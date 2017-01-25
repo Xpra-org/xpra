@@ -16,6 +16,8 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 
+from libc.stdint cimport uint8_t, uintptr_t
+
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
@@ -55,8 +57,6 @@ cdef object memory_as_readonly_pybuffer(void *ptr, Py_ssize_t buf_len):
     pybuf.shape = shape
     return PyMemoryView_FromBuffer(&pybuf)
 
-
-from libc.stdint cimport uint8_t
 
 cdef extern from "libyuv/convert.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
@@ -98,11 +98,11 @@ cdef FilterMode get_filtermode(int speed):
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-cdef inline unsigned long roundupl(unsigned long n, unsigned long m):
+cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m):
     return (n + m - 1) & ~(m - 1)
 
-cdef inline void *memalign_ptr(void *ptr):
-    return <void *> roundupl(<unsigned long> ptr, MEMALIGN_ALIGNMENT)
+cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
+    return <uintptr_t> roundupl(<unsigned long> ptr, MEMALIGN_ALIGNMENT)
 
 
 def init_module():
@@ -154,7 +154,7 @@ class YUVImageWrapper(ImageWrapper):
         log("YUVImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
         ImageWrapper.free(self)
         if self.cython_buffer>0:
-            free(<void *> (<unsigned long> self.cython_buffer))
+            free(<void *> (<uintptr_t> self.cython_buffer))
             self.cython_buffer = 0
 
 
@@ -339,7 +339,7 @@ cdef class ColorspaceConverter:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         for i in range(3):
             #offsets are aligned, so this is safe and gives us aligned pointers:
-            out_planes[i] = <uint8_t*> (<unsigned long> memalign_ptr(output_buffer) + self.out_offsets[i])
+            out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
         with nogil:
             result = ARGBToI420(input_image, stride,
                            out_planes[0], self.out_stride[0],
@@ -372,7 +372,7 @@ cdef class ColorspaceConverter:
                 planes.append(memory_as_readonly_pybuffer(<void *> scaled_planes[i], self.scaled_size[i]))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
-            out_image.cython_buffer = <unsigned long> scaled_buffer
+            out_image.cython_buffer = <uintptr_t> scaled_buffer
         else:
             #use output buffer directly:
             for i in range(3):
@@ -380,7 +380,7 @@ cdef class ColorspaceConverter:
                 planes.append(memory_as_readonly_pybuffer(<void *> out_planes[i], self.out_size[i]))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
-            out_image.cython_buffer = <unsigned long> output_buffer
+            out_image.cython_buffer = <uintptr_t> output_buffer
         return out_image
 
 
