@@ -2116,7 +2116,7 @@ if client_ENABLED:
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
-toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and MINGW_PREFIX), "gi")
+toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 and (MINGW_PREFIX or PYTHON3)), "gi")
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
