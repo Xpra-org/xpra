@@ -21,10 +21,16 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 ################################################################################
 # Get version information, generate filenames
 
+#record in source tree:
+python2 add_build_info.py >& /dev/null
+if [ "$?" != "0" ]; then
+	echo "ERROR: recording build info"
+	exit 1
+fi
+
 #figure out the full xpra version:
 VERSION=`python2.7.exe -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-SVN_VERSION=`svnversion`
-REVISION=`python -c "x=\"$SVN_VERSION\";y=x.split(\":\");y.reverse();z=y[0];print \"\".join([c for c in z if c in \"0123456789\"])"`
+REVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
 FULL_VERSION=${VERSION}-r${REVISION}
 EXTRA_VERSION=""
 BUILD_TYPE=""
@@ -48,7 +54,7 @@ ZIP_FILENAME="${ZIP_DIR}.zip"
 ################################################################################
 # Build: clean, build extensions, generate exe directory
 
-echo "* cleaning ${DIST} output directory"
+echo "* Cleaning ${DIST} output directory"
 rm -fr ${DIST}/*
 mkdir ${DIST} >& /dev/null
 
