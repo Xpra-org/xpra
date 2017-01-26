@@ -929,6 +929,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
+                   "xpra/buffers/membuf.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/vpx/constants.pxi",
