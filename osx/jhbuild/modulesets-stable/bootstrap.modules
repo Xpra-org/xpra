@@ -66,7 +66,7 @@
   <autotools id="gettext-tools" autogen-sh="configure"
              autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp --with-included-glib">
     <branch repo="ftp.gnu.org" source-subdir="gettext-tools"
-            module="gettext/gettext-0.19.4.tar.xz" version="0.19.4"/>
+            module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
   </autotools>
 
   <!-- cmakes ./configure is picky about invalid flags so we manually set it -->
