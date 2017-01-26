@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -71,6 +71,9 @@ def get_mimetypes():
 
 
 def get_info():
+    return default_get_info
+
+def default_get_info():
     return {
             "mimetypes" :   {
                 ""         : get_mimetypes(),
@@ -137,6 +140,7 @@ def main():
     def dump_printers(d):
         for k in sorted(d.keys()):
             v = d[k]
+            print("Printers:")
             print("* %s" % k)
             dump_dict(v)
             attr = get_printer_attributes(k)
@@ -156,6 +160,7 @@ def main():
             print(" %s" % e)
         if len(sys.argv)<=1:
             dump_printers(get_printers())
+            print("")
             dump_info(get_info())
             return 0
         printers = get_printers()

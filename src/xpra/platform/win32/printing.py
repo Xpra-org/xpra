@@ -63,10 +63,10 @@ PROCESSES = {}
 
 GSVIEW_DIR = None
 GSPRINT_EXE = None
-GSWIN32C_EXE = None
+GSWINXXC_EXE = None
 printers_modified_callback = None
 def init_printing(callback=None):
-    global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWIN32C_EXE
+    global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWINXXC_EXE
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
     #ensure we can find gsprint.exe in a subdirectory:
@@ -75,8 +75,11 @@ def init_printing(callback=None):
     assert os.path.exists(GSVIEW_DIR) and os.path.isdir(GSVIEW_DIR), "cannot find gsview directory in '%s'" % GSVIEW_DIR
     GSPRINT_EXE = os.path.join(GSVIEW_DIR, "gsprint.exe")
     assert os.path.exists(GSPRINT_EXE), "cannot find gsprint.exe in '%s'" % GSVIEW_DIR
-    GSWIN32C_EXE = os.path.join(GSVIEW_DIR, "gswin32c.exe")
-    assert os.path.exists(GSWIN32C_EXE), "cannot find gswin32c.exe in '%s'" % GSVIEW_DIR
+    for bits in (32, 64):
+        GSWINXXC_EXE = os.path.join(GSVIEW_DIR, "gswin%sc.exe" % bits)
+        if os.path.exists(GSWINXXC_EXE):
+            break
+    assert os.path.exists(GSWINXXC_EXE), "cannot find gswin??c.exe in '%s'" % GSVIEW_DIR
     try:
         init_winspool_listener()
     except Exception:
@@ -141,6 +144,22 @@ def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
     msvcrt.free(buf)
     return printers
 
+def get_info():
+    from xpra.platform.printing import default_get_info
+    i = default_get_info()
+    #win32 extras:
+    i.update({
+        "skipped-printers"      : SKIPPED_PRINTERS,
+        "printer-level"         : PRINTER_LEVEL,
+        "default-printer-flags" : DEFAULT_PRINTER_FLAGS,
+        "printer-flags"         : PRINTER_FLAGS,
+        "commands" : {
+            "gsview"    : GSPRINT_EXE or "",
+            "gswin"     : GSWINXXC_EXE or "",
+            },
+        })
+    return i
+
 def get_printers():
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
     printers = {}
@@ -184,12 +203,12 @@ def get_printers():
 
 def print_files(printer, filenames, title, options):
     log("win32.print_files%s", (printer, filenames, title, options))
-    global JOB_ID, PROCESSES, GSVIEW_DIR, GSPRINT_EXE, GSWIN32C_EXE
+    global JOB_ID, PROCESSES, GSVIEW_DIR, GSPRINT_EXE, GSWINXXC_EXE
     assert GSVIEW_DIR, "cannot print files without gsprint!"
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        command = [GSPRINT_EXE, "-ghostscript", GSWIN32C_EXE, "-colour"]
+        command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]
         if printer:
             command += ["-printer", printer]
         command += [filename]

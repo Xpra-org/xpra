@@ -1565,14 +1565,14 @@ if WIN32:
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
-            if os.path.exists("C:\\Program Files (x86)\\Ghostgum\\gsview"):
-                GSVIEW = "C:\\Program Files (x86)\\Ghostgum\\gsview"
-            else:
+            if os.path.exists("C:\\Program Files\\Ghostgum\\gsview"):
                 GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
-            if os.path.exists("C:\\Program Files (x86)\\gs"):
-                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files (x86)\\gs"
             else:
+                GSVIEW = "C:\\Program Files (x86)\\Ghostgum\\gsview"
+            if os.path.exists("C:\\Program Files\\gs"):
                 GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
+            else:
+                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files (x86)\\gs"
             GHOSTSCRIPT = None
             for x in reversed(sorted(os.listdir(GHOSTSCRIPT_PARENT_DIR))):
                 f = os.path.join(GHOSTSCRIPT_PARENT_DIR, x)
