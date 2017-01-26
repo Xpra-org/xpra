@@ -141,8 +141,8 @@
   </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.36.8" module="pango/1.36/pango-1.36.8.tar.xz"
-            hash="sha256:18dbb51b8ae12bae0ab7a958e7cf3317c9acfc8a1e1103ec2f147164a0fc2d07">
+    <branch version="1.38.1" module="pango/1.38/pango-1.38.1.tar.xz"
+	hash="sha256:1320569f6c6d75d6b66172b2d28e59c56ee864ee9df202b76799c4506a214eb7">
     </branch>
     <dependencies>
       <dep package="cairo"/>
@@ -168,8 +168,8 @@
   </autotools>
 
   <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.30/gdk-pixbuf-2.30.8.tar.xz" version="2.30.8"
-            hash="sha256:4853830616113db4435837992c0aebd94cbb993c44dc55063cee7f72a7bef8be"/>
+    <branch module="gdk-pixbuf/2.34/gdk-pixbuf-2.34.0.tar.xz" version="2.34.0"
+            hash="sha256:d55e5b383ee219bd0e23bf6ed4427d56a7db5379729a6e3e0a0e0eba9a8d8879"/>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
@@ -222,9 +222,9 @@
 
   <autotools id="pixman" autogenargs="--disable-gtk --disable-mmx"
              autogen-sh="configure">
-    <branch version="0.32.6" module="pixman-0.32.6.tar.gz"
+    <branch version="0.34.0" module="pixman-0.34.0.tar.gz"
             repo="cairographics"
-            hash="sha1:8791343cbf6d99451f4d08e8209d6ac11bf96df2"/>
+            hash="sha1:a1b1683c1a55acce9d928fea1ab6ceb79142ddc7"/>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
