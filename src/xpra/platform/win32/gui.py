@@ -52,9 +52,26 @@ shell32 = ctypes.windll.shell32
 try:
     from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
 except:
-    log.warn("propsys missing", exc_info=True)
-    log.warn("Warning: propsys support missing, window grouping is not available")
-    set_window_group = None
+    #try using pywin32 for "Legacy" builds:
+    try:
+        from win32com.propsys import propsys    #@UnresolvedImport
+        def set_window_group(hwnd, lhandle):
+            try:
+                ps = propsys.SHGetPropertyStoreForWindow(hwnd)
+                key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
+                value = propsys.PROPVARIANTType(lhandle)
+                log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
+                ps.SetValue(key, value)
+            except Exception as e:
+                log("set_window_group(%s, %s)", hwnd, lhandle, exc_info=True)
+                log.error("Error: failed to set group leader '%s':", lhandle)
+                log.error(" %s", e)
+        log.info("using legacy propsys function for window grouping")
+    except ImportError as e:
+        log("propsys missing", exc_info=True)
+        log.warn("Warning: propsys support missing, window grouping is not available:")
+        log.warn(" %s", e)
+        set_window_group = None
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
 

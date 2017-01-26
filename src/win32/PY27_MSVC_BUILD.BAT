@@ -37,7 +37,7 @@ if "%BUNDLE_GSTREAMER1%"=="1" (
 	)
 	SET CL_VERSION=2010
 	SET PYTHON=C:\Python34
-	SET DIST=dist\Sound
+	SET DIST=dist\Audio
 	SET BUILD_ARGS=--minimal --with-sound
 	CALL win32\BUILD.BAT
 	if %ERRORLEVEL% NEQ 0 (
