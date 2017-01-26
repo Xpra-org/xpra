@@ -1778,7 +1778,7 @@ if WIN32:
     remove_packages("pygst", "gst", "gst.extend")
 
     #add subset of PyOpenGL modules (only when installing):
-    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv):
+    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv or "py2exe" in sys.argv):
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
