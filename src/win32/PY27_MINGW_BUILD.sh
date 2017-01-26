@@ -22,6 +22,7 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 # Get version information, generate filenames
 
 #record in source tree:
+rm xpra/src_info.py xpra/build_info.py >& /dev/null
 python2 add_build_info.py >& /dev/null
 if [ "$?" != "0" ]; then
 	echo "ERROR: recording build info"
