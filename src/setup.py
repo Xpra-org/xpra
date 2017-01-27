@@ -180,6 +180,7 @@ enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
+jpeg_ENABLED            = DEFAULT and pkg_config_ok("--exists", "libjpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
@@ -214,7 +215,7 @@ rebuild_ENABLED         = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "nvenc7", "cuda_rebuild",
-            "vpx", "pillow",
+            "vpx", "pillow", "jpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
             "csc_libyuv",
@@ -941,6 +942,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/jpeg/encode.c",
+                   "xpra/codecs/jpeg/decode.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
@@ -2334,6 +2337,16 @@ if enc_x265_ENABLED:
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 if pillow_ENABLED:
     external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
+
+toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
+if jpeg_ENABLED:
+    jpeg_pkgconfig = pkgconfig("libturbojpeg")
+    #cython_add(Extension("xpra.codecs.jpeg.encoder",
+    #            ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
+    #            **jpeg_pkgconfig))
+    cython_add(Extension("xpra.codecs.jpeg.decoder",
+                ["xpra/codecs/jpeg/decoder.pyx"]+membuffers_c,
+                **jpeg_pkgconfig))
 
 #swscale and avcodec2 use libav_common/av_log:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
