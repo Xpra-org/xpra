@@ -183,6 +183,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
         add_codec_version("dec_pillow", "xpra.codecs.pillow.decode")
 
+        codec_import_check("dec_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.decoder", "decoder")
+        add_codec_version("dec_jpeg", "xpra.codecs.jpeg.decoder")
+
         codec_import_check("dec_vpx", "vpx decoder", "xpra.codecs.vpx", "xpra.codecs.vpx.decoder", "Decoder")
         add_codec_version("vpx", "xpra.codecs.vpx.encoder")
 
@@ -226,7 +229,7 @@ def has_codec(name):
 
 CSC_CODECS = "csc_swscale", "csc_libyuv"
 ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc7", "enc_ffmpeg"
-DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2"
+DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2", "dec_jpeg"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 

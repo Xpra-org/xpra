@@ -24,10 +24,12 @@ if INDIRECT_BGR:
     PIXMAP_RGB_MODES += ["BGRX", "BGRA", "BGR"]
 
 
-INTERP_DICT = {"nearest"    : gdk.INTERP_NEAREST,
-               "tiles"      : gdk.INTERP_TILES,
-               "bilinear"   : gdk.INTERP_BILINEAR,
-               "hyper"      : gdk.INTERP_HYPER}
+INTERP_DICT = {
+    "nearest"    : gdk.INTERP_NEAREST,
+    "tiles"      : gdk.INTERP_TILES,
+    "bilinear"   : gdk.INTERP_BILINEAR,
+    "hyper"      : gdk.INTERP_HYPER,
+    }
 SCALING_INTERP_STR = os.environ.get("XPRA_SCALING_INTERPOLATION", "HYPER").lower()
 SCALING_INTERP = INTERP_DICT.get(SCALING_INTERP_STR)
 if not SCALING_INTERP:

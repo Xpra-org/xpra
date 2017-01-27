@@ -21,7 +21,6 @@ from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_plac
 
 DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
-WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
@@ -89,6 +88,7 @@ class WindowBackingBase(object):
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False
+        self.paint_jpeg = None
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
@@ -474,6 +474,8 @@ class WindowBackingBase(object):
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
+            elif self.paint_jpeg and coding=="jpeg":
+                self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":

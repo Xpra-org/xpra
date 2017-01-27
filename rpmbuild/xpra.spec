@@ -26,6 +26,7 @@
 %define numpy numpy
 %define xvfb xorg-x11-server-Xvfb
 %define requires_webcam , python-inotify
+%define requires_jpeg , turbojpeg
 %define requires_shadow shadow-utils
 %define requires_cython Cython
 %define requires_pygobject2 pygobject2
@@ -84,6 +85,8 @@
 %define run_tests 0
 #untested:
 %define with_selinux 0
+#not available:
+%define requires_jpeg %{nil}
 #SUSE Leap aka 42.1 does not have python3-crypto, so skip the python3 build there
 %if 0%{?suse_version} == 1315
 %define with_python3 0
@@ -147,7 +150,7 @@ Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.0
 
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam}
+Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
 Requires: %{requires_pygtk2}
 Requires: %{requires_dbus}
@@ -203,6 +206,9 @@ BuildRequires: checkpolicy, selinux-policy-devel
 Requires: selinux-policy
 Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
 Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+%endif
+%if 0%{?el7}%{?fedora}
+BuildRequires: turbojpeg-devel
 %endif
 %if 0%{?fedora}
 Requires(post): systemd-units

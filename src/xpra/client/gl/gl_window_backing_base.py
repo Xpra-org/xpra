@@ -240,6 +240,11 @@ class GLWindowBackingBase(GTKWindowBacking):
         else:
             self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
+        from xpra.codecs.loader import get_codec
+        self.jpeg_decoder = get_codec("dec_jpeg")
+        if self.jpeg_decoder:
+            #enable fast jpeg decoder:
+            self.paint_jpeg = self.do_paint_jpeg
         self._backing.show()
 
     def init_gl_config(self, window_alpha):
@@ -811,6 +816,12 @@ class GLWindowBackingBase(GTKWindowBacking):
         else:
             #str already
             return  "copy:str", img_data
+
+
+    def do_paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+        img = self.jpeg_decoder.decompress(img_data, width, height, options)
+        flush = options.intget("flush", 0)
+        self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
 
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):

@@ -39,6 +39,11 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-numpy
 # for PNG and JPEG support:
         ,python-imaging
+# fast JPEG client support:
+#xenial:         ,libturbojpeg
+#yakkety:         ,libturbojpeg
+#sid:         ,libturbojpeg0
+#stretch:         ,libturbojpeg0
 # scrolling detection:
         ,python-xxhash
 # ffmpeg based codecs:
