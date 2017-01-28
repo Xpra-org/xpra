@@ -152,7 +152,7 @@ class ServerTestUtil(unittest.TestCase):
 			display = cls.find_free_display()
 		with OSEnvContext():
 			XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-			for x in os.environ.keys():
+			for x in list(os.environ.keys()):
 				if x in ("LOGNAME", "USER", "PATH", "LANG", "TERM", "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME"):	#DBUS_SESSION_BUS_ADDRESS
 					#keep it
 					continue
