@@ -98,7 +98,7 @@ class SysAuthenticator(object):
             salt = self.salt
         else:
             salt = xor(self.salt, client_salt)
-            log("xoring salt: xor(%s, %s)=%s", self.salt, client_salt, binascii.hexlify(salt))
+            log("xoring salt: xor(%s, %s)=%s", self.salt, client_salt, binascii.hexlify(strtobytes(salt)))
         self.salt = None
         password = self.get_password()
         if not password:

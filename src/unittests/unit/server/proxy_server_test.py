@@ -14,8 +14,10 @@ class ProxyServerTest(ServerTestUtil):
 	def test_proxy_start_stop(self):
 		display = self.find_free_display()
 		log("using free display=%s" % display)
-		proxy = self.run_xpra(["proxy", display, "--no-daemon"])
-		assert pollwait(proxy, 5) is None, "proxy failed to start"
+		cmd = ["proxy", display, "--no-daemon"]
+		cmdstr = " ".join("'%s'" % c for c in cmd)
+		proxy = self.run_xpra(cmd)
+		assert pollwait(proxy, 5) is None, "proxy failed to start with cmd=%s" % cmdstr
 		assert display in self.dotxpra.displays(), "proxy display not found"
 		self.check_stop_server(proxy, "stop", display)
 

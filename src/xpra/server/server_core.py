@@ -219,7 +219,7 @@ class ServerCore(object):
         # Define a server UUID if needed:
         self.uuid = self.get_uuid()
         if not self.uuid:
-            self.uuid = unicode(get_hex_uuid())
+            self.uuid = bytestostr(get_hex_uuid())
             self.save_uuid()
         log("server uuid is %s", self.uuid)
 

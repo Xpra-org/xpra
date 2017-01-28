@@ -203,10 +203,11 @@ def selftest(full=False):
         log("decompress(%i bytes)=%s", len(data), img)
         if full:
             try:
-                assert decompress(data[:len(data)//2], 16, 16) is not None
+                v = decompress(data[:len(data)//2], 16, 16)
+                assert v is not None
             except:
                 pass
             else:
-                raise Exception("should not be able to decompress incomplete data")
+                raise Exception("should not be able to decompress incomplete data, but got %s" % v)
     finally:
         pass
