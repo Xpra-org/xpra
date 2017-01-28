@@ -26,7 +26,7 @@ class TestAuth(unittest.TestCase):
 
 	def a(self, name):
 		pmod = "xpra.server.auth"
-		auth_module = __import__(pmod, globals(), locals(), ["%s_auth" % name], -1)
+		auth_module = __import__(pmod, globals(), locals(), ["%s_auth" % name], 0)
 		mod = getattr(auth_module, "%s_auth" % name, None)
 		assert mod, "cannot load '%s_auth' from %s" % (name, pmod)
 		return mod
