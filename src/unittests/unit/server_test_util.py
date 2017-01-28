@@ -151,8 +151,15 @@ class ServerTestUtil(unittest.TestCase):
 		if display is None:
 			display = cls.find_free_display()
 		with OSEnvContext():
-			os.environ["DISPLAY"] = display
 			XAUTHORITY = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+			for x in os.environ.keys():
+				if x in ("LOGNAME", "USER", "PATH", "LANG", "TERM", "HOME", "USERNAME", "PYTHONPATH", "HOSTNAME"):	#DBUS_SESSION_BUS_ADDRESS
+					#keep it
+					continue
+				try:
+					del os.environ[x]
+				except:
+					pass
 			if len(screens)>1:
 				cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset",
 						"-auth", XAUTHORITY]
@@ -164,11 +171,21 @@ class ServerTestUtil(unittest.TestCase):
 				assert xvfb_cmd, "no 'xvfb' command in default config"
 				import shlex
 				cmd = shlex.split(osexpand(xvfb_cmd))
-				if "/etc/xpra/xorg.conf" in cmd:
-					cmd[cmd.index("/etc/xpra/xorg.conf")] = "./etc/xpra/xorg.conf"
+				try:
+					i = cmd.index("/etc/xpra/xorg.conf")
+				except ValueError:
+					i = -1
+				if i>0 and os.path.exists("./etc/xpra/xorg.conf"):
+					cmd[i] = "./etc/xpra/xorg.conf"
 			cmd.append(display)
-			xvfb = cls.run_command(cmd)
-			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command %s failed and returned %s" % (cmd, xvfb.poll())
+			os.environ["DISPLAY"] = display
+			os.environ["XPRA_LOG_DIR"] = "/tmp"
+			cmd_expanded = [osexpand(v) for v in cmd]
+			cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
+			xvfb = cls.run_command(cmd_expanded, stdout=sys.stdout, stderr=sys.stderr)
+			time.sleep(1)
+			print("xvfb(%s)=%s" % (cmdstr, xvfb))
+			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
 			return xvfb
 
 
@@ -185,9 +202,11 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def check_server(cls, subcommand, display, *args):
-		server_proc = cls.run_xpra([subcommand, display, "--no-daemon"]+list(args))
-		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start, returned %s" % server_proc.poll()
-		assert display in cls.dotxpra.displays(), "server display not found"
+		cmd = [subcommand, display, "--no-daemon"]+list(args)
+		server_proc = cls.run_xpra(cmd)
+		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
+		live = cls.dotxpra.displays()
+		assert display in live, "server display '%s' not found in live displays %s" % (display, live)
 		#query it:
 		info = cls.run_xpra(["version", display])
 		for _ in range(5):
