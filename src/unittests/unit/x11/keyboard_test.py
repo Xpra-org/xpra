@@ -8,6 +8,7 @@ import os
 import unittest
 
 from unit.server_test_util import ServerTestUtil, log
+from xpra.os_util import OSX
 
 
 class TestX11Keyboard(ServerTestUtil):
@@ -32,7 +33,7 @@ class TestX11Keyboard(ServerTestUtil):
 
 def main():
     #can only work with an X11 server
-    if os.name=="posix":
+    if os.name=="posix" and not OSX:
         unittest.main()
 
 if __name__ == '__main__':

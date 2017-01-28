@@ -6,6 +6,8 @@ STRIP_SOURCE="${STRIP_SOURCE:=$STRIP_DEFAULT}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 STRIP_NUMPY="${STRIP_NUMPY:=$STRIP_DEFAULT}"
 
+DO_TESTS="${DO_TESTS:-1}"
+
 BUILDNO="${BUILDNO:="0"}"
 IMAGE_DIR="./image/Xpra.app"
 CONTENTS_DIR="${IMAGE_DIR}/Contents"
@@ -37,6 +39,7 @@ echo "./setup.py install ${BUILD_ARGS}"
 echo " (see install.log for details - this may take a minute or two)"
 python ./setup.py install ${BUILD_ARGS} >& install.log
 if [ "$?" != "0" ]; then
+	popd
 	echo "ERROR: install failed"
 	echo
 	tail -n 10 install.log
@@ -48,6 +51,25 @@ VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__v
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 echo "OK"
+
+if [ "${DO_TESTS}" == "1" ]; then
+	echo "running unit tests"
+	pushd ./unittests
+	#make sure the unit tests can run "python2 xpra ...":
+	rm -f ./xpra >& /dev/null
+	ln -sf ../scripts/xpra .
+	UNITTEST_LOG="unittest.log"
+	PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
+	if [ "$?" != "0" ]; then
+		popd
+		echo "ERROR: unit tests failed, see ${UNITTEST_LOG}:"
+		tail -n 20 ${UNITTEST_LOG}
+		exit 1
+	else
+		echo "OK"
+	fi
+fi
+popd
 
 echo
 echo "*******************************************************************************"

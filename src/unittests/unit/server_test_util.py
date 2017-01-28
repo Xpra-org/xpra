@@ -119,7 +119,7 @@ class ServerTestUtil(unittest.TestCase):
 	def find_X11_display_numbers(cls):
 		#use X11 sockets:
 		X11_displays = set()
-		if os.name=="posix":
+		if os.name=="posix" and os.path.exists("/tmp/.X11-unix"):
 			for x in os.listdir("/tmp/.X11-unix"):
 				if x.startswith("X"):
 					try:

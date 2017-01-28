@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, OSX
 from unit.server_test_util import ServerTestUtil, log
 
 

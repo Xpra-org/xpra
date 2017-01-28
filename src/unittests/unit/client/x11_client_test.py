@@ -8,7 +8,7 @@ import os
 import sys
 import unittest
 from xpra.util import envint
-from xpra.os_util import load_binary_file, pollwait
+from xpra.os_util import load_binary_file, pollwait, OSX
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
 CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 5)
@@ -85,7 +85,7 @@ class X11ClientTest(X11ClientTestUtil):
 
 
 def main():
-	if os.name=="posix" and sys.version_info[0]==2:
+	if os.name=="posix" and sys.version_info[0]==2 and not OSX:
 		unittest.main()
 
 

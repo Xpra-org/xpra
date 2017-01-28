@@ -8,7 +8,7 @@ import os
 import sys
 import time
 import unittest
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, OSX
 from unit.server_test_util import ServerTestUtil
 
 
@@ -28,7 +28,7 @@ class ShadowServerTest(ServerTestUtil):
 
 
 def main():
-	if os.name=="posix" and sys.version_info[0]==2:
+	if os.name=="posix" and sys.version_info[0]==2 and not OSX:
 		unittest.main()
 
 

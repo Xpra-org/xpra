@@ -8,6 +8,7 @@ import os
 import sys
 import unittest
 from unit.client.x11_clipboard_test_util import X11ClipboardTestUtil
+from xpra.os_util import OSX
 
 
 class OSXLikeClipboardTest(X11ClipboardTestUtil):
@@ -37,7 +38,7 @@ class OSXLikeClipboardTest(X11ClipboardTestUtil):
 
 
 def main():
-	if os.name=="posix" and sys.version_info[0]==2:
+	if os.name=="posix" and sys.version_info[0]==2 and not OSX:
 		unittest.main()
 
 
