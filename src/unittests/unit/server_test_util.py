@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -27,6 +27,12 @@ XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 5)
 class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
+	def displays(cls):
+		if os.name!="posix":
+			return []
+		return cls.dotxpra.displays()
+
+	@classmethod
 	def setUpClass(cls):
 		from xpra.scripts.server import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
@@ -34,7 +40,7 @@ class ServerTestUtil(unittest.TestCase):
 		cls.display_start = 100
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
 		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp", "--speaker=no", "--microphone=no"]
-		ServerTestUtil.existing_displays = cls.dotxpra.displays()
+		ServerTestUtil.existing_displays = cls.displays()
 		ServerTestUtil.processes = []
 		xpra_list = cls.run_xpra(["list"])
 		assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
@@ -47,7 +53,7 @@ class ServerTestUtil(unittest.TestCase):
 					x.terminate()
 			except:
 				log.error("failed to stop subprocess %s", x)
-		displays = set(cls.dotxpra.displays())
+		displays = set(cls.displays())
 		new_displays = displays - set(ServerTestUtil.existing_displays)
 		if new_displays:
 			for x in list(new_displays):
@@ -124,6 +130,8 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def find_X11_displays(cls):
+		if os.name!="posix":
+			return []
 		return [":%i" % x for x in cls.find_X11_display_numbers()]
 
 
@@ -131,7 +139,7 @@ class ServerTestUtil(unittest.TestCase):
 	def find_free_display_no(cls):
 		#X11 sockets:
 		X11_displays = cls.find_X11_displays()
-		displays = cls.dotxpra.displays()
+		displays = cls.displays()
 		start = cls.display_start % 10000
 		for i in range(start, 20000):
 			display = ":%i" % i

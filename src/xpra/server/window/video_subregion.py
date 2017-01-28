@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -373,7 +373,11 @@ class VideoSubregion(object):
             self.time = time.time()
             self.inout = inoutcount(rect)
             self.score = scoreinout(ww, wh, rect, *self.inout)
-            self.fps = int(self.inout[0]/(rect.width*rect.height) / (time.time()-from_time))
+            elapsed = time.time()-from_time
+            if elapsed<=0:
+                self.fps = 0
+            else:
+                self.fps = int(self.inout[0]/(rect.width*rect.height) / elapsed)
             self.damaged = int(100*damaged_ratio(self.rectangle))
             self.last_scores = scores
             sslog("score(%s)=%s, damaged=%i%%", self.inout, self.score, self.damaged)

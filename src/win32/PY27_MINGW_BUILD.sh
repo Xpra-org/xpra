@@ -10,6 +10,7 @@ DO_CLEAN=${DO_CLEAN:-0}
 DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
+DO_TESTS=${DO_TESTS:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
@@ -77,6 +78,17 @@ if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${BUILD_LOG}:"
 	tail -n 20 "${BUILD_LOG}"
 	exit 1
+fi
+
+if [ "${DO_TESTS}" == "1" ]; then
+	echo "* Running unit tests"
+	UNITTEST_LOG="win32/unittest.log"
+	PYTHONPATH=.:./unittests ./unittests/unit/run.py >& ${UNITTEST_LOG}
+	if [ "$?" != "0" ]; then
+		echo "ERROR: unittests have failed, see ${UNITTEST_LOG}:"
+		tail -n 20 "${UNITTEST_LOG}"
+		exit 1
+	fi
 fi
 
 # For building Python 3.x Sound sub-app (broken because of cx_Freeze bugs)

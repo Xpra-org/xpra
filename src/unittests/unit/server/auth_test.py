@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import tempfile
 import uuid
 import hmac
 from xpra.util import xor
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, WIN32
 from xpra.net.protocol import get_digests
 from xpra.net.crypto import get_digest_module
 
@@ -157,31 +157,41 @@ class TestAuth(unittest.TestCase):
 		assert not a.get_challenge(get_digests())
 		assert not a.get_challenge(get_digests())
 		for muck in (0, 1):
-			f = tempfile.NamedTemporaryFile(prefix=mod_name)
-			filename = f.name
-			with f:
-				a = self._init_auth(mod_name, {"password_file" : filename})
-				password, filedata = genauthdata(a)
-				#print("saving password file data='%s' to '%s'" % (filedata, filename))
-				f.write(strtobytes(filedata))
-				f.flush()
-				assert a.requires_challenge()
-				salt, mac = a.get_challenge(get_digests())
-				assert salt
-				assert mac in get_digests()
-				assert mac!="xor"
-				password = strtobytes(password)
-				client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
-				auth_salt = strtobytes(xor(salt, client_salt))
-				if muck==0:
-					digestmod = get_digest_module(mac)
-					verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
-					assert a.authenticate(verify, client_salt)
-					assert not a.authenticate(verify, client_salt)
-					assert a.get_password()==password
-				elif muck==1:
-					for verify in ("whatever", None, "bad"):
+			if WIN32:
+				#NamedTemporaryFile doesn't work for reading on win32...
+				import time
+				filename = os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-test-%s" % time.time())
+				f = open(filename, 'wb')
+			else:
+				f = tempfile.NamedTemporaryFile(prefix=mod_name)
+				filename = f.name
+			try:
+				with f:
+					a = self._init_auth(mod_name, {"password_file" : filename})
+					password, filedata = genauthdata(a)
+					#print("saving password file data='%s' to '%s'" % (filedata, filename))
+					f.write(strtobytes(filedata))
+					f.flush()
+					assert a.requires_challenge()
+					salt, mac = a.get_challenge(get_digests())
+					assert salt
+					assert mac in get_digests()
+					assert mac!="xor"
+					password = strtobytes(password)
+					client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
+					auth_salt = strtobytes(xor(salt, client_salt))
+					if muck==0:
+						digestmod = get_digest_module(mac)
+						verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
+						assert a.authenticate(verify, client_salt)
 						assert not a.authenticate(verify, client_salt)
+						assert a.get_password()==password
+					elif muck==1:
+						for verify in ("whatever", None, "bad"):
+							assert not a.authenticate(verify, client_salt)
+			finally:
+				if WIN32:
+					os.unlink(filename)
 
 	def test_file(self):
 		def genfiledata(a):

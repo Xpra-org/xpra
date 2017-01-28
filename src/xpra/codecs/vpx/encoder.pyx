@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import time
 import os
 from collections import deque
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, WIN32
 from xpra.util import AtomicInteger, envint, envbool
 
 from xpra.log import Logger
@@ -290,9 +290,13 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 
 #educated guess:
-MAX_SIZE = {"vp8"   : (4096, 4096),
-            "vp9"   : (8192, 4096),
-            }
+MAX_SIZE = {
+    "vp8"   : (4096, 4096),
+    "vp9"   : (8192, 4096),
+    }
+#no idea why, but this is the default on win32:
+if WIN32:
+    MAX_SIZE["vp9"] = (4096, 4096)
 #These are the real limits with libvpx 1.4
 # but we can't probe them without causing OOM on small systems!
 #IF LIBVPX14:
