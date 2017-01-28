@@ -180,7 +180,7 @@ enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
-jpeg_ENABLED            = DEFAULT and pkg_config_ok("--exists", "libjpeg")
+jpeg_ENABLED            = DEFAULT and pkg_config_ok("--exists", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
