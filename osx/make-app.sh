@@ -35,14 +35,15 @@ svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/*
 python ./setup.py clean
+INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
-echo " (see install.log for details - this may take a minute or two)"
-python ./setup.py install ${BUILD_ARGS} >& install.log
+echo " (see ${INSTALL_LOG} for details - this may take a minute or two)"
+python ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
 	echo
-	tail -n 10 install.log
+	tail -n 20 ${INSTALL_LOG}
 	exit 1
 fi
 #get the version and build info from the python build records:
@@ -53,12 +54,12 @@ REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M
 echo "OK"
 
 if [ "${DO_TESTS}" == "1" ]; then
-	echo "running unit tests"
 	pushd ./unittests
 	#make sure the unit tests can run "python2 xpra ...":
 	rm -f ./xpra >& /dev/null
 	ln -sf ../scripts/xpra .
-	UNITTEST_LOG="unittest.log"
+	UNITTEST_LOG=`pwd`/unittest.log
+	echo "running unit tests (see ${UNITTEST_LOG} - this may take a minute or two)"
 	PYTHONPATH=. ./unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
 		popd
@@ -74,13 +75,14 @@ popd
 echo
 echo "*******************************************************************************"
 echo "py2app step:"
+PY2APP_LOG=`pwd`/py2app.log
 echo "./setup.py py2app ${BUILD_ARGS}"
-echo " (see py2app.log for details - this may take a minute or two)"
-python ./setup.py py2app ${BUILD_ARGS} >& py2app.log
+echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
+python ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	echo
-	tail -n 10 py2app.log
+	tail -n 20 ${PY2APP_LOG}
 	exit 1
 fi
 echo "OK"
