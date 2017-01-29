@@ -1139,7 +1139,9 @@ class ServerBase(ServerCore):
         except Exception as e:
             #log exception but don't disclose internal details to the client
             p = ss.protocol
-            log.error("server error processing new connection from %s: %s", p or ss, e, exc_info=True)
+            log("parse_hello_ui%s", (ss, c, auth_caps, send_ui, share_count), exc_info=True)
+            log.error("Error: processing new connection from %s:", p or ss)
+            log.error(" %s", e)
             if p:
                 self.disconnect_client(p, SERVER_ERROR, "error accepting new connection")
 

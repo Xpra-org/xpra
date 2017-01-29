@@ -1564,7 +1564,7 @@ class WindowVideoSource(WindowSource):
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if not fallback_encodings:
             if not self.is_cancelled():
-                log.error("no non-video fallback encodings are available!")
+                log.warn("Warning: no non-video fallback encodings are available!")
             return None
         fallback_encoding = fallback_encodings[0]
         encode_fn = self._encoders[fallback_encoding]
