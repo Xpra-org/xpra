@@ -942,8 +942,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
-                   "xpra/codecs/jpeg/encode.c",
-                   "xpra/codecs/jpeg/decode.c",
+                   "xpra/codecs/jpeg/encoder.c",
+                   "xpra/codecs/jpeg/decoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
@@ -2341,9 +2341,9 @@ if pillow_ENABLED:
 toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
 if jpeg_ENABLED:
     jpeg_pkgconfig = pkgconfig("libturbojpeg")
-    #cython_add(Extension("xpra.codecs.jpeg.encoder",
-    #            ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
-    #            **jpeg_pkgconfig))
+    cython_add(Extension("xpra.codecs.jpeg.encoder",
+                ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
+                **jpeg_pkgconfig))
     cython_add(Extension("xpra.codecs.jpeg.decoder",
                 ["xpra/codecs/jpeg/decoder.pyx"]+membuffers_c,
                 **jpeg_pkgconfig))
