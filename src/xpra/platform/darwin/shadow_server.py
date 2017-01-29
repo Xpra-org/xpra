@@ -90,9 +90,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def screen_refresh_callback(self, count, rects, info):
-        #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped_at)
-        if not self.mapped:
-            return
+        #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
         self.refresh_count += 1
         rlist = []
         for r in rects:
