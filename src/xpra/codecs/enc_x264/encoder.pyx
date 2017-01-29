@@ -27,9 +27,6 @@ LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
-cdef extern from *:
-    ctypedef unsigned long size_t
-
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
 

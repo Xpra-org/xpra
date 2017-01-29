@@ -28,13 +28,8 @@ cdef extern from "stdlib.h":
 cdef extern from "string.h":
     void * memcpy ( void * destination, void * source, size_t num )
 
-
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
-
-cdef extern from *:
-    ctypedef unsigned long size_t
 
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)

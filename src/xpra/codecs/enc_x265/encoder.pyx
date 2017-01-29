@@ -18,9 +18,6 @@ from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
 LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
 
 
-cdef extern from *:
-    ctypedef unsigned long size_t
-
 cdef extern from "stdint.h":
     pass
 cdef extern from "inttypes.h":
