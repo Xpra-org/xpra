@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger("shadow", "osx")
 
+from xpra.util import envbool
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -14,6 +15,9 @@ from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
+
+
+USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
 
 ALPHA = {
          CG.kCGImageAlphaNone                  : "AlphaNone",
@@ -108,14 +112,16 @@ class ShadowServer(GTKShadowServerBase):
         if self.refresh_registered:
             log.warn("Warning: screen refresh callback already registered!")
             return
-        err = CG.CGRegisterScreenRefreshCallback(self.screen_refresh_callback, None)
-        log("CGRegisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
-        if err!=0:
-            log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
-            log.warn(" using fallback timer method")
-            GTKShadowServerBase.start_refresh(self)
-        else:
-            self.refresh_registered = True
+        if not USE_TIMER:
+            err = CG.CGRegisterScreenRefreshCallback(self.screen_refresh_callback, None)
+            log("CGRegisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
+            if err==0:
+                self.refresh_registered = True
+                return
+            else:
+                log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
+                log.warn(" using fallback timer method")
+        GTKShadowServerBase.start_refresh(self)
 
     def stop_refresh(self):
         log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.timer)
@@ -183,6 +189,7 @@ class ShadowServer(GTKShadowServerBase):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/osx-shadow"
         info.setdefault("damage", {}).update({
+                                              "use-timer"       : USE_TIMER,
                                               "notifications"   : self.refresh_registered,
                                               "count"           : self.refresh_count,
                                               "rectangles"      : self.refresh_rectangle_count,
