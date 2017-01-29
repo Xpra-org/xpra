@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -92,11 +92,13 @@ class ShadowServer(GTKShadowServerBase):
         self.refresh_count += 1
         rlist = []
         for r in rects:
-            assert isinstance(r, CG.CGRect), "invalid rectangle in list: %s" % r
+            if not isinstance(r, CG.CGRect):
+                log.error("Error: invalid rectangle in refresh list: %s", r)
+                continue
             self.refresh_rectangle_count += 1
             rlist.append((r.origin.x, r.origin.y, r.size.width, r.size.height))
-            #return quickly, and process the list copy via idle add:
-            self.idle_add(self.do_screen_refresh, rlist)
+        #return quickly, and process the list copy via idle add:
+        self.idle_add(self.do_screen_refresh, rlist)
 
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
