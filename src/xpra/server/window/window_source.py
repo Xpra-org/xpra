@@ -231,6 +231,9 @@ class WindowSource(object):
                 if x in self.server_core_encodings:
                     self._encoders[x] = self.pillow_encode
         #prefer this one over PIL supplied version:
+        enc_jpeg = get_codec("enc_jpeg")
+        if enc_jpeg:
+            self._encoders["jpeg"] = self.jpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
 
@@ -1891,6 +1894,12 @@ class WindowSource(object):
         s = options.get("speed") or self._current_speed
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
                           self.rgb_zlib, self.rgb_lz4, self.rgb_lzo)
+
+    def jpeg_encode(self, coding, image, options):
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
+        enc_jpeg = get_codec("enc_jpeg")
+        return enc_jpeg.encode(image, q, s, options)
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

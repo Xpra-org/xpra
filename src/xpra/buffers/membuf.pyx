@@ -23,10 +23,16 @@ cdef void free_buf(const void *p, size_t l, void *arg):
 
 cdef getbuf(size_t l):
     cdef const void *p = xmemalign(l)
+    assert p!=NULL, "failed to allocate %i bytes of memory" % l
     return MemBuf_init(p, l, &free_buf, NULL)
 
 cdef padbuf(size_t l, size_t padding):
     cdef const void *p = xmemalign(l+padding)
+    assert p!=NULL, "failed to allocate %i bytes of memory" % l
+    return MemBuf_init(p, l, &free_buf, NULL)
+
+cdef makebuf(void *p, size_t l):
+    assert p!=NULL, "invalid NULL buffer pointer"
     return MemBuf_init(p, l, &free_buf, NULL)
 
 

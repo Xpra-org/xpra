@@ -7,6 +7,7 @@ from cpython.buffer cimport PyBuffer_FillInfo
 
 cdef getbuf(size_t l)
 cdef padbuf(size_t l, size_t padding)
+cdef makebuf(void *p, size_t l)
 
 ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 

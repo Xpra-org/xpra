@@ -151,7 +151,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
         add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
 
-        #causes crashes with osx shadow servers, disabled in setup.py:
+        codec_import_check("enc_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.encoder", "encoder")
+        add_codec_version("enc_jpeg", "xpra.codecs.jpeg.encoder")
+
         codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
         add_codec_version("vpx", "xpra.codecs.vpx.decoder")
 
@@ -225,7 +227,7 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_libyuv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc7", "enc_ffmpeg"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc7", "enc_ffmpeg", "enc_jpeg"
 DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2", "dec_jpeg"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))

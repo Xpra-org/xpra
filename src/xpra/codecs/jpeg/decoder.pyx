@@ -6,14 +6,15 @@
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
-from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.codecs.image_wrapper import ImageWrapper
-from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf
+
+from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
 
 ctypedef int boolean
 ctypedef unsigned int JDIMENSION
+
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
@@ -22,7 +23,6 @@ cdef extern from "stdlib.h":
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
-ctypedef int TJXOP
 
 cdef extern from "turbojpeg.h":
     TJSAMP  TJSAMP_444
@@ -57,38 +57,7 @@ cdef extern from "turbojpeg.h":
     int TJFLAG_FASTDCT
     int TJFLAG_ACCURATEDCT
 
-    TJXOP   TJXOP_NONE
-    TJXOP   TJXOP_HFLIP
-    TJXOP   TJXOP_VFLIP
-    TJXOP   TJXOP_TRANSPOSE
-    TJXOP   TJXOP_TRANSVERSE
-    TJXOP   TJXOP_ROT90
-    TJXOP   TJXOP_ROT180
-    TJXOP   TJXOP_ROT270
-
-    int TJXOPT_PERFECT
-    int TJXOPT_TRIM
-    int TJXOPT_CROP
-    int TJXOPT_GRAY
-    int TJXOPT_NOOUTPUT
-
-    ctypedef struct tjscalingfactor:
-        int num
-        int denom
-
-    ctypedef struct tjregion:
-        int x
-        int y
-        int w
-        int h
-
-    cdef struct tjtransform:
-        pass
-
     ctypedef void* tjhandle
-
-
-    #tjhandle tjInitCompress()
     tjhandle tjInitDecompress()
     int tjDecompressHeader3(tjhandle handle,
                             const unsigned char *jpegBuf, unsigned long jpegSize, int *width,
