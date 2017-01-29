@@ -229,7 +229,8 @@ class ServerSource(FileTransferHandler):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, av_sync,
+                 supports_mmap, mmap_filename, 
+                 av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
                  sound_source_plugin,
@@ -244,7 +245,8 @@ class ServerSource(FileTransferHandler):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, av_sync,
+                 supports_mmap, mmap_filename, 
+                 av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
                  sound_source_plugin,
@@ -284,6 +286,7 @@ class ServerSource(FileTransferHandler):
         self.window_filters = window_filters
         # mmap:
         self.supports_mmap = supports_mmap
+        self.mmap_filename = mmap_filename
         self.mmap = None
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check
@@ -896,13 +899,17 @@ class ServerSource(FileTransferHandler):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
         mmap_filename = c.strget("mmap_file")
+        mmaplog("client supplied mmap_file=%s", mmap_filename)
         mmap_token = c.intget("mmap_token")
-        mmaplog("client supplied mmap_file=%s, mmap supported=%s, token=%s", mmap_filename, self.supports_mmap, mmap_token)
+        mmaplog("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
         if mmap_filename:
+            if self.mmap_filename:
+                mmaplog("using global server specified mmap file path: '%s'", self.mmap_filename)
+                mmap_filename = self.mmap_filename
             if not self.supports_mmap:
-                mmaplog("client supplied an mmap_file: %s but mmap mode is not supported", mmap_filename)
+                mmaplog("client enabled mmap but mmap mode is not supported", mmap_filename)
             elif not os.path.exists(mmap_filename):
-                mmaplog("client supplied an mmap_file: %s but we cannot find it", mmap_filename)
+                mmaplog("mmap_file '%s' cannot be found!", mmap_filename)
             else:
                 from xpra.net.mmap_pipe import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
                 self.mmap, self.mmap_size = init_server_mmap(mmap_filename)
@@ -1525,6 +1532,12 @@ class ServerSource(FileTransferHandler):
             info["window-filter"] = finfo
         info["file-transfers"] = FileTransferHandler.get_info(self)
         info["sound"] = self.get_sound_info()
+        info["mmap"] = {
+            "supported"     : self.supports_mmap,
+            "enabled"       : self.mmap is not None,
+            "size"          : self.mmap_size,
+            "filename"      : self.mmap_filename or "",
+            }
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
         return info

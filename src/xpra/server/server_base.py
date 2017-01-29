@@ -79,6 +79,7 @@ class ServerBase(ServerCore):
         self.client_properties = {}
 
         self.supports_mmap = False
+        self.mmap_filename = None
         self.min_mmap_size = 64*1024*1024
         self.randr = False
 
@@ -204,7 +205,11 @@ class ServerBase(ServerCore):
         from xpra.scripts import config
         config.warn = log.warn
 
-        self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
+        if opts.mmap and os.path.isabs(opts.mmap):
+            self.supports_mmap = True
+            self.mmap_filename = opts.mmap
+        else:
+            self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
 
@@ -1103,7 +1108,8 @@ class ServerBase(ServerCore):
                           get_window_id,
                           self.window_filters,
                           self.file_transfer,
-                          self.supports_mmap, self.av_sync,
+                          self.supports_mmap, self.mmap_filename,
+                          self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,
                           self.sound_source_plugin,
@@ -1987,6 +1993,10 @@ class ServerBase(ServerCore):
                              "x"            : self.xdpi,
                              "y"            : self.ydpi
                              })
+        info.setdefault("mmap", {}).update({
+            "supported"     : self.supports_mmap,
+            "filename"      : self.mmap_filename or "",
+            })
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
