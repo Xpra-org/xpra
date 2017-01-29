@@ -14,11 +14,10 @@ from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@U
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.os_util import bytestostr
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t, uint8_t
+
 
 ctypedef unsigned long size_t
-ctypedef unsigned char uint8_t
-
 
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
@@ -29,13 +28,11 @@ cdef extern from "string.h":
     void * memset(void * ptr, int value, size_t num) nogil
     void free(void * ptr) nogil
 
-
 cdef extern from "../../inline.h":
     pass
 
 cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
-
 
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
@@ -51,7 +48,6 @@ cdef extern from "libavcodec/version.h":
 #why can't we define this inside the avcodec.h section? (beats me)
 ctypedef unsigned int AVCodecID
 ctypedef long AVPixelFormat
-
 
 cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_NONE

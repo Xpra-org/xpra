@@ -16,9 +16,6 @@ from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 ctypedef int boolean
 ctypedef unsigned int JDIMENSION
 
-cdef extern from "stdlib.h":
-    void free(void *ptr)
-
 
 ctypedef int TJSAMP
 ctypedef int TJPF

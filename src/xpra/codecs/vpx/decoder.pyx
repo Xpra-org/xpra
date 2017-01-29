@@ -1,19 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
 import time
+
+from xpra.log import Logger
+log = Logger("decoder", "vpx")
+
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport padbuf, MemBuf
 from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 
-from xpra.log import Logger
-log = Logger("decoder", "vpx")
+from libc.stdint cimport uint8_t, int64_t
+
 
 #sensible default:
 cpus = 2
@@ -32,14 +36,10 @@ cdef inline int roundup(int n, int m):
 
 include "constants.pxi"
 
-from libc.stdint cimport int64_t
-
 cdef extern from "string.h":
     void *memcpy(void * destination, void * source, size_t num) nogil
     void *memset(void * ptr, int value, size_t num) nogil
-    void free(void * ptr) nogil
 
-ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 

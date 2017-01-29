@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 
 THREADS = envint("XPRA_X264_THREADS")
@@ -27,16 +27,11 @@ LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
-cdef extern from "string.h":
-    void * memcpy ( void * destination, void * source, size_t num )
-    void * memset ( void * ptr, int value, size_t num )
-    int vsnprintf ( char * s, size_t n, const char * format, va_list arg )
-
-
-from libc.stdint cimport int64_t, uint64_t, uint8_t
-
 cdef extern from *:
     ctypedef unsigned long size_t
+
+cdef extern from "string.h":
+    int vsnprintf(char * s, size_t n, const char * format, va_list arg)
 
 cdef extern from "stdint.h":
     pass

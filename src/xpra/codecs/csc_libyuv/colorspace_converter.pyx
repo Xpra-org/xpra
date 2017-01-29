@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,12 +8,11 @@ import os
 import time
 
 from xpra.log import Logger
-from xpra.codecs.codec_checks import do_testcsc
-from xpra.codecs.codec_constants import get_subsampling_divs
 log = Logger("csc", "libyuv")
 
 from xpra.os_util import is_Ubuntu
-from xpra.codecs.codec_constants import csc_spec
+from xpra.codecs.codec_checks import do_testcsc
+from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t
@@ -21,10 +20,10 @@ from libc.stdint cimport uint8_t, uintptr_t
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
-    void* malloc(size_t size)
 
 cdef extern from "../../buffers/memalign.h":
-    cdef unsigned int MEMALIGN_ALIGNMENT
+    void *xmemalign(size_t size)
+    unsigned int MEMALIGN_ALIGNMENT
 
 #inlined here because linking messes up with c++..
 cdef extern from "Python.h":
@@ -226,7 +225,7 @@ cdef class ColorspaceConverter:
                 self.scaled_offsets[i]  = self.scaled_buffer_size
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
         if self.scaling:
-            self.output_buffer = <uint8_t *> malloc(self.out_buffer_size)
+            self.output_buffer = <uint8_t *> xmemalign(self.out_buffer_size)
             if self.output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         else:
@@ -334,7 +333,7 @@ cdef class ColorspaceConverter:
             output_buffer = self.output_buffer
         else:
             #allocate output buffer:
-            output_buffer = <unsigned char*> malloc(self.out_buffer_size)
+            output_buffer = <unsigned char*> xmemalign(self.out_buffer_size)
             if output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         for i in range(3):
@@ -354,7 +353,7 @@ cdef class ColorspaceConverter:
         strides = []
         if self.scaling:
             start = time.time()
-            scaled_buffer = <unsigned char*> malloc(self.scaled_buffer_size)
+            scaled_buffer = <unsigned char*> xmemalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
             with nogil:

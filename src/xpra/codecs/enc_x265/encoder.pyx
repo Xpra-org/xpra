@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,16 +12,11 @@ log = Logger("encoder", "x265")
 from xpra.util import envbool
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
 
 
 LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
 
-cdef extern from "string.h":
-    void * memcpy ( void * destination, void * source, size_t num )
-    void * memset ( void * ptr, int value, size_t num )
-
-from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t
 
 cdef extern from *:
     ctypedef unsigned long size_t
@@ -32,7 +27,7 @@ cdef extern from "inttypes.h":
     pass
 
 cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x265.h":
 

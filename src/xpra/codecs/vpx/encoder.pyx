@@ -6,15 +6,18 @@
 import time
 import os
 from collections import deque
-from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, WIN32, OSX
-from xpra.util import AtomicInteger, envint, envbool
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+from xpra.codecs.codec_constants import video_spec
+from xpra.os_util import bytestostr, WIN32, OSX
+from xpra.util import AtomicInteger, envint, envbool
 
+from libc.stdint cimport uint8_t
+
+
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 #sensible default:
 cpus = 2
@@ -58,9 +61,8 @@ cdef extern from "../../buffers/memalign.h":
     void *xmemalign(size_t size)
 
 cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
-ctypedef unsigned char uint8_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 

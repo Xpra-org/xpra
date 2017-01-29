@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,12 +11,6 @@ from xpra.buffers.membuf cimport getbuf, MemBuf
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
-cdef extern from "string.h":
-    void * memcpy(void * destination, void * source, size_t num)
-
-cdef extern from "stdlib.h":
-    void free(void* mem)
 
 
 import struct

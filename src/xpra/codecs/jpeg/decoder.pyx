@@ -16,10 +16,6 @@ ctypedef int boolean
 ctypedef unsigned int JDIMENSION
 
 
-cdef extern from "stdlib.h":
-    void free(void *ptr)
-    void* malloc(size_t size)
-
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
