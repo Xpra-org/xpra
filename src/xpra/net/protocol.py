@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import Queue, strtobytes
+from xpra.os_util import Queue, strtobytes, memoryview_to_bytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net import ConnectionClosedException
@@ -356,13 +356,13 @@ class Protocol(object):
                 items.append((data, scb, ecb))
             elif actual_size<PACKET_JOIN_SIZE:
                 if type(data) not in JOIN_TYPES:
-                    data = bytes(data)
+                    data = memoryview_to_bytes(data)
                 header_and_data = pack_header(proto_flags, level, index, payload_size) + data
                 items.append((header_and_data, scb, ecb))
             else:
                 header = pack_header(proto_flags, level, index, payload_size)
                 items.append((header, scb, None))
-                items.append((strtobytes(data), None, ecb))
+                items.append((data, None, ecb))
             counter += 1
         if self._write_thread is None:
             self.start_write_thread()
