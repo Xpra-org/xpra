@@ -7,7 +7,6 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX
 from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -152,10 +151,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
         add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
 
-        if not OSX:
-            #causes crashes with osx shadow servers, disabled in setup.py:
-            codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
-            add_codec_version("vpx", "xpra.codecs.vpx.decoder")
+        #causes crashes with osx shadow servers, disabled in setup.py:
+        codec_import_check("enc_vpx", "vpx encoder", "xpra.codecs.vpx", "xpra.codecs.vpx.encoder", "Encoder")
+        add_codec_version("vpx", "xpra.codecs.vpx.decoder")
 
         codec_import_check("enc_x264", "x264 encoder", "xpra.codecs.enc_x264", "xpra.codecs.enc_x264.encoder", "Encoder")
         add_codec_version("x264", "xpra.codecs.enc_x264.encoder")
@@ -163,9 +161,8 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_x265", "x265 encoder", "xpra.codecs.enc_x265", "xpra.codecs.enc_x265.encoder", "Encoder")
         add_codec_version("x265", "xpra.codecs.enc_x265.encoder")
 
-        for v in (7, ):
-            codec_import_check("nvenc%s" % v, "nvenc encoder", "xpra.codecs.nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v, "Encoder")
-            add_codec_version("nvenc%s" % v, "xpra.codecs.nvenc%s.encoder" % v)
+        codec_import_check("nvenc7", "nvenc encoder", "xpra.codecs.nvenc7", "xpra.codecs.nvenc7.encoder", "Encoder")
+        add_codec_version("nvenc7", "xpra.codecs.nvenc7.encoder")
 
         codec_import_check("enc_ffmpeg", "ffmpeg encoder", "xpra.codecs.enc_ffmpeg", "xpra.codecs.enc_ffmpeg.encoder", "Encoder")
         add_codec_version("ffmpeg", "xpra.codecs.enc_ffmpeg.encoder")

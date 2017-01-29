@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-log = Logger("encoder", "jpeg")
+log = Logger("decoder", "jpeg")
 
 from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.codecs.image_wrapper import ImageWrapper

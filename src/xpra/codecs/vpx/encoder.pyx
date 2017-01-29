@@ -7,7 +7,7 @@ import time
 import os
 from collections import deque
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.util import AtomicInteger, envint, envbool
 
 from xpra.log import Logger
@@ -711,7 +711,7 @@ def selftest(full=False):
         SAVE_TO_FILE = None
         CODECS = testencoder(encoder, full)
         #this is expensive, so don't run it unless "full" is set:
-        if full and os.name=="posix":
+        if full and os.name=="posix" and not OSX:
             #but first, try to figure out if we have enough memory to do this
             import subprocess
             p = subprocess.Popen("free -b | grep ^Mem:", shell=True, stdout=subprocess.PIPE)

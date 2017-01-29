@@ -2341,9 +2341,9 @@ if pillow_ENABLED:
 toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
 if jpeg_ENABLED:
     jpeg_pkgconfig = pkgconfig("libturbojpeg")
-    cython_add(Extension("xpra.codecs.jpeg.encoder",
-                ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
-                **jpeg_pkgconfig))
+    #cython_add(Extension("xpra.codecs.jpeg.encoder",
+    #            ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
+    #            **jpeg_pkgconfig))
     cython_add(Extension("xpra.codecs.jpeg.decoder",
                 ["xpra/codecs/jpeg/decoder.pyx"]+membuffers_c,
                 **jpeg_pkgconfig))
