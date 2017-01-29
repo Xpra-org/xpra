@@ -17,6 +17,10 @@
 #include <malloc.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int pad(int size) {
     return (size + MEMALIGN_ALIGNMENT - 1) & ~(MEMALIGN_ALIGNMENT - 1);
 }
@@ -45,3 +49,7 @@ void *xmemalign(size_t size)
 	return malloc(size);
 #endif
 }
+
+#ifdef __cplusplus
+}
+#endif
