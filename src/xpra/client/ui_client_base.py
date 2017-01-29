@@ -240,6 +240,7 @@ class UIXpraClient(XpraClientBase):
         self.mmap_size = 0
         self.mmap_group = None
         self.mmap_tempfile = None
+        self.mmap_delete = False
 
         #features:
         self.opengl_enabled = False
@@ -1139,7 +1140,7 @@ class UIXpraClient(XpraClientBase):
         #at least 256MB, or 8 fullscreen RGBX frames:
         mmap_size = max(256*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)
-        self.mmap_enabled, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
+        self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
             init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
         if self.mmap_enabled:
             self.mmap_token = get_int_uuid()
@@ -1160,10 +1161,12 @@ class UIXpraClient(XpraClientBase):
             except Exception as e:
                 log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
             self.mmap_tempfile = None
-        #this should be redundant: closing the tempfile should get it deleted
-        if self.mmap_filename and os.path.exists(self.mmap_filename):
-            os.unlink(self.mmap_filename)
-            self.mmap_filename = None
+        if self.mmap_delete:
+            #this should be redundant: closing the tempfile should get it deleted
+            if self.mmap_filename and os.path.exists(self.mmap_filename):
+                from xpra.net.mmap_pipe import clean_mmap
+                clean_mmap(self.mmap_filename)
+                self.mmap_filename = None
 
 
     def init_opengl(self, enable_opengl):

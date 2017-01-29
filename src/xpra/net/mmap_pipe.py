@@ -29,25 +29,38 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
         This is used by the client.
     """
     def rerr():
-        return False, None, 0, None, None
+        return False, False, None, 0, None, None
     if not can_use_mmap():
         log.error("cannot use mmap: python version is too old?")
         return rerr()
     log("init_mmap%s", (mmap_group, socket_filename, size, filename))
+    mmap_filename = filename
+    mmap_temp_file = None
+    delete = True
     try:
         import mmap
+        unit = max(4096, mmap.PAGESIZE)
+        #add 8 bytes for the mmap area control header zone:
+        mmap_size = roundup(size + 8, unit)
         if filename:
-            import errno
-            flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
-            try:
-                fd = os.open(filename, flags)
-                mmap_temp_file = None   #os.fdopen(fd, 'w')
-                mmap_filename = filename
-            except OSError as e:
-                if e.errno == errno.EEXIST:
-                    log.error("Error: the mmap file '%s' already exists", filename)
-                    return rerr()
-                raise
+            if os.path.exists(filename):
+                fd = os.open(filename, os.O_EXCL | os.O_RDWR)
+                mmap_size = os.path.getsize(mmap_filename)
+                #mmap_size = 4*1024*1024    #size restriction needed with ivshmem
+                delete = False
+                log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
+            else:
+                import errno
+                flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+                try:
+                    fd = os.open(filename, flags)
+                    mmap_temp_file = None   #os.fdopen(fd, 'w')
+                    mmap_filename = filename
+                except OSError as e:
+                    if e.errno == errno.EEXIST:
+                        log.error("Error: the mmap file '%s' already exists", filename)
+                        return rerr()
+                    raise
         else:
             import tempfile
             mmap_dir = os.getenv("TMPDIR", "/tmp")
@@ -71,17 +84,14 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
             s = os.stat(socket_filename)
             os.fchown(fd, -1, s.st_gid)
             os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-        assert size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(size)
-        assert size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(size)
-        unit = max(4096, mmap.PAGESIZE)
-        #add 8 bytes for the mmap area control header zone:
-        mmap_size = roundup(size + 8, unit)
+        assert mmap_size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(mmap_size)
+        assert mmap_size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(mmap_size)
         log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
         os.lseek(fd, mmap_size-1, os.SEEK_SET)
         assert os.write(fd, b'\x00')
         os.lseek(fd, 0, os.SEEK_SET)
         mmap_area = mmap.mmap(fd, length=mmap_size)
-        return True, mmap_area, mmap_size, mmap_temp_file, mmap_filename
+        return True, delete, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
         log.error("Error: mmap setup failed:")
@@ -92,7 +102,11 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
 def clean_mmap(mmap_filename):
     log("clean_mmap(%s)", mmap_filename)
     if mmap_filename and os.path.exists(mmap_filename):
-        os.unlink(mmap_filename)
+        try:
+            os.unlink(mmap_filename)
+        except OSError as e:
+            log.error("Error: failed to removed the mmap file '%s':", mmap_filename)
+            log.error(" %s", e)
 
 DEFAULT_TOKEN_INDEX = 512
 DEFAULT_TOKEN_BYTES = 128
