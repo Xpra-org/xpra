@@ -1,6 +1,22 @@
-v1.0.2 (2017-01-12)
+v1.0.2 (2017-01-30)
 ======================
+	-- fix OpenGL pixel upload alignment issues
+	-- fix hello packet errors when pulseaudio is not installed
+	-- fix build handling of optimize flag
+	-- fix NVENC version check, update driver version validation
+	-- fix handling of bind command line option (replace not append)
+	-- fix shadow server screen size on MS Windows for high DPI
+	-- fix Events_test.exe (MS Windows)
+	-- fix compatibility with the latest version of python-cryptography (MS Windows)
 	-- fix Mac OSX clipboard
+	-- fix Mac OSX shadow servers: lack of refresh and CPU wastage
+	-- fix X11 bindings wrongly disabled when workspace switching is turned off
+	-- more user friendly error message for dbus import errors
+	-- print actual display name used when displayfd allocated one
+	-- library updates for Mac OSX
+	-- workaround for putty plink and nested shell commands (MS Windows)
+	-- ignore mmap token errors with desktop mode
+	-- add SSH command debug switch
 
 
 v1.0.1 (2017-01-07)
