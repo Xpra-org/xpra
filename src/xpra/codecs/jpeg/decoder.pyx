@@ -141,14 +141,20 @@ def decompress(data, int width, int height, options={}):
     pystrides = []
     pyplanes = []
     for i in range(3):
-        strides[i] = roundup(w, 4)
+        if subsamp==TJSAMP_444 or i==0:
+            #no subsampling, just rounding:
+            strides[i] = roundup(w, 4)
+        else:
+            #U or V plane with subsampling, halve stride (and round it):
+            strides[i] = roundup(w//2, 4)
         plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
+        assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
         membuf = getbuf(plane_sizes[i])     #add padding?
         planes[i] = <unsigned char*> membuf.get_mem()
         #python objects for each plane:
         pystrides.append(strides[i])
         pyplanes.append(memoryview(membuf))
-    log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
+    #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
     cdef int flags = 0      #TJFLAG_BOTTOMUP
     r = tjDecompressToYUVPlanes(decompressor,
                                 buf, buf_len, 
