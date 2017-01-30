@@ -433,14 +433,16 @@ cdef class Encoder:
         cdef float pps
         if self.profile is None:
             return {}
-        info = {"profile"   : self.profile,
-                #"preset"    : get_preset_names()[self.preset],
-                "frames"    : self.frames,
-                "width"     : self.width,
-                "height"    : self.height,
-                "speed"     : self.speed,
-                "quality"   : self.quality,
-                "src_format": self.src_format}
+        info = {
+            "profile"   : self.profile,
+            #"preset"    : get_preset_names()[self.preset],
+            "frames"    : self.frames,
+            "width"     : self.width,
+            "height"    : self.height,
+            "speed"     : self.speed,
+            "quality"   : self.quality,
+            "src_format": self.src_format,
+            }
         if self.frames>0 and self.time>0:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
             info["total_time_ms"] = int(self.time*1000.0)
@@ -477,20 +479,15 @@ cdef class Encoder:
     def compress_image(self, image, quality=-1, speed=-1, options={}):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
+        cdef unsigned int i                        #@DuplicatedSignature
         cdef int r = 0
-        cdef x265_picture *pic_out
-        cdef x265_picture *pic_in
+        cdef x265_picture *pic_out = NULL
+        cdef x265_picture *pic_in = NULL
         cdef int nal_size, frame_size = 0
 
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
-
-        cdef int quality_override = options.get("quality", -1)
-        cdef int speed_override = options.get("speed", -1)
-        cdef int saved_quality = self.quality
-        cdef int saved_speed = self.speed
-        cdef unsigned int i                        #@DuplicatedSignature
 
         assert self.context!=NULL
         pixels = image.get_pixels()
@@ -517,48 +514,48 @@ cdef class Encoder:
                 data.append(out[:nal[i].sizeBytes])
                 log("x265 header[%s]: %s bytes", i, nal[i].sizeBytes)
 
-        pic_in = x265_picture_alloc()
-        assert pic_in!=NULL
-        x265_picture_init(self.param, pic_in)
-
         pic_out = x265_picture_alloc()
-        assert pic_out!=NULL
-
-        assert pixels, "failed to get pixels from %s" % image
-        assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
-        assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
-        for i in range(3):
-            assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
-            pic_in.planes[i] = pic_buf
-            pic_in.stride[i] = istrides[i]
-        pic_in.pts = image.get_timestamp()-self.first_frame_timestamp
-
-        with nogil:
-            r = x265_encoder_encode(self.context, &nal, &nnal, pic_in, pic_out)
-        log("x265 picture encode returned %s (nnal=%s)", r, nnal)
-        x265_picture_free(pic_in)
-        if r==0:
-            r = x265_encoder_encode(self.context, &nal, &nnal, NULL, pic_out)
-            log("x265 picture encode returned %s (nnal=%s)", r, nnal)
-        if r<=0:
+        assert pic_out!=NULL, "failed to allocate output picture"
+        try:
+            pic_in = x265_picture_alloc()
+            assert pic_in!=NULL, "failed to allocate input picture"
+            try:
+                x265_picture_init(self.param, pic_in)
+        
+                assert pixels, "failed to get pixels from %s" % image
+                assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
+                assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+                for i in range(3):
+                    assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
+                    pic_in.planes[i] = pic_buf
+                    pic_in.stride[i] = istrides[i]
+                pic_in.pts = image.get_timestamp()-self.first_frame_timestamp
+        
+                with nogil:
+                    r = x265_encoder_encode(self.context, &nal, &nnal, pic_in, pic_out)
+                log("x265 picture encode returned %s (nnal=%s)", r, nnal)
+                if r==0:
+                    r = x265_encoder_encode(self.context, &nal, &nnal, NULL, pic_out)
+                    log("x265 picture encode returned %s (nnal=%s)", r, nnal)
+            finally:
+                x265_picture_free(pic_in)
+            if r<=0:
+                log.error("Error: x265 encoder returned %i", r)
+                return None
+            #copy nals:
+            for i in range(nnal):
+                nal_size = nal[i].sizeBytes
+                out = <char *>nal[i].payload
+                if LOG_NALS:
+                    log.info(" nal %s type:%10s, payload=%#x, payload size=%#x",
+                             i, NAL_TYPES.get(nal[i].type, nal[i].type), <uintptr_t> out, nal_size)
+                frame_size += nal_size
+                data.append(out[:nal_size])
+        finally:
             x265_picture_free(pic_out)
-            log.error("x265 encoding error: %s", r)
-            return None
-        for i in range(nnal):
-            nal_size = nal[i].sizeBytes
-            out = <char *>nal[i].payload
-            if LOG_NALS:
-                log.info(" nal %s type:%10s, payload=%#x, payload size=%#x",
-                         i, NAL_TYPES.get(nal[i].type, nal[i].type), <uintptr_t> out, nal_size)
-            frame_size += nal_size
-            data.append(out[:nal_size])
-        x265_picture_free(pic_out)
-        #quality and speed are not used (yet):
         client_options = {
                 "frame"     : self.frames,
                 "pts"     : image.get_timestamp()-self.first_frame_timestamp,
-                #"quality"   : q,
-                #"speed"     : s,
                 }
         end = time.time()
         self.time += end-start
