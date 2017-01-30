@@ -67,6 +67,7 @@ cdef extern from "turbojpeg.h":
     int tjDestroy(tjhandle handle)
     char* tjGetErrorStr()
 
+    int tjPlaneWidth(int componentID, int width, int subsamp)
     unsigned long tjBufSizeYUV2(int width, int pad, int height, int subsamp)
     unsigned long tjPlaneSizeYUV(int componentID, int width, int stride, int height, int subsamp)
     int tjPlaneWidth(int componentID, int width, int subsamp)
@@ -141,12 +142,9 @@ def decompress(data, int width, int height, options={}):
     pystrides = []
     pyplanes = []
     for i in range(3):
-        if subsamp==TJSAMP_444 or i==0:
-            #no subsampling, just rounding:
-            strides[i] = roundup(w, 4)
-        else:
-            #U or V plane with subsampling, halve stride (and round it):
-            strides[i] = roundup(w//2, 4)
+        stride = tjPlaneWidth(i, w, subsamp)
+        assert stride>0, "cannot get stride - out of bounds?"
+        strides[i] = roundup(stride, 4)
         plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
         assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
         membuf = getbuf(plane_sizes[i])     #add padding?
