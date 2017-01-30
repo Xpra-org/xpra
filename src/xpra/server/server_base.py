@@ -630,15 +630,25 @@ class ServerBase(ServerCore):
             self.dbus_helper = DBusHelper()
             self.rpc_handlers["dbus"] = self._handle_dbus_rpc
         except Exception as e:
-            log.warn("cannot load dbus helper: %s", e)
+            log("init_dbus_helper()", exc_info=True)
+            log.warn("Warning: cannot load dbus helper:")
+            log.warn(" %s", e)
+            self.dbus_helper = None
             self.supports_dbus_proxy = False
 
     def init_dbus_server(self):
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         if not self.dbus_control:
             return
-        from xpra.server.dbus.dbus_common import dbus_exception_wrap
-        self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
+        try:
+            from xpra.server.dbus.dbus_common import dbus_exception_wrap
+            self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
+        except Exception as e:
+            log("init_dbus_server()", exc_info=True)
+            log.warn("Warning: cannot load dbus server:")
+            log.warn(" %s", e)
+            self.dbus_server = None
+            
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server
