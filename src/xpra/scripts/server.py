@@ -1266,6 +1266,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     configure_imsettings_env(opts.input_method)
 
     # Start the Xvfb server first to get the display_name if needed
+    odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
     xauth_data = None
@@ -1328,7 +1329,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
+            if odisplay_name!=display_name:
+                #this may be used by scripts, let's try not to change it:
+                stderr.write("Actual display used: %s\n" % display_name)
             stderr.write("Actual log file name is now: %s\n" % log_filename1)
+            stderr.flush()
         stdout.close()
         stderr.close()
 
