@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -211,7 +211,8 @@ def get_version():
 
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
-    return {"version"   : get_version(),
+    return {
+            "version"   : get_version(),
             "formats"   : COLORSPACES,
             "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
             }
@@ -327,7 +328,8 @@ cdef class ColorspaceConverter:
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,
-                "dst_height": self.dst_height})
+                "dst_height": self.dst_height,
+                })
         if self.src_format:
             info["src_format"] = self.src_format
         if self.dst_format:

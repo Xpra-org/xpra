@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,6 +13,9 @@ log = Logger("libav")
 
 cdef extern from "../../inline.h":
     pass
+
+cdef extern from "libavutil/error.h":
+    int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
@@ -49,6 +52,16 @@ def resume_nonfatal_logging():
     WARNING_LEVEL  = AV_LOG_WARNING
     INFO_LEVEL     = AV_LOG_INFO
     DEBUG_LEVEL    = AV_LOG_DEBUG
+
+
+cdef av_error_str(int errnum):
+    cdef char[128] err_str
+    cdef int i = 0
+    if av_strerror(errnum, err_str, 128)==0:
+        while i<128 and err_str[i]!=0:
+            i += 1
+        return bytestostr(err_str[:i])
+    return "error %s" % errnum
 
 
 DEF MAX_LOG_SIZE = 4096

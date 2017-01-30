@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ log = Logger("encoder", "ffmpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
-from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
+from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes
@@ -44,9 +44,6 @@ cdef extern from "../../buffers/buffers.h":
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
     void *av_malloc(size_t size)
-
-cdef extern from "libavutil/error.h":
-    int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
 cdef extern from "libavcodec/version.h":
     int LIBAVCODEC_VERSION_MAJOR
@@ -662,15 +659,6 @@ if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
 if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
     CODECS.append("mpeg4+mp4")
 log("enc_ffmpeg CODECS=%s", csv(CODECS))
-
-cdef av_error_str(int errnum):
-    cdef char[128] err_str
-    cdef int i = 0
-    if av_strerror(errnum, err_str, 128)==0:
-        while i<128 and err_str[i]!=0:
-            i += 1
-        return bytestostr(err_str[:i])
-    return "error %s" % errnum
 
 DEF DEFAULT_BUF_LEN = 64*1024
 

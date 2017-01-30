@@ -23,7 +23,6 @@ LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
 TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
-#USE_OPENCL = envbool("XPRA_X264_OPENCL", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
 
@@ -369,10 +368,12 @@ def get_type():
 generation = AtomicInteger()
 def get_info():
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
-    return {"version"   : get_version(),
-            "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
-            "generation": generation.get(),
-            "formats"   : COLORSPACES.keys()}
+    return {
+        "version"   : get_version(),
+        "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
+        "generation": generation.get(),
+        "formats"   : COLORSPACES.keys(),
+        }
 
 def get_encodings():
     return ["h264"]
@@ -622,13 +623,17 @@ cdef class Encoder:
                      "delayed"   : self.delayed_frames,
                      })
         if self.bytes_in>0 and self.bytes_out>0:
-            info["bytes_in"] = self.bytes_in
-            info["bytes_out"] = self.bytes_out
-            info["ratio_pct"] = int(100.0 * self.bytes_out / self.bytes_in)
+            info.update({
+                "bytes_in"  : self.bytes_in,
+                "bytes_out" : self.bytes_out,
+                "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in),
+                })
         if self.frames>0 and self.time>0:
             pps = float(self.width) * float(self.height) * float(self.frames) / self.time
-            info["total_time_ms"] = int(self.time*1000.0)
-            info["pixels_per_second"] = int(pps)
+            info.update({
+                "total_time_ms"     : int(self.time*1000.0),
+                "pixels_per_second" : int(pps),
+                })
         #calculate fps:
         cdef unsigned int f = 0
         cdef double now = time.time()
@@ -641,8 +646,10 @@ cdef class Encoder:
                 last_time = min(last_time, end)
                 ms_per_frame += (end-start)
         if f>0 and last_time<now:
-            info["fps"] = int(0.5+f/(now-last_time))
-            info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
+            info.update({
+                "fps"           : int(0.5+f/(now-last_time)),
+                "ms_per_frame"  : int(1000.0*ms_per_frame/f),
+                })
         return info
 
     def __repr__(self):
@@ -784,7 +791,8 @@ cdef class Encoder:
                 "pts"       : pic_out.i_pts,
                 "quality"   : max(0, min(100, quality)),
                 "speed"     : max(0, min(100, speed)),
-                "type"      : slice_type}
+                "type"      : slice_type,
+                }
         if self.delayed_frames>0:
             client_options["delayed"] = self.delayed_frames
         if self.export_nals:

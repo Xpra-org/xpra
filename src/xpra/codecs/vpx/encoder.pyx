@@ -497,7 +497,8 @@ cdef class Encoder:
                      "lossless"  : bool(self.lossless),
                      "encoding"  : self.encoding,
                      "src_format": self.src_format,
-                     "max_threads": self.max_threads})
+                     "max_threads": self.max_threads,
+                     })
         #calculate fps:
         cdef unsigned int f = 0
         cdef double now = time.time()
