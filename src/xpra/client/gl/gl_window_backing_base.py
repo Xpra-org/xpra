@@ -817,6 +817,24 @@ class GLWindowBackingBase(GTKWindowBacking):
             #str already
             return  "copy:str", img_data
 
+    def set_alignment(self, width, rowstride, pixel_format):
+        bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4
+        # Compute alignment and row length
+        row_length = 0
+        alignment = 1
+        for a in [2, 4, 8]:
+            # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
+            if (rowstride & a-1) == 0:
+                alignment = a
+        # If number of extra bytes is greater than the alignment value,
+        # then we also have to set row_length
+        # Otherwise it remains at 0 (= width implicitely)
+        if (rowstride - width * bytes_per_pixel) >= alignment:
+            row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
+        self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i", (width, rowstride, pixel_format), row_length, alignment)
+
 
     def do_paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
         img = self.jpeg_decoder.decompress(img_data, width, height, options)
@@ -846,27 +864,12 @@ class GLWindowBackingBase(GTKWindowBacking):
                 pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format.decode())
                 assert pformat is not None, "could not find pixel format for %s" % rgb_format
 
-                bytes_per_pixel = len(rgb_format)       #ie: BGRX -> 4
-                # Compute alignment and row length
-                row_length = 0
-                alignment = 1
-                for a in [2, 4, 8]:
-                    # Check if we are a-aligned - ! (var & 0x1) means 2-aligned or better, 0x3 - 4-aligned and so on
-                    if (rowstride & a-1) == 0:
-                        alignment = a
-                # If number of extra bytes is greater than the alignment value,
-                # then we also have to set row_length
-                # Otherwise it remains at 0 (= width implicitely)
-                if (rowstride - width * bytes_per_pixel) >= alignment:
-                    row_length = width + (rowstride - width * bytes_per_pixel) // bytes_per_pixel
-
-                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), stride=%d, row length %d, alignment %d, using GL %s format=%s",
-                               rgb_format, x, y, width, height, len(img_data), rowstride, row_length, alignment, upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
+                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), using GL %s format=%s",
+                               rgb_format, x, y, width, height, len(img_data), upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
 
                 # Upload data as temporary RGB texture
                 glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
-                glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length)
-                glPixelStorei(GL_UNPACK_ALIGNMENT, alignment)
+                self.set_alignment(width, rowstride, rgb_format)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 set_texture_level()
@@ -916,7 +919,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             with context:
                 self.gl_init()
                 self.update_planar_textures(x, y, enc_width, enc_height, img, pixel_format, scaling=(enc_width!=width or enc_height!=height))
-                img.free()
 
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
@@ -927,6 +929,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.paint_box(encoding, False, x, y, width, height)
                 # Present it on screen
                 self.present_fbo(x, y, width, height, flush)
+            img.free()
             fire_paint_callbacks(callbacks, True)
             return
         except GLError as e:
@@ -968,8 +971,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
+
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowstrides[index])
+            self.set_alignment(width, rowstrides[index], pixel_format)
             upload, pixel_data = self.pixels_for_upload(img_data[index])
             log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data), upload)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
