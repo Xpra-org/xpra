@@ -2370,7 +2370,7 @@ toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
-                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
+                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"]+membuffers_c,
                 language="c++",
                 **libyuv_pkgconfig))
 
