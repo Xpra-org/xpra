@@ -1879,11 +1879,13 @@ class ServerBase(ServerCore):
         u = hashlib.sha1()
         u.update(file_data)
         printlog("sha1 digest: %s", u.hexdigest())
-        options = {"printer"    : printer,
-                   "title"      : title,
-                   "copies"     : no_copies,
-                   "options"    : print_options,
-                   "sha1"       : u.hexdigest()}
+        options = {
+            "printer"    : printer,
+            "title"      : title,
+            "copies"     : no_copies,
+            "options"    : print_options,
+            "sha1"       : u.hexdigest(),
+            }
         printlog("parsed printer options: %s", options)
 
         sent = 0
@@ -1991,7 +1993,7 @@ class ServerBase(ServerCore):
                              "default"      : self.default_dpi,
                              "value"        : self.dpi,
                              "x"            : self.xdpi,
-                             "y"            : self.ydpi
+                             "y"            : self.ydpi,
                              })
         info.setdefault("mmap", {}).update({
             "supported"     : self.supports_mmap,
@@ -2056,7 +2058,8 @@ class ServerBase(ServerCore):
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
              "with_speed"           : list(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "h264", "vp8", "vp9")],
-             "with_lossless_mode"   : self.lossless_mode_encodings}
+             "with_lossless_mode"   : self.lossless_mode_encodings,
+             }
 
     def get_keyboard_info(self):
         start = time.time()
@@ -2067,7 +2070,8 @@ class ServerBase(ServerCore):
                                    "interval"   : self.key_repeat_interval,
                                    },
              "keys_pressed"     : self.keys_pressed.values(),
-             "modifiers"        : self.xkbmap_mod_meanings}
+             "modifiers"        : self.xkbmap_mod_meanings,
+             }
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
@@ -2777,16 +2781,14 @@ class ServerBase(ServerCore):
 
 
     def _process_damage_sequence(self, proto, packet):
-        packet_sequence = packet[1]
-        if len(packet)>=6:
-            wid, width, height, decode_time = packet[2:6]
-            if len(packet)>=7:
-                message = packet[6]
-            else:
-                message = ""
-            ss = self._server_sources.get(proto)
-            if ss:
-                ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
+        packet_sequence, wid, width, height, decode_time = packet[1:6]
+        if len(packet)>=7:
+            message = packet[6]
+        else:
+            message = ""
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
 
 
     def _damage(self, window, x, y, width, height, options=None):
