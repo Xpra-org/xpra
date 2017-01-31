@@ -605,23 +605,24 @@ cdef class Encoder:
         if self.profile is None:
             return {}
         info = get_info()
-        info.update({"profile"   : self.profile,
-                     "preset"    : get_preset_names()[self.preset],
-                     "b-frames"  : self.b_frames,
-                     "tune"      : self.tune or "",
-                     "frames"    : self.frames,
-                     "width"     : self.width,
-                     "height"    : self.height,
-                     #"opencl"    : bool(self.opencl),
-                     "speed"     : self.speed,
-                     "quality"   : self.quality,
-                     "lossless"  : self.quality==100,
-                     "src_format": self.src_format,
-                     "source"    : self.source,
-                     "version"   : get_version(),
-                     "frame-types" : self.frame_types,
-                     "delayed"   : self.delayed_frames,
-                     })
+        info.update({
+            "profile"       : self.profile,
+            "preset"        : get_preset_names()[self.preset],
+            "b-frames"      : self.b_frames,
+            "tune"          : self.tune or "",
+            "frames"        : self.frames,
+            "width"         : self.width,
+            "height"        : self.height,
+            #"opencl"        : bool(self.opencl),
+            "speed"         : self.speed,
+            "quality"       : self.quality,
+            "lossless"      : self.quality==100,
+            "src_format"    : self.src_format,
+            "source"        : self.source,
+            "version"       : get_version(),
+            "frame-types"   : self.frame_types,
+            "delayed"       : self.delayed_frames,
+            })
         if self.bytes_in>0 and self.bytes_out>0:
             info.update({
                 "bytes_in"  : self.bytes_in,
@@ -691,7 +692,6 @@ cdef class Encoder:
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
-
         cdef int i                        #@DuplicatedSignature
 
         if self.first_frame_timestamp==0:
@@ -761,9 +761,9 @@ cdef class Encoder:
             if self.b_frames and self.delayed_frames>0:
                 log("x264 encode %i delayed frames after %i", self.delayed_frames, self.frames)
                 return None, {
-                              "delayed" : self.delayed_frames,
-                              "frame"   : self.frames,
-                              }
+                    "delayed" : self.delayed_frames,
+                    "frame"   : self.frames,
+                    }
             raise Exception("x264_encoder_encode produced no data (frame=%i, frame-size=%i, b-frames=%s, delayed-frames=%i)" % (self.frames, frame_size, self.b_frames, self.delayed_frames))
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
