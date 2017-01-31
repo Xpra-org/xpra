@@ -104,18 +104,6 @@ popd
 
 echo
 echo "*******************************************************************************"
-echo "moving pixbuf loaders to a place that will *always* work"
-mv ${RSCDIR}/lib/gdk-pixbuf-2.0/*/loaders/* ${RSCDIR}/lib/
-echo "remove now empty loaders dir"
-rmdir ${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders
-rmdir ${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0
-rmdir ${RSCDIR}/lib/gdk-pixbuf-2.0
-echo "fix gdk-pixbuf.loaders"
-LOADERS="${RSCDIR}/etc/gtk-2.0/gdk-pixbuf.loaders"
-sed -i '' 's+@executable_path/../Resources/lib/gdk-pixbuf-2.0/.*/loaders/++g' "${LOADERS}"
-
-echo
-echo "*******************************************************************************"
 echo "Add xpra/server/python scripts"
 rsync -pltv ./Helpers/* "${HELPERS_DIR}/"
 #we dont need the wrapper installed by distutils:
