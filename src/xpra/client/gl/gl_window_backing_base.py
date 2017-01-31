@@ -968,7 +968,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glActiveTexture(texture)
 
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
-            self.set_alignment(width, rowstrides[index], pixel_format)
+            self.set_alignment(width//div_w, rowstrides[index], "YUV"[index])
             upload, pixel_data = self.pixels_for_upload(img_data[index])
             log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data), upload)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
