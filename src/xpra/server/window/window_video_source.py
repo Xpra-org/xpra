@@ -263,25 +263,21 @@ class WindowVideoSource(WindowSource):
             (the encoder and csc module may be in use by that thread)
         """
         self.cancel_video_encoder_flush()
-        if self._csc_encoder:
-            self.csc_encoder_clean()
-        if self._video_encoder:
-            self.video_encoder_clean()
+        self.video_context_clean()
 
-    def csc_encoder_clean(self):
-        """ Calls self._csc_encoder.clean() from the encode thread """
+    def video_context_clean(self):
+        """ Calls clean() from the encode thread """
         csce = self._csc_encoder
-        if csce:
-            self._csc_encoder = None
-            self.call_in_encode_thread(False, csce.clean)
-
-    def video_encoder_clean(self):
-        """ Calls self._video_encoder.clean() from the encode thread """
         ve = self._video_encoder
-        if ve:
+        if csce or ve:
+            self._csc_encoder = None
             self._video_encoder = None
-            self.call_in_encode_thread(False, ve.clean)
-
+            def clean():
+                if csce:
+                    csce.clean()
+                if ve:
+                    ve.clean()
+            self.call_in_encode_thread(False, clean)
 
     def parse_csc_modes(self, full_csc_modes):
         #only override if values are specified:
@@ -1021,8 +1017,7 @@ class WindowVideoSource(WindowSource):
             scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s", force_reload, type(ve), scores[0])
             clean = True
         if clean:
-            self.csc_encoder_clean()
-            self.video_encoder_clean()
+            self.video_context_clean()
         self._last_pipeline_check = time.time()
 
 
