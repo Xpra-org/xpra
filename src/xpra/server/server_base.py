@@ -1417,8 +1417,9 @@ class ServerBase(ServerCore):
             return
         level, msg = packet[1:3]
         prefix = "client %i: " % ss.counter
-        if not isinstance(msg, (tuple, list)):
-            msg = msg.splitlines()
+        if isinstance(msg, (tuple, list)):
+            msg = " ".join(str(x) for x in msg)
+        msg = msg.splitlines()
         for x in msg:
             clientlog.log(level, prefix+x)
 
