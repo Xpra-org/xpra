@@ -1727,7 +1727,10 @@ class WindowSource(object):
         if emsg:
             emsg = (" %s" % emsg).replace("\n", "").replace("\r", "")
         log.warn("Warning: client decoding error:")
-        log.warn(" %s%s", message, emsg)
+        if message or emsg:
+            log.warn(" %s%s", message, emsg)
+        else:
+            log.warn(" unknown cause")
         self.global_statistics.decode_errors += 1
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
