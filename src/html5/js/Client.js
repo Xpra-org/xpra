@@ -892,10 +892,10 @@ XpraClient.prototype._window_set_focus = function(win) {
 	}
 }
 
-XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time) {
-	// this function requires wid as arugment because it may be called
+XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time, error_message) {
+	// this function requires wid as argument because it may be called
 	// without a valid client side window
-	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time]);
+	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time, error_message]);
 }
 
 
@@ -1522,7 +1522,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 					if(ctx.debug) {
 						console.debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
 					}
-					ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
+					ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, "");
 				}
 			);
 		}
