@@ -5,7 +5,7 @@
 	<key>Label</key>
 	<string>org.xpra.Agent</string>
 	<key>Program</key>
-	<string>/Applications/Xpra.app/Contents/Helpers/Xpra_Shadow</string>
+	<string>/Applications/Xpra.app/Contents/Helpers/Shadow</string>
 	<key>OnDemand</key>
 	<true/>
 </dict>
