@@ -2402,7 +2402,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, matching_uid=0):
     #wait until the new socket appears:
     start = time.time()
-    while time.time()-start<15 and proc.poll() in (None, 0):
+    while time.time()-start<15 and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
         for socket_path in new_sockets:

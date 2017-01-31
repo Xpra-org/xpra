@@ -6,6 +6,10 @@
 SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = True
 
+# we access the GUI when running as a server (tray, etc)
+# and so we cannot daemonize
+CAN_DAEMONIZE = False
+
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_WANT_TARGETS = True
 CLIPBOARD_GREEDY = True
