@@ -694,7 +694,7 @@ class ServerCore(object):
             return False, conn, None
         return True, conn, v
 
-    def invalid_header(self, proto, data, msg):
+    def invalid_header(self, proto, data, msg=""):
         netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s", proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         err = "invalid packet format, %s" % self.guess_header_protocol(data)
         proto.gibberish(err, data)
