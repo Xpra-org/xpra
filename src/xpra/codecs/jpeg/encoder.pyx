@@ -135,7 +135,8 @@ def encode(image, int quality=50, int speed=50, options={}):
                         width, stride, height, tjpf, &out,
                         &out_size, subsamp, quality, flags)
     if r!=0:
-        log.error("Error: failed to compress image, code %i", r)
+        log.error("Error: failed to compress jpeg image, code %i", r)
+        log.error(" %s", get_error_str())
         return None
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     cdata = makebuf(out, out_size)
