@@ -93,9 +93,6 @@
 	<binary>
 		${prefix}/lib/python2.7/lib-dynload/_ssl.so
 	</binary>
-	<binary>
-		${prefix}/lib/pango/1.8.0/modules/*.so
-	</binary>
 
 	<binary>
 		${prefix}/lib/gstreamer-0.10/*.so
