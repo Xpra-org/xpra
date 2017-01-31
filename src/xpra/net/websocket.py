@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,12 +17,14 @@ from websockify.websocket import WebSocketRequestHandler
 WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
+HTTP_NOCACHE = envbool("XPRA_HTTP_NOCACHE", True)
 
 
 class WSRequestHandler(WebSocketRequestHandler):
 
     disable_nagle_algorithm = WEBSOCKET_TCP_NODELAY
     keep_alive = WEBSOCKET_TCP_KEEPALIVE
+    server_version = "Xpra-WebSockify"
 
     def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/"):
         self.web_root = web_root
@@ -75,6 +77,17 @@ class WSRequestHandler(WebSocketRequestHandler):
         """ Show traffic flow mode. """
         if self.traffic:
             log(token)
+
+
+    def end_headers(self):
+        if HTTP_NOCACHE:
+            self.send_nocache_headers()
+        WebSocketRequestHandler.end_headers(self)
+
+    def send_nocache_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
 
 
 class WebSocketConnection(SocketConnection):
