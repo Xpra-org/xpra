@@ -268,12 +268,12 @@ generation = AtomicInteger()
 def get_info():
     global CODECS, MAX_SIZE
     info = {
-            "version"       : get_version(),
-            "encodings"     : CODECS,
-            "abi_version"   : get_abi_version(),
-            "generation"    : generation.get(),
-            "build_config"  : vpx_codec_build_config(),
-            }
+        "version"       : get_version(),
+        "encodings"     : CODECS,
+        "abi_version"   : get_abi_version(),
+        "generation"    : generation.get(),
+        "build_config"  : vpx_codec_build_config(),
+        }
     for e, maxsize in MAX_SIZE.items():
         info["%s.max-size" % e] = maxsize
     for k,v in COLORSPACES.items():
@@ -347,7 +347,7 @@ def get_error_string(int err):
 cdef class Encoder:
     cdef unsigned long frames
     cdef vpx_codec_ctx_t *context
-    cdef vpx_codec_enc_cfg_t *cfg
+    cdef vpx_codec_enc_cfg_t cfg
     cdef vpx_img_fmt_t pixfmt
     cdef int width
     cdef int height
@@ -389,12 +389,7 @@ cdef class Encoder:
             log.warn("error parsing number of threads: %s", e)
             self.max_threads = 2
 
-        self.cfg = <vpx_codec_enc_cfg_t *> xmemalign(sizeof(vpx_codec_enc_cfg_t))
-        if self.cfg==NULL:
-            raise Exception("failed to allocate memory for vpx encoder config")
-        if vpx_codec_enc_config_default(codec_iface, self.cfg, 0)!=0:
-            free(self.cfg)
-            self.cfg = NULL
+        if vpx_codec_enc_config_default(codec_iface, &self.cfg, 0)!=0:
             raise Exception("failed to create vpx encoder config")
         log("%s codec defaults:", self.encoding)
         self.log_cfg()
@@ -422,14 +417,12 @@ cdef class Encoder:
 
         self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
         if self.context==NULL:
-            free(self.cfg)
-            self.cfg = NULL
             raise Exception("failed to allocate memory for vpx encoder context")
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
 
         log("our configuration:")
         self.log_cfg()
-        cdef int ret = vpx_codec_enc_init_ver(self.context, codec_iface, self.cfg, 0, VPX_ENCODER_ABI_VERSION)
+        cdef int ret = vpx_codec_enc_init_ver(self.context, codec_iface, &self.cfg, 0, VPX_ENCODER_ABI_VERSION)
         if ret!=0:
             free(self.context)
             self.context = NULL
@@ -489,16 +482,17 @@ cdef class Encoder:
 
     def get_info(self):                     #@DuplicatedSignature
         info = get_info()
-        info.update({"frames"    : self.frames,
-                     "width"     : self.width,
-                     "height"    : self.height,
-                     "speed"     : self.speed,
-                     "quality"   : self.quality,
-                     "lossless"  : bool(self.lossless),
-                     "encoding"  : self.encoding,
-                     "src_format": self.src_format,
-                     "max_threads": self.max_threads,
-                     })
+        info.update({
+            "frames"    : self.frames,
+            "width"     : self.width,
+            "height"    : self.height,
+            "speed"     : self.speed,
+            "quality"   : self.quality,
+            "lossless"  : bool(self.lossless),
+            "encoding"  : self.encoding,
+            "src_format": self.src_format,
+            "max_threads": self.max_threads,
+            })
         #calculate fps:
         cdef unsigned int f = 0
         cdef double now = time.time()
@@ -513,15 +507,13 @@ cdef class Encoder:
         if f>0 and last_time<now:
             info["fps"] = int(0.5+f/(now-last_time))
             info["ms_per_frame"] = int(1000.0*ms_per_frame/f)
-        cdef vpx_codec_enc_cfg_t *cfg = self.cfg
-        if cfg!=NULL:
-            info.update({
-                         "target_bitrate"   : cfg.rc_target_bitrate,
-                         "min-quantizer"    : cfg.rc_min_quantizer,
-                         "max-quantizer"    : cfg.rc_max_quantizer,
-                         "undershoot-pct"   : cfg.rc_undershoot_pct,
-                         "overshoot-pct"    : cfg.rc_overshoot_pct,
-                         })
+        info.update({
+            "target_bitrate"   : self.cfg.rc_target_bitrate,
+            "min-quantizer"    : self.cfg.rc_min_quantizer,
+            "max-quantizer"    : self.cfg.rc_max_quantizer,
+            "undershoot-pct"   : self.cfg.rc_undershoot_pct,
+            "overshoot-pct"    : self.cfg.rc_overshoot_pct,
+            })
         return info
 
     def get_encoding(self):
@@ -550,9 +542,6 @@ cdef class Encoder:
             vpx_codec_destroy(self.context)
             free(self.context)
             self.context = NULL
-        if self.cfg:
-            free(self.cfg)
-            self.cfg = NULL
         self.frames = 0
         self.pixfmt = 0
         self.width = 0
@@ -701,7 +690,7 @@ cdef class Encoder:
             if self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100):
                 lossless = 1
         self.lossless = lossless
-        cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, self.cfg)
+        cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, &self.cfg)
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
 
