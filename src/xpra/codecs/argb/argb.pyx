@@ -58,7 +58,7 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
         rgba[i+2] = (v&0x3ff00000) >> 22
         rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
         i = i + 4
-    return output_buf
+    return memoryview(output_buf)
 
 
 def r210_to_rgb(buf):
@@ -86,7 +86,7 @@ cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
         rgb[d+2] = (v&0x3ff00000) >> 22
         s += 1
         d += 3
-    return output_buf
+    return memoryview(output_buf)
 
 
 def argb_to_rgba(buf):
@@ -111,7 +111,7 @@ cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
         rgba[i+2]  = argb[i+3]              #B
         rgba[i+3]  = argb[i]                #A
         i = i + 4
-    return output_buf
+    return memoryview(output_buf)
 
 def argb_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
@@ -137,7 +137,7 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
         rgb[di+2] = argb[i+3]               #B
         di += 3
         i += 4
-    return output_buf
+    return memoryview(output_buf)
 
 
 def bgra_to_rgb(buf):
@@ -164,7 +164,7 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
         rgb[di+2] = bgra[si]                #B
         di += 3
         si += 4
-    return output_buf
+    return memoryview(output_buf)
 
 
 def bgra_to_rgba(buf):
@@ -189,7 +189,7 @@ cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
         rgba[i+2] = bgra[i]             #B
         rgba[i+3] = bgra[i+3]           #A
         i += 4
-    return output_buf
+    return memoryview(output_buf)
 
 
 def premultiply_argb_in_place(buf):
@@ -298,4 +298,4 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
         argb_out[i*4+G] = g
         argb_out[i*4+R] = r
         argb_out[i*4+A] = a
-    return output_buf
+    return memoryview(output_buf)
