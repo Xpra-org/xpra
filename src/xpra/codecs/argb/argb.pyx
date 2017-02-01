@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-cdef as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+cdef int as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1:
     cdef size_t l
     if isinstance(obj, MemBuf):
         buffer[0] = <const void*> (<MemBuf> obj).get_mem()
