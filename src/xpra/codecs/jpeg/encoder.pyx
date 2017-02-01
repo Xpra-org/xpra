@@ -109,8 +109,9 @@ def encode(image, int quality=50, int speed=50, options={}):
     cdef const unsigned char* buf
     cdef Py_ssize_t buf_len
     pixels = image.get_pixels()
-    assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
     pfstr = image.get_pixel_format()
+    assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
+    assert buf_len>=stride*height, "%s buffer is too small: % bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
@@ -135,8 +136,10 @@ def encode(image, int quality=50, int speed=50, options={}):
                         width, stride, height, tjpf, &out,
                         &out_size, subsamp, quality, flags)
     if r!=0:
-        log.error("Error: failed to compress jpeg image, code %i", r)
+        log.error("Error: failed to compress jpeg image, code %i:", r)
         log.error(" %s", get_error_str())
+        log.error(" width=%i, stride=%i, height=%i", width, stride, height)
+        log.error(" pixel format=%s, quality=%i", pfstr, quality)
         return None
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     cdata = makebuf(out, out_size)

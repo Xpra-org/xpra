@@ -158,8 +158,9 @@ def decompress(data, int width, int height, options={}):
                                 buf, buf_len, 
                                 planes, width, strides, height, flags)
     if r:
-        log.error("Error: failed to decompress JPEG data")
+        log.error("Error: failed to decompress %s JPEG data", subsamp_str)
         log.error(" %s", get_error_str())
+        log.error(" width=%i, strides=%s, height=%s", width, pystrides, height)
         return None
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
 
