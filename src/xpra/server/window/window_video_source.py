@@ -520,7 +520,7 @@ class WindowVideoSource(WindowSource):
         #give a boost if we have a video region and this is not video:
         if self.video_subregion.rectangle and encoding not in self.video_encodings:
             q += 40
-        return q
+        return min(100, q)
 
 
     def client_decode_error(self, error, message):
