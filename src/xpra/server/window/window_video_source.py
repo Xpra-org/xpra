@@ -1528,43 +1528,56 @@ class WindowVideoSource(WindowSource):
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
         #send the rest as rectangles:
         if non_scroll:
-            start = time.time()
-            for sy, sh in non_scroll:
-                sub = image.get_sub_image(0, sy, w, sh)
-                flush -= 1
-                ret = self.video_fallback(sub, options)
-                if not ret:
+            nsstart = time.time()
+            if (self._current_speed>=50 and self._current_quality<90) or len(non_scroll)>=8:
+                encoding = self.get_video_fallback_encoding(FAST_ORDER)
+            else:
+                #slower but can be lossless:
+                encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
+            if encoding:
+                encode_fn = self._encoders[encoding]
+                for sy, sh in non_scroll:
+                    sub = image.get_sub_image(0, sy, w, sh)
+                    flush -= 1
+                    ret = encode_fn(encoding, sub, options)
+                    if not ret:
+                        self.free_image_wrapper(sub)
+                        #cancelled?
+                        return None
+                    coding, data, client_options, outw, outh, outstride, _ = ret
+                    assert data
+                    client_options = options.copy()
+                    if flush>0 and self.supports_flush:
+                        client_options["flush"] = flush
+                    packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
+                    self.queue_damage_packet(packet)
                     self.free_image_wrapper(sub)
-                    #cancelled?
-                    return None
-                coding, data, client_options, outw, outh, outstride, _ = ret
-                assert data
-                client_options = options.copy()
-                if flush>0 and self.supports_flush:
-                    client_options["flush"] = flush
-                packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
-                self.queue_damage_packet(packet)
-                self.free_image_wrapper(sub)
-                psize = w*sh*4
-                csize = len(data)
-                end = time.time()
-                compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                     (end-start)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
-            scrolllog("non-scroll encoding took %ims for %i rectangles", (time.time()-start)*1000, non_scroll)
+                    psize = w*sh*4
+                    csize = len(data)
+                    end = time.time()
+                    compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
+                         (end-nsstart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (time.time()-nsstart)*1000, len(non_scroll))
         assert flush==0
         self.last_scroll_time = time.time()
+        scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         return None
 
-    def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
+    def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
         #find one that is not video:
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if not fallback_encodings:
             if not self.is_cancelled():
                 log.warn("Warning: no non-video fallback encodings are available!")
             return None
-        fallback_encoding = fallback_encodings[0]
-        encode_fn = self._encoders[fallback_encoding]
-        return encode_fn(fallback_encoding, image, options)
+        return fallback_encodings[0]
+
+    def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
+        encoding = self.get_video_fallback_encoding(order)
+        if not encoding:
+            return None
+        encode_fn = self._encoders[encoding]
+        return encode_fn(encoding, image, options)
 
     def video_encode(self, encoding, image, options):
         try:
