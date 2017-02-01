@@ -708,9 +708,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
                 else: # throw others to extra_link_args
                     add_to_keywords(kw, 'extra_link_args', token)
-                for k, v in kw.items(): # remove duplicates
-                    seen = set()
-                    kw[k] = [x for x in v if x not in seen and not seen.add(x)]
     if warn_ENABLED:
         if is_msvc():
             add_to_keywords(kw, 'extra_compile_args', "/Wall")
