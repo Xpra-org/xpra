@@ -144,7 +144,7 @@ def do_get_sshpass_command():
     return None
 
 
-def do_get_sound_command():
+def do_get_nodock_command():
     #try to use the subapp:
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
@@ -156,3 +156,6 @@ def do_get_sound_command():
     if not os.path.exists(helper):
         helper = os.path.join(base, "Helpers", "Xpra")
     return [helper]
+
+def do_get_sound_command():
+    return do_get_nodock_command()

@@ -2353,16 +2353,9 @@ def start_server_subprocess(script_file, args, mode, defaults,
     for x in socket_dirs:
         cmd.append("--socket-dirs=%s" % (x or ""))
     #add a unique uuid to the server env:
-    server_env = os.environ.copy()
     from xpra.os_util import get_hex_uuid
     new_server_uuid = get_hex_uuid()
-    server_env["XPRA_PROXY_START_UUID"] = new_server_uuid
-    if username:
-        server_env.update({
-                           "USER"       : username,
-                           "USERNAME"   : username,
-                           "HOME"       : home or os.path.join("/home", username),
-                           })
+    cmd.append("--env=XPRA_PROXY_START_UUID=%s" % new_server_uuid)
     if mode=="shadow" and OSX:
         #launch the shadow server via launchctl so it will have GUI access:
         LAUNCH_AGENT = "org.xpra.Agent"
@@ -2395,6 +2388,13 @@ def start_server_subprocess(script_file, args, mode, defaults,
             if uid!=0 or gid!=0:
                 setuidgid(uid, gid)
         cmd.append("--systemd-run=no")
+        server_env = os.environ.copy()
+        if username:
+            server_env.update({
+                               "USER"       : username,
+                               "USERNAME"   : username,
+                               "HOME"       : home or os.path.join("/home", username),
+                               })
         proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, uid)
     return proc, socket_path
@@ -2402,6 +2402,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, matching_uid=0):
     #wait until the new socket appears:
     start = time.time()
+    from xpra.platform.paths import get_nodock_command
     while time.time()-start<15 and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
@@ -2410,11 +2411,18 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
             try:
                 #we must use a subprocess to avoid messing things up - yuk
                 import subprocess
-                cmd = [sys.argv[0], "info", "socket:%s" % socket_path]
+                cmd = [get_nodock_command(), "info", "socket:%s" % socket_path]
                 p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, _ = p.communicate()
                 if p.returncode==0:
-                    out = stdout.decode('utf-8')
+                    try:
+                        out = stdout.decode('utf-8')
+                    except:
+                        try:
+                            out = stdout.decode()
+                        except:
+                            from xpra.os_util import bytestostr
+                            out = bytestostr(stdout)
                     PREFIX = "env.XPRA_PROXY_START_UUID="
                     for line in out.splitlines():
                         if line.startswith(PREFIX):
