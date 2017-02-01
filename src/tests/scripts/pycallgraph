@@ -89,7 +89,7 @@ bell = ['xpra.x11.gtk_x11.window.WindowModel.do_xpra_xkb_event',
         'xpra.server.source.ServerSource.bell']
 misc = ['xpra.dotxpra.*', 'xpra.x11.bindings.wait_for_server.*',
         'xpra.scripts.*', 'subprocess.*',
-        'xpra.log*',
+        'multiprocessing.*',
         'xpra.gtk_common.gobject_compat.*',
         'xpra.x11.gtk_x11.tray.*',
         'xpra.codecs.version_info.*',
@@ -114,7 +114,9 @@ gl = ['xpra.client.gl.gl_client_window.*', 'xpra.client.gl.gl_colorspace_convers
 
 logging = [
        'logging.*',
-       'xpra.log.*']
+       'xpra.log.*',
+       'xpra.colorstreamhandler.*',
+       ]
 
 std = ['pycallgraph.*',
        'traceback.*', 'linecache.*',
@@ -659,7 +661,7 @@ if trace_thread:
     from xpra import make_thread
     saved_make_thread = make_thread.make_thread
     trace_count = 0
-    def make_trace_daemon_thread(target, name, daemon):
+    def make_trace_daemon_thread(target, name, daemon=False, args=()):
         def trace_target(*args):
             global trace_count
             tracing = name==trace_thread and trace_count==0
@@ -669,13 +671,13 @@ if trace_thread:
                 pcg.start(reset=False)
             else:
                 print("not tracing      %s : %s" % (name.rjust(16), target))
-            target()
+            target(*args)
             print("ended            %s : %s" % (name.rjust(16), target))
             if tracing:
                 trace_count -= 0
                 if trace_count<=0:
                     pcg.stop()
-        return saved_make_thread(trace_target, name, daemon)
+        return saved_make_thread(trace_target, name, daemon, args)
     make_thread.make_thread = make_trace_daemon_thread
 else:
     def do_start_trace(*args):
