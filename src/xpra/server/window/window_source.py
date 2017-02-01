@@ -225,14 +225,14 @@ class WindowSource(object):
     def init_encoders(self):
         self._encoders["rgb24"] = self.rgb_encode
         self._encoders["rgb32"] = self.rgb_encode
-        enc_pillow = get_codec("enc_pillow")
-        if enc_pillow:
-            for x in enc_pillow.get_encodings():
+        self.enc_pillow = get_codec("enc_pillow")
+        if self.enc_pillow:
+            for x in self.enc_pillow.get_encodings():
                 if x in self.server_core_encodings:
                     self._encoders[x] = self.pillow_encode
         #prefer this one over PIL supplied version:
-        enc_jpeg = get_codec("enc_jpeg")
-        if enc_jpeg:
+        self.enc_jpeg = get_codec("enc_jpeg")
+        if self.enc_jpeg:
             self._encoders["jpeg"] = self.jpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
@@ -1901,8 +1901,7 @@ class WindowSource(object):
     def jpeg_encode(self, coding, image, options):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        enc_jpeg = get_codec("enc_jpeg")
-        return enc_jpeg.encode(image, q, s, options)
+        return self.enc_jpeg.encode(image, q, s, options)
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
@@ -1910,9 +1909,7 @@ class WindowSource(object):
         assert coding in self.server_core_encodings
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        enc_pillow = get_codec("enc_pillow")
-        assert enc_pillow
-        return enc_pillow.encode(coding, image, q, s, self.supports_transparency)
+        return self.enc_pillow.encode(coding, image, q, s, self.supports_transparency)
 
     def mmap_encode(self, coding, image, options):
         assert self._mmap and self._mmap_size>0

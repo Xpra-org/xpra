@@ -52,7 +52,8 @@ SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 
 SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
 if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
-    log.warn("invalid value for XPRA_SAVE_VIDEO_FRAMES: must be 'png' or 'jpeg'")
+    log.warn("Warning: invalid value for 'XPRA_SAVE_VIDEO_FRAMES'")
+    log.warn(" only 'png' or 'jpeg' are allowed")
     SAVE_VIDEO_FRAMES = None
 
 FAST_ORDER = ["jpeg", "rgb32", "rgb24", "png"] + PREFERED_ENCODING_ORDER
