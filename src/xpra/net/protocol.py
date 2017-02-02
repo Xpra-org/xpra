@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import Queue, strtobytes, memoryview_to_bytes
+from xpra.os_util import Queue, memoryview_to_bytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net import ConnectionClosedException
@@ -39,19 +39,6 @@ if sys.version > '3':
     unicode = str           #@ReservedAssignment
     JOIN_TYPES = (bytes, )
 
-
-FAULT_RATE = envint("XPRA_PROTOCOL_FAULT_INJECTION_RATE")
-if FAULT_RATE>0:
-    _counter = 0
-    def INJECT_FAULT(p):
-        global _counter
-        _counter += 1
-        if (_counter % FAULT_RATE)==0:
-            log.warn("injecting fault in %s", p)
-            p.raw_write("Protocol JUNK! added by fault injection code")
-else:
-    def INJECT_FAULT(p):
-        pass
 
 USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
@@ -292,7 +279,8 @@ class Protocol(object):
         if not self._write_format_thread and not self._closed:
             self._write_format_thread = make_thread(self._write_format_thread_loop, "format", daemon=True)
             self._write_format_thread.start()
-        INJECT_FAULT(self)
+        #from now on, take shortcut:
+        self.source_has_more = self._source_has_more.set
 
     def _write_format_thread_loop(self):
         log("write_format_thread_loop starting")
@@ -680,6 +668,9 @@ class Protocol(object):
             self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
             self._read_parser_thread.start()
         self._read_queue.put(data)
+        #from now on, take shortcut:
+        if self._read_queue_put==self.read_queue_put:
+            self._read_queue_put = self._read_queue.put
 
     def _read_parse_thread_loop(self):
         log("read_parse_thread_loop starting")
@@ -876,7 +867,6 @@ class Protocol(object):
                 log("processing packet %s", packet_type)
                 self._process_packet_cb(self, packet)
                 packet = None
-                INJECT_FAULT(self)
 
     def flush_then_close(self, last_packet, done_callback=None):
         """ Note: this is best effort only
