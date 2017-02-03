@@ -7,7 +7,7 @@
 import time
 
 import errno as pyerrno
-from libc.stdint cimport uint64_t
+from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 
 from xpra.log import Logger
@@ -215,13 +215,14 @@ cdef class XImageWrapper(object):
     cdef unsigned int depth                                  #@DuplicatedSignature
     cdef unsigned int rowstride
     cdef unsigned int planes
-    cdef int thread_safe
+    cdef unsigned char thread_safe
+    cdef unsigned char sub
     cdef object pixel_format
     cdef void *pixels
     cdef object del_callback
     cdef uint64_t timestamp
 
-    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False):
+    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False, sub=False):
         self.image = NULL
         self.pixels = NULL
         self.x = x
@@ -233,11 +234,13 @@ cdef class XImageWrapper(object):
         self.rowstride = rowstride
         self.planes = planes
         self.thread_safe = thread_safe
-        cdef unsigned long pixels_ptr = pixels
-        self.pixels = <void *> pixels_ptr
+        self.sub = sub
+        self.pixels = <void *> pixels
         self.timestamp = int(time.time()*1000)
+        
 
     cdef set_image(self, XImage* image):
+        assert not self.sub
         assert image!=NULL
         global ximage_counter
         ximage_counter += 1
@@ -311,16 +314,8 @@ cdef class XImageWrapper(object):
         cdef void *src = self.get_pixels_ptr()
         if src==NULL:
             raise Exception("source image does not have pixels!")
-        cdef void *dst
-        if posix_memalign(<void **> &dst, 64, h*w*4+64):
-            raise Exception("posix_memalign failed!")
-        #cache into local var:
-        cdef int stride = self.rowstride
-        cdef unsigned int i
-        for i in range(h):
-            memcpy(dst+i*w*4, src + x*4 + (y+i)*stride, w*4)
-        #memset(dst + h*w*4, 0, 64)
-        return XImageWrapper(self.x+x, self.y+y, w, h, <unsigned long> dst, self.pixel_format, self.depth, w*4, 0, True)
+        cdef uintptr_t sub_ptr = (<uintptr_t >src) + x*4 + y*self.rowstride
+        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True)
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
@@ -353,6 +348,7 @@ cdef class XImageWrapper(object):
 
     def set_pixels(self, pixels):
         """ overrides the context of the image with the given pixels buffer """
+        assert not self.sub
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
@@ -380,7 +376,7 @@ cdef class XImageWrapper(object):
         self.free_pixels()
 
     cdef free_image(self):
-        ximagedebug("%s.free_image() image=%#x", self, <unsigned long> self.image)
+        ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
             XDestroyImage(self.image)
             self.image = NULL
@@ -388,9 +384,10 @@ cdef class XImageWrapper(object):
             ximage_counter -= 1
 
     cdef free_pixels(self):
-        ximagedebug("%s.free_pixels() pixels=%#x", self, <unsigned long> self.pixels)
+        ximagedebug("%s.free_pixels() pixels=%#x", self, <uintptr_t> self.pixels)
         if self.pixels!=NULL:
-            free(self.pixels)
+            if not self.sub:
+                free(self.pixels)
             self.pixels = NULL
 
     def freeze(self):
@@ -589,7 +586,7 @@ cdef class XShmWrapper(object):
         assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %i" % (self, self.ref_count)
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
-        xshmdebug("XShmWrapper.free() has_shm=%s, image=%#x, shmid=%#x", has_shm, <unsigned long> self.image, self.shminfo.shmid)
+        xshmdebug("XShmWrapper.free() has_shm=%s, image=%#x, shmid=%#x", has_shm, <uintptr_t> self.image, self.shminfo.shmid)
         if has_shm:
             XShmDetach(self.display, &self.shminfo)
         if self.image!=NULL:
@@ -614,7 +611,7 @@ cdef class XShmImageWrapper(XImageWrapper):
 
     cdef void *get_pixels_ptr(self):                #@DuplicatedSignature
         if self.pixels!=NULL:
-            xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x (pixels) %s", <unsigned long> self.pixels, self)
+            xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x (pixels) %s", <uintptr_t> self.pixels, self)
             return self.pixels
         cdef XImage *image = self.image             #
         if image==NULL:
@@ -623,7 +620,7 @@ cdef class XShmImageWrapper(XImageWrapper):
         assert self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
         cdef void *ptr = image.data + (self.y * self.rowstride) + (4 * self.x)
-        xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <unsigned long> ptr, self)
+        xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <uintptr_t> ptr, self)
         return ptr
 
     def freeze(self):                               #@DuplicatedSignature

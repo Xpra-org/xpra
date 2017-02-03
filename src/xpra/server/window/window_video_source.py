@@ -1541,7 +1541,6 @@ class WindowVideoSource(WindowSource):
                     flush -= 1
                     ret = encode_fn(encoding, sub, options)
                     if not ret:
-                        self.free_image_wrapper(sub)
                         #cancelled?
                         return None
                     coding, data, client_options, outw, outh, outstride, _ = ret
@@ -1551,7 +1550,6 @@ class WindowVideoSource(WindowSource):
                         client_options["flush"] = flush
                     packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
                     self.queue_damage_packet(packet)
-                    self.free_image_wrapper(sub)
                     psize = w*sh*4
                     csize = len(data)
                     end = time.time()
