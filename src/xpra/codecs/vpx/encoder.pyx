@@ -13,7 +13,7 @@ log = Logger("encoder", "vpx")
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.util import AtomicInteger, envint, envbool
-from xpra.buffers.membuf cimport memalign
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uint8_t
 
@@ -57,9 +57,6 @@ cdef extern from "string.h":
     void *memset(void *ptr, int value, size_t num) nogil
     void free(void *ptr) nogil
 
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t

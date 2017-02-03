@@ -13,14 +13,10 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.buffers.membuf cimport memalign
+from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
 
 from libc.stdint cimport uintptr_t, uint8_t
 
-
-cdef extern from "../../buffers/buffers.h":
-    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "string.h":
     void * memcpy(void * destination, void * source, size_t num) nogil

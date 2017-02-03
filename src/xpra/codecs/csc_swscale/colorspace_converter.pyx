@@ -17,13 +17,9 @@ from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.buffers.membuf cimport padbuf, MemBuf
-
+from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer
 from libc.stdint cimport uintptr_t, uint8_t
 
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "../../inline.h":
     pass

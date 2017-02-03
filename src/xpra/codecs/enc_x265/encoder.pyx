@@ -11,6 +11,7 @@ log = Logger("encoder", "x265")
 
 from xpra.util import envbool
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
+from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
 
@@ -23,8 +24,6 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x265.h":
 

@@ -7,11 +7,7 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
 from xpra.buffers.membuf cimport getbuf, MemBuf
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int object_as_write_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
+from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
 import struct
 from xpra.log import Logger

@@ -15,7 +15,7 @@ from xpra.log import Logger
 logger = Logger("encoding")
 
 from xpra.buffers.membuf cimport memalign
-
+from xpra.buffers.membuf cimport object_as_buffer
 
 import zlib
 hashfn = None

@@ -10,7 +10,7 @@
 //Before Python 3.3, use PyMemoryView_FromBuffer
 //MAJOR<<24 + MINOR<<16 + MICRO<<8
 #if PY_VERSION_HEX<=0x3030000
-PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
+PyObject *_memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
     Py_buffer pybuf;
     Py_ssize_t shape[] = {buf_len};
     int ret;
@@ -30,7 +30,7 @@ PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
 }
 #endif
 
-int object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_len) {
+int _object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_len) {
     Py_buffer *rpybuf;
     if (PyMemoryView_Check(obj)) {
         rpybuf = PyMemoryView_GET_BUFFER(obj);
@@ -43,7 +43,7 @@ int object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_le
     return PyObject_AsReadBuffer(obj, buffer, buffer_len);
 }
 
-int object_as_write_buffer(PyObject *obj, void ** buffer, Py_ssize_t * buffer_len) {
+int _object_as_write_buffer(PyObject *obj, void ** buffer, Py_ssize_t * buffer_len) {
     Py_buffer *wpybuf;
     if (PyMemoryView_Check(obj)) {
         wpybuf = PyMemoryView_GET_BUFFER(obj);

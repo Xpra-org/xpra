@@ -7,7 +7,7 @@ from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport makebuf
+from xpra.buffers.membuf cimport makebuf, object_as_buffer
 from xpra.net.compression import Compressed
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
@@ -57,10 +57,6 @@ cdef extern from "turbojpeg.h":
     int tjCompress2(tjhandle handle, const unsigned char *srcBuf,
                     int width, int pitch, int height, int pixelFormat, unsigned char **jpegBuf,
                     unsigned long *jpegSize, int jpegSubsamp, int jpegQual, int flags) nogil
-
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 
 TJPF_VAL = {

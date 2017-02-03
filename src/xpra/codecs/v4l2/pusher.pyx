@@ -14,7 +14,7 @@ log = Logger("webcam")
 from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.buffers.membuf cimport memalign
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 
 from libc.stdint cimport uint32_t, uint8_t
@@ -25,9 +25,6 @@ cdef extern from "stdlib.h":
 cdef extern from "string.h":
     void *memcpy(void *destination, void *source, size_t num) nogil
     void *memset(void *ptr, int value, size_t num) nogil
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)

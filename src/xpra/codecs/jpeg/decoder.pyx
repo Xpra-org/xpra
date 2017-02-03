@@ -7,7 +7,7 @@ from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf
+from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
@@ -72,10 +72,6 @@ cdef extern from "turbojpeg.h":
     unsigned long tjPlaneSizeYUV(int componentID, int width, int stride, int height, int subsamp)
     int tjPlaneWidth(int componentID, int width, int subsamp)
     int tjPlaneHeight(int componentID, int height, int subsamp)
-
-
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 
 TJSAMP_STR = {

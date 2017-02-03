@@ -2042,7 +2042,7 @@ if x11_ENABLED:
                 **pkgconfig("x11", "xtst", "xfixes", "xcomposite", "xdamage", "xext")
                 ))
     cython_add(Extension("xpra.x11.bindings.ximage",
-                ["xpra/x11/bindings/ximage.pyx", buffers_c],
+                ["xpra/x11/bindings/ximage.pyx"],
                 **pkgconfig("x11", "xcomposite", "xdamage", "xext")
                 ))
 
@@ -2071,7 +2071,7 @@ if gtk_x11_ENABLED:
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
     cython_add(Extension("xpra.client.gtk3.cairo_workaround",
-                ["xpra/client/gtk3/cairo_workaround.pyx", buffers_c],
+                ["xpra/client/gtk3/cairo_workaround.pyx"],
                 **pkgconfig("pycairo")
                 ))
 
@@ -2079,7 +2079,7 @@ if client_ENABLED or server_ENABLED:
     add_packages("xpra.codecs.argb")
     argb_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.codecs.argb.argb",
-                ["xpra/codecs/argb/argb.pyx", buffers_c], **argb_pkgconfig))
+                ["xpra/codecs/argb/argb.pyx"], **argb_pkgconfig))
 
 
 #build tests, but don't install them:
@@ -2159,7 +2159,7 @@ if clipboard_ENABLED:
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
 if client_ENABLED or server_ENABLED:
     cython_add(Extension("xpra.codecs.xor.cyxor",
-                ["xpra/codecs/xor/cyxor.pyx"]+membuffers_c,
+                ["xpra/codecs/xor/cyxor.pyx"],
                 **pkgconfig(optimize=3)))
 
 if server_ENABLED:
@@ -2171,7 +2171,7 @@ if server_ENABLED:
                 ["xpra/server/window/region.pyx"],
                 **O3_pkgconfig))
     cython_add(Extension("xpra.server.window.motion",
-                ["xpra/server/window/motion.pyx"]+[buffers_c],
+                ["xpra/server/window/motion.pyx"],
                 **O3_pkgconfig))
 
 
@@ -2312,7 +2312,7 @@ if nvenc7_ENABLED:
         #    if (unlikely(!(b < sizeof(long)*8 && a == x >> b)) && a) {
         add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-sign-compare")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
-                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule, buffers_c],
+                         ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
                          **nvenc_pkgconfig))
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
@@ -2321,14 +2321,14 @@ if enc_x264_ENABLED:
     if get_gcc_version()>=[6, 0]:
         add_to_keywords(x264_pkgconfig, 'extra_compile_args', "-Wno-unused-variable")
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
-                ["xpra/codecs/enc_x264/encoder.pyx", buffers_c],
+                ["xpra/codecs/enc_x264/encoder.pyx"],
                 **x264_pkgconfig))
 
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
     x265_pkgconfig = pkgconfig("x265")
     cython_add(Extension("xpra.codecs.enc_x265.encoder",
-                ["xpra/codecs/enc_x265/encoder.pyx", buffers_c],
+                ["xpra/codecs/enc_x265/encoder.pyx"],
                 **x265_pkgconfig))
 
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
@@ -2339,10 +2339,10 @@ toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
 if jpeg_ENABLED:
     jpeg_pkgconfig = pkgconfig("libturbojpeg")
     cython_add(Extension("xpra.codecs.jpeg.encoder",
-                ["xpra/codecs/jpeg/encoder.pyx", buffers_c],
+                ["xpra/codecs/jpeg/encoder.pyx"],
                 **jpeg_pkgconfig))
     cython_add(Extension("xpra.codecs.jpeg.decoder",
-                ["xpra/codecs/jpeg/decoder.pyx"]+membuffers_c,
+                ["xpra/codecs/jpeg/decoder.pyx"],
                 **jpeg_pkgconfig))
 
 #swscale and avcodec2 use libav_common/av_log:
@@ -2359,7 +2359,7 @@ toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
-                ["xpra/codecs/dec_avcodec2/decoder.pyx"]+[buffers_c],
+                ["xpra/codecs/dec_avcodec2/decoder.pyx"],
                 **avcodec2_pkgconfig))
 
 
@@ -2367,7 +2367,7 @@ toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
-                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"]+[buffers_c],
+                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
                 language="c++",
                 **libyuv_pkgconfig))
 
@@ -2375,7 +2375,7 @@ toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("swscale", "avutil")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
-                ["xpra/codecs/csc_swscale/colorspace_converter.pyx"]+membuffers_c,
+                ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
 
 
@@ -2388,17 +2388,17 @@ if vpx_ENABLED:
     make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
-                ["xpra/codecs/vpx/encoder.pyx"]+[buffers_c],
+                ["xpra/codecs/vpx/encoder.pyx"],
                 **vpx_pkgconfig))
     cython_add(Extension("xpra.codecs.vpx.decoder",
-                ["xpra/codecs/vpx/decoder.pyx"]+[buffers_c],
+                ["xpra/codecs/vpx/decoder.pyx"],
                 **vpx_pkgconfig))
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
-                ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+[buffers_c],
+                ["xpra/codecs/enc_ffmpeg/encoder.pyx"],
                 **ffmpeg_pkgconfig))
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
@@ -2413,7 +2413,7 @@ if v4l2_ENABLED:
     kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
     make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
-                ["xpra/codecs/v4l2/pusher.pyx"]+[buffers_c],
+                ["xpra/codecs/v4l2/pusher.pyx"],
                 **v4l2_pkgconfig))
 
 
@@ -2422,7 +2422,7 @@ toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cy
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
     cython_add(Extension("xpra.net.bencode.cython_bencode",
-                ["xpra/net/bencode/cython_bencode.pyx", buffers_c],
+                ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig))
 
 if vsock_ENABLED:

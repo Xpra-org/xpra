@@ -18,6 +18,11 @@ cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
     int MEMALIGN_ALIGNMENT
 
+cdef extern from "buffers.h":
+    object _memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
+    int _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
+    int _object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len)
+
 
 cdef void free_buf(const void *p, size_t l, void *arg):
     free(<void *>p)
@@ -39,6 +44,16 @@ cdef makebuf(void *p, size_t l):
 
 cdef void *memalign(size_t size) nogil:
     return xmemalign(size)
+
+
+cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
+    return _memory_as_pybuffer(ptr, buf_len, readonly)
+
+cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
+    return _object_as_buffer(obj, buffer, buffer_len)
+
+cdef int object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len):
+    return _object_as_write_buffer(obj, buffer, buffer_len)
 
 
 cdef class MemBuf:

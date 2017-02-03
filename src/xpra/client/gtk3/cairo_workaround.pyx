@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,10 +26,8 @@
 
 
 import cairo
+from xpra.buffers.membuf cimport object_as_buffer
 
-
-cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "Python.h":
     ctypedef struct PyObject:

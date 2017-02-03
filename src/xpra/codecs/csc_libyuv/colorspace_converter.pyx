@@ -14,7 +14,7 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uint8_t, uintptr_t
 
@@ -33,17 +33,6 @@ cdef extern from "Python.h":
     Py_buffer *PyMemoryView_GET_BUFFER(object mview)
     int PyBuffer_FillInfo(Py_buffer *view, object obj, void *buf, Py_ssize_t len, int readonly, int infoflags)
     int PyBUF_SIMPLE
-
-cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
-    cdef Py_buffer *rpybuf
-    if PyMemoryView_Check(obj):
-        rpybuf = PyMemoryView_GET_BUFFER(obj)
-        if rpybuf.buf==NULL:
-            return -1
-        buffer[0] = rpybuf.buf
-        buffer_len[0] = rpybuf.len
-        return 0
-    return PyObject_AsReadBuffer(obj, buffer, buffer_len)
 
 cdef object memory_as_readonly_pybuffer(void *ptr, Py_ssize_t buf_len):
     cdef Py_buffer pybuf

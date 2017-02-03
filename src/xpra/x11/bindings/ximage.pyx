@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@ import time
 
 import errno as pyerrno
 from libc.stdint cimport uint64_t
+from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
@@ -28,12 +29,8 @@ cdef inline unsigned int MIN(unsigned int a, unsigned int b):
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "../../buffers/buffers.h":
-    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
 cdef extern from "string.h":
-    void *memcpy(void * destination, void * source, size_t num)
+    void *memcpy(void * destination, void * source, size_t num) nogil
 
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)

@@ -13,6 +13,7 @@ from xpra.util import nonl, envint, envbool, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
+from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
@@ -44,9 +45,6 @@ cdef extern from "stdarg.h":
     void* va_arg(va_list, fake_type)
     void va_end(va_list)
     fake_type int_type "int"
-
-cdef extern from "../../buffers/buffers.h":
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "x264.h":
     int X264_KEYINT_MAX_INFINITE
