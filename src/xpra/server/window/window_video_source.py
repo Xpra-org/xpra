@@ -1565,7 +1565,7 @@ class WindowVideoSource(WindowSource):
                 end = time.time()
                 compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                      (end-start)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
-            scrolllog("non-scroll encoding took %ims for %i rectangles", (time.time()-start)*1000, non_scroll)
+            scrolllog("non-scroll encoding took %ims for %i rectangles", (time.time()-start)*1000, len(non_scroll))
         assert flush==0
         self.last_scroll_time = time.time()
         return None
