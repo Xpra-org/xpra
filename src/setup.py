@@ -1583,6 +1583,9 @@ if WIN32:
             assert GHOSTSCRIPT is not None, "cannot find ghostscript installation directory in %s" % GHOSTSCRIPT_PARENT_DIR
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
+        if nvenc7_ENABLED:
+            add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
+            add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
         #FIXME: how do we figure out what target directory to use?
         #(can't use install data override with py2exe?)
