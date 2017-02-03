@@ -45,9 +45,6 @@ cdef extern from "string.h":
     void *memset(void * ptr, int value, size_t num) nogil
     int memcmp(const void *a1, const void *a2, size_t size)
 
-cdef extern from "../../buffers/buffers.h":
-    int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
 
 def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rowstride, unsigned char bpp=4):
     global hashfn

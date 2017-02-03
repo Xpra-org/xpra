@@ -14,7 +14,7 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
 
 from libc.stdint cimport uint8_t, uintptr_t
 
@@ -24,26 +24,6 @@ cdef extern from "stdlib.h":
 
 cdef extern from "../../buffers/memalign.h":
     unsigned int MEMALIGN_ALIGNMENT
-
-#inlined here because linking messes up with c++..
-cdef extern from "Python.h":
-    int PyObject_AsReadBuffer(object obj, const void **buffer, Py_ssize_t *buffer_len)
-    int PyMemoryView_Check(object obj)
-    object PyMemoryView_FromBuffer(Py_buffer *view)
-    Py_buffer *PyMemoryView_GET_BUFFER(object mview)
-    int PyBuffer_FillInfo(Py_buffer *view, object obj, void *buf, Py_ssize_t len, int readonly, int infoflags)
-    int PyBUF_SIMPLE
-
-cdef object memory_as_readonly_pybuffer(void *ptr, Py_ssize_t buf_len):
-    cdef Py_buffer pybuf
-    cdef Py_ssize_t shape[1]
-    shape[0] = buf_len
-    cdef int ret = PyBuffer_FillInfo(&pybuf, None, ptr, buf_len, 0, PyBUF_SIMPLE)
-    if ret!=0:
-        return None
-    pybuf.format = "B"
-    pybuf.shape = shape
-    return PyMemoryView_FromBuffer(&pybuf)
 
 
 cdef extern from "libyuv/convert.h" namespace "libyuv":
@@ -357,7 +337,7 @@ cdef class ColorspaceConverter:
             log("libyuv.ScalePlane took %.1fms", 1000.0*elapsed)
             for i in range(3):
                 strides.append(self.scaled_stride[i])
-                planes.append(memory_as_readonly_pybuffer(<void *> scaled_planes[i], self.scaled_size[i]))
+                planes.append(memory_as_pybuffer(<void *> scaled_planes[i], self.scaled_size[i], True))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <uintptr_t> scaled_buffer
@@ -365,7 +345,7 @@ cdef class ColorspaceConverter:
             #use output buffer directly:
             for i in range(3):
                 strides.append(self.out_stride[i])
-                planes.append(memory_as_readonly_pybuffer(<void *> out_planes[i], self.out_size[i]))
+                planes.append(memory_as_pybuffer(<void *> out_planes[i], self.out_size[i], True))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, ImageWrapper._3_PLANES)
             out_image.cython_buffer = <uintptr_t> output_buffer

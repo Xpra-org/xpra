@@ -44,10 +44,6 @@ ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 
 
-cdef extern from "../../buffers/buffers.h":
-    object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-    int    object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-
 cdef extern from "vpx/vpx_codec.h":
     ctypedef const void *vpx_codec_iter_t
     ctypedef long vpx_codec_flags_t
