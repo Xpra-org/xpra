@@ -30,6 +30,8 @@ class TestImageWrapper(unittest.TestCase):
             SW, SH = 6, 6
             sub = img.get_sub_image(x, 0, SW, SH)
             #print("%s.get_sub_image%s=%s" % (img, (x, 0, SW, SH), sub))
+            #this is only true for the pure python ImageWrapper:
+            #(the X11 image wrapper references the same underlying XShm pixels, with the same rowstride)
             assert sub.get_rowstride()==(SW*4)
             sub_buf = sub.get_pixels()
             #print("pixels for %ix%i: %i" % (SW, SH, len(sub_buf)))
