@@ -133,4 +133,24 @@ var Utilities = {
 		}
 		return new acc();
 	},
+
+
+	getColorGamut : function() {
+		if (!window.matchMedia) {
+			//unknown
+			return "";
+		}
+		else if (window.matchMedia('(color-gamut: rec2020)').matches) {
+			return "rec2020";
+		}
+		else if (window.matchMedia('(color-gamut: p3)').matches) {
+			return "P3";
+		}
+		else if (window.matchMedia('(color-gamut: srgb)').matches) {
+			return "srgb";
+		}
+		else {
+			return "";
+		}
+	},
 };

@@ -726,6 +726,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
+		"encoding.color-gamut"		: Utilities.getColorGamut(),
 		//video stuff:
 		"encoding.video_scaling"	: true,
 		"encoding.full_csc_modes"	: {
