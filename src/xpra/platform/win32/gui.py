@@ -581,8 +581,9 @@ def add_window_hooks(window):
                         else:
                             v += WHEEL_DELTA
                         count += 1
-                    mouselog("mousewheel: send %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
-                    setattr(window, "_win32_%swheel" % orientation, v)
+                    mouselog("mousewheel: sent %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
+                    nval = v
+                setattr(window, "_win32_%swheel" % orientation, nval)
             def mousewheel(hwnd, event, wParam, lParam):
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0
