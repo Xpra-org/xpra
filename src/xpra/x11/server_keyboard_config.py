@@ -391,19 +391,18 @@ class KeyboardConfig(KeyboardConfigBase):
         if ignored_modifier_keynames is None:
             #this is not a keyboard event, ignore modifiers in "mod_pointermissing"
             def is_ignored(modifier, modifier_keynames):
-                m = modifier in (self.xkbmap_mod_pointermissing or [])
-                return m
+                return modifier in (self.xkbmap_mod_pointermissing or [])
         else:
             #keyboard event: ignore the keynames specified
             #(usually the modifier key being pressed/unpressed)
             def is_ignored(modifier, modifier_keynames):
-                m = set(modifier_keynames or []) & set(ignored_modifier_keynames or [])
-                return bool(m)
+                return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or []))>0
 
         def filtered_modifiers_set(modifiers):
             m = set()
+            mm = self.xkbmap_mod_managed or ()
             for modifier in modifiers:
-                if self.xkbmap_mod_managed and modifier in self.xkbmap_mod_managed:
+                if modifier in mm:
                     log("modifier is server managed: %s", modifier)
                     continue
                 keynames = self.keynames_for_mod.get(modifier)
@@ -411,7 +410,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 m.add(modifier)
-            log("filtered_modifiers_set(%s)=%s", modifiers, csv(list(m)))
+            log("filtered_modifiers_set(%s)=%s", modifiers, m)
             return m
 
         def change_mask(modifiers, press, info):
@@ -419,7 +418,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for modifier in modifiers:
                 keynames = self.keynames_for_mod.get(modifier)
                 if not keynames:
-                    log.error("unknown modifier: %s", modifier)
+                    log.error("Error: unknown modifier '%s'", modifier)
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []
@@ -485,9 +484,11 @@ class KeyboardConfig(KeyboardConfigBase):
         fr = change_mask(current.difference(wanted), False, "remove")
         fa = change_mask(wanted.difference(current), True, "add")
         if fr:
-            log.warn("Warning: failed to remove the following modifiers: %s", csv(fr))
+            log.warn("Warning: failed to remove the following modifiers:")
+            log.warn(" %s", csv(fr))
         elif fa:
-            log.warn("Warning: failed to add the following modifiers: %s", csv(fa))
+            log.warn("Warning: failed to add the following modifiers:")
+            log.warn(" %s", csv(fa))
         else:
             return  #all good!
         #this should never happen.. but if it does?
