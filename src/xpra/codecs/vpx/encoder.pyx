@@ -13,6 +13,7 @@ log = Logger("encoder", "vpx")
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.util import AtomicInteger, envint, envbool
+from xpra.buffers.membuf cimport memalign
 
 from libc.stdint cimport uint8_t
 
@@ -56,9 +57,6 @@ cdef extern from "string.h":
     void *memset(void *ptr, int value, size_t num) nogil
     void free(void *ptr) nogil
 
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size)
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -415,7 +413,7 @@ cdef class Encoder:
         self.cfg.kf_min_dist = 999999
         self.cfg.kf_max_dist = 999999
 
-        self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
+        self.context = <vpx_codec_ctx_t *> memalign(sizeof(vpx_codec_ctx_t))
         if self.context==NULL:
             raise Exception("failed to allocate memory for vpx encoder context")
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
@@ -591,7 +589,7 @@ cdef class Encoder:
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
 
         start = time.time()
-        image = <vpx_image_t *> xmemalign(sizeof(vpx_image_t))
+        image = <vpx_image_t *> memalign(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
         image.h = self.height

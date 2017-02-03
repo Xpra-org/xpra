@@ -8,11 +8,12 @@ import weakref
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
+from xpra.os_util import bytestostr
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.os_util import bytestostr
+from xpra.buffers.membuf cimport memalign
 
 from libc.stdint cimport uintptr_t, uint8_t
 
@@ -28,9 +29,6 @@ cdef extern from "string.h":
 
 cdef extern from "../../inline.h":
     pass
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size)
 
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
@@ -491,7 +489,7 @@ cdef class Decoder:
 
         #copy the whole input buffer into a padded C buffer:
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
-        padded_buf = <unsigned char *> xmemalign(buf_len+128)
+        padded_buf = <unsigned char *> memalign(buf_len+128)
         assert padded_buf!=NULL, "failed to allocate %i bytes of memory" % (buf_len+128)
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)

@@ -14,6 +14,7 @@ from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.buffers.membuf cimport memalign
 
 from libc.stdint cimport uint8_t, uintptr_t
 
@@ -22,7 +23,6 @@ cdef extern from "stdlib.h":
     void free(void *ptr)
 
 cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size)
     unsigned int MEMALIGN_ALIGNMENT
 
 #inlined here because linking messes up with c++..
@@ -225,7 +225,7 @@ cdef class ColorspaceConverter:
                 self.scaled_offsets[i]  = self.scaled_buffer_size
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
         if self.scaling:
-            self.output_buffer = <uint8_t *> xmemalign(self.out_buffer_size)
+            self.output_buffer = <uint8_t *> memalign(self.out_buffer_size)
             if self.output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         else:
@@ -333,7 +333,7 @@ cdef class ColorspaceConverter:
             output_buffer = self.output_buffer
         else:
             #allocate output buffer:
-            output_buffer = <unsigned char*> xmemalign(self.out_buffer_size)
+            output_buffer = <unsigned char*> memalign(self.out_buffer_size)
             if output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         for i in range(3):
@@ -353,7 +353,7 @@ cdef class ColorspaceConverter:
         strides = []
         if self.scaling:
             start = time.time()
-            scaled_buffer = <unsigned char*> xmemalign(self.scaled_buffer_size)
+            scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
             with nogil:

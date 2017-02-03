@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,6 +13,9 @@ import time
 from xpra.util import envbool
 from xpra.log import Logger
 logger = Logger("encoding")
+
+from xpra.buffers.membuf cimport memalign
+
 
 import zlib
 hashfn = None
@@ -41,9 +44,6 @@ cdef extern from "string.h":
     void free(void * ptr) nogil
     void *memset(void * ptr, int value, size_t num) nogil
     int memcmp(const void *a1, const void *a2, size_t size)
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size) nogil
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -91,14 +91,14 @@ def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
     cdef int32_t *distances = NULL
     #print("calculate_distances(%s, %s, %i, %i)" % (array1, array2, elen, min_score))
     try:
-        a1 = <int64_t*> xmemalign(asize)
-        a2 = <int64_t*> xmemalign(asize)
+        a1 = <int64_t*> memalign(asize)
+        a2 = <int64_t*> memalign(asize)
         assert a1!=NULL and a2!=NULL, "failed to allocate %i bytes of scroll array memory" % asize
         for i in range(l):
             a1[i] = castint64(array1[i])
             a2[i] = castint64(array2[i])
         #now compare all the values
-        distances = <int32_t*> xmemalign(2*l*sizeof(int32_t))
+        distances = <int32_t*> memalign(2*l*sizeof(int32_t))
         assert distances!=NULL
         with nogil:
             memset(<void*> distances, 0, 2*l*sizeof(int32_t))

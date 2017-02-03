@@ -2171,7 +2171,7 @@ if server_ENABLED:
                 ["xpra/server/window/region.pyx"],
                 **O3_pkgconfig))
     cython_add(Extension("xpra.server.window.motion",
-                ["xpra/server/window/motion.pyx"]+membuffers_c,
+                ["xpra/server/window/motion.pyx"]+[buffers_c],
                 **O3_pkgconfig))
 
 
@@ -2359,7 +2359,7 @@ toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("avcodec", "avutil")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
-                ["xpra/codecs/dec_avcodec2/decoder.pyx"]+membuffers_c,
+                ["xpra/codecs/dec_avcodec2/decoder.pyx"]+[buffers_c],
                 **avcodec2_pkgconfig))
 
 
@@ -2367,7 +2367,7 @@ toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
-                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"]+membuffers_c,
+                ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"]+[buffers_c],
                 language="c++",
                 **libyuv_pkgconfig))
 
@@ -2388,17 +2388,17 @@ if vpx_ENABLED:
     make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
-                ["xpra/codecs/vpx/encoder.pyx"]+membuffers_c,
+                ["xpra/codecs/vpx/encoder.pyx"]+[buffers_c],
                 **vpx_pkgconfig))
     cython_add(Extension("xpra.codecs.vpx.decoder",
-                ["xpra/codecs/vpx/decoder.pyx"]+membuffers_c,
+                ["xpra/codecs/vpx/decoder.pyx"]+[buffers_c],
                 **vpx_pkgconfig))
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
-                ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+membuffers_c,
+                ["xpra/codecs/enc_ffmpeg/encoder.pyx"]+[buffers_c],
                 **ffmpeg_pkgconfig))
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
@@ -2413,7 +2413,7 @@ if v4l2_ENABLED:
     kwargs = {"ENABLE_DEVICE_CAPS" : ENABLE_DEVICE_CAPS}
     make_constants("xpra", "codecs", "v4l2", "constants", **kwargs)
     cython_add(Extension("xpra.codecs.v4l2.pusher",
-                ["xpra/codecs/v4l2/pusher.pyx"]+membuffers_c,
+                ["xpra/codecs/v4l2/pusher.pyx"]+[buffers_c],
                 **v4l2_pkgconfig))
 
 

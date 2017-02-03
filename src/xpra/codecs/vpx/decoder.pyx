@@ -12,7 +12,7 @@ log = Logger("decoder", "vpx")
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport padbuf, MemBuf
+from xpra.buffers.membuf cimport padbuf, MemBuf, memalign
 from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 
@@ -43,9 +43,6 @@ cdef extern from "string.h":
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size)
 
 cdef extern from "../../buffers/buffers.h":
     object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
@@ -208,7 +205,7 @@ cdef class Decoder:
             self.max_threads = max(0, min(int(VPX_THREADS), roundup(height, 32)//32*2))
         except:
             self.max_threads = 1
-        self.context = <vpx_codec_ctx_t *> xmemalign(sizeof(vpx_codec_ctx_t))
+        self.context = <vpx_codec_ctx_t *> memalign(sizeof(vpx_codec_ctx_t))
         assert self.context!=NULL
         memset(self.context, 0, sizeof(vpx_codec_ctx_t))
         cdef vpx_codec_dec_cfg_t dec_cfg

@@ -11,6 +11,13 @@ cdef makebuf(void *p, size_t l)
 
 ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 
+
+cdef void *memalign(size_t size) nogil
+
+#cdef extern from "./memalign.h":
+#    int MEMALIGN_ALIGNMENT
+
+
 cdef class MemBuf:
     cdef const void *p
     cdef size_t l

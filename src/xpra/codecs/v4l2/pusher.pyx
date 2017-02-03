@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,19 +14,17 @@ log = Logger("webcam")
 from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.buffers.membuf cimport memalign
 
 
 from libc.stdint cimport uint32_t, uint8_t
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size) nogil
-    void *memset(void * ptr, int value, size_t num)
 
 cdef extern from "stdlib.h":
     void free(void* ptr)
 
 cdef extern from "string.h":
-    void * memcpy ( void * destination, void * source, size_t num )
+    void *memcpy(void *destination, void *source, size_t num) nogil
+    void *memset(void *ptr, int value, size_t num) nogil
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -430,17 +428,22 @@ cdef class Pusher:
         assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
         cdef size_t l = self.framesize + self.rowstride
-        cdef uint8_t* buf = <uint8_t*> xmemalign(l)
-        memset(buf, 0, l)
+        cdef uint8_t* buf = <uint8_t*> memalign(l)
         assert buf!=NULL, "failed to allocate temporary output buffer"
-        cdef size_t s = Ystride*(self.height//Yhdiv)
-        memcpy(buf, Ybuf, s)
-        cdef int i = s
-        s = Ustride*(self.height//Uhdiv)
-        memcpy(buf+i, Ubuf, s)
-        i += s
-        s = Vstride*(self.height//Vhdiv)
-        memcpy(buf+i, Vbuf, s)
-        self.device.write(buf[:self.framesize])
-        self.device.flush()
-        free(buf)
+        cdef size_t s
+        cdef int i
+        try:
+            with nogil:
+                memset(buf, 0, l)
+                s = Ystride*(self.height//Yhdiv)
+                memcpy(buf, Ybuf, s)
+                i = s
+                s = Ustride*(self.height//Uhdiv)
+                memcpy(buf+i, Ubuf, s)
+                i += s
+                s = Vstride*(self.height//Vhdiv)
+                memcpy(buf+i, Vbuf, s)
+            self.device.write(buf[:self.framesize])
+            self.device.flush()
+        finally:
+            free(buf)

@@ -16,6 +16,7 @@ from libc.string cimport memcpy
 
 cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
+    int MEMALIGN_ALIGNMENT
 
 
 cdef void free_buf(const void *p, size_t l, void *arg):
@@ -34,6 +35,10 @@ cdef padbuf(size_t l, size_t padding):
 cdef makebuf(void *p, size_t l):
     assert p!=NULL, "invalid NULL buffer pointer"
     return MemBuf_init(p, l, &free_buf, NULL)
+
+
+cdef void *memalign(size_t size) nogil:
+    return xmemalign(size)
 
 
 cdef class MemBuf:

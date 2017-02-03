@@ -16,6 +16,7 @@ from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes
+from xpra.buffers.membuf cimport memalign
 
 from libc.stdint cimport uintptr_t
 
@@ -33,9 +34,6 @@ cdef extern from "../../inline.h":
 
 cdef extern from "string.h":
     void free(void * ptr) nogil
-
-cdef extern from "../../buffers/memalign.h":
-    void *xmemalign(size_t size) nogil
 
 cdef extern from "../../buffers/buffers.h":
     int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
@@ -1159,7 +1157,7 @@ cdef class Encoder(object):
 
         buf_len = 1024+self.width*self.height
         av_init_packet(&avpkt)
-        avpkt.data = <uint8_t *> xmemalign(buf_len)
+        avpkt.data = <uint8_t *> memalign(buf_len)
         avpkt.size = buf_len
         assert ret==0
         client_options = {}
