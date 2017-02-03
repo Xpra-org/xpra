@@ -371,7 +371,7 @@ def main():
         log.info("cuda_info")
         print_nested_dict(get_cuda_info(), print_fn=log.info)
         log.info("preferences:")
-        print_nested_dict(get_prefs())
+        print_nested_dict(get_prefs(), print_fn=log.info)
 
 if __name__ == "__main__":
     main()
