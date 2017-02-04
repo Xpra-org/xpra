@@ -21,6 +21,7 @@ SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
 if SAVE_BUFFERS not in ("png", "jpeg", None):
     log.warn("invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
     SAVE_BUFFERS = None
+if SAVE_BUFFERS:
     from OpenGL.GL import glGetTexImage
     import numpy
     from PIL import Image, ImageOps
