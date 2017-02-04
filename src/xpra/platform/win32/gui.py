@@ -462,15 +462,15 @@ def add_window_hooks(window):
                 x = lParam & 0xFFFF
                 cval = getattr(window, "_win32_%swheel" % orientation, 0)
                 nval = cval + distance
-                units = nval // WHEEL_DELTA
+                units = abs(nval) // WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
                 mouselog("mousewheel: orientation=%s distance=%.1f, units=%i, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, units, nval, keys, x, y, client, wid)
-                if units!=0 and client and wid>0:
+                if units>0 and client and wid>0:
                     if orientation==VERTICAL:
-                        button = 4 + int(units<0)       #4 for UP, 5 for DOWN
+                        button = 4 + int(nval<0)        #4 for UP, 5 for DOWN
                     else:
-                        button = 7 - int(units<0)       #6 for LEFT, 7 for RIGHT
+                        button = 7 - int(nval<0)        #6 for LEFT, 7 for RIGHT
                     buttons = []
                     modifiers = client.get_current_modifiers()
                     pointer = window._pointer(x, y)
@@ -486,8 +486,9 @@ def add_window_hooks(window):
                         else:
                             v += WHEEL_DELTA
                         count += 1
-                    mouselog("mousewheel: send %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
-                    setattr(window, "_win32_%swheel" % orientation, v)
+                    mouselog("mousewheel: sent %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
+                    nval = v
+                setattr(window, "_win32_%swheel" % orientation, nval)
             def mousewheel(hwnd, event, wParam, lParam):
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0
