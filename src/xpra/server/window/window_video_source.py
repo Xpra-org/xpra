@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -1496,11 +1496,11 @@ class WindowVideoSource(WindowSource):
         #send the rest as rectangles:
         if non_scroll:
             nsstart = time.time()
-            #if (self._current_speed>=50 and self._current_quality<90) or len(non_scroll)>=8:
-            #encoding = self.get_video_fallback_encoding(FAST_ORDER)
-            #else:
-            #    #slower but can be lossless:
-            encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
+            if (self._current_speed>=50 and self._current_quality<80) or len(non_scroll)>=10:
+                encoding = self.get_video_fallback_encoding(FAST_ORDER)
+            else:
+                #slower but can be lossless:
+                encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
             client_options = options.copy()
             if encoding:
                 encode_fn = self._encoders[encoding]

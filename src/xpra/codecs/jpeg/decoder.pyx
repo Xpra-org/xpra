@@ -151,7 +151,7 @@ def decompress(data, int width, int height, options={}):
     #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
     cdef int flags = 0      #TJFLAG_BOTTOMUP
     r = tjDecompressToYUVPlanes(decompressor,
-                                buf, buf_len, 
+                                buf, buf_len,
                                 planes, width, strides, height, flags)
     if r:
         log.error("Error: failed to decompress %s JPEG data", subsamp_str)

@@ -244,8 +244,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         else:
             self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
-        from xpra.codecs.loader import get_codec
-        self.jpeg_decoder = get_codec("dec_jpeg")
+        #from xpra.codecs.loader import get_codec
+        self.jpeg_decoder = None    #get_codec("dec_jpeg")
         if self.jpeg_decoder:
             #enable fast jpeg decoder:
             self.paint_jpeg = self.do_paint_jpeg
