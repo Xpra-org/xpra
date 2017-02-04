@@ -795,8 +795,8 @@ cdef class Encoder:
         client_options = {
                 "frame"     : int(self.frames),
                 "pts"       : pic_out.i_pts,
-                "quality"   : max(0, min(100, quality)),
-                "speed"     : max(0, min(100, speed)),
+                #"quality"   : max(0, min(100, quality)),
+                #"speed"     : max(0, min(100, speed)),
                 "type"      : slice_type,
                 }
         if self.delayed_frames>0:

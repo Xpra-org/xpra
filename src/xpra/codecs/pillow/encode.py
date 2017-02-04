@@ -152,7 +152,8 @@ def encode(coding, image, quality, speed, supports_transparency):
         #etc
         level = max(1, min(5, (125-speed)//25))
         kwargs["compress_level"] = level
-        client_options["compress_level"] = level
+        #no need to expose to the client:
+        #client_options["compress_level"] = level
         #default is good enough, no need to override, other options:
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY

@@ -572,9 +572,11 @@ cdef class Encoder:
             self.set_encoding_speed(speed)
         if quality>=0:
             self.set_encoding_quality(quality)
-        return self.do_compress_image(pic_in, strides), {"frame"    : self.frames,
-                                                         "quality"  : min(99+self.lossless, self.quality),
-                                                         "speed"    : self.speed}
+        return self.do_compress_image(pic_in, strides), {
+            "frame"    : self.frames,
+            #"quality"  : min(99+self.lossless, self.quality),
+            #"speed"    : self.speed,
+            }
 
     cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
         #actual compression (no gil):
