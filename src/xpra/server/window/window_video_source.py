@@ -14,7 +14,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
 from xpra.server.window.region import rectangle, merge_all          #@UnresolvedImport
-from xpra.server.window.motion import match_distance, consecutive_lines, calculate_distances, CRC_Image #@UnresolvedImport
+from xpra.server.window.motion import scroll_distances, CRC_Image #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
@@ -1453,71 +1453,38 @@ class WindowVideoSource(WindowSource):
         return packet
 
 
-    def encode_scrolling(self, image, distances, old_csums, csums, options):
+    def encode_scrolling(self, image, distances, options):
         start = time.time()
         try:
             del options["av-sync"]
         except:
             pass
         #tells make_data_packet not to invalidate the scroll data:
-        scrolllog("encode_scrolling(%s, {..}, [], [], %s) window-dimensions=%s", image, options, self.window_dimensions)
+        ww, wh = self.window_dimensions
+        scrolllog("encode_scrolling(%s, %s, [], [], %s) window-dimensions=%s", image, distances, options, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
-        yscroll_values = []
-        max_scroll_regions = 50
-        #process distances with the highest score first:
-        for hits in reversed(sorted(distances.values())):
-            for scroll in (d for d,v in distances.items() if v==hits):
-                assert scroll<h
-                yscroll_values.append(scroll)
-            if len(yscroll_values)>=max_scroll_regions:
-                break
-        assert yscroll_values
-        #always add zero=no-change so we can drop those updates!
-        if 0 not in yscroll_values and 0 in distances:
-            #(but do this last so we don't end up cutting too many rectangles)
-            yscroll_values.append(0)
-        scrolllog(" will send scroll packets for yscroll=%s", yscroll_values)
-        #keep track of the lines we have handled already:
-        #(the same line may be available from multiple scroll directions)
-        handled = set()
-        scrolls = []
-        max_scrolls = 1000
-        for s in yscroll_values:
-            #find all the lines that scroll by this much:
-            slines = match_distance(old_csums, csums, s)
-            assert slines, "no lines matching distance %i" % s
-            #remove any lines we have already handled:
-            lines = [v+s for v in slines if ((v+s) not in handled and v not in handled)]
-            if not lines:
-                continue
-            #and them to the handled set so we don't try to paint them again:
-            handled = handled.union(set(lines))
-            if s==0:
-                scrolllog(" %i lines have not changed", len(lines))
-            else:
-                #things have actually moved
-                #aggregate consecutive lines into rectangles:
-                cl = consecutive_lines(lines)
-                #scrolllog(" scroll groups for distance=%i : %s=%s", s, lines, cl)
-                scrolllog(" scroll groups for distance=%i : %s", s, cl)
-                for sy,sh in cl:
-                    #new rectangle
-                    scrolls.append((x, y+sy-s, w, sh, 0, s))
-                    if len(scrolls)>max_scrolls:
-                        break
-                if len(scrolls)>max_scrolls:
-                    break
-
-        non_scroll = []
-        remaining = set(range(h))-handled
-        if remaining:
-            damaged_lines = sorted(list(remaining))
-            non_scroll = consecutive_lines(damaged_lines)
-            scrolllog(" non scroll: %i packets: %s", len(non_scroll), non_scroll)
+        raw_scroll = distances.get_best_scroll_values()
+        non_scroll = distances.get_remaining_areas()
+        scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
-        #send as scroll paints packets:
-        if scrolls:
+        assert raw_scroll, "failed to detect scroll values"
+        #convert to a screen rectangle list for the client:
+        scrolls = []
+        for scroll, line_defs in raw_scroll.items():
+            if scroll==0:
+                continue
+            for line, count in line_defs.items():
+                assert y+line+scroll>=0, "cannot scroll rectangle by %i lines from %i+%i" % (scroll, y, line)
+                assert y+line+scroll<=wh, "cannot scroll rectangle %i high by %i lines from %i+%i (window height is %i)" % (count, scroll, y, line, wh)
+                scrolls.append((x, y+line, w, count, 0, scroll))
+        #send the scrolls if we have any
+        #(zero change scrolls have been removed - so maybe there are none)
+        if len(scrolls)>0:
             client_options = options.copy()
+            try:
+                del client_options["scroll"]
+            except:
+                pass
             if flush>0 and self.supports_flush:
                 client_options["flush"] = flush
             coding = "scroll"
@@ -1529,25 +1496,33 @@ class WindowVideoSource(WindowSource):
         #send the rest as rectangles:
         if non_scroll:
             nsstart = time.time()
-            if (self._current_speed>=50 and self._current_quality<90) or len(non_scroll)>=8:
-                encoding = self.get_video_fallback_encoding(FAST_ORDER)
-            else:
-                #slower but can be lossless:
-                encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
+            #if (self._current_speed>=50 and self._current_quality<90) or len(non_scroll)>=8:
+            #encoding = self.get_video_fallback_encoding(FAST_ORDER)
+            #else:
+            #    #slower but can be lossless:
+            encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
+            client_options = options.copy()
             if encoding:
                 encode_fn = self._encoders[encoding]
-                for sy, sh in non_scroll:
+                for sy, sh in non_scroll.items():
                     sub = image.get_sub_image(0, sy, w, sh)
-                    flush -= 1
                     ret = encode_fn(encoding, sub, options)
                     if not ret:
                         #cancelled?
                         return None
                     coding, data, client_options, outw, outh, outstride, _ = ret
                     assert data
-                    client_options = options.copy()
-                    if flush>0 and self.supports_flush:
+                    flush -= 1
+                    if self.supports_flush and flush>0:
                         client_options["flush"] = flush
+                    #if SAVE_TO_FILE:
+                    #    #hard-coded for BGRA!
+                    #    from xpra.os_util import memoryview_to_bytes
+                    #    from PIL import Image
+                    #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()), "raw", "BGRA", sub.get_rowstride(), 1)
+                    #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
+                    #    im.save(filename, "png")
+                    #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
                     packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
                     self.queue_damage_packet(packet)
                     psize = w*sh*4
@@ -1556,6 +1531,9 @@ class WindowVideoSource(WindowSource):
                     compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                          (end-nsstart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
                 scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (time.time()-nsstart)*1000, len(non_scroll))
+            else:
+                #we can't send the non-scroll areas, ouch!
+                flush = 0
         assert flush==0
         self.last_scroll_time = time.time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
@@ -1633,7 +1611,7 @@ class WindowVideoSource(WindowSource):
                 if csums:
                     self.scroll_data = rectangle(x, y, w, h), csums
                     options["scroll"] = True
-                    scrolllog("updated scroll data, previously set: %s", bool(lsd))
+                    scrolllog("updated scroll data with %s, previously set: %s", self.scroll_data[0], (lsd or [None])[0])
                 if lsd and csums:
                     rect, lcsums = lsd
                     if rect.x!=x or rect.y!=y:
@@ -1644,18 +1622,20 @@ class WindowVideoSource(WindowSource):
                     else:
                         #same size, try to find scrolling value
                         assert len(csums)==len(lcsums), "mismatch between checksums lists: %i vs %i items!" % (len(csums), len(lcsums))
-                        distances = calculate_distances(csums, lcsums, 2, 1000)
-                        if len(distances)==0:
+                        #no point in searching for a large scroll distance,
+                        #if we require a high match percentage:
+                        max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
+                        distances = scroll_distances(lcsums, csums, 2, max_distance)
+                        scroll, count = distances.get_best_match()
+                        if count==0:
                             scrolllog("no scroll distances found")
                         else:
-                            best = max(distances.values())
-                            scroll = distances.keys()[distances.values().index(best)]
                             end = time.time()
-                            best_pct = int(100*best/h)
-                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, best_pct, h, scroll)
+                            match_pct = int(100*count/h)
+                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
                             #if enough scrolling is detected, use scroll encoding for this frame:
-                            if best_pct>=SCROLL_MIN_PERCENT:
-                                return self.encode_scrolling(image, distances, lcsums, csums, options)
+                            if match_pct>=SCROLL_MIN_PERCENT:
+                                return self.encode_scrolling(image, distances, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
 

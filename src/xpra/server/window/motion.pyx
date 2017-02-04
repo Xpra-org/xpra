@@ -9,15 +9,15 @@
 
 import os
 import time
+import collections
 
 from xpra.util import envbool
 from xpra.log import Logger
-logger = Logger("encoding")
+log = Logger("encoding", "scroll")
 
-from xpra.buffers.membuf cimport memalign
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
-import zlib
+cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 hashfn = None
 if envbool("XPRA_XXHASH", True):
     try:
@@ -25,25 +25,18 @@ if envbool("XPRA_XXHASH", True):
         def hashfn(x):
             return xxhash.xxh64(x).intdigest()
     except ImportError as e:
-        logger.warn("Warning: xxhash python bindings not found")
+        log.warn("Warning: xxhash python bindings not found")
 else:
-    logger.warn("Warning: xxhash disabled")
+    log.warn("Warning: xxhash disabled")
 if hashfn is None:
-    logger.warn(" no scrolling detection")
+    log.warn(" no scrolling detection")
 
 
-cdef extern from "math.h":
-    double log(double x)
-
-from libc.stdint cimport int32_t, uint8_t, uint32_t, int64_t
-
-cdef extern from "stdlib.h":
-    int abs(int number)
+from libc.stdint cimport int32_t, uint8_t, uint16_t, int16_t, uint32_t, int64_t
 
 cdef extern from "string.h":
     void free(void * ptr) nogil
     void *memset(void * ptr, int value, size_t num) nogil
-    int memcmp(const void *a1, const void *a2, size_t size)
 
 
 def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rowstride, unsigned char bpp=4):
@@ -73,81 +66,221 @@ cdef inline castint64(v):
     #assert v>=0, "invalid int to cast: %s" % v
     return v
 
-def calculate_distances(array1, array2, int min_score=0, int max_distance=1000):
-    #print("calculate_distances(..)")
-    assert len(array1)==len(array2)
-    cdef int l = len(array1)
-    cdef int i, y1, y2, miny, maxy, d
-    #we want fast array access,
-    #so cache both arrays in C arrays:
-    assert sizeof(int64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(int64_t)
-    cdef size_t asize = l*(sizeof(int64_t))
-    cdef int64_t *a1 = NULL
-    cdef int64_t *a2 = NULL
-    cdef int64_t a2v = 0
-    cdef int32_t *distances = NULL
-    #print("calculate_distances(%s, %s, %i, %i)" % (array1, array2, elen, min_score))
-    try:
-        a1 = <int64_t*> memalign(asize)
-        a2 = <int64_t*> memalign(asize)
-        assert a1!=NULL and a2!=NULL, "failed to allocate %i bytes of scroll array memory" % asize
-        for i in range(l):
-            a1[i] = castint64(array1[i])
-            a2[i] = castint64(array2[i])
+cdef inline da(int64_t *a, uint16_t l):
+    return [a[i] for i in range(l)]
+
+cdef inline dd(uint16_t *d, uint16_t l):
+    return [d[i] for i in range(l)]
+
+cdef inline ds(int16_t *d, uint16_t l):
+    return [d[i] for i in range(l)]
+
+
+assert sizeof(int64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(int64_t)
+
+
+cdef class ScrollDistances:
+
+    cdef object __weakref__
+    #for each distance, keep track of the hit count:
+    cdef uint16_t* distances
+    cdef uint16_t l
+    cdef int64_t *a1
+    cdef int64_t *a2
+
+    def init(self, array1, array2, uint16_t max_distance=1000):
+        assert len(array1)==len(array2)
+        assert len(array1)<2**15 and len(array1)>0, "invalid array length: %i" % len(array1)
+        self.l = len(array1)
+        self.distances = <uint16_t*> memalign(2*self.l*sizeof(uint16_t))
+        cdef size_t asize = self.l*(sizeof(int64_t))
+        self.a1 = <int64_t*> memalign(asize)
+        self.a2 = <int64_t*> memalign(asize)
+        assert self.distances!=NULL and self.a1!=NULL and self.a2!=NULL, "scroll memory allocation failed"
+        for i in range(self.l):
+            self.a1[i] = castint64(array1[i])
+            self.a2[i] = castint64(array2[i])
         #now compare all the values
-        distances = <int32_t*> memalign(2*l*sizeof(int32_t))
-        assert distances!=NULL
+        self.calculate(max_distance)
+
+    def __repr__(self):
+        return "ScrollDistances(%i)" % self.l
+
+    cdef calculate(self, uint16_t max_distance=1000):
+        cdef int64_t *a1 = self.a1
+        cdef int64_t *a2 = self.a2
+        cdef uint16_t l = self.l
+        cdef uint16_t y1, y2
+        cdef uint16_t miny=0, maxy=0
+        cdef int64_t a2v
         with nogil:
-            memset(<void*> distances, 0, 2*l*sizeof(int32_t))
+            memset(self.distances, 0, 2*self.l*sizeof(uint16_t))
             for y2 in range(l):
-                miny = max(0, y2-max_distance)
-                maxy = min(l, y2+max_distance)
+                #miny = max(0, y2-max_distance):
+                if y2>max_distance:
+                    miny = y2-max_distance
+                else:
+                    miny = 0
+                #maxy = min(l, y2+max_distance)
+                if y2+max_distance<l:
+                    maxy = y2+max_distance
+                else:
+                    maxy = l
                 a2v = a2[y2]
                 if a2v==0:
                     continue
                 for y1 in range(miny, maxy):
                     if a1[y1]==a2v:
                         #distance = y1-y2
-                        distances[l+y1-y2] += 1
-        r = {}
-        for i in range(2*l):
-            d = distances[i]
-            if abs(d)>=min_score:
-                r[i-l] = d
-        return r
-    finally:
-        if a1!=NULL:
-            free(a1)
-        if a2!=NULL:
-            free(a2)
-        if distances!=NULL:
-            free(distances)
+                        self.distances[l-(y1-y2)] += 1
+        if DEBUG:
+            log("ScrollDistance: l=%i, calculate(%s, %s, %i)=%s", self.l, da(self.a1, self.l), da(self.a2, self.l), max_distance, dd(self.distances, self.l*2))
 
-def match_distance(array1, array2, int distance):
-    assert len(array1)==len(array2)
-    l = len(array1)
-    if distance>=0:
-        return [i for i,v in enumerate(array1) if (i+distance)<l and array2[i+distance]==v]
-    distance = abs(distance)
-    return [i+distance for i,v in enumerate(array2) if (i+distance)<l and array1[i+distance]==v]
+    def get_best_scroll_values(self, uint16_t min_hits=2):
+        DEF MAX_MATCHES = 20
+        cdef uint16_t m_arr[MAX_MATCHES]    #number of hits
+        cdef int16_t s_arr[MAX_MATCHES]     #scroll distance
+        cdef int16_t i
+        cdef uint8_t j
+        memset(m_arr, 0, MAX_MATCHES*sizeof(uint16_t))
+        memset(s_arr, 0, MAX_MATCHES*sizeof(int16_t))
+        cdef int16_t low = 0
+        cdef int16_t matches
+        cdef uint16_t* distances = self.distances
+        cdef uint16_t l = self.l
+        with nogil:
+            for i in range(2*l):
+                matches = distances[i]
+                if matches>low and matches>min_hits:
+                    #add this candidate match to the arrays:
+                    for j in range(MAX_MATCHES):
+                        if m_arr[j]==low:
+                            break
+                    m_arr[j] = matches
+                    s_arr[j] = i-l
+                    #find the new lowest value:
+                    low = matches
+                    for j in range(MAX_MATCHES):
+                        if m_arr[j]<low:
+                            low = m_arr[j]
+                            if low==0:
+                                break
+        if DEBUG:
+            log("get_best_scroll_values: arrays: matches=%s, scroll=%s", dd(m_arr, MAX_MATCHES), ds(s_arr, MAX_MATCHES))
+        #first collect the list of distances sorted by highest number of matches:
+        #(there can be more than one distance value for each match count):
+        scroll_hits = {}
+        for i in range(MAX_MATCHES):
+            if m_arr[i]>min_hits:
+                scroll_hits.setdefault(m_arr[i], []).append(s_arr[i])
+        if DEBUG:
+            log("scroll hits=%s", scroll_hits)
+        #return a dict with the scroll distance as key,
+        #and the list of matching lines in a dictionary:
+        # {line-start : count, ..}
+        #this is destructive as we clear the checksums after use in match_distance()
+        scrolls = collections.OrderedDict()
+        cdef uint16_t m
+        #starting with the highest matches
+        for m in reversed(sorted(scroll_hits.keys())):
+            v = scroll_hits[m]
+            for scroll in v:
+                #find matching lines:
+                line_defs = self.match_distance(scroll)
+                if line_defs:
+                    scrolls[scroll] = line_defs
+        return scrolls
 
-def consecutive_lines(line_numbers):
-    #print("line_numbers_to_rectangles(%s)" % (line_numbers, ))
-    #aggregates consecutive lines:
-    #[1,2,3,4,8,9] -> [(1,3), (8,1)]
-    assert len(line_numbers)>0
-    if len(line_numbers)==1:
-        return [(line_numbers[0], 1)]
-    cdef int start = line_numbers[0]
-    cdef int last = start
-    cdef int line = 0
-    r = []
-    for line in line_numbers[1:]:
-        if line!=last+1:
-            #new rectangle
-            r.append((start, last-start+1))
-            start = line
-        last = line
-    if last!=line_numbers[0]:
-        r.append((start, last-start+1))
-    return r
+    def get_remaining_areas(self):
+        #all the lines which have not been zeroed out
+        #when we matched them in match_distance
+        cdef int64_t *a2 = self.a2
+        cdef uint16_t i, start = 0, count = 0
+        line_defs = collections.OrderedDict()
+        for i in range(self.l):
+            if a2[i]!=0:
+                if count==0:
+                    start = i
+                count += 1
+            elif count>0:
+                line_defs[start] = count
+                count = 0
+        if count>0:
+            line_defs[start] = count
+        return line_defs
+
+    def match_distance(self, int16_t distance):
+        """ find the lines that match the given scroll distance """
+        cdef int64_t *a1 = self.a1
+        cdef int64_t *a2 = self.a2
+        cdef char swap = 0
+        if distance<0:
+            #swap order:
+            swap = 1
+            a1 = self.a2
+            a2 = self.a1
+            distance = -distance
+        if DEBUG:
+            log("match_distance(%i) l=%i, a1=%s, a2=%s", distance, self.l, da(a1, self.l), da(a2, self.l))
+        assert distance<self.l, "invalid distance %i for size %i" % (distance, self.l)
+        cdef uint16_t i, start = 0, count = 0
+        line_defs = collections.OrderedDict()
+        for i in range(self.l-distance):
+            #if DEBUG:
+            #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i+distance])
+            if a1[i]!=0 and a1[i]==a2[i+distance]:
+                #if DEBUG:
+                #    log("match at %i: %i", i, a1[i])
+                if count==0:
+                    #first match
+                    if swap:
+                        start = i+distance
+                    else:
+                        start = i
+                count += 1
+                #mark the target line as dealt with:
+                if swap:
+                    a1[i] = 0
+                else:
+                    a2[i+distance] = 0
+            elif count>0:
+                #we had a match
+                line_defs[start] = count
+                count = 0
+        if count>0:
+            #last few lines ended as a match:
+            line_defs[start] = count
+        if DEBUG:
+            log("match_distance(%i)=%s", distance, line_defs)
+        return line_defs
+
+
+    def get_best_match(self):
+        cdef int16_t max = 0
+        cdef int d = 0
+        cdef unsigned int i
+        for i in range(2*self.l):
+            if self.distances[i]>max:
+                max = self.distances[i]
+                d = i-self.l
+        return d, max
+
+    def __dealloc__(self):
+        cdef void* ptr = <void*> self.distances
+        if ptr:
+            self.distances = NULL
+            free(ptr)
+        ptr = <void*> self.a1
+        if ptr:
+            self.a1 = NULL
+            free(ptr)
+        ptr = <void*> self.a2
+        if ptr:
+            self.a2 = NULL
+            free(ptr)
+        
+
+def scroll_distances(array1, array2, unsigned int min_score=0, uint16_t max_distance=1000):
+    cdef ScrollDistances sd = ScrollDistances()
+    sd.init(array1, array2, max_distance)
+    return sd
