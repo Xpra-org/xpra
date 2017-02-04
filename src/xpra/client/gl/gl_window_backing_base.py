@@ -21,6 +21,9 @@ SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
 if SAVE_BUFFERS not in ("png", "jpeg", None):
     log.warn("invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
     SAVE_BUFFERS = None
+    from OpenGL.GL import glGetTexImage
+    import numpy
+    from PIL import Image, ImageOps
 
 from xpra.gtk_common.gtk_util import color_parse, is_realized
 
@@ -657,12 +660,9 @@ class GLWindowBackingBase(GTKWindowBacking):
             glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glReadBuffer(GL_COLOR_ATTACHMENT0)
             glViewport(0, 0, bw, bh)
-            from OpenGL.GL import glGetTexImage
             size = bw*bh*4
-            import numpy
             data = numpy.empty(size)
             img_data = glGetTexImage(GL_TEXTURE_RECTANGLE_ARB, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
-            from PIL import Image, ImageOps
             img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
             img = ImageOps.flip(img)
             kwargs = {}
