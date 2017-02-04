@@ -1,23 +1,22 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 
 from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
+from xpra.util import envbool
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, _buffer
-from xpra.net import compression
+from xpra.net.compression import Compressed
 
-import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 from xpra.codecs.pillow import PIL_VERSION
 PIL_can_optimize = PIL_VERSION and PIL_VERSION>="2.2"
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 
 def get_version():
@@ -85,7 +84,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
-        im = PIL.Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
         if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
             rgb = "RGB"
@@ -122,18 +121,18 @@ def encode(coding, image, quality, speed, supports_transparency):
                 if a<=128:
                     return 255
                 return 0
-            mask = PIL.Image.eval(alpha, mask_value)
+            mask = Image.eval(alpha, mask_value)
         else:
             #no transparency
             mask = None
         if coding=="png/L":
-            im = im.convert("L", palette=PIL.Image.ADAPTIVE, colors=255)
+            im = im.convert("L", palette=Image.ADAPTIVE, colors=255)
             bpp = 8
         elif coding=="png/P":
             #I wanted to use the "better" adaptive method,
             #but this does NOT work (produces a black image instead):
             #im.convert("P", palette=Image.ADAPTIVE)
-            im = im.convert("P", palette=PIL.Image.WEB, colors=255)
+            im = im.convert("P", palette=Image.WEB, colors=255)
             bpp = 8
         if mask:
             # paste the alpha mask to the color of index 255
@@ -156,7 +155,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #client_options["compress_level"] = level
         #default is good enough, no need to override, other options:
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
-        #kwargs["compress_type"] = PIL.Image.DEFAULT_STRATEGY
+        #kwargs["compress_type"] = Image.DEFAULT_STRATEGY
         pil_fmt = "PNG"
     im.save(buf, pil_fmt, **kwargs)
     if SAVE_TO_FILE:
@@ -166,7 +165,7 @@ def encode(coding, image, quality, speed, supports_transparency):
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
     buf.close()
-    return coding, compression.Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
+    return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
 def selftest(full=False):
     global ENCODINGS
