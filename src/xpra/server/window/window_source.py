@@ -1909,7 +1909,8 @@ class WindowSource(object):
         assert coding in self.server_core_encodings
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return self.enc_pillow.encode(coding, image, q, s, self.supports_transparency)
+        transparency = self.supports_transparency and options.get("transparency", True)
+        return self.enc_pillow.encode(coding, image, q, s, transparency)
 
     def mmap_encode(self, coding, image, options):
         assert self._mmap and self._mmap_size>0
