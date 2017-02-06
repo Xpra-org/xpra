@@ -25,7 +25,7 @@ PyObject *_memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
     return PyMemoryView_FromBuffer(&pybuf);
 }
 #else
-PyObject *memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
+PyObject *_memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
 	return PyMemoryView_FromMemory(ptr, buf_len, readonly);
 }
 #endif
