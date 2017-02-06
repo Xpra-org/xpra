@@ -148,7 +148,7 @@ class XpraClient(GTKXpraClient):
 
     def _startup_complete(self, *args):
         GTKXpraClient._startup_complete(self, *args)
-        gtk.gdk.notify_startup_complete()
+        gdk.notify_startup_complete()
 
 
     def get_tray_menu_helper_classes(self):
@@ -326,14 +326,14 @@ class XpraClient(GTKXpraClient):
 
 
     def window_grab(self, window):
-        mask = gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK | gtk.gdk.POINTER_MOTION_MASK  | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.ENTER_NOTIFY_MASK | gtk.gdk.LEAVE_NOTIFY_MASK
-        gtk.gdk.pointer_grab(window.get_window(), owner_events=True, event_mask=mask)
+        mask = gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gdk.POINTER_MOTION_MASK  | gdk.POINTER_MOTION_HINT_MASK | gdk.ENTER_NOTIFY_MASK | gdk.LEAVE_NOTIFY_MASK
+        gdk.pointer_grab(window.get_window(), owner_events=True, event_mask=mask)
         #also grab the keyboard so the user won't Alt-Tab away:
-        gtk.gdk.keyboard_grab(window.get_window(), owner_events=False)
+        gdk.keyboard_grab(window.get_window(), owner_events=False)
 
     def window_ungrab(self):
-        gtk.gdk.pointer_ungrab()
-        gtk.gdk.keyboard_ungrab()
+        gdk.pointer_ungrab()
+        gdk.keyboard_ungrab()
 
 
 gobject.type_register(XpraClient)
