@@ -1529,6 +1529,12 @@ class WindowVideoSource(WindowSource):
             damaged_lines = sorted(list(remaining))
             non_scroll = consecutive_lines(damaged_lines)
             scrolllog(" non scroll: %i packets: %s", len(non_scroll), non_scroll)
+        if len(scrolls)>=20 or len(non_scroll)>20:
+            #avoid fragmentation, which is too costly
+            #(too many packets, too many loops through the encoder code)
+            scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(raw_scroll), len(non_scroll))
+            scrolls = []
+            non_scroll = [(0, wh)]
         flush = len(non_scroll)
         #send as scroll paints packets:
         if scrolls:
