@@ -1853,7 +1853,10 @@ else:
                 #install xorg.conf, cuda.conf and nvenc.keys:
                 etc_xpra = os.path.join(etc_prefix, "etc", "xpra")
                 self.mkpath(etc_xpra)
-                for x in ("xorg.conf", "cuda.conf", "nvenc.keys"):
+                etc_files = ["xorg.conf"]
+                if nvenc7_ENABLED:
+                    etc_files += ["cuda.conf", "nvenc.keys"]
+                for x in etc_files:
                     shutil.copyfile("etc/xpra/%s" % x, os.path.join(etc_xpra, x))
 
             if pam_ENABLED:
