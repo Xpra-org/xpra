@@ -126,8 +126,9 @@ cdef class ScrollData:
         #checksum each line of the pixel array:
         cdef uint8_t *buf = NULL
         cdef Py_ssize_t buf_len = 0
+        cdef Py_ssize_t min_buf_len = rowstride*height
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        assert buf_len>=0 and (<unsigned int> buf_len)>=rowstride*height, "buffer length=%i is too small for %ix%i" % (buf_len, rowstride, height)
+        assert buf_len>=0 and buf_len>=min_buf_len, "buffer length=%i is too small for %ix%i" % (buf_len, rowstride, height)
         cdef size_t row_len = width*bpp
         assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
         cdef uint64_t *a2 = self.a2
