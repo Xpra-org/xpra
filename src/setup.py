@@ -772,8 +772,8 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
         elif "usr" in dirs:
             #ie: ["some", "path", "to", "usr"] -> ["usr"]
             #assume "/usr" or "/usr/local" is the build root
-            while "usr" in dirs and dirs.index("usr")>0:
-                dirs = dirs[dirs.index("usr"):]
+            while "usr" in dirs[1:]:
+                dirs = dirs[dirs[1:].index("usr")+1:]
         elif "image" in dirs:
             # Gentoo's "${PORTAGE_TMPDIR}/portage/${CATEGORY}/${PF}/image/_python2.7" -> ""
             while "image" in dirs:
