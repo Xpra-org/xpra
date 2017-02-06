@@ -59,12 +59,12 @@ cdef class ScrollData:
     cdef uint64_t *a1        #checksums of reference picture
     cdef uint64_t *a2        #checksums of latest picture
     cdef uint8_t matched
-    cdef int16_t x
-    cdef int16_t y
-    cdef int16_t width
-    cdef int16_t height
+    cdef uint16_t x
+    cdef uint16_t y
+    cdef uint16_t width
+    cdef uint16_t height
 
-    def __cinit__(self, int16_t x=0, int16_t y=0, int16_t width=0, int16_t height=0):
+    def __cinit__(self, uint16_t x=0, uint16_t y=0, uint16_t width=0, uint16_t height=0):
         self.x = x
         self.y = y
         self.width = width
@@ -88,7 +88,7 @@ cdef class ScrollData:
         for i,v in enumerate(arr):
             self.a2[i] = <uint64_t> abs(v)
 
-    def update(self, pixels, int16_t x, int16_t y, int16_t width, int16_t height, int16_t rowstride, uint8_t bpp=4):
+    def update(self, pixels, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t rowstride, uint8_t bpp=4):
         """
             Add a new image to compare with,
             checksum its rows into a2,
@@ -355,7 +355,8 @@ cdef class ScrollData:
         cdef int16_t max_hits = 0
         cdef int d = 0
         cdef unsigned int i
-        for i in range(2*self.height):
+        cdef uint16_t r = 2*self.height
+        for i in range(r):
             if self.distances[i]>max_hits:
                 max_hits = self.distances[i]
                 d = i-self.height
