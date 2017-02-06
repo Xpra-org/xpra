@@ -13,8 +13,8 @@ from math import sqrt
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import WindowSource, STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY
-from xpra.server.window.region import rectangle, merge_all          #@UnresolvedImport
-from xpra.server.window.motion import scroll_distances, CRC_Image #@UnresolvedImport
+from xpra.server.window.region import merge_all          #@UnresolvedImport
+from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
@@ -1425,35 +1425,18 @@ class WindowVideoSource(WindowSource):
         #overriden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options)
-        lsd = self.scroll_data
-        if lsd and not options.get("scroll"):
-            rect, csums = lsd
+        sd = self.scroll_data
+        if sd and not options.get("scroll") and False:
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
-                #don't scroll low quality content, better to refresh it
+                #don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)", coding, client_options.get("scaled_size"), client_options.get("quality", 100))
-                self.scroll_data = None
+                sd.free()
             else:
-                #do they intersect?
-                inter = rect.intersection(x, y, w, h)
-                if inter:
-                    #remove any lines that have been updated
-                    #by zeroing out their checksums:
-                    assert len(csums)==rect.height
-                    assert inter.y>=rect.y and inter.y+inter.height<=rect.y+rect.height
-                    #the array indexes are relative to rect.y:
-                    start_y = inter.y-rect.y
-                    for iy in range(start_y, start_y+inter.height):
-                        csums[iy] = 0
-                    nonzero = len([True for v in csums if v!=0])
-                    scrolllog("removed %i lines checksums from intersection of scroll area %s and %s draw packet %s, remains %i", inter.height, rect, coding, (x, y, w, h), nonzero)
-                    #if more than half has already been invalidated, drop it completely:
-                    if nonzero<=rect.height//2:
-                        scrolllog("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)
-                        self.scroll_data = None
+                sd.invalidate(x, y, w, h)
         return packet
 
 
-    def encode_scrolling(self, image, distances, options):
+    def encode_scrolling(self, image, options={}):
         start = time.time()
         try:
             del options["av-sync"]
@@ -1461,10 +1444,9 @@ class WindowVideoSource(WindowSource):
             pass
         #tells make_data_packet not to invalidate the scroll data:
         ww, wh = self.window_dimensions
-        scrolllog("encode_scrolling(%s, %s, [], [], %s) window-dimensions=%s", image, distances, options, (ww, wh))
+        scrolllog("encode_scrolling(%s, %s) window-dimensions=%s", image, options, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
-        raw_scroll = distances.get_best_scroll_values()
-        non_scroll = distances.get_remaining_areas()
+        raw_scroll, non_scroll = self.scroll_data.get_scroll_values()
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
         assert raw_scroll, "failed to detect scroll values"
@@ -1573,7 +1555,6 @@ class WindowVideoSource(WindowSource):
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
         stride = image.get_rowstride()
-        img_data = None
         if self.pixel_format!=src_format:
             videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
@@ -1597,47 +1578,33 @@ class WindowVideoSource(WindowSource):
             videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
-        test_scrolling = self.supports_scrolling and not STRICT_MODE
-        if test_scrolling and self.b_frame_flush_timer:
-            scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
-            test_scrolling = False
-            self.scroll_data = None
-        else:
-            lsd = self.scroll_data
-            try:
-                start = time.time()
-                img_data = img_data or image.get_pixels()
-                csums = CRC_Image(img_data, w, h, stride)
-                if csums:
-                    self.scroll_data = rectangle(x, y, w, h), csums
-                    options["scroll"] = True
-                    scrolllog("updated scroll data with %s, previously set: %s", self.scroll_data[0], (lsd or [None])[0])
-                if lsd and csums:
-                    rect, lcsums = lsd
-                    if rect.x!=x or rect.y!=y:
-                        #TODO: just adjust the scrolling packet for this offset
-                        scrolllog("scroll data position mismatch: %s vs %i,%i", rect, x, y)
-                    elif rect.width!=w or rect.height!=h:
-                        scrolllog("scroll data size mismatch: %s vs %ix%i", rect, w, h)
+        if self.supports_scrolling and not STRICT_MODE:
+            if self.b_frame_flush_timer and self.scroll_data:
+                scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
+                self.scroll_data.free()
+                self.scroll_data = None
+            else:
+                try:
+                    start = time.time()
+                    if not self.scroll_data:
+                        self.scroll_data = ScrollData()
+                        scrolllog("new scroll data: %s", self.scroll_data)
+                    self.scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), len(src_format))
+                    max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
+                    self.scroll_data.calculate(max_distance)
+                    scroll, count = self.scroll_data.get_best_match()
+                    if count==0:
+                        scrolllog("no scroll distances found")
                     else:
-                        #same size, try to find scrolling value
-                        assert len(csums)==len(lcsums), "mismatch between checksums lists: %i vs %i items!" % (len(csums), len(lcsums))
-                        #no point in searching for a large scroll distance,
-                        #if we require a high match percentage:
-                        max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
-                        distances = scroll_distances(lcsums, csums, 2, max_distance)
-                        scroll, count = distances.get_best_match()
-                        if count==0:
-                            scrolllog("no scroll distances found")
-                        else:
-                            end = time.time()
-                            match_pct = int(100*count/h)
-                            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
-                            #if enough scrolling is detected, use scroll encoding for this frame:
-                            if match_pct>=SCROLL_MIN_PERCENT:
-                                return self.encode_scrolling(image, distances, options)
-            except Exception:
-                scrolllog.error("Error during scrolling detection!", exc_info=True)
+                        end = time.time()
+                        match_pct = int(100*count/h)
+                        scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
+                        #if enough scrolling is detected, use scroll encoding for this frame:
+                        if match_pct>=SCROLL_MIN_PERCENT:
+                            return self.encode_scrolling(image, options)
+                except Exception:
+                    scrolllog.error("Error during scrolling detection")
+                    scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
 
         def video_fallback():
             videolog.warn("using non-video fallback encoding")

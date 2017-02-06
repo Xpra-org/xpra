@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -21,8 +21,7 @@ cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_
 
 cdef int object_as_write_buffer(object  obj, void ** buffer, Py_ssize_t * buffer_len)
 
-#cdef extern from "./memalign.h":
-#    int MEMALIGN_ALIGNMENT
+cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
 
 
 cdef class MemBuf:

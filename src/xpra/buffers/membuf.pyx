@@ -1,18 +1,24 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2015-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#Buffer code found here:
-#http://stackoverflow.com/a/28166272/428751
-#Allows to return a malloced python buffer,
-#which will be freed when the python object is garbage collected
-#(also uses memalign to allocate the buffer)
+# Memory buffers functions:
+#
+# 1) Buffer code found here and also similar to the Cython docs:
+#    http://stackoverflow.com/a/28166272/428751
+#    Allows to return a malloced python buffer,
+#    which will be freed when the python object is garbage collected
+#    (also uses memalign to allocate the buffer)
+# 2) object to buffer conversion utility functions,
+# 3) xxhash wrapper
+
 
 from cpython.buffer cimport PyBuffer_FillInfo
 from libc.stdlib cimport free
 from libc.string cimport memcpy
+from libc.stdint cimport uintptr_t
 
 cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
@@ -22,6 +28,10 @@ cdef extern from "buffers.h":
     object _memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
     int _object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len)
+
+cdef extern from "xxhash.h":
+    ctypedef unsigned long long XXH64_hash_t
+    XXH64_hash_t XXH64(const void* input, size_t length, unsigned long long seed) nogil
 
 
 cdef void free_buf(const void *p, size_t l, void *arg):
@@ -61,6 +71,9 @@ cdef class MemBuf:
     def __len__(self):
         return self.l
 
+    def __repr__(self):
+        return "MemBuf(%#x)" % (<uintptr_t> self.p)
+
     cdef const void *get_mem(self):
         return self.p
 
@@ -87,3 +100,7 @@ cdef MemBuf MemBuf_init(const void *p, size_t l,
     ret.dealloc_cb_p = dealloc_cb_p
     ret.dealloc_cb_arg = dealloc_cb_arg
     return ret
+
+
+cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:
+    return XXH64(input, length, seed)

@@ -48,9 +48,11 @@ long_description = "Xpra is a multi platform persistent remote display server an
             "forwarding applications and desktop screens. Also known as 'screen for X11'."
 url = "http://xpra.org/"
 
+
+XPRA_VERSION = xpra.__version__         #@UndefinedVariable
 setup_options = {
                  "name"             : "xpra",
-                 "version"          : xpra.__version__,
+                 "version"          : XPRA_VERSION,
                  "license"          : "GPLv2+",
                  "author"           : "Antoine Martin",
                  "author_email"     : "antoine@devloop.org.uk",
@@ -85,8 +87,7 @@ if "pkg-info" in sys.argv:
     sys.exit(0)
 
 
-from xpra import __version__
-print("Xpra version %s" % __version__)
+print("Xpra version %s" % XPRA_VERSION)
 #*******************************************************************************
 # Most of the options below can be modified on the command line
 # using --with-OPTION or --without-OPTION
@@ -1611,14 +1612,6 @@ if WIN32:
         add_data_files('',      ['win32\\DirectShow.tlb'])
         add_modules("comtypes.gen.stdole", "comtypes.gen.DirectShowLib")
 
-    if server_ENABLED:
-        try:
-            import xxhash
-            assert xxhash
-            external_includes += ["xxhash"]
-        except ImportError as e:
-            print("Warning: no xxhash module: %s" % e)
-            print(" this is required for scrolling detection")
 
     #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
     #the win32 py-gi installers don't have development headers for pycairo
@@ -1886,8 +1879,6 @@ else:
         modules.append("importlib")
         modules.append("xpra.scripts.gtk_info")
         modules.append("xpra.scripts.show_webcam")
-        #always ship xxhash
-        modules.append("xxhash")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
@@ -1984,13 +1975,13 @@ if annotate_ENABLED:
 
 
 #*******************************************************************************
-#which file to link against (new-style buffers or old?):
 buffers_c = "xpra/buffers/buffers.c"
-inline_c = "xpra/inline.c"
 memalign_c = "xpra/buffers/memalign.c"
-#convenience grouping for codecs:
-membuffers_c = [memalign_c, inline_c, buffers_c]
-
+xxhash_c = "xpra/buffers/xxhash.c"
+membuffers_c = [memalign_c, buffers_c, xxhash_c]
+if WIN32 and not MINGW_PREFIX:
+    #MSVC workaround:
+    membuffers_c.append("xpra/inline.c")
 
 add_packages("xpra.buffers")
 buffers_pkgconfig = pkgconfig()

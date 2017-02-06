@@ -11,6 +11,7 @@ from zlib import crc32
 from xpra.util import envbool
 try:
 	from xpra.server.window import motion
+	log = motion.log		#@UndefinedVariable
 except ImportError:
 	motion = None
 
@@ -20,14 +21,26 @@ SHOW_PERF = envbool("XPRA_SHOW_PERF")
 
 class TestMotion(unittest.TestCase):
 
-	def calculate_distances(self, array1, array2, min_hits=2, max_distance=1):
-		sd = motion.scroll_distances(array1, array2, max_distance)
-		return sd.get_best_scroll_values(min_hits)
+	def calculate_distances(self, array1, array2, min_hits=2, max_distance=1000):
+		assert len(array1)==len(array2)
+		rect = (0, 0, 1, len(array1))
+		return self.do_calculate_distances(rect, array1, array2, min_hits, max_distance)
+
+	def do_calculate_distances(self, rect, array1, array2, min_hits=2, max_distance=1000):
+		sd = motion.ScrollData(*rect)
+		sd._test_update(array1)
+		sd._test_update(array2)
+		sd.calculate(max_distance)
+		return sd.get_scroll_values(min_hits)
+
+	def test_simple(self):
+		self.calculate_distances([0], [1], 0, 100)
 
 	def test_match_distance(self):
 		def t(a1, a2, distance, matches):
-			sd = motion.scroll_distances(a1, a2)
-			line_defs = sd.match_distance(distance)
+			scrolls = self.calculate_distances(a1, a2, 0)[0]
+			line_defs = scrolls.get(distance)
+			assert line_defs, "distance %i not found in scroll data: %s for a1=%s, a2=%s" % (distance, scrolls, a1, a2)
 			linecount = sum(line_defs.values())
 			assert linecount==matches, "expected %i matches for distance=%i but got %i for a1=%s, a2=%s, result=%s" % (matches, distance, linecount, a1, a2, line_defs)
 		for N in (1, 10, 100):
@@ -36,8 +49,6 @@ class TestMotion(unittest.TestCase):
 
 			a = [1]*N
 			t(a, a, 0, N)
-			for M in range(N):
-				t(a, a, M, N-M)
 
 		#from a1 to a2: shift by 2, get 2 hits
 		t([3, 4, 5, 6], [1, 2, 3, 4], 2, 2)
@@ -54,12 +65,12 @@ class TestMotion(unittest.TestCase):
 	def test_calculate_distances(self):
 		array1 = [crc32(str(x)) for x in (1234, "abc", 99999)]
 		array2 = array1[:]
-		d = self.calculate_distances(array1, array2, 1)
+		d = self.calculate_distances(array1, array2, 1)[0]
 		assert len(d)==1 and sum(d[0].values())==len(array1), "expected %i matches but got %s" % (len(array1), d[0])
 
 		array1 = range(1, 5)
 		array2 = range(2, 6)
-		d = self.calculate_distances(array1, array2)
+		d = self.calculate_distances(array1, array2)[0]
 		assert len(d)==1, "expected 1 match but got: %s" % len(d)
 		common = set(array1).intersection(set(array2))
 		assert -1 in d, "expected distance of -1 but got: %s" % d.keys()
@@ -81,18 +92,22 @@ class TestMotion(unittest.TestCase):
 		start = time.time()
 		array1 = range(N)
 		array2 = [N*2-x*2 for x in range(N)]
-		d = self.calculate_distances(array1, array2, 1)
+		d = self.calculate_distances(array1, array2, 1)[0]
 		end = time.time()
 		if SHOW_PERF:
-			print("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
+			log.info("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
 
 	def test_detect_motion(self):
-		W, H, BPP = 1920, 1080, 4
+		self.do_test_detect_motion(5, 5)
+		self.do_test_detect_motion(1920, 1080)
+
+	def do_test_detect_motion(self, W, H):
+		BPP = 4
 		#W, H, BPP = 2, 4, 4
 		LEN = W * H * BPP
 		import numpy as np
 		try:
-			na1 = np.random.randint(2**63-1, size=LEN//8, dtype="int64")
+			na1 = np.random.randint(255, size=LEN, dtype="uint8")
 		except TypeError as e:
 			#older numpy version may not have dtype argument..
 			#and may not accept 64-bit values
@@ -110,36 +125,41 @@ class TestMotion(unittest.TestCase):
 				#older versions of numpy (ie: centos7)
 				return a.tostring()
 		buf1 = tobytes(na1)
-		ov1 = motion.CRC_Image(buf1, W, H, W*BPP, BPP)
-		assert len(ov1)==H
+		#push first image:
+		sd = motion.ScrollData(0, 0, W, H)
 		#make a new "image" shifted N lines:
-		for N in (1, 20, 100):
-			na2 = np.roll(na1, -N*W*BPP//8)
+		for N in (1, 2, 20, 100):
+			if N>H//2:
+				break
+			sd.update(buf1, 0, 0, W, H, W*BPP, BPP)
+			log("picture of height %i scrolled by %i", H, N)
+			na2 = np.roll(na1, -N*W*BPP)
 			buf2 = tobytes(na2)
 			start = time.time()
-			ov2 = motion.CRC_Image(buf2, W, H, W*BPP, BPP)
+			sd.update(buf2, 0, 0, W, H, W*BPP, BPP)
 			end = time.time()
 			if SHOW_PERF:
-				print("\nCRC_Image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
-			assert len(ov2)==H
+				log.info("hashed image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
 			start = time.time()
-			distances = self.calculate_distances(ov1, ov2, min_hits=1)
+			sd.calculate()
+			sd_data = sd.get_scroll_values(1)
+			scrolls, non_scrolls = sd_data
+			log("scroll values=%s", dict(scrolls))
+			log("non scroll values=%s", dict(non_scrolls))
 			end = time.time()
 			if SHOW_PERF:
-				print("calculate_distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
-			line_defs = distances.get(-N, {})
+				log.info("calculated distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
+			line_defs = scrolls.get(-N, {})
 			linecount = sum(line_defs.values())
-			assert linecount>0, "could not find distance %i" % N
+			assert linecount>0, "could not find distance %i in %s" % (N, line_defs)
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
 		if False:
 			import binascii
-			print("na1:\n%s" % binascii.hexlify(tobytes(na1)))
-			print("na2:\n%s" % binascii.hexlify(tobytes(na2)))
+			log("na1:\n%s" % binascii.hexlify(tobytes(na1)))
+			log("na2:\n%s" % binascii.hexlify(tobytes(na2)))
 			np.set_printoptions(threshold=np.inf)
-			print("na1:\n%s" % (na1, ))
-			print("na2:\n%s" % (na2, ))
-			print("ov1:\n%s" % (ov1, ))
-			print("ov2:\n%s" % (ov2, ))
+			log("na1:\n%s" % (na1, ))
+			log("na2:\n%s" % (na2, ))
 
 	def test_csum_data(self):
 		a1=[
@@ -181,18 +201,21 @@ class TestMotion(unittest.TestCase):
 			17157005122993541799, 5218869126146608853, 13274228147453099388, 16342723934713827717, 2435034235422505275, 3689766606612767057, 13721141386368216492, 14859793948180065358,
 			]
 		#distances = motion.scroll_distances(a1[100:400], a2[100:400], 2, 1000)
-		distances = motion.scroll_distances(a1, a2, 2, 1000)
-		scroll, count = distances.get_best_match()
+		sd = motion.ScrollData(0, 0, 1050, len(a1))
+		sd._test_update(a1)
+		sd._test_update(a2)
+		sd.calculate(1000)
+		scroll, count = sd.get_best_match()
 		wh = len(a1)
-		print("best match: %s" % ((scroll, count),))
+		log("best match: %s" % ((scroll, count),))
 		x, y, w, h = 0, 0, 1050, 1151
-		raw_scroll = distances.get_best_scroll_values()
-		#non_scroll = distances.get_remaining_areas()
+		raw_scroll, non_scroll = sd.get_scroll_values()
+		assert len(non_scroll)>0
 		scrolls = []
 		def h(v):
 			return hex(v).lstrip("0x").rstrip("L")
 		for i in range(wh):
-			print("%2i:	%16s	%16s" % (i, h(a1[i]), h(a2[i])))
+			log("%2i:	%16s	%16s" % (i, h(a1[i]), h(a2[i])))
 		for scroll, line_defs in raw_scroll.items():
 			if scroll==0:
 				continue
