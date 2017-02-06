@@ -330,7 +330,7 @@ cdef class ScrollData:
             return
         #remove any lines that have been updated
         #by zeroing out their checksums:
-        assert len(inter)<=self.height
+        assert inter.height<=self.height
         assert inter.y>=rect.y and inter.y+inter.height<=rect.y+rect.height
         #the array indexes are relative to rect.y:
         cdef int start_y = inter.y-rect.y
@@ -341,7 +341,7 @@ cdef class ScrollData:
         for i in range(self.height):
             if self.a2[i]!=0:
                 nonzero += 1
-        log("invalidated %i lines checksums from intersection of scroll area %s and %s rectangle %s, remains %i", inter.height, rect, (x, y, w, h), nonzero)
+        log("invalidated %i lines checksums from intersection of scroll area %s and rectangle %s, remains %i", inter.height, rect, (x, y, w, h), nonzero)
         #if more than half has already been invalidated, drop it completely:
         if nonzero<=rect.height//2:
             log("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)

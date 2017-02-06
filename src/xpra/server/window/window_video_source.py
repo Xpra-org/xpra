@@ -1426,7 +1426,7 @@ class WindowVideoSource(WindowSource):
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = WindowSource.make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options)
         sd = self.scroll_data
-        if sd and not options.get("scroll") and False:
+        if sd and not options.get("scroll"):
             if client_options.get("scaled_size") or client_options.get("quality", 100)<20:
                 #don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)", coding, client_options.get("scaled_size"), client_options.get("quality", 100))
@@ -1592,6 +1592,8 @@ class WindowVideoSource(WindowSource):
                     self.scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), len(src_format))
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
                     self.scroll_data.calculate(max_distance)
+                    #marker telling us not to invalidate the scroll data from here on:
+                    options["scroll"] = True
                     scroll, count = self.scroll_data.get_best_match()
                     if count==0:
                         scrolllog("no scroll distances found")
