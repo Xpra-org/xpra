@@ -127,17 +127,23 @@ def encode(image, int quality=50, int speed=50, options={}):
     cdef unsigned long out_size = 0
     cdef int r
     log("jpeg: encode with subsampling=%s for pixel format=%s with quality=%s", TJSAMP_STR.get(subsamp, subsamp), pfstr, quality)
-    with nogil:
-        r = tjCompress2(compressor, buf,
-                        width, stride, height, tjpf, &out,
-                        &out_size, subsamp, quality, flags)
-    if r!=0:
-        log.error("Error: failed to compress jpeg image, code %i:", r)
-        log.error(" %s", get_error_str())
-        log.error(" width=%i, stride=%i, height=%i", width, stride, height)
-        log.error(" pixel format=%s, quality=%i", pfstr, quality)
-        return None
-    assert out_size>0 and out!=NULL, "jpeg compression produced no data"
+    try:
+        with nogil:
+            r = tjCompress2(compressor, buf,
+                            width, stride, height, tjpf, &out,
+                            &out_size, subsamp, quality, flags)
+        if r!=0:
+            log.error("Error: failed to compress jpeg image, code %i:", r)
+            log.error(" %s", get_error_str())
+            log.error(" width=%i, stride=%i, height=%i", width, stride, height)
+            log.error(" pixel format=%s, quality=%i", pfstr, quality)
+            return None
+        assert out_size>0 and out!=NULL, "jpeg compression produced no data"
+    finally:
+        r = tjDestroy(compressor)
+        if r:
+            log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
+            log.error(" %s", get_error_str())
     cdata = makebuf(out, out_size)
     client_options = {}
     return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24

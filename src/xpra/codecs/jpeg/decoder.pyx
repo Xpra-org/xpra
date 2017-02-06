@@ -117,6 +117,12 @@ def decompress(data, int width, int height, options={}):
         log.error("Error: failed to instantiate a JPEG decompressor")
         return None
 
+    def close():
+        r = tjDestroy(decompressor)
+        if r:
+            log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
+            log.error(" %s", get_error_str())
+
     cdef int r, w, h, subsamp, cs
     r = tjDecompressHeader3(decompressor,
                             <const unsigned char *> buf, buf_len,
@@ -124,6 +130,7 @@ def decompress(data, int width, int height, options={}):
     if r:
         log.error("Error: failed to decompress JPEG header")
         log.error(" %s", get_error_str())
+        close()
         return None
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
@@ -135,29 +142,33 @@ def decompress(data, int width, int height, options={}):
     cdef int strides[3]
     cdef int i, stride
     cdef MemBuf membuf
+    cdef int flags = 0      #TJFLAG_BOTTOMUP
     pystrides = []
     pyplanes = []
-    for i in range(3):
-        stride = tjPlaneWidth(i, w, subsamp)
-        assert stride>0, "cannot get stride - out of bounds?"
-        strides[i] = roundup(stride, 4)
-        plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
-        assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
-        membuf = getbuf(plane_sizes[i])     #add padding?
-        planes[i] = <unsigned char*> membuf.get_mem()
-        #python objects for each plane:
-        pystrides.append(strides[i])
-        pyplanes.append(memoryview(membuf))
-    #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
-    cdef int flags = 0      #TJFLAG_BOTTOMUP
-    r = tjDecompressToYUVPlanes(decompressor,
-                                buf, buf_len,
-                                planes, width, strides, height, flags)
-    if r:
-        log.error("Error: failed to decompress %s JPEG data", subsamp_str)
-        log.error(" %s", get_error_str())
-        log.error(" width=%i, strides=%s, height=%s", width, pystrides, height)
-        return None
+    try:
+        for i in range(3):
+            stride = tjPlaneWidth(i, w, subsamp)
+            assert stride>0, "cannot get stride - out of bounds?"
+            strides[i] = roundup(stride, 4)
+            plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
+            assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
+            membuf = getbuf(plane_sizes[i])     #add padding?
+            planes[i] = <unsigned char*> membuf.get_mem()
+            #python objects for each plane:
+            pystrides.append(strides[i])
+            pyplanes.append(memoryview(membuf))
+        #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
+        with nogil:
+            r = tjDecompressToYUVPlanes(decompressor,
+                                        buf, buf_len,
+                                        planes, width, strides, height, flags)
+        if r:
+            log.error("Error: failed to decompress %s JPEG data", subsamp_str)
+            log.error(" %s", get_error_str())
+            log.error(" width=%i, strides=%s, height=%s", width, pystrides, height)
+            return None
+    finally:
+        close()
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
 
 def selftest(full=False):
