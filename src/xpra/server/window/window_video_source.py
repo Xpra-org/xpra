@@ -1628,7 +1628,7 @@ class WindowVideoSource(WindowSource):
             scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             test_scrolling = False
             self.scroll_data = None
-        else:
+        elif test_scrolling:
             lsd = self.scroll_data
             try:
                 start = time.time()
