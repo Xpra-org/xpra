@@ -1448,9 +1448,15 @@ class WindowVideoSource(WindowSource):
         scrolllog("encode_scrolling(%s, %s) window-dimensions=%s", image, options, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
         raw_scroll, non_scroll = self.scroll_data.get_scroll_values()
+        assert raw_scroll, "failed to detect scroll values"
+        if len(raw_scroll)>=20 or len(non_scroll)>20:
+            #avoid fragmentation, which is too costly
+            #(too many packets, too many loops through the encoder code)
+            scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(raw_scroll), len(non_scroll))
+            raw_scroll = []
+            non_scroll = [(0, wh)]
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
-        assert raw_scroll, "failed to detect scroll values"
         #convert to a screen rectangle list for the client:
         scrolls = []
         for scroll, line_defs in raw_scroll.items():
