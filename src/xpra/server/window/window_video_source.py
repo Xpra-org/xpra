@@ -752,12 +752,12 @@ class WindowVideoSource(WindowSource):
         w = image.get_width()
         h = image.get_height()
 
-        must_freeze = options.get("av-sync", False) or coding in self.video_encodings
-        if must_freeze:
-            newstride = image.get_width()*4
-            if not image.restride(newstride):
-                avsynclog("Warning: failed to freeze image pixels for:")
-                avsynclog(" %s", image)
+        #freeze the pixels so we can access them in the encode thread:
+        newstride = image.get_width()*4
+        if not image.restride(newstride):
+            log.error("Error: failed to freeze image pixels for:")
+            log.error(" %s", image)
+            return
         av_delay = self.get_frame_encode_delay(options)
         def call_encode(ew, eh, eimage, encoding, eflush):
             self._sequence += 1
