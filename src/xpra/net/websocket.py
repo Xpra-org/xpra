@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("network", "websocket")
 
 from xpra.util import AdHocStruct, envbool
+from xpra.os_util import memoryview_to_bytes
 from xpra.net.bytestreams import SocketConnection
 from websockify.websocket import WebSocketRequestHandler
 
@@ -111,6 +112,6 @@ class WebSocketConnection(SocketConnection):
                 return buf
 
     def write(self, buf):
-        self.ws_handler.send_frames([buf])
+        self.ws_handler.send_frames([memoryview_to_bytes(buf)])
         self.output_bytecount += len(buf)
         return len(buf)
