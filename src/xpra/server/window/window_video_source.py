@@ -1494,6 +1494,7 @@ class WindowVideoSource(WindowSource):
             if encoding:
                 encode_fn = self._encoders[encoding]
                 for sy, sh in non_scroll.items():
+                    substart = time.time()
                     sub = image.get_sub_image(0, sy, w, sh)
                     ret = encode_fn(encoding, sub, options)
                     if not ret:
@@ -1516,9 +1517,8 @@ class WindowVideoSource(WindowSource):
                     self.queue_damage_packet(packet)
                     psize = w*sh*4
                     csize = len(data)
-                    end = time.time()
                     compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                         (end-nsstart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                         (time.time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
                 scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (time.time()-nsstart)*1000, len(non_scroll))
             else:
                 #we can't send the non-scroll areas, ouch!
