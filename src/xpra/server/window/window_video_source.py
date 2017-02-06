@@ -66,9 +66,10 @@ class WindowVideoSource(WindowSource):
 
     def __init__(self, *args):
         #this will call init_vars():
+        self.supports_scrolling = False
         WindowSource.__init__(self, *args)
         self.scroll_encoding = SCROLL_ENCODING
-        self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling")
+        self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
 
@@ -313,7 +314,7 @@ class WindowVideoSource(WindowSource):
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
-        self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling)
+        self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling) and not STRICT_MODE
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
@@ -329,7 +330,7 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
-        if self.common_video_encodings:
+        if self.common_video_encodings or self.supports_scrolling:
             return self.get_best_encoding_video
         return WindowSource.get_best_encoding_impl_default(self)
 
@@ -352,7 +353,7 @@ class WindowVideoSource(WindowSource):
 
         if not self.non_video_encodings:
             return current_encoding
-        if not self.common_video_encodings:
+        if not self.common_video_encodings and not self.supports_scrolling:
             return nonvideo()
 
         #ensure the dimensions we use for decision making are the ones actually used:
@@ -1578,7 +1579,7 @@ class WindowVideoSource(WindowSource):
             videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
-        if self.supports_scrolling and not STRICT_MODE:
+        if self.supports_scrolling:
             if self.b_frame_flush_timer and self.scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
                 self.scroll_data.free()
@@ -1595,18 +1596,18 @@ class WindowVideoSource(WindowSource):
                     #marker telling us not to invalidate the scroll data from here on:
                     options["scroll"] = True
                     scroll, count = self.scroll_data.get_best_match()
-                    if count==0:
-                        scrolllog("no scroll distances found")
-                    else:
-                        end = time.time()
-                        match_pct = int(100*count/h)
-                        scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
-                        #if enough scrolling is detected, use scroll encoding for this frame:
-                        if match_pct>=SCROLL_MIN_PERCENT:
-                            return self.encode_scrolling(image, options)
+                    end = time.time()
+                    match_pct = int(100*count/h)
+                    scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
+                    #if enough scrolling is detected, use scroll encoding for this frame:
+                    if match_pct>=SCROLL_MIN_PERCENT:
+                        return self.encode_scrolling(image, options)
                 except Exception:
                     scrolllog.error("Error during scrolling detection")
                     scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
+            if not self.common_video_encodings:
+                #we have to send using a non-video encoding as that's all we have!
+                return self.video_fallback(image, options)
 
         def video_fallback():
             videolog.warn("using non-video fallback encoding")
