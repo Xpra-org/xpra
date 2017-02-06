@@ -245,7 +245,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
         #from xpra.codecs.loader import get_codec
-        self.jpeg_decoder = None    #get_codec("dec_jpeg")
+        self.jpeg_decoder = None #get_codec("dec_jpeg")
         if self.jpeg_decoder:
             #enable fast jpeg decoder:
             self.paint_jpeg = self.do_paint_jpeg
@@ -525,10 +525,10 @@ class GLWindowBackingBase(GTKWindowBacking):
 
             for x,y,w,h,xdelta,ydelta in scrolls:
                 if abs(xdelta)>=bw:
-                    fail("invalid xdelta value: %i" % xdelta)
+                    fail("invalid xdelta value: %i, backing width is %i" % (xdelta, bw))
                     continue
                 if abs(ydelta)>=bh:
-                    fail("invalid ydelta value: %i" % ydelta)
+                    fail("invalid ydelta value: %i, backing height is %i" % (ydelta, bh))
                     continue
                 if ydelta==0 and xdelta==0:
                     fail("scroll has no delta!")
@@ -897,7 +897,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
         except Exception as e:
-            log("Error in %s paint of %i bytes, options=%s)", rgb_format, len(img_data), options)
+            log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
             fire_paint_callbacks(callbacks, False, "OpenGL %s paint error: %s" % (rgb_format, e))
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
