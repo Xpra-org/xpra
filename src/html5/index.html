@@ -125,6 +125,7 @@
 				var remote_logging = getboolparam("remote_logging", true);
 				var debug = getboolparam("debug", false);
 				var insecure = getboolparam("insecure", false);
+				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -226,6 +227,7 @@
 				    				"debug"				: debug,
 				    				"remote_logging"	: remote_logging,
 				    				"insecure"			: insecure,
+				    				"ignore_audio_blacklist" : ignore_audio_blacklist,
 				    				}
 				    		for (var name in props) {
 				    			var value = props[name];
@@ -240,7 +242,7 @@
 					    }
 				    }
 				}
-			    client.init();
+			    client.init(ignore_audio_blacklist);
 
 			    // and connect
 				var ssl = document.location.protocol=="https:";

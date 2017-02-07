@@ -134,7 +134,7 @@ var MediaSourceUtil = {
 			return codecs_supported;
 		},
 
-		getMediaSourceAudioCodecs : function() {
+		getMediaSourceAudioCodecs : function(ignore_blacklist) {
 			var media_source_class = MediaSourceUtil.MediaSourceClass();
 			if(!media_source_class) {
 				Utilities.log("audio forwarding: no media source API support");
@@ -169,7 +169,12 @@ var MediaSourceUtil = {
 					}
 					if(blacklist.indexOf(codec_option)>=0) {
 						Utilities.log("audio codec MediaSource '"+codec_option+"' / '"+codec_string+"' is blacklisted for "+navigator.userAgent);
-						continue;
+						if(ignore_blacklist) {
+							Utilities.log("blacklist overruled!");
+						}
+						else {
+							continue;
+						}
 					}
 					codecs_supported[codec_option] = codec_string;
 					Utilities.log("audio codec MediaSource OK  '"+codec_option+"' / '"+codec_string+"'");
@@ -178,6 +183,7 @@ var MediaSourceUtil = {
 					Utilities.error("audio error probing codec '"+codec_string+"' / '"+codec_string+"': "+e);
 				}
 			}
+			Utilities.log("getMediaSourceAudioCodecs(", ignore_blacklist, ")=", codecs_supported);
 			return codecs_supported;
 		},
 

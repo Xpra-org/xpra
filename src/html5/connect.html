@@ -196,6 +196,7 @@
 					<input type="checkbox" id="sound"> <span>Audio forwarding, codec: </span>
 					<select id="audio_codec">
 				  	</select>
+				  	<input type="hidden" id="ignore_audio_blacklist" value="" />
 				  </li>
 				  <li class="list-group-item exit_with_children">
 				  	<input type="checkbox" id="exit_with_children"> <span>Terminate server when command exits</span>
@@ -290,6 +291,10 @@ function doConnect() {
 		var audio_codec = document.getElementById("audio_codec");
 		if(audio_codec) {
 			url = url + "&audio_codec="+encodeData(audio_codec.value);
+		}
+		var ignore_audio_blacklist = document.getElementById("ignore_audio_blacklist");
+		if(ignore_audio_blacklist && ignore_audio_blacklist.value) {
+			url = url + "&ignore_audio_blacklist="+encodeData(ignore_audio_blacklist.value);
 		}
 	}
 	var start = null;
@@ -398,9 +403,14 @@ $(document).ready(function() {
 
 	var audio_codec = getparam("audio_codec") || "";
 	var audio_codec_select = document.getElementById("audio_codec");
+	var ignore_audio_blacklist = getparam("ignore_audio_blacklist");
+	if(ignore_audio_blacklist) {
+		$('input#ignore_audio_blacklist').prop("value", true);
+	}
+
 	var codecs_supported = [];
 	if(getboolparam("mediasource", true)) {
-		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs();
+		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
 		for (var codec_option in mediasource_codecs) {
 			codecs_supported["mediasource:"+codec_option] = MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
 		}

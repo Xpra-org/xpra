@@ -124,14 +124,14 @@ XpraClient.prototype.log = function() {
 }
 
 
-XpraClient.prototype.init = function() {
-	this.init_audio();
+XpraClient.prototype.init = function(ignore_blacklist) {
+	this.init_audio(ignore_blacklist);
 	this.init_packet_handlers();
 	this.init_clipboard();
 	this.init_keyboard();
 }
 
-XpraClient.prototype.init_audio = function() {
+XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 	if(this.debug) {
 		console.debug("init_audio() enabled="+this.audio_enabled+", mediasource enabled="+this.audio_mediasource_enabled+", aurora enabled="+this.audio_aurora_enabled);
 	}
@@ -140,7 +140,7 @@ XpraClient.prototype.init_audio = function() {
 	}
 	var mediasource_codecs = {};
 	if(this.audio_mediasource_enabled) {
-		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs();
+		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
 		for (var codec_option in mediasource_codecs) {
 			this.audio_codecs[codec_option] = mediasource_codecs[codec_option];
 		}
