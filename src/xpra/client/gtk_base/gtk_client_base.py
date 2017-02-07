@@ -25,7 +25,7 @@ filelog = Logger("gtk", "client", "file")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, DEFAULT_METADATA_SUPPORTED
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.simple_stats import std_unit
 from xpra.gtk_common.cursor_names import cursor_types
@@ -645,6 +645,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if warning:
                 warnings.append(warning)
         self.opengl_props["info"] = ""
+
+        def err(msg, e):
+            opengllog("OpenGL initialization error", exc_info=True)
+            self.GLClientWindowClass = None
+            self.client_supports_opengl = False
+            opengllog.warn("%s", msg)
+            for x in str(e).split("\n"):
+                opengllog.warn(" %s", x)
+            self.opengl_props["info"] = str(e)
+
         if warnings:
             if enable_opengl is True:
                 opengllog.warn("OpenGL safety warning (enabled at your own risk):")
@@ -697,23 +707,51 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     l = opengllog.warn
                 l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i", self.gl_texture_size_limit, self.gl_texture_size_limit)
                 l(" for OpenGL %s renderer '%s'", pver(self.opengl_props.get("opengl", "")), self.opengl_props.get("renderer", "unknown"))
+            if self.opengl_enabled:
+                #try to render using a temporary window:
+                draw_result = {}
+                try:
+                    w, h = 50, 50
+                    window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size)
+                    window.realize()
+                    pixel_format = "BGRX"
+                    bpp = len(pixel_format)
+                    options = typedict({"pixel_format" : pixel_format})
+                    stride = bpp*w
+                    img_data = "\0"*stride*h
+                    coding = "rgb32"
+                    #we have to suspend idle_add to make this synchronous
+                    #we can do this because this method must be running in the UI thread already:
+                    def no_idle_add(*args, **kwargs):
+                        args[0](*args[1:], **kwargs)
+                    window._backing.idle_add = no_idle_add
+                    widget = window._backing._backing
+                    widget.realize()
+                    def paint_callback(success, message):
+                        opengllog("paint_callback(%s, %s)", success, message)
+                        draw_result.update({
+                            "success"   : success,
+                            "message"   : message,
+                            })
+                    opengllog("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
+                    window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
+                finally:
+                    window.destroy()
+                if not draw_result.get("success"):
+                    err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
+                    return
+                log("OpenGL test rendering succeeded")
             driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
             if self.opengl_enabled:
                 opengllog.info("OpenGL enabled with %s", driver_info)
             elif self.client_supports_opengl:
                 opengllog("OpenGL supported with %s, but not enabled", driver_info)
         except ImportError as e:
-            opengllog.warn("OpenGL support is missing:")
-            opengllog.warn(" %s", e)
-            self.opengl_props["info"] = str(e)
+            err("OpenGL support is missing:", e)
         except RuntimeError as e:
-            opengllog.warn("OpenGL support could not be enabled on this hardware:")
-            opengllog.warn(" %s", e)
-            self.opengl_props["info"] = str(e)
+            err("OpenGL support could not be enabled on this hardware:", e)
         except Exception as e:
-            opengllog.error("Error loading OpenGL support:")
-            opengllog.error(" %s", e, exc_info=True)
-            self.opengl_props["info"] = str(e)
+            err("Error loading OpenGL support:", e)
 
     def get_client_window_classes(self, w, h, metadata, override_redirect):
         log("get_client_window_class(%i, %i, %s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", w, h, metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)

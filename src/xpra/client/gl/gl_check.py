@@ -33,7 +33,7 @@ if uv and uv<[15]:
     GREYLIST.setdefault("vendor", []).append("X.Org")
 if False:
     #for testing:
-    BLACKLIST["vendor"].append("NVIDIA Corporation")
+    GREYLIST["vendor"].append("NVIDIA Corporation")
     WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
 
     if OSX:
@@ -312,10 +312,13 @@ def do_check_GL_support(force_enable):
                 log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
             else:
                 gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
-        safe = bool(whitelisted) or not (bool(greylisted) or bool(blacklisted))
+        safe = bool(whitelisted) or not bool(blacklisted)
         if safe and sys.version_info[0]>2:
             log.warn("Warning: OpenGL python3 support is not enabled by default")
             safe = False
+        if safe and greylisted:
+            log.warn("Warning: %s '%s' is greylisted,", *greylisted)
+            log.warn(" you may want to turn off OpenGL if you encounter bugs")
         props["safe"] = safe
 
         #check for specific functions we need:
