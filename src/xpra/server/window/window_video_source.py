@@ -1437,7 +1437,7 @@ class WindowVideoSource(WindowSource):
         return packet
 
 
-    def encode_scrolling(self, image, options={}):
+    def encode_scrolling(self, scroll_data, image, options={}):
         start = time.time()
         try:
             del options["av-sync"]
@@ -1447,14 +1447,14 @@ class WindowVideoSource(WindowSource):
         ww, wh = self.window_dimensions
         scrolllog("encode_scrolling(%s, %s) window-dimensions=%s", image, options, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
-        raw_scroll, non_scroll = self.scroll_data.get_scroll_values()
+        raw_scroll, non_scroll = scroll_data.get_scroll_values()
         assert raw_scroll, "failed to detect scroll values"
         if len(raw_scroll)>=20 or len(non_scroll)>20:
             #avoid fragmentation, which is too costly
             #(too many packets, too many loops through the encoder code)
             scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(raw_scroll), len(non_scroll))
-            raw_scroll = []
-            non_scroll = [(0, wh)]
+            raw_scroll = {}
+            non_scroll = {0 : wh}
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
         #convert to a screen rectangle list for the client:
@@ -1586,19 +1586,20 @@ class WindowVideoSource(WindowSource):
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
         if self.supports_scrolling:
-            if self.b_frame_flush_timer and self.scroll_data:
+            scroll_data = self.scroll_data
+            if self.b_frame_flush_timer and scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
-                self.scroll_data.free()
                 self.scroll_data = None
             else:
                 try:
                     start = time.time()
-                    if not self.scroll_data:
-                        self.scroll_data = ScrollData()
-                        scrolllog("new scroll data: %s", self.scroll_data)
-                    self.scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), len(src_format))
+                    if not scroll_data:
+                        scroll_data = ScrollData()
+                        self.scroll_data = scroll_data
+                        scrolllog("new scroll data: %s", scroll_data)
+                    scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), len(src_format))
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
-                    self.scroll_data.calculate(max_distance)
+                    scroll_data.calculate(max_distance)
                     #marker telling us not to invalidate the scroll data from here on:
                     options["scroll"] = True
                     scroll, count = self.scroll_data.get_best_match()
@@ -1607,7 +1608,7 @@ class WindowVideoSource(WindowSource):
                     scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
                     #if enough scrolling is detected, use scroll encoding for this frame:
                     if match_pct>=SCROLL_MIN_PERCENT:
-                        return self.encode_scrolling(image, options)
+                        return self.encode_scrolling(scroll_data, image, options)
                 except Exception:
                     scrolllog.error("Error during scrolling detection")
                     scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)

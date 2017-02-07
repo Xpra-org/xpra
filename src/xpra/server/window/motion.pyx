@@ -25,11 +25,16 @@ cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 from libc.stdint cimport uint8_t, uint16_t, int16_t, uint64_t, uintptr_t
 
+cdef extern from "stdlib.h":
+    void* malloc(size_t __size)
+
 cdef extern from "string.h":
     void free(void * ptr) nogil
     void *memset(void * ptr, int value, size_t num) nogil
     void *memcpy(void * destination, void * source, size_t num) nogil
 
+
+DEF MIN_LINE_COUNT = 5
 
 DEF MAXINT64 = 2**63
 DEF MAXUINT64 = 2**64
@@ -202,14 +207,19 @@ cdef class ScrollData:
         cdef int16_t s_arr[MAX_MATCHES]     #scroll distance
         cdef int16_t i
         cdef uint8_t j
-        memset(m_arr, 0, MAX_MATCHES*sizeof(uint16_t))
-        memset(s_arr, 0, MAX_MATCHES*sizeof(int16_t))
-        cdef int16_t low = 0
+        cdef int16_t low = 0                #the lowest match value
         cdef int16_t matches
         cdef uint16_t* distances = self.distances
         cdef uint16_t l = self.height
+        cdef size_t asize = l*(sizeof(uint8_t))
+        #use a temporary buffer to track the lines we have already dealt with:
+        cdef uint8_t *line_state = <uint8_t*> malloc(asize)
+        assert line_state!=NULL, "state map memory allocation failed"
         #find the best values (highest match count):
         with nogil:
+            memset(line_state, 0, asize)
+            memset(m_arr, 0, MAX_MATCHES*sizeof(uint16_t))
+            memset(s_arr, 0, MAX_MATCHES*sizeof(int16_t))
             for i in range(2*l):
                 matches = distances[i]
                 if matches>low and matches>min_hits:
@@ -238,28 +248,22 @@ cdef class ScrollData:
         #return a dict with the scroll distance as key,
         #and the list of matching lines in a dictionary:
         # {line-start : count, ..}
-        #use a temporary buffer which we modify:
-        #(where we clear the values we have already matched)
-        cdef size_t asize = l*(sizeof(uint64_t))
-        cdef uint64_t *tmp = <uint64_t*> memalign(asize)
-        assert self.a2!=NULL, "checksum memory allocation failed"
         cdef uint16_t start = 0, count = 0
         try:
-            memcpy(tmp, self.a2, asize)
             scrolls = collections.OrderedDict()
             #starting with the highest matches
             for i in reversed(sorted(scroll_hits.keys())):
                 v = scroll_hits[i]
                 for scroll in v:
                     #find matching lines:
-                    line_defs = self.match_distance(tmp, scroll)
+                    line_defs = self.match_distance(line_state, scroll)
                     if line_defs:
                         scrolls[scroll] = line_defs
             #same for the unmatched lines:
-            #all the lines in tmp which have not been zeroed out by match_distance()
+            #all the lines in tmp which have not been set by match_distance()
             line_defs = collections.OrderedDict()
             for i in range(l):
-                if tmp[i]!=0:
+                if line_state[i]==0:
                     if count==0:
                         start = i
                     count += 1
@@ -269,52 +273,51 @@ cdef class ScrollData:
             if count>0:
                 line_defs[start] = count
         finally:
-            free(tmp)
+            free(line_state)
         return scrolls, line_defs
 
-    cdef match_distance(self, uint64_t *tmp, int16_t distance):
+    cdef match_distance(self, uint8_t *line_state, int16_t distance):
         """
             find the lines that match the given scroll distance,
             return a dictionary with the starting line as key
             and the number of matching lines as value
         """
         cdef uint64_t *a1 = self.a1
-        cdef uint64_t *a2 = tmp         #this is a copy of a2 we can modify
-        cdef char swap = 0
+        cdef uint64_t *a2 = self.a2
+        assert abs(distance)<=self.height, "invalid distance %i for size %i" % (distance, self.height)
+        cdef uint16_t rstart = 0
+        cdef uint16_t rend = self.height-distance
         if distance<0:
-            #swap order:
-            swap = 1
-            a1 = tmp
-            a2 = self.a1
-            distance = -distance
-        assert distance<self.height, "invalid distance %i for size %i" % (distance, self.height)
-        cdef uint16_t i, start = 0, count = 0
+            rstart = -distance
+            rend = self.height
+        cdef uint16_t i1, i2, start = 0, count = 0
         line_defs = collections.OrderedDict()
-        for i in range(self.height-distance):
+        for i1 in range(rstart, rend):
+            i2 = i1+distance
+            if line_state[i2]:
+                #this target line has been marked as matched already
+                continue
             #if DEBUG:
             #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i+distance])
-            if a1[i]!=0 and a1[i]==a2[i+distance]:
+            if a1[i1]==a2[i2]:
                 #if DEBUG:
                 #    log("match at %i: %i", i, a1[i])
                 if count==0:
-                    #first match
-                    if swap:
-                        start = i+distance
-                    else:
-                        start = i
+                    start = i1
                 count += 1
                 #mark the target line as dealt with:
-                if swap:
-                    a1[i] = 0
-                else:
-                    a2[i+distance] = 0
             elif count>0:
                 #we had a match
-                line_defs[start] = count
+                if count>MIN_LINE_COUNT:
+                    line_defs[start] = count
                 count = 0
         if count>0:
             #last few lines ended as a match:
             line_defs[start] = count
+        #clear the ones we have matched:
+        for start, count in line_defs.items():
+            for i in range(count):
+                line_state[start+distance+i] = 1
         #if DEBUG:
         #    log("match_distance(%i)=%s", distance, line_defs)
         return line_defs
