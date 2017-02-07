@@ -435,12 +435,13 @@ cdef class XImageWrapper(object):
         cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,
         #so if the newstride is bigger than oldstride, you get garbage..
-        cdef unsigned int cpy_size = MIN(rowstride, oldstride)
+        cdef unsigned int cpy_size
         if oldstride==rowstride:
             memcpy(to, img_buf, size)
         else:
+            cpy_size = MIN(rowstride, oldstride)
             for ry in range(self.height):
-                memcpy(to, img_buf, rowstride)
+                memcpy(to, img_buf, cpy_size)
                 to += rowstride
                 img_buf += oldstride
         #we can now free the pixels buffer if present
