@@ -934,10 +934,11 @@ class GLWindowBackingBase(GTKWindowBacking):
             fire_paint_callbacks(callbacks, True)
             return
         except GLError as e:
-            message = "OpenGL %s paint error: %r" % (encoding, e)
+            message = "OpenGL %s paint failed: %r" % (encoding, e)
         except Exception as e:
-            message = "OpenGL %s paint error: %s" % (encoding, e)
-        log.error("%s.gl_paint_planar(..) error: %s", self, e, exc_info=True)
+            message = "OpenGL %s paint failed: %s" % (encoding, e)
+        log.error("Error: %s", e, exc_info=True)
+        log.error(" flush=%i, image=%s, coords=%s, size=%ix%i", flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
     def update_planar_textures(self, x, y, width, height, img, pixel_format, scaling=False):
