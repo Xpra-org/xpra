@@ -877,6 +877,7 @@
       <dep package="python-py2app"/>
       <dep package="python-cython"/>
       <dep package="python-numpy"/>
+      <dep package="python-pycups"/>
       <dep package="python-websockify"/>
       <dep package="python-websocket-client"/>
       <dep package="python-twisted"/>
