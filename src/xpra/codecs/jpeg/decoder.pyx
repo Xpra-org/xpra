@@ -3,19 +3,21 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
+from xpra.util import envbool
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
 
+LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
+
 ctypedef int boolean
 ctypedef unsigned int JDIMENSION
-
-
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
@@ -145,6 +147,7 @@ def decompress(data, int width, int height, options={}):
     cdef int flags = 0      #TJFLAG_BOTTOMUP
     pystrides = []
     pyplanes = []
+    cdef unsigned long total_size = 0
     try:
         for i in range(3):
             stride = tjPlaneWidth(i, w, subsamp)
@@ -152,12 +155,14 @@ def decompress(data, int width, int height, options={}):
             strides[i] = roundup(stride, 4)
             plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
             assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
+            total_size += plane_sizes[i]
             membuf = getbuf(plane_sizes[i])     #add padding?
             planes[i] = <unsigned char*> membuf.get_mem()
             #python objects for each plane:
             pystrides.append(strides[i])
             pyplanes.append(memoryview(membuf))
         #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
+        start = time.time()
         with nogil:
             r = tjDecompressToYUVPlanes(decompressor,
                                         buf, buf_len,
@@ -169,7 +174,11 @@ def decompress(data, int width, int height, options={}):
             return None
     finally:
         close()
+    if LOG_PERF:
+        elapsed = time.time()-start
+        log("decompress jpeg: %iMB/s (%i bytes in %.1fms)", float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
+
 
 def selftest(full=False):
     try:

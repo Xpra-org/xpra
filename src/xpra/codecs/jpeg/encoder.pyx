@@ -15,8 +15,6 @@ from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
 ctypedef int boolean
 ctypedef unsigned int JDIMENSION
-
-
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
