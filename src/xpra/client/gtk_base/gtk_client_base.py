@@ -681,8 +681,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 self.opengl_enabled = False
             self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
             self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
-            self.GLClientWindowClass.MAX_VIEWPORT_DIMS = 8192, 8192
-            self.GLClientWindowClass.MAX_BACKING_DIMS = 4096, 4096
             mww, mwh = self.max_window_size
             opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s", self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
             if self.opengl_enabled and self.gl_texture_size_limit<16*1024 and (mww==0 or mwh==0 or self.gl_texture_size_limit<mww or self.gl_texture_size_limit<mwh):
