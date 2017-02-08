@@ -605,6 +605,8 @@ def get_default_key_shortcuts():
                  if e]
 
 def get_default_systemd_run():
+    if WIN32 or OSX:
+        return "no"
     #don't use systemd-run on CentOS / RedHat
     #(it causes failures with "Failed to create bus connection: No such file or directory")
     from xpra.os_util import load_binary_file, strtobytes
