@@ -16,6 +16,7 @@ OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX", 0)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
+HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
 
 SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
 if SAVE_BUFFERS not in ("png", "jpeg", None):
@@ -88,6 +89,7 @@ from OpenGL.GL import \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
+    GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB10_A2, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
@@ -115,19 +117,20 @@ from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER
 from ctypes import c_uint
 
 PIXEL_FORMAT_TO_CONSTANT = {
-                       "BGR"    : GL_BGR,
-                       "RGB"    : GL_RGB,
-                       "BGRA"   : GL_BGRA,
-                       "BGRX"   : GL_BGRA,
-                       "RGBA"   : GL_RGBA,
-                       "RGBX"   : GL_RGBA,
-                       }
+    "r210"  : GL_RGBA,
+    "BGR"   : GL_BGR,
+    "RGB"   : GL_RGB,
+    "BGRA"  : GL_BGRA,
+    "BGRX"  : GL_BGRA,
+    "RGBA"  : GL_RGBA,
+    "RGBX"  : GL_RGBA,
+    }
 CONSTANT_TO_PIXEL_FORMAT = {
-                       GL_BGR   : "BGR",
-                       GL_RGB   : "RGB",
-                       GL_BGRA  : "BGRA",
-                       GL_RGBA  : "RGBA",
-                       }
+    GL_BGR   : "BGR",
+    GL_RGB   : "RGB",
+    GL_BGRA  : "BGRA",
+    GL_RGBA  : "RGBA",
+    }
 
 
 #debugging variables:
@@ -238,11 +241,21 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.init_gl_config(window_alpha)
         self.init_backing()
         #this is how many bpp we keep in the texture
-        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-        if self._alpha_enabled:
+        if self.glconfig.get_depth()==30 and HIGH_BIT_DEPTH:
+            self.texture_pixel_type = GL_UNSIGNED_INT_2_10_10_10_REV    #GL_UNSIGNED_INT_10_10_10_2
             self.texture_pixel_format = GL_RGBA
+            self.internal_format = GL_RGB10_A2
+            if "r210" not in GLWindowBackingBase.RGB_MODES:
+                GLWindowBackingBase.RGB_MODES.append("r210")
         else:
-            self.texture_pixel_format = GL_RGB
+            #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+            self.texture_pixel_type = GL_UNSIGNED_BYTE
+            if self._alpha_enabled:
+                self.internal_format = GL_RGBA
+                self.texture_pixel_format = GL_RGBA
+            else:
+                self.internal_format = GL_RGB
+                self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
         #from xpra.codecs.loader import get_codec
         self.jpeg_decoder = None #get_codec("dec_jpeg")
@@ -443,7 +456,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             # Define empty tmp FBO
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
             set_texture_level()
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -452,7 +465,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             set_texture_level()
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
+            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -843,7 +856,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         if not options.get("paint", True):
             fire_paint_callbacks(callbacks)
             return
-
+        try:
+            rgb_format = rgb_format.decode()
+        except:
+            pass
         try:
             upload, img_data = self.pixels_for_upload(img_data)
 
@@ -852,7 +868,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.set_rgb_paint_state()
 
                 #convert it to a GL constant:
-                pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format.decode())
+                pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
                 assert pformat is not None, "could not find pixel format for %s" % rgb_format
 
                 self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), using GL %s format=%s",
@@ -866,7 +882,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 set_texture_level()
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
                 glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.texture_pixel_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, img_data)
+                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, img_data)
 
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
@@ -886,9 +902,13 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.present_fbo(x, y, width, height, options.get("flush", 0))
                 # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
+            return
+        except GLError as e:
+            message = b"OpenGL %s paint failed: %r" % (rgb_format, e)
         except Exception as e:
-            log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
-            fire_paint_callbacks(callbacks, False, "OpenGL %s paint error: %s" % (rgb_format, e))
+            message = b"OpenGL %s paint error: %s" % (rgb_format, e)
+        log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
+        fire_paint_callbacks(callbacks, False, message)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
