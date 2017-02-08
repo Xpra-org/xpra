@@ -503,12 +503,30 @@ def check_support(force_enable=False, check_colormap=False):
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
     props.update({
-                  "display_mode"    : get_MODE_names(display_mode),
-                  "glconfig"        : glconfig,
-                  "has_alpha"       : glconfig.has_alpha(),
-                  "rgba"            : glconfig.is_rgba(),
+                  "display_mode"        : get_MODE_names(display_mode),
+                  #"glconfig"            : glconfig,
+                  "has_alpha"           : glconfig.has_alpha(),
+                  "rgba"                : glconfig.is_rgba(),
+                  "stereo"              : glconfig.is_stereo(),
+                  "double-buffered"     : glconfig.is_double_buffered(),
+                  "depth"               : glconfig.get_depth(),
+                  "has-depth-buffer"    : glconfig.has_depth_buffer(),
+                  "has-stencil-buffer"  : glconfig.has_stencil_buffer(),
                   })
+    for x in ("RED_SIZE", "GREEN_SIZE", "BLUE_SIZE", "ALPHA_SIZE",
+              "AUX_BUFFERS", "DEPTH_SIZE", "STENCIL_SIZE",
+              "ACCUM_RED_SIZE", "ACCUM_GREEN_SIZE", "ACCUM_BLUE_SIZE",
+              "SAMPLE_BUFFERS", "SAMPLES"):
+        prop = getattr(gdkgl, x)
+        if not prop:
+            continue
+        try:
+            v = glconfig.get_attrib(prop)[0]
+            props[x.lower().replace("_", "-")] = v
+        except:
+            pass
     log("GL props=%s", props)
+    
     from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
     gtk = import_gtk()
     assert gdkgl.query_extension()
