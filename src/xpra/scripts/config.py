@@ -73,9 +73,6 @@ def get_xorg_bin():
 
 def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
-    if os.path.exists("/etc/debian_version"):
-        #no patched dummy driver for debian, so force reasonable DPI instead:
-        cmd += ["-dpi", "96"]
     cmd += [
           "-noreset",
           "-nolisten", "tcp",
