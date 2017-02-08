@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import ctypes
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, WIN32
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
@@ -13,9 +13,6 @@ log = Logger("mmap")
 """
 Utility functions for communicating via mmap
 """
-
-def can_use_mmap():
-    return hasattr(ctypes.c_ubyte, "from_buffer")
 
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
@@ -30,9 +27,6 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
     """
     def rerr():
         return False, False, None, 0, None, None
-    if not can_use_mmap():
-        log.error("cannot use mmap: python version is too old?")
-        return rerr()
     log("init_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
     mmap_temp_file = None
@@ -42,55 +36,56 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
         unit = max(4096, mmap.PAGESIZE)
         #add 8 bytes for the mmap area control header zone:
         mmap_size = roundup(size + 8, unit)
-        if filename:
-            if os.path.exists(filename):
-                fd = os.open(filename, os.O_EXCL | os.O_RDWR)
-                mmap_size = os.path.getsize(mmap_filename)
-                #mmap_size = 4*1024*1024    #size restriction needed with ivshmem
-                delete = False
-                log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
-            else:
-                import errno
-                flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
-                try:
-                    fd = os.open(filename, flags)
-                    mmap_temp_file = None   #os.fdopen(fd, 'w')
-                    mmap_filename = filename
-                except OSError as e:
-                    if e.errno == errno.EEXIST:
-                        log.error("Error: the mmap file '%s' already exists", filename)
-                        return rerr()
-                    raise
+        if WIN32:
+            if not filename:
+                from xpra.net.crypto import get_hex_uuid
+                filename = "xpra-%s" % get_hex_uuid()
+            mmap_filename = filename
+            mmap_area = mmap.mmap(0, mmap_size, filename)
+            #not a real file:
+            delete = False
+            mmap_temp_file = None
         else:
-            import tempfile
-            mmap_dir = os.getenv("TMPDIR", "/tmp")
-            if not os.path.exists(mmap_dir):
-                raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-            #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
-            #that the file is readable and writable only by the creating user ID
-            try:
-                temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
-            except OSError as e:
-                log.error("Error: cannot create mmap file:")
-                log.error(" %s", e)
-                return rerr()
-            #keep a reference to it so it does not disappear!
-            mmap_temp_file = temp
-            mmap_filename = temp.name
-            fd = temp.file.fileno()
-        #set the group permissions and gid if the mmap-group option is specified
-        if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
-            from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
-            s = os.stat(socket_filename)
-            os.fchown(fd, -1, s.st_gid)
-            os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-        assert mmap_size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(mmap_size)
-        assert mmap_size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(mmap_size)
-        log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
-        os.lseek(fd, mmap_size-1, os.SEEK_SET)
-        assert os.write(fd, b'\x00')
-        os.lseek(fd, 0, os.SEEK_SET)
-        mmap_area = mmap.mmap(fd, length=mmap_size)
+            assert os.name=="posix"
+            if filename:
+                if os.path.exists(filename):
+                    fd = os.open(filename, os.O_EXCL | os.O_RDWR)
+                    mmap_size = os.path.getsize(mmap_filename)
+                    #mmap_size = 4*1024*1024    #size restriction needed with ivshmem
+                    delete = False
+                    log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
+                else:
+                    import errno
+                    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+                    try:
+                        fd = os.open(filename, flags)
+                        mmap_temp_file = None   #os.fdopen(fd, 'w')
+                        mmap_filename = filename
+                    except OSError as e:
+                        if e.errno == errno.EEXIST:
+                            log.error("Error: the mmap file '%s' already exists", filename)
+                            return rerr()
+                        raise
+            else:
+                mmap_dir = os.getenv("TEMP", "/tmp")
+                if not os.path.exists(mmap_dir):
+                    raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+                mmap_filename = os.path.join(mmap_dir, "xpra-mmap")
+                mmap_temp_file = open(mmap_filename, 'wb')
+                fd = mmap_temp_file.fileno()
+            #set the group permissions and gid if the mmap-group option is specified
+            if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
+                from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
+                s = os.stat(socket_filename)
+                os.fchown(fd, -1, s.st_gid)
+                os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
+            assert mmap_size>=1024*1024, "mmap size is too small: %s (minimum is 1MB)" % to_std_unit(mmap_size)
+            assert mmap_size<=1024*1024*1024, "mmap is too big: %s (maximum is 1GB)" % to_std_unit(mmap_size)
+            log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
+            os.lseek(fd, mmap_size-1, os.SEEK_SET)
+            assert os.write(fd, b'\x00')
+            os.lseek(fd, 0, os.SEEK_SET)
+            mmap_area = mmap.mmap(fd, length=mmap_size)
         return True, delete, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
@@ -105,7 +100,7 @@ def clean_mmap(mmap_filename):
         try:
             os.unlink(mmap_filename)
         except OSError as e:
-            log.error("Error: failed to removed the mmap file '%s':", mmap_filename)
+            log.error("Error: failed to remove the mmap file '%s':", mmap_filename)
             log.error(" %s", e)
 
 DEFAULT_TOKEN_INDEX = 512
@@ -133,29 +128,36 @@ def read_mmap_token(mmap_area, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BY
     return v
 
 
-def init_server_mmap(mmap_filename):
+def init_server_mmap(mmap_filename, mmap_size=0):
     """
         Reads the mmap file provided by the client
         and verifies the token if supplied.
         Returns the mmap object and its size: (mmap, size)
     """
-    if not can_use_mmap():
-        log.error("cannot use mmap: python version is too old?")
-        return None, 0
-    try:
-        f = open(mmap_filename, "r+b")
-    except Exception as e:
-        log.error("Error: cannot access mmap file '%s':", mmap_filename)
-        log.error("  %s", e)
-        log.error(" see mmap-group option?")
-        return None, 0
+    if not WIN32:
+        try:
+            f = open(mmap_filename, "r+b")
+        except Exception as e:
+            log.error("Error: cannot access mmap file '%s':", mmap_filename)
+            log.error("  %s", e)
+            log.error(" see mmap-group option?")
+            return None, 0
 
     mmap_area = None
     try:
         import mmap
-        mmap_size = os.path.getsize(mmap_filename)
-        mmap_area = mmap.mmap(f.fileno(), mmap_size)
-        return mmap_area, mmap_size
+        if not WIN32:
+            actual_mmap_size = os.path.getsize(mmap_filename)
+            if mmap_size and actual_mmap_size!=mmap_size:
+                log.warn("Warning: expected mmap file '%s' of size %i but got %i", mmap_filename, mmap_size, actual_mmap_size)
+            mmap_area = mmap.mmap(f.fileno(), mmap_size)
+        else:
+            if mmap_size==0:
+                log.error("Error: client did not supply the mmap area size")
+                log.error(" try updating your client version?")
+            mmap_area = mmap.mmap(0, mmap_size, mmap_filename)
+            actual_mmap_size = mmap_size
+        return mmap_area, actual_mmap_size
     except Exception as e:
         log.error("cannot use mmap file '%s': %s", mmap_filename, e, exc_info=True)
         if mmap_area:

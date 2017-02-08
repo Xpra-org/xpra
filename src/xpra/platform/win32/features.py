@@ -6,7 +6,7 @@
 
 # Platform-specific settings for Win32.
 CAN_DAEMONIZE = False
-MMAP_SUPPORTED = False
+MMAP_SUPPORTED = True
 SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = True
 

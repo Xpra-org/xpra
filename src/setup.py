@@ -869,7 +869,7 @@ def build_xpra_conf(install_dir):
             'webcam'                : ["no", "auto"][webcam],
             'printing'              : printing_ENABLED,
             'dbus_control'          : bstr(dbus_ENABLED),
-            'mmap'                  : bstr(not OSX and not WIN32),
+            'mmap'                  : bstr(True),
             }
     def convert_templates(subdirs=[]):
         dirname = os.path.join(*(["etc", "xpra"] + subdirs))
@@ -1754,8 +1754,9 @@ if WIN32:
 
 
     remove_packages(*external_excludes)
+
+    external_includes.append("mmap")
     remove_packages(#not used on win32:
-                    "mmap",
                     #we handle GL separately below:
                     "OpenGL", "OpenGL_accelerate",
                     #this is a mac osx thing:

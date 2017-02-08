@@ -42,7 +42,7 @@ from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass, WIN32
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -899,6 +899,7 @@ class ServerSource(FileTransferHandler):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
         mmap_filename = c.strget("mmap_file")
+        mmap_size = c.intget("mmap_size", 0)
         mmaplog("client supplied mmap_file=%s", mmap_filename)
         mmap_token = c.intget("mmap_token")
         mmaplog("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
@@ -908,11 +909,11 @@ class ServerSource(FileTransferHandler):
                 mmap_filename = self.mmap_filename
             if not self.supports_mmap:
                 mmaplog("client enabled mmap but mmap mode is not supported", mmap_filename)
-            elif not os.path.exists(mmap_filename):
+            elif not os.path.exists(mmap_filename) and not WIN32:
                 mmaplog("mmap_file '%s' cannot be found!", mmap_filename)
             else:
                 from xpra.net.mmap_pipe import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-                self.mmap, self.mmap_size = init_server_mmap(mmap_filename)
+                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
                     index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)

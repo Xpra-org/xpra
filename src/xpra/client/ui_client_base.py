@@ -1402,6 +1402,7 @@ class UIXpraClient(XpraClientBase):
         if self.mmap_enabled:
             capabilities.update({
                 "mmap_file"         : self.mmap_filename,
+                "mmap_size"         : self.mmap_size,
                 "mmap_token"        : self.mmap_token,
                 "mmap_token_index"  : self.mmap_token_index,
                 "mmap_token_bytes"  : self.mmap_token_bytes,
