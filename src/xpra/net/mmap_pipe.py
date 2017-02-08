@@ -67,12 +67,22 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                             return rerr()
                         raise
             else:
-                mmap_dir = os.getenv("TEMP", "/tmp")
+                import tempfile
+                mmap_dir = os.getenv("TMPDIR", "/tmp")
                 if not os.path.exists(mmap_dir):
                     raise Exception("TMPDIR %s does not exist!" % mmap_dir)
-                mmap_filename = os.path.join(mmap_dir, "xpra-mmap")
-                mmap_temp_file = open(mmap_filename, 'wb')
-                fd = mmap_temp_file.fileno()
+                #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
+                #that the file is readable and writable only by the creating user ID
+                try:
+                    temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
+                except OSError as e:
+                    log.error("Error: cannot create mmap file:")
+                    log.error(" %s", e)
+                    return rerr()
+                #keep a reference to it so it does not disappear!
+                mmap_temp_file = temp
+                mmap_filename = temp.name
+                fd = temp.file.fileno()                
             #set the group permissions and gid if the mmap-group option is specified
             if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
                 from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
