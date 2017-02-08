@@ -117,7 +117,7 @@ from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER
 from ctypes import c_uint
 
 PIXEL_FORMAT_TO_CONSTANT = {
-    "r210"  : GL_RGBA,
+    "r210"  : GL_BGRA,
     "BGR"   : GL_BGR,
     "RGB"   : GL_RGB,
     "BGRA"  : GL_BGRA,
