@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -556,9 +556,9 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({"xsettings" : False})
     legacy_bool_parse("mmap")
-    group.add_option("--mmap", action="store", metavar="yes|no",
+    group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                       dest="mmap", default=defaults.mmap,
-                      help="Use memory mapped transfers for local connections. Default: %s." % enabled_str(defaults.mmap))
+                      help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
     legacy_bool_parse("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
