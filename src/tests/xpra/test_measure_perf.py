@@ -574,6 +574,7 @@ def get_auth_args():
         if XPRA_VERSION_NO>=[0, 14]:
             cmd.append("--auth=file")
         if XPRA_VERSION_NO>=[0, 15]:
+            cmd.append("--auth=none")
             cmd.append("--tcp-auth=file")
     return cmd
 
