@@ -517,7 +517,8 @@ class WindowModel(BaseWindowModel):
             self._updateprop("geometry", (x, y, cw, ch))
 
     def do_child_configure_request_event(self, event):
-        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask))
+        hints = self.get_property("size-hints")
+        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s", event, self.xid, self.corral_window.xid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
         # Also potentially update our record of what the app has requested:
@@ -544,7 +545,6 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWWidth or event.value_mask & CWHeight:
             self._updateprop("requested-size", (rw, rh))
 
-        hints = self.get_property("size-hints")
         w, h = calc_constrained_size(w, h, hints)
         #update the geometry now, as another request may come in
         #before we've had a chance to process the ConfigureNotify that the code below will generate
