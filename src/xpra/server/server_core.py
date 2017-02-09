@@ -476,10 +476,17 @@ class ServerCore(object):
                 log.info(" uid=%i, gid=%i", uid, gid)
         log.info(" running with pid %s%s", os.getpid(), osinfo)
 
+    def get_display_bit_depth(self):
+        return 0
+
     def print_screen_info(self):
         display = os.environ.get("DISPLAY")
         if display and display.startswith(":"):
-            log.info(" connected to X11 display %s", display)
+            extra = ""
+            bit_depth = self.get_display_bit_depth()
+            if bit_depth:
+                extra = " with %i bit colors" % bit_depth
+            log.info(" connected to X11 display %s%s", display, extra)
 
 
     def server_is_ready(self):

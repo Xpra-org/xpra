@@ -27,6 +27,8 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
 X11Core = X11CoreBindings()
+from xpra.x11.bindings.window_bindings import X11WindowBindings
+X11Window = X11WindowBindings()
 from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
@@ -139,6 +141,11 @@ class X11ServerBase(GTKServerBase):
             cursorlog("get_default_cursor=%s", self.default_cursor_data)
         trap.swallow_synced(get_default_cursor)
         X11Keyboard.selectCursorChange(True)
+
+    def get_display_bit_depth(self):
+        with xswallow:
+            return X11Window.get_depth(X11Window.getDefaultRootWindow())
+        return 0
 
     def query_opengl(self):
         self.opengl_props = {}
