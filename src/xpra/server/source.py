@@ -466,17 +466,18 @@ class ServerSource(FileTransferHandler):
         self.encode_work_queue.put(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
-        if self.mmap:
-            self.mmap.close()
+        mmap = self.mmap
+        if mmap:
             self.mmap = None
             self.mmap_size = 0
+            mmap.close()
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
         ds = self.dbus_server
         if ds:
-            ds.cleanup()
             self.dbus_server = None
+            ds.cleanup()
 
 
     def recalculate_delays(self):
