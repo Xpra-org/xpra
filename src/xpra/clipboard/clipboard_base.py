@@ -41,6 +41,7 @@ if CLIPBOARDS_ENV is not None:
 
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 STORE_ON_EXIT = envbool("XPRA_CLIPBOARD_STORE_ON_EXIT", True)
+DELAY_SEND_TOKEN = envbool("XPRA_DELAY_SEND_TOKEN", True)
 
 _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
 if _discard_target_strs_ is not None:
@@ -234,7 +235,10 @@ class ClipboardProtocolHelperBase(object):
     def _send_clipboard_token_handler(self, proxy):
         #send via idle_add so the main loop can run
         #(prevents tight clipboard loops from completely hogging the main loop)
-        gobject.idle_add(self.do_send_clipboard_token_handler, proxy)
+        if DELAY_SEND_TOKEN:
+            glib.idle_add(self.do_send_clipboard_token_handler, proxy)
+        else:
+            self.do_send_clipboard_token_handler(proxy)
 
     def do_send_clipboard_token_handler(self, proxy):
         selection = proxy._selection
@@ -630,7 +634,11 @@ class ClipboardProxy(gtk.Invisible):
         dtype = result["type"]
         log("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
               selection_data, info, time, dtype, dformat, type(data), len(data or ""))
+        boc = self._block_owner_change
+        self._block_owner_change = True
         selection_data.set(dtype, dformat, data)
+        if boc is False:
+            glib.idle_add(self.remove_block)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
