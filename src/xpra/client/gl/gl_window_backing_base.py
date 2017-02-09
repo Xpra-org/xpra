@@ -241,7 +241,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.init_gl_config(window_alpha)
         self.init_backing()
         #this is how many bpp we keep in the texture
-        if self.glconfig.get_depth()==30 and HIGH_BIT_DEPTH:
+        self.bit_depth = self.glconfig.get_depth()
+        if self.bit_depth==30 and HIGH_BIT_DEPTH:
             self.texture_pixel_type = GL_UNSIGNED_INT_2_10_10_10_REV    #GL_UNSIGNED_INT_10_10_10_2
             self.texture_pixel_format = GL_RGBA
             self.internal_format = GL_RGB10_A2
@@ -300,6 +301,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         props = GTKWindowBacking.get_encoding_properties(self)
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
+            props["encoding.bit-depth"] = self.bit_depth
         return props
 
 

@@ -448,7 +448,7 @@ class WindowVideoSource(WindowSource):
         else:
             #lossless options:
             #avoid very small and very large areas (both slow)
-            if speed>75:
+            if speed>75 or self.bit_depth>24:
                 if "rgb24" in options:
                     return "rgb24"
                 if "rgb32" in options:
