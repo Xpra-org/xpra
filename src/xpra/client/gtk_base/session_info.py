@@ -641,24 +641,26 @@ class SessionInfo(gtk.Window):
         if self.client.opengl_enabled:
             glinfo = "%s / %s" % (self.client.opengl_props.get("vendor", ""), self.client.opengl_props.get("renderer", ""))
             display_mode = self.client.opengl_props.get("display_mode", [])
+            bit_depth = self.client.opengl_props.get("depth", 0)
+            info = []
+            if bit_depth:
+                info.append("%i-bit" % bit_depth)
             if "DOUBLE" in display_mode:
-                buffering = "double buffering"
+                info.append("double buffering")
             elif "SINGLE" in display_mode:
-                buffering = "single buffering"
+                info.append("single buffering")
             else:
-                buffering = "unknown"
-            if buffering!="unknown":
-                if "ALPHA" in display_mode:
-                    buffering += " with"
-                else:
-                    buffering += " without"
-                buffering += " transparency"
+                info.append("unknown buffering")
+            if "ALPHA" in display_mode:
+                info.append("with transparency")
+            else:
+                info.append("without transparency")
         else:
             #info could be telling us that the gl bindings are missing:
             glinfo = self.client.opengl_props.get("info", "disabled")
-            buffering = "n/a"
+            info = ["n/a"]
         self.client_opengl_label.set_text(glinfo)
-        self.opengl_buffering.set_text(buffering)
+        self.opengl_buffering.set_text(" ".join(info))
 
     def populate_features(self):
         size_info = ""
