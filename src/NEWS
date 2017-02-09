@@ -1,3 +1,23 @@
+v1.0.3 (2017-02-09)
+======================
+	-- fix memcpy overflow
+	-- fix race condition between encoders and X11 destroy events
+	-- fix invalid packet header error handler
+	-- fix missing build flags, built root stripping
+	-- fix out of range quality values sent to pixel encoders
+	-- fix scroll debugging log message format
+	-- fix scroll encoding sometimes wrongly used
+	-- fix scroll encoding fragmentation performance
+	-- fix lost wheel events delta with MS Windows clients
+	-- fix detected OpenGL size constraints wrongly overruled
+	-- fix packet errors with non-string errors (ie: OpenGL)
+	-- fix clipboard loops with some greedy clients (ie: MS Windows)
+	-- try to prevent X11 crash following keyboard setup
+	-- remove hardcoded DPI option for Debian and Ubuntu (use patched Xdummy)
+	-- disable unused and unsafe 24bpp pixel modes with x264 encoder
+	-- OSX library updates
+
+
 v1.0.2 (2017-01-30)
 ======================
 	-- fix OpenGL pixel upload alignment issues
