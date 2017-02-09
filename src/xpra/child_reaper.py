@@ -118,9 +118,9 @@ class ChildReaper(object):
         #see if we still have procinfos alive (and not meant to be ignored)
         self.poll()
         alive = [procinfo for procinfo in list(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
-        log("check() alive=%s", alive)
+        cb = self._quit
+        log("check() alive=%s, quit callback=%s", alive, cb)
         if len(alive)==0:
-            cb = self._quit
             if cb:
                 self._quit = None
                 cb()
