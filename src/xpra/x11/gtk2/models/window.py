@@ -532,7 +532,7 @@ class WindowModel(BaseWindowModel):
             ry = y
         if event.value_mask & CWX or event.value_mask & CWY:
             self._internal_set_property("set-initial-position", True)
-        self._updateprop("requested-position", (rx, ry))
+            self._updateprop("requested-position", (rx, ry))
 
         rw, rh = self.get_property("requested-size")
         if event.value_mask & CWWidth:
@@ -541,7 +541,8 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWHeight:
             h = event.height
             rh = h
-        self._updateprop("requested-size", (rw, rh))
+        if event.value_mask & CWWidth or event.value_mask & CWHeight:
+            self._updateprop("requested-size", (rw, rh))
 
         hints = self.get_property("size-hints")
         w, h = calc_constrained_size(w, h, hints)
