@@ -625,7 +625,11 @@ class ClipboardProxy(gtk.Invisible):
         dtype = result["type"]
         log("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
               selection_data, info, time, dtype, dformat, type(data), len(data or ""))
+        boc = self._block_owner_change
+        self._block_owner_change = True
         selection_data.set(dtype, dformat, data)
+        if boc is False:
+            glib.idle_add(self.remove_block)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
