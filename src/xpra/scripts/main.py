@@ -1353,10 +1353,12 @@ def parse_display_name(error_cb, opts, display_name):
         if password and is_putty:
             full_ssh += ["-pw", password]
         if username:
+            desc["username"] = username
             opts.username = username
             full_ssh += ["-l", username]
         if ssh_port and ssh_port!=22:
             #grr why bother doing it different?
+            desc["ssh-port"] = ssh_port
             if is_putty:
                 #special env used by plink:
                 env = os.environ.copy()
@@ -1710,7 +1712,17 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         from xpra.net.bytestreams import TwoFileConnection
-        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=display_name, socktype=dtype, close_cb=stop_tunnel)
+        target = "ssh/"
+        username = display_desc.get("username")
+        if username:
+            target += "%s@" % username
+        target += display_desc.get("host")
+        ssh_port = display_desc.get("ssh-port")
+        if ssh_port:
+            target += ":%i" % ssh_port
+        display = display_desc.get("display")
+        target += "/%s" % (display or "")
+        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype=dtype, close_cb=stop_tunnel)
         conn.timeout = 0            #taken care of by abort_test
         conn.process = (child, "ssh", cmd)
 
