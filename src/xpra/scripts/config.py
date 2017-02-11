@@ -392,8 +392,8 @@ def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
                 ad = os.path.expanduser(d)
                 conf_file = os.path.join(ad, xpra_conf_filename)
                 try:
-                    if not os.path.exists(d):
-                        os.makedirs(d, int('700', 8))
+                    if not os.path.exists(ad):
+                        os.makedirs(ad, int('700', 8))
                     with open(conf_file, 'wb') as f:
                         f.write("# xpra user configuration file\n")
                         f.write("# place your custom settings in this file\n")
