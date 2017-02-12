@@ -1482,7 +1482,7 @@ class WindowVideoSource(WindowSource):
         #send the rest as rectangles:
         if non_scroll:
             nsstart = time.time()
-            if (self._current_speed>=50 and self._current_quality<80) or len(non_scroll)>=10:
+            if (self._current_speed>=75 and self._current_quality<75) or len(non_scroll)>=16:
                 encoding = self.get_video_fallback_encoding(FAST_ORDER)
             else:
                 #slower but can be lossless:
