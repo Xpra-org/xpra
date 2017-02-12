@@ -58,6 +58,7 @@ def get_xorg_bin():
     # Detect Xorg Binary
     for p in (
               "/usr/libexec/Xorg",              #fedora 22+
+              "/usr/lib/xorg/Xorg",             #ubuntu 16.10
               "/usr/lib/xorg-server/Xorg",      #arch linux
               "/usr/X11/bin/X",                 #OSX
               ):
