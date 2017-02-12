@@ -597,8 +597,12 @@ fi
 
 
 %changelog
-* Thu Feb 09 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
+* Sun Feb 12 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
 - fix memcpy overflow
+- fix ssh password leak in connection strings
+- fix race condition in system tray paint updates
+- fix iconified window coordinates with MS Windows clients
+- fix "~" directory created by mistake
 - fix race condition between encoders and X11 destroy events
 - fix invalid packet header error handler
 - fix missing build flags, built root stripping
