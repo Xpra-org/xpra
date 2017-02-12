@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -132,19 +132,23 @@ class ClientTray(ClientWidgetBase):
     def draw_region(self, x, y, width, height, coding, img_data, rowstride, packet_sequence, options, callbacks):
         log("%s.draw_region%s", self, (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 
+        #note: a new backing may be assigned between the time we call draw_region
+        # and the time we get the callback (as the draw may use idle_add)
+        backing = self._backing
         def after_draw_update_tray(success, message=None):
             log("%s.after_draw_update_tray(%s, %s)", self, success, message)
             if not success:
                 log.warn("after_draw_update_tray(%s, %s) options=%s", success, message, options)
                 return
-            tray_data = self._backing.data
+            tray_data = backing.data
+            log("tray backing=%s, data: %s", backing, tray_data is not None)
             if tray_data is None:
-                log.warn("tray backing for window %i does not have any pixel data!", self._backing.wid)
+                log.warn("Warning: no pixel data in tray backing for window %i", backing.wid)
                 return
             self.idle_add(self.set_tray_icon, tray_data)
             self.idle_add(self.reconfigure)
         callbacks.append(after_draw_update_tray)
-        self._backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
+        backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def set_tray_icon(self, tray_data):
         enc, w, h, rowstride, pixels = tray_data
