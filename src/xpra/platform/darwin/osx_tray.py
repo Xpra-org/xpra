@@ -62,7 +62,7 @@ class OSXTray(TrayBase):
                 self.macapp.cancel_attention_request(self.last_attention_request_id)
                 self.last_attention_request_id = -1
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
 

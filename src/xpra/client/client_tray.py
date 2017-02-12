@@ -89,8 +89,10 @@ class ClientTray(ClientWidgetBase):
             geometry = x, y, w, h
         if force_send_configure or self._geometry is None or geometry!=self._geometry:
             self._geometry = geometry
-            client_properties = {"encoding.transparency": True,
-                                 "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"]}
+            client_properties = {
+                "encoding.transparency" : True,
+                "encodings.rgb_formats" : ["RGBA", "RGB", "RGBX"],
+                }
             if tw:
                 orientation = tw.get_orientation()
                 if orientation:
@@ -151,12 +153,12 @@ class ClientTray(ClientWidgetBase):
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def set_tray_icon(self, tray_data):
-        enc, w, h, rowstride, pixels = tray_data
+        enc, w, h, rowstride, pixels, options = tray_data
         log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
         has_alpha = enc=="rgb32"
         tw = self.tray_widget
         if tw:
-            tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
+            tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
 
     def destroy(self):
@@ -188,17 +190,17 @@ class TrayBacking(GTKWindowBacking):
     def get_encoding_properties(self):
         #override so we skip all csc caps:
         return {
-                "encodings.rgb_formats" : self.RGB_MODES,
-                "encoding.transparency" : True
-               }
+            "encodings.rgb_formats" : self.RGB_MODES,
+            "encoding.transparency" : True,
+            }
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb24%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
-        self.data = ["rgb24", width, height, rowstride, img_data[:]]
+        self.data = ["rgb24", width, height, rowstride, img_data[:], options]
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb32%s", self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
-        self.data = ["rgb32", width, height, rowstride, img_data[:]]
+        self.data = ["rgb32", width, height, rowstride, img_data[:], options]
         return True

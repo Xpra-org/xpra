@@ -31,7 +31,7 @@ class Win32Tray(TrayBase):
         self.calculate_offset()
         self.default_icon_extension = "ico"
         icon_filename = get_icon_filename(self.default_icon_filename, "ico")
-        self.tray_widget = win32NotifyIcon(self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)
+        self.tray_widget = win32NotifyIcon(self.app_id, self.tooltip, self.move_cb, self.click_cb, self.exit_cb, None, icon_filename)
         el = get_win32_event_listener()
         if el:
             el.add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
@@ -79,9 +79,9 @@ class Win32Tray(TrayBase):
             self.tray_widget.set_tooltip(name)
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         if self.tray_widget:
-            self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride)
+            self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
     def do_set_icon_from_file(self, filename):
         if self.tray_widget:

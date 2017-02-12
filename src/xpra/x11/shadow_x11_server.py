@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import time
 #ensures we only load GTK2:
 from xpra.x11.x11_server_base import X11ServerBase
 
-from xpra.util import envbool
+from xpra.util import envbool, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
@@ -100,7 +100,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         errs = []
         for c in classes:
             try:
-                w = c(self, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+                w = c(self, XPRA_APP_ID, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
                 return w
             except Exception as e:
                 errs.append((c, e))

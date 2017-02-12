@@ -15,9 +15,10 @@ class TrayBase(object):
         Utility superclass for all tray implementations
     """
 
-    def __init__(self, client, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
+    def __init__(self, client, app_id, menu, tooltip, icon_filename, size_changed_cb, click_cb, mouseover_cb, exit_cb):
         #we don't keep a reference to client,
         #because calling functions on the client directly should be discouraged
+        self.app_id = app_id
         self.menu = menu
         self.tooltip = tooltip
         self.size_changed_cb = size_changed_cb
@@ -68,7 +69,7 @@ class TrayBase(object):
         raise Exception("override me!")
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         raise Exception("override me!")
 
     def get_icon_filename(self, basename=None):

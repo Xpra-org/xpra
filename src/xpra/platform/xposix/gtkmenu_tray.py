@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -38,7 +38,7 @@ class GTKMenuTray(TrayBase):
     def set_tooltip(self, text=None):
         pass
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         pass
 
     def do_set_icon_from_file(self, filename):

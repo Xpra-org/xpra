@@ -72,7 +72,7 @@ class AppindicatorTray(TrayBase):
         if not self._has_icon:
             self.tray_widget.set_label(text or "Xpra")
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         #use a temporary file (yuk)
         try:
             from gtk import gdk

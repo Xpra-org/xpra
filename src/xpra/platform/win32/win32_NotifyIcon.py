@@ -10,6 +10,7 @@
 import ctypes
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR
 
+from xpra.util import csv
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import GUID, WNDCLASSEX, WNDPROC
 from xpra.log import Logger
@@ -56,7 +57,6 @@ class ICONINFO(ctypes.Structure):
 CreateIconIndirect.restype = HICON
 CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
 
-
 class NOTIFYICONDATA(ctypes.Structure):
     _fields_ = [
         ("cbSize",              DWORD),
@@ -100,6 +100,17 @@ NIF_GUID        = 32
 NIF_REALTIME    = 64
 NIF_SHOWTIP     = 128
 
+NIF_FLAGS = {
+    NIF_MESSAGE     : "MESSAGE",
+    NIF_ICON        : "ICON",
+    NIF_TIP         : "TIP",
+    NIF_STATE       : "STATE",
+    NIF_INFO        : "INFO",
+    NIF_GUID        : "GUID",
+    NIF_REALTIME    : "REALTIME",
+    NIF_SHOWTIP     : "SHOWTIP",
+    }
+
 NOTIFYICON_VERSION = 3
 NOTIFYICON_VERSION_4 = 4
 
@@ -131,12 +142,18 @@ class win32NotifyIcon(object):
     #this allows us to know which hwnd refers to which instance:
     instances = {}
 
-    def __init__(self, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
-        log("win32NotifyIcon: title='%s'", title)
-        self.title = title[:127]
+    def __init__(self, app_id, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
+        log("win32NotifyIcon: app_id=%i, title='%s'", app_id, title)
+        self.app_id = app_id
+        self.title = title
         self.current_icon = None
         # Create the Window.
-        self.current_icon = self.LoadImage(iconPathName.decode())
+        if iconPathName:
+            try:
+                iconPathName = iconPathName.decode()
+            except:
+                pass
+            self.current_icon = self.LoadImage(iconPathName)
         self.create_tray_window()
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
@@ -165,8 +182,7 @@ class win32NotifyIcon(object):
         nid = NOTIFYICONDATA()
         nid.cbSize = ctypes.sizeof(NOTIFYICONDATA)
         nid.hWnd = self.hwnd
-        nid.uID = 20
-        nid.uFlags = flags
+        nid.uID = 20+self.app_id
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
         nid.szTip = self.title
@@ -180,7 +196,7 @@ class win32NotifyIcon(object):
         #dwInfoFlags
         #guidItem
         #hBalloonIcon
-        log("make_nid(%#x)=%s", flags, nid)
+        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, title, self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
 
     def delete_tray_window(self):
@@ -200,8 +216,8 @@ class win32NotifyIcon(object):
         #FIXME: implement blinking on win32 using a timer
         pass
 
-    def set_tooltip(self, name):
-        self.title = name[:127]
+    def set_tooltip(self, tooltip):
+        self.title = tooltip
         Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
 
@@ -217,7 +233,7 @@ class win32NotifyIcon(object):
         Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         #this is convoluted but it works..
         log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
         from PIL import Image, ImageOps           #@UnresolvedImport
@@ -277,7 +293,7 @@ class win32NotifyIcon(object):
                     hicon = FALLBACK_ICON
             self.do_set_icon(hicon)
             UpdateWindow(self.hwnd)
-            self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
+            self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride, options)
         except:
             log.error("error setting icon", exc_info=True)
         finally:
@@ -295,8 +311,10 @@ class win32NotifyIcon(object):
                     img_type = win32con.IMAGE_BITMAP
                     icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
                 log("LoadImage(%s) using image type=%s", iconPathName,
-                                            {win32con.IMAGE_ICON    : "ICON",
-                                             win32con.IMAGE_BITMAP  : "BITMAP"}.get(img_type))
+                                            {
+                                                win32con.IMAGE_ICON    : "ICON",
+                                                win32con.IMAGE_BITMAP  : "BITMAP",
+                                             }.get(img_type))
                 v = LoadImage(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
             except:
                 log.error("Failed to load icon at %s", iconPathName, exc_info=True)

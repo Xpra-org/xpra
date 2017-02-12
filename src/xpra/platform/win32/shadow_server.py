@@ -17,6 +17,7 @@ traylog = Logger("tray")
 shapelog = Logger("shape")
 netlog = Logger("network")
 
+from xpra.util import XPRA_APP_ID
 from xpra.os_util import StringIOClass
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -358,7 +359,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def make_tray_widget(self):
         from xpra.platform.win32.win32_tray import Win32Tray
-        return Win32Tray(self, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)
+        return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)
 
 
     def makeRootWindowModel(self):

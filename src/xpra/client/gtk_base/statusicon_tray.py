@@ -131,7 +131,7 @@ class GTKStatusIconTray(TrayBase):
             self.tray_widget.set_blinking(on)
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.set_icon_from_pixbuf(tray_icon)
 

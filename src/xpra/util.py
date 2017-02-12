@@ -12,6 +12,8 @@ import os
 import re
 
 
+XPRA_APP_ID = 0
+
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
 #timeouts:

@@ -59,7 +59,7 @@ from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, WIN32, OSX
-from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT
+from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -860,7 +860,8 @@ class UIXpraClient(XpraClientBase):
                 if v:
                     return v
             except:
-                log.error("make_instance%s failed to instantiate %s", class_options+list(args), c, exc_info=True)
+                log.error("Error: cannot instantiate %s:", c)
+                log.error(" arguments=%s", list(args), exc_info=True)
         return None
 
 
@@ -888,7 +889,7 @@ class UIXpraClient(XpraClientBase):
         menu = None
         if self.menu_helper:
             menu = self.menu_helper.build()
-        tray = self.make_tray(menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
         return tray
 
@@ -946,7 +947,9 @@ class UIXpraClient(XpraClientBase):
                 self.idle_add(do_tray_geometry, *args)
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
-        tray_widget = self.make_system_tray(None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
+        #TODO: use the pid instead?
+        app_id = wid
+        tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
         traylog("setup_system_tray%s tray_widget=%s", (client, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
