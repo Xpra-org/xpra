@@ -1092,7 +1092,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_map_event(self, event):
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         gtk.Window.do_map_event(self, event)
-        if not self._override_redirect:
+        if not self._override_redirect and (not self._iconified or not WIN32):
             self.process_map_event()
 
     def process_map_event(self):
@@ -1126,7 +1126,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if wfs and len(wfs)==4:
                 state["frame"] = self._client.crect(*wfs)
                 self._current_frame_extents = wfs
-        geomlog("map-window for wid=%s with client props=%s, state=%s", self._id, props, state)
+        geomlog("map-window wid=%s, geometry=%s, client props=%s, state=%s", self._id, (x, y, w, h), props, state)
         cx = self._client.cx
         cy = self._client.cy
         self.send("map-window", self._id, cx(x), cy(y), cx(w), cy(h), props, state)
