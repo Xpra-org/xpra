@@ -54,6 +54,9 @@ elif [ -x "/usr/libexec/Xorg.bin" ]; then
 elif [ -x "/usr/lib/xorg-server/Xorg" ]; then
 	#Arch Linux:
 	exec "/usr/lib/xorg-server/Xorg" "$@"
+elif [ -x "/usr/lib/xorg/Xorg" ]; then
+	#Ubuntu 16.10:
+	exec "/usr/lib/xorg/Xorg" "$@"
 else
 	XORG_BIN=$(which Xorg)
 fi
