@@ -16,11 +16,12 @@ xpra (1.0.3-1) UNRELEASED; urgency=low
   * fix packet errors with non-string errors (ie: OpenGL)
   * fix clipboard loops with some greedy clients (ie: MS Windows)
   * try to prevent X11 crash following keyboard setup
+  * handle non-suid Xorg binary location used in Ubuntu
   * remove hardcoded DPI option for Debian and Ubuntu (use patched Xdummy)
   * disable unused and unsafe 24bpp pixel modes with x264 encoder
   * OSX library updates
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 12 Feb 2017 22:35:17 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 12 Feb 2017 23:00:31 +0700
 
 xpra (1.0.2-1) UNRELEASED; urgency=low
   * fix Mac OSX clipboard

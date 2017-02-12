@@ -615,6 +615,7 @@ fi
 - fix packet errors with non-string errors (ie: OpenGL)
 - fix clipboard loops with some greedy clients (ie: MS Windows)
 - try to prevent X11 crash following keyboard setup
+- handle non-suid Xorg binary location used in Ubuntu
 - remove hardcoded DPI option for Debian and Ubuntu (use patched Xdummy)
 - disable unused and unsafe 24bpp pixel modes with x264 encoder
 - OSX library updates
