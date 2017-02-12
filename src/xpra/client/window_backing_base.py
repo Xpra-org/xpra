@@ -297,28 +297,55 @@ class WindowBackingBase(object):
             if not specs:
                 continue
             for spec in specs:
-                if spec.min_w>src_width or spec.min_w>dst_width or \
-                   spec.max_w<src_width or spec.max_w<dst_width:
-                    log("csc module %s cannot cope with dimensions %sx%s to %sx%s", spec.codec_class, src_width, src_height, dst_width, dst_height)
-                    continue
-                if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
-                    log("csc module %s cannot scale")
+                v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
+                if v:
                     continue
                 try:
                     csc = spec.make_instance()
                     csc.init_context(src_width, src_height, src_format,
                                dst_width, dst_height, dst_format, speed)
                     return csc
-                except:
-                    log.error("failed to create csc instance of %s for %s to %s", spec.codec_class, src_format, dst_format, exc_info=True)
+                except Exception as e:
+                    log("make_csc%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), exc_info=True)
+                    log.error("Error: failed to create csc instance %s", spec.codec_class)
+                    log.error(" for %s to %s: %s", src_format, dst_format, e)
         log.error("Error: no matching CSC module found")
         log.error(" for %ix%i %s source format,", src_width, src_height, src_format)
         log.error(" to %ix%i %s", dst_width, dst_height, " or ".join(dst_format_options))
         log.error(" with options=%s, speed=%i", dst_format_options, speed)
         log.error(" tested:")
-        for spec in specs:
-            log.error(" - %s", spec)
+        for dst_format in dst_format_options:
+            specs = in_options.get(dst_format)
+            if not specs:
+                continue
+            log.error(" * %s:", dst_format)
+            for spec in specs:
+                log.error("   - %s:", spec)
+                v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
+                if v:
+                    log.error("       "+v[0], *v[1:])
         raise Exception("no csc module found for %s(%sx%s) to %s(%sx%s)" % (src_format, src_width, src_height, " or ".join(dst_format_options), dst_width, dst_height, CSC_OPTIONS))
+
+    def validate_csc_size(self, spec, src_width, src_height, dst_width, dst_height):
+        if not spec.can_scale and (src_width!=dst_width or src_height!=dst_height):
+            return "scaling not suported"
+        elif src_width<spec.min_w:
+            return "source width %i is out of range: minimum is %i", src_width, spec.min_w
+        elif src_height<spec.min_h:
+            return "source height %i is out of range: minimum is %i", src_height, spec.min_h
+        elif dst_width<spec.min_w:
+            return "target width %i is out of range: minimum is %i", dst_width, spec.min_w
+        elif dst_height<spec.min_h:
+            return "target height %i is out of range: minimum is %i", dst_height, spec.min_h
+        elif src_width>spec.max_w:
+            return "source width %i is out of range: maximum is %i", src_width, spec.max_w
+        elif src_height>spec.max_h:
+            return "source height %i is out of range: maximum is %i", src_height, spec.max_h
+        elif dst_width>spec.max_w:
+            return "target width %i is out of range: maximum is %i", dst_width, spec.max_w
+        elif dst_height>spec.max_h:
+            return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
+        return None
 
     def paint_with_video_decoder(self, decoder_module, coding, img_data, x, y, width, height, options, callbacks):
         #log("paint_with_video_decoder%s", (decoder_module, coding, "%s bytes" % len(img_data), x, y, width, height, options, callbacks))
