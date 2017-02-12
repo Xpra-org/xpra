@@ -187,8 +187,9 @@ def get_native_notifier_classes():
 
 def get_native_tray_classes():
     try:
-        from xpra.platform.win32.win32_tray import Win32Tray
-        return [Win32Tray]
+        #from xpra.platform.win32.win32_tray import Win32Tray
+        #return [Win32Tray]
+        pass
     except ImportError as e:
         log("no native tray", exc_info=True)
         log.warn("Warning: cannot load native win32 tray")
