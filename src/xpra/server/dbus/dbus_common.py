@@ -12,8 +12,9 @@ def dbus_exception_wrap(fn, info="setting up server dbus instance"):
         v = fn()
         log("dbus_exception_wrap() %s()=%s", fn, v)
         return v
-    except ImportError:
-        raise
+    except ImportError as e:
+        log.error("Error %s:", info)
+        log.error(" %s", e)
     except Exception as e:
         if str(e).find("org.freedesktop.DBus.Error.NoServer")<0:
             log.error("dbus server error", exc_info=True)
