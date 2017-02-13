@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2014-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,7 +28,8 @@ def find_libfakeXinerama():
             if libpath:
                 return libpath
         except Exception as e:
-            log.warn("Failed to launch ldconfig -p: %s", e)
+            log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:", e)
+            log.error(" %s", e)
     return find_lib("libfakeXinerama.so.1")
 
 current_xinerama_config = None
@@ -99,7 +100,8 @@ def cleanup_fakeXinerama():
                 log("cleanup_fakexinerama() deleting fake xinerama file '%s'", f)
                 os.unlink(f)
         except Exception as e:
-            log.warn("cleanup_fakexinerama() error deleting fake xinerama file '%s': %s", f, e)
+            log.error("Error: failed to delete fakexinerama config file")
+            log.error(" '%s': %s", f, e)
 
 
 def main():
