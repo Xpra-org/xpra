@@ -225,9 +225,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.2.2.tar.bz2"
-		version="3.2.2"
-		hash="sha256:0b129a56d1b8d06101b1fcbfaa9f4f5eee3182d1ad6e44f511a84c12113a366b"
+	<branch module="/releases/ffmpeg-3.2.4.tar.bz2"
+		version="3.2.4"
+		hash="sha256:c0fa3593a2e9e96ace3c1757900094437ad96d1d6ca19f057c378b5f394496a4"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -394,9 +394,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/82/f7/d6dfd7595910a20a563a83a762bf79a253c4df71759c3b228accb3d7e5e4/cryptography-1.7.1.tar.gz"
-		hash="sha256:953fef7d40a49a795f4d955c5ce4338abcec5dea822ed0414ed30348303fdb4c"
-		version="1.7.1"/>
+		module="/packages/99/df/71c7260003f5c469cec3db4c547115df39e9ce6c719a99e067ba0e78fd8a/cryptography-1.7.2.tar.gz"
+		hash="sha256:878cb68b3da3d493ffd68f36db11c29deee623671d3287c3f8d685117ffda9a9"
+		version="1.7.2"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
@@ -535,9 +535,9 @@
 
   <distutils id="python-xxhash">
 	<branch repo="pypi.python.org"
-	        module="/packages/08/ac/f5cf4fc624ef5a12a8c6e80143ee43d9ed8d0c8bda96e2af5772798bcfbe/xxhash-0.6.1.tar.bz2"
-	        hash="sha1:6c57420ea50bb52b3b7161c5b0d9766abc0ac9c9"
-	        version="0.6.1"/>
+	        module="/packages/d9/41/cb1449b72bd089cff9d84f200e8f61125f4643eab1694b6e57beebd3aa32/xxhash-1.0.0.tar.gz"
+	        hash="sha256:9b736af6935424ee7814644ee77c3443b90b0f349249e9bc8a1f7ed1a82f6350"
+	        version="1.0.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
