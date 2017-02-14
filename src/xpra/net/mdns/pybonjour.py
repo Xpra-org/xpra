@@ -83,7 +83,10 @@ _global_lock = _DummyLock()
 
 if sys.platform == 'win32':
     # Need to use the stdcall variants
-    _libdnssd = ctypes.windll.dnssd
+    try:
+        _libdnssd = ctypes.windll.dnssd
+    except Exception:
+        raise ImportError("dnssd library not found, is 'Apple Bonjour' installed?")
     _CFunc = ctypes.WINFUNCTYPE
 else:
     if sys.platform == 'darwin':
@@ -112,7 +115,7 @@ else:
         except Exception as e:
             print("error loading %s: %s" % (lib, e))
     if not _libdnssd:
-        raise ImportError("Failed to load dns library: %s" % str(libs))
+        raise ImportError("Failed to load dns_sd library: %s" % str(libs))
     _CFunc = ctypes.CFUNCTYPE
 
 
