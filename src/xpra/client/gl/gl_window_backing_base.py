@@ -391,10 +391,10 @@ class GLWindowBackingBase(GTKWindowBacking):
     def gl_context(self):
         b = self._backing
         if not b:
-            raise Exception("no OpenGL backing")
+            log("cannot get an OpenGL context: no backing defined")
             return None
         if not is_realized(b):
-            raise Exception("OpenGL backing %s is not realized" % b)
+            log.error("Error: OpenGL backing %s is not realized", b)
             return None
         w, h = self.size
         if w<=0 or h<=0:
@@ -499,7 +499,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("do_scroll_paints%s", (scrolls, flush))
         context = self.gl_context()
         if not context:
-            log.warn("Warning: cannot paint scroll, no OpenGL context!")
+            log("%s.do_scroll_paints(..) no context!", self)
+            fire_paint_callbacks(callbacks, False, "no opengl context")
             return
         def fail(msg):
             log.error("Error: %s", msg)
