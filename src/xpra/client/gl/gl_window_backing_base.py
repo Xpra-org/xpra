@@ -258,11 +258,6 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.internal_format = GL_RGB
                 self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
-        #from xpra.codecs.loader import get_codec
-        self.jpeg_decoder = None #get_codec("dec_jpeg")
-        if self.jpeg_decoder:
-            #enable fast jpeg decoder:
-            self.paint_jpeg = self.do_paint_jpeg
         self._backing.show()
 
     def init_gl_config(self, window_alpha):
@@ -842,8 +837,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.gl_marker("set_alignment%s GL_UNPACK_ROW_LENGTH=%i, GL_UNPACK_ALIGNMENT=%i", (width, rowstride, pixel_format), row_length, alignment)
 
 
-    def do_paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        img = self.jpeg_decoder.decompress(img_data, width, height, options)
+    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+        img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
         flush = options.intget("flush", 0)
         self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
 

@@ -88,7 +88,7 @@ class WindowBackingBase(object):
         self.draw_needs_refresh = True
         self.mmap = None
         self.mmap_enabled = False
-        self.paint_jpeg = None
+        self.jpeg_decoder = get_codec("dec_jpeg")
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
@@ -508,7 +508,7 @@ class WindowBackingBase(object):
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding), coding, img_data, x, y, width, height, options, callbacks)
-            elif self.paint_jpeg and coding=="jpeg":
+            elif self.jpeg_decoder and coding=="jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
