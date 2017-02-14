@@ -320,7 +320,7 @@ def query_actions(bus_name, object_path, actions_cb=None, error_cb=None):
     def actions_error(*args):
         log("actions_error%s", args)
         if error_cb:
-            error_cb()
+            error_cb(args)
     actions_iface.List(reply_handler=actions_list, error_handler=actions_error)
     def describe_all_actions(values):
         log("describe_all_actions(%s)", values)
