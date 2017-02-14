@@ -61,6 +61,9 @@
 		${prefix}/lib/libx264.*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libyuv*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libavcodec.*.dylib
 	</binary>
 	<binary>
