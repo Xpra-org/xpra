@@ -838,9 +838,10 @@ class GLWindowBackingBase(GTKWindowBacking):
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
-        flush = options.intget("flush", 0)
-        self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+        #img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
+        #self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+        img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
+        self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
 
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):

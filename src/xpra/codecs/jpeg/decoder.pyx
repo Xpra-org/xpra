@@ -153,7 +153,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
-    log("decompress: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    log("decompress_to_yuv: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
     #allocate YUV buffers:
     cdef unsigned long plane_sizes[3]
     cdef unsigned char *planes[3]
@@ -192,7 +192,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
         close()
     if LOG_PERF:
         elapsed = time.time()-start
-        log("decompress jpeg: %iMB/s (%i bytes in %.1fms)", float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
+        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", subsamp_str, float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
 
 
@@ -224,16 +224,12 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
         close()
         return None
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
-    subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
-    assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
-    log("decompress: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
-    cdef int i, stride
+    subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
+    log("decompress_to_rgb: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
     cdef MemBuf membuf
     cdef unsigned char *dst_buf
-    cdef int flags = 0      #TJFLAG_BOTTOMUP
-    pystrides = []
-    pyplanes = []
-    cdef unsigned long total_size = 0
+    cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
+    cdef unsigned long size = 0
     try:
         #TODO: add padding and rounding?
         start = time.time()
@@ -246,15 +242,15 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
                               buf, buf_len, dst_buf,
                               width, stride, height, pixel_format, flags)
         if r:
-            log.error("Error: failed to decompress %s JPEG data to RGB", subsamp_str)
+            log.error("Error: failed to decompress %s JPEG data to %s", subsamp_str, rgb_format)
             log.error(" %s", get_error_str())
-            log.error(" width=%i, strides=%s, height=%s", width, pystrides, height)
+            log.error(" width=%i, stride=%s, height=%s", width, stride, height)
             return None
     finally:
         close()
     if LOG_PERF:
         elapsed = time.time()-start
-        log("decompress jpeg: %iMB/s (%i bytes in %.1fms)", float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
+        log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", rgb_format, float(size)/elapsed//1024//1024, size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, ImageWrapper.PACKED)
 
 
@@ -263,15 +259,18 @@ def selftest(full=False):
         log("jpeg selftest")
         import binascii
         data = binascii.unhexlify("ffd8ffe000104a46494600010101004800480000fffe00134372656174656420776974682047494d50ffdb0043000302020302020303030304030304050805050404050a070706080c0a0c0c0b0a0b0b0d0e12100d0e110e0b0b1016101113141515150c0f171816141812141514ffdb00430103040405040509050509140d0b0d1414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414ffc20011080010001003011100021101031101ffc4001500010100000000000000000000000000000008ffc40014010100000000000000000000000000000000ffda000c03010002100310000001aa4007ffc40014100100000000000000000000000000000020ffda00080101000105021fffc40014110100000000000000000000000000000020ffda0008010301013f011fffc40014110100000000000000000000000000000020ffda0008010201013f011fffc40014100100000000000000000000000000000020ffda0008010100063f021fffc40014100100000000000000000000000000000020ffda0008010100013f211fffda000c03010002000300000010924fffc40014110100000000000000000000000000000020ffda0008010301013f101fffc40014110100000000000000000000000000000020ffda0008010201013f101fffc40014100100000000000000000000000000000020ffda0008010100013f101fffd9")
-        img = decompress_to_yuv(data, 16, 16)
-        log("decompress(%i bytes)=%s", len(data), img)
-        if full:
-            try:
-                v = decompress_to_yuv(data[:len(data)//2], 16, 16)
-                assert v is not None
-            except:
-                pass
-            else:
-                raise Exception("should not be able to decompress incomplete data, but got %s" % v)
+        def test_rgbx(*args):
+            return decompress_to_rgb("RGBX", *args) 
+        for fn in (decompress_to_yuv, test_rgbx):
+            img = fn(data, 16, 16)
+            log("%s(%i bytes)=%s", fn, len(data), img)
+            if full:
+                try:
+                    v = decompress_to_yuv(data[:len(data)//2], 16, 16)
+                    assert v is not None
+                except:
+                    pass
+                else:
+                    raise Exception("should not be able to decompress incomplete data, but got %s" % v)
     finally:
         pass
