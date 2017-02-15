@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.log import Logger
 log = Logger("osx", "events")
+workspacelog = Logger("osx", "events", "workspace")
 
 from xpra.util import envbool
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
@@ -459,6 +461,10 @@ try:
        }
 except:
     CG = None
+try:
+    from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
+except:
+    CGWindowListCopyWindowInfo = None
 
 
 def roundup(n, m):
@@ -543,7 +549,7 @@ def register_URL_handler(handler):
         )
 
 
-from AppKit import NSApplication, NSWorkspace, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 import objc         #@UnresolvedImport
 
 def delegate_cb(delegate, name):
@@ -566,16 +572,39 @@ class Delegate(NSObject):
         log("register_sleep_handlers()")
         workspace          = NSWorkspace.sharedWorkspace()
         notificationCenter = workspace.notificationCenter()
-        notificationCenter.addObserver_selector_name_object_(self, self.receiveSleepNotification_,
-                                                             NSWorkspaceWillSleepNotification, None)
-        notificationCenter.addObserver_selector_name_object_(self, self.receiveWakeNotification_,
-                                                             NSWorkspaceDidWakeNotification, None)
+        def add_observer(fn, val):
+            notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
+        add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
+        add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
+        add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
 
     @objc.signature('B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
         delegate_cb(self, "deiconify_callback")
         return True
+
+    def receiveWorkspaceChangeNotification_(self, aNotification):
+        workspacelog("receiveWorkspaceChangeNotification_(%s)", aNotification)
+        if not CGWindowListCopyWindowInfo:
+            return
+        try:
+            ourpid = os.getpid()
+            windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
+            our_windows = {}
+            for window in windowList:
+                pid = window['kCGWindowOwnerPID']
+                if pid==ourpid:
+                    num = window['kCGWindowNumber']
+                    name = window['kCGWindowName']
+                    our_windows[num] = name
+            workspacelog("workspace change - our windows on screen: %s", our_windows)
+            if our_windows:
+                delegate_cb(self, "wake_callback")
+            else:
+                delegate_cb(self, "sleep_callback")
+        except:
+            workspacelog.error("Error querying workspace info", exc_info=True)
 
     def receiveSleepNotification_(self, aNotification):
         log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)

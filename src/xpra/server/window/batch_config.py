@@ -71,17 +71,21 @@ class DamageBatchConfig(object):
             "min-delay"         : self.min_delay,
             "max-delay"         : self.max_delay,
             "timeout-delay"     : self.timeout_delay,
-            "locked"            : self.locked}
-        if len(self.last_delays)>0:
-            batch_delays = [x for _,x in list(self.last_delays)]
-            info["delay"] = get_list_stats(batch_delays)
-        if len(self.last_actual_delays)>0:
-            batch_delays = [x for _,x in list(self.last_actual_delays)]
-            info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
-        for name, details, factor, weight in self.factors:
-            fdetails = details.copy()
-            fdetails[""] = int(100.0*factor), int(100.0*weight)
-            info[name] = fdetails
+            "locked"            : self.locked,
+            }
+        if self.locked:
+            info["delay"] = self.delay
+        else:
+            if len(self.last_delays)>0:
+                batch_delays = [x for _,x in list(self.last_delays)]
+                info["delay"] = get_list_stats(batch_delays)
+            if len(self.last_actual_delays)>0:
+                batch_delays = [x for _,x in list(self.last_actual_delays)]
+                info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
+            for name, details, factor, weight in self.factors:
+                fdetails = details.copy()
+                fdetails[""] = int(100.0*factor), int(100.0*weight)
+                info[name] = fdetails
         return info
 
 

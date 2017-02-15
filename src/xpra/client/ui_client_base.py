@@ -695,10 +695,12 @@ class UIXpraClient(XpraClientBase):
         packet = ["buffer-refresh", wid, 0, quality]
         options["refresh-now"] = bool(refresh)
         if suspend_resume is True:
-            options["batch"] = {"reset"     : True,
-                                "delay"     : 1000,
-                                "locked"    : True,
-                                "always"    : True}
+            options["batch"] = {
+                "reset"     : True,
+                "delay"     : 1000,
+                "locked"    : True,
+                "always"    : True,
+                }
         elif suspend_resume is False:
             options["batch"] = {"reset"     : True}
         else:
