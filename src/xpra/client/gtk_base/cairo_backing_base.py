@@ -119,10 +119,12 @@ class CairoBackingBase(GTKWindowBacking):
         #use frombytes rather than frombuffer to be compatible with python3 new-style buffers
         #this is slower, but since this codepath is already dreadfully slow, we don't care
         bdata = strtobytes(memoryview_to_bytes(img_data))
+        src_format = rgb_format.replace("X", "A")
         try:
-            img = PIL.Image.frombytes(oformat, (width,height), bdata, "raw", rgb_format.replace("X", "A"), rowstride, 1)
+            img = PIL.Image.frombytes(oformat, (width,height), bdata, "raw", src_format, rowstride, 1)
         except ValueError as e:
-            raise Exception("failed to parse raw %s data to %s: %s" % (rgb_format, oformat, e))
+            log("PIL Image frombytes:", exc_info=True)
+            raise Exception("failed to parse raw %s data as %s to %s: %s" % (rgb_format, src_format, oformat, e))
         #This is insane, the code below should work, but it doesn't:
         # img_data = bytearray(img.tostring('raw', oformat, 0, 1))
         # pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, True, 8, width, height, rowstride)

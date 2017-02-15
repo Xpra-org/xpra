@@ -240,7 +240,6 @@ class WindowBackingBase(object):
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
         else:
             raise Exception("invalid image mode: %s" % img.mode)
-        paint_options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, paint_options, callbacks)
         return False
 
@@ -267,6 +266,7 @@ class WindowBackingBase(object):
             bpp = len(rgb_format)*8
             assert bpp in (24, 32), "invalid rgb format %s" % rgb_format
             paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
+            options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
@@ -449,7 +449,6 @@ class WindowBackingBase(object):
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #make a new options dict and set the rgb format:
         paint_options = typedict(options)
-        paint_options["rgb_format"] = rgb_format
         #this will also take care of firing callbacks (from the UI thread):
         def paint():
             data = rgb.get_pixels()

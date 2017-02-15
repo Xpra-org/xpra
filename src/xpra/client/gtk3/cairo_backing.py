@@ -43,6 +43,9 @@ class CairoBacking(CairoBackingBase):
     def __repr__(self):
         return "gtk3.CairoBacking(%s)" % self._backing
 
+    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+        #don't use the native decoder... which would give us RGB data
+        return self.paint_image("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         log("cairo.paint_image(%s, %s bytes,%s,%s,%s,%s,%s,%s) alpha_enabled=%s", coding, len(img_data), x, y, width, height, options, callbacks, self._alpha_enabled)
