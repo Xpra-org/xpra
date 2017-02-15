@@ -25,9 +25,9 @@ from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 RandR = RandRBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
-from xpra.x11.bindings.core_bindings import X11CoreBindings #@UnresolvedImport
+from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
 X11Core = X11CoreBindings()
-from xpra.x11.bindings.window_bindings import X11WindowBindings
+from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
