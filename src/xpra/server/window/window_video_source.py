@@ -1532,7 +1532,7 @@ class WindowVideoSource(WindowSource):
         if len(scrolls)>=20 or len(non_scroll)>20:
             #avoid fragmentation, which is too costly
             #(too many packets, too many loops through the encoder code)
-            scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(raw_scroll), len(non_scroll))
+            scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(scrolls), len(non_scroll))
             scrolls = []
             non_scroll = [(0, wh)]
         flush = len(non_scroll)
