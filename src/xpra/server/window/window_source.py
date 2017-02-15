@@ -812,7 +812,7 @@ class WindowSource(object):
             return "png"
         if "jpeg" in self.common_encodings:
             return "jpeg"
-        return self.common_encodings[0]
+        return [x for x in self.common_encodings if x!="rgb"][0]
 
     def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *args):
         if pixel_count<self._rgb_auto_threshold:
