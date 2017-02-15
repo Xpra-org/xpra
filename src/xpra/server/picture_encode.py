@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgb    #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgbx, r210_to_rgb    #@UnresolvedImport
 from xpra.codecs.loader import get_codec
 from xpra.os_util import memoryview_to_bytes
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -128,6 +128,11 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixels(r210_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
+            return True
+        if "RGBX" in rgb_formats:
+            log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(r210_to_rgbx(pixels))
+            image.set_pixel_format("RGBX")
             return True
     elif pixel_format in ("BGRX", "BGRA"):
         if supports_transparency and "RGBA" in rgb_formats:

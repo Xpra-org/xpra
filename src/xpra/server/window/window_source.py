@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -60,7 +60,7 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import rgb_encode, mmap_send
+from xpra.server.picture_encode import rgb_encode, mmap_send, argb_swap
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
@@ -1901,7 +1901,13 @@ class WindowSource(object):
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
                           self.rgb_zlib, self.rgb_lz4, self.rgb_lzo)
 
+    def no_r210(self, image, rgb_formats):
+        rgb_format = image.get_pixel_format()
+        if rgb_format=="r210":
+            argb_swap(image, rgb_formats, self.supports_transparency)
+
     def jpeg_encode(self, coding, image, options):
+        self.no_r210(image, ["RGB"])
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         return self.enc_jpeg.encode(image, q, s, options)
@@ -1910,6 +1916,7 @@ class WindowSource(object):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
+        self.no_r210(image, ["RGBA", "RGBX"])
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         transparency = self.supports_transparency and options.get("transparency", True)

@@ -57,6 +57,33 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
     return memoryview(output_buf)
 
 
+def r210_to_rgbx(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    # buf is a Python buffer object
+    cdef const unsigned int* cbuf = <const unsigned int *> 0
+    cdef Py_ssize_t cbuf_len = 0
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    return r210data_to_rgbx(cbuf, cbuf_len)
+
+cdef r210data_to_rgbx(const unsigned int* r210, const int r210_len):
+    if r210_len <= 0:
+        return None
+    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
+    cdef MemBuf output_buf = getbuf(r210_len)
+    cdef unsigned char* rgbx = <unsigned char*> output_buf.get_mem()    
+    #number of pixels:
+    cdef int i = 0
+    cdef unsigned int v
+    while i < r210_len:
+        v = r210[i//4]
+        rgbx[i]   = (v&0x000003ff) >> 2
+        rgbx[i+1] = (v&0x000ffc00) >> 12
+        rgbx[i+2] = (v&0x3ff00000) >> 22
+        rgbx[i+3] = 0xFF
+        i = i + 4
+    return memoryview(output_buf)
+
+
 def r210_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
