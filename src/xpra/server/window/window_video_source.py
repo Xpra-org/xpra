@@ -368,7 +368,7 @@ class WindowVideoSource(WindowSource):
         if sr:
             videomin = min(videomin, sr.width * sr.height)
             rgbmax = min(rgbmax, sr.width*sr.height//2)
-        if pixel_count<=rgbmax:
+        if pixel_count<=rgbmax or cww<8 or cwh<8:
             return lossless("low pixel count")
 
         if current_encoding!="auto" and current_encoding not in self.common_video_encodings:
