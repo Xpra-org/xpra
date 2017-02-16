@@ -106,10 +106,10 @@ class Keyboard(KeyboardBase):
             layout = v
         def s(v):
             try:
-                return v.encode("ascii")
+                return v.decode("latin1")
             except:
                 return str(v)
-        return s(layout), [s(x) for x in layouts], b"", None
+        return s(layout), [s(x) for x in layouts], "", None
 
 
     def get_keyboard_repeat(self):

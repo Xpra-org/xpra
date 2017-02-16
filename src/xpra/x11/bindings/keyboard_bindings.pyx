@@ -398,10 +398,11 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
 
     def get_default_properties(self):
-        return {"rules"    : "base",
-                "model"    : "pc105",
-                "layout"   : "us",
-                }
+        return {
+            "rules"    : "base",
+            "model"    : "pc105",
+            "layout"   : "us",
+            }
 
     def getXkbProperties(self):
         if not self.hasXkb():

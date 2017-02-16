@@ -17,6 +17,7 @@ dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "menu")
 menulog = Logger("posix", "menu")
 
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import iround, envbool
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
@@ -24,6 +25,10 @@ device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XSETTINGS_DPI", True)
+
+
+def hexstr(v):
+    return binascii.hexlify(strtobytes(v))
 
 
 def get_native_system_tray_classes():
@@ -184,7 +189,7 @@ def _get_xsettings_dict():
     if v:
         _, values = v
         for setting_type, prop_name, value, _ in values:
-            d[prop_name] = (setting_type, value)
+            d[bytestostr(prop_name)] = (setting_type, value)
     return d
 
 
@@ -192,11 +197,12 @@ def _get_xsettings_dpi():
     if XSETTINGS_DPI:
         from xpra.x11.xsettings_prop import XSettingsTypeInteger
         d = _get_xsettings_dict()
-        for k,div in {"Xft.dpi"         : 1,
-                      "Xft/DPI"         : 1024,
-                      "gnome.Xft/DPI"   : 1024,
-                      #"Gdk/UnscaledDPI" : 1024, ??
-                      }.items():
+        for k,div in {
+            "Xft.dpi"         : 1,
+            "Xft/DPI"         : 1024,
+            "gnome.Xft/DPI"   : 1024,
+            #"Gdk/UnscaledDPI" : 1024, ??
+            }.items():
             if k in d:
                 value_type, value = d.get(k)
                 if value_type==XSettingsTypeInteger:
@@ -238,7 +244,7 @@ def get_icc_info():
         if data:
             screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
             version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", binascii.hexlify(version), binascii.hexlify(data))
+            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version), hexstr(data))
             icc = {
                     "source"    : "_ICC_PROFILE",
                     "data"      : data,
@@ -297,7 +303,7 @@ def get_current_desktop():
             v = struct.unpack("=I", d)[0]
     except Exception as e:
         log.warn("failed to get current desktop: %s", e)
-    log("get_current_desktop() %s=%s", binascii.hexlify(d or ""), v)
+    log("get_current_desktop() %s=%s", hexstr(d or ""), v)
     return v
 
 def get_workarea():
@@ -315,7 +321,7 @@ def get_workarea():
         else:
             cur_workarea = workarea[d*4*4:(d+1)*4*4]
             v = struct.unpack("=IIII", cur_workarea)
-            screenlog("get_workarea() %s=%s", binascii.hexlify(cur_workarea), v)
+            screenlog("get_workarea() %s=%s", hexstr(cur_workarea), v)
             return v
     except Exception as e:
         screenlog.warn("failed to get workarea: %s", e)
@@ -332,7 +338,7 @@ def get_number_of_desktops():
     except Exception as e:
         screenlog.warn("failed to get number of desktop: %s", e)
     v = max(1, v)
-    screenlog("get_number_of_desktops() %s=%s", binascii.hexlify(d or ""), v)
+    screenlog("get_number_of_desktops() %s=%s", hexstr(d or ""), v)
     return v
 
 def get_desktop_names():
@@ -346,7 +352,7 @@ def get_desktop_names():
                 v = v[:-1]
     except Exception as e:
         screenlog.warn("failed to get desktop names: %s", e)
-    screenlog("get_desktop_names() %s=%s", binascii.hexlify(d or ""), v)
+    screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)
     return v
 
 
@@ -494,7 +500,7 @@ def get_info():
         serial, values = s
         xi = {"serial"  : serial}
         for _,name,value,_ in values:
-            xi[name] = value
+            xi[bytestostr(name)] = value
         i["xsettings"] = xi
     i.setdefault("dpi", {
                          "xsettings"    : _get_xsettings_dpi(),
