@@ -502,17 +502,23 @@ def check_support(force_enable=False, check_colormap=False):
         glconfig = Config_new_by_mode(display_mode)
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
-    props.update({
-                  "display_mode"        : get_MODE_names(display_mode),
-                  #"glconfig"            : glconfig,
-                  "has_alpha"           : glconfig.has_alpha(),
-                  "rgba"                : glconfig.is_rgba(),
-                  "stereo"              : glconfig.is_stereo(),
-                  "double-buffered"     : glconfig.is_double_buffered(),
-                  "depth"               : glconfig.get_depth(),
-                  "has-depth-buffer"    : glconfig.has_depth_buffer(),
-                  "has-stencil-buffer"  : glconfig.has_stencil_buffer(),
-                  })
+    props["display_mode"] = get_MODE_names(display_mode)
+    #on OSX, we had to patch out get_depth...
+    #so take extra precautions when querying properties:
+    for x,fn_name in {
+        "has_alpha"           : "has_alpha",
+        "rgba"                : "is_rgba",
+        "stereo"              : "is_stereo",
+        "double-buffered"     : "is_double_buffered",
+        "depth"               : "get_depth",
+        "has-depth-buffer"    : "has_depth_buffer",
+        "has-stencil-buffer"  : "has_stencil_buffer",
+        }.items():
+        fn = getattr(glconfig, fn_name, None)
+        if fn:
+            props[x] = fn()
+        else:
+            log("%s does not support %s()", glconfig, fn_name)
     for x in ("RED_SIZE", "GREEN_SIZE", "BLUE_SIZE", "ALPHA_SIZE",
               "AUX_BUFFERS", "DEPTH_SIZE", "STENCIL_SIZE",
               "ACCUM_RED_SIZE", "ACCUM_GREEN_SIZE", "ACCUM_BLUE_SIZE",
