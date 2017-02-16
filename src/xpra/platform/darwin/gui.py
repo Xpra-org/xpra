@@ -523,9 +523,7 @@ except Exception as e:
 
 def register_URL_handler(handler):
     log("register_URL_handler(%s)", handler)
-    import objc         #@UnresolvedImport
-    NSAppleEventManager = objc.lookUpClass('NSAppleEventManager')
-    NSObject = objc.lookUpClass('NSObject')
+    from AppKit import NSAppleEventManager, NSObject          #@UnresolvedImport
 
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
@@ -568,12 +566,14 @@ class Delegate(NSObject):
         if SLEEP_HANDLER:
             self.register_sleep_handlers()
 
+    @objc.python_method
     def register_sleep_handlers(self):
         log("register_sleep_handlers()")
         workspace          = NSWorkspace.sharedWorkspace()
         notificationCenter = workspace.notificationCenter()
         def add_observer(fn, val):
             notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
+        #NSWorkspaceWillPowerOffNotification
         add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
         add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
         add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
