@@ -121,23 +121,26 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     #abs: try to never go higher than 5 times reference latency:
     dam_lat_abs = max(0, ((statistics.avg_damage_in_latency or 0)-ref_damage_latency) / (ref_damage_latency * 4.0))
 
-    #calculate a target latency and try to get close to it
-    avg_delay = batch.delay
-    delays = list(batch.last_actual_delays)
-    if len(delays)>0:
-        #average recent actual delay:
-        avg_delay = time_weighted_average(delays)
-    #and average that with the current delay (which is lower or equal):
-    frame_delay = (avg_delay + batch.delay) / 2.0
-    #ensure we always spend at least as much time encoding as we spend batching:
-    #(one frame encoding whilst one frame is batching is our ideal result)
-    target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
-    #current speed:
-    speed = min_speed
-    if len(speed_data)>0:
-        speed = max(min_speed, time_weighted_average(speed_data))
-    #rel: do we need to increase or decrease speed to reach the target:
-    dam_lat_rel = speed/100.0 * statistics.avg_damage_in_latency / target_damage_latency
+    if batch.locked:
+        dam_lat_rel = 0
+    else:
+        #calculate a target latency and try to get close to it
+        avg_delay = batch.delay
+        delays = list(batch.last_actual_delays)
+        if len(delays)>0:
+            #average recent actual delay:
+            avg_delay = time_weighted_average(delays)
+        #and average that with the current delay (which is lower or equal):
+        frame_delay = (avg_delay + batch.delay) / 2.0
+        #ensure we always spend at least as much time encoding as we spend batching:
+        #(one frame encoding whilst one frame is batching is our ideal result)
+        target_damage_latency = max(ref_damage_latency, frame_delay/1000.0)
+        #current speed:
+        speed = min_speed
+        if len(speed_data)>0:
+            speed = max(min_speed, time_weighted_average(speed_data))
+        #rel: do we need to increase or decrease speed to reach the target:
+        dam_lat_rel = speed/100.0 * statistics.avg_damage_in_latency / target_damage_latency
 
     #ensure we decode at a reasonable speed (for slow / low-power clients)
     #maybe this should be configurable?
@@ -204,7 +207,7 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     batch_q = -1
     if batch is not None:
         recs = len(batch.last_actual_delays)
-        if recs>0:
+        if recs>0 and not batch.locked:
             #weighted average between start delay and min_delay
             #so when we start and we don't have any records, we don't lower quality
             #just because the start delay is higher than min_delay
