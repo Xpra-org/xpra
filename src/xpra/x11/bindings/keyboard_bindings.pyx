@@ -81,7 +81,6 @@ cdef extern from "X11/Xlib.h":
     int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
     XModifierKeymap* XInsertModifiermapEntry(XModifierKeymap* modifiermap, KeyCode keycode_entry, int modifier)
     KeySym XKeycodeToKeysym(Display* display, KeyCode keycode, int index)
-    KeySym XStringToKeysym(char* string)
     char* XKeysymToString(KeySym keysym)
 
     int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
@@ -468,7 +467,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
-    cdef _parse_keysym(self, symbol):
+    cdef KeySym _parse_keysym(self, symbol):
         cdef KeySym keysym
         if symbol in ["NoSymbol", "VoidSymbol"]:
             return  NoSymbol
@@ -653,7 +652,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
     def get_keycodes(self, keyname):
         codes = []
-        keysym = self._parse_keysym(keyname)
+        cdef KeySym keysym = self._parse_keysym(keyname)
         if not keysym:
             return  codes
         return self.KeysymToKeycodes(keysym)
@@ -886,6 +885,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return unhandled
 
     def set_xmodmap(self, xmodmap_data):
+        log("set_xmodmap(%s)", xmodmap_data)
         return self.native_xmodmap(xmodmap_data)
 
     def grab_key(self, xwindow, keycode, modifiers):
