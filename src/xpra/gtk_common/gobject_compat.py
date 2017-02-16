@@ -108,6 +108,8 @@ def import_gdk2():
     from gtk import gdk
     return gdk
 def import_gdk3():
+    import gi
+    gi.require_version('Gdk', '3.0')
     from gi.repository import Gdk                   #@UnresolvedImport
     try_import_GdkX11()
     return Gdk
