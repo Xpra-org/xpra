@@ -35,7 +35,7 @@ if [ -d "$APP_ROOT" ]; then
 		chown root:wheel /usr/local/bin/$x
 		chmod 755 /usr/local/bin/$x
 	done
-	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Launcher Network_info OpenGL_check Path_info PowerMonitor Print Python Shadow Version_info Webcam_Test;do
+	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Keyboard_info Launcher Network_info OpenGL_check Path_info PowerMonitor Print Python Shadow Version_info Webcam_Test;do
 		echo '#!/bin/sh' > /usr/local/bin/Xpra_$x
 		echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/local/bin/Xpra_$x
 		chown root:wheel /usr/local/bin/Xpra_$x
