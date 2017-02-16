@@ -2385,7 +2385,8 @@ class UIXpraClient(XpraClientBase):
             soundlog("start_sound_source(%s) sound source %s started", device, ss)
             return True
         except Exception as e:
-            log.error("error setting up sound: %s", e)
+            log.error("Error setting up sound:")
+            log.error(" %s", e)
             return False
 
     def new_stream(self, sound_source, codec):
@@ -2413,7 +2414,7 @@ class UIXpraClient(XpraClientBase):
             self.emit("microphone-changed")
         self.sound_source = None
         if ss is None:
-            log.warn("stop_sending_sound: sound not started!")
+            log.warn("Warning: cannot stop sound source which has not been started")
             return
         #tell the server to stop:
         self.send("sound-data", ss.codec or "", "", {"end-of-stream" : True})
@@ -2496,13 +2497,14 @@ class UIXpraClient(XpraClientBase):
         if sound_sink!=self.sound_sink:
             soundlog("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
             return
-        soundlog.warn("stopping speaker because of error: %s", error)
+        soundlog.warn("Error: stopping speaker:")
+        soundlog.warn(" %s", str(error).replace("gst-resource-error-quark: ", ""))
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
         if sound_sink!=self.sound_sink:
             soundlog("sound_process_stopped(%s, %s) not the current sink, ignoring it", sound_sink, args)
             return
-        soundlog.warn("the sound process has stopped")
+        soundlog.warn("Warning: the sound process has stopped")
         self.stop_receiving_sound()
 
     def sound_sink_exit(self, sound_sink, *args):
@@ -2514,7 +2516,7 @@ class UIXpraClient(XpraClientBase):
         if ss and ss.codec:
             #the mandatory "I've been naughty warning":
             #we use the "codec" field as guard to ensure we only print this warning once..
-            soundlog.warn("the %s sound sink has stopped", ss.codec)
+            soundlog.warn("Warning: the %s sound sink has stopped", ss.codec)
             ss.codec = ""
         self.stop_receiving_sound()
 
@@ -2537,7 +2539,7 @@ class UIXpraClient(XpraClientBase):
             soundlog("%s sound sink started", codec)
             return True
         except Exception as e:
-            soundlog.error("failed to start sound sink", exc_info=True)
+            soundlog.error("Error: failed to start sound sink", exc_info=True)
             self.sound_sink_error(self.sound_sink, e)
             return False
 
@@ -2610,7 +2612,8 @@ class UIXpraClient(XpraClientBase):
             self.stop_receiving_sound(False)
             return
         if codec!=ss.codec:
-            soundlog.error("sound codec change not supported! (from %s to %s)", ss.codec, codec)
+            soundlog.error("Error: sound codec change is not supported!")
+            soundlog.error(" stream tried to switch from %s to %s", ss.codec, codec)
             self.stop_receiving_sound()
             return
         elif ss.get_state()=="stopped":
