@@ -44,7 +44,6 @@ def _get_keyboard_layouts():
     #     "<TSMInputSource 0x7ff8e9f2c5f0> KB Layout: Czech - QWERTY (id=30778)",
     #     "<TSMInputSource 0x7ff8e9f2b8c0> KB Layout: Czech (id=30776)",
     # [...]
-    print("TISCreateInputSourceList keyboard_layouts=%s", keyboard_layouts)
     return keyboard_layouts
 
 def _get_keyboard_layout_dict(layout):
