@@ -281,6 +281,7 @@ platform_import(globals(), "gui", False,
 def main():
     from xpra.platform import program_context
     from xpra.util import print_nested_dict
+    from xpra.os_util import OSX
     from xpra.log import enable_color
     with program_context("GUI-Properties"):
         enable_color()
@@ -292,9 +293,10 @@ def main():
                 x.enable_debug()
 
         #naughty, but how else can I hook this up?
-        if os.name=="posix":
+        if os.name=="posix" and not OSX:
             try:
-                from xpra.x11.bindings import posix_display_source      #@UnusedImport
+                from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+                init_posix_display_source()
             except:
                 pass    #maybe running on OSX? hope for the best..
         i = get_info()

@@ -172,8 +172,8 @@ def main():
             print("xsettings require a posix OS")
             return 1
 
-        from xpra.x11.bindings import posix_display_source  #@UnresolvedImport - takes care of hooking up the display
-        assert posix_display_source
+        from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+        init_posix_display_source()
         from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
         window_bindings = X11WindowBindings()
         selection = "_XSETTINGS_S0"
