@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -33,6 +33,27 @@ class Keyboard(KeyboardBase):
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
         self.key_translations = {}
+
+
+    def get_layout_spec(self):
+        layout = "us"
+        layouts = ["us"]
+        variant = ""
+        variants = []
+        try:
+            from xpra.platform.darwin.keyboard_layout import get_keyboard_layout
+            i = get_keyboard_layout()
+            log("get_keyboard_layout()=%s", i)
+            locale = i["locale"]        #ie: "en_GB"
+            parts = locale.split("_")
+            if len(parts)==2:
+                layout = parts[1].lower()
+                layouts = [layout, 'us']
+        except Exception as e:
+            log("get_layout_spec()", exc_info=True)
+            log.error("Error querying keyboard layout:")
+            log.error(" %s", e)
+        return layout, layouts, variant, variants
 
     def get_keymap_modifiers(self):
         """
