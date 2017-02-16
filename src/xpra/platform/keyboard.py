@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ platform_import(globals(), "keyboard", True,
 
 def main():
     import sys
-    from xpra.os_util import WIN32
+    from xpra.os_util import WIN32, OSX, bytestostr
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color
@@ -31,11 +31,14 @@ def main():
 
         #naughty, but how else can I hook this up?
         import os
-        if os.name=="posix":
+        if os.name=="posix" and not OSX:
             try:
-                from xpra.x11.bindings import posix_display_source      #@UnusedImport
-            except:
-                pass    #maybe running on OSX? hope for the best..
+                from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+                init_posix_display_source()
+            except Exception as e:
+                print("failed to connect to the X11 server:")
+                print(" %s" % e)
+                #hope for the best..
 
         keyboard = Keyboard()
         mod_meanings, mod_managed, mod_pointermissing = keyboard.get_keymap_modifiers()
