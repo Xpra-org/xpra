@@ -588,11 +588,12 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     sockpaths.add(sockpath)
                 except Exception as e:
                     log("socket creation error", exc_info=True)
-                    if sockpath.startswith("/var/run/xpra"):
+                    if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
                         log.warn("Warning: cannot create socket '%s'", sockpath)
                         log.warn(" %s", e)
-                        if not os.path.exists("/var/run/xpra"):
-                            log.warn(" %s does not exist", "/var/run/xpra")
+                        dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
+                        if not os.path.exists(dirname):
+                            log.warn(" %s does not exist", dirname)
                         if os.name=="posix":
                             uid = getuid()
                             username = get_username_for_uid(uid)
@@ -602,8 +603,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                                 log.warn("  (missing 'xpra' group membership?)")
                             try:
                                 import stat
-                                stat_info = os.stat("/var/run/xpra")
-                                log.warn(" permissions on directory %s: %s", "/var/run/xpra", oct(stat.S_IMODE(stat_info.st_mode)))
+                                stat_info = os.stat(dirname)
+                                log.warn(" permissions on directory %s: %s", dirname, oct(stat.S_IMODE(stat_info.st_mode)))
                                 import pwd,grp      #@UnresolvedImport
                                 user = pwd.getpwuid(stat_info.st_uid)[0]
                                 group = grp.getgrgid(stat_info.st_gid)[0]
