@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.3
+%define version 1.0.4
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -597,6 +597,20 @@ fi
 
 
 %changelog
+* Fri Feb 17 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
+- fix quality and speed values skewed by locked batch delay
+- fix csc libyuv packaging on Mac OS
+- fix dbus import failures causing fatal error
+- fix gtk menu dbus error handler
+- fix Gdk import warnings
+- fix shared socket creation failures causing fatal error
+- fix multi-monitor wheel scroll offset on MS Windows
+- fix client paint failures with very small CSC sizes
+- fix unlikely encoding selection error with rgb strict mode
+- restore software mp3 decoding in HTML5 client
+- revert overly zealous memory access barrier
+- run uninstaller before install on MS Windows
+
 * Sun Feb 12 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
 - fix memcpy overflow
 - fix ssh password leak in connection strings
@@ -672,7 +686,7 @@ fi
 - fix encoding quality tray tooltip message when disabled by mmap
 - fix systray forwarding window position
 
-* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.3
+* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.4
 - support all current versions of Ubuntu and Debian using a private ffmpeg library
 - proxy server can start new sessions on demand
 - SSH start server support on OSX < 10.11
@@ -1059,7 +1073,7 @@ fi
 - fix paint issue with transparent tooltips on OSX and MS Windows
 - fix pixel format typo in OpenGL logging
 
-* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0.3
+* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0.4
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -1290,7 +1304,7 @@ fi
 - safer test for windows to ignore (window IDs starts at 1 again)
 - expose more version and statistical data via xpra info
 - improved OpenGL client rendering (still disabled by default)
-- upgrade to rencode 1.0.3
+- upgrade to rencode 1.0.4
 
 * Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
 - fix server deadlock on dead connections
@@ -1589,7 +1603,7 @@ fi
 - per-window update batching auto-tuning, which is fairer
 - windows update batching now takes into account the number of pixels rather than just the number of regions to update
 - support --socket-dir option over ssh
-- IPv6 support using the syntax: ssh/::ffff:192.168.1.1.0.30 or tcp/::ffff:192.168.1.1.0.30000
+- IPv6 support using the syntax: ssh/::ffff:192.168.1.1.0.40 or tcp/::ffff:192.168.1.1.0.40000
 - all commands now return a non-zero exit code in case of failure
 - new "xpra info" command to report server statistics
 - prettify some of the logging and error messages
@@ -1607,7 +1621,7 @@ fi
 - show more system version information in session information dialog
 - hide window decorations for openoffice splash screen (workaround)
 
-* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0.3
+* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0.4
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)
