@@ -74,24 +74,6 @@ begin
 	end;
 end;
 
-procedure CurStepChanged(CurrentStep: TSetupStep);
-var
-  Version: TWindowsVersion;
-begin
-  GetWindowsVersionEx(Version);
-  if Version.NTPlatform and (Version.Major = 5) then
-  begin
-	if (CurrentStep = ssPostInstall) then
-    begin
-	  SuppressibleMsgBox('Warning: using an older version of Plink for SSH support on Windows XP,' + #13#10 +
-	   					 'use at your own risk.',
-	  	mbInformation, MB_OK, IDOK);
-      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\msvcp110.dll'), ExpandConstant('{app}\msvcp110.dll'), False);
-      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\msvcr110.dll'), ExpandConstant('{app}\msvcr110.dll'), False);
-      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\Plink.exe'), ExpandConstant('{app}\Plink.exe'), False);
-	end;
-  end;
-end;
 
 function InitializeSetup(): Boolean;
 var
@@ -192,14 +174,28 @@ begin
     Result := 1;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+procedure CurStepChanged(CurrentStep: TSetupStep);
+var
+  Version: TWindowsVersion;
 begin
-  if (CurStep=ssInstall) then
+  if (CurrentStep=ssInstall) then
   begin
     if (IsUpgrade()) then
     begin
       UnInstallOldVersion();
     end;
   end;
+  GetWindowsVersionEx(Version);
+  if Version.NTPlatform and (Version.Major = 5) then
+  begin
+	if (CurrentStep = ssPostInstall) then
+    begin
+	  SuppressibleMsgBox('Warning: using an older version of Plink for SSH support on Windows XP,' + #13#10 +
+	   					 'use at your own risk.',
+	  	mbInformation, MB_OK, IDOK);
+      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\msvcp110.dll'), ExpandConstant('{app}\msvcp110.dll'), False);
+      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\msvcr110.dll'), ExpandConstant('{app}\msvcr110.dll'), False);
+      FileCopy(ExpandConstant('{app}\TortoisePlink-XP\Plink.exe'), ExpandConstant('{app}\Plink.exe'), False);
+	end;
+  end;
 end;
-
