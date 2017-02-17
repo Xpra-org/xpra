@@ -130,6 +130,22 @@ var
   cert, config, saved_config, args, cmd: string;
   ResultCode: integer;
 begin
+  cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
+  if (NOT FileExists(cert)) then
+  begin
+    config := ExpandConstant('{app}\openssl.cfg');
+    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
+    cmd := ExpandConstant('{app}\OpenSSL.exe');
+	Exec(cmd, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+  // move old config file:
+  config := ExpandConstant('{app}\xpra.conf');
+  saved_config := ExpandConstant('{app}\etc\xpra.conf.bak');
+  if (FileExists(config)) then
+  begin
+	RenameFile(config, saved_config);
+  end;
+end;
 
 
 function GetUninstallString(): String;
@@ -186,19 +202,4 @@ begin
     end;
   end;
 end;
-  cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
-  if (NOT FileExists(cert)) then
-  begin
-    config := ExpandConstant('{app}\openssl.cfg');
-    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
-    cmd := ExpandConstant('{app}\OpenSSL.exe');
-	Exec(cmd, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  end;
-  // move old config file:
-  config := ExpandConstant('{app}\xpra.conf');
-  saved_config := ExpandConstant('{app}\etc\xpra.conf.bak');
-  if (FileExists(config)) then
-  begin
-	RenameFile(config, saved_config);
-  end;
-end;
+
