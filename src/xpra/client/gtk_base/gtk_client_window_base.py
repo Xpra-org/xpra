@@ -1306,8 +1306,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             y -= self.OR_offset[1]
         return self._client.cp(x, y)
 
+    def _get_pointer(self, event):
+        return event.x_root, event.y_root
+
     def _pointer_modifiers(self, event):
-        pointer = self._pointer(event.x_root, event.y_root)
+        x, y = self._get_pointer(event)
+        pointer = self._pointer(x, y)
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
         v = pointer, modifiers, buttons
