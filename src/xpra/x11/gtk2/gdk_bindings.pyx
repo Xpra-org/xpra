@@ -23,28 +23,6 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "Python.h":
-    ctypedef object PyObject
-    object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
-
-cdef extern from "string.h":
-    void * memcpy( void * destination, void * source, size_t num )
-
-cdef extern from "sys/ipc.h":
-    ctypedef struct key_t:
-        pass
-    key_t IPC_PRIVATE
-    int IPC_CREAT
-
-cdef extern from "sys/shm.h":
-    int shmget(key_t __key, size_t __size, int __shmflg)
-    void *shmat(int __shmid, const void *__shmaddr, int __shmflg)
-    int shmdt (const void *__shmaddr)
-
-cdef extern from "X11/Xutil.h":
-    pass
-
 cdef extern from "gdk/gdk.h":
     pass
 cdef extern from "gdk/gdkx.h":
