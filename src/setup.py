@@ -926,6 +926,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/ximage.c",
                    "xpra/platform/win32/propsys.cpp",
+                   "xpra/platform/darwin/gdk_bindings.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
@@ -2004,6 +2005,23 @@ toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipb
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
+
+if OSX:
+    quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
+    add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
+                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/Cocoa.h",
+                    '-ObjC',
+                    '-mmacosx-version-min=10.10')
+    add_to_keywords(quartz_pkgconfig, 'extra_link_args',
+                    '-framework', 'Foundation',
+                    '-framework', 'AppKit',
+                    )
+    cython_add(Extension("xpra.platform.darwin.gdk_bindings",
+                ["xpra/platform/darwin/gdk_bindings.pyx", "xpra/platform/darwin/nsevent_glue.m"],
+                language="objc",
+                **quartz_pkgconfig
+                ))
+
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")

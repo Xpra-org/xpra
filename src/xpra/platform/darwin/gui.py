@@ -5,12 +5,15 @@
 # later version. See the file COPYING for details.
 
 import os
+import math
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
+scrolllog = Logger("osx", "events", "scroll")
 
 from xpra.util import envbool
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
+WHEEL = envbool("XPRA_WHEEL", True)
 
 
 exit_cb = None
@@ -423,14 +426,36 @@ def window_focused(window, event):
         mh.add_to_menu_bar(title, app_menu)
 
 
+#keep track of the window object for each view
+import weakref
+VIEW_TO_WINDOW = weakref.WeakValueDictionary()
+
 def add_window_hooks(window):
     window.connect("focus-in-event", window_focused)
+    global VIEW_TO_WINDOW
+    log.info("window=%s", window)
+    gdkwin = window.get_window()
+    nsview = gdkwin.nsview
+    log.info("ns_view(%s)=%s", gdkwin, nsview)
+    try:
+        VIEW_TO_WINDOW[gdkwin.nsview] = window
+    except:
+        log("add_window_hooks(%s)", window, exc_info=True)
+        log.warn("Warning: failed to associate window %s with its nsview %i", window, nsview, exc_info=True)
 
 def remove_window_hooks(window):
     try:
-        del window_menus[window._id]
+        del window_menus[window]
     except:
         pass
+    global VIEW_TO_WINDOW
+    #this should be redundant as we use weak references:
+    try:
+        gdkwin = window.get_window()
+        del VIEW_TO_WINDOW[gdkwin.nsview]
+    except:
+        pass
+
 
 def _set_osx_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
     global window_menus
@@ -550,21 +575,48 @@ def register_URL_handler(handler):
 from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 import objc         #@UnresolvedImport
 
-def delegate_cb(delegate, name):
-    #find the named callback and call it
-    callback = getattr(delegate, name, None)
-    log("delegate_cb(%s)=%s", name, callback)
-    if callback:
-        try:
-            callback()
-        except:
-            log.error("Error in %s callback %s", name, callback, exc_info=True)
-
 class Delegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
         log("applicationDidFinishLaunching_(%s)", notification)
         if SLEEP_HANDLER:
             self.register_sleep_handlers()
+        if WHEEL:
+            from xpra.platform.darwin.gdk_bindings import init_quartz_filter, set_wheel_event_handler
+            set_wheel_event_handler(self.wheel_event_handler)
+            init_quartz_filter()
+
+    @objc.python_method
+    def wheel_event_handler(self, nsview, deltax, deltay):
+        global VIEW_TO_WINDOW
+        window = VIEW_TO_WINDOW.get(nsview)
+        scrolllog("wheel_event_handler%s window=%s", (nsview, deltax, deltay), window)
+        if not window:
+            return False    #not handled
+        client = window._client
+        wid = window._id
+        modifiers = client.get_current_modifiers()
+        buttons = []
+        pointer = client.get_mouse_position()
+        def send_button(button, distance):
+            v = math.sqrt(10.0*abs(distance))       #ie: 0.1 -> 1, -0.9 -> 3
+            scrolllog("send_button(%i, %f) steps=%i", button, distance, v)
+            for _ in range(int(v)):
+                window._client.send_button(wid, button, True, pointer, modifiers, buttons)
+                window._client.send_button(wid, button, False, pointer, modifiers, buttons)
+        #accumulate deltas:
+        dx = getattr(window, "deltax", 0)+deltax
+        dy = getattr(window, "deltay", 0)+deltay
+        if abs(dx)>0.1:
+            button = 6+int(dx>0)            #RIGHT=7, LEFT=6
+            send_button(button, dx)
+            dx = 0
+        if abs(dy)>0.1:
+            button = 5-int(dy>0)            #UP=4, DOWN=5
+            send_button(button, dy)
+            dy = 0
+        setattr(window, "deltax", dx)
+        setattr(window, "deltax", dy)
+        return True
 
     @objc.python_method
     def register_sleep_handlers(self):
@@ -581,7 +633,7 @@ class Delegate(NSObject):
     @objc.signature('B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-        delegate_cb(self, "deiconify_callback")
+        self.delegate_cb("deiconify_callback")
         return True
 
     def receiveWorkspaceChangeNotification_(self, aNotification):
@@ -600,19 +652,30 @@ class Delegate(NSObject):
                     our_windows[num] = name
             workspacelog("workspace change - our windows on screen: %s", our_windows)
             if our_windows:
-                delegate_cb(self, "wake_callback")
+                self.delegate_cb("wake_callback")
             else:
-                delegate_cb(self, "sleep_callback")
+                self.delegate_cb("sleep_callback")
         except:
             workspacelog.error("Error querying workspace info", exc_info=True)
 
     def receiveSleepNotification_(self, aNotification):
         log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
-        delegate_cb(self, "sleep_callback")
+        self.delegate_cb("sleep_callback")
 
     def receiveWakeNotification_(self, aNotification):
         log("receiveWakeNotification_(%s)", aNotification)
-        delegate_cb(self, "wake_callback")
+        self.delegate_cb("wake_callback")
+
+    @objc.python_method
+    def delegate_cb(self, name):
+        #find the named callback and call it
+        callback = getattr(self, name, None)
+        log("delegate_cb(%s)=%s", name, callback)
+        if callback:
+            try:
+                callback()
+            except:
+                log.error("Error in %s callback %s", name, callback, exc_info=True)
 
 
 class ClientExtras(object):
