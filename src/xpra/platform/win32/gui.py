@@ -374,7 +374,6 @@ def cache_pointer_offset(self, event):
     #this overrides the window._get_pointer method
     #so we can cache the GTK position offset for synthetic wheel events
     gtk_x, gtk_y = event.x_root, event.y_root
-    pos = POINT()
     x, y = win32api.GetCursorPos()
     self.win32_pointer_offset = gtk_x-x, gtk_y-y
     return gtk_x, gtk_y
