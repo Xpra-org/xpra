@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
 from xpra.os_util import bytestostr, strtobytes
+from libc.stdint cimport uintptr_t
 
 
 DEF PATH_MAX = 1024
@@ -517,7 +518,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             keycode = int(keycode_str)
         min_keycode, max_keycode = self._get_minmax_keycodes()
         if keycode!=0 and keycode<min_keycode or keycode>max_keycode:
-            log.error("keycode %s: value %s is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
+            log.error("Error for keycode '%s': value %i is out of range (%s-%s)", keycode_str, keycode, min_keycode, max_keycode)
             return -1
         return keycode
 
@@ -570,7 +571,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                             keysyms.append(NoSymbol)
                             if ks is not None:
                                 missing_keysyms.append(str(ks))
-                for j in range(0, keysyms_per_keycode):
+                for j in range(keysyms_per_keycode):
                     keysym = NoSymbol
                     if keysyms and j<len(keysyms) and keysyms[j] is not None:
                         keysym = keysyms[j]
@@ -605,19 +606,18 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef KeySym keysym                              #@DuplicatedSignature
         cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
-        keyboard_map = XGetKeyboardMapping(self.display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
-        log("XGetKeyboardMapping keysyms_per_keycode=%i", keysyms_per_keycode)
+        cdef int keycode_count = max_keycode - min_keycode + 1
+        keyboard_map = XGetKeyboardMapping(self.display, min_keycode, keycode_count, &keysyms_per_keycode)
+        log("XGetKeyboardMapping keysyms_per_keycode=%i, keyboard_map=%#x", keysyms_per_keycode, <uintptr_t> keyboard_map)
         mappings = {}
-        i = 0
-        keycode = min_keycode
-        while keycode<max_keycode:
+        cdef int i
+        for i in range(keycode_count):
+            keycode = min_keycode + i
             keysyms = []
-            for keysym_index in range(0, keysyms_per_keycode):
+            for keysym_index in range(keysyms_per_keycode):
                 keysym = keyboard_map[i*keysyms_per_keycode + keysym_index]
                 keysyms.append(keysym)
             mappings[keycode] = keysyms
-            i += 1
-            keycode += 1
         XFree(keyboard_map)
         return mappings
 
