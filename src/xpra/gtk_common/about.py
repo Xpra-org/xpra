@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2009-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2009-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-"""
-    about.py
-"""
 
 import os.path
 
@@ -15,7 +11,7 @@ gtk = import_gtk()
 import webbrowser
 
 from xpra.scripts.config import get_build_info
-from xpra import __version__
+from xpra import __version__ as XPRA_VERSION    #@UnresolvedImport
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
 log = Logger("info")
@@ -60,7 +56,7 @@ def about(on_close=None):
         if xpra_icon:
             dialog.set_icon(xpra_icon)
     dialog.set_name("Xpra")
-    dialog.set_version(__version__)
+    dialog.set_version(XPRA_VERSION)
     dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
                         'Nathaniel Smith <njs@pobox.com>',
                         'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
