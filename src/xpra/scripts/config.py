@@ -212,14 +212,17 @@ def get_build_info():
     except Exception as e:
         warn("Error: could not find the source information: %s" % e)
     try:
-        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, CYTHON_VERSION, COMPILER_VERSION    #@UnresolvedImport
-        info.append("Built on %s by %s" % (BUILT_ON, BUILT_BY))
-        if BUILD_DATE:
-            info.append(BUILD_DATE)
+        from xpra.build_info import BUILT_BY, BUILT_ON, BUILD_DATE, BUILD_TIME, BUILD_BIT, CYTHON_VERSION, COMPILER_VERSION    #@UnresolvedImport
+        if BUILD_BIT:
+            info.insert(0, "")
+            info.insert(0, BUILD_BIT)
+        info.append("built on %s by %s" % (BUILT_ON, BUILT_BY))
+        if BUILD_DATE and BUILD_TIME:
+            info.append("%s %s" % (BUILD_DATE, BUILD_TIME))
         if CYTHON_VERSION!="unknown" or COMPILER_VERSION!="unknown":
             info.append("")
         if CYTHON_VERSION!="unknown":
-            info.append("built with Cython %s" % CYTHON_VERSION)
+            info.append("using Cython %s" % CYTHON_VERSION)
         if COMPILER_VERSION!="unknown":
             cv = COMPILER_VERSION.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
             info += cv.splitlines()
