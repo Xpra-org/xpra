@@ -18,7 +18,7 @@ import signal
 import shlex
 import traceback
 
-from xpra import __version__ as XPRA_VERSION
+from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
@@ -1575,7 +1575,7 @@ def setsid():
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
-    from xpra.net import ConnectionClosedException
+    from xpra.net import ConnectionClosedException  #@UnresolvedImport
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None

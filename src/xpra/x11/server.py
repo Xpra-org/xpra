@@ -15,6 +15,7 @@ import time
 import math
 from collections import deque
 
+from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool, envint
 from xpra.os_util import memoryview_to_bytes
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -52,7 +53,6 @@ framelog = Logger("x11", "frame")
 menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
 
-import xpra
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
@@ -215,7 +215,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             gdk.atom_intern("STRING", False),
                             8,
                             gdk.PROP_MODE_REPLACE,
-                            xpra.__version__)
+                            XPRA_VERSION)
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
             try:
