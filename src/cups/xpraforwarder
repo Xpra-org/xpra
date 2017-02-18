@@ -7,7 +7,7 @@
 # It is based on pdf2email by Georde Notaras.
 #
 # Copyright (c) George Notaras <George [D.O.T.] Notaras [A.T.] gmail [D.O.T.] com>
-# Copyright (C) 2014, 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 #
 # License: GPLv2
 #
@@ -104,7 +104,11 @@ def do_main():
 	else:
 		filename = "-"
 	info("version %s, username: %s, title: %s, filename: %s, job_id: %s" % (__version__, username, title, filename, job_id))
-	info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
+	try:
+		info("uid=%s, gid=%s" % (os.getresuid(), os.getresgid()))
+	except:
+		#osx doesn't have getresuid or getresgid
+		pass
 
 	dev_uri = os.environ['DEVICE_URI']
 	info("DEVICE_URI=%s" % dev_uri)
