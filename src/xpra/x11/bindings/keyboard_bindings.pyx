@@ -80,10 +80,8 @@ cdef extern from "X11/Xlib.h":
     KeySym* XGetKeyboardMapping(Display* display, KeyCode first_keycode, int keycode_count, int* keysyms_per_keycode_return)
     int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
     XModifierKeymap* XInsertModifiermapEntry(XModifierKeymap* modifiermap, KeyCode keycode_entry, int modifier)
-    KeySym XKeycodeToKeysym(Display* display, KeyCode keycode, int index)
     char* XKeysymToString(KeySym keysym)
 
-    int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
     int XSetModifierMapping(Display* display, XModifierKeymap* modifiermap)
 
     int XGrabKey(Display * display, int keycode, unsigned int modifiers,
