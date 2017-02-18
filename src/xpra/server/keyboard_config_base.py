@@ -15,6 +15,7 @@ class KeyboardConfigBase(object):
     def __init__(self):
         self.enabled = True
         self.is_native_keymap = True
+        self.owner = None
 
     def __repr__(self):
         return "KeyboardConfigBase"
@@ -23,6 +24,7 @@ class KeyboardConfigBase(object):
         return {
                 "enabled"   : self.enabled,
                 "native"    : self.is_native_keymap,
+                "owner"     : self.owner or "",
                 }
 
     def parse_options(self, props):
@@ -34,7 +36,7 @@ class KeyboardConfigBase(object):
     def set_layout(self, layout, variant):
         pass
 
-    def set_keymap(self):
+    def set_keymap(self, translate_only=False):
         pass
 
     def set_default_keymap(self):

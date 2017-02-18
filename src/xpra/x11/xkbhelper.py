@@ -136,6 +136,56 @@ def apply_xmodmap(instructions):
         unset = instructions
     return unset
 
+
+def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
+    """
+        Translate the given keycodes into the existing keymap
+    """
+    #get the list of keycodes (either from x11 keycodes or gtk keycodes):
+    if xkbmap_x11_keycodes and len(xkbmap_x11_keycodes)>0:
+        dump_dict(xkbmap_x11_keycodes)
+        keycodes = indexed_mappings(xkbmap_x11_keycodes)
+    else:
+        keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
+    #keycodes = {
+    #     9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
+    #     10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6), ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
+    x11_keycodes = X11Keyboard.get_keycode_mappings()
+    #x11_keycodes = {
+    #    8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],
+    #    9: ['Escape', '', 'Escape', '', 'Escape'],
+    #for faster lookups:
+    x11_keycodes_for_keysym = {}
+    for keycode, keysyms in x11_keycodes.items():
+        for keysym in keysyms:
+            x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
+    def find_keycode(kc, keysym, i):
+        keycodes = x11_keycodes_for_keysym.get(keysym)
+        if not keycodes:
+            return None
+        #no other option, use it:
+        if len(keycodes)==1:
+            return keycodes[0]
+        for keycode in keycodes:
+            defs = x11_keycodes.get(keycode)
+            assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
+            if (keysym, i) in defs:
+                return keycode
+        #if possible, use the same one:
+        if kc in keycodes:
+            return kc
+        return keycodes[0]
+    #generate the translation map:
+    trans = {}
+    for keycode, defs in keycodes.items():
+        for keysym,i in list(defs):             #ie: ('1', 0)
+            x11_keycode = find_keycode(keycode, keysym, i)
+            if x11_keycode:
+                trans[(keycode, keysym)] = x11_keycode
+                trans[keysym] = x11_keycode
+    log("set_keycode_translation(..)=%s", trans)
+    return trans
+
 def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers):
     """
         Clients that have access to raw x11 keycodes should provide

@@ -1324,8 +1324,8 @@ class ServerSource(FileTransferHandler):
         return self.keyboard_config
 
 
-    def set_keymap(self, current_keyboard_config, keys_pressed, force):
-        keylog("set_keymap%s", (current_keyboard_config, keys_pressed, force))
+    def set_keymap(self, current_keyboard_config, keys_pressed, force=False, translate_only=False):
+        keylog("set_keymap%s", (current_keyboard_config, keys_pressed, force, translate_only))
         if self.keyboard_config and self.keyboard_config.enabled:
             current_id = None
             if current_keyboard_config and current_keyboard_config.enabled:
@@ -1334,7 +1334,8 @@ class ServerSource(FileTransferHandler):
             keylog("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
             if force or current_id is None or keymap_id!=current_id:
                 self.keyboard_config.keys_pressed = keys_pressed
-                self.keyboard_config.set_keymap()
+                self.keyboard_config.set_keymap(translate_only)
+                self.keyboard_config.owner = self.uuid
                 current_keyboard_config = self.keyboard_config
             else:
                 keylog.info("keyboard mapping already configured (skipped)")

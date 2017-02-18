@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,7 +17,7 @@ from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
-from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, \
+from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, set_keycode_translation, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
                            clear_modifiers, set_modifiers, \
                            clean_keyboard_state
@@ -226,10 +226,16 @@ class KeyboardConfig(KeyboardConfigBase):
         return False
 
 
-    def set_keymap(self):
+    def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap() layout=%s, variant=%s, print=%s, query=%s", self.xkbmap_layout, self.xkbmap_variant, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        log("set_keymap(%s) layout=%s, variant=%s, print=%s, query=%s", translate_only, self.xkbmap_layout, self.xkbmap_variant, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        if translate_only:
+            self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
+            self.add_gtk_keynames()
+            self.compute_modifier_keynames()
+            return
+
         try:
             with xsync:
                 clean_keyboard_state()

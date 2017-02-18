@@ -1066,9 +1066,12 @@ class ServerBase(ServerCore):
         if not is_request and ui_client:
             #a bit of explanation:
             #normally these things are synchronized using xsettings, which we handle already
-            #but non-posix clients have no such thing and we don't won't to expose that as an interface (it's not very nice and very X11 specific)
+            #but non-posix clients have no such thing,
+            #and we don't want to expose that as an interface
+            #(it's not very nice and it is very X11 specific)
             #also, clients may want to override what is in their xsettings..
             #so if the client specifies what it wants to use, we patch the xsettings with it
+            #(the actual xsettings part is done in update_all_server_settings in the X11 specific subclasses)
             if share_count>0:
                 log.info("sharing with %s other client(s)", share_count)
                 self.dpi = 0
@@ -1257,16 +1260,21 @@ class ServerBase(ServerCore):
         self._clipboard_helper.enable_selections(client_selections)
 
     def parse_hello_ui_keyboard(self, ss, c):
-        #keyboard:
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        #parse client config:
         ss.keyboard_config = self.get_keyboard_config(c)
 
-        #so only activate this feature afterwards:
-        self.keyboard_sync = c.boolget("keyboard_sync", True)
-        key_repeat = c.intpair("key_repeat")
-        self.set_keyboard_repeat(key_repeat)
+        if not other_ui_clients:
+            #so only activate this feature afterwards:
+            self.keyboard_sync = c.boolget("keyboard_sync", True)
+            key_repeat = c.intpair("key_repeat")
+            self.set_keyboard_repeat(key_repeat)
+            #always clear modifiers before setting a new keymap
+            ss.make_keymask_match(c.strlistget("modifiers", []))
+        else:
+            self.set_keyboard_repeat(None)
+            key_repeat = (0, 0)
 
-        #always clear modifiers before setting a new keymap
-        ss.make_keymask_match(c.strlistget("modifiers", []))
         self.set_keymap(ss)
         return key_repeat
 
@@ -1291,7 +1299,7 @@ class ServerBase(ServerCore):
     def set_keyboard_repeat(self, key_repeat):
         pass
 
-    def set_keymap(self, ss):
+    def set_keymap(self, ss, force=False):
         pass
 
     def get_transient_for(self, window):
@@ -2584,6 +2592,10 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         log("received new keymap from client")
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        if other_ui_clients:
+            log.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
+            return
         kc = ss.keyboard_config
         if kc and kc.enabled:
             kc.parse_options(props)

@@ -242,7 +242,7 @@ class X11ServerBase(GTKServerBase):
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
             if self.key_repeat_delay>0 and self.key_repeat_interval>0:
                 X11Keyboard.set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-                log.info("setting key repeat rate from client: %sms delay / %sms interval", self.key_repeat_delay, self.key_repeat_interval)
+                keylog.info("setting key repeat rate from client: %sms delay / %sms interval", self.key_repeat_delay, self.key_repeat_interval)
         else:
             #dont do any jitter compensation:
             self.key_repeat_delay = -1
@@ -340,7 +340,10 @@ class X11ServerBase(GTKServerBase):
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
             self.keymap_changing = True
 
-            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force)
+            #if sharing, don't set the keymap, translate the existing one:
+            other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=server_source and s.ui_client]
+            translate_only = len(other_ui_clients)>0
+            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
@@ -357,7 +360,7 @@ class X11ServerBase(GTKServerBase):
         self.cancel_key_repeat_timer()
         #clear all the keys we know about:
         if len(self.keys_pressed)>0:
-            log("clearing keys pressed: %s", self.keys_pressed)
+            keylog("clearing keys pressed: %s", self.keys_pressed)
             for keycode in self.keys_pressed.keys():
                 X11Keyboard.xtest_fake_key(keycode, False)
             self.keys_pressed = {}
