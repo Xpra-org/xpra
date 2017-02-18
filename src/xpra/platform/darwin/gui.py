@@ -6,14 +6,43 @@
 
 import os
 import math
+import ctypes
+import struct
+import weakref
+import gtkosx_application           #@UnresolvedImport
+
+import objc                         #@UnresolvedImport
+import Quartz                       #@UnresolvedImport
+import Quartz.CoreGraphics as CG    #@UnresolvedImport
+from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
+from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
+from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 scrolllog = Logger("osx", "events", "scroll")
 
-from xpra.util import envbool
+
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 WHEEL = envbool("XPRA_WHEEL", True)
+
+ALPHA = {
+         CG.kCGImageAlphaNone                  : "AlphaNone",
+         CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
+         CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
+         CG.kCGImageAlphaLast                  : "Last",
+         CG.kCGImageAlphaFirst                 : "First",
+         CG.kCGImageAlphaNoneSkipLast          : "SkipLast",
+         CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
+   }
+#if there is an easier way of doing this, I couldn't find it:
+try:
+    Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
+    GetDblTime = Carbon_ctypes.GetDblTime
+except:
+    GetDblTime = None
 
 
 exit_cb = None
@@ -35,12 +64,8 @@ macapp = None
 def get_OSXApplication():
     global macapp
     if macapp is None:
-        try:
-            import gtkosx_application        #@UnresolvedImport
-            macapp = gtkosx_application.Application()
-            macapp.connect("NSApplicationWillTerminate", quit_handler)
-        except:
-            pass
+        macapp = gtkosx_application.Application()
+        macapp.connect("NSApplicationWillTerminate", quit_handler)
     return macapp
 
 
@@ -75,20 +100,9 @@ def get_native_tray_classes():
     return [OSXTray]
 
 def system_bell(*args):
-    try:
-        from AppKit import NSBeep   #@UnresolvedImport
-        NSBeep()
-        return True
-    except:
-        return False
+    NSBeep()
+    return True
     
-
-#if there is an easier way of doing this, I couldn't find it:
-try:
-    import ctypes
-    Carbon_ctypes = ctypes.CDLL("/System/Library/Frameworks/Carbon.framework/Carbon")
-except:
-    Carbon_ctypes = None
 
 def _sizetotuple(s):
     return int(s.width), int(s.height)
@@ -101,7 +115,7 @@ def get_double_click_time():
         #They must have considered gigaparsecs divided by teapot too, which is just as useful.
         #(but still call it "Time" you see)
         MS_PER_TICK = 1000/60
-        return int(Carbon_ctypes.GetDblTime() * MS_PER_TICK)
+        return int(GetDblTime() * MS_PER_TICK)
     except:
         return -1
 
@@ -112,7 +126,6 @@ def get_window_frame_sizes():
 
 def get_window_frame_size(x, y, w, h):
     try:
-        import Quartz                   #@UnresolvedImport
         cr = Quartz.NSMakeRect(x, y, w, h)
         mask = Quartz.NSTitledWindowMask | Quartz.NSClosableWindowMask | Quartz.NSMiniaturizableWindowMask | Quartz.NSResizableWindowMask
         wr = Quartz.NSWindow.pyobjc_classMethods.frameRectForContentRect_styleMask_(cr, mask)
@@ -142,11 +155,6 @@ def get_workarea():
 
 #per monitor workareas (assuming a single screen)
 def get_workareas():
-    try:
-        from AppKit import NSScreen     #@UnresolvedImport
-    except ImportError as e:
-        log("cannot get workarea info without AppKit: %s", e)
-        return []
     workareas = []
     screens = NSScreen.screens()
     for screen in screens:
@@ -170,7 +178,6 @@ def get_workareas():
 def get_vrefresh():
     vrefresh = []
     try:
-        from Quartz import CoreGraphics as CG   #@UnresolvedImport
         err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
         log("get_vrefresh() %i active displays: %s (err=%i)", no, active_displays, err)
         if err==0 and no>0:
@@ -191,7 +198,6 @@ def get_vrefresh():
 def get_display_icc_info():
     info = {}
     try:
-        from Quartz import CoreGraphics as CG   #@UnresolvedImport
         err, active_displays, no = CG.CGGetActiveDisplayList(99, None, None)
         if err==0 and no>0:
             for i,adid in enumerate(active_displays):
@@ -204,7 +210,6 @@ def get_icc_info():
     #maybe we shouldn't return anything if there's more than one display?
     info = {}
     try:
-        from Quartz import CoreGraphics as CG   #@UnresolvedImport
         did = CG.CGMainDisplayID()
         info = get_colorspace_info(CG.CGDisplayCopyColorSpace(did))
     except Exception as e:
@@ -213,7 +218,6 @@ def get_icc_info():
 
 
 def get_colorspace_info(cs):
-    from Quartz import CoreGraphics as CG  #@UnresolvedImport
     MODELS = {
               CG.kCGColorSpaceModelUnknown     : "unknown",
               CG.kCGColorSpaceModelMonochrome  : "monochrome",
@@ -260,7 +264,6 @@ def _call_CG_conv(defs, argument):
     #utility for calling functions on CG with an argument,
     #then convert the return value using another function
     #missing functions are ignored, and None values are skipped
-    from Quartz import CoreGraphics as CG   #@UnresolvedImport
     info = {}
     for prop_name, fn_name, conv in defs:
         fn = getattr(CG, fn_name, None)
@@ -307,7 +310,6 @@ def get_display_info(did):
             )
     info = _call_CG_conv(defs, did)
     try:
-        from Quartz import CoreGraphics as CG   #@UnresolvedImport
         modes = CG.CGDisplayCopyAllDisplayModes(did, None)
         info["modes"] = get_display_modes_info(modes)
     except Exception as e:
@@ -315,7 +317,6 @@ def get_display_info(did):
     return info
 
 def get_displays_info():
-    from Quartz import CoreGraphics as CG  #@UnresolvedImport
     did = CG.CGMainDisplayID()
     info = {
             "main" : get_display_info(did),
@@ -427,21 +428,17 @@ def window_focused(window, event):
 
 
 #keep track of the window object for each view
-import weakref
 VIEW_TO_WINDOW = weakref.WeakValueDictionary()
 
 def add_window_hooks(window):
     window.connect("focus-in-event", window_focused)
     global VIEW_TO_WINDOW
-    log.info("window=%s", window)
-    gdkwin = window.get_window()
-    nsview = gdkwin.nsview
-    log.info("ns_view(%s)=%s", gdkwin, nsview)
     try:
+        gdkwin = window.get_window()
         VIEW_TO_WINDOW[gdkwin.nsview] = window
     except:
         log("add_window_hooks(%s)", window, exc_info=True)
-        log.warn("Warning: failed to associate window %s with its nsview %i", window, nsview, exc_info=True)
+        log.error("Error: failed to associate window %s with its nsview", window, exc_info=True)
 
 def remove_window_hooks(window):
     try:
@@ -471,25 +468,6 @@ def _set_osx_window_menu(add, wid, window, menus, application_action_callback=No
 
 def get_menu_support_function():
     return _set_osx_window_menu
-
-
-try:
-    import Quartz.CoreGraphics as CG    #@UnresolvedImport
-    ALPHA = {
-             CG.kCGImageAlphaNone                  : "AlphaNone",
-             CG.kCGImageAlphaPremultipliedLast     : "PremultipliedLast",
-             CG.kCGImageAlphaPremultipliedFirst    : "PremultipliedFirst",
-             CG.kCGImageAlphaLast                  : "Last",
-             CG.kCGImageAlphaFirst                 : "First",
-             CG.kCGImageAlphaNoneSkipLast          : "SkipLast",
-             CG.kCGImageAlphaNoneSkipFirst         : "SkipFirst",
-       }
-except:
-    CG = None
-try:
-    from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
-except:
-    CGWindowListCopyWindowInfo = None
 
 
 def roundup(n, m):
@@ -536,20 +514,8 @@ def take_screenshot():
     return w, h, "png", image.get_rowstride(), data
 
 
-try:
-    from AppKit import NSObject                 #@UnresolvedImport
-except Exception as e:
-    log.warn("Warning: failed to load critical modules")
-    log.warn(" %s", e)
-    log.warn(" cannot enable sleep notification support")
-    log.warn(" or dock click notification")
-    NSObject = object
-
-
 def register_URL_handler(handler):
     log("register_URL_handler(%s)", handler)
-    from AppKit import NSAppleEventManager, NSObject          #@UnresolvedImport
-
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
             log("GURLHandler.handleEvent")
@@ -559,7 +525,6 @@ def register_URL_handler(handler):
 
     # A helper to make struct since cocoa headers seem to make
     # it impossible to use kAE*
-    import struct
     fourCharToInt = lambda code: struct.unpack('>l', code)[0]
 
     urlh = GURLHandler.alloc()
@@ -572,16 +537,13 @@ def register_URL_handler(handler):
         )
 
 
-from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
-import objc         #@UnresolvedImport
-
 class Delegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
         log("applicationDidFinishLaunching_(%s)", notification)
         if SLEEP_HANDLER:
             self.register_sleep_handlers()
         if WHEEL:
-            from xpra.platform.darwin.gdk_bindings import init_quartz_filter, set_wheel_event_handler
+            from xpra.platform.darwin.gdk_bindings import init_quartz_filter, set_wheel_event_handler   #@UnresolvedImport
             set_wheel_event_handler(self.wheel_event_handler)
             init_quartz_filter()
 
