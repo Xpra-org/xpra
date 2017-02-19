@@ -1181,7 +1181,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
         if de:
             warn = []
-            if opts.pulseaudio:
+            if opts.pulseaudio is not False:
                 try:
                     xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
                     out,_ = xprop.communicate()
