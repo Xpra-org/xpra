@@ -731,7 +731,7 @@ class WindowSource(object):
         else:
             #sane defaults:
             ropts = set(("png", "rgb24", "rgb32"))          #default encodings for auto-refresh
-            if AUTO_REFRESH_QUALITY<100:
+            if AUTO_REFRESH_QUALITY<100 and self.image_depth>16:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
         self.auto_refresh_encodings = [x for x in are if x in self.common_encodings]

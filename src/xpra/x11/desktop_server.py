@@ -65,7 +65,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         }
 
 
-    _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title"]
+    _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth"]
     _dynamic_property_names = ["size-hints"]
 
     def __init__(self, root):
@@ -81,6 +81,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         screen = self.client_window.get_screen()
         screen.connect("size-changed", self._screen_size_changed)
         self.update_size_hints(screen)
+        self._depth = X11Window.get_depth(self.client_window.xid)
         self._managed = True
         self._setup_done = True
 
@@ -103,6 +104,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def get_property(self, prop):
         if prop=="xid":
             return self.client_window.xid
+        elif prop=="depth":
+            return self._depth
         elif prop=="title":
             return get_wm_name() or "xpra desktop"
         elif prop=="client-machine":
