@@ -20,6 +20,16 @@ ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 cdef inline unsigned int roundup(unsigned int n, unsigned int m):
     return (n + m - 1) & ~(m - 1)
 
+cdef inline unsigned char BYTESPERPIXEL(unsigned int depth):
+    if depth>=24 and depth<=32:
+        return 4
+    elif depth==16:
+        return 2
+    elif depth==8:
+        return 1
+    #shouldn't happen!
+    return roundup(depth, 8)//8
+
 cdef inline unsigned int MIN(unsigned int a, unsigned int b):
     if a<=b:
         return a
@@ -187,9 +197,9 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
-cdef const char *XRGB = "XRGB"
 cdef const char *RGB565 = "RGB565"
 cdef const char *BGR565 = "BGR565"
+cdef const char *XRGB = "XRGB"
 cdef const char *BGRX = "BGRX"
 cdef const char *ARGB = "ARGB"
 cdef const char *BGRA = "BGRA"
@@ -199,7 +209,7 @@ cdef const char *RGBX = "RGBX"
 cdef const char *R210 = "R210"
 cdef const char *r210 = "r210"
 
-RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210]
+RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565]
 
 
 cdef int ximage_counter = 0
@@ -239,7 +249,6 @@ cdef class XImageWrapper(object):
         self.sub = sub
         self.pixels = <void *> pixels
         self.timestamp = int(time.time()*1000)
-        
 
     cdef set_image(self, XImage* image):
         assert not self.sub
@@ -321,9 +330,7 @@ cdef class XImageWrapper(object):
         cdef void *src = self.get_pixels_ptr()
         if src==NULL:
             raise Exception("source image does not have pixels!")
-        cdef unsigned char Bpp = 4
-        if self.depth==16:
-            Bpp = 2
+        cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
         return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True)
 
@@ -630,9 +637,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             return NULL
         assert self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
-        cdef unsigned char Bpp = 4
-        if self.depth==16:
-            Bpp = 2
+        cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef void *ptr = image.data + (self.y * self.rowstride) + (Bpp * self.x)
         xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <uintptr_t> ptr, self)
         return ptr
