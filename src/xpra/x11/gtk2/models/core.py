@@ -96,6 +96,11 @@ class CoreX11WindowModel(WindowModelStub):
         "geometry": (gobject.TYPE_PYOBJECT,
                 "current coordinates (x, y, w, h, border) for the window", "",
                 gobject.PARAM_READABLE),
+        #bits per pixel
+        "depth": (gobject.TYPE_INT,
+                "window bit depth", "",
+                -1, 64, -1,
+                gobject.PARAM_READABLE),
         #if the window depth is 32 bit
         "has-alpha": (gobject.TYPE_BOOLEAN,
                 "Does the window use transparency", "",
@@ -167,7 +172,7 @@ class CoreX11WindowModel(WindowModelStub):
         }
 
     #things that we expose:
-    _property_names         = ["xid", "has-alpha", "client-machine", "pid", "title", "role", "command", "shape", "class-instance", "protocols"]
+    _property_names         = ["xid", "depth", "has-alpha", "client-machine", "pid", "title", "role", "command", "shape", "class-instance", "protocols"]
     #exposed and changing (should be watched for notify signals):
     _dynamic_property_names = ["title", "command", "shape", "class-instance", "protocols"]
     #should not be exported to the clients:
@@ -329,10 +334,11 @@ class CoreX11WindowModel(WindowModelStub):
         """
         metalog("read_initial_X11_properties() core")
         #immutable ones:
-        has_alpha = X11Window.get_depth(self.xid)==32
-        metalog("initial X11 properties: xid=%#x, has-alpha=%s", self.xid, has_alpha)
+        depth = X11Window.get_depth(self.xid)
+        metalog("initial X11 properties: xid=%#x, depth=%i", self.xid, depth)
+        self._updateprop("depth", depth)
         self._updateprop("xid", self.xid)
-        self._updateprop("has-alpha", has_alpha)
+        self._updateprop("has-alpha", depth==32)
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
         #note: some of those are technically mutable,

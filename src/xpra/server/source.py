@@ -76,7 +76,7 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
         if v is None:
             return {propname: ""}
         return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor"):
+    elif propname in ("pid", "workspace", "bypass-compositor", "depth"):
         v = raw()
         assert v is not None, "%s is None!" % propname
         if v<0 or (v==WORKSPACE_UNSET and propname=="workspace"):

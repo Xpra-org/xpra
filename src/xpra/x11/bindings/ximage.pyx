@@ -188,6 +188,8 @@ SBFirst = {
            }
 
 cdef const char *XRGB = "XRGB"
+cdef const char *RGB565 = "RGB565"
+cdef const char *BGR565 = "BGR565"
 cdef const char *BGRX = "BGRX"
 cdef const char *ARGB = "ARGB"
 cdef const char *BGRA = "BGRA"
@@ -253,6 +255,11 @@ cdef class XImageWrapper(object):
                 self.pixel_format = XRGB
             else:
                 self.pixel_format = BGRX
+        elif self.depth==16:
+            if image.byte_order==MSBFirst:
+                self.pixel_format = RGB565
+            else:
+                self.pixel_format = BGR565
         elif self.depth==32:
             if image.byte_order==MSBFirst:
                 self.pixel_format = ARGB
@@ -314,7 +321,10 @@ cdef class XImageWrapper(object):
         cdef void *src = self.get_pixels_ptr()
         if src==NULL:
             raise Exception("source image does not have pixels!")
-        cdef uintptr_t sub_ptr = (<uintptr_t >src) + x*4 + y*self.rowstride
+        cdef unsigned char Bpp = 4
+        if self.depth==16:
+            Bpp = 2
+        cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
         return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True)
 
     cdef void *get_pixels_ptr(self):
@@ -620,7 +630,10 @@ cdef class XShmImageWrapper(XImageWrapper):
             return NULL
         assert self.height>0
         #calculate offset (assuming 4 bytes "pixelstride"):
-        cdef void *ptr = image.data + (self.y * self.rowstride) + (4 * self.x)
+        cdef unsigned char Bpp = 4
+        if self.depth==16:
+            Bpp = 2
+        cdef void *ptr = image.data + (self.y * self.rowstride) + (Bpp * self.x)
         xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <uintptr_t> ptr, self)
         return ptr
 

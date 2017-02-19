@@ -439,7 +439,7 @@ class WindowVideoSource(WindowSource):
         #take into account how many pixels need to be encoder:
         #more pixels means we switch to lossless more easily
         lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
-        if quality<lossless_q:
+        if quality<lossless_q and self.image_depth>16:
             #lossy options:
             if "jpeg" in options:
                 #assume that we have "turbojpeg",
@@ -448,7 +448,7 @@ class WindowVideoSource(WindowSource):
         else:
             #lossless options:
             #avoid very small and very large areas (both slow)
-            if speed>75 or self.bit_depth>24:
+            if speed>75 or self.image_depth>24:
                 if "rgb24" in options:
                     return "rgb24"
                 if "rgb32" in options:
@@ -748,6 +748,7 @@ class WindowVideoSource(WindowSource):
             image.free()
             return
         self.pixel_format = image.get_pixel_format()
+        self.image_depth = image.get_depth()
         #image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
@@ -1595,7 +1596,10 @@ class WindowVideoSource(WindowSource):
                         scroll_data = ScrollData()
                         self.scroll_data = scroll_data
                         scrolllog("new scroll data: %s", scroll_data)
-                    scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), len(src_format))
+                    bpp = 4
+                    if image.get_depth()==16:
+                        bpp = 2
+                    scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
                     scroll_data.calculate(max_distance)
                     #marker telling us not to invalidate the scroll data from here on:
@@ -1610,9 +1614,9 @@ class WindowVideoSource(WindowSource):
                 except Exception:
                     scrolllog.error("Error during scrolling detection")
                     scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
-            if not self.common_video_encodings:
-                #we have to send using a non-video encoding as that's all we have!
-                return self.video_fallback(image, options)
+        if not self.common_video_encodings or self.image_depth<=16:
+            #we have to send using a non-video encoding as that's all we have!
+            return self.video_fallback(image, options)
 
         def video_fallback():
             videolog.warn("using non-video fallback encoding")

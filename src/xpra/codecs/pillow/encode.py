@@ -78,6 +78,20 @@ def encode(coding, image, quality, speed, supports_transparency):
                 pixels = r210_to_rgb(pixels)
                 pixel_format = "RGB"
                 rgb = "RGB"
+                bpp = 24
+        elif pixel_format=="BGR565":
+            from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport
+            if supports_transparency:
+                image.set_rowstride(image.get_rowstride()*2)
+                pixels = bgr565_to_rgbx(pixels)
+                pixel_format = "RGBA"
+                rgb = "RGBA"
+            else:
+                image.set_rowstride(image.get_rowstride()*3//2)
+                pixels = bgr565_to_rgb(pixels)
+                pixel_format = "RGB"
+                rgb = "RGB"
+                bpp = 24
         #PIL cannot use the memoryview directly:
         if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)

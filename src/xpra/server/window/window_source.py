@@ -132,7 +132,7 @@ class WindowSource(object):
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
-        self.bit_depth = encoding_options.intget("bit-depth", 24)
+        self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
         self.supports_flush = PAINT_FLUSH and encoding_options.get("flush")
@@ -183,6 +183,10 @@ class WindowSource(object):
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
         self.pixel_format = None                            #ie: BGRX
+        try:
+            self.image_depth = window.get_property("depth")
+        except:
+            self.image_depth = 24
 
         #for sending and batching window icon updates:
         self.window_icon_data = None
@@ -390,7 +394,10 @@ class WindowSource(object):
                                            "max"            : self.max_soft_expired,
                                            },
                  "rgb_formats"          : self.rgb_formats,
-                 "bit-depth"            : self.bit_depth,
+                 "bit-depth"            : {
+                    "source"                : self.image_depth,
+                    "client"                : self.client_bit_depth,
+                    },
                  #"icons"                : self.icons_encoding_options,
                  })
         ma = self.mapped_at
@@ -632,7 +639,7 @@ class WindowSource(object):
 
     def do_set_client_properties(self, properties):
         self.maximized = properties.boolget("maximized", False)
-        self.bit_depth = properties.intget("bit-depth", self.bit_depth)
+        self.client_bit_depth = properties.intget("bit-depth", self.client_bit_depth)
         self.client_refresh_encodings = properties.strlistget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = self.is_tray or properties.boolget("encoding.full_frames_only", self.full_frames_only)
         self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
@@ -796,7 +803,7 @@ class WindowSource(object):
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or self.bit_depth>24):
+        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or self.image_depth>24):
             return "rgb32"
         if "png" in self.common_encodings and quality>75:
             return "png"
@@ -808,7 +815,7 @@ class WindowSource(object):
     def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
-        if "png" in self.common_encodings and quality>=80 and speed<80:
+        if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
             return "png"
         if "jpeg" in self.common_encodings:
             return "jpeg"
@@ -1454,6 +1461,7 @@ class WindowSource(object):
             image.free()
             return
         self.pixel_format = image.get_pixel_format()
+        self.image_depth = image.get_depth()
 
         now = time.time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)

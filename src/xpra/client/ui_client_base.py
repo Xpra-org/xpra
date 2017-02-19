@@ -3018,7 +3018,7 @@ class UIXpraClient(XpraClientBase):
             options = packet[10]
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
-        drawlog("process_draw: %7i %8s for window %3i using %6s encoding with options=%s", len(data), dtype, wid, coding, options)
+        drawlog("process_draw: %7i %8s for window %3i, %4ix%4i at %4i,%4i using %6s encoding with options=%s", len(data), dtype, wid, width, height, x, y, coding, options)
         start = time.time()
         def record_decode_time(success, message=""):
             if success>0:

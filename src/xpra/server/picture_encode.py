@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgbx, r210_to_rgb    #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
 from xpra.os_util import memoryview_to_bytes
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -134,6 +134,19 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixels(r210_to_rgbx(pixels))
             image.set_pixel_format("RGBX")
             return True
+    elif pixel_format=="BGR565":
+        if "RGB" in rgb_formats:
+            log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgr565_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//2)
+            return True
+        if "RGBX" in rgb_formats:
+            log("argb_swap: bgr565_to_rgbx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgr565_to_rgbx(pixels))
+            image.set_pixel_format("RGBX")
+            image.set_rowstride(rs*2)
+            return True
     elif pixel_format in ("BGRX", "BGRA"):
         if supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
@@ -187,7 +200,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
-    if not PIL or pixel_format=="r210":
+    if not PIL or pixel_format in ("r210", "BGR565"):
         #try to fallback to argb module
         #(required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
