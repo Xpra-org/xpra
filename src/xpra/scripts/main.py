@@ -41,6 +41,9 @@ def enabled_str(v, true_str="yes", false_str="no"):
         return true_str
     return false_str
 
+def enabled_or_auto(v):
+    return bool_or(v, None, true_str="yes", false_str="no", other_str="auto")
+
 def bool_or(v, other_value, true_str, false_str, other_str):
     vs = str(v).lower()
     if vs==other_value:
@@ -484,9 +487,9 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("dbus-proxy")
     legacy_bool_parse("dbus-control")
     if supports_server:
-        group.add_option("--pulseaudio", action="store", metavar="yes|no",
+        group.add_option("--pulseaudio", action="store", metavar="yes|no|auto",
                       dest="pulseaudio", default=defaults.pulseaudio,
-                      help="Start a pulseaudio server for the session. Default: %s." % enabled_str(defaults.pulseaudio))
+                      help="Start a pulseaudio server for the session. Default: %s." % enabled_or_auto(defaults.pulseaudio))
         group.add_option("--pulseaudio-command", action="store",
                       dest="pulseaudio_command", default=defaults.pulseaudio_command,
                       help="The command used to start the pulseaudio server. Default: '%default'.")

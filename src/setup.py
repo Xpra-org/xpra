@@ -806,12 +806,14 @@ def build_xpra_conf(install_dir):
     xvfb_command = detect_xorg_setup(install_dir)
     from xpra.platform.features import DEFAULT_ENV
     def bstr(b):
+        if b is None:
+            return "auto"
         return ["no", "yes"][int(b)]
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
     from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, DEFAULT_POSTSCRIPT_PRINTER
+    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -851,6 +853,7 @@ def build_xpra_conf(install_dir):
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
             'remote_logging'        : "both",
             'start_env'             : start_env,
+            'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
             'pulseaudio_command'    : pretty_cmd(DEFAULT_PULSEAUDIO_COMMAND),
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
             'conf_dir'              : conf_dir,
@@ -863,7 +866,6 @@ def build_xpra_conf(install_dir):
             'mdns'                  : bstr(mdns),
             'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
             'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),
-            'pulseaudio'            : bstr(not OSX and not WIN32),
             'pdf_printer'           : pdf,
             'postscript_printer'    : postscript,
             'webcam'                : ["no", "auto"][webcam],

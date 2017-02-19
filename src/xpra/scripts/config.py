@@ -36,6 +36,9 @@ DEFAULT_XPRA_CONF_FILENAME = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
 DEFAULT_NET_WM_NAME = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
 DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
+DEFAULT_PULSEAUDIO = None   #auto
+if OSX or WIN32:
+    DEFAULT_PULSEAUDIO = False
 
 POSIX = os.name=="posix"
 PYTHON3 = sys.version_info[0]>=3
@@ -759,7 +762,7 @@ def get_defaults():
                     "fake-xinerama"     : not OSX and not WIN32,
                     "resize-display"    : not OSX and not WIN32,
                     "tray"              : True,
-                    "pulseaudio"        : not OSX and not WIN32,
+                    "pulseaudio"        : DEFAULT_PULSEAUDIO,
                     "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : "yes",
                     "mmap-group"        : False,

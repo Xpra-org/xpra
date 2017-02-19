@@ -464,8 +464,30 @@ class ServerBase(ServerCore):
 
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
-        if not self.pulseaudio:
+        if self.pulseaudio is False:
             return
+        if not self.pulseaudio_command:
+            soundlog.warn("Warning: pulseaudio command is not defined")
+            return
+        import shlex
+        cmd = shlex.split(self.pulseaudio_command)
+        #find the absolute path to the command:
+        pa_cmd = cmd[0]
+        if not os.path.isabs(pa_cmd):
+            pa_path = None
+            for x in os.environ.get("PATH", "").split(os.path.pathsep):
+                t = os.path.join(x, pa_cmd)
+                if os.path.exists(t):
+                    pa_path = t
+                    break
+            if not pa_path:
+                msg = "pulseaudio not started: '%s' command not found" % pa_cmd
+                if self.pulseaudio is None:
+                    soundlog.info(msg)
+                else:
+                    soundlog.warn(msg)
+                return
+            cmd[0] = pa_cmd
         started_at = time.time()
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
@@ -486,8 +508,8 @@ class ServerBase(ServerCore):
             self.pulseaudio_proc = None
         import subprocess
         env = self.get_child_env()
-        self.pulseaudio_proc = subprocess.Popen(self.pulseaudio_command, stdin=None, env=env, shell=True, close_fds=True)
-        self.add_process(self.pulseaudio_proc, "pulseaudio", self.pulseaudio_command, ignore=True, callback=pulseaudio_ended)
+        self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, close_fds=True)
+        self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             def configure_pulse():
