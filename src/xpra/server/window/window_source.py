@@ -1939,7 +1939,6 @@ class WindowSource(object):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
-        self.no_r210(image, ["RGBA", "RGBX"])
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         transparency = self.supports_transparency and options.get("transparency", True)

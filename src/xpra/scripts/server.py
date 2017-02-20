@@ -792,7 +792,7 @@ def close_fds(excluding=[0, 1, 2]):
             except:
                 pass
 
-def start_Xvfb(xvfb_str, display_name, cwd):
+def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
     if os.name!="posix":
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
@@ -850,6 +850,9 @@ def start_Xvfb(xvfb_str, display_name, cwd):
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
+    if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
+        xvfb_cmd.append("-depth")
+        xvfb_cmd.append(str(pixel_depth))
     if use_display_fd:
         # 'S' means that we allocate the display automatically
         r_pipe, w_pipe = os.pipe()
@@ -858,6 +861,7 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         def preexec():
             setsid()
             close_fds([0, 1, 2, r_pipe, w_pipe])
+        #print("xvfb_cmd=%s" % (xvfb_cmd, ))
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb
@@ -1268,7 +1272,15 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if start_vfb:
         assert not proxying
         try:
-            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, display_name, cwd)
+            pixel_depth = int(opts.pixel_depth)
+        except ValueError as e:
+            raise InitException("invalid value '%s' for pixel depth, must be a number" % opts.pixel_depth)
+        if pixel_depth not in (8, 16, 24, 30):
+            raise InitException("invalid pixel depth: %s (%s)" % pixel_depth)
+        if not starting_desktop and pixel_depth==8:
+            raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
+        try:
+            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd)
         except OSError as e:
             log.error("Error starting Xvfb:")
             log.error(" %s", e)

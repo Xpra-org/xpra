@@ -516,6 +516,7 @@ OPTION_TYPES = {
                     "idle-timeout"      : int,
                     "server-idle-timeout" : int,
                     "sync-xvfb"         : int,
+                    "pixel-depth"       : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -756,6 +757,7 @@ def get_defaults():
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : 0,
+                    "pixel-depth"       : 24,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "use-display"       : False,

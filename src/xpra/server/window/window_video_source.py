@@ -1532,6 +1532,10 @@ class WindowVideoSource(WindowSource):
     def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
         #find one that is not video:
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
+        if self.image_depth==8:
+            return "png/P"
+        elif self.image_depth=="30":
+            return "rgb"
         if not fallback_encodings:
             if not self.is_cancelled():
                 log.warn("Warning: no non-video fallback encodings are available!")
@@ -1621,7 +1625,7 @@ class WindowVideoSource(WindowSource):
                 except Exception:
                     scrolllog.error("Error during scrolling detection")
                     scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
-        if not self.common_video_encodings or self.image_depth<=16:
+        if not self.common_video_encodings or self.image_depth!=24:
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
 

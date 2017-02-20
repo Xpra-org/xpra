@@ -53,6 +53,7 @@ def get_info():
 
 
 def encode(coding, image, quality, speed, supports_transparency):
+    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency))
     pixel_format = image.get_pixel_format()
     palette = None
     w = image.get_width()
@@ -61,8 +62,10 @@ def encode(coding, image, quality, speed, supports_transparency):
         "RLE8"  : "P",
         "XRGB"  : "RGB",
         "BGRX"  : "RGB",
+        "RGBX"  : "RGBX",
         "RGBA"  : "RGBA",
         "BGRA"  : "RGBA",
+        "BGRX"  : "RGBA",
         }.get(pixel_format, pixel_format)
     bpp = 32
     #remove transparency if it cannot be handled:
