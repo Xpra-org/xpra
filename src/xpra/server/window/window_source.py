@@ -753,7 +753,10 @@ class WindowSource(object):
             return self.encoding_is_mmap
         elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
-            return self.get_strict_encoding
+            return self.encoding_is_pngL
+        elif self.image_depth==8:
+            #no other option:
+            return self.encoding_is_pngP
         elif self.strict and self.encoding!="auto":
             #honour strict flag
             if self.encoding=="rgb":
@@ -791,6 +794,12 @@ class WindowSource(object):
 
     def encoding_is_mmap(self, *args):
         return "mmap"
+
+    def encoding_is_pngL(self, *args):
+        return "png/L"
+
+    def encoding_is_pngP(self, *args):
+        return "png/P"
 
     def encoding_is_rgb32(self, *args):
         return "rgb32"

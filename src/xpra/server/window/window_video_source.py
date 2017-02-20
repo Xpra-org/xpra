@@ -428,6 +428,8 @@ class WindowVideoSource(WindowSource):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
+        if self.image_depth==8:
+            return "png/P"
         if pixel_count<self._rgb_auto_threshold:
             #high speed and high quality, rgb is still good
             if "rgb24" in options:
@@ -1537,9 +1539,12 @@ class WindowVideoSource(WindowSource):
         return fallback_encodings[0]
 
     def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
-        encoding = self.get_video_fallback_encoding(order)
-        if not encoding:
-            return None
+        if self.image_depth==8:
+            encoding = "png/P"
+        else:
+            encoding = self.get_video_fallback_encoding(order)
+            if not encoding:
+                return None
         encode_fn = self._encoders[encoding]
         return encode_fn(encoding, image, options)
 
@@ -1599,6 +1604,8 @@ class WindowVideoSource(WindowSource):
                     bpp = 4
                     if image.get_depth()==16:
                         bpp = 2
+                    elif image.get_depth()==8:
+                        bpp = 1
                     scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
                     scroll_data.calculate(max_distance)

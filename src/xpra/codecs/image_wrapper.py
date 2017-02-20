@@ -36,6 +36,7 @@ class ImageWrapper(object):
         self.thread_safe = thread_safe
         self.freed = False
         self.timestamp = int(time.time()*1000)
+        self.palette = None
 
     def _cn(self):
         try:
@@ -78,6 +79,9 @@ class ImageWrapper(object):
 
     def get_planes(self):
         return self.planes
+
+    def get_palette(self):
+        return self.palette
 
     def is_thread_safe(self):
         """ if True, free() and clone_pixel_data() can be called from any thread,

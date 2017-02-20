@@ -64,17 +64,18 @@ cdef extern from "sys/shm.h":
 cdef extern from "errno.h" nogil:
     int errno
 
-cdef extern from "X11/Xutil.h":
-    pass
-
-
 include "constants.pxi"
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
 ctypedef unsigned char CARD8
+ctypedef CARD32 Colormap
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
+
+cdef extern from "X11/Xatom.h":
+    int XA_RGB_DEFAULT_MAP
+    int XA_RGB_BEST_MAP
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
@@ -106,6 +107,31 @@ cdef extern from "X11/Xlib.h":
         int bits_per_rgb
         int map_entries
 
+    ctypedef struct XVisualInfo:
+        Visual *visual
+        VisualID visualid
+        int screen
+        unsigned int depth
+        int c_class
+        unsigned long red_mask
+        unsigned long green_mask
+        unsigned long blue_mask
+        int colormap_size
+        int bits_per_rgb
+
+    ctypedef struct XColor:
+        unsigned long pixel                 # pixel value
+        unsigned short red, green, blue     # rgb values
+        char flags                          # DoRed, DoGreen, DoBlue
+
+    int VisualIDMask
+    #query colors flags:
+    int DoRed
+    int DoGreen
+    int DoBlue
+    void XQueryColors(Display *display, Colormap colormap, XColor defs_in_out[], int ncolors)
+    VisualID XVisualIDFromVisual(Visual *visual)
+    XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
 
     int XFree(void * data)
 
@@ -115,9 +141,9 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct XWindowAttributes:
         int x, y, width, height, depth, border_width
         Visual *visual
-
-    Status XGetWindowAttributes(Display * display, Window w,
-                                XWindowAttributes * attributes)
+        Colormap colormap
+        Bool map_installed
+    Status XGetWindowAttributes(Display * display, Window w, XWindowAttributes * attributes)
 
     ctypedef char* XPointer
 
@@ -156,6 +182,8 @@ cdef extern from "X11/Xlib.h":
                         int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
                         unsigned int *border_width_return, unsigned int *depth_return)
 
+cdef extern from "X11/Xutil.h":
+    pass
 
 cdef extern from "X11/extensions/Xcomposite.h":
     Bool XCompositeQueryExtension(Display *, int *, int *)
@@ -191,12 +219,12 @@ cdef extern from "X11/extensions/XShm.h":
     int XShmGetEventBase(Display *display)
 
 
-
 SBFirst = {
            MSBFirst : "MSBFirst",
            LSBFirst : "LSBFirst"
            }
 
+cdef const char *RLE8 = "RLE8"
 cdef const char *RGB565 = "RGB565"
 cdef const char *BGR565 = "BGR565"
 cdef const char *XRGB = "XRGB"
@@ -209,7 +237,7 @@ cdef const char *RGBX = "RGBX"
 cdef const char *R210 = "R210"
 cdef const char *r210 = "r210"
 
-RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565]
+RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565, RLE8]
 
 
 cdef int ximage_counter = 0
@@ -233,8 +261,9 @@ cdef class XImageWrapper(object):
     cdef void *pixels
     cdef object del_callback
     cdef uint64_t timestamp
+    cdef object palette
 
-    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False, sub=False):
+    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False, sub=False, palette=None):
         self.image = NULL
         self.pixels = NULL
         self.x = x
@@ -249,6 +278,7 @@ cdef class XImageWrapper(object):
         self.sub = sub
         self.pixels = <void *> pixels
         self.timestamp = int(time.time()*1000)
+        self.palette = palette
 
     cdef set_image(self, XImage* image):
         assert not self.sub
@@ -269,6 +299,8 @@ cdef class XImageWrapper(object):
                 self.pixel_format = RGB565
             else:
                 self.pixel_format = BGR565
+        elif self.depth==8:
+            self.pixel_format = RLE8
         elif self.depth==32:
             if image.byte_order==MSBFirst:
                 self.pixel_format = ARGB
@@ -303,6 +335,9 @@ cdef class XImageWrapper(object):
     def get_rowstride(self):
         return self.rowstride
 
+    def get_palette(self):
+        return self.palette
+
     def get_planes(self):
         return self.planes
 
@@ -332,7 +367,7 @@ cdef class XImageWrapper(object):
             raise Exception("source image does not have pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True)
+        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True, self.palette)
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
@@ -352,6 +387,9 @@ cdef class XImageWrapper(object):
         """ time in millis """
         return self.timestamp
 
+
+    def set_palette(self, palette):
+        self.palette = palette
 
     def set_timestamp(self, timestamp):
         self.timestamp = timestamp
@@ -572,8 +610,44 @@ cdef class XShmWrapper(object):
         imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
         imageWrapper.set_free_callback(self.free_image_callback)
+        if self.depth==8:
+            imageWrapper.set_palette(self.read_palette())
         xshmdebug("XShmWrapper.get_image(%#x, %i, %i, %i, %i)=%s (ref_count=%i)", drawable, x, y, w, h, imageWrapper, self.ref_count)
         return imageWrapper
+
+    def read_palette(self):
+        #FIXME: we assume screen is zero
+        cdef Colormap colormap = 0
+        cdef XWindowAttributes attrs
+        cdef VisualID visualid
+        cdef XVisualInfo vinfo_template
+        cdef XVisualInfo *vinfo
+        cdef int count = 0
+        if not XGetWindowAttributes(self.display, self.window, &attrs):
+            return None
+        colormap = attrs.colormap
+        visualid = XVisualIDFromVisual(attrs.visual)
+        vinfo_template.visualid = visualid
+        vinfo = XGetVisualInfo(self.display, VisualIDMask, &vinfo_template, &count)
+        if count!=1 or vinfo==NULL:
+            log.error("Error: visual %i not found, count=%i, vinfo=%#x", visualid, count, <uintptr_t> vinfo)
+            if vinfo:
+                XFree(vinfo)
+            return None
+        log("visual: depth=%i, red mask=%#10x, green mask=%#10x, blue mask=%#10x, size=%i, bits per rgb=%i", vinfo.depth, vinfo.red_mask, vinfo.green_mask, vinfo.blue_mask, vinfo.colormap_size, vinfo.bits_per_rgb)
+        cdef unsigned int size = vinfo.colormap_size
+        XFree(vinfo)
+        if size>256:
+            log.error("invalid colormap size: %i", size)
+            return None
+        cdef XColor[256] colors
+        cdef int i
+        for i in range(size):
+            colors[i].flags = DoRed | DoGreen | DoBlue
+            colors[i].pixel = i
+        XQueryColors(self.display, colormap, colors, size)
+        palette = [(colors[i].red, colors[i].green, colors[i].blue) for i in range(256)]
+        return palette
 
     def discard(self):
         #force next get_image call to get a new image from the server

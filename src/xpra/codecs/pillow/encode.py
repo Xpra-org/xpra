@@ -12,7 +12,7 @@ from xpra.util import envbool
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, _buffer
 from xpra.net.compression import Compressed
 
-from PIL import Image           #@UnresolvedImport
+from PIL import Image, ImagePalette     #@UnresolvedImport
 from xpra.codecs.pillow import PIL_VERSION
 PIL_can_optimize = PIL_VERSION and PIL_VERSION>="2.2"
 
@@ -54,14 +54,16 @@ def get_info():
 
 def encode(coding, image, quality, speed, supports_transparency):
     pixel_format = image.get_pixel_format()
+    palette = None
     w = image.get_width()
     h = image.get_height()
     rgb = {
-           "XRGB"   : "RGB",
-           "BGRX"   : "RGB",
-           "RGBA"   : "RGBA",
-           "BGRA"   : "RGBA",
-           }.get(pixel_format, pixel_format)
+        "RLE8"  : "P",
+        "XRGB"  : "RGB",
+        "BGRX"  : "RGB",
+        "RGBA"  : "RGBA",
+        "BGRA"  : "RGBA",
+        }.get(pixel_format, pixel_format)
     bpp = 32
     #remove transparency if it cannot be handled:
     try:
@@ -92,6 +94,15 @@ def encode(coding, image, quality, speed, supports_transparency):
                 pixel_format = "RGB"
                 rgb = "RGB"
                 bpp = 24
+        elif pixel_format=="RLE8":
+            pixel_format = "P"
+            palette = image.get_palette()
+            rp, gp, bp = [], [], []
+            for r, g, b in palette:
+                rp.append((r>>8) & 0xFF)
+                gp.append((g>>8) & 0xFF)
+                bp.append((b>>8) & 0xFF)
+            palette = rp+gp+bp
         #PIL cannot use the memoryview directly:
         if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)
@@ -99,6 +110,9 @@ def encode(coding, image, quality, speed, supports_transparency):
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
         im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+        if palette:
+            im.putpalette(palette)
+            im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
         if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
             rgb = "RGB"
