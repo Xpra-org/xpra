@@ -60,7 +60,6 @@ def encode(coding, image, quality, speed, supports_transparency):
         "RGBX"  : "RGBX",
         "RGBA"  : "RGBA",
         "BGRA"  : "RGBA",
-        "BGRX"  : "RGBA",
         }.get(pixel_format, pixel_format)
     bpp = 32
     #remove transparency if it cannot be handled,
