@@ -14,7 +14,6 @@ from xpra.net.compression import Compressed
 
 from PIL import Image, ImagePalette     #@UnresolvedImport
 from xpra.codecs.pillow import PIL_VERSION
-PIL_can_optimize = PIL_VERSION and PIL_VERSION>="2.2"
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
@@ -29,9 +28,6 @@ def do_get_encodings():
     log("PIL.Image.SAVE=%s", Image.SAVE)
     encodings = []
     for encoding in ["png", "png/L", "png/P", "jpeg"]:
-        if encoding=="jpeg" and PIL_VERSION<"2":
-            #jpeg does not support BytesIO in older versions
-            continue
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.SAVE:
@@ -48,7 +44,6 @@ def get_info():
     return  {
             "version"       : get_version(),
             "encodings"     : get_encodings(),
-            "optimize"      : PIL_can_optimize,
             }
 
 
@@ -68,7 +63,8 @@ def encode(coding, image, quality, speed, supports_transparency):
         "BGRX"  : "RGBA",
         }.get(pixel_format, pixel_format)
     bpp = 32
-    #remove transparency if it cannot be handled:
+    #remove transparency if it cannot be handled,
+    #and deal with non 24-bit formats:
     try:
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
@@ -125,7 +121,6 @@ def encode(coding, image, quality, speed, supports_transparency):
         raise
     buf = BytesIOClass()
     client_options = {}
-    #only optimize with Pillow>=2.2 and when speed is zero
     if coding=="jpeg":
         #newer versions of pillow require explicit conversion to non-alpha:
         if pixel_format.find("A")>=0:
@@ -134,7 +129,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         kwargs = im.info
         kwargs["quality"] = q
         client_options["quality"] = q
-        if PIL_can_optimize and speed<70:
+        if speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
             client_options["optimize"] = True
@@ -172,7 +167,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         if mask is not None:
             client_options["transparency"] = 255
             kwargs["transparency"] = 255
-        if PIL_can_optimize and speed==0:
+        if speed==0:
             #optimizing png is very rarely worth doing
             kwargs["optimize"] = True
             client_options["optimize"] = True
