@@ -57,7 +57,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         "RLE8"  : "P",
         "XRGB"  : "RGB",
         "BGRX"  : "RGB",
-        "RGBX"  : "RGBX",
+        "RGBX"  : "RGB",
         "RGBA"  : "RGBA",
         "BGRA"  : "RGBA",
         }.get(pixel_format, pixel_format)
