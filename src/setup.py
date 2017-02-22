@@ -737,7 +737,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
                 add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     if rpath:
-        insert_into_keywords(kw, "library_dirs", rpath)
+        #insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
