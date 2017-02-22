@@ -641,7 +641,7 @@ cdef class XShmWrapper(object):
             log.error("invalid colormap size: %i", size)
             return None
         cdef XColor[256] colors
-        cdef int i
+        cdef unsigned int i
         for i in range(size):
             colors[i].flags = DoRed | DoGreen | DoBlue
             colors[i].pixel = i
