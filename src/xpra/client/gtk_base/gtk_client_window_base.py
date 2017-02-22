@@ -65,7 +65,6 @@ if os.name=="posix" and USE_X11_BINDINGS:
 
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
-        CurrentTime = constants["CurrentTime"]
 
         try:
             #TODO: in theory this is not a proper check, meh - that will do
@@ -75,7 +74,7 @@ if os.name=="posix" and USE_X11_BINDINGS:
         except Exception as e:
             log.info("failed to setup workspace hooks: %s", e, exc_info=True)
     except ImportError:
-        pass
+        prop_get, prop_set = None, None
 
 
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
