@@ -2429,7 +2429,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
             try:
                 #we must use a subprocess to avoid messing things up - yuk
                 import subprocess
-                cmd = [get_nodock_command(), "info", "socket:%s" % socket_path]
+                cmd = get_nodock_command()+["info", "socket:%s" % socket_path]
                 p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, _ = p.communicate()
                 if p.returncode==0:
