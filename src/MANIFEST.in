@@ -11,6 +11,7 @@ include xpra/buffers/xxhash.c
 include xpra/buffers/buffers.h
 include xpra/buffers/buffers.c
 include xpra/codecs/cuda_common/*.cu
+include xpra/codecs/v4l2/video.h
 recursive-include html5 *
 recursive-include man *
 recursive-include patches *
