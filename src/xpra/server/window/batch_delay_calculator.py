@@ -123,6 +123,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
 
     if batch.locked:
         dam_lat_rel = 0
+        frame_delay = 0
     else:
         #calculate a target latency and try to get close to it
         avg_delay = batch.delay
