@@ -6,6 +6,10 @@ include xpra/buffers/memalign.c
 include xpra/buffers/buffers.h
 include xpra/buffers/new_buffers.c
 include xpra/buffers/old_buffers.c
+include xpra/buffers/xxhash.h
+include xpra/buffers/xxhash.c
+include xpra/buffers/buffers.h
+include xpra/buffers/buffers.c
 include xpra/codecs/cuda_common/*.cu
 recursive-include html5 *
 recursive-include man *
