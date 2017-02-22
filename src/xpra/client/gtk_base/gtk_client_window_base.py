@@ -49,7 +49,7 @@ PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
-USE_X11_BINDINGS = envbool("XPRA_SET_WORKSPACE", True)
+USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", True)
 SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
 if os.name=="posix" and USE_X11_BINDINGS:
     try:
