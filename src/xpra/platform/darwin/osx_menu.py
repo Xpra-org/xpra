@@ -11,7 +11,7 @@ from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu, \
-            CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS, CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL
+            CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS, CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL, SHOW_UPLOAD
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 
@@ -226,7 +226,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             def add_ah(*args):
                 if self.client.start_new_commands:
                     actions_menu.add(self.make_runcommandmenu())
-                if self.client.remote_file_transfer:
+                if SHOW_UPLOAD and self.client.remote_file_transfer:
                     actions_menu.add(self.make_uploadmenuitem())
             self.client.after_handshake(add_ah)
             menus.append(("Actions", actions_menu))
