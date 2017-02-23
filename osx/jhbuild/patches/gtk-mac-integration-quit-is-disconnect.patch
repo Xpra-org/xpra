@@ -1,5 +1,5 @@
---- a/src/gtkosxapplication_quartz.c	2017-02-23 07:29:55.000000000 +0000
-+++ b/src/gtkosxapplication_quartz.c	2017-02-23 07:30:21.000000000 +0000
+--- a/src/gtkosxapplication_quartz.c	2017-02-23 07:44:05.000000000 +0000
++++ b/src/gtkosxapplication_quartz.c	2017-02-23 07:44:12.000000000 +0000
 @@ -258,7 +258,7 @@
    [app_menu addItem: menuitem];
    [menuitem release];

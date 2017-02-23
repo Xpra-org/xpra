@@ -597,7 +597,7 @@ fi
 
 
 %changelog
-* Fri Feb 17 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.3-1
+* Thu Feb 23 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
 - fix quality and speed values skewed by locked batch delay
 - fix csc libyuv packaging on Mac OS
 - fix dbus import failures causing fatal error
@@ -607,6 +607,16 @@ fi
 - fix multi-monitor wheel scroll offset on MS Windows
 - fix client paint failures with very small CSC sizes
 - fix unlikely encoding selection error with rgb strict mode
+- fix connection errors when an invalid sharing option is used
+- fix speed setting not updated when batch delay is locked
+- fix environment variable name used for disabling X11 bindings
+- fix some glib timer warnings, clear them after use
+- fix printer forwarding with Mac OS shadow servers (partial)
+- fix Mac OS workarea calculations
+- honour "show upload" option in Mac OS application menu
+- Mac OS menu shows "Disconnect" instead of "Quit", "Xpra" instead of "Launcher"
+- Mac OS modules update: patch location, sshpass, opus, numpy
+- deiconify windows when they get mapped (more correct)
 - restore software mp3 decoding in HTML5 client
 - revert overly zealous memory access barrier
 - run uninstaller before install on MS Windows

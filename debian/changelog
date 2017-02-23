@@ -8,11 +8,21 @@ xpra (1.0.4-1) UNRELEASED; urgency=low
   * fix multi-monitor wheel scroll offset on MS Windows
   * fix client paint failures with very small CSC sizes
   * fix unlikely encoding selection error with rgb strict mode
+  * fix connection errors when an invalid sharing option is used
+  * fix speed setting not updated when batch delay is locked
+  * fix environment variable name used for disabling X11 bindings
+  * fix some glib timer warnings, clear them after use
+  * fix printer forwarding with Mac OS shadow servers (partial)
+  * fix Mac OS workarea calculations
+  * honour "show upload" option in Mac OS application menu
+  * Mac OS menu shows "Disconnect" instead of "Quit", "Xpra" instead of "Launcher"
+  * Mac OS modules update: patch location, sshpass, opus, numpy
+  * deiconify windows when they get mapped (more correct)
   * restore software mp3 decoding in HTML5 client
   * revert overly zealous memory access barrier
   * run uninstaller before install on MS Windows
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 17 Feb 2017 19:00:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 23 Feb 2017 17:38:16 +0700
 
 xpra (1.0.3-1) UNRELEASED; urgency=low
   * fix memcpy overflow
