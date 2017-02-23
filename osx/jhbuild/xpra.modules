@@ -169,7 +169,7 @@
     </dependencies>
   </autotools>
 
-  <autotools id="opus" autogenargs="" autogen-sh="configure">
+  <autotools id="opus" autogenargs="" autogen-sh="configure --disable-intrinsics">
 	<branch module="/releases/opus/opus-1.1.4.tar.gz"
 		version="1.1.4"
 		hash="sha256:9122b6b380081dd2665189f97bfd777f04f92dc3ab6698eea1dbb27ad59d8692"
