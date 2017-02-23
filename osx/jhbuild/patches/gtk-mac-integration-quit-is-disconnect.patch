@@ -1,11 +1,11 @@
---- a/src/gtkosxapplication_quartz.c	2017-02-23 12:36:11.000000000 +0700
-+++ b/src/gtkosxapplication_quartz.c	2017-02-23 12:36:23.000000000 +0700
-@@ -294,7 +294,7 @@
+--- a/src/gtkosxapplication_quartz.c	2017-02-23 07:29:55.000000000 +0000
++++ b/src/gtkosxapplication_quartz.c	2017-02-23 07:30:21.000000000 +0000
+@@ -258,7 +258,7 @@
+   [app_menu addItem: menuitem];
    [menuitem release];
    [app_menu addItem: [NSMenuItem separatorItem]];
- 
--  menuitem = [[NSMenuItem alloc] initWithTitle: [NSString stringWithFormat: NSLocalizedStringFromTable (@"Quit %@", @"GtkosxApplication", @"Quit menu item title"), appname]
-+  menuitem = [[NSMenuItem alloc] initWithTitle: [NSString stringWithFormat: NSLocalizedStringFromTable (@"Disconnect %@", @"GtkosxApplication", @"Quit menu item title"), appname]
- 	      action: @selector (terminate:) keyEquivalent: @"q"];
- /*
-  * Accounts for the added application name to the Quit menu item in a
+-  menuitem = [[NSMenuItem alloc] initWithTitle: [[NSLocalizedStringFromTable (@"Quit",  @"GtkosxApplication", @"Quit menu item title") autorelease] stringByAppendingFormat: @" %@", appname]
++  menuitem = [[NSMenuItem alloc] initWithTitle: [[NSLocalizedStringFromTable (@"Disconnect",  @"GtkosxApplication", @"Quit menu item title") autorelease] stringByAppendingFormat: @" %@", appname]
+ 	      action: @selector (terminate: ) keyEquivalent: @"q"];
+   [menuitem setTarget: NSApp];
+   [app_menu addItem: menuitem];
