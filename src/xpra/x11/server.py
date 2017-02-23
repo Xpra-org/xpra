@@ -553,7 +553,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #but for now it is just easier to create a new one:
             self._lost_window(window)
         tray_window = get_tray_window(raw_window)
-        windowlog("Discovered new override-redirect window: %#x (tray=%s)", xid, tray_window)
+        windowlog("Discovered new override-redirect window: %#x (tray=%s) geometry=%s", xid, tray_window, raw_window.get_geometry())
         try:
             if tray_window is not None:
                 assert self._tray
