@@ -13,5 +13,5 @@ if [ -e "$MANUAL" ]; then
 else
 	echo "Sorry, the manual page could not be found"
 	echo "Opening the version found on the xpra.org website"
-	open "http://xpra.org/trac/browser/xpra/trunk/src/man/xpra.1"
+	open "http://xpra.org/trac/browser/xpra/tags/v1.0.x/src/man/xpra.1"
 fi
