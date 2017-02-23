@@ -1154,6 +1154,7 @@ class WindowSource(object):
         if not delayed:
             #region has been sent
             return
+        self.cancel_may_send_timer()
         self.may_send_delayed()
         delayed = self._damage_delayed
         if not delayed:
@@ -1209,9 +1210,14 @@ class WindowSource(object):
         self.full_quality_refresh(options)
         return False
 
+    def _may_send_delayed(self):
+        #this method is called from the timer,
+        #we know we can clear it (and no need to cancel it):
+        self.may_send_timer = None
+        self.may_send_delayed()
+
     def may_send_delayed(self):
         """ send the delayed region for processing if the time is right """
-        self.cancel_may_send_timer()
         dd = self._damage_delayed
         if not dd:
             log("window %s delayed region already sent", self.wid)
@@ -1234,7 +1240,7 @@ class WindowSource(object):
         def check_again(delay=actual_delay/10.0):
             #schedules a call to check again:
             delay = int(min(self.batch_config.max_delay, max(10, delay)))
-            self.may_send_timer = self.timeout_add(delay, self.may_send_delayed)
+            self.may_send_timer = self.timeout_add(delay, self._may_send_delayed)
             return
         #locked means a fixed delay we try to honour,
         #this code ensures that we don't fire too early if called from damage_packet_acked
@@ -1716,7 +1722,7 @@ class WindowSource(object):
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             self.cancel_may_send_timer()
-            self.may_send_timer = self.idle_add(self.may_send_delayed)
+            self.may_send_timer = self.idle_add(self._may_send_delayed)
         if not self._damage_delayed:
             self.soft_expired = 0
 
