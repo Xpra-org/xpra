@@ -168,7 +168,7 @@ def get_workareas():
         except:
             pass
         x = int(visibleFrame.origin.x - frame.origin.x)
-        y = int((frame.size.height - visibleFrame.size.height) - (frame.origin.y - visibleFrame.origin.y))
+        y = int((frame.size.height - visibleFrame.size.height) - (visibleFrame.origin.y - frame.origin.y))
         w = int(visibleFrame.size.width)
         h = int(visibleFrame.size.height)
         workareas.append((x, y, w, h))
