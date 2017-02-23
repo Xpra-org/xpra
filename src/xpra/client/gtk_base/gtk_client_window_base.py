@@ -1092,7 +1092,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_map_event(self, event):
         log("%s.do_map_event(%s) OR=%s", self, event, self._override_redirect)
         gtk.Window.do_map_event(self, event)
-        if not self._override_redirect and (not self._iconified or not WIN32):
+        if not self._override_redirect:
+            #we can get a map event for an iconified window on win32:
+            if self._iconified:
+                self.deiconify()
             self.process_map_event()
 
     def process_map_event(self):
