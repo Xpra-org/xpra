@@ -311,11 +311,12 @@
 		repo="oberhumer.com"/>
   </autotools>
 
+  <!-- versions newer than this have problems packaging pyobjc -->
   <distutils id="setuptools">
 	<branch repo="pypi.python.org"
-		module="/packages/dc/8c/7c9869454bdc53e72fb87ace63eac39336879eef6f2bf96e946edbf03e90/setuptools-33.1.1.zip"
-		hash="sha256:6b20352ed60ba08c43b3611bdb502286f7a869fbfcf472f40d7279f1e77de145"
-		version="33.1.1"/>
+		module="/packages/source/s/setuptools/setuptools-19.2.tar.gz"
+		hash="md5:78353b1f80375ca5e088f4b4627ffe03"
+		version="19.2"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
