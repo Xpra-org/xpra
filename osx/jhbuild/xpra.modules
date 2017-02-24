@@ -445,11 +445,12 @@
         </after>
   </distutils>
 
+  <!-- py2app versions newer than this have regressions, see #1404 -->
   <distutils id="python-py2app">
 	<branch repo="pypi.python.org"
-		module="/packages/d9/ff/48a8aede5e99db5983039fd0e6c54bb4c0806ef696430d2684348e78249f/py2app-0.12.tar.gz"
-		hash="sha256:09c8e0fc2b9335859c416c2bb60749701f8981577e706a45aecb525836f3e0a1"
-		version="0.12"/>
+		module="/packages/d0/07/a290a6323d684fd2b9271ec72e6a80bc7dc97e41eb1213b4414928e8dbf1/py2app-0.10.tar.gz"
+		hash="sha256:82b1dd75cfb6b917ad60b9937e800dc80229b61819ff459b7ed46ed177eeaa5e"
+		version="0.10"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
