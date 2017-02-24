@@ -363,11 +363,12 @@
         </after>
   </distutils>
 
+  <!-- newer versions of cffi create problems when packaging python-cryptography, see #1404 -->
   <distutils id="cffi">
 	<branch repo="pypi.python.org"
-		module="/packages/a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/cffi-1.9.1.tar.gz"
-		hash="sha256:563e0bd53fda03c151573217b3a49b3abad8813de9dd0632e10090f6190fdaf8"
-		version="1.9.1"/>
+		module="/packages/c7/bb/2e1ba0ef25477929b44040800a880f02b42efb757e06a9d8899591582ba4/cffi-1.5.2.tar.gz"
+		hash="sha256:da9bde99872e46f7bb5cff40a9b1cc08406765efafb583c704de108b6cb821dd"
+		version="1.5.2"/>
 	<dependencies>
 		<dep package="pycparser"/>
 	</dependencies>
