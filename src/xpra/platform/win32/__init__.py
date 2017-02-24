@@ -330,4 +330,12 @@ def do_clean():
     global _wait_for_input
     if _wait_for_input:
         print("\nPress Enter to close")
+        try:
+            sys.stdout.flush()
+        except:
+            pass
+        try:
+            sys.stderr.flush()
+        except:
+            pass
         sys.stdin.readline()
