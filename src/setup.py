@@ -1914,12 +1914,20 @@ else:
         remove_packages("ctypes.wintypes", "colorsys")
         remove_packages(*external_excludes)
 
-        Plist = {"CFBundleDocumentTypes" : {
-                        "CFBundleTypeExtensions"    : ["Xpra"],
-                        "CFBundleTypeName"          : "Xpra Session Config File",
-                        "CFBundleName"              : "Xpra",
-                        "CFBundleTypeRole"          : "Viewer",
-                        }}
+        try:
+            from xpra.src_info import REVISION
+        except:
+            REVISION = "unknown"
+        Plist = {
+            "CFBundleDocumentTypes" : {
+                "CFBundleTypeExtensions"    : ["Xpra"],
+                "CFBundleTypeName"          : "Xpra Session Config File",
+                "CFBundleName"              : "Xpra",
+                "CFBundleTypeRole"          : "Viewer",
+                },
+            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2017 http://xpra.org/" % (XPRA_VERSION, REVISION),
+            "CFBundleIdentifier"            : "org.xpra.xpra",
+            }
         #Note: despite our best efforts, py2app will not copy all the modules we need
         #so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)

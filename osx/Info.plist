@@ -15,7 +15,7 @@
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.xpra.Xpra</string>
+	<string>org.xpra.xpra</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
