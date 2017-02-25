@@ -8,15 +8,18 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 import ctypes
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, HDC
 
-from xpra.util import csv
+from xpra.util import csv, XPRA_APP_ID
+from xpra.os_util import memoryview_to_bytes
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import GUID, WNDCLASSEX, WNDPROC
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
 log("loading ctypes NotifyIcon functions")
+
+sprintf = ctypes.cdll.msvcrt.sprintf
 
 user32 = ctypes.windll.user32
 GetSystemMetrics = user32.GetSystemMetrics
@@ -32,6 +35,8 @@ DestroyIcon = user32.DestroyIcon
 LoadImage = user32.LoadImageW
 CreateIconIndirect = user32.CreateIconIndirect
 GetDC = user32.GetDC
+GetDC.argtypes = [HWND]
+GetDC.restype = HDC
 ReleaseDC = user32.ReleaseDC
 DestroyWindow = user32.DestroyWindow
 PostQuitMessage = user32.PostQuitMessage
@@ -45,9 +50,26 @@ CreateCompatibleDC = gdi32.CreateCompatibleDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
 SelectObject = gdi32.SelectObject
 SetPixelV = gdi32.SetPixelV
+DeleteDC = gdi32.DeleteDC
+CreateDIBSection = gdi32.CreateDIBSection
+CreateBitmap = gdi32.CreateBitmap
+DeleteObject = gdi32.DeleteObject
+
+
+def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, dwSpMinorVersion=0):
+    GetProductInfo = kernel32.GetProductInfo
+    PDWORD = ctypes.POINTER(DWORD)
+    GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
+    GetProductInfo.restype  = BOOL
+    product_type = DWORD(0)
+    v = GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, ctypes.byref(product_type))
+    log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, product_type)
+    return bool(v)
+#win7 is actually 6.1:
+ISWIN7ORHIGHER = GetProductInfo(6, 1)
 
 class ICONINFO(ctypes.Structure):
-    __fields__ = [
+    _fields_ = [
         ('fIcon',       BOOL),
         ('xHotspot',    DWORD),
         ('yHotspot',    DWORD),
@@ -57,15 +79,19 @@ class ICONINFO(ctypes.Structure):
 CreateIconIndirect.restype = HICON
 CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
 
-class NOTIFYICONDATA(ctypes.Structure):
-    _fields_ = [
+if ISWIN7ORHIGHER:
+    MAX_TIP_SIZE = 128
+else:
+    MAX_TIP_SIZE = 64
+
+NOTIFYICONDATA_fields= [
         ("cbSize",              DWORD),
         ("hWnd",                HWND),
         ("uID",                 UINT),
         ("uFlags",              UINT),
         ("uCallbackMessage",    UINT),
         ("hIcon",               HICON),
-        ("szTip",               WCHAR * 64),
+        ("szTip",               WCHAR * 128),
         ("dwState",             DWORD),
         ("dwStateMask",         DWORD),
         ("szInfo",              WCHAR * 256),
@@ -76,11 +102,73 @@ class NOTIFYICONDATA(ctypes.Structure):
         ("hBalloonIcon",        HICON),
     ]
 
+if ISWIN7ORHIGHER:
+    #full:
+    class NOTIFYICONDATA(ctypes.Structure):
+        _fields_ = NOTIFYICONDATA_fields[:]
+else:
+    #winxp: V2
+    class NOTIFYICONDATA(ctypes.Structure):
+        _fields_ = NOTIFYICONDATA_fields[:-2]
+
 shell32 = ctypes.windll.shell32
 Shell_NotifyIcon = shell32.Shell_NotifyIcon
 Shell_NotifyIcon.restype = ctypes.wintypes.BOOL
 Shell_NotifyIcon.argtypes = [ctypes.wintypes.DWORD, ctypes.POINTER(NOTIFYICONDATA)]
 
+BI_RGB = 0
+BI_BITFIELDS = 0x00000003
+class CIEXYZ(ctypes.Structure):
+    _fields_ = [
+        ('ciexyzX', DWORD),
+        ('ciexyzY', DWORD),
+        ('ciexyzZ', DWORD),
+    ]
+class CIEXYZTRIPLE(ctypes.Structure):
+    _fields_ = [
+        ('ciexyzRed',   CIEXYZ),
+        ('ciexyzBlue',  CIEXYZ),
+        ('ciexyzGreen', CIEXYZ),
+    ]
+class BITMAPV5HEADER(ctypes.Structure):
+    _fields_ = [
+        ('bV5Size',             DWORD),
+        ('bV5Width',            LONG),
+        ('bV5Height',           LONG),
+        ('bV5Planes',           WORD),
+        ('bV5BitCount',         WORD),
+        ('bV5Compression',      DWORD),
+        ('bV5SizeImage',        DWORD),
+        ('bV5XPelsPerMeter',    LONG),
+        ('bV5YPelsPerMeter',    LONG),
+        ('bV5ClrUsed',          DWORD),
+        ('bV5ClrImportant',     DWORD),
+        ('bV5RedMask',          DWORD),
+        ('bV5GreenMask',        DWORD),
+        ('bV5BlueMask',         DWORD),
+        ('bV5AlphaMask',        DWORD),
+        ('bV5CSType',           DWORD),
+        ('bV5Endpoints',        CIEXYZTRIPLE),
+        ('bV5GammaRed',         DWORD),
+        ('bV5GammaGreen',       DWORD),
+        ('bV5GammaBlue',        DWORD),
+        ('bV5Intent',           DWORD),
+        ('bV5ProfileData',      DWORD),
+        ('bV5ProfileSize',      DWORD),
+        ('bV5Reserved',         DWORD),
+    ]
+
+CreateDIBSection.restype = HBITMAP
+CreateDIBSection.argtypes = [HANDLE, ctypes.POINTER(BITMAPV5HEADER), UINT, ctypes.POINTER(ctypes.c_void_p), HANDLE, DWORD]
+
+CreateBitmap.restype = HBITMAP
+CreateBitmap.argtypes = [INT, INT, UINT, UINT, ctypes.POINTER(ctypes.c_void_p)]
+
+XPRA_GUID = GUID()
+XPRA_GUID.Data1 = 0x67b3efa2
+XPRA_GUID.Data2 = 0xe470
+XPRA_GUID.Data3 = 0x4a5f
+XPRA_GUID.Data4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
 
 FALLBACK_ICON = LoadIcon(0, win32con.IDI_APPLICATION)
 
@@ -135,6 +223,35 @@ BUTTON_MAP = {
             WM_XBUTTONDBLCLK            : [(4, 1), (4, 0)],
             }
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+def rgba_to_bitmap(rgba, w, h):
+    header = BITMAPV5HEADER()
+    header.bV5Size = ctypes.sizeof(BITMAPV5HEADER)
+    header.bV5Width = w
+    header.bV5Height = -h
+    header.bV5Planes = 1
+    header.bV5BitCount = 32
+    header.bV5Compression = BI_RGB      #BI_BITFIELDS
+    #header.bV5RedMask = 0x000000ff
+    #header.bV5GreenMask = 0x0000ff00
+    #header.bV5BlueMask = 0x00ff0000
+    #header.bV5AlphaMask = 0xff000000
+    bitmap = 0
+    try:
+        hdc = GetDC(None)
+        dataptr = ctypes.c_void_p()
+        log("GetDC()=%#x", hdc)
+        bitmap = CreateDIBSection(hdc, ctypes.byref(header), win32con.DIB_RGB_COLORS, ctypes.byref(dataptr), None, 0)
+    finally:
+        ReleaseDC(None, hdc)
+    assert dataptr and bitmap, "failed to create DIB section"
+    log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
+    img_data = ctypes.create_string_buffer(rgba)
+    ctypes.memmove(dataptr, ctypes.byref(img_data), w*4*h)
+    return bitmap
+
 
 class win32NotifyIcon(object):
 
@@ -178,24 +295,34 @@ class win32NotifyIcon(object):
         if not r:
             raise Exception("Shell_NotifyIcon failed to ADD")
 
-    def make_nid(self, flags, version_timeout=5000):
+    def make_nid(self, flags):
         nid = NOTIFYICONDATA()
         nid.cbSize = ctypes.sizeof(NOTIFYICONDATA)
         nid.hWnd = self.hwnd
-        nid.uID = 20+self.app_id
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
-        nid.szTip = self.title
+        #don't ask why we have to use sprintf to get what we want:
+        title = self.title[:MAX_TIP_SIZE-1]
+        sprintf(ctypes.byref(nid,NOTIFYICONDATA.szTip.offset), title)
         nid.dwState = 0
         nid.dwStateMask = 0
-        nid.uVersion = version_timeout
         #balloon notification bits:
         #szInfo
         #uTimeout
         #szInfoTitle
         #dwInfoFlags
-        #guidItem
         #hBalloonIcon
+        if ISWIN7ORHIGHER:
+            #flags |= NIF_SHOWTIP
+            if self.app_id==XPRA_APP_ID:
+                nid.guidItem = XPRA_GUID
+                flags |= NIF_GUID
+            else:
+                nid.uID = self.app_id
+            nid.uVersion = 4
+        else:
+            nid.uVersion = 3
+        nid.uFlags = flags
         log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, title, self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
 
@@ -203,7 +330,7 @@ class win32NotifyIcon(object):
         if not self.hwnd:
             return
         try:
-            nid = self.make_nid(0, 0)
+            nid = self.make_nid(0)
             log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
             Shell_NotifyIcon(NIM_DELETE, nid)
         except Exception as e:
@@ -232,74 +359,51 @@ class win32NotifyIcon(object):
         self.current_icon = hicon
         Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
-
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         #this is convoluted but it works..
-        log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride))
-        from PIL import Image, ImageOps           #@UnresolvedImport
+        log("set_icon_from_data%s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride, options))
+        from PIL import Image   #@UnresolvedImport
         if has_alpha:
-            rgb_format = "RGBA"
+            img_format = "RGBA"
         else:
-            rgb_format = "RGB"
-        img = Image.frombuffer(rgb_format, (w, h), pixels, "raw", rgb_format, 0, 1)
+            img_format = "RGBX"
+        rgb_format = options.get("rgb_format", "RGBA")
+        img = Image.frombuffer(img_format, (w, h), pixels, "raw", rgb_format, rowstride, 1)
+        assert img, "failed to load image from buffer (%i bytes for %ix%i %s)" % (len(pixels), w, h, rgb_format)
         #apparently, we have to use SM_CXSMICON (small icon) and not SM_CXICON (regular size):
-        size = GetSystemMetrics(win32con.SM_CXSMICON)
-        if w!=h or w!=size:
-            img = img.resize((size, size), Image.ANTIALIAS)
-        if has_alpha:
-            #extract alpha channel as mask into an inverted "L" channel image:
-            alpha = img.tobytes("raw", "A")
-            mask = Image.frombytes("L", img.size, alpha)
-            mask = ImageOps.invert(mask)
-            #strip alpha from pixels:
-            img = img.convert("RGB")
-        else:
-            #no alpha: just use image as mask:
-            mask = img
+        icon_w = GetSystemMetrics(win32con.SM_CXSMICON)
+        icon_h = GetSystemMetrics(win32con.SM_CYSMICON)
+        if w!=icon_w or h!=icon_h:
+            log("resizing tray icon to %ix%i", icon_w, icon_h)
+            img = img.resize((w, h), Image.ANTIALIAS)
 
-        def img_to_bitmap(image, pixel_value):
-            hdc = CreateCompatibleDC(0)
-            dc = GetDC(0)
-            hbm = CreateCompatibleBitmap(dc, size, size)
-            hbm_save = SelectObject(hdc, hbm)
-            for x in range(size):
-                for y in range(size):
-                    pixel = image.getpixel((x, y))
-                    v = pixel_value(pixel)
-                    SetPixelV(hdc, x, y, v)
-            SelectObject(hdc, hbm_save)
-            ReleaseDC(self.hwnd, hdc)
-            ReleaseDC(self.hwnd, dc)
-            return hbm
-
-        hicon = FALLBACK_ICON
+        bitmap = 0
+        mask = 0
         try:
-            def rgb_pixel(pixel):
-                r, g, b = pixel[:3]
-                return r+g*256+b*256*256
-            bitmap = img_to_bitmap(img, rgb_pixel)
-            if mask is img:
-                mask_bitmap = bitmap
-            else:
-                #mask is in "L" mode, so we get the pixel value directly from getpixel(x, y)
-                def mask_pixel(l):
-                    return l+l*256+l*256*256
-                mask_bitmap = img_to_bitmap(mask, mask_pixel)
-            if mask_bitmap:
-                pyiconinfo = (True, 0, 0, mask_bitmap, bitmap)
-                hicon = CreateIconIndirect(pyiconinfo)
-                log("CreateIconIndirect(%s)=%s", pyiconinfo, hicon)
-                if hicon==0:
-                    hicon = FALLBACK_ICON
-            self.do_set_icon(hicon)
-            UpdateWindow(self.hwnd)
-            self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride, options)
-        except:
-            log.error("error setting icon", exc_info=True)
+            from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
+            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes()))
+            bitmap = rgba_to_bitmap(bgra, icon_w, icon_h)
+            mask = CreateBitmap(icon_w, icon_h, 1, 1, None)
+
+            iconinfo = ICONINFO()
+            iconinfo.fIcon = True
+            iconinfo.hbmMask = mask
+            iconinfo.hbmColor = bitmap
+            hicon = CreateIconIndirect(ctypes.byref(iconinfo))
+            log("CreateIconIndirect()=%s", hicon)
+            if not hicon:
+                raise ctypes.WinError(ctypes.get_last_error())
+        except Exception:
+            log.error("Error: failed to set tray icon", exc_info=True)
+            hicon = FALLBACK_ICON
         finally:
-            #DeleteDC(dc)
-            if hicon!=FALLBACK_ICON:
-                DestroyIcon(hicon)
+            if mask:
+                DeleteObject(mask)
+            if bitmap:
+                DeleteObject(bitmap)
+        self.do_set_icon(hicon)
+        UpdateWindow(self.hwnd)
+        self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
 
     def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
         v = fallback

@@ -237,7 +237,6 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
         si += 4
     return memoryview(output_buf)
 
-
 def bgra_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
@@ -261,6 +260,10 @@ cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
         rgba[i+3] = bgra[i+3]           #A
         i += 4
     return memoryview(output_buf)
+
+def rgba_to_bgra(buf):
+    #same: just a swap
+    return bgra_to_rgba(buf)
 
 
 def premultiply_argb_in_place(buf):
