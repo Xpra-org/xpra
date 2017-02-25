@@ -199,9 +199,6 @@ NIF_FLAGS = {
     NIF_SHOWTIP     : "SHOWTIP",
     }
 
-NOTIFYICON_VERSION = 3
-NOTIFYICON_VERSION_4 = 4
-
 #found here:
 #http://msdn.microsoft.com/en-us/library/windows/desktop/ff468877(v=vs.85).aspx
 WM_XBUTTONDOWN  = 0x020B

@@ -45,6 +45,12 @@ class Win32Tray(TrayBase):
     def hide(self):
         pass
 
+
+    def get_size(self):
+        w = GetSystemMetrics(win32con.SM_CXSMICON)
+        h = GetSystemMetrics(win32con.SM_CYSMICON)
+        return w, h
+
     def getHWND(self):
         if self.tray_widget is None:
             return    None
@@ -99,10 +105,11 @@ class Win32Tray(TrayBase):
         pos = wintypes.POINT()
         GetCursorPos(ctypes.byref(pos))
         x, y = pos.x, pos.y
-        size = GetSystemMetrics(win32con.SM_CXSMICON)
+        w = GetSystemMetrics(win32con.SM_CXSMICON)
+        h = GetSystemMetrics(win32con.SM_CYSMICON)
         x += self.offset_x
         y += self.offset_y
-        log("move_cb%s x=%s, y=%s, size=%s", args, x, y, size)
-        self.recalculate_geometry(x, y, size, size)
+        log("move_cb%s x=%s, y=%s, size=%i, %i", args, x, y, w, h)
+        self.recalculate_geometry(x, y, w, h)
         if self.mouseover_cb:
             self.mouseover_cb(x, y)
