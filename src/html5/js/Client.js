@@ -751,6 +751,7 @@ XpraClient.prototype._make_hello = function() {
 		"sound.receive"				: true,
 		"sound.send"				: false,
 		"sound.decoders"			: Object.keys(this.audio_codecs),
+		"sound.bundle-metadata"		: true,
 		// encoding stuff
 		"encoding.rgb24zlib"		: true,
 		"encoding.rgb_zlib"			: true,
@@ -921,7 +922,6 @@ XpraClient.prototype._send_sound_start = function() {
 }
 
 XpraClient.prototype._sound_start_aurora = function() {
-	this.audio_buffers_count = 0;
 	this.audio_aurora_ctx = AV.Player.fromXpraSource();
 	this.audio_aurora_ctx.play();
 	this._send_sound_start();
@@ -1016,7 +1016,6 @@ XpraClient.prototype._close_audio_aurora = function() {
 		//this.audio_aurora_ctx.close();
 		this.audio_aurora_ctx = null;
 	}
-	this.audio_buffers_count = 0;
 }
 
 XpraClient.prototype._close_audio_mediasource = function() {
@@ -1567,7 +1566,13 @@ XpraClient.prototype._process_sound_data_aurora = function(packet) {
 		this.warn("audio aurora context is closed already, dropping sound buffer");
 		return;
 	}
-	this.audio_buffers_count += 1;
+	var metadata = packet[4];
+	if(metadata) {
+		//push metadata first:
+		for(var i = 0; i < metadata.length; i++) {
+			this.audio_aurora_ctx.asset.source._on_data(metadata[i]);
+		}
+	}
 	this.audio_aurora_ctx.asset.source._on_data(buf);
 }
 
@@ -1591,12 +1596,21 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 			this._close_audio();
 			return;
 		}
+		var MIN_START_BUFFERS = 4;
 		var buf = packet[2];
+		var metadata = packet[4];
+		if(metadata) {
+			//push metadata first:
+			for(var i = 0; i < metadata.length; i++) {
+				this.audio_buffers.push(metadata[i]);
+			}
+			//since we have the metadata, we should be good to go:
+			MIN_START_BUFFERS = 1;
+		}
 		this.audio_buffers.push(buf);
 		var asb = this.audio_source_buffer;
 		var ab = this.audio_buffers;
 		//not needed for all codecs / browsers!
-		var MIN_START_BUFFERS = 4;
 		if(ab.length >= MIN_START_BUFFERS || this.audio_buffers_count>0){
 			if(asb && !asb.updating) {
 				var buffers = ab.splice(0, 200);
