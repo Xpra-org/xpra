@@ -22,6 +22,8 @@ from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.util import AdHocStruct, csv, envint, envbool
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
+USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
+
 
 from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, POINT
@@ -186,14 +188,16 @@ def get_native_notifier_classes():
     return []
 
 def get_native_tray_classes():
-    try:
-        from xpra.platform.win32.win32_tray import Win32Tray
-        return [Win32Tray]
-    except ImportError as e:
-        log("no native tray", exc_info=True)
-        log.warn("Warning: cannot load native win32 tray")
-        log.warn(" %s", e)
-    return []
+    c = []
+    if USE_NATIVE_TRAY:
+        try:
+            from xpra.platform.win32.win32_tray import Win32Tray
+            c.append(Win32Tray)
+        except ImportError as e:
+            log("no native tray", exc_info=True)
+            log.warn("Warning: cannot load native win32 tray")
+            log.warn(" %s", e)
+    return c
 
 def get_native_system_tray_classes(*args):
     #Win32Tray cannot set the icon from data

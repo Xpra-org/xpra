@@ -24,7 +24,8 @@ from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
-XSETTINGS_DPI = envbool("XSETTINGS_DPI", True)
+XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
+USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 
 
 def hexstr(v):
@@ -32,13 +33,15 @@ def hexstr(v):
 
 
 def get_native_system_tray_classes():
-    try:
-        from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
-        if can_use_appindicator():
-            return [AppindicatorTray]
-    except Exception as e:
-        traylog("cannot load appindicator tray: %s", e)
-    return []
+    c = []
+    if USE_NATIVE_TRAY:
+        try:
+            from xpra.platform.xposix.appindicator_tray import AppindicatorTray, can_use_appindicator
+            if can_use_appindicator():
+                c.append(AppindicatorTray)
+        except Exception as e:
+            traylog("cannot load appindicator tray: %s", e)
+    return c
 
 def get_wm_name():
     wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "")
