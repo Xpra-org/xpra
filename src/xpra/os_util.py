@@ -211,6 +211,9 @@ def is_Ubuntu():
 def is_Debian():
     return is_distribution_variant(b"Debian")
 
+def is_Raspbian():
+    return is_distribution_variant(b"Raspbian")
+
 def is_Fedora():
     return is_distribution_variant(b"Fedora")
 

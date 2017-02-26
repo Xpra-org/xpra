@@ -709,8 +709,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                         #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
                         #"-Wno-error=uninitialized",
                         ]
-                from xpra.os_util import is_Ubuntu, is_Debian
-                if is_Debian() or is_Ubuntu():
+                from xpra.os_util import is_Ubuntu, is_Debian, is_Raspbian
+                if is_Debian() or is_Ubuntu() or is_Raspbian():
                     #needed on Debian and Ubuntu to avoid this error:
                     #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
                     eifd.append("-Wno-error=strict-prototypes")
