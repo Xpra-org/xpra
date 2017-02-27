@@ -57,16 +57,15 @@ def get_digests():
 
 def get_network_caps():
     try:
-        from xpra.net.mmap_pipe import can_use_mmap
-        mmap = can_use_mmap()
+        from xpra.platform.features import MMAP_SUPPORTED
     except:
-        mmap = False
+        MMAP_SUPPORTED = False
     
     caps = {
                 "digest"                : get_digests(),
                 "compressors"           : compression.get_enabled_compressors(),
                 "encoders"              : packet_encoding.get_enabled_encoders(),
-                "mmap"                  : mmap,
+                "mmap"                  : MMAP_SUPPORTED,
                }
     caps.update(get_crypto_caps())
     caps.update(get_compression_caps())
