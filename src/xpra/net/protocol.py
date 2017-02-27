@@ -665,6 +665,10 @@ class Protocol(object):
     def read_queue_put(self, data):
         #start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
+            if data is None:
+                log("empty marker in read queue, exiting")
+                self.idle_add(self.close)
+                return
             self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
             self._read_parser_thread.start()
         self._read_queue.put(data)
