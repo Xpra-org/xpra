@@ -337,7 +337,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def add_listen_socket(self, socktype, sock):
-        log("add_listen_socket(%s, %s)", socktype, sock)
+        netlog("add_listen_socket(%s, %s)", socktype, sock)
         if socktype=="named-pipe":
             #named pipe listener uses a thread:
             sock.new_connection_cb = self._new_connection
@@ -348,7 +348,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def _new_connection(self, listener, *args):
         socktype = self.socket_types.get(listener)
-        log("_new_connection(%s) socktype=%s", listener, socktype)
+        netlog("_new_connection(%s) socktype=%s", listener, socktype)
         if socktype!="named-pipe":
             return GTKServerBase._new_connection(self, listener)
         pipe_handle = args[0]
