@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015 Spikes, Inc.
@@ -13,6 +13,7 @@
  * requires:
  *	bencode.js
  *  inflate.js
+ *  lz4.js
  */
 
 
@@ -96,9 +97,6 @@ function XpraProtocol() {
 
 	//Queue processing via intervals
 	this.process_interval = 0;  //milliseconds
-	this.rQ_interval_id = null;
-	this.sQ_interval_id = null;
-	this.mQ_interval_id = null;
 }
 
 XpraProtocol.prototype.open = function(uri) {
@@ -122,6 +120,9 @@ XpraProtocol.prototype.open = function(uri) {
 	this.websocket.onmessage = function (e) {
 		// push arraybuffer values onto the end
 		me.rQ.push(new Uint8Array(e.data));
+		setTimeout(function() {
+				me.process_receive_queue();
+			}, this.process_interval);
 	};
 	this.start_processing();
 }
@@ -139,40 +140,8 @@ XpraProtocol.prototype.terminate = function() {
 }
 
 XpraProtocol.prototype.start_processing = function() {
-	var me = this;
-	if(this.rQ_interval_id === null){
-		this.rQ_interval_id = setInterval(function(){
-			if (me.rQ.length > 0) {
-				me.process_receive_queue();
-			}
-		}, this.process_interval);
-	}
-
-	if(this.sQ_interval_id === null){
-		this.sQ_interval_id = setInterval(function(){
-			if(me.sQ.length > 0){
-				me.process_send_queue();
-			}
-		}, this.process_interval);
-	}
-
-	if(this.mQ_interval_id === null){
-		this.mQ_interval_id = setInterval(function(){
-			if(me.mQ.length > 0){
-				me.process_message_queue();
-			}
-		}, this.process_interval);
-	}
 }
 XpraProtocol.prototype.stop_processing = function() {
-	clearInterval(this.rQ_interval_id);
-	this.rQ_interval_id = null;
-
-	clearInterval(this.sQ_interval_id);
-	this.sQ_interval_id = null;
-
-	clearInterval(this.mQ_interval_id);
-	this.mQ_interval_id = null;
 }
 
 
@@ -349,6 +318,10 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			}
 			if (this.is_worker){
 				this.mQ[this.mQ.length] = packet;
+				var me = this;
+				setTimeout(function() {
+						me.process_message_queue();
+					}, this.process_interval);
 			} else {
 				this.packet_handler(packet, this.packet_ctx);
 			}
@@ -357,11 +330,6 @@ XpraProtocol.prototype.process_receive_queue = function() {
 			console.error("error processing packet " + e)
 			//console.error("packet_data="+packet_data);
 		}
-	}
-
-	// see if buffer still has unread packets
-	if (this.rQ.length > 0) {
-		this.process_receive_queue();
 	}
 }
 
@@ -426,6 +394,10 @@ XpraProtocol.prototype.process_message_queue = function() {
 
 XpraProtocol.prototype.send = function(packet) {
 	this.sQ[this.sQ.length] = packet;
+	var me = this;
+	setTimeout(function() {
+		me.process_send_queue();
+		}, this.process_interval);
 }
 
 XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
