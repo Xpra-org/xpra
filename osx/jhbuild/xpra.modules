@@ -916,7 +916,7 @@
 
   <metamodule id="meta-osx-xpra-pkgtools">
     <dependencies>
-      <dep package="xar"/>
+      <!-- dep package="xar"/ doesn't work with openssl 1.1-->
       <dep package="cpio"/>
       <dep package="bomutils"/>
     </dependencies>
