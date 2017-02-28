@@ -89,7 +89,6 @@ function XpraProtocol() {
 	this.cipher_in = null;
 	this.cipher_in_block_size = null;
 	this.cipher_out = null;
-	this.mode = 'binary';	// Current WebSocket mode: 'binary', 'base64'
 	this.rQ = [];			// Receive queue
 	this.sQ = [];			// Send queue
 	this.mQ = [];			// Worker message queue
