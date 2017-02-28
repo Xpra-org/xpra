@@ -95,7 +95,7 @@ function XpraProtocol() {
 	this.header = [];
 
 	//Queue processing via intervals
-	this.process_interval = 4;  //milliseconds
+	this.process_interval = 0;  //milliseconds
 	this.rQ_interval_id = null;
 	this.sQ_interval_id = null;
 	this.mQ_interval_id = null;
