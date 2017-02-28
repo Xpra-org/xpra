@@ -62,7 +62,7 @@ function XpraClient(container) {
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
     //packet handling
-    this.queue_draw_packets = true;
+    this.queue_draw_packets = false;
     this.dQ = [];
     this.dQ_interval_id = null;
     this.process_interval = 4;
@@ -1466,7 +1466,6 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
                 ctx._process_draw_queue(null, ctx);
             }, ctx.process_interval);
         }
-
         ctx.dQ[ctx.dQ.length] = packet;
     } else {
         ctx._process_draw_queue(packet, ctx);
@@ -1476,9 +1475,6 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 XpraClient.prototype._process_draw_queue = function(packet, ctx){
     if(!packet && ctx.queue_draw_packets){
         packet = ctx.dQ.shift();
-        if(!packet){
-            return;
-        }
     }
     if(!packet){
         //no valid draw packet, likely handle errors for that here
