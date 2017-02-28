@@ -1615,7 +1615,7 @@ class WindowVideoSource(WindowSource):
                     scroll_data.calculate(max_distance)
                     #marker telling us not to invalidate the scroll data from here on:
                     options["scroll"] = True
-                    scroll, count = self.scroll_data.get_best_match()
+                    scroll, count = scroll_data.get_best_match()
                     end = time.time()
                     match_pct = int(100*count/h)
                     scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
