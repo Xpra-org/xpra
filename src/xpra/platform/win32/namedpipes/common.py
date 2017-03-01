@@ -6,8 +6,8 @@
 
 #@PydevCodeAnalysisIgnore
 
-from ctypes import POINTER, Structure, Union, c_void_p
-from ctypes.wintypes import DWORD, ULONG, HANDLE
+from ctypes import POINTER, Structure, Union, c_void_p, c_int, c_ubyte
+from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT
 
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 
@@ -75,3 +75,28 @@ class OVERLAPPED(Structure):
         ('union',           _inner_union),
         ('hEvent',          HANDLE),
         ]
+
+class SECURITY_ATTRIBUTES(Structure):
+    _fields_ = [
+        ("nLength",                 c_int),
+        ("lpSecurityDescriptor",    c_void_p),
+        ("bInheritHandle",          c_int),
+        ]
+class SECURITY_DESCRIPTOR(Structure):
+    SECURITY_DESCRIPTOR_CONTROL = USHORT
+    REVISION = 1
+    _fields_ = [
+        ('Revision',    c_ubyte),
+        ('Sbz1',        c_ubyte),
+        ('Control',     SECURITY_DESCRIPTOR_CONTROL),
+        ('Owner',       c_void_p),
+        ('Group',       c_void_p),
+        ('Sacl',        c_void_p),
+        ('Dacl',        c_void_p),
+    ]
+
+class TOKEN_USER(Structure):
+    _fields_ = [
+        ('SID',         c_void_p),
+        ('ATTRIBUTES',  DWORD),
+    ]
