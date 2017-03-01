@@ -195,6 +195,10 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
 
 
 def get_target_quality(wid, window_dimensions, batch, global_statistics, statistics, min_quality, min_speed):
+    info = {
+        "min_quality"   : min_quality,
+        "min_speed"     : min_speed,
+        }
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # quality:
@@ -203,9 +207,10 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     # here we try minimize client-latency, packet-backlog and batch.delay
     # the compression ratio tells us if we can increase the quality
     packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
-    pixels_bl = 1.0 - logp(pixels_backlog/low_limit//4)
+    pb_ratio = pixels_backlog/low_limit
+    pixels_bl = 1.0 - logp(pb_ratio//4)     #4 frames behind -> min quality
+    info["backlog_factor"] = packets_backlog, pixels_backlog, low_limit, pb_ratio, int(100.0*pixels_bl)
     target = pixels_bl
-    batch_q = -1
     if batch is not None:
         recs = len(batch.last_actual_delays)
         if recs>0 and not batch.locked:
@@ -216,8 +221,8 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             #anything less than N times the reference delay is good enough:
             N = 4
             batch_q = N * ref_delay / max(1, batch.min_delay, batch.delay)
+            info["batch-delay-ratio"] = int(100.0*batch_q)
             target = min(1.0, target, batch_q)
-    cratio_factor = None
     #from here on, the compression ratio integer value is in per-1000:
     es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in list(statistics.encoding_stats) if pixels>=4096]
     if len(es)>=2:
@@ -237,13 +242,14 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
             smooth = 50
             bump = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
+        log.error("ascore=%.2f, rscore=%.2f bump=%.3f", ascore, rscore, bump)
         target += bump
-        cratio_factor = ascore, rscore, int(100*bump)
-    latency_q = -1
+        info["compression-ratio"] = ascore, rscore, int(100*bump)
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
         #if the latency is too high, lower quality target:
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
         target = min(target, latency_q)
+        info["latency"] = int(100.0*latency_q)
     target = min(1.0, max(0.0, target))
     if min_speed>0:
         #discount the quality more aggressively if we have speed requirements to satisfy:
@@ -269,15 +275,4 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     #apply min-quality:
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
-    info = {
-            "min_quality"   : min_quality,
-            "min_speed"     : min_speed,
-            "backlog_factor": (packets_backlog, pixels_backlog, int(100.0*pixels_bl)),
-            }
-    if cratio_factor:
-        info["compression-ratio"] = cratio_factor
-    if batch_q>=0:
-        info["batch-delay-ratio"] = int(100.0*batch_q)
-    if latency_q>=0:
-        info["latency"] = int(100.0*latency_q)
     return info, target_quality
