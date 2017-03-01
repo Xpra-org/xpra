@@ -1767,7 +1767,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         except Exception as e:
             if e[0]==errno.ENOENT:
                 raise InitException("the named pipe '%s' does not exist" % pipe_name)
-            raise InitException("failed to connect to the named pipe '%s': %s" % (pipe_name, e))
+            raise InitException("failed to connect to the named pipe '%s':\n %s" % (pipe_name, e))
         conn = NamedPipeConnection(pipe_name, pipe_handle)
         conn.timeout = SOCKET_TIMEOUT
 
