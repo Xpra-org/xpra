@@ -33,7 +33,11 @@ fi
 #figure out the full xpra version:
 VERSION=`python2.7.exe -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
+LOCAL_MODIFICATIONS=`python2.7.exe -c "from xpra.src_info import LOCAL_MODIFICATIONS;import sys;sys.stdout.write(str(LOCAL_MODIFICATIONS))"`
 FULL_VERSION=${VERSION}-r${REVISION}
+if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
+	FULL_VERSION="${FULL_VERSION}M"
+fi
 EXTRA_VERSION=""
 BUILD_TYPE=""
 echo
