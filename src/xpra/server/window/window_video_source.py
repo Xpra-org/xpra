@@ -1486,11 +1486,12 @@ class WindowVideoSource(WindowSource):
         #send the rest as rectangles:
         if non_scroll:
             nsstart = time.time()
-            if (self._current_speed>=75 and self._current_quality<75) or len(non_scroll)>=16:
-                encoding = self.get_video_fallback_encoding(FAST_ORDER)
-            else:
-                #slower but can be lossless:
-                encoding = self.get_video_fallback_encoding(PREFERED_ENCODING_ORDER)
+            #prefer fast encoding in most cases,
+            #since video and scroll encoding fire when there are lots of updates:
+            order = None
+            if len(non_scroll)>=16:
+                order = FAST_ORDER
+            encoding = self.get_video_fallback_encoding(order)
             client_options = options.copy()
             if encoding:
                 encode_fn = self._encoders[encoding]
@@ -1531,6 +1532,11 @@ class WindowVideoSource(WindowSource):
 
     def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
         #find one that is not video:
+        if order is None:
+            if self._current_speed>=50:
+                order = FAST_ORDER
+            else:
+                order = PREFERED_ENCODING_ORDER
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if self.image_depth==8:
             return "png/P"
@@ -1542,7 +1548,7 @@ class WindowVideoSource(WindowSource):
             return None
         return fallback_encodings[0]
 
-    def video_fallback(self, image, options, order=PREFERED_ENCODING_ORDER):
+    def video_fallback(self, image, options, order=None):
         if self.image_depth==8:
             encoding = "png/P"
         else:
