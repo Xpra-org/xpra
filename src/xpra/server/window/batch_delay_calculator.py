@@ -242,7 +242,6 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
             mult = (1000 + rscore)/2000.0           #mult should be in the range 0.5 to ~1.0
             smooth = 50
             bump = -logp((float(smooth+rscore)/(smooth+ascore))-1.0) * mult
-        log.error("ascore=%.2f, rscore=%.2f bump=%.3f", ascore, rscore, bump)
         target += bump
         info["compression-ratio"] = ascore, rscore, int(100*bump)
     if len(global_statistics.client_latency)>0 and global_statistics.recent_client_latency>0:
