@@ -2413,12 +2413,15 @@ def start_server_subprocess(script_file, args, mode, defaults,
                                "HOME"       : home or os.path.join("/home", username),
                                })
         proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
-    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, uid)
+    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
 
-def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, matching_uid=0):
+def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
     #wait until the new socket appears:
     start = time.time()
+    match_display_name = None
+    if display_name:
+        match_display_name = "server.display=%s" % display_name
     from xpra.platform.paths import get_nodock_command
     while time.time()-start<15 and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
@@ -2447,7 +2450,9 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                             if info_uuid==new_server_uuid:
                                 #found it!
                                 return socket_path
-                                break
+                        if match_display_name and match_display_name==line:
+                            #found it
+                            return socket_path
             except Exception as e:
                 warn("error during server process detection: %s" % e)
         time.sleep(0.10)
