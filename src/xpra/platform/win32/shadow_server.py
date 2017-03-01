@@ -274,7 +274,7 @@ class Win32RootWindowModel(RootWindowModel):
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
         buf_size = width*height*4
         pixels = ctypes.create_string_buffer("", buf_size)
-        log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.byref(pixels))
+        log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.addressof(pixels))
         r = GetBitmapBits(self.bitmap, buf_size, ctypes.byref(pixels))
         if r==0:
             log.error("Error: failed to copy screen bitmap data")
