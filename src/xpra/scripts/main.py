@@ -1755,9 +1755,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         if not WIN32:
             raise InitException("named pipes are only supported on MS Windows")
         import errno
-        from xpra.platform.win32.dotxpra import PIPE_PATH
+        from xpra.platform.win32.dotxpra import PIPE_PATH, PIPE_ROOT
         from xpra.platform.win32.namedpipes.connection import NamedPipeConnection, connect_to_namedpipe
-        path = PIPE_PATH+pipe_name
+        if pipe_name.startswith(PIPE_ROOT):
+            #absolute pipe path already specified
+            path = pipe_name
+        else:
+            path = PIPE_PATH+pipe_name
         try:
             pipe_handle = connect_to_namedpipe(path)
         except Exception as e:
