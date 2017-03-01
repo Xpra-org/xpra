@@ -105,7 +105,7 @@ def encode(image, int quality=50, int speed=50, options={}):
     pixels = image.get_pixels()
     pfstr = image.get_pixel_format()
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
-    assert buf_len>=stride*height, "%s buffer is too small: % bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
+    assert buf_len>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
