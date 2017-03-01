@@ -8,7 +8,8 @@ import os
 from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, osexpand
 
 PIPE_PREFIX = "Xpra\\"
-PIPE_PATH = "\\\\.\\pipe\\"
+PIPE_ROOT = "\\\\"
+PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
 class DotXpra(object):
