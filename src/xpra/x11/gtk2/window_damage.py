@@ -118,7 +118,7 @@ class WindowDamageHandler(object):
                 ch.cleanup()
 
     def get_xshm_handle(self):
-        if not self._use_xshm or not WindowDamageHandler.XShmEnabled:
+        if not self._use_xshm or not WindowDamageHandler.XShmEnabled or not XImage.has_XShm():
             return None
         if self._xshm_handle and self._xshm_handle.get_size()!=self.client_window.get_size():
             #size has changed!
