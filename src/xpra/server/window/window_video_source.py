@@ -1611,11 +1611,7 @@ class WindowVideoSource(WindowSource):
                         scroll_data = ScrollData()
                         self.scroll_data = scroll_data
                         scrolllog("new scroll data: %s", scroll_data)
-                    bpp = 4
-                    if image.get_depth()==16:
-                        bpp = 2
-                    elif image.get_depth()==8:
-                        bpp = 1
+                    bpp = image.get_bytesperpixel()
                     scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
                     scroll_data.calculate(max_distance)

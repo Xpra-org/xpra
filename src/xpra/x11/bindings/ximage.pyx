@@ -252,6 +252,7 @@ cdef class XImageWrapper(object):
     cdef unsigned int depth                                  #@DuplicatedSignature
     cdef unsigned int rowstride
     cdef unsigned int planes
+    cdef unsigned int bytesperpixel
     cdef unsigned char thread_safe
     cdef unsigned char sub
     cdef object pixel_format
@@ -260,7 +261,7 @@ cdef class XImageWrapper(object):
     cdef uint64_t timestamp
     cdef object palette
 
-    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, thread_safe=False, sub=False, palette=None):
+    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, unsigned int bytesperpixel=4, thread_safe=False, sub=False, palette=None):
         self.image = NULL
         self.pixels = NULL
         self.x = x
@@ -268,6 +269,7 @@ cdef class XImageWrapper(object):
         self.width = width
         self.height = height
         self.depth = depth
+        self.bytesperpixel = bytesperpixel
         self.pixel_format = pixel_format
         self.rowstride = rowstride
         self.planes = planes
@@ -287,23 +289,28 @@ cdef class XImageWrapper(object):
         self.rowstride = image.bytes_per_line
         self.depth = image.depth
         if self.depth==24:
+            self.bytesperpixel = 4
             if image.byte_order==MSBFirst:
                 self.pixel_format = XRGB
             else:
                 self.pixel_format = BGRX
         elif self.depth==16:
+            self.bytesperpixel = 2
             if image.byte_order==MSBFirst:
                 self.pixel_format = RGB565
             else:
                 self.pixel_format = BGR565
         elif self.depth==8:
+            self.bytesperpixel = 1
             self.pixel_format = RLE8
         elif self.depth==32:
+            self.bytesperpixel = 4
             if image.byte_order==MSBFirst:
                 self.pixel_format = ARGB
             else:
                 self.pixel_format = BGRA
         elif self.depth==30:
+            self.bytesperpixel = 4
             if image.byte_order==MSBFirst:
                 self.pixel_format = R210
             else:
@@ -341,6 +348,9 @@ cdef class XImageWrapper(object):
     def get_depth(self):
         return self.depth
 
+    def get_bytesperpixel(self):
+        return self.bytesperpixel
+
     def get_size(self):
         return self.rowstride * self.height
 
@@ -364,7 +374,7 @@ cdef class XImageWrapper(object):
             raise Exception("source image does not have pixels!")
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
-        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, 0, True, True, self.palette)
+        return XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format, self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True, self.palette)
 
     cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:

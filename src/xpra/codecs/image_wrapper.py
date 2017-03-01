@@ -23,7 +23,7 @@ class ImageWrapper(object):
                    _3_PLANES    : "3_PLANES",
                    _4_PLANES    : "4_PLANES"}
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, planes=PACKED, thread_safe=True):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, bytesperpixel=4, planes=PACKED, thread_safe=True):
         self.x = x
         self.y = y
         self.width = width
@@ -32,6 +32,7 @@ class ImageWrapper(object):
         self.pixel_format = pixel_format
         self.depth = depth
         self.rowstride = rowstride
+        self.bytesperpixel = bytesperpixel
         self.planes = planes
         self.thread_safe = thread_safe
         self.freed = False
@@ -67,6 +68,9 @@ class ImageWrapper(object):
 
     def get_depth(self):
         return self.depth
+
+    def get_bytesperpixel(self):
+        return self.bytesperpixel
 
     def get_size(self):
         return self.rowstride * self.height

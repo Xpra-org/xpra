@@ -19,6 +19,7 @@ netlog = Logger("network")
 
 from xpra.util import XPRA_APP_ID
 from xpra.os_util import StringIOClass
+from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -53,6 +54,7 @@ GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
 GetBitmapBits.restype  = LONG
 SelectObject = gdi32.SelectObject
 BitBlt = gdi32.BitBlt
+GetDeviceCaps = gdi32.GetDeviceCaps
 
 
 NOEVENT = object()
@@ -90,12 +92,17 @@ except:
 DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", DISABLE_DWM_COMPOSITION)
 
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+
 class Win32RootWindowModel(RootWindowModel):
 
     def __init__(self, root):
         RootWindowModel.__init__(self, root)
         self.metrics = None
         self.dc, self.memdc, self.bitmap = None, None, None
+        self.bit_depth = 32
         if DISABLE_DWM_COMPOSITION:
             try:
                 from ctypes import windll
@@ -251,6 +258,7 @@ class Win32RootWindowModel(RootWindowModel):
         if not self.dc:
             self.dc = GetWindowDC(desktop_wnd)
             assert self.dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
+            self.bit_depth =  GetDeviceCaps(self.dc, win32con.BITSPIXEL)
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
             self.bitmap = CreateCompatibleBitmap(self.dc, width, height)
@@ -272,7 +280,8 @@ class Win32RootWindowModel(RootWindowModel):
             return None
         bitblt_time = time.time()
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
-        buf_size = width*height*4
+        rowstride = roundup(width*self.bit_depth//8, 2)
+        buf_size = rowstride*height
         pixels = ctypes.create_string_buffer("", buf_size)
         log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.addressof(pixels))
         r = GetBitmapBits(self.bitmap, buf_size, ctypes.byref(pixels))
@@ -284,7 +293,20 @@ class Win32RootWindowModel(RootWindowModel):
             pixels = pixels[:r]
         log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
         assert pixels, "no pixels returned from GetBitmapBits"
-        v = ImageWrapper(x, y, width, height, pixels, "BGRX", 24, width*4, planes=ImageWrapper.PACKED, thread_safe=True)
+        if self.bit_depth==32:
+            rgb_format = "BGRX"
+        elif self.bit_depth==30:
+            rgb_format = "r210"
+        elif self.bit_depth==24:
+            rgb_format = "BGR"
+        elif self.bit_depth==16:
+            rgb_format = "BGR565"
+        elif self.bit_depth==8:
+            rgb_format = "RLE8"
+        else:
+            raise Exception("unsupported bit depth: %s" % self.bit_depth)
+        bpp = self.bit_depth//8
+        v = ImageWrapper(x, y, width, height, pixels, rgb_format, self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
         if logger==None:
             logger = log
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)
@@ -309,6 +331,8 @@ class ShadowServer(GTKShadowServerBase):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         self.keycodes = {}
+        if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
+            raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
         from xpra.net.bytestreams import set_continue_wait
         #on win32, we want to wait just a little while,
