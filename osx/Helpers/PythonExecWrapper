@@ -82,6 +82,11 @@ if test "$LANG" == ""; then
 else
 	export LANG="$LANG.utf8"
 fi
+if test "$LANG" == "C"; then
+	if test "$LC_ALL" == ""; then
+		export LC_ALL="C"
+	fi
+fi
 
 if test -f "$bundle_lib/charset.alias"; then
     export CHARSETALIASDIR="$bundle_lib"
