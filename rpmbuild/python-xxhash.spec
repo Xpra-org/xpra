@@ -19,14 +19,13 @@
 
 
 Name:           python2-xxhash
-Version:        0.6.1
+Version:        1.0.1
 Release:        1%{?dist}
 URL:            https://github.com/ifduyue/python-xxhash
 Summary:        xxhash Bindings for Python
 License:        BSD
 Group:          Development/Languages/Python
-Source:         https://pypi.python.org/packages/08/ac/f5cf4fc624ef5a12a8c6e80143ee43d9ed8d0c8bda96e2af5772798bcfbe/xxhash-%{version}.tar.bz2
-Patch0:			python-xxhash-notest.patch
+Source:         https://pypi.python.org/packages/06/2d/59697bd6d2e8b277a39a916fcdd17246bd25eeceb107534fe50e128f6e59/xxhash-%{version}.zip
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -48,9 +47,6 @@ https://github.com/Cyan4973/xxHash by Yann Collet.
 
 %prep
 %setup -q -n xxhash-%{version}
-%if 0%{?el6}
-%patch0 -p1
-%endif
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
@@ -88,5 +84,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Mar 02 2017 Antoine Martin <antoine@nagafix.co.uk> - 1.0.1-1
+- new upstream release
+
+* Fri Feb 10 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.6.3-1
+- new upstream release
+
 * Sat Aug 20 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.6.1-1
 - initial packaging
