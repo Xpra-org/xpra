@@ -77,7 +77,7 @@ class SoundSource(SoundPipeline):
         self.src = None
         self.src_type = src_type
         self.pending_metadata = []
-        self.buffer_latency = False
+        self.buffer_latency = True
         self.jitter_queue = None
         self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
@@ -124,9 +124,11 @@ class SoundSource(SoundPipeline):
         self.sink.connect("new-preroll", self.on_new_preroll)
         self.src = self.pipeline.get_by_name("src")
         for x in ("actual-buffer-time", "actual-latency-time"):
-            #don't comment this out, it is used to verify the attributes are present:
-            gstlog("initial %s: %s", x, self.src.get_property(x))
-        self.buffer_latency = True
+            try:
+                gstlog("initial %s: %s", x, self.src.get_property(x))
+            except Exception as e:
+                gstlog("no %s property on %s: %s", x, self.src, e)
+                self.buffer_latency = False
         #if the env vars have been set, try to honour the settings:
         global BUFFER_TIME, LATENCY_TIME
         if BUFFER_TIME>0:
