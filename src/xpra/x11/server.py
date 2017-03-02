@@ -55,7 +55,7 @@ eventlog = Logger("x11", "events")
 import xpra
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
 
-REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
+REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", False)
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
