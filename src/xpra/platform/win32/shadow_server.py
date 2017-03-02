@@ -55,6 +55,7 @@ GetBitmapBits.restype  = LONG
 SelectObject = gdi32.SelectObject
 BitBlt = gdi32.BitBlt
 GetDeviceCaps = gdi32.GetDeviceCaps
+GetSystemPaletteEntries = gdi32.GetSystemPaletteEntries
 
 
 NOEVENT = object()
@@ -91,6 +92,13 @@ except:
     pass
 DISABLE_DWM_COMPOSITION = envbool("XPRA_DISABLE_DWM_COMPOSITION", DISABLE_DWM_COMPOSITION)
 
+class PALETTEENTRY(ctypes.Structure):
+    _fields_ = [
+        ('peRed',   ctypes.c_ubyte),
+        ('peGreen', ctypes.c_ubyte),
+        ('peBlue',  ctypes.c_ubyte),
+        ('peFlags', ctypes.c_ubyte),
+        ]
 
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)
@@ -307,6 +315,17 @@ class Win32RootWindowModel(RootWindowModel):
             raise Exception("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth//8
         v = ImageWrapper(x, y, width, height, pixels, rgb_format, self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
+        if self.bit_depth==8:
+            count = GetSystemPaletteEntries(self.dc, 0, 0, None)
+            log("palette size: %s", count)
+            palette = []
+            if count>0:
+                buf = (PALETTEENTRY*count)()
+                r = GetSystemPaletteEntries(self.dc, 0, count, ctypes.byref(buf))
+                #we expect 16-bit values, so bit-shift them:
+                for p in buf:
+                    palette.append((p.peRed<<8, p.peGreen<<8, p.peBlue<<8))
+            v.set_palette(palette)
         if logger==None:
             logger = log
         log("get_image%s=%s took %ims", (x, y, width, height), v, (time.time()-start)*1000)

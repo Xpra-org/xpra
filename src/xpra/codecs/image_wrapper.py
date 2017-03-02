@@ -23,7 +23,7 @@ class ImageWrapper(object):
                    _3_PLANES    : "3_PLANES",
                    _4_PLANES    : "4_PLANES"}
 
-    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, bytesperpixel=4, planes=PACKED, thread_safe=True):
+    def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):
         self.x = x
         self.y = y
         self.width = width
@@ -37,7 +37,7 @@ class ImageWrapper(object):
         self.thread_safe = thread_safe
         self.freed = False
         self.timestamp = int(time.time()*1000)
-        self.palette = None
+        self.palette = palette
 
     def _cn(self):
         try:
@@ -111,6 +111,9 @@ class ImageWrapper(object):
     def set_pixel_format(self, pixel_format):
         self.pixel_format = pixel_format
 
+    def set_palette(self, palette):
+        self.palette = palette
+
     def set_pixels(self, pixels):
         assert not self.freed
         self.pixels = pixels
@@ -166,7 +169,7 @@ class ImageWrapper(object):
         for _ in range(h):
             lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
             pos += oldstride
-        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride, planes=self.planes, thread_safe=True)
+        return ImageWrapper(self.x+x, self.y+y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride, planes=self.planes, thread_safe=True, palette=self.palette)
 
     def __del__(self):
         #print("ImageWrapper.__del__() calling %s" % self.free)
