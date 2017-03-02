@@ -66,7 +66,12 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
     log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, product_type)
     return bool(v)
 #win7 is actually 6.1:
-ISWIN7ORHIGHER = GetProductInfo(6, 1)
+try:
+    ISWIN7ORHIGHER = GetProductInfo(6, 1)
+except AttributeError as e:
+    #likely running on win XP:
+    log("cannot query GetProductInfo", exc_info=True)
+    raise ImportError("cannot query GetProductInfo: %s" % e)
 
 class ICONINFO(ctypes.Structure):
     _fields_ = [
