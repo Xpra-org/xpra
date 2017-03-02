@@ -768,7 +768,7 @@ class WindowSource(object):
                     assert "rgb24" in self.common_encodings
                     return self.encoding_is_rgb24
             return self.get_strict_encoding
-        elif self._want_alpha:
+        elif self._want_alpha or self.is_tray:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
             if self.encoding in ("png", "png/P"):

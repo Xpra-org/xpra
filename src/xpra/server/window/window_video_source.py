@@ -355,6 +355,8 @@ class WindowVideoSource(WindowSource):
             return current_encoding
         if not self.common_video_encodings and not self.supports_scrolling:
             return nonvideo()
+        if self.is_tray:
+            return nonvideo(100)
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
@@ -430,7 +432,7 @@ class WindowVideoSource(WindowSource):
         options = options or self.non_video_encodings
         if self.image_depth==8:
             return "png/P"
-        if pixel_count<self._rgb_auto_threshold:
+        if pixel_count<self._rgb_auto_threshold or self.is_tray:
             #high speed and high quality, rgb is still good
             if "rgb24" in options:
                 return "rgb24"
