@@ -1542,8 +1542,11 @@ class WindowVideoSource(WindowSource):
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
         if self.image_depth==8:
             return "png/P"
-        elif self.image_depth=="30":
+        elif self.image_depth==30:
             return "rgb"
+        elif self.image_depth not in (24, 32):
+            #jpeg cannot handle other bit depths
+            fallback_encodings = [x for x in fallback_encodings if x!="jpeg"]
         if not fallback_encodings:
             if not self.is_cancelled():
                 log.warn("Warning: no non-video fallback encodings are available!")
