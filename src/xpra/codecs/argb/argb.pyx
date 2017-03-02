@@ -48,7 +48,8 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     cdef uint32_t *rgbx = <uint32_t*> output_buf.get_mem()
     cdef uint16_t v
     cdef unsigned int i = 0
-    for i in range(rgb565_len//2):
+    cdef unsigned int l = rgb565_len//2
+    for i in range(l):
         v = rgb565[i]
         rgbx[i] = 0xff000000 | (((v & 0xF800) >> 8) + ((v & 0x07E0) << 5) + ((v & 0x001F) << 19))
     return memoryview(output_buf)
@@ -69,7 +70,8 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v
     cdef unsigned int i = 0
-    for i in range(rgb565_len//2):
+    cdef unsigned int l = rgb565_len//2
+    for i in range(l):
         v = rgb565[i]
         rgb[0] = (v & 0xF800) >> 8
         rgb[1] = (v & 0x07E0) >> 3
