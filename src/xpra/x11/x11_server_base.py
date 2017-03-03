@@ -250,6 +250,19 @@ class X11ServerBase(GTKServerBase):
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
         if self.opengl_props:
             info["opengl"] = self.opengl_props
+        sinfo = info.setdefault("server", {})
+        sinfo.update({
+            "type"                  : "Python/gtk/x11",
+            "fakeXinerama"          : self.fake_xinerama and bool(self.libfakeXinerama_so),
+            "libfakeXinerama"       : self.libfakeXinerama_so or "",
+            })
+        log("X11ServerBase.do_get_info took %ims", (time.time()-start)*1000)
+        return info
+
+    def get_ui_info(self, proto, wids=None, *args):
+        import threading
+        log("do_get_info thread=%s", threading.current_thread())
+        info = GTKServerBase.get_ui_info(self, proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
         info.setdefault("keyboard", {}).update({
                                                 "state"           : {
@@ -258,12 +271,6 @@ class X11ServerBase(GTKServerBase):
                                                 "fast-switching"  : True,
                                                 })
         sinfo = info.setdefault("server", {})
-        sinfo.update({"type"                : "Python/gtk/x11",
-                      "fakeXinerama"        : self.fake_xinerama and bool(self.libfakeXinerama_so),
-                      "libfakeXinerama"     : self.libfakeXinerama_so or "",
-                      "Xkb"                 : X11Keyboard.hasXkb(),
-                      "XTest"               : X11Keyboard.hasXTest(),
-                      })
         try:
             from xpra.x11.gtk2.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
@@ -272,15 +279,21 @@ class X11ServerBase(GTKServerBase):
         #cursor:
         log("do_get_info: adding cursor=%s", self.last_cursor_data)
         info.setdefault("cursor", {}).update(self.get_cursor_info())
+        with xswallow:
+            sinfo.update({
+                "Xkb"                   : X11Keyboard.hasXkb(),
+                "XTest"                 : X11Keyboard.hasXTest(),
+                })
         #randr:
         try:
-            sizes = RandR.get_screen_sizes()
-            if self.randr and len(sizes)>=0:
-                sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
+            with xsync:
+                sizes = RandR.get_screen_sizes()
+                if self.randr and len(sizes)>=0:
+                    sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
         except:
             pass
-        log("X11ServerBase.do_get_info took %ims", (time.time()-start)*1000)
         return info
+
 
     def get_cursor_info(self):
         #(NOT from UI thread)
