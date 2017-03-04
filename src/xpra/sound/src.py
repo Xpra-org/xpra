@@ -77,7 +77,7 @@ class SoundSource(SoundPipeline):
         self.src = None
         self.src_type = src_type
         self.pending_metadata = []
-        self.buffer_latency = False
+        self.buffer_latency = True
         self.jitter_queue = None
         self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
@@ -137,8 +137,10 @@ class SoundSource(SoundPipeline):
         try:
             for x in ("actual-buffer-time", "actual-latency-time"):
                 #don't comment this out, it is used to verify the attributes are present:
-                gstlog("initial %s: %s", x, self.src.get_property(x))
-            self.buffer_latency = True
+                try:
+                    gstlog("initial %s: %s", x, self.src.get_property(x))
+                except Exception as e:
+                    self.buffer_latency = False
         except Exception as e:
             log.info("source %s does not support 'buffer-time' or 'latency-time':", self.src_type)
             log.info(" %s", e)
