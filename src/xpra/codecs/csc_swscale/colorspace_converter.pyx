@@ -116,6 +116,18 @@ else:
     log.warn("Warning: swscale version %s is too old:", ".".join((str(x) for x in (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO))))
     log.warn(" disabling YUV422P to %s", ", ".join(YUV422P_SKIPLIST))
 
+BYTES_PER_PIXEL = {
+    AV_PIX_FMT_YUV420P  : 1,
+    AV_PIX_FMT_YUV422P  : 1,
+    AV_PIX_FMT_YUV444P  : 1,
+    AV_PIX_FMT_RGB24    : 3,
+    AV_PIX_FMT_0RGB     : 4,
+    AV_PIX_FMT_BGR0     : 4,
+    AV_PIX_FMT_ARGB     : 4,
+    AV_PIX_FMT_BGRA     : 4,
+    AV_PIX_FMT_GBRP     : 1,
+    }
+
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -290,6 +302,7 @@ cdef class ColorspaceConverter:
         assert dst, "invalid destination format: %s" % dst_format
         self.dst_format = dst_format
         self.dst_format_enum = dst.av_enum
+        self.dst_bytes_per_pixel = BYTES_PER_PIXEL.get(dst.av_enum, 1)
         #pre-calculate plane heights:
         cdef int subsampling = False
         for i in range(4):
@@ -325,6 +338,7 @@ cdef class ColorspaceConverter:
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,
                 "dst_height": self.dst_height,
+                "dst_bytes_per_pixel"   : self.dst_bytes_per_pixel,
                 })
         if self.src_format:
             info["src_format"] = self.src_format
@@ -469,7 +483,7 @@ cdef class ColorspaceConverter:
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
-        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, oplanes)
+        return ImageWrapper(0, 0, self.dst_width, self.dst_height, out, self.dst_format, 24, strides, self.dst_bytes_per_pixel, oplanes)
 
 
 def selftest(full=False):

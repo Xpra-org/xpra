@@ -112,6 +112,18 @@ FORMAT_TO_ENUM = {
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
             }
+#for planar formats, this is the number of bytes per channel
+BYTES_PER_PIXEL = {
+    AV_PIX_FMT_YUV420P  : 1,
+    AV_PIX_FMT_YUV422P  : 1,
+    AV_PIX_FMT_YUV444P  : 1,
+    AV_PIX_FMT_RGB24    : 3,
+    AV_PIX_FMT_0RGB     : 4,
+    AV_PIX_FMT_BGR0     : 4,
+    AV_PIX_FMT_ARGB     : 4,
+    AV_PIX_FMT_BGRA     : 4,
+    AV_PIX_FMT_GBRP     : 1,
+    }
 
 COLORSPACES = FORMAT_TO_ENUM.keys()
 ENUM_TO_FORMAT = {}
@@ -570,9 +582,10 @@ cdef class Decoder:
         if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
             raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
+        bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         framewrapper = AVFrameWrapper()
         framewrapper.set_context(self.codec_ctx, self.av_frame)
-        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, nplanes, thread_safe=False)
+        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
         #add to weakref list after cleaning it up:
