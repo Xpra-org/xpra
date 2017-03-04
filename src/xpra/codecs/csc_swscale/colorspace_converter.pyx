@@ -271,6 +271,7 @@ cdef class ColorspaceConverter:
     cdef object src_format
     cdef int dst_width
     cdef int dst_height
+    cdef unsigned char dst_bytes_per_pixel
     cdef AVPixelFormat dst_format_enum
     cdef object dst_format
 
