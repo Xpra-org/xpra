@@ -470,7 +470,7 @@ class ServerSource(FileTransferHandler):
         self.remove_printers()
         ds = self.dbus_server
         if ds:
-            ds.cleanup()
+            self.idle_add(ds.cleanup)
             self.dbus_server = None
 
 
