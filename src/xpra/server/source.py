@@ -477,7 +477,7 @@ class ServerSource(FileTransferHandler):
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
-            ds.cleanup()
+            self.idle_add(ds.cleanup)
 
 
     def recalculate_delays(self):
