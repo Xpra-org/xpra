@@ -102,9 +102,6 @@ cdef extern from "X11/Xlib.h":
 
     int XFree(void * data)
 
-    Bool XQueryExtension(Display * display, char *name,
-                         int *major_opcode_return, int *first_event_return, int *first_error_return)
-
     ctypedef struct XWindowAttributes:
         int x, y, width, height, depth, border_width
         Visual *visual
@@ -166,7 +163,7 @@ cdef extern from "X11/extensions/XShm.h":
         char *shmaddr   # address in client
         Bool readOnly   # how the server should attach it
 
-    XShmQueryExtension(Display *display)
+    Bool XShmQueryExtension(Display *display)
     Bool XShmQueryVersion(Display *display, int *major, int *minor, Bool *pixmaps)
 
     Bool XShmAttach(Display *display, XShmSegmentInfo *shminfo)
@@ -767,6 +764,14 @@ def XImageBindings():
     return singleton
 
 cdef class _XImageBindings(_X11CoreBindings):
+    cdef int has_xshm
+
+    def __cinit__(self):
+        self.has_xshm = XShmQueryExtension(self.display)
+        log.info("XShmQueryExtension()=%s", bool(self.has_xshm))
+
+    def has_XShm(self):
+        return self.has_xshm
 
     def get_XShmWrapper(self, xwindow):
         cdef XWindowAttributes attrs
