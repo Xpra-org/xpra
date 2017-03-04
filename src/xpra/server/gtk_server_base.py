@@ -115,7 +115,7 @@ class GTKServerBase(ServerBase):
         start = time.time()
         info = ServerBase.do_get_info(self, proto, *args)
         vi = get_gtk_version_info()
-        vi["type"] = "Python/gtk-x11"
+        vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)
         info.setdefault("features", {})["randr"] = self.randr
         log("GTKServerBase.do_get_info took %ims", (time.time()-start)*1000)
