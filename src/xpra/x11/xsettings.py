@@ -46,9 +46,14 @@ class XSettingsManager(object):
         if type(settings)==list:
             settings = tuple(settings)
         elif type(settings)!=tuple:
-            log.warn("discarding xsettings because of incompatible format: %s", type(settings))
+            log.warn("Warning: discarding xsettings because of incompatible format: %s", type(settings))
             return
-        prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
+        with xsync:
+            try:
+                prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
+            except Exception as e:
+                log.error("Error: XSettings not applied")
+                log.error(" %s", e)
 
 
 class XSettingsHelper(object):
@@ -61,12 +66,12 @@ class XSettingsHelper(object):
         self._clipboard = gtk.Clipboard(gtk.gdk.display_get_default(), self._selection)
 
     def xsettings_owner(self):
-        owner_x = X11Window.XGetSelectionOwner(self._selection)
-        log("XGetSelectionOwner(%s)=%s", self._selection, owner_x)
-        if owner_x == XNone:
-            return None
         try:
             with xsync:
+                owner_x = X11Window.XGetSelectionOwner(self._selection)
+                log("XGetSelectionOwner(%s)=%s", self._selection, owner_x)
+                if owner_x == XNone:
+                    return None
                 return get_pywindow(self._clipboard, owner_x)
         except XError:
             log("X error while fetching owner of XSettings data; ignored")
