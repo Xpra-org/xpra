@@ -36,7 +36,7 @@
   <repository type="tarball" name="cpan.org" href="http://www.cpan.org/"/>
   <repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
   <repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
-
+  <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
 
 
   <autotools id="yasm" autogen-sh="configure">
@@ -245,6 +245,12 @@
 		hash="md5:9d96df8417572a2afb781a7c4c811a85"
 		repo="www.libsdl.org"/>
   </autotools>
+
+  <cmake id="libyuv">
+    <branch repo="chromium.googlesource.com" module="libyuv/libyuv"/>
+    <dependencies>
+    </dependencies>
+  </cmake>
 
   <!-- HACK: patch after autoreconf is run -->
   <autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s %(autogenargs)s">
