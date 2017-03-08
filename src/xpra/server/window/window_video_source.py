@@ -760,7 +760,7 @@ class WindowVideoSource(WindowSource):
         av_delay = self.get_frame_encode_delay(options)
         must_freeze = av_delay>=0 or coding in self.video_encodings
         if must_freeze:
-            newstride = image.get_width()*4
+            newstride = image.get_width()*image.get_bytesperpixel()
             image.restride(newstride)
         def call_encode(ew, eh, eimage, encoding, eflush):
             self._sequence += 1
