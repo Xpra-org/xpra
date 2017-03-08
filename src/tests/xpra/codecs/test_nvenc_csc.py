@@ -11,9 +11,7 @@ import numpy
 from xpra.log import Logger
 log = Logger()
 
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
-
+from xpra.util import roundup
 print("loading encoder class")
 from xpra.codecs.nvenc.encoder import cuda_check, get_BGRA2NV12
 

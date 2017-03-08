@@ -11,7 +11,7 @@ import ctypes
 from ctypes.wintypes import RECT, BOOL, HWND, LPARAM, HGDIOBJ, LONG, LPVOID
 
 from xpra.log import Logger
-from xpra.util import AdHocStruct, envbool, prettify_plug_name
+from xpra.util import AdHocStruct, envbool, prettify_plug_name, roundup
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
@@ -99,9 +99,6 @@ class PALETTEENTRY(ctypes.Structure):
         ('peBlue',  ctypes.c_ubyte),
         ('peFlags', ctypes.c_ubyte),
         ]
-
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
 
 
 class Win32RootWindowModel(RootWindowModel):

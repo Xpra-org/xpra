@@ -225,8 +225,6 @@ BUTTON_MAP = {
             WM_XBUTTONDBLCLK            : [(4, 1), (4, 0)],
             }
 
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
 
 def rgba_to_bitmap(rgba, w, h):
     header = BITMAPV5HEADER()

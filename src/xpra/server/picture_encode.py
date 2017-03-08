@@ -30,9 +30,6 @@ def warn_encoding_once(key, message):
         encoding_warnings.add(key)
 
 
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
-
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)

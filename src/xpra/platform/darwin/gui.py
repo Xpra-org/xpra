@@ -18,7 +18,7 @@ from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, 
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
 from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util import envbool, roundup
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
@@ -469,9 +469,6 @@ def _set_osx_window_menu(add, wid, window, menus, application_action_callback=No
 def get_menu_support_function():
     return _set_osx_window_menu
 
-
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
 
 def get_CG_imagewrapper(rect=None):
     from xpra.codecs.image_wrapper import ImageWrapper

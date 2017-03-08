@@ -5,6 +5,7 @@
 
 import os
 import ctypes
+from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, WIN32
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
@@ -13,9 +14,6 @@ log = Logger("mmap")
 """
 Utility functions for communicating via mmap
 """
-
-def roundup(n, m):
-    return (n + m - 1) & ~(m - 1)
 
 
 def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, filename=None):

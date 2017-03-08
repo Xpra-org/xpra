@@ -18,7 +18,7 @@ from xpra.server.window.motion import ScrollData                    #@Unresolved
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import parse_scaling_value, engs, envint, envbool, csv
+from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -760,7 +760,7 @@ class WindowVideoSource(WindowSource):
         av_delay = self.get_frame_encode_delay(options)
         must_freeze = av_delay>=0 or coding in self.video_encodings
         if must_freeze:
-            newstride = image.get_width()*image.get_bytesperpixel()
+            newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
             image.restride(newstride)
         def call_encode(ew, eh, eimage, encoding, eflush):
             self._sequence += 1

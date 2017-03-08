@@ -141,6 +141,10 @@ def merge_dicts(a, b, path=None):
     return a
 
 
+def roundup(n, m):
+    return (n + m - 1) & ~(m - 1)
+
+
 class AtomicInteger(object):
     def __init__(self, integer = 0):
         self.counter = integer
