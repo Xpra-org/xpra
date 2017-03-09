@@ -1637,6 +1637,9 @@ class WindowVideoSource(WindowSource):
             lsd = self.scroll_data
             try:
                 start = time.time()
+                if not image.is_thread_safe():
+                    newstride = image.get_width()*4
+                    image.restride(newstride)
                 img_data = img_data or image.get_pixels()
                 csums = CRC_Image(img_data, w, h, stride)
                 if csums:
