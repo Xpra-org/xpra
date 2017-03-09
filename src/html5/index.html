@@ -3,7 +3,7 @@
 	<head>
 
 		<!--
-			Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+			Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 			Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
 			Licensed under MPL 2.0
  		-->
@@ -255,19 +255,20 @@
 
 			   	if (clipboard) {
 				    //clipboard hooks:
-					$('#pasteboard').on('paste', function (e) {
+				    var pasteboard = $('#pasteboard');
+					pasteboard.on('paste', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
 				        client._send_clipboard_token(paste_data);
 				        return false;
 					});
-					$('#pasteboard').on('copy', function (e) {
-						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-				        $('#pasteboard').text(client.clipboard_buffer);
+					pasteboard.on('copy', function (e) {
+				        var clipboard_buffer = client.get_clipboard_buffer();
+						$('#pasteboard').text(clipboard_buffer);
 				        $('#pasteboard').select();
 				        client.clipboard_pending = false;
 				        return true;
 					});
-					$('#pasteboard').on('cut', function (e) {
+					pasteboard.on('cut', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
 				        $('#pasteboard').text(client.clipboard_buffer);
 				        $('#pasteboard').select();

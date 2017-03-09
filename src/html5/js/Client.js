@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2016 David Brushinski <dbrushinski@spikes.com>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015-2016 Spikes, Inc.
@@ -1640,6 +1640,10 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 	}
 }
 
+
+XpraClient.prototype.get_clipboard_buffer = function() {
+	return this.clipboard_buffer;
+}
 
 XpraClient.prototype._send_clipboard_token = function(data) {
 	if (!this.clipboard_enabled) {
