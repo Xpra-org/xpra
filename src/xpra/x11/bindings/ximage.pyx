@@ -410,12 +410,12 @@ cdef class XImageWrapper(object):
 
     def set_pixels(self, pixels):
         """ overrides the context of the image with the given pixels buffer """
-        assert not self.sub
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
         if self.pixels!=NULL:
-            free(self.pixels)
+            if not self.sub:
+                free(self.pixels)
             self.pixels = NULL
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
