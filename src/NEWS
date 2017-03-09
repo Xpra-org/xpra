@@ -1,5 +1,7 @@
-v1.0.4 (2017-02-17)
+v1.0.4 (2017-03-09)
 ======================
+	-- fix info queries causing server crashes
+	-- fix unguarded access to X11 functions
 	-- fix quality and speed values skewed by locked batch delay
 	-- fix csc libyuv packaging on Mac OS
 	-- fix dbus import failures causing fatal error
@@ -15,9 +17,17 @@ v1.0.4 (2017-02-17)
 	-- fix some glib timer warnings, clear them after use
 	-- fix printer forwarding with Mac OS shadow servers (partial)
 	-- fix Mac OS workarea calculations
+	-- fix missing header file from setuptools source archives
+	-- fix audio forwarding errors on some Linux distributions
+	-- fix errors with xvfb not supporting XShm
+	-- fix error in scrolling detection fallback case
+	-- fix race condition in scrolling detection code causing visual artifacts
+	-- fix systray geometry issues on some distributions (not responding to clicks)
+	-- fix some inaccessible drop down menus with Mac OS clients (disables drag-n-drop)
+	-- safer dbus cleanup code
 	-- honour "show upload" option in Mac OS application menu
 	-- Mac OS menu shows "Disconnect" instead of "Quit", "Xpra" instead of "Launcher"
-	-- Mac OS modules update: patch location, sshpass, opus, numpy
+	-- Mac OS modules update: patch location, sshpass, opus, numpy, python-xxhash, lzo
 	-- deiconify windows when they get mapped (more correct)
 	-- restore software mp3 decoding in HTML5 client
 	-- revert overly zealous memory access barrier
