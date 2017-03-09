@@ -29,7 +29,7 @@
 		<script type="text/javascript" src="js/lib/broadway/Decoder.js"></script>
 		<script type="text/javascript" src="js/lib/aurora/aurora.js"></script>
 		<script type="text/javascript" src="js/lib/aurora/mp3.js"></script>
-		<!-- 
+		<!--
 		<script type="text/javascript" src="js/lib/aurora/flac.js"></script>
 		-->
 		<script type="text/javascript" src="js/lib/aurora/aurora-xpra.js"></script>
@@ -68,16 +68,16 @@
 									r = /([^&=]+)=?([^&]*)/g,
 									d = function (s) { return decodeURIComponent(s.replace(a, " ")); },
 									q = window.location.search.substring(1);
-	
+
 							while (e = r.exec(q))
 									params[d(e[1])] = d(e[2]);
-	
+
 							return params;
 					}
-	
+
 					if (!this.queryStringParams)
 							this.queryStringParams = parseParams();
-	
+
 					return this.queryStringParams[key];
 				};
 			}
