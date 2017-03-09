@@ -193,11 +193,22 @@ XpraWindow.prototype.ensure_visible = function() {
 	var oldy = this.y;
 	// for now make sure we don't out of top left
 	// this will be much smarter!
-	if(oldx <= 0) {
-		this.x = 0 + this.leftoffset;
+	var min_visible = 10;
+	var desktop_size = this.client._get_desktop_size();
+	var ww = desktop_size[0];
+	var wh = desktop_size[1];
+	//this.log("x=", this.x, "y=", this.y, "w=", this.w, "h=", this.h, "leftoffset=", this.leftoffset, "topoffset=", this.topoffset, " - ww=", ww, "wh=", wh);
+	if(oldx + this.w <= min_visible) {
+		this.x = min_visible - this.w + this.leftoffset;
 	}
-	if(oldy <= 10) {
+	else if (oldx >= ww - min_visible) {
+		this.x = Math.min(oldx, ww - min_visible);
+	}
+	if(oldy <= min_visible) {
 		this.y = 0 + this.topoffset;
+	}
+	else if (oldy >= wh - min_visible) {
+		this.y = Math.min(oldy, wh - min_visible);
 	}
 	if((oldx != this.x) || (oldy != this.y)) {
 		this.updateCSSGeometry();
@@ -542,6 +553,7 @@ XpraWindow.prototype.handle_resized = function(e) {
 XpraWindow.prototype.handle_moved = function(e) {
 	// add on padding to the event position so that
 	// it reflects the internal geometry of the canvas
+	//this.log("handle moved: position=", e.position.left, e.position.top);
 	this.x = Math.round(e.position.left) + this.leftoffset;
 	this.y = Math.round(e.position.top) + this.topoffset;
 	// make sure we are visible after move
@@ -559,6 +571,7 @@ XpraWindow.prototype.screen_resized = function() {
 		this.fill_screen();
 		this.handle_resized();
 	}
+	this.ensure_visible();
 };
 
 /**
