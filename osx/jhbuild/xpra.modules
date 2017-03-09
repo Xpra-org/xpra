@@ -354,10 +354,10 @@
   </autotools>
 
   <autotools id="lzo" autogen-sh="configure">
-	<branch module="/opensource/lzo/download/lzo-2.09.tar.gz"
-		version="2.09"
-		hash="md5:c7ffc9a103afe2d1bba0b015e7aa887f"
-		checkoutdir="lzo-2.09"
+	<branch module="/opensource/lzo/download/lzo-2.10.tar.gz"
+		version="2.10"
+		hash="sha256:c0f892943208266f9b6543b3ae308fab6284c5c90e627931446fb49b4221a072"
+		checkoutdir="lzo-2.10"
 		repo="oberhumer.com"/>
   </autotools>
 
