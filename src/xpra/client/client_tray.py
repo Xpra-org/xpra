@@ -72,7 +72,7 @@ class ClientTray(ClientWidgetBase):
     def reconfigure(self, force_send_configure=False):
         geometry = None
         tw = self.tray_widget
-        if not tw:
+        if tw:
             geometry = tw.get_geometry()
         log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)
         if geometry is None:
