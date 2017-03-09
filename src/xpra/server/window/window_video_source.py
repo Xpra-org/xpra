@@ -1533,7 +1533,7 @@ class WindowVideoSource(WindowSource):
             #(too many packets, too many loops through the encoder code)
             scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead", len(scrolls), len(non_scroll))
             scrolls = []
-            non_scroll = [(0, wh)]
+            non_scroll = [(0, h)]
         flush = len(non_scroll)
         #send as scroll paints packets:
         if scrolls:
@@ -1667,6 +1667,9 @@ class WindowVideoSource(WindowSource):
                                 return self.encode_scrolling(image, distances, lcsums, csums, options)
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
+                #make sure we start again from scratch next time:
+                scroll_data.free()
+                self.scroll_data = None
 
         def video_fallback():
             videolog.warn("using non-video fallback encoding")
