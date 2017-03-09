@@ -192,6 +192,9 @@
 					Keyboard Layout
 				  </li>
 
+				  <li class="list-group-item clipboard">
+				  	<input type="checkbox" id="clipboard"> <span>Clipboard sharing</span>
+				  </li>
 				  <li class="list-group-item sound">
 					<input type="checkbox" id="sound"> <span>Audio forwarding, codec: </span>
 					<select id="audio_codec">
@@ -279,8 +282,9 @@ function doConnect() {
 	var port = parseInt(document.getElementById("port").value);
 	var encoding = document.getElementById("encoding").value;
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
+	var clipboard = document.getElementById("clipboard").checked;
 	// url to client
-	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true";
+	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard;
 	if (username.length>0)
 		url += "&username="+encodeData(username);
 	if (password.length>0)
@@ -391,6 +395,9 @@ $(document).ready(function() {
 
 	var keyboard_layout = Utilities.getKeyboardLayout();
 	document.getElementById('keyboard_layout').value = keyboard_layout;
+
+	var clipboard = getboolparam("clipboard", true);
+   	$('input#clipboard').prop("checked", clipboard);
 
 	var exit_with_children = getboolparam("exit_with_children");
 	if(exit_with_children) {

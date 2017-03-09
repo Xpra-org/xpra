@@ -53,11 +53,13 @@
 		<div class="notifications">
 		</div>
 
-		<input id="pasteboard" onblur="this.focus()" autofocus />
+	    <div>
+		    <textarea id="pasteboard" onblur="this.focus()" autofocus style="display: block; position: absolute; left: -99em;"></textarea>
+	    </div>
 
 		<script>
 
-			if (!window.location.getParameter ) {
+			if (!window.location.getParameter) {
 				window.location.getParameter = function(key) {
 					function parseParams() {
 							var params = {},
@@ -126,6 +128,7 @@
 				var debug = getboolparam("debug", false);
 				var insecure = getboolparam("insecure", false);
 				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
+				var clipboard = getboolparam("clipboard", true);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -133,6 +136,7 @@
 				client.remote_logging = remote_logging;
 				client.sharing = sharing;
 		    	client.insecure = insecure;
+		    	client.clipboard_enabled = clipboard;
 
 			    // mediasource video
 			    if(video) {
@@ -218,6 +222,7 @@
 				    				"action"			: action,
 				    				"sound"				: sound,
 				    				"audio_codec"		: audio_codec,
+				    				"clipboard"			: clipboard,
 				    				"exit_with_children": exit_with_children,
 				    				"exit_with_client"	: exit_with_client,
 				    				"sharing"			: sharing,
@@ -248,20 +253,43 @@
 				var ssl = document.location.protocol=="https:";
 			    client.connect(server, port, ssl);
 
-			    // attach a callback for paste on the screen
-				$('#pasteboard').on('paste', function (e) {
-					e.preventDefault();
-					var text = (e.originalEvent || e).clipboardData.getData('text/plain');
-					client.handle_paste(text);
-				});
-
-			    // try to ensure the browser doesn't fire shortcuts
-			    // (ie: we want control-S to be sent to the application, not trigger the save-page browser action)
-				$(window).bind('keydown', function(event) {
-				    if (event.ctrlKey || event.metaKey) {
-			            event.preventDefault();
-				    }
-				});
+			   	if (clipboard) {
+				    //clipboard hooks:
+					$('#pasteboard').on('paste', function (e) {
+						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+				        client._send_clipboard_token(paste_data);
+				        return false;
+					});
+					$('#pasteboard').on('copy', function (e) {
+						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+				        $('#pasteboard').text(client.clipboard_buffer);
+				        $('#pasteboard').select();
+				        client.clipboard_pending = false;
+				        return true;
+					});
+					$('#pasteboard').on('cut', function (e) {
+						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+				        $('#pasteboard').text(client.clipboard_buffer);
+				        $('#pasteboard').select();
+				        client.clipboard_pending = false;
+				        return true;
+					});
+					$('#screen').on('click', function (e) {
+						//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
+						if (client.clipboard_pending) {
+					        $('#pasteboard').text(client.clipboard_buffer);
+					        $('#pasteboard').select();
+							//for IE:
+							if (window.clipboardData && window.clipboardData.setData) {
+						        clipboardData.setData("Text", this.clipboard_buffer);
+							}
+						    else {
+								var success = document.execCommand('copy');
+								//console.log("copy success=", success);
+							}
+						}
+					});
+			   	}
 			});
 		</script>
 	</body>

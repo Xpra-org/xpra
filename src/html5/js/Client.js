@@ -50,6 +50,11 @@ function XpraClient(container) {
 	this.encryption_key = null;
 	this.cipher_in_caps = null;
 	this.cipher_out_caps = null;
+	// clipboard
+	this.clipboard_enabled = false;
+	this.clipboard_buffer = "";
+	this.clipboard_pending = false;
+	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
 	// authentication
 	this.insecure = false;
 	this.authentication_key = null;
@@ -127,7 +132,6 @@ XpraClient.prototype.log = function() {
 XpraClient.prototype.init = function(ignore_blacklist) {
 	this.init_audio(ignore_blacklist);
 	this.init_packet_handlers();
-	this.init_clipboard();
 	this.init_keyboard();
 }
 
@@ -187,12 +191,6 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 	this.log("audio codecs: ", Object.keys(this.audio_codecs));
 }
 
-XpraClient.prototype.init_clipboard = function() {
-	// the "clipboard"
-	this.clipboard_buffer = "";
-	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
-}
-
 XpraClient.prototype.init_keyboard = function() {
 	var me = this;
 	this.keyboard_layout = null;
@@ -207,26 +205,23 @@ XpraClient.prototype.init_keyboard = function() {
 	// to allow multiple clients on the same page
 	if (window.jQuery) {
 		jQuery(document).keydown(function (e) {
-			e.preventDefault();
-			me._keyb_onkeydown(e, me);
+			return me._keyb_onkeydown(e, me);
 		});
 		jQuery(document).keyup(function (e) {
-			e.preventDefault();
-			me._keyb_onkeyup(e, me);
+			return me._keyb_onkeyup(e, me);
 		});
 		jQuery(document).keypress(function (e) {
-			e.preventDefault();
-			me._keyb_onkeypress(e, me);
+			return me._keyb_onkeypress(e, me);
 		});
 	} else {
 		document.onkeydown = function (e) {
-			me._keyb_onkeydown(e, me);
+			return me._keyb_onkeydown(e, me);
 		};
 		document.onkeyup = function (e) {
-			me._keyb_onkeyup(e, me);
+			return me._keyb_onkeyup(e, me);
 		};
 		document.onkeypress = function (e) {
-			me._keyb_onkeypress(e, me);
+			return me._keyb_onkeypress(e, me);
 		};
 	}
 }
@@ -394,15 +389,6 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 	}
 }
 
-XpraClient.prototype.handle_paste = function(text) {
-	// set our clipboard buffer
-	this.clipboard_buffer = text;
-	// send token
-	var packet = ["clipboard-token", "CLIPBOARD"];
-	this.protocol.send(packet);
-	// tell user to paste in remote application
-	// alert("Paste acknowledged. Please paste in remote application.");
-}
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
 	/**
@@ -467,19 +453,45 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		str = str.toLowerCase();
 
 	if (this.topwindow != null) {
-		//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
+		//send via a timer so we get a chance to capture the clipboard value,
+		//before we send control-V to the server:
 		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
-		this.protocol.send(packet);
+		var protocol = this.protocol;
+		setTimeout(function () {
+			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
+			protocol.send(packet);
+		}, 0);
 	}
+	if (this.clipboard_enabled) {
+		//allow some key events that need to be seen by the browser
+		//for handling the clipboard:
+		if (keyname=="Control_L" || keyname=="Control_R") {
+			return true;
+		}
+		if (keyname=="Shift_L" || keyname=="Shift_R") {
+			return true;
+		}
+		if (shift && keyname=="Insert") {
+			return true;
+		}
+		var control = modifiers.indexOf("control")>=0;
+		if (control) {
+			var l = keyname.toLowerCase();
+			if (control && (l=="c" || l=="x" || l=="v")) {
+				return true;
+			}
+		}
+	}
+	//this.log("keyname=", keyname, "modifiers=", modifiers);
+	return false;
 }
 
+
 XpraClient.prototype._keyb_onkeydown = function(event, ctx) {
-	ctx._keyb_process(true, event);
-	return false;
+	return ctx._keyb_process(true, event);
 };
 XpraClient.prototype._keyb_onkeyup = function(event, ctx) {
-	ctx._keyb_process(false, event);
-	return false;
+	return ctx._keyb_process(false, event);
 };
 
 XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
@@ -498,12 +510,16 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 	var modifiers = ctx._keyb_get_modifiers(event);
 
 	/* PITA: this only works for keypress event... */
-	caps_lock = false;
 	var shift = modifiers.indexOf("shift")>=0;
-	if (keycode>=97 && keycode<=122 && shift)
-		caps_lock = true;
-	else if (keycode>=65 && keycode<=90 && !shift)
-		caps_lock = true;
+	if (keycode>=97 && keycode<=122 && shift) {
+		ctx.caps_lock = true;
+	}
+	else if (keycode>=65 && keycode<=90 && !shift) {
+		ctx.caps_lock = true;
+	}
+	else {
+		ctx.caps_lock = false;
+	}
 	//show("caps_lock="+caps_lock);
 	return false;
 };
@@ -766,9 +782,10 @@ XpraClient.prototype._make_hello = function() {
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
-		"clipboard_enabled"			: true,
+		"clipboard_enabled"			: this.clipboard_enabled,
 		"clipboard.want_targets"	: true,
-		"clipboard.selections"		: ["CLIPBOARD"],
+		"clipboard.greedy"			: true,
+		"clipboard.selections"		: ["CLIPBOARD", "PRIMARY"],
 		"notifications"				: true,
 		"cursors"					: true,
 		"bell"						: true,
@@ -792,7 +809,8 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 	mydiv.id = String(wid);
 	var mycanvas = document.createElement("canvas");
 	mydiv.appendChild(mycanvas);
-	document.body.appendChild(mydiv);
+	var screen = document.getElementById("screen");
+	screen.appendChild(mydiv);
 	// set initial sizes
 	mycanvas.width = w;
 	mycanvas.height = h;
@@ -1622,21 +1640,47 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 	}
 }
 
+
+XpraClient.prototype._send_clipboard_token = function(data) {
+	if (!this.clipboard_enabled) {
+		return;
+	}
+	if (this.debug) {
+		console.debug("sending clipboard token with data:", data);
+	}
+	var packet = ["clipboard-token", "CLIPBOARD", [], "STRING", "STRING", data.length, "bytes", data, false, true, true];
+	this.protocol.send(packet);
+}
+
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
-	// only accept some clipboard types
+	if (!ctx.clipboard_enabled) {
+		return;
+	}
+	if (ctx.debug) {
+		console.debug("clipboard token:", packet);
+	}
+	// we don't actually set the clipboard here,
+	// because we can't (the browser security won't let us)
+	// we just record the contents and actually set the clipboard
+	// when we get a click, control-C or control-X event
 	if(ctx.clipboard_targets.indexOf(packet[3])>=0) {
-		// we should probably update our clipboard buffer
 		ctx.clipboard_buffer = packet[7];
-		// prompt user
-		prompt("Text was placed on the remote clipboard:", packet[7]);
+		ctx.clipboard_pending = true;
 	}
 }
 
 XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
-	this.log("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
+	if (!ctx.clipboard_enabled) {
+		return;
+	}
+	ctx.clipboard_enabled = packet[1];
+	ctx.log("server set clipboard state to "+packet[1]+" reason was: "+packet[2]);
 }
 
 XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
+	// we shouldn't be handling clipboard requests,
+	// since we use a synchronous clipboard,
+	// but older servers may still request it..
 	var request_id = packet[1],
 		selection = packet[2],
 		target = packet[3];

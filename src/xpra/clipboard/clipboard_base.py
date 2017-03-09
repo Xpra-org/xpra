@@ -196,12 +196,13 @@ class ClipboardProtocolHelperBase(object):
         #older versions always claimed the selection when the token is received:
         claim = True
         if len(packet)>=10:
-            claim = packet[8]
+            claim = bool(packet[8])
             #clients can now also change the greedy flag on the fly,
             #this is needed for clipboard direction restrictions:
             #the client may want to be notified of clipboard changes, just like a greedy client
-            proxy._greedy_client = packet[9]
-        proxy.got_token(targets, target_data, claim)
+            proxy._greedy_client = bool(packet[9])
+        synchronous_client = len(packet)>=11 and bool(packet[10])
+        proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
         for x in DISCARD_TARGETS:
@@ -661,7 +662,7 @@ class ClipboardProxy(gtk.Invisible):
                     glib.idle_add(self.remove_block)
         gtk.Invisible.do_selection_clear_event(self, event)
 
-    def got_token(self, targets, target_data, claim):
+    def got_token(self, targets, target_data, claim=True, synchronous_client=False):
         # We got the anti-token.
         if not self._enabled:
             return
@@ -672,7 +673,7 @@ class ClipboardProxy(gtk.Invisible):
             #re-enable the flag via idle_add so events like do_owner_changed
             #get a chance to run first.
             glib.idle_add(self.remove_block)
-        if CLIPBOARD_GREEDY and self._can_receive:
+        if (CLIPBOARD_GREEDY or synchronous_client) and self._can_receive:
             if targets:
                 for target in targets:
                     self.selection_add_target(self._selection, target, 0)
@@ -682,7 +683,7 @@ class ClipboardProxy(gtk.Invisible):
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
                         log("clipboard %s set to '%s'", self._selection, repr_ellipsized(text_data))
-                        self._clipboard.set_text(text_data)
+                        self._clipboard.set_text(text_data, len=len(text_data))
         if not claim:
             log("token packet without claim, not setting the token flag")
             #the other end is just telling us to send the token again next time something changes,
