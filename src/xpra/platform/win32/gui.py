@@ -372,7 +372,7 @@ def fixup_window_style(self, *args):
             #window is not / no longer meant to be decorated
             #(this is what GTK does for modal windows - keep it consistent)
             return
-        cur_style = GetWindowLong(hwnd, win32con.GWL_STYLE)
+        cur_style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
         #re-add taskbar menu:
         style = cur_style
         if cur_style & win32con.WS_CAPTION:
