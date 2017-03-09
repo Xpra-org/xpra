@@ -19,38 +19,29 @@ mouselog = Logger("win32", "mouse")
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
+from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWindowLongW,
+                                        ClipCursor, GetCursorPos,
+                                        GetDC, ReleaseDC,
+                                        SendMessageA, GetMessageA, TranslateMessage, DispatchMessageA,
+                                        FindWindowA,
+                                        GetModuleHandleA,
+                                        GetKeyState, GetWindowRect,
+                                        GetDoubleClickTime,
+                                        MonitorFromWindow, GetMonitorInfoW, EnumDisplayMonitors,
+                                        UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
+                                        SetConsoleCtrlHandler,
+                                        GetDeviceCaps,
+                                        user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 
 
-from ctypes import CFUNCTYPE, c_int, POINTER, Structure, windll, byref, sizeof, c_ulong, c_double
+from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof, c_ulong, c_double
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, POINT
 
-user32 = ctypes.windll.user32
-GetSystemMetrics = user32.GetSystemMetrics
-SetWindowLong = user32.SetWindowLongW
-GetWindowLong = user32.GetWindowLongW
-ClipCursor = user32.ClipCursor
-GetCursorPos = user32.GetCursorPos
-GetDC = user32.GetDC
-ReleaseDC = user32.ReleaseDC
-SendMessage = user32.SendMessageA
-FindWindow = user32.FindWindowA
-GetKeyState = user32.GetKeyState
-GetWindowRect = user32.GetWindowRect
-GetDoubleClickTime = user32.GetDoubleClickTime
-MonitorFromWindow = user32.MonitorFromWindow
-
-gdi32 = ctypes.windll.gdi32
-GetDeviceCaps = gdi32.GetDeviceCaps
-
-kernel32 = ctypes.windll.kernel32
-GetModuleHandle = kernel32.GetModuleHandleA
-SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
-
-shell32 = ctypes.windll.shell32
+shell32 = WinDLL("shell32", use_last_error=True)
 try:
     from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
 except:
@@ -77,17 +68,17 @@ except:
 
 MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
 
-def EnumDisplayMonitors():
+def _EnumDisplayMonitors():
     results = []
     def _callback(monitor, dc, rect, data):
         results.append(monitor)
         return 1
     callback = MonitorEnumProc(_callback)
-    user32.EnumDisplayMonitors(0, 0, callback, 0)
+    EnumDisplayMonitors(0, 0, callback, 0)
     return results
 
 try:
-    dwmapi = ctypes.windll.dwmapi
+    dwmapi = WinDLL("dwmapi", use_last_error=True)
     DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
 except:
     #win XP:
@@ -105,7 +96,7 @@ def GetMonitorInfo(hmonitor):
     info = MONITORINFOEX()
     info.szDevice = ""
     info.cbSize = MONITORINFOEX_size
-    if not user32.GetMonitorInfoW(hmonitor, byref(info)):
+    if not GetMonitorInfoW(hmonitor, byref(info)):
         raise ctypes.WinError()
     monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
     work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
@@ -256,7 +247,7 @@ def get_window_handle(window):
 def get_session_type():
     try:
         b = ctypes.c_bool()
-        retcode = ctypes.windll.dwmapi.DwmIsCompositionEnabled(ctypes.byref(b))
+        retcode = dwmapi.DwmIsCompositionEnabled(ctypes.byref(b))
         log("get_session_type() DwmIsCompositionEnabled()=%s (retcode=%s)", b.value, retcode)
         if retcode==0 and b.value:
             return "aero"
@@ -268,7 +259,7 @@ def get_session_type():
 #    try:
 #        # Vista & 7 stuff
 #        hwnd = GetDesktopWindow()
-#        DwmGetWindowAttribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
+#        DwmGetWindowAttribute = dwmapi.DwmGetWindowAttribute
 #        DWMWA_NCRENDERING_ENABLED = 1
 #        b = BOOL()
 #        DwmGetWindowAttribute(HWND(hwnd), DWORD(DWMWA_NCRENDERING_ENABLED), byref(b), sizeof(b))
@@ -352,7 +343,7 @@ def pointer_grab(window, *args):
     bx = GetSystemMetrics(win32con.SM_CXSIZEFRAME)
     by = GetSystemMetrics(win32con.SM_CYSIZEFRAME)
     top = by
-    style = GetWindowLong(hwnd, win32con.GWL_STYLE)
+    style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
     if style & win32con.WS_CAPTION:
         top += GetSystemMetrics(win32con.SM_CYCAPTION)
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
@@ -390,7 +381,7 @@ def fixup_window_style(self, *args):
             style |= win32con.WS_MINIMIZEBOX
             if style!=cur_style:
                 log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
-                SetWindowLong(hwnd, win32con.GWL_STYLE, style)
+                SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
             else:
                 log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
     except:
@@ -653,7 +644,7 @@ FE_FONTSMOOTHING_STR = {
 
 
 def _add_SPI(info, constant, name, convert, default=None):
-    SystemParametersInfo = windll.user32.SystemParametersInfoA
+    SystemParametersInfo = user32.SystemParametersInfoA
     i = ctypes.c_uint32()
     if SystemParametersInfo(constant, 0, byref(i), 0):
         info[name] = convert(i.value)
@@ -717,7 +708,7 @@ def get_workarea():
         #first we need to find the absolute top-left and bottom-right corners
         #so we can make everything relative to 0,0
         monitors = []
-        for m in EnumDisplayMonitors():
+        for m in _EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             mx1, my1, mx2, my2 = mi['Monitor']
             monitors.append((mx1, my1, mx2, my2))
@@ -728,7 +719,7 @@ def get_workarea():
         screenlog("get_workarea() absolute total monitor area: %s", (minmx, minmy, maxmx, maxmy))
         screenlog(" total monitor dimensions: %s", (maxmx-minmx, maxmy-minmy))
         workareas = []
-        for m in EnumDisplayMonitors():
+        for m in _EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             #absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
@@ -757,7 +748,7 @@ MONITORINFOF_PRIMARY = 1
 def get_workareas():
     try:
         workareas = []
-        for m in EnumDisplayMonitors():
+        for m in _EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             screenlog("get_workareas() GetMonitorInfo(%s)=%s", m, mi)
             #absolute workarea / monitor coordinates:
@@ -886,9 +877,9 @@ def show_desktop(b):
     else:
         v = MIN_ALL_UNDO
     try:
-        root = FindWindow("Shell_TrayWnd", None)
+        root = FindWindowA("Shell_TrayWnd", None)
         assert root is not None, "cannot find 'Shell_TrayWnd'"
-        SendMessage(root, win32con.WM_COMMAND, v, 0)
+        SendMessageA(root, win32con.WM_COMMAND, v, 0)
     except Exception as e:
         log.warn("failed to call show_desktop(%s): %s", b, e)
 
@@ -956,7 +947,7 @@ class ClientExtras(object):
         khid = self.keyboard_hook_id
         if khid:
             self.keyboard_hook_id = None
-            windll.user32.UnhookWindowsHookEx(khid)
+            UnhookWindowsHookEx(khid)
         log("ClientExtras.cleanup() ended")
         #self.client = None
 
@@ -1039,22 +1030,19 @@ class ClientExtras(object):
             except Exception as e:
                 keylog.error("Error: low level keyboard hook failed")
                 keylog.error(" %s", e)
-            return windll.user32.CallNextHookEx(keyboard_hook_id, nCode, wParam, lParam)
+            return CallNextHookEx(keyboard_hook_id, nCode, wParam, lParam)
         # Our low level handler signature.
         CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))
         # Convert the Python handler into C pointer.
         pointer = CMPFUNC(low_level_keyboard_handler)
         # Hook both key up and key down events for common keys (non-system).
-        keyboard_hook_id = user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, GetModuleHandle(None), 0)
+        keyboard_hook_id = SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, GetModuleHandleA(None), 0)
         # Register to remove the hook when the interpreter exits:
         keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
-        GetMessage = user32.GetMessageA
-        TranslateMessage = user32.TranslateMessage
-        DispatchMessage = user32.DispatchMessageA
         msg = MSG()
         lpmsg = byref(msg)        
         while True:
-            ret = GetMessage(lpmsg, None, 0, 0)
+            ret = GetMessageA(lpmsg, None, 0, 0)
             keylog("init_keyboard_listener: GetMessage()=%s", ret)
             if ret==-1:
                 raise ctypes.WinError()
@@ -1063,7 +1051,7 @@ class ClientExtras(object):
                 return
             else:
                 TranslateMessage(lpmsg)
-                DispatchMessage(lpmsg)
+                DispatchMessageA(lpmsg)
 
 
     def wm_move(self, wParam, lParam):

@@ -12,20 +12,12 @@ log = Logger("events", "win32")
 
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import WNDCLASSEX, WNDPROC
-
-user32 = ctypes.windll.user32
-RegisterClassEx = user32.RegisterClassExW
-CreateWindowEx = user32.CreateWindowExA
-DestroyWindow = user32.DestroyWindow
-UnregisterClass = user32.UnregisterClassW
-DefWindowProc = user32.DefWindowProcW
-
-kernel32 = ctypes.windll.kernel32
-GetModuleHandle = kernel32.GetModuleHandleA
-
-gdi32 = ctypes.windll.gdi32
-GetStockObject = gdi32.GetStockObject
+from xpra.platform.win32.common import (WNDCLASSEX, WNDPROC,
+                                        RegisterClassExW,
+                                        CreateWindowExA, DestroyWindow,
+                                        UnregisterClassW, DefWindowProcW,
+                                        GetModuleHandleA,
+                                        GetStockObject)
 
 try:
     wtsapi32 = ctypes.WinDLL("WtsApi32")
@@ -110,7 +102,7 @@ class Win32EventListener(object):
         self.wc.lpfnWndProc = WNDPROC(self.WndProc)
         self.wc.cbClsExtra = 0
         self.wc.cbWndExtra = 0
-        self.wc.hInstance = GetModuleHandle(0)
+        self.wc.hInstance = GetModuleHandleA(0)
         self.wc.hIcon = 0
         self.wc.hCursor = 0
         self.wc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
@@ -118,11 +110,11 @@ class Win32EventListener(object):
         self.wc.lpszClassName = u'Xpra-Event-Window'
         self.wc.hIconSm = 0
         self.wc.hbrBackground = win32con.COLOR_WINDOW
-        self.wc_atom = RegisterClassEx(ctypes.byref(self.wc))
+        self.wc_atom = RegisterClassExW(ctypes.byref(self.wc))
         if self.wc_atom==0:
             raise ctypes.WinError()
 
-        self.hwnd = CreateWindowEx(0, self.wc_atom, u"For xpra event listener only",
+        self.hwnd = CreateWindowExA(0, self.wc_atom, u"For xpra event listener only",
             win32con.WS_CAPTION,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
             0, 0, self.wc.hInstance, None)
@@ -158,7 +150,7 @@ class Win32EventListener(object):
             wc = self.wc
             self.wc = None
             try:
-                UnregisterClass(wc.lpszClassName, wc.hInstance)
+                UnregisterClassW(wc.lpszClassName, wc.hInstance)
             except Exception as e:
                 log.error("Error during cleanup of event window class:")
                 log.error(" %s", e)
@@ -206,6 +198,6 @@ class Win32EventListener(object):
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         if msg==win32con.WM_DESTROY:
             self.cleanup()
-        r = DefWindowProc(hWnd, msg, wParam, lParam)
+        r = DefWindowProcW(hWnd, msg, wParam, lParam)
         log("DefWindowProc%s=%s", (hWnd, msg, wParam, lParam), r)
         return r

@@ -7,8 +7,7 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
-import ctypes
-from ctypes import wintypes
+from ctypes import wintypes, byref
 
 from xpra.log import Logger
 log = Logger("tray", "win32")
@@ -17,11 +16,9 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
 from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32.common import GetSystemMetrics, GetCursorPos
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_filename
-
-GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
-GetCursorPos = ctypes.windll.user32.GetCursorPos
 
 
 class Win32Tray(TrayBase):
@@ -103,7 +100,7 @@ class Win32Tray(TrayBase):
 
     def move_cb(self, *args):
         pos = wintypes.POINT()
-        GetCursorPos(ctypes.byref(pos))
+        GetCursorPos(byref(pos))
         x, y = pos.x, pos.y
         w = GetSystemMetrics(win32con.SM_CXSMICON)
         h = GetSystemMetrics(win32con.SM_CYSMICON)

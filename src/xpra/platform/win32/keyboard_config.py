@@ -4,20 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import ctypes
-
 from xpra.log import Logger
 log = Logger("keyboard", "win32")
 
 from xpra.platform.win32 import constants as win32con
 from xpra.server.keyboard_config_base import KeyboardConfigBase
-
-user32 = ctypes.windll.user32
-MapVirtualKey = user32.MapVirtualKeyW
-GetAsyncKeyState = user32.GetAsyncKeyState
-VkKeyScan = user32.VkKeyScanW
-VkKeyScan.argtypes = [ctypes.c_wchar]
-keybd_event = user32.keybd_event
+from xpra.platform.win32.common import MapVirtualKeyW, GetAsyncKeyState, VkKeyScanW, keybd_event
 
 
 MAPVK_VK_TO_VSC = 0
@@ -30,7 +22,7 @@ def fake_key(keycode, press):
     if not press:
         flags |= win32con.KEYEVENTF_KEYUP
     #get the scancode:
-    scancode = MapVirtualKey(keycode, MAPVK_VK_TO_VSC)
+    scancode = MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC)
     #see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
     log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
     keybd_event(keycode, scancode, flags, 0)
@@ -416,7 +408,7 @@ for name, char in KEYSYM_DEFS.items():
     if len(char)!=1:
         log.warn("invalid character '%s' : '%s' (len=%i)", name, char, len(char))
         continue
-    v = VkKeyScan(char)
+    v = VkKeyScanW(char)
     vk_code = v & 0xff
     if vk_code>0 and vk_code!=0xff:
         log("KEYCODE[%s]=%i (%s)", char, vk_code, name)

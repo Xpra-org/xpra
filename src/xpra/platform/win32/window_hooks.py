@@ -16,11 +16,13 @@ from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import WNDPROC
 
-GetSystemMetrics = ctypes.windll.user32.GetSystemMetrics
+
+user32 = ctypes.WinDLL("user32", use_last_error=True)
+GetSystemMetrics = user32.GetSystemMetrics
 #use ctypes to ensure we call the "W" version:
-SetWindowLong = ctypes.windll.user32.SetWindowLongW
-GetWindowLong = ctypes.windll.user32.GetWindowLongW
-CallWindowProc = ctypes.windll.user32.CallWindowProcW
+SetWindowLongW = user32.SetWindowLongW
+GetWindowLongW = user32.GetWindowLongW
+CallWindowProcW = user32.CallWindowProcW
 
 
 class MINMAXINFO(ctypes.Structure):
@@ -70,13 +72,13 @@ class Win32Hooks(object):
     def setup(self):
         assert self._oldwndproc is None
         self._newwndproc = WNDPROC(self._wndproc)
-        self._oldwndproc = SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
+        self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
         if self.max_size and lparam:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
             width, height = self.max_size
-            style = GetWindowLong(hwnd, win32con.GWL_STYLE)
+            style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
             if style & win32con.WS_BORDER:
                 fw, fh = self.frame_width, self.frame_height
             else:
@@ -102,7 +104,7 @@ class Win32Hooks(object):
         if not self._oldwndproc or not self._hwnd:
             return
         try:
-            SetWindowLong(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
+            SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._oldwndproc)
             self._oldwndproc = None
             self._hwnd = None
         except:
@@ -123,6 +125,6 @@ class Win32Hooks(object):
                 log.error(" %s", e)
         #if our callback doesn't define the return value, use the default handler:
         if v is None:
-            v = CallWindowProc(self._oldwndproc, hwnd, msg, wparam, lparam)
+            v = CallWindowProcW(self._oldwndproc, hwnd, msg, wparam, lparam)
             vlog("_wndproc%s return value=%s", (hwnd, msg, wparam, lparam), v)
         return v

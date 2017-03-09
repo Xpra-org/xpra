@@ -5,6 +5,12 @@
 
 import os
 
+import ctypes
+from ctypes.wintypes import DWORD
+
+advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+GetUserNameA = advapi32.GetUserNameA
+
 def get_sys_info():
     return  {}
 
@@ -14,13 +20,10 @@ def get_username():
 
 def get_name():
     try:
-        import ctypes
-        from ctypes.wintypes import DWORD
-        advapi32 = ctypes.windll.advapi32
         max_len = 256
         size = DWORD(max_len)
         buf = ctypes.create_string_buffer(max_len + 1)
-        if not advapi32.GetUserNameA(ctypes.byref(buf), ctypes.byref(size)):
+        if not GetUserNameA(ctypes.byref(buf), ctypes.byref(size)):
             raise ctypes.WinError()
         return buf.value
     except:

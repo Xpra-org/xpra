@@ -8,7 +8,8 @@ import os.path
 import sys
 import ctypes
 
-SHGetFolderPath = ctypes.windll.shell32.SHGetFolderPathW
+shell32 = ctypes.WinDLL("shell32", use_last_error=True)
+SHGetFolderPath = shell32.SHGetFolderPathW
 
 CSIDL_APPDATA = 26
 CSIDL_COMMON_APPDATA = 35

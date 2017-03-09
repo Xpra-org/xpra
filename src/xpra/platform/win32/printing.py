@@ -103,7 +103,7 @@ def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
     import ctypes
     from ctypes.wintypes import BYTE, DWORD, LPCWSTR
 
-    winspool = ctypes.WinDLL('winspool.drv')
+    winspool = ctypes.WinDLL('winspool.drv', use_last_error=True)
     msvcrt = ctypes.cdll.msvcrt
 
     class PRINTER_INFO(ctypes.Structure):

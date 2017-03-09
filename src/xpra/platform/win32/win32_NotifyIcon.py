@@ -8,61 +8,42 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 import ctypes
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, DWORD, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, HDC
+from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
 from xpra.util import csv, XPRA_APP_ID
 from xpra.os_util import memoryview_to_bytes
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import GUID, WNDCLASSEX, WNDPROC
+from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
+                                        GetSystemMetrics,
+                                        GetCursorPos,
+                                        PostMessageA,
+                                        CreateWindowExA,
+                                        LoadIconA,
+                                        DefWindowProcW, RegisterWindowMessageA,
+                                        RegisterClassExW,
+                                        LoadImageW, CreateIconIndirect,
+                                        GetDC, ReleaseDC,
+                                        CreateBitmap, CreateDIBSection, 
+                                        UpdateWindow, DestroyWindow,
+                                        PostQuitMessage,
+                                        GetModuleHandleA,
+                                        GetStockObject, DeleteObject)
 from xpra.log import Logger
 log = Logger("tray", "win32")
 
 log("loading ctypes NotifyIcon functions")
-
 sprintf = ctypes.cdll.msvcrt.sprintf
-
-user32 = ctypes.windll.user32
-GetSystemMetrics = user32.GetSystemMetrics
-GetCursorPos = user32.GetCursorPos
-PostMessage = user32.PostMessageA
-LoadIcon = user32.LoadIconA
-CreateWindowEx = user32.CreateWindowExA
-DefWindowProcW = user32.DefWindowProcW
-RegisterWindowMessage = user32.RegisterWindowMessageA
-RegisterClassEx = user32.RegisterClassExW
-UpdateWindow = user32.UpdateWindow
-DestroyIcon = user32.DestroyIcon
-LoadImage = user32.LoadImageW
-CreateIconIndirect = user32.CreateIconIndirect
-GetDC = user32.GetDC
-GetDC.argtypes = [HWND]
-GetDC.restype = HDC
-ReleaseDC = user32.ReleaseDC
-DestroyWindow = user32.DestroyWindow
-PostQuitMessage = user32.PostQuitMessage
-
-kernel32 = ctypes.windll.kernel32
-GetModuleHandle = kernel32.GetModuleHandleA
-
-gdi32 = ctypes.windll.gdi32
-GetStockObject = gdi32.GetStockObject
-CreateCompatibleDC = gdi32.CreateCompatibleDC
-CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
-SelectObject = gdi32.SelectObject
-SetPixelV = gdi32.SetPixelV
-DeleteDC = gdi32.DeleteDC
-CreateDIBSection = gdi32.CreateDIBSection
-CreateBitmap = gdi32.CreateBitmap
-DeleteObject = gdi32.DeleteObject
 
 
 def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, dwSpMinorVersion=0):
+    from xpra.platform.win32.common import kernel32
     GetProductInfo = kernel32.GetProductInfo
-    PDWORD = ctypes.POINTER(DWORD)
+    PDWORD = POINTER(DWORD)
     GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
     GetProductInfo.restype  = BOOL
     product_type = DWORD(0)
-    v = GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, ctypes.byref(product_type))
+    v = GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, byref(product_type))
     log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, product_type)
     return bool(v)
 #win7 is actually 6.1:
@@ -73,7 +54,7 @@ except AttributeError as e:
     log("cannot query GetProductInfo", exc_info=True)
     raise ImportError("cannot query GetProductInfo: %s" % e)
 
-class ICONINFO(ctypes.Structure):
+class ICONINFO(Structure):
     _fields_ = [
         ('fIcon',       BOOL),
         ('xHotspot',    DWORD),
@@ -82,7 +63,7 @@ class ICONINFO(ctypes.Structure):
         ('hbmColor',    HBITMAP),
     ]
 CreateIconIndirect.restype = HICON
-CreateIconIndirect.argtypes = [ctypes.POINTER(ICONINFO)]
+CreateIconIndirect.argtypes = [POINTER(ICONINFO)]
 
 if ISWIN7ORHIGHER:
     MAX_TIP_SIZE = 128
@@ -109,33 +90,33 @@ NOTIFYICONDATA_fields= [
 
 if ISWIN7ORHIGHER:
     #full:
-    class NOTIFYICONDATA(ctypes.Structure):
+    class NOTIFYICONDATA(Structure):
         _fields_ = NOTIFYICONDATA_fields[:]
 else:
     #winxp: V2
-    class NOTIFYICONDATA(ctypes.Structure):
+    class NOTIFYICONDATA(Structure):
         _fields_ = NOTIFYICONDATA_fields[:-2]
 
-shell32 = ctypes.windll.shell32
+shell32 = WinDLL("shell32", use_last_error=True)
 Shell_NotifyIcon = shell32.Shell_NotifyIcon
-Shell_NotifyIcon.restype = ctypes.wintypes.BOOL
-Shell_NotifyIcon.argtypes = [ctypes.wintypes.DWORD, ctypes.POINTER(NOTIFYICONDATA)]
+Shell_NotifyIcon.restype = BOOL
+Shell_NotifyIcon.argtypes = [DWORD, POINTER(NOTIFYICONDATA)]
 
 BI_RGB = 0
 BI_BITFIELDS = 0x00000003
-class CIEXYZ(ctypes.Structure):
+class CIEXYZ(Structure):
     _fields_ = [
         ('ciexyzX', DWORD),
         ('ciexyzY', DWORD),
         ('ciexyzZ', DWORD),
     ]
-class CIEXYZTRIPLE(ctypes.Structure):
+class CIEXYZTRIPLE(Structure):
     _fields_ = [
         ('ciexyzRed',   CIEXYZ),
         ('ciexyzBlue',  CIEXYZ),
         ('ciexyzGreen', CIEXYZ),
     ]
-class BITMAPV5HEADER(ctypes.Structure):
+class BITMAPV5HEADER(Structure):
     _fields_ = [
         ('bV5Size',             DWORD),
         ('bV5Width',            LONG),
@@ -164,10 +145,10 @@ class BITMAPV5HEADER(ctypes.Structure):
     ]
 
 CreateDIBSection.restype = HBITMAP
-CreateDIBSection.argtypes = [HANDLE, ctypes.POINTER(BITMAPV5HEADER), UINT, ctypes.POINTER(ctypes.c_void_p), HANDLE, DWORD]
+CreateDIBSection.argtypes = [HANDLE, POINTER(BITMAPV5HEADER), UINT, POINTER(c_void_p), HANDLE, DWORD]
 
 CreateBitmap.restype = HBITMAP
-CreateBitmap.argtypes = [INT, INT, UINT, UINT, ctypes.POINTER(ctypes.c_void_p)]
+CreateBitmap.argtypes = [INT, INT, UINT, UINT, POINTER(c_void_p)]
 
 XPRA_GUID = GUID()
 XPRA_GUID.Data1 = 0x67b3efa2
@@ -175,7 +156,7 @@ XPRA_GUID.Data2 = 0xe470
 XPRA_GUID.Data3 = 0x4a5f
 XPRA_GUID.Data4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
 
-FALLBACK_ICON = LoadIcon(0, win32con.IDI_APPLICATION)
+FALLBACK_ICON = LoadIconA(0, win32con.IDI_APPLICATION)
 
 #constants found in win32gui:
 NIM_ADD         = 0
@@ -228,7 +209,7 @@ BUTTON_MAP = {
 
 def rgba_to_bitmap(rgba, w, h):
     header = BITMAPV5HEADER()
-    header.bV5Size = ctypes.sizeof(BITMAPV5HEADER)
+    header.bV5Size = sizeof(BITMAPV5HEADER)
     header.bV5Width = w
     header.bV5Height = -h
     header.bV5Planes = 1
@@ -241,15 +222,15 @@ def rgba_to_bitmap(rgba, w, h):
     bitmap = 0
     try:
         hdc = GetDC(None)
-        dataptr = ctypes.c_void_p()
+        dataptr = c_void_p()
         log("GetDC()=%#x", hdc)
-        bitmap = CreateDIBSection(hdc, ctypes.byref(header), win32con.DIB_RGB_COLORS, ctypes.byref(dataptr), None, 0)
+        bitmap = CreateDIBSection(hdc, byref(header), win32con.DIB_RGB_COLORS, byref(dataptr), None, 0)
     finally:
         ReleaseDC(None, hdc)
     assert dataptr and bitmap, "failed to create DIB section"
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
     img_data = ctypes.create_string_buffer(rgba)
-    ctypes.memmove(dataptr, ctypes.byref(img_data), w*4*h)
+    ctypes.memmove(dataptr, byref(img_data), w*4*h)
     return bitmap
 
 
@@ -283,7 +264,7 @@ class win32NotifyIcon(object):
     def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         window_name = (self.title+" StatusIcon Window").decode()
-        self.hwnd = CreateWindowEx(0, NIclassAtom, window_name, style,
+        self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, NIwc.hInstance, None)
         if self.hwnd==0:
@@ -297,13 +278,13 @@ class win32NotifyIcon(object):
 
     def make_nid(self, flags):
         nid = NOTIFYICONDATA()
-        nid.cbSize = ctypes.sizeof(NOTIFYICONDATA)
+        nid.cbSize = sizeof(NOTIFYICONDATA)
         nid.hWnd = self.hwnd
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
         #don't ask why we have to use sprintf to get what we want:
         title = self.title[:MAX_TIP_SIZE-1]
-        sprintf(ctypes.byref(nid,NOTIFYICONDATA.szTip.offset), title)
+        sprintf(byref(nid,NOTIFYICONDATA.szTip.offset), title)
         nid.dwState = 0
         nid.dwStateMask = 0
         #balloon notification bits:
@@ -389,7 +370,7 @@ class win32NotifyIcon(object):
             iconinfo.fIcon = True
             iconinfo.hbmMask = mask
             iconinfo.hbmColor = bitmap
-            hicon = CreateIconIndirect(ctypes.byref(iconinfo))
+            hicon = CreateIconIndirect(byref(iconinfo))
             log("CreateIconIndirect()=%s", hicon)
             if not hicon:
                 raise ctypes.WinError(ctypes.get_last_error())
@@ -419,7 +400,7 @@ class win32NotifyIcon(object):
                                                 win32con.IMAGE_ICON    : "ICON",
                                                 win32con.IMAGE_BITMAP  : "BITMAP",
                                              }.get(img_type))
-                v = LoadImage(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
+                v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
             except:
                 log.error("Failed to load icon at %s", iconPathName, exc_info=True)
         log("LoadImage(%s)=%s", iconPathName, v)
@@ -487,7 +468,7 @@ class win32NotifyIcon(object):
 
 
 WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose
-TASKBAR_CREATED = RegisterWindowMessage("TaskbarCreated")
+TASKBAR_CREATED = RegisterWindowMessageA("TaskbarCreated")
 message_map = {
     TASKBAR_CREATED                     : win32NotifyIcon.OnTrayRestart,
     win32con.WM_DESTROY                 : win32NotifyIcon.OnDestroy,
@@ -501,15 +482,15 @@ def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
     if instance and fn:
         return fn(instance, hwnd, msg, wParam, lParam) or 0
-    return user32.DefWindowProcW(hwnd, msg, wParam, lParam)
+    return DefWindowProcW(hwnd, msg, wParam, lParam)
 
 NIwc = WNDCLASSEX()
-NIwc.cbSize = ctypes.sizeof(WNDCLASSEX)
+NIwc.cbSize = sizeof(WNDCLASSEX)
 NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
 NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
 NIwc.cbClsExtra = 0
 NIwc.cbWndExtra = 0
-NIwc.hInstance = GetModuleHandle(0)
+NIwc.hInstance = GetModuleHandleA(0)
 NIwc.hIcon = 0
 NIwc.hCursor = 0
 NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
@@ -517,14 +498,15 @@ NIwc.lpszMenuName = 0
 NIwc.lpszClassName = u"win32NotifyIcon"
 NIwc.hIconSm = 0
 
-NIclassAtom = RegisterClassEx(ctypes.byref(NIwc))
+NIclassAtom = RegisterClassExW(byref(NIwc))
 if NIclassAtom==0:
     raise ctypes.WinError()
-log("RegisterClassEx(%s)=%i", NIwc.lpszClassName, NIclassAtom)
+log("RegisterClassExW(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 def main():
     import os
     import sys
+    from xpra.platform.win32.common import user32
 
     def click_callback(button, pressed):
         CreatePopupMenu = user32.CreatePopupMenu
@@ -537,11 +519,11 @@ def main():
         AppendMenu(menu, win32con.MF_STRING, 1024, u"Generate balloon")
         AppendMenu(menu, win32con.MF_STRING, 1025, u"Exit")
         pos = POINT()
-        GetCursorPos(ctypes.byref(pos))
+        GetCursorPos(byref(pos))
         hwnd = tray.hwnd
         user32.SetForegroundWindow(hwnd)
         user32.TrackPopupMenu(menu, win32con.TPM_LEFTALIGN, pos.x, pos.y, 0, hwnd, None)
-        PostMessage(hwnd, win32con.WM_NULL, 0, 0)
+        PostMessageA(hwnd, win32con.WM_NULL, 0, 0)
 
     def command_callback(hwnd, cid):
         if cid == 1024:

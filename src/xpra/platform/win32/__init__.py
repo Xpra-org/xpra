@@ -11,29 +11,24 @@ import os.path
 import sys
 import ctypes
 
-from ctypes import WINFUNCTYPE, windll, POINTER, byref, c_int
+from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
 from xpra.platform.win32 import constants as win32con
-
-kernel32 = ctypes.windll.kernel32
-SetConsoleTitle = kernel32.SetConsoleTitleA
-GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
-MessageBox = ctypes.windll.user32
-GetLastError = ctypes.GetLastError
+from xpra.platform.win32.common import SetConsoleTitleA, GetConsoleScreenBufferInfo, MessageBoxA, GetLastError, kernel32
 
 
-GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", windll.kernel32))
+GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", kernel32))
 STD_OUTPUT_HANDLE = DWORD(-11)
 STD_ERROR_HANDLE = DWORD(-12)
-GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType", windll.kernel32))
+GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType", kernel32))
 FILE_TYPE_CHAR = 0x0002
 FILE_TYPE_REMOTE = 0x8000
-GetConsoleMode = WINFUNCTYPE(BOOL, HANDLE, POINTER(DWORD))(("GetConsoleMode", windll.kernel32))
+GetConsoleMode = WINFUNCTYPE(BOOL, HANDLE, POINTER(DWORD))(("GetConsoleMode", kernel32))
 INVALID_HANDLE_VALUE = DWORD(-1).value
 STDOUT_FILENO = 1
 STDERR_FILENO = 2
-WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", windll.kernel32))
+WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", kernel32))
 
 
 #redirect output if we are launched from py2exe's gui mode:
@@ -75,7 +70,7 @@ def set_prgname(name):
     global prg_name
     prg_name = name
     try:
-        SetConsoleTitle(name)
+        SetConsoleTitleA(name)
         import glib
         glib.set_prgname(name)
     except:
@@ -243,6 +238,10 @@ def set_wait_for_input():
         #(which usually does not popup a new shell window)
         _wait_for_input = False
         return
+    if os.environ.get("MSYSCON"):
+        #msys environment doesn't popup a new shell window
+        _wait_for_input = False
+        return
     try:
         handle = GetStdHandle(STD_OUTPUT_HANDLE)
         #handle.SetConsoleTextAttribute(FOREGROUND_BLUE)
@@ -298,7 +297,7 @@ def _show_message(message, uType):
     if SHOW_MESSAGEBOX and GUI_MODE:
         #try to use an alert box since no console output will be shown:
         try:
-            MessageBox(0, message, prg_name, uType)
+            MessageBoxA(0, message, prg_name, uType)
             return
         except:
             pass

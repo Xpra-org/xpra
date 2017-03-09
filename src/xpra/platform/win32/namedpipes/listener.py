@@ -7,6 +7,7 @@
 #@PydevCodeAnalysisIgnore
 
 import ctypes
+from ctypes.wintypes import HANDLE, DWORD
 from threading import Thread
 
 from xpra.log import Logger
@@ -17,19 +18,22 @@ log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
 
-kernel32 = ctypes.windll.kernel32
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 WaitForSingleObject = kernel32.WaitForSingleObject
 CreateEventA = kernel32.CreateEventA
+CreateEventA.restype = HANDLE
 ReadFile = kernel32.ReadFile
 WriteFile = kernel32.WriteFile
 CloseHandle = kernel32.CloseHandle
 CreateNamedPipeA = kernel32.CreateNamedPipeA
+CreateNamedPipeA.restype = HANDLE
 ConnectNamedPipe = kernel32.ConnectNamedPipe
 DisconnectNamedPipe = kernel32.DisconnectNamedPipe
 FlushFileBuffers = kernel32.FlushFileBuffers
 GetLastError = kernel32.GetLastError
 GetCurrentProcess = kernel32.GetCurrentProcess
-advapi32 = ctypes.windll.advapi32
+GetCurrentProcess.restype = HANDLE
+advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
 InitializeSecurityDescriptor = advapi32.InitializeSecurityDescriptor
 SetSecurityDescriptorOwner = advapi32.SetSecurityDescriptorOwner
 SetSecurityDescriptorDacl = advapi32.SetSecurityDescriptorDacl
@@ -127,7 +131,6 @@ class NamedPipeListener(Thread):
         return SA
 
     def CreatePipeSecurityObject(self):
-        from ctypes.wintypes import HANDLE, DWORD
         TOKEN_QUERY = 0x8
         cur_proc = GetCurrentProcess()
         log("CreatePipeSecurityObject() GetCurrentProcess()=%s", cur_proc)

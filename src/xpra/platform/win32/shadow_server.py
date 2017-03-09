@@ -8,7 +8,7 @@ import os
 import time
 import ctypes
 
-from ctypes.wintypes import RECT, BOOL, HWND, LPARAM, HGDIOBJ, LONG, LPVOID
+from ctypes.wintypes import RECT
 
 from xpra.log import Logger
 from xpra.util import AdHocStruct, envbool, prettify_plug_name, roundup
@@ -30,32 +30,20 @@ from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.codecs.image_wrapper import ImageWrapper
 
-user32 = ctypes.windll.user32
-EnumWindows = ctypes.windll.user32.EnumWindows
-EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
-FindWindow = user32.FindWindowA
-IsWindowVisible = user32.IsWindowVisible
-GetWindowTextLength = user32.GetWindowTextLengthW
-GetWindowText = user32.GetWindowTextW
-GetWindowRect = user32.GetWindowRect
-GetWindowThreadProcessId = user32.GetWindowThreadProcessId
-GetDesktopWindow = user32.GetDesktopWindow
-GetSystemMetrics = user32.GetSystemMetrics
-GetWindowDC = user32.GetWindowDC
-SetCursorPos = user32.SetCursorPos
-mouse_event = user32.mouse_event
-
-gdi32 = ctypes.windll.gdi32
-CreateCompatibleDC = gdi32.CreateCompatibleDC
-CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
-CreateBitmap = gdi32.CreateBitmap
-GetBitmapBits = gdi32.GetBitmapBits
-GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
-GetBitmapBits.restype  = LONG
-SelectObject = gdi32.SelectObject
-BitBlt = gdi32.BitBlt
-GetDeviceCaps = gdi32.GetDeviceCaps
-GetSystemPaletteEntries = gdi32.GetSystemPaletteEntries
+#user32:
+from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindowA, IsWindowVisible,
+                                        GetWindowTextLengthW, GetWindowTextW,
+                                        GetWindowRect,
+                                        GetWindowThreadProcessId,
+                                        GetDesktopWindow, GetSystemMetrics,
+                                        GetWindowDC, SetCursorPos,
+                                        mouse_event)
+#gdi32:
+from xpra.platform.win32.common import (CreateCompatibleDC,
+                                        CreateCompatibleBitmap,
+                                        GetBitmapBits, SelectObject,
+                                        BitBlt, GetDeviceCaps,
+                                        GetSystemPaletteEntries)
 
 
 NOEVENT = object()
@@ -150,7 +138,7 @@ class Win32RootWindowModel(RootWindowModel):
         l = log
         if logit or envbool("XPRA_SHAPE_DEBUG", False):
             l = shapelog
-        taskbar = FindWindow("Shell_TrayWnd", None)
+        taskbar = FindWindowA("Shell_TrayWnd", None)
         l("taskbar window=%#x", taskbar)
         ourpid = os.getpid()
         l("our pid=%i", ourpid)
@@ -165,9 +153,9 @@ class Win32RootWindowModel(RootWindowModel):
                 l("skipped our own window %#x", hwnd)
                 return True
             #skipping IsWindowEnabled check
-            length = GetWindowTextLength(hwnd)
+            length = GetWindowTextLengthW(hwnd)
             buf = ctypes.create_unicode_buffer(length+1)
-            if GetWindowText(hwnd, buf, length+1)>0:
+            if GetWindowTextW(hwnd, buf, length+1)>0:
                 window_title = buf.value
             else:
                 window_title = ''

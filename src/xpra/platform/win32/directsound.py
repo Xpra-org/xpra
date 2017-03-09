@@ -7,11 +7,11 @@ from xpra.log import Logger
 log = Logger("win32", "sound")
 
 import ctypes
-from ctypes import windll
+from ctypes import WinDLL
 from ctypes import oledll
 from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID
 
-dsound = windll.LoadLibrary("dsound.dll")
+dsound = WinDLL("dsound", use_last_error=True)
 DirectSoundEnumerateW = dsound.DirectSoundEnumerateW
 DirectSoundCaptureEnumerate = dsound.DirectSoundCaptureEnumerateW
 GetDeviceID = dsound.GetDeviceID

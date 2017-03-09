@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes.wintypes import HANDLE, INT, SHORT
+from ctypes.wintypes import HANDLE, INT
 
+from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, SystemParametersInfoA
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
@@ -15,18 +16,13 @@ from xpra.util import csv, envint, envbool
 from xpra.log import Logger
 log = Logger("keyboard")
 
-user32 = ctypes.windll.user32
-GetKeyState = user32.GetKeyState
-GetKeyState.restype = SHORT
-GetKeyboardLayout = user32.GetKeyboardLayout
 
-
-def GetKeyboardLayoutList():
+def _GetKeyboardLayoutList():
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
-    user32.GetKeyboardLayoutList.argtypes = [INT, ctypes.POINTER(HANDLE*max_items)]
-    count = user32.GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
+    GetKeyboardLayoutList.argtypes = [INT, ctypes.POINTER(HANDLE*max_items)]
+    count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
     layouts = []
     for i in range(count):
         layouts.append(handle_list[i])
@@ -34,8 +30,7 @@ def GetKeyboardLayoutList():
 
 def GetIntSystemParametersInfo(key):
     rv = ctypes.wintypes.INT()
-    SystemParametersInfo = ctypes.windll.user32.SystemParametersInfoA
-    SystemParametersInfo(key, 0, ctypes.byref(rv), 0)
+    SystemParametersInfoA(key, 0, ctypes.byref(rv), 0)
     return rv.value
 
 
@@ -128,7 +123,7 @@ class Keyboard(KeyboardBase):
         variant = None
         variants = None
         try:
-            l = GetKeyboardLayoutList()
+            l = _GetKeyboardLayoutList()
             log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
             for hkl in l:
                 kbid = hkl & 0xffff
