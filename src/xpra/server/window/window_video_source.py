@@ -1616,6 +1616,15 @@ class WindowVideoSource(WindowSource):
                         scroll_data = ScrollData()
                         self.scroll_data = scroll_data
                         scrolllog("new scroll data: %s", scroll_data)
+                    if not image.is_thread_safe():
+                        #what we really want is to check that the frame has been frozen,
+                        #so it doesn't get modified whilst we checksum or encode it,
+                        #the "thread_safe" flag gives us that for the X11 case in most cases,
+                        #(the other servers already copy the pixels from the "real" screen buffer)
+                        #TODO: use a separate flag? (ximage uses this flag to know if it is safe
+                        # to call image.free from another thread - which is theoretically more restrictive)
+                        newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
+                        image.restride(newstride)
                     bpp = image.get_bytesperpixel()
                     scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
                     max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
