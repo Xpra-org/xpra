@@ -268,7 +268,7 @@ class win32NotifyIcon(object):
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, NIwc.hInstance, None)
         if self.hwnd==0:
-            raise ctypes.WinError()
+            raise ctypes.WinError(ctypes.get_last_error())
         log("hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
         r = Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
@@ -500,7 +500,7 @@ NIwc.hIconSm = 0
 
 NIclassAtom = RegisterClassExW(byref(NIwc))
 if NIclassAtom==0:
-    raise ctypes.WinError()
+    raise ctypes.WinError(ctypes.get_last_error())
 log("RegisterClassExW(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 def main():

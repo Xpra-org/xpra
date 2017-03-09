@@ -97,7 +97,7 @@ def GetMonitorInfo(hmonitor):
     info.szDevice = ""
     info.cbSize = MONITORINFOEX_size
     if not GetMonitorInfoW(hmonitor, byref(info)):
-        raise ctypes.WinError()
+        raise ctypes.WinError(ctypes.get_last_error())
     monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
     work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
     return  {
@@ -1045,7 +1045,7 @@ class ClientExtras(object):
             ret = GetMessageA(lpmsg, None, 0, 0)
             keylog("init_keyboard_listener: GetMessage()=%s", ret)
             if ret==-1:
-                raise ctypes.WinError()
+                raise ctypes.WinError(ctypes.get_last_error())
             elif ret==0:
                 keylog("GetMessage()=0, exiting loop")
                 return

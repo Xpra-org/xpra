@@ -112,14 +112,14 @@ class Win32EventListener(object):
         self.wc.hbrBackground = win32con.COLOR_WINDOW
         self.wc_atom = RegisterClassExW(ctypes.byref(self.wc))
         if self.wc_atom==0:
-            raise ctypes.WinError()
+            raise ctypes.WinError(ctypes.get_last_error())
 
         self.hwnd = CreateWindowExA(0, self.wc_atom, u"For xpra event listener only",
             win32con.WS_CAPTION,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
             0, 0, self.wc.hInstance, None)
         if self.hwnd==0:
-            raise ctypes.WinError()
+            raise ctypes.WinError(ctypes.get_last_error())
 
         if wtsapi32:
             #register our interest in session events:
