@@ -36,6 +36,7 @@
   <repository type="tarball" name="cpan.org" href="http://www.cpan.org/"/>
   <repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
   <repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
+  <repository type="tarball" name="ftp.pcre.org" href="https://ftp.pcre.org"/>
   <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
 
 
@@ -78,6 +79,23 @@
 		version="2.12"
 		hash="md5:93eea9f07c0058c097891c73e4955456"
 		repo="ftp.gnu.org"/>
+  </autotools>
+
+  <autotools id="pcre" autogenargs="--enable-utf8" autogen-sh="configure">
+	<branch module="/pub/pcre/pcre-8.40.tar.gz"
+		version="8.40"
+		hash="sha256:1d75ce90ea3f81ee080cdc04e68c9c25a9fb984861a0618be7bbf676b18eda3e"
+		repo="ftp.pcre.org"/>
+  </autotools>
+
+  <autotools id="grep" autogen-sh="configure">
+	<branch module="/gnu/grep/grep-3.0.tar.xz"
+		version="2.12"
+		hash="sha256:e2c81db5056e3e8c5995f0bb5d0d0e1cad1f6f45c3b2fc77b6e81435aed48ab5"
+		repo="ftp.gnu.org"/>
+        <dependencies>
+                <dep package="pcre"/>
+        </dependencies>
   </autotools>
 
   <autotools id="bomutils" autogen-sh="" skip-autogen="true">
