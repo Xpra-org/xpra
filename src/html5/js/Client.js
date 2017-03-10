@@ -1500,36 +1500,39 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		options = packet[10];
 	var win = ctx.id_to_window[wid];
 	var decode_time = -1;
-	if (win) {
-		try {
-			win.paint(x, y,
-				width, height,
-				coding, data, packet_sequence, rowstride, options,
-				function (ctx) {
-					var flush = options["flush"] || 0;
-					if(flush==0) {
-						// request that drawing to screen takes place at next available opportunity if possible
-						if(requestAnimationFrame) {
-							requestAnimationFrame(function() {
-								win.draw();
-							});
-						} else {
-							// requestAnimationFrame is not available, draw immediately
+	if (!win) {
+		ctx.error('cannot paint, window not found:', wid);
+		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, "window not found");
+		return;
+	}
+	try {
+		win.paint(x, y,
+			width, height,
+			coding, data, packet_sequence, rowstride, options,
+			function (ctx) {
+				var flush = options["flush"] || 0;
+				if(flush==0) {
+					// request that drawing to screen takes place at next available opportunity if possible
+					if(requestAnimationFrame) {
+						requestAnimationFrame(function() {
 							win.draw();
-						}
+						});
+					} else {
+						// requestAnimationFrame is not available, draw immediately
+						win.draw();
 					}
-					decode_time = new Date().getTime() - start;
-					if(ctx.debug) {
-						console.debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
-					}
-					ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time);
 				}
-			);
-		}
-		catch(e) {
-			ctx.error('error painting', coding, e);
-			ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, String(e));
-		}
+				decode_time = new Date().getTime() - start;
+				if(ctx.debug) {
+					console.debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
+				}
+				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, "");
+			}
+		);
+	}
+	catch(e) {
+		ctx.error('error painting', coding, e);
+		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, String(e));
 	}
 }
 
