@@ -708,7 +708,9 @@ XpraWindow.prototype._close_broadway = function() {
 
 
 XpraWindow.prototype._close_video = function() {
-	this.log("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
+	if(this.debug) {
+		console.debug("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
+	}
 	this.video_source_ready = false;
 	if(this.video) {
 		if(this.media_source) {
