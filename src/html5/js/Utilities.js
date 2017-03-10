@@ -236,7 +236,8 @@ var Utilities = {
 			spinX  : sX,
 			spinY  : sY,
 			pixelX : pX,
-			pixelY : pY
+			pixelY : pY,
+			deltaMode : (event.deltaMode || 0),
 			};
 	},
 };
