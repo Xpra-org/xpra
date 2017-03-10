@@ -597,7 +597,7 @@ fi
 
 
 %changelog
-* Thu Mar 09 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
+* Fri Mar 10 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
 - fix info queries causing server crashes
 - fix unguarded access to X11 functions
 - fix quality and speed values skewed by locked batch delay
@@ -621,7 +621,10 @@ fi
 - fix error in scrolling detection fallback case
 - fix race condition in scrolling detection code causing visual artifacts
 - fix systray geometry issues on some distributions (not responding to clicks)
-- fix some inaccessible drop down menus with Mac OS clients (disables drag-n-drop)
+- fix some inaccessible drop down menus with Mac OS clients
+- fix HTML5 client failing to acknowledge paint packets
+- fix HTML5 client capslock state detection
+- remove HTML5 client unnecessary debug logging
 - safer dbus cleanup code
 - honour "show upload" option in Mac OS application menu
 - Mac OS menu shows "Disconnect" instead of "Quit", "Xpra" instead of "Launcher"

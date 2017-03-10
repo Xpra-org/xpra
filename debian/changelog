@@ -22,7 +22,10 @@ xpra (1.0.4-1) UNRELEASED; urgency=low
   * fix error in scrolling detection fallback case
   * fix race condition in scrolling detection code causing visual artifacts
   * fix systray geometry issues on some distributions (not responding to clicks)
-  * fix some inaccessible drop down menus with Mac OS clients (disables drag-n-drop)
+  * fix some inaccessible drop down menus with Mac OS clients
+  * fix HTML5 client failing to acknowledge paint packets
+  * fix HTML5 client capslock state detection
+  * remove HTML5 client unnecessary debug logging
   * safer dbus cleanup code
   * honour "show upload" option in Mac OS application menu
   * Mac OS menu shows "Disconnect" instead of "Quit", "Xpra" instead of "Launcher"
@@ -32,7 +35,7 @@ xpra (1.0.4-1) UNRELEASED; urgency=low
   * revert overly zealous memory access barrier
   * run uninstaller before install on MS Windows
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Mar 2017 22:39:01 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 10 Mar 2017 19:55:19 +0700
 
 xpra (1.0.3-1) UNRELEASED; urgency=low
   * fix memcpy overflow
