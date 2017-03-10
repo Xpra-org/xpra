@@ -90,7 +90,7 @@
 
   <autotools id="grep" autogen-sh="configure">
 	<branch module="/gnu/grep/grep-3.0.tar.xz"
-		version="2.12"
+		version="3.0"
 		hash="sha256:e2c81db5056e3e8c5995f0bb5d0d0e1cad1f6f45c3b2fc77b6e81435aed48ab5"
 		repo="ftp.gnu.org"/>
         <dependencies>
