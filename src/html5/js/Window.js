@@ -346,32 +346,42 @@ XpraWindow.prototype.on_mousescroll = function(e) {
 	var mouse = this.getMouse(e),
 			mx = Math.round(mouse.x),
 			my = Math.round(mouse.y);
-
 	var modifiers = [];
 	var buttons = [];
-
 	var wheel = Utilities.normalizeWheel(e);
 	if (this.debug) {
 		console.debug("normalized wheel event:", wheel);
 	}
 	//clamp to prevent event floods:
-	var px = Math.min(800, wheel.pixelX);
-	var py = Math.min(800, wheel.pixelY);
-	//add to accumulators:
-	this.wheel_delta_x += px;
-	this.wheel_delta_y += py;
+	var px = Math.min(1200, wheel.pixelX);
+	var py = Math.min(1200, wheel.pixelY);
+	var apx = Math.abs(px);
+	var apy = Math.abs(py);
+	//generate a single event if we can, or add to accumulators:
+	if (apx>=40 && apx<=160) {
+		this.wheel_delta_x = (px>0) ? 120 : -120;
+	}
+	else {
+		this.wheel_delta_x += px;
+	}
+	if (apy>=40 && apy<=160) {
+		this.wheel_delta_y = (py>0) ? 120 : -120;
+	}
+	else {
+		this.wheel_delta_y += py;
+	}
 	//send synthetic click+release as many times as needed:
 	var wx = Math.abs(this.wheel_delta_x);
 	var wy = Math.abs(this.wheel_delta_y);
 	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
 	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
-	while (wx>=40) {
-		wx -= 40;
+	while (wx>=120) {
+		wx -= 120;
 		this.handle_mouse_click(btn_x, true, mx, my, modifiers, buttons);
 		this.handle_mouse_click(btn_x, false, mx, my, modifiers, buttons);
 	}
-	while (wy>=40) {
-		wy -= 40;
+	while (wy>=120) {
+		wy -= 120;
 		this.handle_mouse_click(btn_y, true, mx, my, modifiers, buttons);
 		this.handle_mouse_click(btn_y, false, mx, my, modifiers, buttons);
 	}
