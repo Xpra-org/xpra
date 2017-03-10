@@ -96,6 +96,7 @@ class Win32RootWindowModel(RootWindowModel):
         self.metrics = None
         self.dc, self.memdc, self.bitmap = None, None, None
         self.bit_depth = 32
+        self.bitblt_err_time = 0
         if DISABLE_DWM_COMPOSITION:
             try:
                 from ctypes import windll
@@ -264,7 +265,12 @@ class Win32RootWindowModel(RootWindowModel):
         log("get_image up to SelectObject (%s) took %ims", REGION_CONSTS.get(r, r), (select_time-start)*1000)
         try:
             if BitBlt(self.memdc, 0, 0, width, height, self.dc, x, y, win32con.SRCCOPY)==0:
-                log.error("Error: failed to blit screen capture")
+                e = ctypes.get_last_error()
+                #rate limit the error message:
+                now = time.time()
+                if now-self.bitblt_err_time>10:
+                    log.error("Error: failed to blit the screen, error %i", e)
+                    self.bitblt_err_time = now
                 return None
         except Exception as e:
             log("BitBlt error", exc_info=True)
