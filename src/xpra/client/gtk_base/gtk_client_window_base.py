@@ -80,7 +80,7 @@ if os.name=="posix" and USE_X11_BINDINGS:
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", os.name=="posix")
 
-OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", False)
+OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
@@ -1363,7 +1363,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def get_mouse_event_wid(self, x, y):
         #on OSX, the mouse events are reported against the wrong window by GTK,
         #so we may have to patch this and use the currently focused window:
-        if sys.platform.startswith("darwin") and OSX_FOCUS_WORKAROUND:
+        if sys.platform.startswith("darwin") and OSX_FOCUS_WORKAROUND and not self.is_OR():
             focused = self._client._focused
             w = self._client._id_to_window.get(focused)
             focuslog("get_mouse_event_wid(%s, %s) focused=%s vs id=%i, window=%s", x, y, focused, self._id, w)
