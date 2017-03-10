@@ -498,12 +498,12 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 	var modifiers = ctx._keyb_get_modifiers(event);
 
 	/* PITA: this only works for keypress event... */
-	caps_lock = false;
+	ctx.caps_lock = false;
 	var shift = modifiers.indexOf("shift")>=0;
 	if (keycode>=97 && keycode<=122 && shift)
-		caps_lock = true;
+		ctx.caps_lock = true;
 	else if (keycode>=65 && keycode<=90 && !shift)
-		caps_lock = true;
+		ctx.caps_lock = true;
 	//show("caps_lock="+caps_lock);
 	return false;
 };
