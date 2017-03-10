@@ -114,7 +114,7 @@ var MediaSourceUtil = {
 
 		getAuroraAudioCodecs : function() {
 			//IE is totally useless:
-			if(navigator.userAgent.indexOf("MSIE") != -1) {
+			if(Utilities.isIE()) {
 				return {};
 			}
 			var codecs_supported = {};
@@ -141,7 +141,7 @@ var MediaSourceUtil = {
 				return [];
 			}
 			//IE is totally useless:
-			if(navigator.userAgent.indexOf("MSIE") != -1) {
+			if(Utilities.isIE()) {
 				return [];
 			}
 			var codecs_supported = [];
@@ -154,17 +154,14 @@ var MediaSourceUtil = {
 						continue;
 					}
 					var blacklist = [];
-					var ua = navigator.userAgent.toLowerCase();
-					var is_safari = ua.indexOf("safari") >= 0 && ua.indexOf('chrome') < 0;
-					var is_firefox = ua.indexOf("firefox") >= 0;
-					if (is_firefox || is_safari) {
+					if (Utilities.isFirefox() || Utilities.isSafari()) {
 						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
 						if (is_safari) {
 							//this crashes Safari!
 							blacklist += ["wav", "mp3"];
 						}
 					}
-					else if (navigator.userAgent.toLowerCase().indexOf('chrome') >= 0) {
+					else if (Utilities.isChrome()) {
 						blacklist = ["aac+mpeg4"];
 					}
 					if(blacklist.indexOf(codec_option)>=0) {

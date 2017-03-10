@@ -72,6 +72,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	// last mouse position
 	this.last_mouse_x = null;
 	this.last_mouse_y = null;
+	// wheel accumulators:
+	this.wheel_delta_x = 0;
+	this.wheel_delta_y = 0;
 
 	// get offsets
 	this.leftoffset = parseInt(jQuery(this.div).css('border-left-width'), 10);
@@ -152,9 +155,19 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.spinnerdiv = jQuery('#spinner'+String(wid));
 
 	// listen for mouse wheel events on my window
-	jQuery(this.div).bind('mousewheel DOMMouseScroll', function (e) {
+	var div = document.getElementById(wid);
+	function on_mousescroll(e) {
 		me.on_mousescroll(e);
-	});
+	}
+	if (Utilities.isEventSupported("wheel")) {
+		div.addEventListener('wheel',			on_mousescroll, false);
+	}
+	else if (Utilities.isEventSupported("mousewheel")) {
+		div.addEventListener('mousewheel',		on_mousescroll, false);
+	}
+	else if (Utilities.isEventSupported("DOMMouseScroll")) {
+		div.addEventListener('DOMMouseScroll',	on_mousescroll, false); // for Firefox
+	}
 
 	// need to update the CSS geometry
 	this.ensure_visible();
@@ -337,17 +350,34 @@ XpraWindow.prototype.on_mousescroll = function(e) {
 	var modifiers = [];
 	var buttons = [];
 
-	// see if we are going up or down
-	if (e.originalEvent.wheelDelta > 0 || e.originalEvent.detail < 0) {
-		// scroll up
-		this.handle_mouse_click(4, true, mx, my, modifiers, buttons);
-		this.handle_mouse_click(4, false, mx, my, modifiers, buttons);
+	var wheel = Utilities.normalizeWheel(e);
+	if (this.debug) {
+		console.debug("normalized wheel event:", wheel);
 	}
-	else {
-		// scroll down
-		this.handle_mouse_click(5, true, mx, my, modifiers, buttons);
-		this.handle_mouse_click(5, false, mx, my, modifiers, buttons);
+	//clamp to prevent event floods:
+	var px = Math.min(800, wheel.pixelX);
+	var py = Math.min(800, wheel.pixelY);
+	//add to accumulators:
+	this.wheel_delta_x += px;
+	this.wheel_delta_y += py;
+	//send synthetic click+release as many times as needed:
+	var wx = Math.abs(this.wheel_delta_x);
+	var wy = Math.abs(this.wheel_delta_y);
+	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
+	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
+	while (wx>=40) {
+		wx -= 40;
+		this.handle_mouse_click(btn_x, true, mx, my, modifiers, buttons);
+		this.handle_mouse_click(btn_x, false, mx, my, modifiers, buttons);
 	}
+	while (wy>=40) {
+		wy -= 40;
+		this.handle_mouse_click(btn_y, true, mx, my, modifiers, buttons);
+		this.handle_mouse_click(btn_y, false, mx, my, modifiers, buttons);
+	}
+	//store left overs:
+	this.wheel_delta_x = (this.wheel_delta_x>=0) ? wx : -wx;
+	this.wheel_delta_y = (this.wheel_delta_y>=0) ? wy : -wy;
 }
 
 /**
