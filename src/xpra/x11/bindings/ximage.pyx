@@ -768,7 +768,7 @@ cdef class _XImageBindings(_X11CoreBindings):
 
     def __cinit__(self):
         self.has_xshm = XShmQueryExtension(self.display)
-        log.info("XShmQueryExtension()=%s", bool(self.has_xshm))
+        log("XShmQueryExtension()=%s", bool(self.has_xshm))
 
     def has_XShm(self):
         return self.has_xshm
