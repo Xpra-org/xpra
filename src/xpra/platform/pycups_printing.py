@@ -133,9 +133,16 @@ def get_lpinfo_drv(make_and_model):
             if proc.poll() is not None:
                 return      #finished already
             time.sleep(1)
+        if proc.poll() is not None:
+            return
         log.warn("Warning: lpinfo command is taking too long,")
         log.warn(" is the cups server running?")
-        proc.terminate()
+        try:
+            proc.terminate()
+        except Exception as e:
+            log("%s.terminate()", proc, exc_info=True)
+            log.error("Error: failed to terminate lpinfo command")
+            log.error(" %s", e)
     start_thread(watch_lpinfo, "lpinfo watcher", daemon=True)
     out, err = proc.communicate()
     if proc.wait()!=0:
