@@ -1648,7 +1648,7 @@ XpraClient.prototype.get_clipboard_buffer = function() {
 	return this.clipboard_buffer;
 }
 
-XpraClient.prototype._send_clipboard_token = function(data) {
+XpraClient.prototype.send_clipboard_token = function(data) {
 	if (!this.clipboard_enabled) {
 		return;
 	}
@@ -1671,8 +1671,11 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	// we just record the contents and actually set the clipboard
 	// when we get a click, control-C or control-X event
 	if(ctx.clipboard_targets.indexOf(packet[3])>=0) {
-		ctx.clipboard_buffer = packet[7];
-		ctx.clipboard_pending = true;
+		var data = packet[7];
+		if (ctx.clipboard_buffer!=data) {
+			ctx.clipboard_buffer = data;
+			ctx.clipboard_pending = true;
+		}
 	}
 }
 

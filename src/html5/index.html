@@ -258,7 +258,7 @@
 				    var pasteboard = $('#pasteboard');
 					pasteboard.on('paste', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-				        client._send_clipboard_token(paste_data);
+				        client.send_clipboard_token(paste_data);
 				        return false;
 					});
 					pasteboard.on('copy', function (e) {
@@ -269,8 +269,8 @@
 				        return true;
 					});
 					pasteboard.on('cut', function (e) {
-						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-				        $('#pasteboard').text(client.clipboard_buffer);
+				        var clipboard_buffer = client.get_clipboard_buffer();
+				        $('#pasteboard').text(clipboard_buffer);
 				        $('#pasteboard').select();
 				        client.clipboard_pending = false;
 				        return true;
@@ -278,15 +278,20 @@
 					$('#screen').on('click', function (e) {
 						//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 						if (client.clipboard_pending) {
+					        var clipboard_buffer = client.get_clipboard_buffer();
 					        $('#pasteboard').text(client.clipboard_buffer);
 					        $('#pasteboard').select();
 							//for IE:
+							var success = true;
 							if (window.clipboardData && window.clipboardData.setData) {
 						        clipboardData.setData("Text", this.clipboard_buffer);
 							}
 						    else {
-								var success = document.execCommand('copy');
+								success = document.execCommand('copy');
 								//console.log("copy success=", success);
+							}
+							if (success) {
+						        client.clipboard_pending = false;
 							}
 						}
 					});
