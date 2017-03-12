@@ -966,7 +966,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 				sh = scroll_data[3],
 				xdelta = scroll_data[4],
 				ydelta = scroll_data[5];
-			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, y+ydelta, sw, sh);
+			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
 		}
 		decode_callback(this.client);
 	}
