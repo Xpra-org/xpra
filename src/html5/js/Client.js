@@ -1527,8 +1527,8 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 				var flush = options["flush"] || 0;
 				if(flush==0) {
 					// request that drawing to screen takes place at next available opportunity if possible
-					if(requestAnimationFrame) {
-						requestAnimationFrame(function() {
+					if(window.requestAnimationFrame) {
+						window.requestAnimationFrame(function() {
 							win.draw();
 						});
 					} else {
