@@ -918,6 +918,21 @@ XpraWindow.prototype.may_paint_now = function paint() {
 	}
 }
 
+var DEFAULT_BOX_COLORS = {
+        "png"     : "yellow",
+        "h264"    : "blue",
+        "vp8"     : "green",
+        "rgb24"   : "orange",
+        "rgb32"   : "red",
+        "jpeg"    : "purple",
+        "png/P"   : "indigo",
+        "png/L"   : "teal",
+        "h265"    : "khaki",
+        "vp9"     : "lavender",
+        "mpeg4"   : "black",
+        "scroll"  : "brown",
+        }
+
 XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
  	if (this.debug) {
  		console.debug("do_paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
@@ -934,10 +949,19 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		enc_width = scaled_size[0];
 		enc_height = scaled_size[1];
 	}
+	function paint_box(color, px, py, pw, ph) {
+		me.offscreen_canvas_ctx.strokeStyle = color;
+		me.offscreen_canvas_ctx.lineWidth = "2";
+		me.offscreen_canvas_ctx.strokeRect(px, py, pw, ph);
+	}
 
-	function painted() {
+	function painted(skip_box) {
 		me.paint_pending = false;
 		decode_callback(me.client);
+		if (me.debug && !skip_box) {
+			var color = DEFAULT_BOX_COLORS[coding] || "white";
+			paint_box(color, x, y, width, height);
+		}
 		me.may_paint_now();
 	}
 
@@ -1050,8 +1074,11 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				xdelta = scroll_data[4],
 				ydelta = scroll_data[5];
 			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
+			if (this.debug) {
+				paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
+			}
 		}
-		painted();
+		painted(true);
 	}
 	else {
 		throw "unsupported coding " + coding;
