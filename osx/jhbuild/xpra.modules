@@ -420,9 +420,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/99/df/71c7260003f5c469cec3db4c547115df39e9ce6c719a99e067ba0e78fd8a/cryptography-1.7.2.tar.gz"
-		hash="sha256:878cb68b3da3d493ffd68f36db11c29deee623671d3287c3f8d685117ffda9a9"
-		version="1.7.2"/>
+		module="/packages/ec/5f/d5bc241d06665eed93cd8d3aa7198024ce7833af7a67f6dc92df94e00588/cryptography-1.8.1.tar.gz"
+		hash="sha256:323524312bb467565ebca7e50c8ae5e9674e544951d28a2904a50012a8828190"
+		version="1.8.1"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
