@@ -529,7 +529,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         raise InitException("at least one socket directory must be set to use unix domain sockets")
-    dotxpra = DotXpra(socket_dir or socket_dirs[0])
+    dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs)
     display_name = normalize_local_display_name(display_name)
     from xpra.log import Logger
     defs = []
@@ -542,10 +542,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
             if b=="none" or b=="":
                 continue
             elif b=="auto":
-                if socket_dirs:
-                    try_sockpaths = [norm_makepath(socket_dir, display_name) for socket_dir in socket_dirs]
-                else:
-                    try_sockpaths = [dotxpra.socket_path(display_name)]
+                try_sockpaths = dotxpra.norm_socket_paths(display_name)
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, try_sockpaths, getuid(), getgid())
             else:
                 sockpath = dotxpra.osexpand(b)
