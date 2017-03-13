@@ -34,8 +34,9 @@ try:
             if level>=9:
                 return level | LZ4_FLAG, compressHC(packet)
             #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
-            accel = max(1, 17-level*5)
-            return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
+            if level<=2:
+                return level | LZ4_FLAG, LZ4_compress_fast(packet)
+            return level | LZ4_FLAG, LZ4_compress(packet)
     else:
         #v0.7.0 and earlier
         def lz4_compress(packet, level):
@@ -53,8 +54,9 @@ try:
         except ImportError:
             pass
         else:
-            #last known security issue:
-            assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
+            if lz4.LZ4_VERSION.startswith("r"):
+                #last known security issue:
+                assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
         lz4_version = lz4.LZ4_VERSION
 except Exception as e:
     log("lz4 not found: %s", e)
