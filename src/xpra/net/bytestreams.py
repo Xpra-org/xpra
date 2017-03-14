@@ -19,7 +19,7 @@ from xpra.util import envint, envbool
 
 TCP_NODELAY = envbool("XPRA_TCP_NODELAY", True)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
-SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 10)
+SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
