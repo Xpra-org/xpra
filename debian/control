@@ -62,6 +62,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #yakkety:        ,python-lz4
 #if you use Ubuntu, you will "want" this mess:
 #precise:		,python-appindicator
+        ,gstreamer1.0-pulseaudio
+        ,gstreamer1.0-alsa
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
