@@ -539,9 +539,9 @@ def get_source_plugins():
         sources.append("directsoundsrc")
     sources.append("autoaudiosrc")
     if os.name=="posix":
-        sources += ["alsasrc", "jackaudiosrc",
+        sources += ["alsasrc",
                     "osssrc", "oss4src",
-                    "osxaudiosrc", "jackaudiosrc"]
+                    "jackaudiosrc"]
     sources.append("audiotestsrc")
     return sources
 
