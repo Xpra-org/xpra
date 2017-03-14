@@ -17,13 +17,13 @@
 
 
 Name:           python2-lz4
-Version:        0.8.2
-Release:        2%{?dist}
-URL:            https://github.com/steeve/python-lz4
+Version:        0.9.0
+Release:        1%{?dist}
+URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://www.xpra.org/src/python-lz4-%{version}.tar.xz
+Source:         https://pypi.python.org/packages/da/9c/a00d5a3f47c5339471938ed826a536ed0a3313a512ef8ec329c6477adc6f/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -32,7 +32,8 @@ BuildRequires:  lz4-devel
 %endif
 Requires: 		lz4
 Provides:		python-lz4
-Obsoletes:      python-lz4 < 0.8.2-2
+Obsoletes:      python-lz4 < 0.8.2-3
+Conflicts:		python-lz4 < 0.8.2-3
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
@@ -50,7 +51,7 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %endif
 
 %prep
-%setup -q -n python-lz4-%{version}
+%setup -q -n lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 %if 0%{?fedora:1}
 #should work... until things get out of sync again
@@ -95,6 +96,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Mar 13 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.9.0-1
+- New upstream release
+
+* Sat Dec 24 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-3
+- conflict with old package name
+
 * Mon Jul 18 2016 Antoine Martin <antoine@nagafix.co.uk> - 0.8.2-2
 - new package name, obsolete the old one
 

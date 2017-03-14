@@ -609,16 +609,32 @@
         </after>
   </distutils>
 
-  <distutils id="python-lz4">
+  <distutils id="python-setuptools-scm">
 	<branch repo="pypi.python.org"
-	        module="/packages/b5/f0/e1de2bb7feb54011f3c4dcf35b7cca3536e19526764db051b50ea26b58e7/lz4-0.8.2.tar.gz"
-	        hash="md5:50dc6c2cb99c43ce6ed95cf6ae965f0e"
-	        version="0.8.2"/>
+	        module="/packages/80/b7/31b6ae5fcb188e37f7e31abe75f9be90490a5456a72860fa6e643f8a3cbc/setuptools_scm-1.15.0.tar.gz"
+	        hash="sha256:daf12d05aa2155a46aa357453757ffdc47d87f839e62114f042bceac6a619e2f"
+	        version="1.15.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
         <after>
                 <dep package="python"/>
+        </after>
+  </distutils>
+
+
+  <distutils id="python-lz4">
+	<branch repo="pypi.python.org"
+	        module="/packages/da/9c/a00d5a3f47c5339471938ed826a536ed0a3313a512ef8ec329c6477adc6f/lz4-0.9.0.tar.gz"
+	        hash="sha256:93c2b83aa9c74c024062823f96515488c510fa5a4b3826579d0916049d28c205"
+	        version="0.9.0"/>
+        <dependencies>
+                <dep package="python"/>
+                <dep package="python-setuptools-scm"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+                <dep package="python-setuptools-scm"/>
         </after>
   </distutils>
 

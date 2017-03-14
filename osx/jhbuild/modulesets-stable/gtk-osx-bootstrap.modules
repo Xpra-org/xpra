@@ -31,8 +31,8 @@
               href="http://www.colm.net/files/ragel/"/>
 
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch version="1.6.27" module="libpng/libpng-1.6.27.tar.xz"
-            repo="sourceforge" hash="sha256:fca2ffd97336356cdab9bfa8936b9d6dfd580a70205e5dfead3ac42cb054b57b"/>
+    <branch version="1.6.28" module="libpng/libpng-1.6.28.tar.xz"
+            repo="sourceforge" hash="sha256:d8d3ec9de6b5db740fefac702c37ffcf96ae46cb17c18c1544635a3852f78f7a"/>
     <dependencies>
       <dep package="zlib"/>
     </dependencies>
