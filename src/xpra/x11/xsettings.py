@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -48,12 +48,11 @@ class XSettingsManager(object):
         elif type(settings)!=tuple:
             log.warn("Warning: discarding xsettings because of incompatible format: %s", type(settings))
             return
-        with xsync:
-            try:
-                prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
-            except Exception as e:
-                log.error("Error: XSettings not applied")
-                log.error(" %s", e)
+        try:
+            prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
+        except XError as e:
+            log.error("Error: XSettings not applied")
+            log.error(" %s", e)
 
 
 class XSettingsHelper(object):
@@ -83,8 +82,7 @@ class XSettingsHelper(object):
         if owner is None:
             return None
         try:
-            with xsync:
-                return prop_get(owner, XSETTINGS, XSETTINGS_TYPE)
+            return prop_get(owner, XSETTINGS, XSETTINGS_TYPE)
         except XError:
             log("X error while fetching XSettings data; ignored")
             return None
