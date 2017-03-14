@@ -63,6 +63,7 @@ Recommends:
         ,python-cryptography
 # audio-related:
         ,gstreamer1.0-pulseaudio
+        ,gstreamer1.0-alsa
         ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
         ,gstreamer1.0-plugins-good
