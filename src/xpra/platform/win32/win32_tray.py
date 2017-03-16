@@ -74,7 +74,8 @@ class Win32Tray(TrayBase):
                 self.offset_x = max(self.offset_x, -mx1)
                 self.offset_y = max(self.offset_y, -my1)
         except Exception as e:
-            log.warn("failed to query monitors: %s", e)
+            log("EnumDisplayMonitors()", exc_info=True)
+            log.warn("Warning: failed to query monitors: %s", e)
         log("calculate_offset() x=%i, y=%i", self.offset_x, self.offset_y)
 
     def set_tooltip(self, name):

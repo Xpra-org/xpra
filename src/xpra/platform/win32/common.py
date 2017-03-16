@@ -6,8 +6,8 @@
 
 import ctypes
 
-from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_uint
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER
+from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_uint, c_double
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
@@ -107,6 +107,19 @@ SetPixelV = gdi32.SetPixelV
 DeleteDC = gdi32.DeleteDC
 CreateDIBSection = gdi32.CreateDIBSection
 DeleteObject = gdi32.DeleteObject
+
+
+#wrap EnumDisplayMonitors to hide the callback function:
+MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
+_EnumDisplayMonitors = EnumDisplayMonitors
+def EnumDisplayMonitors():
+    results = []
+    def _callback(monitor, dc, rect, data):
+        results.append(monitor)
+        return 1
+    callback = MonitorEnumProc(_callback)
+    _EnumDisplayMonitors(0, 0, callback, 0)
+    return results
 
 
 WNDPROC = WINFUNCTYPE(c_int, HANDLE, c_uint, WPARAM, LPARAM)

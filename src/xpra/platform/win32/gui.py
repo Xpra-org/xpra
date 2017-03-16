@@ -38,8 +38,8 @@ CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 
 
-from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof, c_ulong, c_double
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, RECT, MSG, WCHAR, POINT
+from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, WCHAR, POINT, RECT
 
 shell32 = WinDLL("shell32", use_last_error=True)
 try:
@@ -66,16 +66,6 @@ except:
         log.warn(" %s", e)
         set_window_group = None
 
-MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
-
-def _EnumDisplayMonitors():
-    results = []
-    def _callback(monitor, dc, rect, data):
-        results.append(monitor)
-        return 1
-    callback = MonitorEnumProc(_callback)
-    EnumDisplayMonitors(0, 0, callback, 0)
-    return results
 
 try:
     dwmapi = WinDLL("dwmapi", use_last_error=True)
@@ -708,7 +698,7 @@ def get_workarea():
         #first we need to find the absolute top-left and bottom-right corners
         #so we can make everything relative to 0,0
         monitors = []
-        for m in _EnumDisplayMonitors():
+        for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             mx1, my1, mx2, my2 = mi['Monitor']
             monitors.append((mx1, my1, mx2, my2))
@@ -719,7 +709,7 @@ def get_workarea():
         screenlog("get_workarea() absolute total monitor area: %s", (minmx, minmy, maxmx, maxmy))
         screenlog(" total monitor dimensions: %s", (maxmx-minmx, maxmy-minmy))
         workareas = []
-        for m in _EnumDisplayMonitors():
+        for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             #absolute workarea / monitor coordinates:
             wx1, wy1, wx2, wy2 = mi['Work']
@@ -748,7 +738,7 @@ MONITORINFOF_PRIMARY = 1
 def get_workareas():
     try:
         workareas = []
-        for m in _EnumDisplayMonitors():
+        for m in EnumDisplayMonitors():
             mi = GetMonitorInfo(m)
             screenlog("get_workareas() GetMonitorInfo(%s)=%s", m, mi)
             #absolute workarea / monitor coordinates:
