@@ -62,7 +62,7 @@ class TestAuth(unittest.TestCase):
 				pass
 			else:
 				assert challenge is None
-		
+
 
 	def test_all(self):
 		test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
