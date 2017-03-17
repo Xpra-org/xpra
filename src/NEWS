@@ -1,3 +1,27 @@
+v2.0 (2017-03-17)
+======================
+	-- dropped support for outdated OS and libraries (long list)
+	-- 64-bit builds for MS Windows and MacOSX
+	-- MS Windows MSYS2 based build system with fully up to date libraries
+	-- MS Windows full support for named-pipe connections
+	-- MS Windows and MacOSX support for mmap transfers
+	-- more configurable mmap options to support KVM's ivshmem
+	-- faster HTML5 client, now packaged separately (RPM only)
+	-- clipboard synchronization support for the HTML5 client
+	-- faster window scrolling detection, bandwidth savings
+	-- support more screen bit depths: 8, 16, 24, 30 and 32
+	-- support 10-bit per pixel rendering with the OpenGL client backend
+	-- improved keyboard mapping support when sharing sessions
+	-- faster native turbojpeg codec
+	-- OpenGL enabled by default on more chipsets, with better driver sanity checks
+	-- better handling of tablet input devices (multiple platforms and HTML5 client)
+	-- synchronize Xkb layout group
+	-- support stronger HMAC authentication digest modes
+	-- unit tests are now executed automatically on more platforms
+	-- fix python-lz4 0.9.0 API breakage
+	-- fix html5 visual corruption with scroll paint packets
+
+
 v1.0 (2016-12-06)
 ======================
 	-- SSL socket support
