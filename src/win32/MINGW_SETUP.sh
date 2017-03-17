@@ -8,7 +8,7 @@
 if [ -z "$1" ]; then
 	if [ "$MSYSTEM" == "MINGW64" ]; then
 		export XPKG="mingw-w64-x86_64-"
-	elif [ "$MSYSTEM" == "MINGW64" ]; then
+	elif [ "$MSYSTEM" == "MINGW32" ]; then
 		export XPKG="mingw-w64-i686-"
 	else
 		echo "failed to detect msys platform, MSYSTEM=$MSYSTEM"
