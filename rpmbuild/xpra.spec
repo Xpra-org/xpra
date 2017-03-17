@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.0
+%define version 2.1
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -148,7 +148,7 @@ So basically it's screen for remote X apps.
 %package -n python2-xpra
 Summary: python2 build of xpra
 Group: Networking
-Conflicts: xpra < 2.0
+Conflicts: xpra < 2.1
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
@@ -250,7 +250,7 @@ getent group xpra > /dev/null || groupadd -r xpra
 Summary: Xpra HTML5 client
 Group: Networking
 BuildArch: noarch
-Conflicts: xpra < 2.0
+Conflicts: xpra < 2.1
 
 %description html5
 This package contains Xpra's HTML5 client.
@@ -558,7 +558,7 @@ fi
 
 
 %changelog
-* Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.0-1
+* Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
 - dropped support for outdated OS and libraries (long list)
 - 64-bit builds for MS Windows and MacOSX
 - MS Windows MSYS2 based build system with fully up to date libraries
@@ -902,7 +902,7 @@ fi
 - fix 32-bit server timestamps
 - fix client PNG handling on installations without PIL / Pillow
 
-* Sun Mar 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.0-1
+* Sun Mar 23 2014 Antoine Martin <antoine@devloop.org.uk> 0.12.1-1
 - NVENC support for YUV444 mode, support for automatic bitrate tuning
 - NVENC and CUDA load balancing for multiple cards
 - proxy encoding: ability to encode on proxy server
@@ -1509,7 +1509,7 @@ fi
 - automated regression and performance tests
 - remove compatibility code for versions older than 0.1
 
-* Fri Apr 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.2.0-1
+* Fri Apr 20 2012 Antoine Martin <antoine@devloop.org.uk> 0.2.1-1
 - x264 and vpx video encoding support
 - gtk3 and python 3 partial support (client only - no keyboard support)
 - detect missing X11 server extensions and exit with error

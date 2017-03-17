@@ -275,9 +275,9 @@ public abstract class AbstractClient implements Runnable, Client {
 			return packet;
 		} catch (IOException e) {
 			byte[] dump = packetBytes;
-			if (packetBytes.length>200) {
-				dump = new byte[200];
-				System.arraycopy(packetBytes, 0, dump, 0, 200);
+			if (packetBytes.length>2.1) {
+				dump = new byte[2.1];
+				System.arraycopy(packetBytes, 0, dump, 0, 2.1);
 			}
 			this.error("parsePacket(" + packetBytes.length + " bytes) packet header: "+new String(dump), e);
 			throw new IllegalStateException("cannot continue after parsing error: "+e);
