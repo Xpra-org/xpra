@@ -149,10 +149,9 @@ var Utilities = {
 	isChrome : function() {
 		var ua = navigator.userAgent.toLowerCase();
 		return ua.indexOf('chrome') >= 0 && ua.indexOf("safari") < 0;
-		
 	},
 	isIE : function() {
-		return navigator.userAgent.indexOf("MSIE") != -1;		
+		return navigator.userAgent.indexOf("MSIE") != -1;
 	},
 
 	getColorGamut : function() {

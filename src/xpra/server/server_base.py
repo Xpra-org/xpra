@@ -673,7 +673,7 @@ class ServerBase(ServerCore):
             log.error("Error: cannot load dbus server:")
             log.error(" %s", e)
             self.dbus_server = None
-            
+
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server
@@ -1801,7 +1801,7 @@ class ServerBase(ServerCore):
         for vs in self._control_video_subregions_from_wid(wid):
             vs.reset()
         return "reset video region heuristics for window %i" % wid
-        
+
 
     def control_command_lock_batch_delay(self, wid, delay):
         for ws in self._control_windowsources_from_args(wid).keys():

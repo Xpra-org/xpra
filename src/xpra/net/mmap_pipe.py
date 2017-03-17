@@ -80,7 +80,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 #keep a reference to it so it does not disappear!
                 mmap_temp_file = temp
                 mmap_filename = temp.name
-                fd = temp.file.fileno()                
+                fd = temp.file.fileno()
             #set the group permissions and gid if the mmap-group option is specified
             if mmap_group and type(socket_filename)==str and os.path.exists(socket_filename):
                 from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP

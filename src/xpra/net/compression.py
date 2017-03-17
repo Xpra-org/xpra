@@ -47,7 +47,7 @@ try:
                 #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
                 if level<=2:
                     #clamp it: 0->17, 1->12, 2->7, 3->2, >=4->1
-                    accel = max(1, 17-level*5)                    
+                    accel = max(1, 17-level*5)
                     return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
                 return level | LZ4_FLAG, LZ4_compress(packet)
         else:

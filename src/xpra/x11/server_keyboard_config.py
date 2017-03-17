@@ -248,13 +248,13 @@ class KeyboardConfig(KeyboardConfigBase):
             with xsync:
                 #first clear all existing modifiers:
                 clean_keyboard_state()
-    
+
                 if not self.xkbmap_raw:
                     clear_modifiers(ALL_X11_MODIFIERS.keys())       #just clear all of them (set or not)
-    
+
                     #now set all the keycodes:
                     clean_keyboard_state()
-    
+
                     has_keycodes = (self.xkbmap_x11_keycodes and len(self.xkbmap_x11_keycodes)>0) or \
                                     (self.xkbmap_keycodes and len(self.xkbmap_keycodes)>0)
                     assert has_keycodes, "client failed to provide any keycodes!"
@@ -275,7 +275,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
                     self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
                     self.add_gtk_keynames()
-    
+
                     #now set the new modifier mappings:
                     clean_keyboard_state()
                     log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))

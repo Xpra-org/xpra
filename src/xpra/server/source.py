@@ -229,7 +229,7 @@ class ServerSource(FileTransferHandler):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, mmap_filename, 
+                 supports_mmap, mmap_filename,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -245,7 +245,7 @@ class ServerSource(FileTransferHandler):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, mmap_filename, 
+                 supports_mmap, mmap_filename,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -1456,7 +1456,6 @@ class ServerSource(FileTransferHandler):
                 "mmap_token_index"  : self.mmap_client_token_index,
                 "mmap_token_bytes"  : self.mmap_client_token_bytes,
                 })
-                
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:

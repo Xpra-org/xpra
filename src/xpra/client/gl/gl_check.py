@@ -532,7 +532,7 @@ def check_support(force_enable=False, check_colormap=False):
         except:
             pass
     log("GL props=%s", props)
-    
+
     from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
     gtk = import_gtk()
     assert gdkgl.query_extension()

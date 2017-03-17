@@ -18,7 +18,6 @@ def _get_keyboard_layouts():
                      ('TISCreateInputSourceList','@@B'),
                      ('TISGetInputSourceProperty', '@@@'),
                     ]
-    
     HIT_constants = [
                      ('kTISPropertyInputSourceType', '@'),
                      ('kTISTypeKeyboardLayout', '@'),

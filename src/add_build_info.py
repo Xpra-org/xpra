@@ -200,7 +200,7 @@ def get_platform_name():
             try:
                 o = str(o, "latin-1")  # Python 3+
             except:
-                pass  
+                pass
             return re.search("OS Name:\s*(.*)", o).group(1).strip()
         except:
             pass

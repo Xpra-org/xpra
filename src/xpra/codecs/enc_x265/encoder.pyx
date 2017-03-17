@@ -520,7 +520,6 @@ cdef class Encoder:
             assert pic_in!=NULL, "failed to allocate input picture"
             try:
                 x265_picture_init(self.param, pic_in)
-        
                 assert pixels, "failed to get pixels from %s" % image
                 assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
                 assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
@@ -529,7 +528,6 @@ cdef class Encoder:
                     pic_in.planes[i] = pic_buf
                     pic_in.stride[i] = istrides[i]
                 pic_in.pts = image.get_timestamp()-self.first_frame_timestamp
-        
                 with nogil:
                     r = x265_encoder_encode(self.context, &nal, &nnal, pic_in, pic_out)
                 log("x265 picture encode returned %s (nnal=%s)", r, nnal)

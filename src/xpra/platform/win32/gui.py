@@ -95,7 +95,7 @@ def GetMonitorInfo(hmonitor):
         "Monitor"   : monitor,
         "Flags"     : info.dwFlags,
         "Device"    : info.szDevice or "",
-        } 
+        }
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)
@@ -1030,7 +1030,7 @@ class ClientExtras(object):
         # Register to remove the hook when the interpreter exits:
         keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
         msg = MSG()
-        lpmsg = byref(msg)        
+        lpmsg = byref(msg)
         while True:
             ret = GetMessageA(lpmsg, None, 0, 0)
             keylog("init_keyboard_listener: GetMessage()=%s", ret)

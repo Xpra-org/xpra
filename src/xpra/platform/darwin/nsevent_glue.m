@@ -7,7 +7,7 @@
 
 NSEventType getNSEventType(NSEvent *nsevent) {
 	return [nsevent type];
-} 
+}
 
 double getNSEventScrollingDeltaX(NSEvent *nsevent) {
 	return [nsevent scrollingDeltaX];

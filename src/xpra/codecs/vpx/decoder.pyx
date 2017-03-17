@@ -304,7 +304,6 @@ cdef class Decoder:
             strides.append(stride)
 
             plane_len = height * stride
-            
             #add one extra line of padding:
             output_buf = padbuf(plane_len, stride)
             output = <void *>output_buf.get_mem()

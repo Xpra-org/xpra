@@ -60,7 +60,6 @@ def get_network_caps():
         from xpra.platform.features import MMAP_SUPPORTED
     except:
         MMAP_SUPPORTED = False
-    
     caps = {
                 "digest"                : get_digests(),
                 "compressors"           : compression.get_enabled_compressors(),
@@ -592,6 +591,10 @@ class Protocol(object):
                         log.error("Error on write start callback %s", start_cb, exc_info=True)
             while buf and not self._closed:
                 written = con.write(buf)
+                #example test code, for sending small chunks very slowly:
+                #written = con.write(buf[:1024])
+                #import time
+                #time.sleep(0.05)
                 if written:
                     buf = buf[written:]
                     self.output_raw_packetcount += 1

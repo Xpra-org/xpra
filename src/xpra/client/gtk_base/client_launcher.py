@@ -264,7 +264,6 @@ class ApplicationWindow:
         self.info.modify_fg(STATE_NORMAL, red)
         vbox.pack_start(self.info)
 
-        
         #hide encoding options by default
         self.encoding_combo = None
         self.encoding_options_check = None

@@ -455,9 +455,9 @@ def with_server(start_server_command, stop_server_commands, in_tests, get_stats_
                     #start the test command:
                     if config.USE_VIRTUALGL:
                         if type(test_command)==str:
-                            cmd = config.VGLRUN_BIN + " -- "+ test_command
+                            cmd = config.VGLRUN_BIN + "-d "+os.environ.get("DISPLAY")+" -- "+ test_command
                         elif type(test_command) in (list, tuple):
-                            cmd = [config.VGLRUN_BIN, "--"] + list(test_command)
+                            cmd = [config.VGLRUN_BIN, "-d", os.environ.get("DISPLAY"), "--"] + list(test_command)
                         else:
                             raise Exception("invalid test command type: %s for %s" % (type(test_command), test_command))
                     else:

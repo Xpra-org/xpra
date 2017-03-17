@@ -2641,7 +2641,7 @@ def run_list_mdns(error_cb, opts, extra_args):
     else:
         from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
-    
+
 
 def run_list(error_cb, opts, extra_args):
     no_gtk()

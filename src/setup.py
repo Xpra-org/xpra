@@ -1341,7 +1341,7 @@ if WIN32:
                        "win32-1.0")
                 if opengl_ENABLED:
                     add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
-                    
+
                 add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
 
             if gtk2_ENABLED:

@@ -102,7 +102,7 @@ def get_native_tray_classes():
 def system_bell(*args):
     NSBeep()
     return True
-    
+
 
 def _sizetotuple(s):
     return int(s.width), int(s.height)
