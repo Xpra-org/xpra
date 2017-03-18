@@ -29,9 +29,6 @@ AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
 
 from libc.stdint cimport uint8_t, int64_t, uint32_t
 
-cdef extern from "../../inline.h":
-    pass
-
 cdef extern from "string.h":
     void free(void * ptr) nogil
 

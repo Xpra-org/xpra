@@ -11,9 +11,6 @@ from xpra.log import Logger
 log = Logger("libav")
 
 
-cdef extern from "../../inline.h":
-    pass
-
 cdef extern from "libavutil/error.h":
     int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 

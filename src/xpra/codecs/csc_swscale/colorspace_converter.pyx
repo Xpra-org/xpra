@@ -21,9 +21,6 @@ from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer
 from libc.stdint cimport uintptr_t, uint8_t
 
 
-cdef extern from "../../inline.h":
-    pass
-
 ctypedef long AVPixelFormat
 cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MAJOR

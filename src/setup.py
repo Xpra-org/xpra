@@ -11,7 +11,6 @@
 # does the make_constants hack.)
 
 import glob
-import site
 from distutils.core import setup
 from distutils.extension import Extension
 import sys
@@ -38,8 +37,8 @@ print(" ".join(sys.argv))
 import xpra
 data_files = []
 modules = []
-packages = []       #used by py2app and py2exe
-excludes = []       #only used by py2exe on win32
+packages = []       #used by py2app
+excludes = []       #only used by cx_freeze on win32
 ext_modules = []
 cmdclass = {}
 scripts = []
@@ -95,11 +94,10 @@ print("Xpra version %s" % XPRA_VERSION)
 #*******************************************************************************
 from xpra.os_util import get_status_output
 
-MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
 #we don't support building with "pkg-config" on win32 with python2:
-if PKG_CONFIG and (PYTHON3 or MINGW_PREFIX or not WIN32):
+if PKG_CONFIG:
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0]==0 and v[1]
     if has_pkg_config:
@@ -137,10 +135,6 @@ def is_RH():
     except:
         pass
     return False
-
-def is_msvc():
-    #ugly: assume we want to use visual studio if we find the env var:
-    return os.environ.get("VCINSTALLDIR") is not None
 
 DEFAULT = True
 if "--minimal" in sys.argv:
@@ -369,7 +363,7 @@ if not dbus_ENABLED:
 
 
 #because of differences in how we specify packages and modules
-#for distutils / py2app and py2exe
+#for distutils / py2app and cx_freeze
 #use the following functions, which should get the right
 #data in the global variables "packages", "modules" and "excludes"
 
@@ -682,60 +676,47 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 else: # throw others to extra_link_args
                     add_to_keywords(kw, 'extra_link_args', token)
     if warn_ENABLED:
-        if is_msvc():
-            add_to_keywords(kw, 'extra_compile_args', "/Wall")
-        else:
-            add_to_keywords(kw, 'extra_compile_args', "-Wall")
-            add_to_keywords(kw, 'extra_link_args', "-Wall")
+        add_to_keywords(kw, 'extra_compile_args', "-Wall")
+        add_to_keywords(kw, 'extra_link_args', "-Wall")
     if strict_ENABLED:
-        if is_msvc():
-            add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
-            add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error in __Pyx_PyInt_As_size_t
-            add_to_keywords(kw, 'extra_compile_args', "/wd4293")    #MSVC error in __Pyx_PyFloat_DivideObjC
-            add_to_keywords(kw, 'extra_compile_args', "/WX")
-            add_to_keywords(kw, 'extra_link_args', "/WX")
+        if os.environ.get("CC", "").find("clang")>=0:
+            #clang emits too many warnings with cython code,
+            #so we can't enable Werror
+            eifd = ["-Werror",
+                    "-Wno-unneeded-internal-declaration",
+                    "-Wno-unknown-attributes",
+                    "-Wno-unused-function",
+                    "-Wno-self-assign",
+                    "-Wno-sometimes-uninitialized"]
+        elif get_gcc_version()>=[4, 4]:
+            eifd = ["-Werror",
+                    #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
+                    #"-Wno-error=uninitialized",
+                    ]
+            from xpra.os_util import is_Ubuntu, is_Debian, is_Raspbian
+            if is_Debian() or is_Ubuntu() or is_Raspbian():
+                #needed on Debian and Ubuntu to avoid this error:
+                #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
+                eifd.append("-Wno-error=strict-prototypes")
+            if sys.platform.startswith("netbsd"):
+                #see: http://trac.cython.org/ticket/395
+                eifd += ["-fno-strict-aliasing"]
+            elif sys.platform.startswith("freebsd"):
+                eifd += ["-Wno-error=unused-function"]
         else:
-            if os.environ.get("CC", "").find("clang")>=0:
-                #clang emits too many warnings with cython code,
-                #so we can't enable Werror
-                eifd = ["-Werror",
-                        "-Wno-unneeded-internal-declaration",
-                        "-Wno-unknown-attributes",
-                        "-Wno-unused-function",
-                        "-Wno-self-assign",
-                        "-Wno-sometimes-uninitialized"]
-            elif get_gcc_version()>=[4, 4]:
-                eifd = ["-Werror",
-                        #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
-                        #"-Wno-error=uninitialized",
-                        ]
-                from xpra.os_util import is_Ubuntu, is_Debian, is_Raspbian
-                if is_Debian() or is_Ubuntu() or is_Raspbian():
-                    #needed on Debian and Ubuntu to avoid this error:
-                    #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
-                    eifd.append("-Wno-error=strict-prototypes")
-                if sys.platform.startswith("netbsd"):
-                    #see: http://trac.cython.org/ticket/395
-                    eifd += ["-fno-strict-aliasing"]
-                elif sys.platform.startswith("freebsd"):
-                    eifd += ["-Wno-error=unused-function"]
-            else:
-                #older versions of OSX ship an old gcc,
-                #not much we can do with this:
-                eifd = []
-            for eif in eifd:
-                add_to_keywords(kw, 'extra_compile_args', eif)
-    if PIC_ENABLED and not is_msvc():
+            #older versions of OSX ship an old gcc,
+            #not much we can do with this:
+            eifd = []
+        for eif in eifd:
+            add_to_keywords(kw, 'extra_compile_args', eif)
+    if PIC_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
-        if is_msvc():
-            add_to_keywords(kw, 'extra_compile_args', '/Zi')
-        else:
-            add_to_keywords(kw, 'extra_compile_args', '-g')
-            add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-            if get_gcc_version()>=[4, 8]:
-                add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
-                add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
+        add_to_keywords(kw, 'extra_compile_args', '-g')
+        add_to_keywords(kw, 'extra_compile_args', '-ggdb')
+        if get_gcc_version()>=[4, 8]:
+            add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
+            add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     if rpath:
         #insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
@@ -1073,322 +1054,205 @@ def install_html5(install_dir="www"):
 
 #*******************************************************************************
 if WIN32:
+    MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
+    assert MINGW_PREFIX, "you must run this build from a MINGW environment"
     add_packages("xpra.platform.win32")
     remove_packages("xpra.platform.darwin", "xpra.platform.xposix")
 
-
-    if MINGW_PREFIX:
-        #all good, no hard-coded mess!
-        pass
-    else:
-        ###########################################################
-        #START OF HARDCODED SECTION
-        #this should all be done with pkgconfig...
-        #but until someone figures this out, the ugly path code below works
-        #as long as you install in the same place or tweak the paths.
-
-        WIN32_BUILD_LIB_PREFIX = os.environ.get("XPRA_WIN32_BUILD_LIB_PREFIX", "C:\\")
-        #ffmpeg is needed for both swscale and x264:
-        libffmpeg_path = ""
-        if dec_avcodec2_ENABLED:
-            libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
-        else:
-            if csc_swscale_ENABLED:
-                libffmpeg_path = WIN32_BUILD_LIB_PREFIX + "ffmpeg2-win32-bin"
-        libffmpeg_include_dir   = os.path.join(libffmpeg_path, "include")
-        libffmpeg_lib_dir       = os.path.join(libffmpeg_path, "lib")
-        libffmpeg_bin_dir       = os.path.join(libffmpeg_path, "bin")
-        #x265
-        x265_path = WIN32_BUILD_LIB_PREFIX + "x265"
-        x265_include_dir    = x265_path
-        x265_lib_dir        = x265_path
-        x265_bin_dir        = x265_path
-        #x264 (direct from build dir.. yuk - sorry!):
-        x264_path = WIN32_BUILD_LIB_PREFIX + "x264"
-        x264_include_dir    = os.path.join(x264_path, "include")
-        x264_lib_dir        = os.path.join(x264_path, "lib")
-        x264_bin_dir        = os.path.join(x264_path, "bin")
-        # Same for vpx:
-        # http://code.google.com/p/webm/downloads/list
-        #the path after installing may look like this:
-        #vpx_PATH="C:\\vpx-vp8-debug-src-x86-win32mt-vs9-v1.1.0"
-        #but we use something more generic, without the version numbers:
-        vpx_path = ""
-        for v in ("vpx", "vpx-1.5", "vpx-1.4", "vpx-1.3"):
-            p = WIN32_BUILD_LIB_PREFIX + v
-            if os.path.exists(p) and os.path.isdir(p):
-                vpx_path = p
-                break
-        vpx_include_dir     = os.path.join(vpx_path, "include")
-        vpx_lib_dir         = os.path.join(vpx_path, "lib", "Win32")
-        vpx_bin_dir         = os.path.join(vpx_path, "lib", "Win32")
-        if os.path.exists(os.path.join(vpx_lib_dir, "vpxmd.lib")):
-            vpx_lib_names = ["vpxmd"]             #msvc builds only?
-        elif os.path.exists(os.path.join(vpx_lib_dir, "vpx.lib")):
-            vpx_lib_names = ["vpx"]               #for libvpx 1.3.0
-        else:
-            vpx_lib_names = ["vpxmt", "vpxmtd"]   #for libvpx 1.1.0
-
-        libyuv_path = WIN32_BUILD_LIB_PREFIX + "libyuv"
-        libyuv_include_dir = os.path.join(libyuv_path, "include")
-        libyuv_lib_dir = os.path.join(libyuv_path, "lib")
-        libyuv_bin_dir = os.path.join(libyuv_path, "bin")
-        libyuv_lib_names = ["yuv"]
-
-    # Same for PyGTK / GTK3:
-    # http://www.pygtk.org/downloads.html
-    if PYTHON3:
-        GTK3_DIR = "C:\\GTK3"
-        GTK_INCLUDE_DIR = os.path.join(GTK3_DIR, "include")
-
-        #find the gnome python directory
-        #(ie: "C:\Python34\Lib\site-packages\gnome")
-        #and global include directory
-        #(ie: "C:\Python34\include")
-        GNOME_DIR = None
-        for x in site.getsitepackages():
-            t = os.path.join(x, "gnome")
-            if os.path.exists(t):
-                GNOME_DIR = t
-            t = os.path.join(x, "include")
-    else:
-        gtk2_path = "C:\\Python27\\Lib\\site-packages\\gtk-2.0"
-        python_include_path = "C:\\Python27\\include"
-        gtk2runtime_path        = os.path.join(gtk2_path, "runtime")
-        gtk2_lib_dir            = os.path.join(gtk2runtime_path, "bin")
-        GTK_INCLUDE_DIR   = os.path.join(gtk2runtime_path, "include")
-        #gtk2 only:
-        gdkconfig_include_dir   = os.path.join(gtk2runtime_path, "lib", "gtk-2.0", "include")
-        glibconfig_include_dir  = os.path.join(gtk2runtime_path, "lib", "glib-2.0", "include")
-        pygtk_include_dir       = os.path.join(python_include_path, "pygtk-2.0")
-        gtk2_include_dir        = os.path.join(GTK_INCLUDE_DIR, "gtk-2.0")
-
-    atk_include_dir         = os.path.join(GTK_INCLUDE_DIR, "atk-1.0")
-    gdkpixbuf_include_dir   = os.path.join(GTK_INCLUDE_DIR, "gdk-pixbuf-2.0")
-    glib_include_dir        = os.path.join(GTK_INCLUDE_DIR, "glib-2.0")
-    cairo_include_dir       = os.path.join(GTK_INCLUDE_DIR, "cairo")
-    pango_include_dir       = os.path.join(GTK_INCLUDE_DIR, "pango-1.0")
-    #END OF HARDCODED SECTION
-    ###########################################################
-
-    #ie: C:\Python3.5\Lib\site-packages\
-    try:
-        site_dir = site.getsitepackages()[1]
-    except:
-        site_dir = site.getsitepackages()[0]
     #this is where the win32 gi installer will put things:
-    if "MINGW_PREFIX" in os.environ:
-        gnome_include_path = os.environ.get("MINGW_PREFIX")
-    else:
-        gnome_include_path = os.path.join(site_dir, "gnome")
+    gnome_include_path = os.environ.get("MINGW_PREFIX")
 
-    #only add the py2exe / cx_freeze specific options
+    #only add the cx_freeze specific options
     #if we aren't just building the Cython bits with "build_ext":
     if "build_ext" not in sys.argv:
-        #with py2exe and cx_freeze, we don't use py_modules
+        #with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
-        if PYTHON3 or MINGW_PREFIX:
-            from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
+        from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
 
-            #cx_freeze doesn't use "data_files"...
-            del setup_options["data_files"]
-            #it wants source files first, then where they are placed...
-            #one item at a time (no lists)
-            #all in its own structure called "include_files" instead of "data_files"...
-            def add_data_files(target_dir, files):
-                if verbose_ENABLED:
-                    print("add_data_files(%s, %s)" % (target_dir, files))
-                assert type(target_dir)==str
-                assert type(files) in (list, tuple)
-                for f in files:
-                    target_file = os.path.join(target_dir, os.path.basename(f))
-                    data_files.append((f, target_file))
+        #cx_freeze doesn't use "data_files"...
+        del setup_options["data_files"]
+        #it wants source files first, then where they are placed...
+        #one item at a time (no lists)
+        #all in its own structure called "include_files" instead of "data_files"...
+        def add_data_files(target_dir, files):
+            if verbose_ENABLED:
+                print("add_data_files(%s, %s)" % (target_dir, files))
+            assert type(target_dir)==str
+            assert type(files) in (list, tuple)
+            for f in files:
+                target_file = os.path.join(target_dir, os.path.basename(f))
+                data_files.append((f, target_file))
 
-            #pass a potentially nested dictionary representing the tree
-            #of files and directories we do want to include
-            #relative to gnome_include_path
-            def add_dir(base, defs):
-                if verbose_ENABLED:
-                    print("add_dir(%s, %s)" % (base, defs))
-                if type(defs) in (list, tuple):
-                    for sub in defs:
-                        if type(sub)==dict:
-                            add_dir(base, sub)
+        #pass a potentially nested dictionary representing the tree
+        #of files and directories we do want to include
+        #relative to gnome_include_path
+        def add_dir(base, defs):
+            if verbose_ENABLED:
+                print("add_dir(%s, %s)" % (base, defs))
+            if type(defs) in (list, tuple):
+                for sub in defs:
+                    if type(sub)==dict:
+                        add_dir(base, sub)
+                    else:
+                        assert type(sub)==str
+                        filename = os.path.join(gnome_include_path, base, sub)
+                        if os.path.exists(filename):
+                            add_data_files(base, [filename])
                         else:
-                            assert type(sub)==str
-                            filename = os.path.join(gnome_include_path, base, sub)
-                            if os.path.exists(filename):
-                                add_data_files(base, [filename])
-                            else:
-                                print("Warning: missing '%s'" % filename)
-                else:
-                    assert type(defs)==dict
-                    for d, sub in defs.items():
-                        assert type(sub) in (dict, list, tuple)
-                        #recurse down:
-                        add_dir(os.path.join(base, d), sub)
+                            print("Warning: missing '%s'" % filename)
+            else:
+                assert type(defs)==dict
+                for d, sub in defs.items():
+                    assert type(sub) in (dict, list, tuple)
+                    #recurse down:
+                    add_dir(os.path.join(base, d), sub)
 
-            #convenience method for adding GI libs and "typelib" and "gir":
-            def add_gi(*libs):
-                if verbose_ENABLED:
-                    print("add_gi(%s)" % str(libs))
-                add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
-                add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
+        #convenience method for adding GI libs and "typelib" and "gir":
+        def add_gi(*libs):
+            if verbose_ENABLED:
+                print("add_gi(%s)" % str(libs))
+            add_dir('lib',      {"girepository-1.0":    ["%s.typelib" % x for x in libs]})
+            add_dir('share',    {"gir-1.0" :            ["%s.gir" % x for x in libs]})
 
-            def add_DLLs(*dll_names):
-                try:
-                    do_add_DLLs(*dll_names)
-                except Exception as e:
-                    print("Error: failed to add DLLs: %s" % (dll_names, ))
-                    print(" %s" % e)
-                    sys.exit(1)
+        def add_DLLs(*dll_names):
+            try:
+                do_add_DLLs(*dll_names)
+            except Exception as e:
+                print("Error: failed to add DLLs: %s" % (dll_names, ))
+                print(" %s" % e)
+                sys.exit(1)
 
-            def do_add_DLLs(*dll_names):
-                dll_names = list(dll_names)
-                dll_files = []
-                import re
-                version_re = re.compile("\-[0-9\.\-]+$")
-                dirs = os.environ.get("PATH").split(os.path.pathsep)
-                if os.path.exists(gnome_include_path):
-                    dirs.insert(0, gnome_include_path)
-                if verbose_ENABLED:
-                    print("add_DLLs: looking for %s in %s" % (dll_names, dirs))
-                for d in dirs:
-                    if not os.path.exists(d):
+        def do_add_DLLs(*dll_names):
+            dll_names = list(dll_names)
+            dll_files = []
+            import re
+            version_re = re.compile("\-[0-9\.\-]+$")
+            dirs = os.environ.get("PATH").split(os.path.pathsep)
+            if os.path.exists(gnome_include_path):
+                dirs.insert(0, gnome_include_path)
+            if verbose_ENABLED:
+                print("add_DLLs: looking for %s in %s" % (dll_names, dirs))
+            for d in dirs:
+                if not os.path.exists(d):
+                    continue
+                for x in os.listdir(d):
+                    dll_path = os.path.join(d, x)
+                    x = x.lower()
+                    if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
                         continue
-                    for x in os.listdir(d):
-                        dll_path = os.path.join(d, x)
-                        x = x.lower()
-                        if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
-                            continue
-                        nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
-                        if verbose_ENABLED:
-                            print("checking %s: %s" % (x, nameversion))
-                        m = version_re.search(nameversion)          #look for version part of filename
-                        if m:
-                            dll_version = m.group(0)                #found it, ie: "-1.0-0"
-                            dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
-                            dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
-                        else:
-                            dll_version = ""                        #no version
-                            dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
-                        if dll_name in dll_names:
-                            #this DLL is on our list
-                            print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
-                            dll_files.append(dll_path)
-                            dll_names.remove(dll_name)
-                if len(dll_names)>0:
-                    print("some DLLs could not be found:")
-                    for x in dll_names:
-                        print(" - lib%s*.dll" % x)
-                add_data_files("", dll_files)
+                    nameversion = x[3:-4]                       #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    if verbose_ENABLED:
+                        print("checking %s: %s" % (x, nameversion))
+                    m = version_re.search(nameversion)          #look for version part of filename
+                    if m:
+                        dll_version = m.group(0)                #found it, ie: "-1.0-0"
+                        dll_name = nameversion[:-len(dll_version)]  #ie: "atk"
+                        dll_version = dll_version.lstrip("-")   #ie: "1.0-0"
+                    else:
+                        dll_version = ""                        #no version
+                        dll_name = nameversion                  #ie: "libzzz.dll" -> "zzz"
+                    if dll_name in dll_names:
+                        #this DLL is on our list
+                        print("%s %s %s" % (dll_name.ljust(22), dll_version.ljust(10), x))
+                        dll_files.append(dll_path)
+                        dll_names.remove(dll_name)
+            if len(dll_names)>0:
+                print("some DLLs could not be found:")
+                for x in dll_names:
+                    print(" - lib%s*.dll" % x)
+            add_data_files("", dll_files)
 
-            #list of DLLs we want to include, without the "lib" prefix, or the version and extension
-            #(ie: "libatk-1.0-0.dll" -> "atk")
-            if sound_ENABLED or gtk3_ENABLED:
-                add_DLLs('gio', 'girepository', 'glib',
-                         'gnutls', 'gobject', 'gthread',
-                         'orc', 'stdc++',
-                         'winpthread',
-                         #no longer needed with mingw builds?:
-                         'proxy',
-                         'zzz',
-                         )
-            if gtk3_ENABLED:
-                add_DLLs('atk',
-                         'dbus', 'dbus-glib',
-                         'gdk', 'gdk_pixbuf', 'gtk',
-                         'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
-                         'harfbuzz', 'harfbuzz-gobject',
-                         'jasper', 'epoxy',
-                         'intl',
-                         'p11-kit',
-                         'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
-                #these are missing in newer aio installers (sigh):
-                do_add_DLLs('javascriptcoregtk')
-                if opengl_ENABLED:
-                    do_add_DLLs('gdkglext', 'gtkglext')
-            if client_ENABLED and os.environ.get("VCINSTALLDIR"):
-                #Visual Studio may link our avcodec2 module against libiconv...
-                do_add_DLLs("iconv")
-            #this one may be missing in pygi-aio 3.14?
-            #ie: libpyglib-gi-2.0-python34
-            # pyglib-gi-2.0-python%s%s' % (sys.version_info[0], sys.version_info[1])
+        #list of DLLs we want to include, without the "lib" prefix, or the version and extension
+        #(ie: "libatk-1.0-0.dll" -> "atk")
+        if sound_ENABLED or gtk3_ENABLED:
+            add_DLLs('gio', 'girepository', 'glib',
+                     'gnutls', 'gobject', 'gthread',
+                     'orc', 'stdc++',
+                     'winpthread',
+                     )
+        if gtk3_ENABLED:
+            add_DLLs('atk',
+                     'dbus', 'dbus-glib',
+                     'gdk', 'gdk_pixbuf', 'gtk',
+                     'cairo-gobject', 'pango', 'pangocairo', 'pangoft2', 'pangowin32',
+                     'harfbuzz', 'harfbuzz-gobject',
+                     'jasper', 'epoxy',
+                     'intl',
+                     'p11-kit',
+                     'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
+            #these are missing in newer aio installers (sigh):
+            do_add_DLLs('javascriptcoregtk')
+            if opengl_ENABLED:
+                do_add_DLLs('gdkglext', 'gtkglext')
 
-            if gtk3_ENABLED:
-                add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
-                add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
-                                "libvisual-0.4", "p11-kit", "pkcs11"])
-                add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
-                                  "icons", "p11-kit", "xml",
-                                  {"locale" : ["en"]},
-                                  {"themes" : ["Default"]}
-                                 ])
-            if gtk3_ENABLED or sound_ENABLED:
-                add_dir('lib', ["gio"])
-                packages.append("gi")
-                add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
-                       "GObject-2.0")
-            if gtk3_ENABLED:
-                add_gi("Atk-1.0",
-                       "fontconfig-2.0", "freetype2-2.0",
-                       "GDesktopEnums-3.0", "Soup-2.4",
-                       "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
-                       "HarfBuzz-0.0",
-                       "Libproxy-1.0", "libxml2-2.0",
-                       "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
-                       "Rsvg-2.0",
-                       "win32-1.0")
-                if opengl_ENABLED:
-                    add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
+        if gtk3_ENABLED:
+            add_dir('etc', ["fonts", "gtk-3.0", "pango", "pkcs11"])     #add "dbus-1"?
+            add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
+                            "libvisual-0.4", "p11-kit", "pkcs11"])
+            add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
+                              "icons", "p11-kit", "xml",
+                              {"locale" : ["en"]},
+                              {"themes" : ["Default"]}
+                             ])
+        if gtk3_ENABLED or sound_ENABLED:
+            add_dir('lib', ["gio"])
+            packages.append("gi")
+            add_gi("Gio-2.0", "GIRepository-2.0", "Glib-2.0", "GModule-2.0",
+                   "GObject-2.0")
+        if gtk3_ENABLED:
+            add_gi("Atk-1.0",
+                   "fontconfig-2.0", "freetype2-2.0",
+                   "GDesktopEnums-3.0", "Soup-2.4",
+                   "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
+                   "HarfBuzz-0.0",
+                   "Libproxy-1.0", "libxml2-2.0",
+                   "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
+                   "Rsvg-2.0",
+                   "win32-1.0")
+            if opengl_ENABLED:
+                add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
+            add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
 
-                add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
-
-            if gtk2_ENABLED:
-                add_dir('lib',      {
-                    "gdk-pixbuf-2.0":    {
-                        "2.10.0"    :   {
-                            "loaders"   :
-                                ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp")]
-                            },
+        if gtk2_ENABLED:
+            add_dir('lib',      {
+                "gdk-pixbuf-2.0":    {
+                    "2.10.0"    :   {
+                        "loaders"   :
+                            ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp")]
                         },
-                    })
+                    },
+                })
 
-            if sound_ENABLED:
-                add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
-                add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
-                       "GstTag-1.0")
-                add_DLLs('gstreamer', 'orc-test')
-                for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
-                          "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
-                          #I think 'coreelements' needs those (otherwise we would exclude them):
-                          "basecamerabinsrc", "mpegts", "photography",
-                          ):
-                    add_DLLs('gst%s' % p)
-                #DLLs needed by the plugins:
-                add_DLLs("faac", "faad", "flac", "mad", "mpg123")
-                #add the gstreamer plugins we need:
-                GST_PLUGINS = ("app",
-                               #muxers:
-                               "gdp", "matroska", "ogg", "isomp4",
-                               "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
-                               "coreelements", "directsoundsink", "directsoundsrc",
-                               #codecs:
-                               "opus", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
-                               "volume", "vorbis", "wavenc", "wavpack", "wavparse",
-                               #untested: a52dec, voaacenc
-                               )
-                add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
-                #END OF SOUND
-
-            if client_ENABLED:
-                #pillow links against zlib, but expects the DLL to be named z.dll:
-                add_DLLs('zzz', 'z')
+        if sound_ENABLED:
+            add_dir("share", ["gst-plugins-bad", "gst-plugins-base", "gstreamer-1.0"])
+            add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
+                   "GstTag-1.0")
+            add_DLLs('gstreamer', 'orc-test')
+            for p in ("app", "audio", "base", "codecparsers", "fft", "net", "video",
+                      "pbutils", "riff", "sdp", "rtp", "rtsp", "tag", "uridownloader",
+                      #I think 'coreelements' needs those (otherwise we would exclude them):
+                      "basecamerabinsrc", "mpegts", "photography",
+                      ):
+                add_DLLs('gst%s' % p)
+            #DLLs needed by the plugins:
+            add_DLLs("faac", "faad", "flac", "mad", "mpg123")
+            #add the gstreamer plugins we need:
+            GST_PLUGINS = ("app",
+                           #muxers:
+                           "gdp", "matroska", "ogg", "isomp4",
+                           "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
+                           "coreelements", "directsoundsink", "directsoundsrc",
+                           #codecs:
+                           "opus", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
+                           "volume", "vorbis", "wavenc", "wavpack", "wavparse",
+                           #untested: a52dec, voaacenc
+                           )
+            add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
+            #END OF SOUND
 
             if server_ENABLED:
                 #used by proxy server:
                 external_includes += ["multiprocessing"]
-            #I am reluctant to add these to py2exe because it figures it out already:
             external_includes += ["encodings"]
             #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
             os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
@@ -1407,127 +1271,23 @@ if WIN32:
             executables = []
             setup_options["executables"] = executables
 
-            def add_exe(script, icon, base_name, base="Console"):
-                executables.append(Executable(
-                            script                  = script,
-                            initScript              = None,
-                            #targetDir               = "dist",
-                            icon                    = "win32/%s" % icon,
-                            targetName              = "%s.exe" % base_name,
-                            compress                = True,
-                            copyDependentFiles      = True,
-                            appendScriptToExe       = False,
-                            appendScriptToLibrary   = True,
-                            base                    = base))
+        def add_exe(script, icon, base_name, base="Console"):
+            executables.append(Executable(
+                        script                  = script,
+                        initScript              = None,
+                        #targetDir               = "dist",
+                        icon                    = "win32/%s" % icon,
+                        targetName              = "%s.exe" % base_name,
+                        compress                = True,
+                        copyDependentFiles      = True,
+                        appendScriptToExe       = False,
+                        appendScriptToLibrary   = True,
+                        base                    = base))
 
-            def add_console_exe(script, icon, base_name):
-                add_exe(script, icon, base_name)
-            def add_gui_exe(script, icon, base_name):
-                add_exe(script, icon, base_name, base="Win32GUI")
-            #END OF cx_freeze SECTION
-        else:
-            assert not MINGW_PREFIX, "mingw builds must use cx_Freeze"
-            #py2exe recipe for win32com:
-            # ModuleFinder can't handle runtime changes to __path__, but win32com uses them
-            try:
-                # py2exe 0.6.4 introduced a replacement modulefinder.
-                # This means we have to add package paths there, not to the built-in
-                # one.  If this new modulefinder gets integrated into Python, then
-                # we might be able to revert this some day.
-                # if this doesn't work, try import modulefinder
-                try:
-                    import py2exe.mf as modulefinder
-                except ImportError:
-                    import modulefinder
-                import win32com, sys
-                for p in win32com.__path__[1:]:
-                    modulefinder.AddPackagePath("win32com", p)
-                for extra in ["win32com.propsys"]: #,"win32com.mapi"
-                    __import__(extra)
-                    m = sys.modules[extra]
-                    for p in m.__path__[1:]:
-                        modulefinder.AddPackagePath(extra, p)
-            except ImportError:
-                # no build path setup, no worries.
-                pass
-
-            import py2exe    #@UnresolvedImport
-            assert py2exe is not None
-            EXCLUDED_DLLS = list(py2exe.build_exe.EXCLUDED_DLLS) + ["nvcuda.dll",
-                            "curand32_55.dll", "curand32_60.dll", "curand32_65.dll",
-                            "curand64_55.dll", "curand64_60.dll", "curand64_65.dll", "curand64_70.dll"]
-            py2exe.build_exe.EXCLUDED_DLLS = EXCLUDED_DLLS
-            py2exe_options = {
-                              #"bundle_files"   : 3,
-                              "skip_archive"   : not zip_ENABLED,
-                              "optimize"       : 0,    #WARNING: do not change - causes crashes
-                              "unbuffered"     : True,
-                              "compressed"     : zip_ENABLED,
-                              "packages"       : packages,
-                              "includes"       : external_includes,
-                              "excludes"       : excludes,
-                              "dll_excludes"   : ["w9xpopen.exe", "tcl85.dll", "tk85.dll", "propsys.dll",
-                                #exclude the msys DLLs, as py2exe builds should be using MSVC
-                                "msys-2.0.dll", "msys-gcc_s-1.dll", "MSVCP90.dll"],
-                             }
-            #workaround for setuptools >= 19.3
-            add_packages("pkg_resources._vendor.packaging")
-            if not zip_ENABLED:
-                #the filename is actually ignored because we specify "skip_archive"
-                #this places the modules in library/
-                setup_options["zipfile"] = "library/foo.zip"
-            else:
-                setup_options["zipfile"] = "library.zip"
-            setup_options["options"] = {"py2exe" : py2exe_options}
-            windows = []
-            setup_options["windows"] = windows
-            console = []
-            setup_options["console"] = console
-
-            def add_exe(tolist, script, icon, base_name):
-                tolist.append({ 'script'             : script,
-                                'icon_resources'    : [(1, "win32/%s" % icon)],
-                                "dest_base"         : base_name})
-            def add_console_exe(*args):
-                add_exe(console, *args)
-            def add_gui_exe(*args):
-                add_exe(windows, *args)
-
-            # Python2.7 was compiled with Visual Studio 2008:
-            # (you can find the DLLs in various packages, including Visual Studio 2008,
-            # pywin32, etc...)
-            # This is where I keep them, you will obviously need to change this value
-            # or make sure you also copy them there:
-            C_DLLs = WIN32_BUILD_LIB_PREFIX
-            check_md5sums({
-               C_DLLs+"Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest"  : "37f44d535dcc8bf7a826dfa4f5fa319b",
-               C_DLLs+"Microsoft.VC90.CRT/msvcm90.dll"                  : "4a8bc195abdc93f0db5dab7f5093c52f",
-               C_DLLs+"Microsoft.VC90.CRT/msvcp90.dll"                  : "6de5c66e434a9c1729575763d891c6c2",
-               C_DLLs+"Microsoft.VC90.CRT/msvcr90.dll"                  : "e7d91d008fe76423962b91c43c88e4eb",
-               C_DLLs+"Microsoft.VC90.CRT/vcomp90.dll"                  : "f6a85f3b0e30c96c993c69da6da6079e",
-               C_DLLs+"Microsoft.VC90.MFC/Microsoft.VC90.MFC.manifest"  : "17683bda76942b55361049b226324be9",
-               C_DLLs+"Microsoft.VC90.MFC/mfc90.dll"                    : "462ddcc5eb88f34aed991416f8e354b2",
-               C_DLLs+"Microsoft.VC90.MFC/mfc90u.dll"                   : "b9030d821e099c79de1c9125b790e2da",
-               C_DLLs+"Microsoft.VC90.MFC/mfcm90.dll"                   : "d4e7c1546cf3131b7d84b39f8da9e321",
-               C_DLLs+"Microsoft.VC90.MFC/mfcm90u.dll"                  : "371226b8346f29011137c7aa9e93f2f6",
-               })
-            add_data_files('Microsoft.VC90.CRT', glob.glob(C_DLLs+'Microsoft.VC90.CRT\\*.*'))
-            add_data_files('Microsoft.VC90.MFC', glob.glob(C_DLLs+'Microsoft.VC90.MFC\\*.*'))
-            if enc_x264_ENABLED:
-                add_data_files('', ['%s\\libx264.dll' % x264_bin_dir])
-                #find pthread DLL...
-                for x in (["C:\\MinGW\\bin"]+os.environ.get("PATH").split(";")):
-                    f = os.path.join(x, "pthreadGC2.dll")
-                    if os.path.exists(f):
-                        add_data_files('', [f])
-                        break
-            # MS-Windows theme
-            add_data_files('etc/gtk-2.0', ['win32/gtkrc'])
-            engines_dir = os.path.join(site_dir, 'gtk-2.0/runtime/lib/gtk-2.0/2.10.0/engines')
-            add_data_files('lib/gtk-2.0/2.10.0/engines', glob.glob(engines_dir+"/*.dll"))
-            hicolor_dir = os.path.join(site_dir, 'gtk-2.0/runtime/share/icons/hicolor')
-            add_data_files('share/icons/hicolor', glob.glob(hicolor_dir+"/*.*"))
-            #END OF py2exe SECTION
+        def add_console_exe(script, icon, base_name):
+            add_exe(script, icon, base_name)
+        def add_gui_exe(script, icon, base_name):
+            add_exe(script, icon, base_name, base="Win32GUI")
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
@@ -1592,7 +1352,6 @@ if WIN32:
             add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
         #FIXME: how do we figure out what target directory to use?
-        #(can't use install data override with py2exe?)
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
         build_xpra_conf(".")
@@ -1615,149 +1374,7 @@ if WIN32:
         add_data_files('',      ['win32\\DirectShow.tlb'])
         add_modules("comtypes.gen.stdole", "comtypes.gen.DirectShowLib")
 
-
-    #FIXME: ugly workaround for building the ugly pycairo workaround on win32:
-    #the win32 py-gi installers don't have development headers for pycairo
-    #so we hardcode them here instead...
-    #(until someone fixes the win32 builds properly)
-    def pycairo_pkgconfig(*pkgs_options, **ekw):
-        try:
-            return exec_pkgconfig(*pkgs_options, **ekw)
-        except:
-            #this is only needed for non-mingw builds:
-            #ugly workaround for building the ugly pycairo workaround on win32:
-            #the win32 py-gi installers don't have development headers for pycairo
-            #so we hardcode them here instead...
-            #(until someone fixes the win32 builds properly)
-            if "pycairo" in pkgs_options:
-                kw = pkgconfig("cairo", **ekw)
-                PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
-                add_to_keywords(kw, 'include_dirs', PYCAIRO_DIR)
-                checkdirs(PYCAIRO_DIR)
-                return kw
-            raise
-
-    #hard-coded pkgconfig replacement for visual studio:
-    #(normally used with python2 / py2exe builds)
-    def VC_pkgconfig(*pkgs_options, **ekw):
-        kw = dict(ekw)
-        #remove optimize flag on win32..
-        if kw.get("optimize"):
-            add_to_keywords(kw, 'extra_compile_args', "/Ox")
-            del kw["optimize"]
-        if kw.get("ignored_flags"):
-            #we don't handle this keyword here yet..
-            del kw["ignored_flags"]
-        if strict_ENABLED:
-            add_to_keywords(kw, 'extra_compile_args', "/WX")
-            add_to_keywords(kw, 'extra_link_args', "/WX")
-
-        if debug_ENABLED:
-            #Od will override whatever may be specified elsewhere
-            #and allows us to use the debug switches,
-            #at the cost of a warning...
-            for flag in ('/Od', '/Zi', '/DEBUG', '/RTC1', '/GS'):
-                add_to_keywords(kw, 'extra_compile_args', flag)
-            add_to_keywords(kw, 'extra_link_args', "/DEBUG")
-            kw['cython_gdb'] = True
-            add_to_keywords(kw, 'extra_compile_args', "/Ox")
-
-        if strict_ENABLED:
-            add_to_keywords(kw, 'extra_compile_args', "/wd4146")    #MSVC error on __Pyx_PyInt_As_size_t
-            add_to_keywords(kw, 'extra_compile_args', "/wd4293")    #MSVC error in __Pyx_PyFloat_DivideObjC
-
-        #always add the win32 include dirs for VC,
-        #so codecs can find the inttypes.h and stdint.h:
-        win32_include_dir = os.path.join(os.getcwd(), "win32")
-        add_to_keywords(kw, 'include_dirs', win32_include_dir)
-        if len(pkgs_options)==0:
-            return kw
-
-        def add_to_PATH(*bindirs):
-            for bindir in bindirs:
-                if os.environ['PATH'].find(bindir)<0:
-                    os.environ['PATH'] = bindir + ';' + os.environ['PATH']
-                if bindir not in sys.path:
-                    sys.path.append(bindir)
-        def add_keywords(path_dirs=[], inc_dirs=[], lib_dirs=[], libs=[], noref=True, nocmt=False):
-            checkdirs(*path_dirs)
-            add_to_PATH(*path_dirs)
-            checkdirs(*inc_dirs)
-            for d in inc_dirs:
-                add_to_keywords(kw, 'include_dirs', d)
-            checkdirs(*lib_dirs)
-            for d in lib_dirs:
-                add_to_keywords(kw, 'extra_link_args', "/LIBPATH:%s" % d)
-            add_to_keywords(kw, 'libraries', *libs)
-            if noref:
-                add_to_keywords(kw, 'extra_link_args', "/OPT:NOREF")
-            if nocmt:
-                add_to_keywords(kw, 'extra_link_args', "/NODEFAULTLIB:LIBCMT")
-        if "avcodec" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
-                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
-                         ["avcodec", "avutil"])
-        elif "avformat" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
-                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
-                         ["avformat", "avutil"])
-        elif "swscale" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
-                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
-                         ["swscale", "avutil"])
-        elif "avutil" in pkgs_options[0]:
-            add_keywords([libffmpeg_bin_dir], [libffmpeg_include_dir],
-                         [libffmpeg_lib_dir, libffmpeg_bin_dir],
-                         ["avutil"])
-        elif "x264" in pkgs_options[0]:
-            add_keywords([x264_bin_dir], [x264_include_dir],
-                         [x264_lib_dir],
-                         ["libx264"])
-        elif "x265" in pkgs_options[0]:
-            add_keywords([x265_bin_dir], [x265_include_dir],
-                         [x265_lib_dir],
-                         ["libx265"])
-        elif "vpx" in pkgs_options[0]:
-            add_to_keywords(kw, 'extra_compile_args', "/wd4005")    #macro redifined with vpx vs stdint.h
-            add_keywords([vpx_bin_dir], [vpx_include_dir],
-                         [vpx_lib_dir],
-                         vpx_lib_names, nocmt=True)
-        elif "libyuv" in pkgs_options[0]:
-            add_keywords([libyuv_bin_dir], [libyuv_include_dir],
-                         [libyuv_lib_dir],
-                         libyuv_lib_names)
-        elif "pygobject-2.0" in pkgs_options[0]:
-            dirs = (python_include_path,
-                    pygtk_include_dir, atk_include_dir, gtk2_include_dir,
-                    GTK_INCLUDE_DIR, gdkconfig_include_dir, gdkpixbuf_include_dir,
-                    glib_include_dir, glibconfig_include_dir,
-                    cairo_include_dir, pango_include_dir)
-            add_to_keywords(kw, 'include_dirs', *dirs)
-            checkdirs(*dirs)
-        elif "cairo" in pkgs_options:
-            add_to_keywords(kw, 'include_dirs', GTK_INCLUDE_DIR, cairo_include_dir)
-            add_to_keywords(kw, 'libraries', "cairo")
-            if PYTHON3:
-                PYCAIRO_DIR = WIN32_BUILD_LIB_PREFIX + "pycairo-1.10.0"
-                cairo_library_dir = os.path.join(PYCAIRO_DIR, "lib")
-                add_to_keywords(kw, "library_dirs", cairo_library_dir)
-            checkdirs(cairo_include_dir)
-        elif "pycairo" in pkgs_options:
-            kw = pycairo_pkgconfig(*pkgs_options, **ekw)
-        else:
-            sys.exit("ERROR: unknown package config: %s" % str(pkgs_options))
-        print("pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
-        return kw
-
-    if not has_pkg_config:
-        #use the hardcoded version above:
-        pkgconfig = VC_pkgconfig
-    else:
-        pkgconfig = pycairo_pkgconfig
-
-
     remove_packages(*external_excludes)
-
     external_includes.append("mmap")
     remove_packages(#not used on win32:
                     #we handle GL separately below:
@@ -1779,10 +1396,11 @@ if WIN32:
     remove_packages("pygst", "gst", "gst.extend")
 
     #add subset of PyOpenGL modules (only when installing):
-    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv or "py2exe" in sys.argv):
+    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv):
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
+        #but we re-add those two directories to the library.zip as part of the build script
         import OpenGL, OpenGL_accelerate        #@UnresolvedImport
         print("*** copying PyOpenGL modules to %s ***" % install)
         for module_name, module in {"OpenGL" : OpenGL, "OpenGL_accelerate" : OpenGL_accelerate}.items():
@@ -1994,9 +1612,6 @@ buffers_c = "xpra/buffers/buffers.c"
 memalign_c = "xpra/buffers/memalign.c"
 xxhash_c = "xpra/buffers/xxhash.c"
 membuffers_c = [memalign_c, buffers_c, xxhash_c]
-if WIN32 and not MINGW_PREFIX:
-    #MSVC workaround:
-    membuffers_c.append("xpra/inline.c")
 
 add_packages("xpra.buffers")
 buffers_pkgconfig = pkgconfig()
@@ -2011,10 +1626,11 @@ toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
-#cannot use toggle here as py2exe will complain if we try to exclude this module:
+toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
+
+#cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
-toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 
 if OSX:
     quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
@@ -2167,7 +1783,7 @@ if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
     add_modules("xpra.scripts.gtk_info")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
-#we can't just include "xpra.client.gl" because cx_freeze and py2exe then do the wrong thing
+#we can't just include "xpra.client.gl" because cx_freeze then do the wrong thing
 #and try to include both gtk3 and gtk2, and fail hard..
 for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base", "gtk_compat"):
     toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)

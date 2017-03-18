@@ -1,6 +1,4 @@
 include COPYING NEWS README
-include xpra/inline.h
-include xpra/inline.c
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
 include xpra/buffers/buffers.h
