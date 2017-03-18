@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -34,7 +34,7 @@ OSX = sys.platform.startswith("darwin")
 USE_PROCESS_POLLING = envbool("XPRA_USE_PROCESS_POLLING") or sys.version_info<(2, 7) or sys.version_info[:2]==(3, 0)
 WAIT_FOR_UNKNOWN = envint("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", 5)
 
-DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "1920x1080").replace(",", "x").split("x", 1))
+DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "3840x2160").replace(",", "x").split("x", 1))
 
 
 _cleanups = []
