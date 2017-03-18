@@ -625,7 +625,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         del kw["optimize"]
         if type(optimize)==bool:
             optimize = int(optimize)*3
-        add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
+        if not debug_ENABLED:
+            add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
     ignored_flags = []
     if kw.get("ignored_flags"):
         ignored_flags = kw.get("ignored_flags")
@@ -1614,7 +1615,7 @@ xxhash_c = "xpra/buffers/xxhash.c"
 membuffers_c = [memalign_c, buffers_c, xxhash_c]
 
 add_packages("xpra.buffers")
-buffers_pkgconfig = pkgconfig()
+buffers_pkgconfig = pkgconfig(optimize=3)
 cython_add(Extension("xpra.buffers.membuf",
             ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
 
