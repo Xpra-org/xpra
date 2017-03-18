@@ -36,6 +36,8 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.offscreen_canvas_ctx = null;
 	this.offscreen_canvas_mode = null;
 	this._init_2d_canvas();
+	this.paint_queue = [];
+	this.paint_pending = false;
 
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
@@ -841,9 +843,29 @@ XpraWindow.prototype._non_video_paint = function(coding) {
  * we have received from the server.
  * The image is painted into off-screen canvas.
  */
-XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
+XpraWindow.prototype.paint = function paint() {
+	//process all paint request in order using the paint_queue:
+	var item = Array.prototype.slice.call(arguments);
+	this.paint_queue.push(item);
+	this.may_paint_now();
+}
+
+/**
+ * Pick items from the paint_queue
+ * if we're not already in the process of painting something.
+ */
+XpraWindow.prototype.may_paint_now = function paint() {
+	console.log("may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
+	while (!this.paint_pending && this.paint_queue.length>0) {
+		this.paint_pending = true;
+		var item = this.paint_queue.shift();
+		this.do_paint.apply(this, item);
+	}
+}
+
+XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
  	if (this.debug) {
- 		console.debug("paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
+ 		console.debug("do_paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
  	}
 	var me = this;
 
@@ -856,6 +878,12 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 	if(scaled_size) {
 		enc_width = scaled_size[0];
 		enc_height = scaled_size[1];
+	}
+
+	function painted() {
+		me.paint_pending = false;
+		decode_callback(me.client);
+		me.may_paint_now();
 	}
 
 	if (coding=="rgb32") {
@@ -895,7 +923,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
-		decode_callback(this.client);
+		painted();
 	}
 	else if (coding=="jpeg" || coding=="png") {
 		this._non_video_paint(coding);
@@ -903,7 +931,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		var j = new Image();
 		j.onload = function () {
 			me.offscreen_canvas_ctx.drawImage(j, x, y);
-			decode_callback(me.client);
+			painted();
 		};
 		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
 	}
@@ -921,7 +949,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 		this.broadway_decoder.decode(new Uint8Array(img_data));
 		// broadway decoding is synchronous:
 		// (and already painted via the onPictureDecoded callback)
-		decode_callback(this.client);
+		painted();
 	}
 	else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
 		var frame = options["frame"] || -1;
@@ -951,7 +979,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 			var delay = Math.max(10, 50*(this.video_buffers.length-25));
 			var me = this;
 			setTimeout(function() {
-				decode_callback(me.client);
+				painted();
 			}, delay);
 			//console.debug("video queue: ", this.video_buffers.length);
 		}
@@ -968,7 +996,7 @@ XpraWindow.prototype.paint = function paint(x, y, width, height, coding, img_dat
 				ydelta = scroll_data[5];
 			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
 		}
-		decode_callback(this.client);
+		painted();
 	}
 	else {
 		throw "unsupported coding " + coding;
