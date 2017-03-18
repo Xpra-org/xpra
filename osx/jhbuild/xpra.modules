@@ -455,21 +455,49 @@
         </after>
   </distutils>
 
+  <distutils id="pyparsing">
+	<branch repo="pypi.python.org"
+		module="/packages/6f/2c/47457771c02a8ff0f302b695e094ec309e30452232bd79198ee94fda689f/pyparsing-1.5.7.tar.gz"
+		hash="sha256:0832bcf47acd283788593e7a0f542407bd9550a55a8a8435214a1960e04bcb04"
+		version="1.5.7"/>
+	<dependencies>
+		<dep package="python"/>
+	</dependencies>
+    <after>
+		<dep package="python"/>
+    </after>
+  </distutils>
+
+  <distutils id="packaging">
+	<branch repo="pypi.python.org"
+		module="/packages/c6/70/bb32913de251017e266c5114d0a645f262fb10ebc9bf6de894966d124e35/packaging-16.8.tar.gz"
+		hash="sha256:5d50835fdf0a7edf0b55e311b7c887786504efea1177abd7e69329a8e5ea619e"
+		version="16.8"/>
+	<dependencies>
+		<dep package="python"/>
+	</dependencies>
+    <after>
+		<dep package="python"/>
+    </after>
+  </distutils>
+
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/82/f7/d6dfd7595910a20a563a83a762bf79a253c4df71759c3b228accb3d7e5e4/cryptography-1.7.1.tar.gz"
-		hash="sha256:953fef7d40a49a795f4d955c5ce4338abcec5dea822ed0414ed30348303fdb4c"
-		version="1.7.1"/>
+		module="/packages/ec/5f/d5bc241d06665eed93cd8d3aa7198024ce7833af7a67f6dc92df94e00588/cryptography-1.8.1.tar.gz"
+                hash="sha256:323524312bb467565ebca7e50c8ae5e9674e544951d28a2904a50012a8828190"
+                version="1.8.1"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
 		<dep package="python-enum34"/>
+		<dep package="pyparsing"/>
+		<dep package="packaging"/>
 	</dependencies>
-        <after>
-                <dep package="python"/>
-        </after>
+    <after>
+        <dep package="python"/>
+    </after>
   </distutils>
 
   <autotools id="curl" autogen-sh="configure">
