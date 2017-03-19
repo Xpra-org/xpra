@@ -149,6 +149,7 @@ So basically it's screen for remote X apps.
 Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.1
+Requires: xpra-common = %{version}-%{build_no}%{dist}
 
 Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
@@ -261,6 +262,7 @@ s#optional python3 package:
 %package -n python3-xpra
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
+Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %{py3requires_printing}
 Requires: python3-lz4
 Requires: python3-gobject
