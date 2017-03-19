@@ -1204,7 +1204,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif (mode in ("start", "start-desktop", "upgrade") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
             current_display = nox()
-            from xpra.scripts.server import run_server
+            try:
+                from xpra import server
+                assert server
+                from xpra.scripts.server import run_server
+            except ImportError as e:
+                error_cb("Xpra server is not installed")
             return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test"):
             return run_client(error_cb, options, args, mode)
@@ -1995,6 +2000,12 @@ def run_client(error_cb, opts, extra_args, mode):
             error_cb("invalid number of arguments for screenshot mode")
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
+
+    try:
+        from xpra import client
+        assert client
+    except ImportError as e:
+        error_cb("Xpra client is not installed")
 
     if opts.compression_level < 0 or opts.compression_level > 9:
         error_cb("Compression level must be between 0 and 9 inclusive.")
