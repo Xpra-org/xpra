@@ -133,65 +133,104 @@ Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: python2-xpra = %{version}-%{build_no}%{dist}
+Requires: python2-xpra-client = %{version}-%{build_no}%{dist}
+Requires: python2-xpra-server = %{version}-%{build_no}%{dist}
 %if %{with_python3}
-Requires: python3-xpra = %{version}-%{build_no}%{dist}
+Requires: python3-xpra-client = %{version}-%{build_no}%{dist}
+Requires: python3-xpra-server = %{version}-%{build_no}%{dist}
 %endif
-Requires: xpra-html5
-
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
 
 So basically it's screen for remote X apps.
 
+This metapackage installs both the python2 and python3 versions of xpra in full, including the python client, server and HTML5 client.
 
-%package -n python2-xpra
+
+#packages containing the common bits:
+%package common
+Summary: Common files for xpra packages
+Group: Networking
+BuildArch: noarch
+Requires(pre): %{requires_shadow}
+%description common
+This package contains the files which are shared between all the xpra packages.
+
+%package common-client
+Summary: Common files for xpra client packages
+Group: Networking
+BuildArch: noarch
+Requires: xpra-common
+BuildRequires: desktop-file-utils
+Requires(post): desktop-file-utils
+Requires(postun): desktop-file-utils
+%description common-client
+This package contains the files which are shared between all the xpra client packages.
+
+%package common-server
+Summary: Common files for xpra server packages
+Group: Networking
+BuildArch: noarch
+Requires: xpra-common
+#used for locating the Xorg binary:
+Requires: which
+Requires: libfakeXinerama
+Requires: gtk2-immodule-xim
+Requires: %{requires_xorg}
+Requires(post): openssl
+%if 0%{?fedora}
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+%endif
+%if 0%{?with_selinux}
+BuildRequires: checkpolicy, selinux-policy-devel
+Requires: selinux-policy
+Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+%endif
+%description common-server
+This package contains the files which are shared between all the xpra server packages.
+
+#HTML5 client:
+%package html5
+Summary: Xpra HTML5 client
+Group: Networking
+BuildArch: noarch
+BuildRequires: uglify-js
+Conflicts: xpra < 2.1
+%description html5
+This package contains Xpra's HTML5 client.
+
+%package -n python2-xpra-common
 Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-
-Requires: python %{requires_opengl} %{requires_sound} %{requires_lzo} %{requires_websockify} %{requires_printing} %{requires_webcam} %{requires_jpeg}
+Requires: python %{requires_sound} %{requires_lzo} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
-Requires: %{requires_pygtk2}
 Requires: %{requires_dbus}
 Requires: %{requires_crypto}
-#used for locating the Xorg binary:
-Requires: which
 Requires: python2-netifaces
 Requires: python2-rencode
 Requires: python2-pillow
-Requires: libfakeXinerama
-Requires: gtk2-immodule-xim
-Requires: %{requires_xorg}
 Requires: %{libvpx}
 %if 0%{?fedora}
 Requires: python-avahi
-Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
-Requires: python2-pynvml
 Requires: %{numpy}
-Requires: xpra-common = %{version}-%{build_no}%{dist}
-%if 0%{?el7}
-#sshpass is not available!
-%else
-Requires: sshpass
-%endif
 %if 0%{?suse_version}
 #only use recommends because these are not in the standard repos:
 Recommends: python-gstreamer
 Recommends: cups-pdf
 Recommends: cups-filters
 %endif
-
 BuildRequires: pkgconfig
 BuildRequires: %{requires_cython}
-BuildRequires: %{requires_pygtk2}-devel
 BuildRequires: python, %{requires_setuptools}
-BuildRequires: %{requires_pygobject2}-devel
 BuildRequires: libxkbfile-devel
 BuildRequires: libXtst-devel
 BuildRequires: libXfixes-devel
@@ -200,72 +239,62 @@ BuildRequires: libXdamage-devel
 BuildRequires: libXrandr-devel
 BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
-BuildRequires: pam-devel
-%if 0%{?with_selinux}
-BuildRequires: checkpolicy, selinux-policy-devel
-Requires: selinux-policy
-Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
-Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
-%endif
+BuildRequires: %{requires_pygtk2}-devel
+BuildRequires: %{requires_pygobject2}-devel
 %if 0%{?el7}%{?fedora}
 BuildRequires: turbojpeg-devel
 %endif
 %if 0%{?fedora}
-Requires(post): systemd-units
-Requires(preun): systemd-units
-Requires(postun): systemd-units
-BuildRequires: uglify-js
-BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
 %endif
 BuildRequires: x264-xpra-devel
 BuildRequires: ffmpeg-xpra-devel
-BuildRequires: desktop-file-utils
 %if 0%{?run_tests}
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
 %endif
-Requires(post): openssl
-Requires(post): desktop-file-utils
-Requires(postun): desktop-file-utils
-Requires: %{requires_crypto}
+%description -n python2-xpra-common
+This package contains the python2 common build of xpra.
 
-%description -n python2-xpra
-This package contains the python2 build of xpra.
-
-
-#package containing the common bits:
-%package common
-Summary: Common files for xpra packages
+%package -n python2-xpra-client
+Summary: python2 build of xpra client
 Group: Networking
-BuildArch: noarch
-Requires(pre): %{requires_shadow}
-%description common
-This package contains the files which are common to both the Python 2 and Python 3 xpra packages.
-
-%pre common
-getent group xpra > /dev/null || groupadd -r xpra
-
-
-%package html5
-Summary: Xpra HTML5 client
-Group: Networking
-BuildArch: noarch
 Conflicts: xpra < 2.1
+Requires: xpra-common-client = %{version}-%{build_no}%{dist}
+Requires: python2-xpra-common = %{version}-%{build_no}%{dist}
+Requires: python-cups
+Requires: %{requires_opengl}
+Requires: %{requires_pygtk2}
+%if ! 0%{?el7}
+#sshpass is not available on CentOS 7.x
+Requires: sshpass
+%endif
+%description -n python2-xpra-client
+This package contains the python2 xpra client.
 
-%description html5
-This package contains Xpra's HTML5 client.
+%package -n python2-xpra-server
+Summary: python2 build of xpra server
+Group: Networking
+Conflicts: xpra < 2.1
+Requires: xpra-html5
+Requires: xpra-common-server = %{version}-%{build_no}%{dist}
+Requires: python2-xpra-common = %{version}-%{build_no}%{dist}
+Requires: %{requires_websockify} %{requires_printing}
+BuildRequires: pam-devel
+%ifarch x86_64
+Requires: python2-pynvml
+%endif
+%description -n python2-xpra-server
+This package contains the python2 xpra server.
 
-
-s#optional python3 package:
+#optional python3 packages:
 %if %{with_python3}
-%package -n python3-xpra
+%package -n python3-xpra-common
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %{py3requires_printing}
 Requires: python3-lz4
-Requires: python3-gobject
 Requires: python3-pillow
 Requires: %{py3requires_crypto}
 #TODO:
@@ -274,21 +303,14 @@ Requires: python3-netifaces
 Requires: python3-rencode
 Requires: python3-pillow
 Requires: python3-numpy
-Requires: libfakeXinerama
-Requires: gtk3-immodule-xim
-Requires: xorg-x11-server-utils
-Requires: xorg-x11-drv-dummy
-Requires: %{requires_xorg}
+Requires: python3-gobject
 Requires: %{libvpx}
 %if 0%{?fedora}
-BuildRequires: libwebp-devel
 BuildRequires: libyuv-devel
-Requires: libwebp
 Requires: libyuv
 %endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
-Requires: xpra-common = %{version}-%{build_no}%{dist}
 #for running the tests:
 BuildRequires: %{py3requires_crypto}
 BuildRequires: python3-devel
@@ -298,11 +320,32 @@ BuildRequires: gtk3-devel
 BuildRequires: python3-gobject
 BuildRequires: gobject-introspection-devel
 BuildRequires: python3-rencode
-
-%description -n python3-xpra
+%description -n python3-xpra-common
 This package contains the python3 build of xpra.
 
+%package -n python3-xpra-client
+Summary: python3 build of xpra client
+Group: Networking
+Conflicts: xpra < 2.1
+Requires: xpra-common-client = %{version}-%{build_no}%{dist}
+Requires: python3-xpra-common = %{version}-%{build_no}%{dist}
+%description -n python3-xpra-client
+This package contains the python3 xpra client.
+
+%package -n python3-xpra-server
+Summary: python3 build of xpra server
+Group: Networking
+Conflicts: xpra < 2.1
+Requires: xpra-html5
+Requires: xpra-common-server = %{version}-%{build_no}%{dist}
+Requires: python3-xpra-common = %{version}-%{build_no}%{dist}
+#Requires: %{requires_websockify}
+Requires: %{requires_printing}
+Requires: gtk3-immodule-xim
+%description -n python3-xpra-server
+This package contains the python3 xpra server.
 %endif
+
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
@@ -362,6 +405,10 @@ popd
 %endif
 popd
 
+
+%pre common-server
+getent group xpra > /dev/null || groupadd -r xpra
+
 %install
 rm -rf $RPM_BUILD_ROOT
 %if %{with_python3}
@@ -407,24 +454,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/xpra*
 %{_datadir}/xpra
 %{_datadir}/man/man1/xpra*
-%{_datadir}/applications/xpra_launcher.desktop
-%{_datadir}/applications/xpra.desktop
-%{_datadir}/mime/packages/application-x-xpraconfig.xml
 %{_datadir}/appdata/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
-/usr/lib/systemd/system/xpra.service
-/usr/lib/cups/backend/xpraforwarder
-%config /usr/lib/tmpfiles.d/xpra.conf
-%config %{_sysconfdir}/pam.d/xpra
 %dir %{_sysconfdir}/xpra
-%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config %{_sysconfdir}/xpra/xpra.conf
-#we only enable CUDA / NVENC with 64-bit builds:
-%ifarch x86_64
-%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
-%config(noreplace) %{_sysconfdir}/xpra/nvenc.keys
-%endif
-%config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_sysconfdir}/xpra/conf.d/05_features.conf
 %config %{_sysconfdir}/xpra/conf.d/10_network.conf
 %config %{_sysconfdir}/xpra/conf.d/12_ssl.conf
@@ -433,8 +466,26 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/20_sound.conf
 %config %{_sysconfdir}/xpra/conf.d/30_picture.conf
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
+
+%files common-client
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 %config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
+%{_datadir}/applications/xpra_launcher.desktop
+%{_datadir}/applications/xpra.desktop
+%{_datadir}/mime/packages/application-x-xpraconfig.xml
+
+%files common-server
+/usr/lib/systemd/system/xpra.service
+/usr/lib/cups/backend/xpraforwarder
+%config(noreplace) %{_sysconfdir}/sysconfig/xpra
+%config /usr/lib/tmpfiles.d/xpra.conf
+%config %{_sysconfdir}/pam.d/xpra
+%config(noreplace) %{_sysconfdir}/xpra/xorg.conf
+#we only enable CUDA / NVENC with 64-bit builds:
+%ifarch x86_64
+%config(noreplace) %{_sysconfdir}/xpra/cuda.conf
+%config(noreplace) %{_sysconfdir}/xpra/nvenc.keys
+%endif
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
@@ -443,13 +494,48 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/cups_xpra.pp
 %endif
 
-%files -n python2-xpra
-%{python2_sitearch}/xpra
+%files -n python2-xpra-common
+%{python2_sitearch}/xpra/buffers
+%{python2_sitearch}/xpra/clipboard
+%{python2_sitearch}/xpra/codecs
+%{python2_sitearch}/xpra/dbus
+%{python2_sitearch}/xpra/gtk_common
+%{python2_sitearch}/xpra/keyboard
+%{python2_sitearch}/xpra/net
+%{python2_sitearch}/xpra/platform
+%{python2_sitearch}/xpra/scripts
+%{python2_sitearch}/xpra/sound
+%{python2_sitearch}/xpra/x11
+%{python2_sitearch}/xpra/*.py*
 %{python2_sitearch}/xpra-*.egg-info
 
+%files -n python2-xpra-client
+%{python2_sitearch}/xpra/client
+
+%files -n python2-xpra-server
+%{python2_sitearch}/xpra/server
+
 %if %{with_python3}
-%files -n python3-xpra
-%{python3_sitearch}/xpra
+%files -n python3-xpra-server
+%{python3_sitearch}/xpra/server
+
+%files -n python3-xpra-client
+%{python3_sitearch}/xpra/client
+
+%files -n python3-xpra-common
+%{python3_sitearch}/xpra/__pycache__
+%{python3_sitearch}/xpra/buffers
+#%{python3_sitearch}/xpra/clipboard
+%{python3_sitearch}/xpra/codecs
+%{python3_sitearch}/xpra/dbus
+%{python3_sitearch}/xpra/gtk_common
+%{python3_sitearch}/xpra/keyboard
+%{python3_sitearch}/xpra/net
+%{python3_sitearch}/xpra/platform
+%{python3_sitearch}/xpra/scripts
+%{python3_sitearch}/xpra/sound
+%{python3_sitearch}/xpra/x11
+%{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
 %endif
 
@@ -478,9 +564,9 @@ popd
 %endif
 
 
-%post
+%post common-server
 if [ $1 -eq 1 ]; then
-        /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
@@ -501,11 +587,6 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
-/usr/bin/update-mime-database &> /dev/null || :
-/usr/bin/update-desktop-database &> /dev/null || :
-/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-
-%post common
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 %if 0%{?with_selinux}
 for selinuxvariant in %{selinux_variants}
@@ -516,13 +597,18 @@ done
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 %endif
 
-%preun
+%post common-client
+/usr/bin/update-mime-database &> /dev/null || :
+/usr/bin/update-desktop-database &> /dev/null || :
+/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+
+%preun common-server
 if [ $1 -eq 0 ] ; then
         /bin/systemctl disable xpra.service > /dev/null 2>&1 || :
         /bin/systemctl stop xpra.service > /dev/null 2>&1 || :
 fi
 
-%postun
+%postun common-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -ge 1 ] ; then
         /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
@@ -538,14 +624,6 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
-/usr/bin/update-mime-database &> /dev/null || :
-/usr/bin/update-desktop-database &> /dev/null || :
-if [ $1 -eq 0 ] ; then
-	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
-	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
-fi
-
-%postun common
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
 	for selinuxvariant in %{selinux_variants}
@@ -555,12 +633,23 @@ if [ $1 -eq 0 ] ; then
 fi
 %endif
 
-%posttrans
+%postun common-client
+/usr/bin/update-mime-database &> /dev/null || :
+/usr/bin/update-desktop-database &> /dev/null || :
+if [ $1 -eq 0 ] ; then
+	/bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null
+	/usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+fi
+
+%posttrans common
 /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 
 %changelog
-* Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
+* Sun Mar 19 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
+- TODO
+
+* Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.0-1
 - dropped support for outdated OS and libraries (long list)
 - 64-bit builds for MS Windows and MacOSX
 - MS Windows MSYS2 based build system with fully up to date libraries
