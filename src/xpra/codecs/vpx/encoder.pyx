@@ -702,16 +702,21 @@ def selftest(full=False):
         #this is expensive, so don't run it unless "full" is set:
         if full and os.name=="posix" and not OSX:
             #but first, try to figure out if we have enough memory to do this
-            import subprocess
-            p = subprocess.Popen("free -b | grep ^Mem:", shell=True, stdout=subprocess.PIPE)
-            stdout = p.communicate()[0]
-            out = stdout.decode('utf-8')
-            freemem_MB = int(out.split(" ")[-1])//1024//1024
-            if freemem_MB<=4096:
-                log.info("system has only %iMB of memory available, skipping vpx max-size tests", freemem_MB)
+            try:
+                import subprocess
+                p = subprocess.Popen("free -b | grep ^Mem:", shell=True, stdout=subprocess.PIPE)
+                stdout = p.communicate()[0]
+                out = stdout.decode('utf-8')
+                freemem_MB = int(out.split(" ")[-1])//1024//1024
+                if freemem_MB<=4096:
+                    log.info("system has only %iMB of memory available, skipping vpx max-size tests", freemem_MB)
+                    full = False
+                else:
+                    log.info("system has %.1fGB of memory available, running full tests", freemem_MB/1024.0)
+            except Exception as e:
+                log.info("failed to detect free memory: %s", e)
+                log.info("skipping vpx max-size tests")
                 full = False
-            else:
-                log.info("system has %.1fGB of memory available, running full tests", freemem_MB/1024.0)
         if full:
             global MAX_SIZE
             for encoding in get_encodings():
