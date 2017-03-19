@@ -669,13 +669,16 @@ def select_log_file(log_dir, log_file, display_name):
     """ returns the log file path we should be using given the parameters,
         this may return a temporary logpath if display_name is not available.
     """
-    if log_file and display_name:
+    if log_file:
         if os.path.isabs(log_file):
             logpath = log_file
         else:
             logpath = os.path.join(log_dir, log_file)
-        logpath = shellsub(logpath, {"DISPLAY" : display_name})
-    elif display_name:
+        v = shellsub(logpath, {"DISPLAY" : display_name})
+        if display_name or v==logpath:
+            #we have 'display_name', or we just don't need it:
+            return v
+    if display_name:
         logpath = norm_makepath(log_dir, display_name) + ".log"
     else:
         logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
