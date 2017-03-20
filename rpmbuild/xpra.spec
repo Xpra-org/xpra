@@ -197,8 +197,10 @@ This package contains the files which are shared between all the xpra server pac
 Summary: Xpra HTML5 client
 Group: Networking
 BuildArch: noarch
-BuildRequires: uglify-js
 Conflicts: xpra < 2.1
+%if 0%{?fedora}
+BuildRequires: uglify-js
+%endif
 %description html5
 This package contains Xpra's HTML5 client.
 
