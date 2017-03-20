@@ -1032,7 +1032,8 @@ def install_html5(install_dir="www"):
                     assert minifier=="yuicompressor"
                     assert yuicompressor
                     jar = yuicompressor.get_jar_filename()
-                    minify_cmd = ["java", "-jar", jar,
+                    java_cmd = os.environ.get("JAVA", "java")
+                    minify_cmd = [java_cmd, "-jar", jar,
                                   src,
                                   "--nomunge",
                                   "--line-break", "400",

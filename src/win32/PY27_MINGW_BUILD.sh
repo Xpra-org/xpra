@@ -18,6 +18,12 @@ BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 
+# Find a java interpreter we can use for the minifier
+$JAVA -version >& /dev/null
+if [ "$?" != "0" ]; then
+	PROGRAMFILES_X86=`env | sed -n s,'^PROGRAMFILES(X86)=',,p`
+	export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
+fi
 
 ################################################################################
 # Get version information, generate filenames
