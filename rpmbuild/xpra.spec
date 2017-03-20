@@ -204,7 +204,7 @@ BuildRequires: uglify-js
 %description html5
 This package contains Xpra's HTML5 client.
 
-%package -n python2-xpra-common
+%package -n python2-xpra
 Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.1
@@ -255,7 +255,7 @@ BuildRequires: ffmpeg-xpra-devel
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
 %endif
-%description -n python2-xpra-common
+%description -n python2-xpra
 This package contains the python2 common build of xpra.
 
 %package -n python2-xpra-client
@@ -263,7 +263,7 @@ Summary: python2 build of xpra client
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
-Requires: python2-xpra-common = %{version}-%{build_no}%{dist}
+Requires: python2-xpra = %{version}-%{build_no}%{dist}
 Requires: python-cups
 Requires: %{requires_opengl}
 Requires: %{requires_pygtk2}
@@ -280,7 +280,7 @@ Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-html5
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
-Requires: python2-xpra-common = %{version}-%{build_no}%{dist}
+Requires: python2-xpra = %{version}-%{build_no}%{dist}
 Requires: %{requires_websockify} %{requires_printing}
 BuildRequires: pam-devel
 %ifarch x86_64
@@ -496,7 +496,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/selinux/*/cups_xpra.pp
 %endif
 
-%files -n python2-xpra-common
+%files -n python2-xpra
 %{python2_sitearch}/xpra/buffers
 %{python2_sitearch}/xpra/clipboard
 %{python2_sitearch}/xpra/codecs
