@@ -163,7 +163,7 @@ class mdns_sessions(gtk.Window):
                 password = self.password_entry.get_text()
                 uri = self.get_uri(password, *recs[0])
                 self.attach(uri)
-            btn = imagebutton("Connect", icon, "Connect", clicked_callback=clicked)
+            btn = imagebutton("Connect", icon, clicked_callback=clicked)
             return gtk.Label(uri), btn
         #multiple modes / uris
         uri_menu = gtk.combo_box_new_text()
@@ -179,7 +179,7 @@ class mdns_sessions(gtk.Window):
             uri = self.get_uri(password, *rec)
             self.attach(uri)
         uri_menu.set_active(0)
-        btn = imagebutton("Connect", icon, "Connect", clicked_callback=connect)
+        btn = imagebutton("Connect", icon, clicked_callback=connect)
         #btn = gtk.Button(">")
         #btn.connect("clicked", connect)
         return uri_menu, btn
