@@ -27,15 +27,15 @@ class ZeroconfListener(object):
 		return "ZeroconfListener(%s)" % self.service_type
 
 	def remove_service(self, zeroconf, stype, name):
-		log.info("remove_service%s", (zeroconf, stype, name))
+		log("remove_service%s", (zeroconf, stype, name))
 		if self.mdns_remove:
 			domain = "local"
 			self.mdns_remove(0, 0, name, stype, domain, 0)
 
 	def add_service(self, zeroconf, stype, name):
-		log.info("add_service%s", (zeroconf, stype, name))
+		log("add_service%s", (zeroconf, stype, name))
 		info = zeroconf.get_service_info(stype, name)
-		log.info("service info: %s", info)
+		log("service info: %s", info)
 		if self.mdns_add:
 			interface = 0
 			protocol = 0
@@ -46,7 +46,7 @@ class ZeroconfListener(object):
 
 	def start(self):
 		self.browser = ServiceBrowser(self.zeroconf, self.service_type, listener=self)
-		log.info("ServiceBrowser%s=%s", (self.zeroconf, self.service_type, self), self.browser)
+		log("ServiceBrowser%s=%s", (self.zeroconf, self.service_type, self), self.browser)
 
 	def stop(self):
 		b = self.browser
