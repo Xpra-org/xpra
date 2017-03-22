@@ -187,6 +187,10 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
 		cat "win32/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' > "xpra.iss"
 	fi
+	if [ "${CLIENT_ONLY}" == "1" ]; then
+		#remove shadow start menu entry
+		sed -i"" "s/.*Xpra Shadow Server.*//g" xpra.iss
+	fi
 	"${INNOSETUP}" "xpra.iss" >& "${INNOSETUP_LOG}"
 	if [ "$?" != "0" ]; then
 		echo "InnoSetup error - see ${INNOSETUP_LOG}:"
