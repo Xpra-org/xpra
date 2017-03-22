@@ -248,7 +248,7 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog screenshot filename [DISPLAY]\n",
                         "\t%prog info [DISPLAY]\n",
                         "\t%prog control DISPLAY command [arg1] [arg2]..\n",
-                        "\t%prog print DISPLAY filename",
+                        "\t%prog print DISPLAY filename\n",
                         "\t%prog version [DISPLAY]\n"
                         "\t%prog showconfig\n"
                       ]
