@@ -55,7 +55,7 @@ class AvahiListener:
 				log(" text=%s", text)
 			except Exception:
 				log.error("failed to parse text record", exc_info=True)
-			nargs = (dbus_to_native(x) for x in (interface, name, domain, host, address, port, text))
+			nargs = (dbus_to_native(x) for x in (interface, protocol, name, stype, domain, host, address, port, text))
 			self.mdns_add(*nargs)
 
 	def service_found(self, interface, protocol, name, stype, domain, flags):

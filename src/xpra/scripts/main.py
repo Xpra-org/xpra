@@ -253,6 +253,7 @@ def do_parse_cmdline(cmdline, defaults):
                       ]
     if supports_mdns:
         command_options.append("\t%prog list-mdns\n")
+        command_options.append("\t%prog mdns-gui\n")
     server_modes = []
     if supports_server:
         server_modes.append("start")
@@ -1062,7 +1063,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "list-mdns", "attach", "stop", "version", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "control", "list", "list-mdns", "mdns-gui", "attach", "stop", "version", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
@@ -1220,6 +1221,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_list(error_cb, options, args)
         elif mode == "list-mdns" and supports_mdns:
             return run_list_mdns(error_cb, options, args)
+        elif mode == "mdns-gui" and supports_mdns:
+            return run_mdns_gui(error_cb, options, args)
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
@@ -2581,6 +2584,15 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
             pass
     sys.stdout.write("\n")
 
+def run_mdns_gui(error_cb, opts, extra_args):
+    try:
+        from xpra.net.mdns.avahi_listener import AvahiListener
+        assert AvahiListener
+    except ImportError:
+        error_cb("sorry, 'list-mdns' is not supported on this platform yet")
+    from xpra.client.gtk_base.mdns_gui import main
+    main()
+
 def run_list_mdns(error_cb, opts, extra_args):
     no_gtk()
     if len(extra_args)<=1:
@@ -2629,7 +2641,7 @@ def run_list_mdns(error_cb, opts, extra_args):
                 uri = "%s/%s@%s:%s/%s" % (mode, username, address, port, dstr)
                 print("   \"%s\"" % uri)
             shown.add(uq)
-    def mdns_add(interface, name, domain, host, address, port, text):
+    def mdns_add(interface, protocol, name, stype, domain, host, address, port, text):
         text = text or {}
         iface = interface
         if if_indextoname:
