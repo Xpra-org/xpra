@@ -2589,7 +2589,7 @@ def run_mdns_gui(error_cb, opts, extra_args):
         from xpra.net.mdns.avahi_listener import AvahiListener
         assert AvahiListener
     except ImportError:
-        error_cb("sorry, 'list-mdns' is not supported on this platform yet")
+        error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.client.gtk_base.mdns_gui import main
     main()
 
