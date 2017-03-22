@@ -1,15 +1,22 @@
 #!/bin/sh
 
+CLIENT_ONLY="${CLIENT_ONLY:=0}"
+APP_DIR="./image/Xpra.app"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	APP_DIR="./image/Xpra-Client.app"
+fi
+
+echo
 echo
 echo "*******************************************************************************"
-if [ ! -d "image/Xpra.app" ]; then
-	echo "image/Xpra.app is missing!"
+if [ ! -d "${APP_DIR}" ]; then
+	echo "${APP_DIR} is missing!"
 	echo "run make-app.sh first"
 	exit 1
 fi
 
 #get the version and build info from the python build records:
-export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
+export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
@@ -20,6 +27,9 @@ if [ "$BUILD_BIT" != "32bit" ]; then
 fi
 
 DMG_NAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	DMG_NAME="Xpra-Client$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.dmg"
+fi
 echo "Creating $DMG_NAME"
 
 rm -fr image/Blank.*
@@ -31,9 +41,9 @@ cp Blank.dmg.bz2 image/
 bunzip2 image/Blank.dmg.bz2
 hdiutil mount image/Blank.dmg -mountpoint ./image/Blank
 
-echo "Copying Xpra.app into the DMG"
-rsync -rpltgo image/Xpra.app ./image/Blank/
-chmod -Rf go-w image/Blank/Xpra.app
+echo "Copying app into the DMG"
+rsync -rpltgo ${APP_DIR} ./image/Blank/
+chmod -Rf go-w image/Blank/*
 hdiutil detach image/Blank
 
 echo "Creating compressed DMG"

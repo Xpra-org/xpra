@@ -5,12 +5,17 @@ STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=$STRIP_DEFAULT}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
 STRIP_NUMPY="${STRIP_NUMPY:=$STRIP_DEFAULT}"
+CLIENT_ONLY="${CLIENT_ONLY:=0}"
 
 DO_TESTS="${DO_TESTS:-1}"
 
 BUILDNO="${BUILDNO:="0"}"
-IMAGE_DIR="./image/Xpra.app"
-CONTENTS_DIR="${IMAGE_DIR}/Contents"
+APP_DIR="./image/Xpra.app"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	APP_DIR="./image/Xpra-Client.app"
+	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
+fi
+CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RSCDIR="${CONTENTS_DIR}/Resources"
 HELPERS_DIR="${CONTENTS_DIR}/Helpers"
@@ -103,6 +108,18 @@ fi
 
 echo
 echo "*******************************************************************************"
+echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
+svn revert Info.plist
+sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
+sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
+sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	sed -i '' -e "s+Xpra+Xpra-Client+g" "./Info.plist"
+	sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "./Info.plist"
+fi
+
+echo
+echo "*******************************************************************************"
 echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
 gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
@@ -147,6 +164,10 @@ popd
 
 # launcher needs to be in main ("MacOS" dir) since it is launched from the custom Info.plist:
 cp ./Helpers/Launcher ${MACOS_DIR}
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	rm -f "${HELPERS_DIR}/Shadow"
+	rm -f "${RSCDIR}/bin/Shadow"
+fi
 # Add the icon:
 cp ./*.icns ${RSCDIR}/
 
@@ -160,6 +181,12 @@ for x in "*.c" "*.pyx" "*.pxd" "constants.pxi" "constants.txt"; do
 	echo "removing $x:"
 	find $LIBDIR/python/xpra/ -name "$x" -print -exec rm "{}" \; | sed "s+$LIBDIR/python/xpra/++g" | xargs -L 1 echo "* "
 done
+#should be redundant:
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	for x in "server" "x11"; do
+		rm -fr "$LIBDIR/python/xpra/$x"
+	done
+fi
 
 
 echo
@@ -167,17 +194,19 @@ echo "**************************************************************************
 echo "Ship default config files"
 #the build / install step should have placed them here:
 rsync -rplogtv ../src/build/etc/xpra ${RSCDIR}/etc/
-#add the launch agent file
-mkdir ${RSCDIR}/LaunchAgents
-cp ./org.xpra.Agent.plist ${RSCDIR}/LaunchAgents/
+if [ "${CLIENT_ONLY}" == "0" ]; then
+	#add the launch agent file
+	mkdir ${RSCDIR}/LaunchAgents
+	cp ./org.xpra.Agent.plist ${RSCDIR}/LaunchAgents/
+fi
 
 
 echo
 echo "*******************************************************************************"
 echo "Xpra without a tray..."
 for app in Xpra_NoDock.app; do
-	SUB_APP="${IMAGE_DIR}/Contents/${app}"
-	rsync -rplvtog ${app} ${IMAGE_DIR}/Contents/
+	SUB_APP="${APP_DIR}/Contents/${app}"
+	rsync -rplvtog ${app} ${APP_DIR}/Contents/
 	ln -sf ../../Resources ${SUB_APP}/Contents/Resources
 	ln -sf ../../MacOS ${SUB_APP}/Contents/MacOS
 	ln -sf ../../Helpers ${SUB_APP}/Contents/Helpers
@@ -280,12 +309,13 @@ groff -mandoc -Thtml < ../src/man/xpra_launcher.1 > ${RSCDIR}/share/launcher-man
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Info.plist"
-sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Info.plist"
-sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${CONTENTS_DIR}/Info.plist"
 sed -i '' -e "s+%VERSION%+$VERSION+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	sed -i '' -e "s+Xpra+Xpra-Client+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+	sed -i '' -e "s+org.xpra.xpra+org.xpra.xpra-client+g" "${CONTENTS_DIR}/Xpra_NoDock.app/Contents/Info.plist"
+fi
 
 echo
 echo "*******************************************************************************"
@@ -321,7 +351,7 @@ popd
 echo
 echo "*******************************************************************************"
 echo "copying application image to Desktop"
-rsync --delete -rplogt "${IMAGE_DIR}" ~/Desktop/
+rsync --delete -rplogt "${APP_DIR}" ~/Desktop/
 echo "Done"
 echo "*******************************************************************************"
 echo

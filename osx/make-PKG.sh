@@ -1,14 +1,22 @@
 #!/bin/bash
 
+
+CLIENT_ONLY="${CLIENT_ONLY:=0}"
+APP_NAME="Xpra"
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	APP_NAME="Xpra-Client"
+fi
+APP_DIR="./image/${APP_NAME}.app"
+
 echo
 echo "*******************************************************************************"
-if [ ! -d "./image/Xpra.app" ]; then
-	echo "./image/Xpra.app is missing - cannot continue"
+if [ ! -d "${APP_DIR}" ]; then
+	echo "${APP_DIR} is missing - cannot continue"
 	exit 1
 fi
 
 #get the version and build info from the python build records:
-export PYTHONPATH="image/Xpra.app/Contents/Resources/lib/python/"
+export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
 VERSION=`python -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
 REV_MOD=`python -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
@@ -18,7 +26,7 @@ if [ "$BUILD_BIT" != "32bit" ]; then
 	BUILD_INFO="-x86_64"
 fi
 
-PKG_FILENAME="Xpra$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.pkg"
+PKG_FILENAME="$APP_NAME$BUILD_INFO-$VERSION-r$REVISION$REV_MOD.pkg"
 rm -f ./image/$PKG_FILENAME >& /dev/null
 echo "Making $PKG_FILENAME"
 
@@ -26,7 +34,7 @@ echo "Making $PKG_FILENAME"
 rm -fr ./image/flat ./image/root
 mkdir -p ./image/flat/base.pkg ./image/flat/Resources/en.lproj
 mkdir -p ./image/root/Applications
-rsync -rplogt ./image/Xpra.app ./image/root/Applications/
+rsync -rplogt ${APP_DIR} ./image/root/Applications/
 
 #man page:
 mkdir -p ./image/root/usr/share/man/man1
@@ -65,8 +73,8 @@ cat > ./image/flat/base.pkg/PackageInfo << EOF
 	<postinstall file="./postinstall"/>
   </scripts>
   <bundle-version>
-	<bundle id="org.xpra.Xpra" CFBundleIdentifier="org.xpra.Xpra" path="./Applications/Xpra.app" CFBundleVersion="$VERSION">
-		<bundle id="org.xpra.XpraNoDock" CFBundleIdentifier="org.xpra.XpraNoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
+	<bundle id="org.xpra.${APP_NAME}" CFBundleIdentifier="org.xpra.${APP_NAME}" path="./Applications/${APP_NAME}.app" CFBundleVersion="$VERSION">
+		<bundle id="org.xpra.Xpra_NoDock" CFBundleIdentifier="org.xpra.Xpra_NoDock" path="./Contents/Xpra_NoDock.app" CFBundleVersion="$VERSION"/>
 	</bundle>
   </bundle-version>
 </pkg-info>
@@ -75,7 +83,7 @@ EOF
 cat > ./image/flat/Distribution << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-script minSpecVersion="2">
-	<title>Xpra $VERSION</title>
+	<title>${APP_NAME} $VERSION</title>
 	<allowed-os-versions>
 		<os-version min="10.5.8" />
 	</allowed-os-versions>

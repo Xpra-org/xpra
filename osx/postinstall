@@ -13,9 +13,11 @@ if [ -d "$APP_ROOT" ]; then
 		mkdir /usr/local/bin
 	fi
 
-	csrutil status 2> /dev/null | grep "enabled"
-	if [ $? != "0" ]; then
-		cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
+	if [ -e "$APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist" ]; then
+		csrutil status 2> /dev/null | grep "enabled"
+		if [ $? != "0" ]; then
+			cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
+		fi
 	fi
 
 	if [ ! -e "/Library/Application Support/Xpra/ssl-cert.pem" ]; then
@@ -36,9 +38,11 @@ if [ -d "$APP_ROOT" ]; then
 		chmod 755 /usr/local/bin/$x
 	done
 	for x in Bug_Report Config_info Encoding_info GStreamer_info GTK_info Keyboard_Tool Keymap_info Keyboard_info Launcher Network_info OpenGL_check Path_info PowerMonitor Print Python Shadow Version_info Webcam_Test;do
-		echo '#!/bin/sh' > /usr/local/bin/Xpra_$x
-		echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/local/bin/Xpra_$x
-		chown root:wheel /usr/local/bin/Xpra_$x
-		chmod 755 /usr/local/bin/Xpra_$x
+		if [ -e "$APP_ROOT/Contents/Helpers/$x" ]; then
+			echo '#!/bin/sh' > /usr/local/bin/Xpra_$x
+			echo exec $APP_ROOT/Contents/Helpers/$x \"\$@\" >> /usr/local/bin/Xpra_$x
+			chown root:wheel /usr/local/bin/Xpra_$x
+			chmod 755 /usr/local/bin/Xpra_$x
+		fi
 	done
 fi
