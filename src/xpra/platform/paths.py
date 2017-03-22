@@ -206,7 +206,7 @@ def get_xpra_command():
     return do_get_xpra_command()
 def do_get_xpra_command():
     #try to use the same "xpra" executable that launched this server:
-    if sys.argv and sys.argv[0].endswith("/xpra"):
+    if sys.argv and sys.argv[0].lower().endswith("/xpra"):
         return [sys.argv[0]]
     return ["xpra"]
 
@@ -264,6 +264,7 @@ def get_info():
             "resources"         : get_resources_dir(),
             "icons"             : get_icon_dir(),
             "home"              : os.path.expanduser("~"),
+            "xpra_command"      : get_xpra_command(),
             "nodock_command"    : get_nodock_command(),
             "sound_command"     : get_sound_command(),
             "sshpass_command"   : get_sshpass_command(),
