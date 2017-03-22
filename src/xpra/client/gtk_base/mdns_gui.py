@@ -4,13 +4,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import pango
+import os.path
+import subprocess
+from collections import OrderedDict
+
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
-import os.path
-from xpra.platform.paths import get_icon_dir
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image
+
+from xpra.platform.paths import get_icon_dir, get_xpra_command
+from xpra.child_reaper import getChildReaper
+from xpra.exit_codes import EXIT_STR
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
 from xpra.log import Logger
 log = Logger("mdns", "util")
 
@@ -29,18 +36,30 @@ class mdns_sessions(gtk.Window):
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
 
+        self.child_reaper = getChildReaper()
+
         self.vbox = gtk.VBox(False, 20)
         self.add(self.vbox)
 
-        title = gtk.Label("Xpra Sessions")
+        title = gtk.Label("Xpra mDNS Sessions")
+        title.modify_font(pango.FontDescription("sans 14"))
         self.vbox.add(title)
 
+        self.warning = gtk.Label(" ")
+        red = color_parse("red")
+        self.warning.modify_fg(STATE_NORMAL, red)
+        self.vbox.add(self.warning)
+
         hbox = gtk.HBox(False, 10)
-        hbox.add(gtk.Label("Password:"))
+        al = gtk.Alignment(xalign=1, yalign=0.5)
+        al.add(gtk.Label("Password:"))
+        hbox.add(al)
         self.password_entry = gtk.Entry(max=128)
         self.password_entry.set_width_chars(16)
         self.password_entry.set_visibility(False)
-        hbox.add(self.password_entry)
+        al = gtk.Alignment(xalign=0, yalign=0.5)
+        al.add(self.password_entry)
+        hbox.add(al)
         self.vbox.add(hbox)
 
         self.table = None
@@ -77,25 +96,28 @@ class mdns_sessions(gtk.Window):
         if self.table:
             self.vbox.remove(self.table)
             self.table = None
-        tb = TableBuilder(1, 5, False)
-        tb.add_row(gtk.Label("Session"), gtk.Label("Host"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("Connect"))
+        tb = TableBuilder(1, 6, False)
+        tb.add_row(gtk.Label("Host"), gtk.Label("Session"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"))
         self.table = tb.get_table()
         self.vbox.add(self.table)
         self.table.resize(1+len(self.records), 5)
-        #for interface, protocol, name, stype, domain, host, address, port, text in self.records:
-        for _, _, _, stype, _, host, address, port, text in self.records:
+        #group them by uuid
+        d = OrderedDict()
+        for i, (interface, protocol, name, stype, domain, host, address, port, text) in enumerate(self.records):
             uuid = text.get("uuid", "")
-            display = text.get("display")
-            username = text.get("username")
+            display = text.get("display", "")
+            platform = text.get("platform", "")
+            dtype = text.get("type", "")
+            key = (uuid, uuid or i, host, display, platform, dtype)
+            d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
+        for key, recs in d.items():
+            uuid, _, host, display, platform, dtype = key
             title = uuid
             if display:
                 title = display
             label = gtk.Label(title)
             if uuid!=title:
                 label.set_tooltip_text(uuid)
-            platform = text.get("platform", "")
-            stype = text.get("type", "")
-            mode = text.get("mode", "")
             #try to use an icon for the platform:
             platform_icon_name = self.get_platform_icon_name(platform)
             if platform_icon_name:
@@ -103,32 +125,64 @@ class mdns_sessions(gtk.Window):
                 pwidget.set_tooltip_text(platform)
             else:
                 pwidget = gtk.Label(platform)
-            w = self.make_connect_widget(mode, username, address, port, display)
-            tb.add_row(label, gtk.Label(host), pwidget, gtk.Label(stype), w)
+            w, c = self.make_connect_widgets(recs, address, port, display)
+            tb.add_row(gtk.Label(host), label, pwidget, gtk.Label(dtype), w, c)
         self.table.show_all()
 
-    def get_uri(self, mode, username, address, port, display, password=None):
+    def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
         dstr = ""
+        display = text.get("display", "")
+        username = text.get("username", "")
+        mode = text.get("mode", "")
         if display.startswith(":"):
             dstr = display[1:]
         if username or password:
-            uri = "%s/%s:%s@%s:%s/%s" % (mode, username or "", password, address, port, display)
+            uri = "%s/%s:%s@%s:%s/%s" % (mode, username or "", password, address, port, dstr)
         else:
             uri = "%s/%s:%s/%s" % (mode, address, port, dstr)
         return uri
 
-    def make_connect_widget(self, mode, username, address, port, display):
-        uri = self.get_uri(mode, username, address, port, display)
+    def attach(self, uri):
+        self.warning.set_text("")
+        cmd = get_xpra_command() + ["attach", uri]
+        proc = subprocess.Popen(cmd)
+        log("attach() Popen(%s)=%s", cmd, proc)
+        def proc_exit(*args):
+            log("proc_exit%s", args)
+            c = proc.poll()
+            if c not in (0, None):
+                self.warning.set_text(EXIT_STR.get(c, "exit code %s" % c).replace("_", " "))
+        self.child_reaper.add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
+
+    def make_connect_widgets(self, recs, address, port, display):
+        icon = self.get_pixbuf("connect.png")
+        if len(recs)==1:
+            #single record, single uri:
+            uri = self.get_uri(None, *recs[0])
+            def clicked(*args):
+                password = self.password_entry.get_text()
+                uri = self.get_uri(password, *recs[0])
+                self.attach(uri)
+            btn = imagebutton("Connect", icon, "Connect", clicked_callback=clicked)
+            return gtk.Label(uri), btn
+        #multiple modes / uris
+        uri_menu = gtk.combo_box_new_text()
+        d = {}
+        for rec in sorted(recs):
+            uri = self.get_uri(None, *rec)
+            uri_menu.append_text(uri)
+            d[uri] = rec
         def connect(*args):
-            from xpra.platform.paths import get_xpra_command
-            import subprocess
+            uri = uri_menu.get_active_text()
+            rec = d[uri]
             password = self.password_entry.get_text()
-            uri = self.get_uri(mode, username, address, port, display, password)
-            cmd = get_xpra_command() + ["attach", uri]
-            subprocess.Popen(cmd)
-        btn = gtk.Button(uri)
-        btn.connect("clicked", connect)
-        return btn
+            uri = self.get_uri(password, *rec)
+            self.attach(uri)
+        uri_menu.set_active(0)
+        btn = imagebutton("Connect", icon, "Connect", clicked_callback=connect)
+        #btn = gtk.Button(">")
+        #btn.connect("clicked", connect)
+        return uri_menu, btn
 
     def get_platform_icon_name(self, platform):
         for p,i in {
