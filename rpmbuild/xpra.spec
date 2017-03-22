@@ -39,7 +39,8 @@
 #OpenGL bits:
 %define requires_opengl , python2-pyopengl, pygtkglext
 %define py3requires_opengl , python3-pyopengl
-%define requires_printing , python2-cups, cups-filters, cups-pdf
+%define requires_server_printing , cups-filters, cups-pdf
+%define requires_printing , python2-cups
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly
@@ -69,7 +70,8 @@
 #don't have python3 by default:
 %define with_python3 0
 #cups-pdf is not in the regular repos, so remove it from dependencies:
-%define requires_printing , python-cups, cups-filters
+%define requires_printing , python-cups
+%define requires_server_printing , cups-filters
 %endif
 
 %if 0%{?fedora}
@@ -133,11 +135,14 @@ Source: xpra-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 Requires: xpra-common = %{version}-%{build_no}%{dist}
+Requires: xpra-html5
 Requires: python2-xpra-client = %{version}-%{build_no}%{dist}
 Requires: python2-xpra-server = %{version}-%{build_no}%{dist}
+Requires: python2-xpra-audio = %{version}-%{build_no}%{dist}
 %if %{with_python3}
 Requires: python3-xpra-client = %{version}-%{build_no}%{dist}
 Requires: python3-xpra-server = %{version}-%{build_no}%{dist}
+Requires: python3-xpra-audio = %{version}-%{build_no}%{dist}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -209,7 +214,7 @@ Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: python %{requires_sound} %{requires_lzo} %{requires_webcam} %{requires_jpeg}
+Requires: python %{requires_lzo} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
 Requires: %{requires_dbus}
 Requires: %{requires_crypto}
@@ -258,14 +263,24 @@ BuildRequires: %{xvfb}
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
 
+%package -n python2-xpra-audio
+Summary: python2 build of xpra audio support
+Group: Networking
+Conflicts: xpra < 2.1
+Requires: python2-xpra = %{version}-%{build_no}%{dist}
+Requires: python %{requires_sound}
+Requires: python2-rencode
+BuildRequires: python, %{requires_setuptools}
+%description -n python2-xpra-audio
+This package contains audio support for python2 builds of xpra.
+
 %package -n python2-xpra-client
 Summary: python2 build of xpra client
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
-Requires: python-cups
-Requires: %{requires_opengl}
+Requires: %{requires_printing} %{requires_opengl}
 Requires: %{requires_pygtk2}
 %if ! 0%{?el7}
 #sshpass is not available on CentOS 7.x
@@ -278,10 +293,9 @@ This package contains the python2 xpra client.
 Summary: python2 build of xpra server
 Group: Networking
 Conflicts: xpra < 2.1
-Requires: xpra-html5
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
-Requires: %{requires_websockify} %{requires_printing}
+Requires: %{requires_websockify} %{requires_printing} %{requires_server_printing}
 BuildRequires: pam-devel
 %ifarch x86_64
 Requires: python2-pynvml
@@ -291,11 +305,11 @@ This package contains the python2 xpra server.
 
 #optional python3 packages:
 %if %{with_python3}
-%package -n python3-xpra-common
+%package -n python3-xpra
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: python %{py3requires_opengl} %{py3requires_sound} %{py3requires_lzo} %{py3requires_printing}
+Requires: python3 %{py3requires_lzo}
 Requires: python3-lz4
 Requires: python3-pillow
 Requires: %{py3requires_crypto}
@@ -322,15 +336,27 @@ BuildRequires: gtk3-devel
 BuildRequires: python3-gobject
 BuildRequires: gobject-introspection-devel
 BuildRequires: python3-rencode
-%description -n python3-xpra-common
+%description -n python3-xpra
 This package contains the python3 build of xpra.
+
+%package -n python3-xpra-audio
+Summary: python3 build of xpra audio support
+Group: Networking
+Conflicts: xpra < 2.1
+Requires: python3-xpra = %{version}-%{build_no}%{dist}
+Requires: python3 %{py3requires_sound}
+Requires: python3-rencode
+BuildRequires: python3
+%description -n python3-xpra-audio
+This package contains audio support for python2 builds of xpra.
 
 %package -n python3-xpra-client
 Summary: python3 build of xpra client
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
-Requires: python3-xpra-common = %{version}-%{build_no}%{dist}
+Requires: python3-xpra = %{version}-%{build_no}%{dist}
+Requires: %{py3requires_printing} %{py3requires_opengl}
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
@@ -338,11 +364,10 @@ This package contains the python3 xpra client.
 Summary: python3 build of xpra server
 Group: Networking
 Conflicts: xpra < 2.1
-Requires: xpra-html5
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
-Requires: python3-xpra-common = %{version}-%{build_no}%{dist}
+Requires: python3-xpra = %{version}-%{build_no}%{dist}
 #Requires: %{requires_websockify}
-Requires: %{requires_printing}
+Requires: %{py3requires_printing} %{requires_server_printing}
 Requires: gtk3-immodule-xim
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
@@ -506,10 +531,12 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/xpra/net
 %{python2_sitearch}/xpra/platform
 %{python2_sitearch}/xpra/scripts
-%{python2_sitearch}/xpra/sound
 %{python2_sitearch}/xpra/x11
 %{python2_sitearch}/xpra/*.py*
 %{python2_sitearch}/xpra-*.egg-info
+
+%files -n python2-xpra-audio
+%{python2_sitearch}/xpra/sound
 
 %files -n python2-xpra-client
 %{python2_sitearch}/xpra/client
@@ -518,13 +545,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/xpra/server
 
 %if %{with_python3}
-%files -n python3-xpra-server
-%{python3_sitearch}/xpra/server
-
-%files -n python3-xpra-client
-%{python3_sitearch}/xpra/client
-
-%files -n python3-xpra-common
+%files -n python3-xpra
 %{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers
 #%{python3_sitearch}/xpra/clipboard
@@ -539,8 +560,16 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/x11
 %{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
-%endif
 
+%files -n python3-xpra-audio
+%{python3_sitearch}/xpra/sound
+
+%files -n python3-xpra-client
+%{python3_sitearch}/xpra/client
+
+%files -n python3-xpra-server
+%{python3_sitearch}/xpra/server
+%endif
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
