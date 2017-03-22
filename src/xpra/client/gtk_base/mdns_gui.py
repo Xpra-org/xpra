@@ -13,6 +13,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
+glib.threads_init()
 
 from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.child_reaper import getChildReaper
@@ -66,9 +67,10 @@ class mdns_sessions(gtk.Window):
         self.records = []
         self.populate_table()
         #self.set_size_request(0, 200)
-        from xpra.net.mdns import XPRA_MDNS_TYPE
-        from xpra.net.mdns.avahi_listener import AvahiListener
-        self.listener = AvahiListener(XPRA_MDNS_TYPE, mdns_found=None, mdns_add=self.mdns_add, mdns_remove=self.mdns_remove)
+        from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
+        listener = get_listener_class()
+        self.listener = listener(XPRA_MDNS_TYPE, mdns_found=None, mdns_add=self.mdns_add, mdns_remove=self.mdns_remove)
+        log("%s%s=%s", listener, (XPRA_MDNS_TYPE, None, self.mdns_add, self.mdns_remove), self.listener)
         self.listener.start()
         self.show_all()
 
@@ -136,8 +138,11 @@ class mdns_sessions(gtk.Window):
         mode = text.get("mode", "")
         if display.startswith(":"):
             dstr = display[1:]
-        if username or password:
-            uri = "%s/%s:%s@%s:%s/%s" % (mode, username or "", password, address, port, dstr)
+        if username:
+            if password:
+                uri = "%s/%s:%s@%s:%s/%s" % (mode, username, password, address, port, dstr)
+            else:
+                uri = "%s/%s@%s:%s/%s" % (mode, username, address, port, dstr)
         else:
             uri = "%s/%s:%s/%s" % (mode, address, port, dstr)
         return uri

@@ -4,3 +4,16 @@
 # later version. See the file COPYING for details.
 
 XPRA_MDNS_TYPE = '_xpra._tcp.'
+
+
+def get_listener_class():
+    try:
+        from xpra.net.mdns.avahi_listener import AvahiListener
+        return AvahiListener
+    except ImportError:
+        try:
+            from xpra.net.mdns.zeroconf_listener import ZeroconfListener
+            return ZeroconfListener
+        except ImportError:
+            pass
+    return None
