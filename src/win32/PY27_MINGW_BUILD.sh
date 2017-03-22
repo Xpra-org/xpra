@@ -17,12 +17,18 @@ BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
-
-# Find a java interpreter we can use for the minifier
-$JAVA -version >& /dev/null
-if [ "$?" != "0" ]; then
-	PROGRAMFILES_X86=`env | sed -n s,'^PROGRAMFILES(X86)=',,p`
-	export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
+CLIENT_ONLY="0"
+if [ "$1" == "CLIENT" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5"
+	CLIENT_ONLY="1"
+	shift
+else
+	# Find a java interpreter we can use for the html5 minifier
+	$JAVA -version >& /dev/null
+	if [ "$?" != "0" ]; then
+		PROGRAMFILES_X86=`env | sed -n s,'^PROGRAMFILES(X86)=',,p`
+		export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
+	fi
 fi
 
 ################################################################################
@@ -45,6 +51,10 @@ if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 	FULL_VERSION="${FULL_VERSION}M"
 fi
 EXTRA_VERSION=""
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	EXTRA_VERSION="-Client"
+	DO_CUDA="0"
+fi
 BUILD_TYPE=""
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
