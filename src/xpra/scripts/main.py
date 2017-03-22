@@ -2585,10 +2585,9 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
     sys.stdout.write("\n")
 
 def run_mdns_gui(error_cb, opts, extra_args):
-    try:
-        from xpra.net.mdns.avahi_listener import AvahiListener
-        assert AvahiListener
-    except ImportError:
+    from xpra.net.mdns import get_listener_class
+    listener = get_listener_class()
+    if not listener:
         error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.client.gtk_base.mdns_gui import main
     main()

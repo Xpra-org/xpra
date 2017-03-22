@@ -7,13 +7,19 @@ XPRA_MDNS_TYPE = '_xpra._tcp.'
 
 
 def get_listener_class():
+    from xpra.log import Logger
+    log = Logger("network", "mdns")
     try:
         from xpra.net.mdns.avahi_listener import AvahiListener
+        log("AvahiListener=%s", AvahiListener)
         return AvahiListener
-    except ImportError:
+    except ImportError as e:
+        log("failed to import AvahiListener: %s", e)
         try:
             from xpra.net.mdns.zeroconf_listener import ZeroconfListener
+            log("ZeroconfListener=%s", ZeroconfListener)
             return ZeroconfListener
-        except ImportError:
+        except ImportError as e:
+            log("failed to import ZeroconfListener: %s", e)
             pass
     return None
