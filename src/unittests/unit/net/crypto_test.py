@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import unittest
 import binascii
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, monotonic_time
 from xpra.util import envbool
 
 from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
@@ -57,7 +56,7 @@ class TestCrypto(unittest.TestCase):
         dec = self.backend.get_decryptor(*args)
         log("%s%s=%s" % (self.backend.get_decryptor, args, dec))
         assert dec is not None
-        #print("init took %ims", (time.time()-start)//1000)
+        #print("init took %ims", (monotonic_time()-start)//1000)
         #test encoding of a message:
         encrypted = []
         for i in range(encrypt_count):
@@ -89,9 +88,9 @@ class TestCrypto(unittest.TestCase):
             return
         times = []
         data = b"0123456789ABCDEF"*asize
-        start = time.time()
+        start = monotonic_time()
         self.do_test_backend(data, enc_iterations, dec_iterations)
-        end = time.time()
+        end = monotonic_time()
         i = self.backend.get_info()
         elapsed = end-start
         speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed

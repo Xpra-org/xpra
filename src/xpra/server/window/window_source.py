@@ -12,6 +12,7 @@ import hashlib
 import threading
 from collections import deque
 
+from xpra.os_util import monotonic_time
 from xpra.util import envint, envbool, csv
 from xpra.log import Logger
 log = Logger("window", "encoding")
@@ -357,13 +358,13 @@ class WindowSource(object):
         if larm:
             esinfo = {"auto-refresh"    : {
                                            "last-event" : {
-                                                           "elapsed"    : int(1000*(time.time()-larm[0])),
+                                                           "elapsed"    : int(1000*(monotonic_time()-larm[0])),
                                                            "message"    : larm[1],
                                                            }
                                            }
                       }
 
-        now = time.time()
+        now = monotonic_time()
         buckets_info = {}
         for i,x in enumerate(self.delta_pixel_data):
             if x:
@@ -403,7 +404,7 @@ class WindowSource(object):
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
-        now = time.time()
+        now = monotonic_time()
         cutoff = now-5
         lde = [x for x in list(self.statistics.last_damage_events) if x[0]>=cutoff]
         dfps = 0
@@ -919,7 +920,7 @@ class WindowSource(object):
         if self.batch_config.locked:
             return
         #calculations take time (CPU), see if we can just skip it this time around:
-        now = time.time()
+        now = monotonic_time()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %i seconds ago", self.wid, self.batch_config.delay, elapsed)
@@ -963,7 +964,7 @@ class WindowSource(object):
             #make a copy to work on (and discard "info")
             speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
             info, target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_speed, speed_data)
-            speed_data.append((time.time(), target_speed))
+            speed_data.append((monotonic_time(), target_speed))
             speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
             speed = min(99, speed)
         else:
@@ -971,7 +972,7 @@ class WindowSource(object):
             speed = min(100, speed)
         self._current_speed = int(speed)
         statslog("update_speed() info=%s, speed=%s", info, self._current_speed)
-        self._encoding_speed.append((time.time(), info, self._current_speed))
+        self._encoding_speed.append((monotonic_time(), info, self._current_speed))
 
     def set_min_speed(self, min_speed):
         if self._fixed_min_speed!=min_speed:
@@ -1001,7 +1002,7 @@ class WindowSource(object):
             info, quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality, self._fixed_min_speed)
             #make a copy to work on (and discard "info")
             ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
-            ves_copy.append((time.time(), quality))
+            ves_copy.append((monotonic_time(), quality))
             quality = max(self._fixed_min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
             quality = min(99, quality)
         else:
@@ -1009,7 +1010,7 @@ class WindowSource(object):
             quality = min(100, quality)
         self._current_quality = int(quality)
         statslog("update_quality() info=%s, quality=%s", info, self._current_quality)
-        self._encoding_quality.append((time.time(), info, self._current_quality))
+        self._encoding_quality.append((monotonic_time(), info, self._current_quality))
 
     def set_min_quality(self, min_quality):
         if self._fixed_min_quality!=min_quality:
@@ -1055,7 +1056,7 @@ class WindowSource(object):
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
-        now = time.time()
+        now = monotonic_time()
         if "auto_refresh" not in options:
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
@@ -1158,7 +1159,7 @@ class WindowSource(object):
         try:
             t, _ = self.batch_config.last_delays[-5]
             #do batch if we got more than 5 damage events in the last 10 milliseconds:
-            return time.time()-t<0.010
+            return monotonic_time()-t<0.010
         except:
             #probably not enough events to grab -10
             return False
@@ -1211,13 +1212,13 @@ class WindowSource(object):
             return False
         #ouch: same region!
         options     = delayed[3]
-        elapsed = int(1000.0 * (time.time() - region_time))
+        elapsed = int(1000.0 * (monotonic_time() - region_time))
         log.warn("Warning: delayed region timeout")
         log.warn(" region is %i seconds old, will retry - bad connection?", elapsed/1000)
         dap = dict(self.statistics.damage_ack_pending)
         if dap:
             log.warn(" %i late responses:", len(dap))
-            now = time.time()
+            now = monotonic_time()
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
                 log.warn(" %4i %s: %is", seq, ack_data[1], now-ack_data[3])
@@ -1244,7 +1245,7 @@ class WindowSource(object):
             return
         damage_time = dd[0]
         packets_backlog = self.statistics.get_packets_backlog()
-        now = time.time()
+        now = monotonic_time()
         actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:
             if actual_delay>self.batch_config.timeout_delay:
@@ -1296,7 +1297,7 @@ class WindowSource(object):
         if delayed:
             self._damage_delayed = None
             damage_time = delayed[0]
-            now = time.time()
+            now = monotonic_time()
             actual_delay = int(1000.0 * (now-damage_time))
             self.batch_config.last_actual_delays.append((now, actual_delay))
             self.send_delayed_regions(*delayed)
@@ -1461,7 +1462,7 @@ class WindowSource(object):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
 
-        rgb_request_time = time.time()
+        rgb_request_time = monotonic_time()
         image = self.window.get_image(x, y, w, h, logger=log)
         if image is None:
             log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
@@ -1472,7 +1473,7 @@ class WindowSource(object):
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
 
-        now = time.time()
+        now = monotonic_time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms",
@@ -1545,7 +1546,7 @@ class WindowSource(object):
                     refreshlog.warn("refresh regions are pending but no refresh timer is due!")
             else:
                 #some pixels were modified, and we do need to refresh them:
-                now = time.time()
+                now = monotonic_time()
                 #figure out the proportion of pixels updated:
                 pixels = region.width*region.height
                 ww, wh = self.window_dimensions
@@ -1558,7 +1559,7 @@ class WindowSource(object):
                 #important: must check both, I think:
                 if target_time==0 or not self.refresh_timer:
                     #this means we must schedule the refresh
-                    self.refresh_event_time = time.time()
+                    self.refresh_event_time = monotonic_time()
                     #delay in milliseconds: always at least the settings,
                     #more if we have more than 50% of the window pixels to update:
                     sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100))
@@ -1570,7 +1571,7 @@ class WindowSource(object):
                     sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100))
                     self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                     msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
-        self.last_auto_refresh_message = time.time(), msg
+        self.last_auto_refresh_message = monotonic_time(), msg
         refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
@@ -1612,7 +1613,7 @@ class WindowSource(object):
         ret = self.refresh_event_time
         if ret==0:
             return
-        delta = self.refresh_target_time - time.time()
+        delta = self.refresh_target_time - monotonic_time()
         if delta<0.050:
             #this is about right (due already or due shortly)
             self.timer_full_refresh()
@@ -1628,9 +1629,9 @@ class WindowSource(object):
         regions = self.refresh_regions
         self.refresh_regions = []
         if self.can_refresh() and regions and ret>0:
-            now = time.time()
+            now = monotonic_time()
             options = self.get_refresh_options()
-            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s", 1000.0*(time.time()-ret), self.auto_refresh_encodings, options, regions)
+            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s", 1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions)
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=self.get_refresh_exclude(), get_best_encoding=self.get_refresh_encoding)
         return False
 
@@ -1664,7 +1665,7 @@ class WindowSource(object):
         encoding = self.auto_refresh_encodings[0]
         new_options.update(self.get_refresh_options())
         refreshlog("full_quality_refresh() using %s with options=%s", encoding, new_options)
-        damage_time = time.time()
+        damage_time = monotonic_time()
         self.send_delayed_regions(damage_time, refresh_regions, encoding, new_options)
         self.damage(0, 0, w, h, options=new_options)
 
@@ -1692,10 +1693,10 @@ class WindowSource(object):
         damage_packet_sequence = packet[8]
         actual_batch_delay = process_damage_time-damage_time
         def start_send(bytecount):
-            now = time.time()
+            now = monotonic_time()
             self.statistics.damage_ack_pending[damage_packet_sequence] = [now, coding, bytecount, 0, 0, width*height]
         def damage_packet_sent(bytecount):
-            now = time.time()
+            now = monotonic_time()
             stats = self.statistics.damage_ack_pending.get(damage_packet_sequence)
             #if we timed it out, it may be gone already:
             if stats:
@@ -1708,7 +1709,7 @@ class WindowSource(object):
                     self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
                     self.statistics.damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
         if damage_time>0:
-            now = time.time()
+            now = monotonic_time()
             damage_in_latency = now-process_damage_time
             self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent)
@@ -1725,7 +1726,7 @@ class WindowSource(object):
         """
         statslog("packet decoding sequence %s for window %s: %sx%s took %.1fms", damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
-            self.statistics.client_decode_time.append((time.time(), width*height, decode_time))
+            self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
         elif decode_time<0:
             self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.get(damage_packet_sequence)
@@ -1787,7 +1788,7 @@ class WindowSource(object):
         isize = w*h
         psize = isize*4
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
-        start = time.time()
+        start = monotonic_time()
         delta, store, bucket, hits = -1, -1, -1, 0
         pixel_format = image.get_pixel_format()
         #use delta pre-compression for this encoding if:
@@ -1820,7 +1821,7 @@ class WindowSource(object):
                         delta = lsequence
                         xored = xor_str(dpixels, ldata)
                         image.set_pixels(xored)
-                        dr[-1] = time.time()            #update last used time
+                        dr[-1] = monotonic_time()            #update last used time
                         hits += 1
                         dr[-2] = hits               #update hit count
                     else:
@@ -1878,7 +1879,7 @@ class WindowSource(object):
                                 t = dr[-1]
                                 bucket = i
                         deltalog("delta: using oldest bucket %i", bucket)
-                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store, len(dpixels), dpixels, hits, time.time()]
+                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store, len(dpixels), dpixels, hits, monotonic_time()]
                 client_options["store"] = store
                 client_options["bucket"] = bucket
                 #record number of frames and pixels:
@@ -1899,7 +1900,7 @@ class WindowSource(object):
         #actual network packet:
         if self.supports_flush and flush not in (None, 0):
             client_options["flush"] = flush
-        end = time.time()
+        end = monotonic_time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))

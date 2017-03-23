@@ -3,11 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import threading
 from threading import Event
+
 from xpra.make_thread import start_thread
 from xpra.log import Logger
+from xpra.os_util import monotonic_time
 from xpra.util import envint
 log = Logger("util")
 
@@ -60,6 +61,7 @@ class UI_thread_watcher(object):
             def sleep_in_ui_thread(*args):
                 t = threading.current_thread()
                 log.warn("sleep_in_ui_thread%s pausing %s for %ims", args, t, FAKE_UI_LOCKUPS)
+                import time
                 time.sleep(FAKE_UI_LOCKUPS/1000.0)
                 return True
             self.timeout_add(10*1000+FAKE_UI_LOCKUPS, sleep_in_ui_thread)
@@ -85,7 +87,7 @@ class UI_thread_watcher(object):
 
     def UI_thread_wakeup(self):
         log("UI_thread_wakeup()")
-        self.last_UI_thread_time = time.time()
+        self.last_UI_thread_time = monotonic_time()
         #UI thread was blocked?
         if self.UI_blocked:
             log.info("UI thread is running again, resuming")
@@ -96,7 +98,7 @@ class UI_thread_watcher(object):
     def poll_UI_loop(self):
         log("poll_UI_loop() running")
         while not self.exit.isSet():
-            delta = time.time()-self.last_UI_thread_time
+            delta = monotonic_time()-self.last_UI_thread_time
             log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s", delta, self.max_delta/1000, self.UI_blocked)
             if delta>self.max_delta/1000.0:
                 #UI thread is (still?) blocked:
@@ -109,11 +111,11 @@ class UI_thread_watcher(object):
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             self.timeout_add(0, self.UI_thread_wakeup)
-            wstart = time.time()
+            wstart = monotonic_time()
             wait_time = self.polling_timeout/1000.0     #convert to seconds
             self.exit.wait(wait_time)
             if not self.exit.isSet():
-                wdelta = time.time() - wstart
+                wdelta = monotonic_time() - wstart
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):
                     #this can be caused by an ntp update?

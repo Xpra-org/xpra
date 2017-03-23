@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ from xpra.net.compression import decompress_by_name
 
 from xpra.scripts.config import InitExit
 from xpra.util import csv, envint, envbool
-from xpra.os_util import thread
+from xpra.os_util import thread, monotonic_time
 from xpra.log import Logger
 log = Logger("sound")
 gstlog = Logger("gstreamer")
@@ -89,8 +89,8 @@ class SoundSink(SoundPipeline):
         self.last_data = None
         self.last_underrun = 0
         self.last_overrun = 0
-        self.last_max_update = time.time()
-        self.last_min_update = time.time()
+        self.last_max_update = monotonic_time()
+        self.last_min_update = monotonic_time()
         self.level_lock = Lock()
         pipeline_els = []
         appsrc_el = ["appsrc",
@@ -196,7 +196,7 @@ class SoundSink(SoundPipeline):
         return True
 
     def queue_underrun(self, *args):
-        now = time.time()
+        now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
@@ -209,7 +209,7 @@ class SoundSink(SoundPipeline):
         return 1
 
     def get_level_range(self, mintime=2, maxtime=10):
-        now = time.time()
+        now = monotonic_time()
         filtered = [v for t,v in list(self.levels) if (now-t)>=mintime and (now-t)<=maxtime]
         if len(filtered)>=10:
             maxl = max(filtered)
@@ -219,13 +219,13 @@ class SoundSink(SoundPipeline):
         return 0
 
     def queue_overrun(self, *args):
-        now = time.time()
+        now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
             return 1
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
         log("overrun level=%ims", clt)
-        now = time.time()
+        now = monotonic_time()
         #grace period of recording overruns:
         #(because when we record an overrun, we lower the max-time,
         # which causes more overruns!)
@@ -239,7 +239,7 @@ class SoundSink(SoundPipeline):
     def set_min_level(self):
         if not self.queue:
             return
-        now = time.time()
+        now = monotonic_time()
         elapsed = now-self.last_min_update
         if elapsed<1:
             #not more than once a second
@@ -254,7 +254,7 @@ class SoundSink(SoundPipeline):
         try:
             cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
             #from 100% down to 0% in 2 seconds after underrun:
-            now = time.time()
+            now = monotonic_time()
             pct = max(0, int((self.last_underrun+2-now)*50))
             #cannot go higher than mst-50:
             mst = self.queue.get_property("max-size-time")
@@ -271,7 +271,7 @@ class SoundSink(SoundPipeline):
     def set_max_level(self):
         if not self.queue:
             return
-        now = time.time()
+        now = monotonic_time()
         elapsed = now-self.last_max_update
         if elapsed<1:
             #not more than once a second
@@ -388,7 +388,7 @@ class SoundSink(SoundPipeline):
         if self.queue:
             clt = self.queue.get_property("current-level-time")//MS_TO_NS
             log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
-            self.levels.append((time.time(), clt))
+            self.levels.append((monotonic_time(), clt))
 
     def push_buffer(self, buf):
         #buf.size = size

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
-import time
 
-from xpra.os_util import SIGNAMES, Queue
+from xpra.os_util import SIGNAMES, Queue, monotonic_time
 from xpra.util import csv, envint, envbool, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
@@ -279,7 +278,7 @@ class SoundSource(SoundPipeline):
         for x in self.pending_metadata:
             self.inc_buffer_count()
             self.inc_byte_count(len(x))
-        metadata["time"] = int(time.time()*1000)
+        metadata["time"] = int(monotonic_time()*1000)
         self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
         self.pending_metadata = []
         self.emit_info()

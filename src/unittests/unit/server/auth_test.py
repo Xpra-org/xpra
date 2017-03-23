@@ -11,7 +11,7 @@ import tempfile
 import uuid
 import hmac
 from xpra.util import xor
-from xpra.os_util import strtobytes, bytestostr, WIN32
+from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32
 from xpra.net.protocol import get_digests
 from xpra.net.crypto import get_digest_module
 
@@ -159,8 +159,7 @@ class TestAuth(unittest.TestCase):
 		for muck in (0, 1):
 			if WIN32:
 				#NamedTemporaryFile doesn't work for reading on win32...
-				import time
-				filename = os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-test-%s" % time.time())
+				filename = os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-test-%s" % monotonic_time())
 				f = open(filename, 'wb')
 			else:
 				f = tempfile.NamedTemporaryFile(prefix=mod_name)

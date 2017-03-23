@@ -4,15 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
-
 from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
@@ -217,7 +215,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
         warn_encoding_once(warning_key, "cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
         return False
     input_format, target_format = target_rgb[0]
-    start = time.time()
+    start = monotonic_time()
     w = image.get_width()
     h = image.get_height()
     #PIL cannot use the memoryview directly:
@@ -231,7 +229,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     image.set_pixels(data)
     image.set_rowstride(rowstride)
     image.set_pixel_format(target_format)
-    end = time.time()
+    end = monotonic_time()
     log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, rgb_formats, supports_transparency, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
     return True
 
@@ -245,11 +243,11 @@ def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):
             warning_key = "mmap_send(%s)" % image.get_pixel_format()
             warn_encoding_once(warning_key, "cannot use mmap to send %s" % image.get_pixel_format())
             return None
-    start = time.time()
+    start = monotonic_time()
     data = image.get_pixels()
     assert data, "failed to get pixels from %s" % image
     mmap_data, mmap_free_size = mmap_write(mmap, mmap_size, data)
-    elapsed = time.time()-start+0.000000001 #make sure never zero!
+    elapsed = monotonic_time()-start+0.000000001 #make sure never zero!
     log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
     if mmap_data is None:
         return None

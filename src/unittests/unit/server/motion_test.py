@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
-import time
 from zlib import crc32
 
 from xpra.util import envbool
+from xpra.os_util import monotonic_time
 try:
 	from xpra.server.window import motion
 	log = motion.log		#@UndefinedVariable
@@ -89,11 +89,11 @@ class TestMotion(unittest.TestCase):
 
 		#performance:
 		N = 4096
-		start = time.time()
+		start = monotonic_time()
 		array1 = range(N)
 		array2 = [N*2-x*2 for x in range(N)]
 		d = self.calculate_distances(array1, array2, 1)[0]
-		end = time.time()
+		end = monotonic_time()
 		if SHOW_PERF:
 			log.info("calculate_distances %4i^2 in %5.1f ms" % (N, (end-start)*1000))
 
@@ -135,18 +135,18 @@ class TestMotion(unittest.TestCase):
 			log("picture of height %i scrolled by %i", H, N)
 			na2 = np.roll(na1, -N*W*BPP)
 			buf2 = tobytes(na2)
-			start = time.time()
+			start = monotonic_time()
 			sd.update(buf2, 0, 0, W, H, W*BPP, BPP)
-			end = time.time()
+			end = monotonic_time()
 			if SHOW_PERF:
 				log.info("hashed image %ix%i (%.1fMB) in %4.2f ms" % (W, H, len(buf2)//1024//1024, 1000.0*(end-start)))
-			start = time.time()
+			start = monotonic_time()
 			sd.calculate()
 			sd_data = sd.get_scroll_values(1)
 			scrolls, non_scrolls = sd_data
 			log("scroll values=%s", dict(scrolls))
 			log("non scroll values=%s", dict(non_scrolls))
-			end = time.time()
+			end = monotonic_time()
 			if SHOW_PERF:
 				log.info("calculated distances %4i^2 in %5.2f ms" % (H, 1000.0*(end-start)))
 			line_defs = scrolls.get(-N, {})

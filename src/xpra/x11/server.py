@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,13 +11,12 @@ import gtk
 from gtk import gdk
 import glib
 import gobject
-import time
 import math
 from collections import deque
 
 from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool, envint
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
@@ -507,7 +506,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #TODO: find a better way to choose the timer delay:
         #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         #(lcce should always be in the past, so min(..) should be redundant here)
-        delay = max(100, min(250, 250 + 1000 * (lcce-time.time())))
+        delay = max(100, min(250, 250 + 1000 * (lcce-monotonic_time())))
         self.snc_timer = glib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1):
@@ -865,7 +864,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     damage = True
             else:
                 assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
-                self.last_client_configure_event = time.time()
+                self.last_client_configure_event = monotonic_time()
                 if is_ui_driver and len(packet)>=9:
                     changes = self._set_window_state(proto, wid, window, packet[8])
                     damage |= len(changes)>0

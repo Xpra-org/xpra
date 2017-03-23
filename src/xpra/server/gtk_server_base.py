@@ -1,12 +1,11 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import gtk
 from gtk import gdk
 #most important with win32 servers:
@@ -22,6 +21,7 @@ clipboardlog = Logger("server", "clipboard")
 cursorlog = Logger("server", "cursor")
 
 from xpra.util import flatten_dict
+from xpra.os_util import monotonic_time
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
@@ -112,13 +112,13 @@ class GTKServerBase(ServerBase):
         return cinfo
 
     def do_get_info(self, proto, *args):
-        start = time.time()
+        start = monotonic_time()
         info = ServerBase.do_get_info(self, proto, *args)
         vi = get_gtk_version_info()
         vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)
         info.setdefault("features", {})["randr"] = self.randr
-        log("GTKServerBase.do_get_info took %ims", (time.time()-start)*1000)
+        log("GTKServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
     def get_root_window_size(self):

@@ -1,16 +1,16 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 from collections import deque
 from threading import Event
 from math import sqrt
+from time import sleep
 
 from xpra.log import Logger
 log = Logger("server")
@@ -42,7 +42,7 @@ from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, BytesIOClass, WIN32
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, WIN32
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -327,7 +327,7 @@ class ServerSource(FileTransferHandler):
         self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
-        self.connection_time = time.time()
+        self.connection_time = monotonic_time()
 
         # the queues of damage requests we work through:
         self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
@@ -343,7 +343,7 @@ class ServerSource(FileTransferHandler):
         self.video_helper = getVideoHelper().clone()
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
-        self.last_user_event = time.time()
+        self.last_user_event = monotonic_time()
         self.last_ping_echoed_time = 0
 
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_PER_SECOND)
@@ -516,9 +516,9 @@ class ServerSource(FileTransferHandler):
                 return
             #allow other threads to run
             #(ideally this would be a low priority thread)
-            time.sleep(0)
+            sleep(0)
         #calculate weighted average as new global default delay:
-        now = time.time()
+        now = monotonic_time()
         wdimsum, wdelay, tsize, tcount = 0, 0, 0, 0
         for ws in list(self.window_sources.values()):
             if ws.batch_config.last_updated<=0:
@@ -554,9 +554,9 @@ class ServerSource(FileTransferHandler):
         self.calculate_due = True
         def recalculate_work():
             self.calculate_due = False
-            self.calculate_last_time = time.time()
+            self.calculate_last_time = monotonic_time()
             self.recalculate_delays()
-        delta = time.time() - self.calculate_last_time
+        delta = monotonic_time() - self.calculate_last_time
         RECALCULATE_DELAY = 1.0           #1s
         if delta>RECALCULATE_DELAY:
             add_work_item(recalculate_work)
@@ -605,7 +605,7 @@ class ServerSource(FileTransferHandler):
 
     def user_event(self):
         timeoutlog("user_event()")
-        self.last_user_event = time.time()
+        self.last_user_event = monotonic_time()
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
         if self.idle:
@@ -1468,13 +1468,13 @@ class ServerSource(FileTransferHandler):
     def get_info(self):
         lpe = 0
         if self.last_ping_echoed_time>0:
-            lpe = int(time.time()*1000-self.last_ping_echoed_time)
+            lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)
         info = {
                 "version"           : self.client_version or "unknown",
                 "revision"          : self.client_revision or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
                 "uuid"              : self.uuid,
-                "idle_time"         : int(time.time()-self.last_user_event),
+                "idle_time"         : int(monotonic_time()-self.last_user_event),
                 "idle"              : self.idle,
                 "hostname"          : self.hostname,
                 "argv"              : self.argv,
@@ -1483,7 +1483,7 @@ class ServerSource(FileTransferHandler):
                 "desktops"          : self.desktops,
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
-                "elapsed_time"      : int(time.time()-self.connection_time),
+                "elapsed_time"      : int(monotonic_time()-self.connection_time),
                 "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
                 "counter"           : self.counter,
@@ -1661,7 +1661,7 @@ class ServerSource(FileTransferHandler):
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:
             return
-        now = time.time()
+        now = monotonic_time()
         self.clipboard_stats.append(now)
         if len(self.clipboard_stats)>=MAX_CLIPBOARD_PER_SECOND:
             elapsed = now-self.clipboard_stats[0]
@@ -1897,7 +1897,7 @@ class ServerSource(FileTransferHandler):
 
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
-        now_ms = int(1000*time.time())
+        now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send("ping", now_ms)
         timeout = 60
@@ -1926,11 +1926,11 @@ class ServerSource(FileTransferHandler):
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
         self.last_ping_echoed_time = echoedtime
-        client_ping_latency = time.time()-echoedtime/1000.0
-        self.statistics.client_ping_latency.append((time.time(), client_ping_latency))
+        client_ping_latency = monotonic_time()-echoedtime/1000.0
+        self.statistics.client_ping_latency.append((monotonic_time(), client_ping_latency))
         self.client_load = l1, l2, l3
         if server_ping_latency>=0:
-            self.statistics.server_ping_latency.append((time.time(), server_ping_latency/1000.0))
+            self.statistics.server_ping_latency.append((monotonic_time(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
@@ -2178,7 +2178,7 @@ class ServerSource(FileTransferHandler):
         damage_options = {}
         if options:
             damage_options = options.copy()
-        self.statistics.damage_last_events.append((wid, time.time(), w*h))
+        self.statistics.damage_last_events.append((wid, monotonic_time(), w*h))
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
 
@@ -2193,7 +2193,7 @@ class ServerSource(FileTransferHandler):
             log.error("client_ack_damage when we don't send any window data!?")
             return
         if decode_time>0:
-            self.statistics.client_decode_time.append((wid, time.time(), width*height, decode_time))
+            self.statistics.client_decode_time.append((wid, monotonic_time(), width*height, decode_time))
         ws = self.window_sources.get(wid)
         if ws:
             ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
@@ -2210,7 +2210,7 @@ class ServerSource(FileTransferHandler):
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
         """
-        self.statistics.compression_work_qsizes.append((time.time(), self.encode_work_queue.qsize()))
+        self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_work_queue.qsize()))
         self.encode_work_queue.put(fn_and_args)
 
     def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None):
@@ -2218,7 +2218,7 @@ class ServerSource(FileTransferHandler):
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
         """
-        now = time.time()
+        now = monotonic_time()
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
             self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in list(self.packet_queue) if x[1]==wid)))
@@ -2254,4 +2254,4 @@ class ServerSource(FileTransferHandler):
                     log(" %s", e)
                 else:
                     log.error("Error during encoding:", exc_info=True)
-            NOYIELD or time.sleep(0)
+            NOYIELD or sleep(0)

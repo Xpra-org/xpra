@@ -1,15 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
-import time
 
 from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 from collections import deque
 
 
@@ -68,7 +66,7 @@ class Encoder(object):
         if self.scaling!=(1,1):
             info["scaling"] = self.scaling
         #calculate fps:
-        now = time.time()
+        now = monotonic_time()
         last_time = now
         cut_off = now-10.0
         f = 0
@@ -151,6 +149,6 @@ class Encoder(object):
         if self.scaling!=(1,1):
             client_options["scaling"] = self.scaling
         log("compress_image(%s, %s) returning %s bytes and options=%s", image, options, len(pixels), client_options)
-        self.last_frame_times.append(time.time())
+        self.last_frame_times.append(monotonic_time())
         self.frames += 1
         return  memoryview_to_bytes(pixels[:]), client_options

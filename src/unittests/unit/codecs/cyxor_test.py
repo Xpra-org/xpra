@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import unittest
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, monotonic_time
 try:
     from xpra.codecs.xor.cyxor import xor_str       #@UnresolvedImport
 except:
@@ -50,14 +49,14 @@ class TestHMAC(unittest.TestCase):
 
 
     def test_large_xor_speed(self):
-        start = time.time()
+        start = monotonic_time()
         size = 1*1024*1024       #1MB
         zeroes  = strtobytes(chr(0)*size)
         ones    = strtobytes(chr(1)*size)
         count = 10
         for _ in range(count):
             self.check_xor(zeroes, ones, ones)
-        end = time.time()
+        end = monotonic_time()
         if end>start:
             speed = size/(end-start)/1024/1024
             #print("%iMB/s: took %ims on average (%s iterations)" % (speed, 1000*(end-start)/count, count))

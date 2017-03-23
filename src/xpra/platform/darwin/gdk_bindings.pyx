@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import time
 
 import gobject
 import gtk
@@ -78,7 +77,6 @@ def set_wheel_event_handler(fn):
 cdef GdkFilterReturn quartz_event_filter(GdkXEvent * event,
                                     GdkEvent * gdk_event,
                                     void * userdata) with gil:
-    start = time.time()
     cdef NSEvent* nsevent = <NSEvent*> event
     cdef NSEventType event_type = getNSEventType(nsevent)
     cdef void *view

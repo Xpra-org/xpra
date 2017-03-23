@@ -1,15 +1,15 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 from math import log as mathlog, sqrt
 
 from xpra.log import Logger
 log = Logger("server", "stats")
 
+from xpra.os_util import monotonic_time
 from xpra.server.cystats import queue_inspect, logp, time_weighted_average, calculate_timesize_weighted_average_score   #@UnresolvedImport
 
 
@@ -64,7 +64,7 @@ def update_batch_delay(batch, factors):
         then combine it with the new factors.
     """
     current_delay = batch.delay
-    now = time.time()
+    now = monotonic_time()
     tv, tw = 0.0, 0.0
     decay = max(1, logp(current_delay/batch.min_delay)/5.0)
     max_delay = batch.max_delay
@@ -155,7 +155,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     # may aggregate multiple damage requests into one packet - which may skip frames)
     #TODO: reconcile this with video regions
     #only count the last second's worth:
-    now = time.time()
+    now = monotonic_time()
     lim = now-1.0
     lde = [w*h for t,_,_,w,h in list(statistics.last_damage_events) if t>=lim]
     pixels = sum(lde)
@@ -261,7 +261,7 @@ def get_target_quality(wid, window_dimensions, batch, global_statistics, statist
     #raise the quality when there are not many recent damage events:
     ww, wh = window_dimensions
     if ww>0 and wh>0:
-        now = time.time()
+        now = monotonic_time()
         damage_pixel_count = dict((lim, sum([w*h for t,_,_,w,h in list(statistics.last_damage_events) if t>=now-lim and t<now-lim+1])) for lim in range(1,11))
         pixl5 = sum(v for lim,v in damage_pixel_count.items() if lim<=5)
         pixn5 = sum(v for lim,v in damage_pixel_count.items() if lim>5)

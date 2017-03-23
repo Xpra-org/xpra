@@ -10,7 +10,7 @@ import sys
 import os.path
 import stat
 import socket
-import time
+from time import sleep
 import optparse
 import logging
 from subprocess import Popen, PIPE
@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, DEFAULT_PORT
-from xpra.os_util import getuid, getgid, WIN32, OSX
+from xpra.os_util import getuid, getgid, monotonic_time, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -2436,12 +2436,12 @@ def start_server_subprocess(script_file, args, mode, defaults,
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
     #wait until the new socket appears:
-    start = time.time()
+    start = monotonic_time()
     match_display_name = None
     if display_name:
         match_display_name = "server.display=%s" % display_name
     from xpra.platform.paths import get_nodock_command
-    while time.time()-start<15 and (proc is None or proc.poll() in (None, 0)):
+    while monotonic_time()-start<15 and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
         for socket_path in new_sockets:
@@ -2473,7 +2473,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                             return socket_path
             except Exception as e:
                 warn("error during server process detection: %s" % e)
-        time.sleep(0.10)
+        sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
@@ -2526,14 +2526,14 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         for _ in range(25):
             if not os.path.exists(sockfile):
                 break
-            time.sleep(0.2)
+            sleep(0.2)
         #next 5 seconds: actually try to connect
         for _ in range(10):
             final_state = sockdir.get_server_state(sockfile, 1)
             if final_state is DotXpra.DEAD:
                 break
             if final_state is DotXpra.LIVE:
-                time.sleep(0.5)
+                sleep(0.5)
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display)
             return 0
@@ -2696,7 +2696,7 @@ def run_list(error_cb, opts, extra_args):
         sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
         counter = 0
         while reprobe and counter<5:
-            time.sleep(1)
+            sleep(1)
             counter += 1
             probe_list = list(reprobe)
             unknown = []

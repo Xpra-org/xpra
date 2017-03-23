@@ -4,11 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
-
 import errno as pyerrno
 from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
+from xpra.os_util import monotonic_time
 
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
@@ -276,7 +275,7 @@ cdef class XImageWrapper(object):
         self.thread_safe = thread_safe
         self.sub = sub
         self.pixels = <void *> pixels
-        self.timestamp = int(time.time()*1000)
+        self.timestamp = int(monotonic_time()*1000)
         self.palette = palette
 
     cdef set_image(self, XImage* image):
@@ -474,7 +473,7 @@ cdef class XImageWrapper(object):
 
     def restride(self, const unsigned int rowstride):
         #NOTE: this must be called from the UI thread!
-        start = time.time()
+        #start = monotonic_time()
         cdef unsigned int newsize = rowstride*self.height                #desirable size we could have
         cdef unsigned int size = self.rowstride*self.height
         #is it worth re-striding to save space:
@@ -510,7 +509,7 @@ cdef class XImageWrapper(object):
         if self.image==NULL:
             self.thread_safe = 1
         #log("restride(%s) %s pixels re-stride saving %i%% from %s (%s bytes) to %s (%s bytes) took %.1fms",
-        #    rowstride, self.pixel_format, 100-100*newsize/size, oldstride, size, rowstride, newsize, (time.time()-start)*1000)
+        #    rowstride, self.pixel_format, 100-100*newsize/size, oldstride, size, rowstride, newsize, (monotonic_time()-start)*1000)
         return True
 
 

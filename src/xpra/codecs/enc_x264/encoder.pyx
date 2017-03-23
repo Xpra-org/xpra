@@ -3,14 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
 from xpra.util import nonl, envint, envbool, typedict, AtomicInteger
-from xpra.os_util import bytestostr, strtobytes
+from xpra.os_util import bytestostr, strtobytes, monotonic_time
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 from xpra.buffers.membuf cimport object_as_buffer
@@ -643,7 +642,7 @@ cdef class Encoder:
                 })
         #calculate fps:
         cdef unsigned int f = 0
-        cdef double now = time.time()
+        cdef double now = monotonic_time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -745,7 +744,7 @@ cdef class Encoder:
         cdef x264_picture_t pic_out
         cdef int frame_size = 0
         assert self.context!=NULL
-        start = time.time()
+        start = monotonic_time()
 
         if speed>=0:
             self.set_encoding_speed(speed)
@@ -804,7 +803,7 @@ cdef class Encoder:
         if self.export_nals:
             client_options["nals"] = nal_indexes
         #accounting:
-        end = time.time()
+        end = monotonic_time()
         self.time += end-start
         self.frames += 1
         self.last_frame_times.append((start, end))

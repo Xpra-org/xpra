@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import time
 import traceback
 
 import gobject
@@ -14,6 +13,7 @@ import gtk.gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
+from xpra.os_util import monotonic_time
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
@@ -963,7 +963,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         log("x_event_filter ignoring %s send_event", event_type)
         return GDK_FILTER_CONTINUE
-    start = time.time()
+    start = monotonic_time()
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)
@@ -1149,7 +1149,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
             else:
                 signal, parent_signal = event_args
                 _route_event(pyev, signal, parent_signal)
-        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type, 1000.0*(time.time()-start))
+        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type, 1000.0*(monotonic_time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()

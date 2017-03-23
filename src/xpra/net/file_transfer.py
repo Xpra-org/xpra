@@ -1,11 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 import subprocess, shlex
 import hashlib
 import uuid
@@ -15,6 +14,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
+from xpra.os_util import monotonic_time
 from xpra.util import typedict, csv, nonl, envint, envbool
 from xpra.simple_stats import std_unit
 
@@ -220,7 +220,7 @@ class FileTransferHandler(FileTransferAttributes):
         if expected_digest:
             self.check_digest(filename, digest.hexdigest(), expected_digest)
         start_time = chunk_state[0]
-        elapsed = time.time()-start_time
+        elapsed = monotonic_time()-start_time
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
         self.do_process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
@@ -251,7 +251,7 @@ class FileTransferHandler(FileTransferAttributes):
             digest = hashlib.sha1()
             chunk = 0
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
-            chunk_state = [time.time(), fd, filename, mimetype, printit, openit, filesize, options, digest, 0, timer, chunk]
+            chunk_state = [monotonic_time(), fd, filename, mimetype, printit, openit, filesize, options, digest, 0, timer, chunk]
             self.receive_chunks_in_progress[chunk_id] = chunk_state
             self.send("ack-file-chunk", chunk_id, True, "", chunk)
             return
@@ -329,14 +329,14 @@ class FileTransferHandler(FileTransferAttributes):
             printlog("printing failed and returned %i", job)
             delfile()
             return
-        start = time.time()
+        start = monotonic_time()
         def check_printing_finished():
             done = printing_finished(job)
             printlog("printing_finished(%s)=%s", job, done)
             if done:
                 delfile()
                 return False
-            if time.time()-start>10*60:
+            if monotonic_time()-start>10*60:
                 printlog.warn("print job %s timed out", job)
                 delfile()
                 return False
@@ -417,7 +417,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_id = uuid.uuid4().hex
             options["file-chunk-id"] = chunk_id
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, 0)
-            chunk_state = [time.time(), data, chunk_size, timer, 0]
+            chunk_state = [monotonic_time(), data, chunk_size, timer, 0]
             self.send_chunks_in_progress[chunk_id] = chunk_state
             cdata = ""
             #timer to check that the other end is requesting more chunks:
@@ -459,7 +459,7 @@ class FileTransferHandler(FileTransferAttributes):
         start_time, data, chunk_size, timer, chunk = chunk_state
         if not data:
             #all sent!
-            elapsed = time.time()-start_time
+            elapsed = monotonic_time()-start_time
             filelog("%i chunks of %i bytes sent in %ims (%sB/s)", chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
             del self.send_chunks_in_progress[chunk_id]
             return

@@ -1,13 +1,12 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 
 try:
     from gtk import gdk
@@ -33,7 +32,7 @@ from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
-from xpra.os_util import StringIOClass
+from xpra.os_util import StringIOClass, monotonic_time
 from xpra.net.compression import Compressed
 
 
@@ -263,7 +262,7 @@ class X11ServerBase(GTKServerBase):
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
-        start = time.time()
+        start = monotonic_time()
         info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
         if self.opengl_props:
             info["opengl"] = self.opengl_props
@@ -273,7 +272,7 @@ class X11ServerBase(GTKServerBase):
             "fakeXinerama"          : self.fake_xinerama and bool(self.libfakeXinerama_so),
             "libfakeXinerama"       : self.libfakeXinerama_so or "",
             })
-        log("X11ServerBase.do_get_info took %ims", (time.time()-start)*1000)
+        log("X11ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
     def get_ui_info(self, proto, wids=None, *args):

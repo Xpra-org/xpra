@@ -1,11 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 from gtk import gdk
 import cairo
 
@@ -14,7 +13,7 @@ log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.util import csv, envbool
 
 
@@ -184,7 +183,7 @@ class PixmapBacking(GTK2WindowBacking):
             context.paint()
             if self.pointer_overlay:
                 x, y, size, start_time = self.pointer_overlay[2:]
-                elapsed = time.time()-start_time
+                elapsed = max(0, monotonic_time()-start_time)
                 if elapsed<6:
                     alpha = max(0, (5.0-elapsed)/5.0)
                     log("cairo_draw_from_drawable(%s, %s) drawing pointer with cairo at %s with alpha=%s", context, drawable, self.pointer_overlay, alpha)

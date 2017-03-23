@@ -4,11 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
-
 #ensures we only load GTK2:
 from xpra.x11.x11_server_base import X11ServerBase
 
+from xpra.os_util import monotonic_time
 from xpra.util import envbool, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
@@ -49,7 +48,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def get_image(self, x, y, width, height, logger=None):
         try:
-            start = time.time()
+            start = monotonic_time()
             with xsync:
                 if USE_XSHM:
                     log("X11 shadow get_image, xshm=%s", self.xshm)
@@ -69,7 +68,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
             #cleanup and hope for the best!
             self.cleanup()
         finally:
-            end = time.time()
+            end = monotonic_time()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 
 

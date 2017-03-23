@@ -19,6 +19,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup
+from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -205,7 +206,7 @@ class WindowVideoSource(WindowSource):
                  "scrolling"      : self.supports_scrolling,
                  }
         if self._last_pipeline_check>0:
-            einfo["pipeline_last_check"] = int(1000*(time.time()-self._last_pipeline_check))
+            einfo["pipeline_last_check"] = int(1000*(monotonic_time()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
             popts = einfo.setdefault("pipeline_option", {})
@@ -384,7 +385,7 @@ class WindowVideoSource(WindowSource):
             #(maybe this should be an 'assert' statement here?)
             return nonvideo()
 
-        now = time.time()
+        now = monotonic_time()
         if now-self.statistics.last_resized<0.350:
             #window has just been resized, may still resize
             return nonvideo(quality-30)
@@ -535,7 +536,7 @@ class WindowVideoSource(WindowSource):
         if not regions or not self.can_refresh():
             return
         self.flush_video_encoder_now()
-        now = time.time()
+        now = monotonic_time()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
         WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
@@ -704,7 +705,7 @@ class WindowVideoSource(WindowSource):
             delay = 0
         else:
             #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
-            elapsed = int(1000.0*(time.time()-damage_time))
+            elapsed = int(1000.0*(monotonic_time()-damage_time))
             delay = max(self.batch_config.delay*4, 50)
             delay = min(delay, self.video_subregion.non_max_wait-elapsed)
         if delay<=25:
@@ -743,7 +744,7 @@ class WindowVideoSource(WindowSource):
             log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
             return
 
-        rgb_request_time = time.time()
+        rgb_request_time = monotonic_time()
         image = self.window.get_image(x, y, w, h, logger=log)
         if image is None:
             log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
@@ -768,7 +769,7 @@ class WindowVideoSource(WindowSource):
             if self.is_cancelled(sequence):
                 log("get_window_pixmap: dropping damage request with sequence=%s", sequence)
                 return
-            now = time.time()
+            now = monotonic_time()
             log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
                     self.wid, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
             item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, eflush)
@@ -827,7 +828,7 @@ class WindowVideoSource(WindowSource):
         #must be called from the UI thread for synchronization
         #we ensure that the timer will fire no later than av_delay
         #re-scheduling it if it was due later than that
-        due = time.time()+av_delay
+        due = monotonic_time()+av_delay
         if self.encode_from_queue_due==0 or due<self.encode_from_queue_due:
             self.encode_from_queue_due = due
             self.cancel_encode_from_queue()
@@ -846,14 +847,14 @@ class WindowVideoSource(WindowSource):
             return      #nothing to encode, must have been picked off already
         self.update_av_sync_delay()
         #find the first item which is due
-        #in seconds, same as time.time():
+        #in seconds, same as monotonic_time():
         if len(self.encode_queue)>=self.encode_queue_max_size:
             av_delay = 0        #we must free some space!
         elif FORCE_AV_DELAY>0:
             av_delay = FORCE_AV_DELAY/1000.0
         else:
             av_delay = self.av_sync_delay/1000.0
-        now = time.time()
+        now = monotonic_time()
         still_due = []
         remove = []
         index = 0
@@ -939,7 +940,7 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        elapsed = time.time()-self._last_pipeline_check
+        elapsed = monotonic_time()-self._last_pipeline_check
         if not force_reload and elapsed<0.75:
             scorelog("cannot score: only %ims since last check", 1000*elapsed)
             #already checked not long ago
@@ -976,8 +977,8 @@ class WindowVideoSource(WindowSource):
                 h = r.height & self.width_mask
         if w<self.min_w or w>self.max_w or h<self.min_h or h>self.max_h:
             return checknovideo("out of bounds: %sx%s (min %sx%s, max %sx%s)", w, h, self.min_w, self.min_h, self.max_w, self.max_h)
-        #if time.time()-self.statistics.last_resized<0.500:
-        #    return checknovideo("resized just %.1f seconds ago", time.time()-self.statistics.last_resized)
+        #if monotonic_time()-self.statistics.last_resized<0.500:
+        #    return checknovideo("resized just %.1f seconds ago", monotonic_time()-self.statistics.last_resized)
 
         #must copy reference to those objects because of threading races:
         ve = self._video_encoder
@@ -1023,7 +1024,7 @@ class WindowVideoSource(WindowSource):
             clean = True
         if clean:
             self.video_context_clean()
-        self._last_pipeline_check = time.time()
+        self._last_pipeline_check = monotonic_time()
 
 
     def get_video_pipeline_options(self, encodings, width, height, src_format, force_refresh=False):
@@ -1041,9 +1042,9 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        if not force_refresh and (time.time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encodings, width, height, src_format):
+        if not force_refresh and (monotonic_time()-self.last_pipeline_time<1) and self.last_pipeline_params and self.last_pipeline_params==(encodings, width, height, src_format):
             #keep existing scores
-            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encodings, width, height, src_format, force_refresh), 1000.0*(time.time()-self.last_pipeline_time))
+            scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encodings, width, height, src_format, force_refresh), 1000.0*(monotonic_time()-self.last_pipeline_time))
             return self.last_pipeline_scores
         scorelog("get_video_pipeline_options%s last params=%s", (encodings, width, height, src_format, force_refresh), self.last_pipeline_params)
 
@@ -1119,7 +1120,7 @@ class WindowVideoSource(WindowSource):
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         self.last_pipeline_params = (encodings, width, height, src_format)
         self.last_pipeline_scores = s
-        self.last_pipeline_time = time.time()
+        self.last_pipeline_time = monotonic_time()
         return s
 
     def csc_equiv(self, csc_mode):
@@ -1136,7 +1137,7 @@ class WindowVideoSource(WindowSource):
         q = self._current_quality
         s = self._current_speed
         actual_scaling = self.scaling
-        now = time.time()
+        now = monotonic_time()
         def get_min_required_scaling():
             if width<=max_w and height<=max_h:
                 return (1, 1)       #no problem
@@ -1313,7 +1314,7 @@ class WindowVideoSource(WindowSource):
             Runs in the 'encode' thread.
         """
         assert width>0 and height>0, "invalid dimensions: %sx%s" % (width, height)
-        start = time.time()
+        start = monotonic_time()
         if len(scores)==0:
             if not self.is_cancelled():
                 log.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
@@ -1341,7 +1342,7 @@ class WindowVideoSource(WindowSource):
             if ve:
                 self._video_encoder = None
                 ve.clean()
-        end = time.time()
+        end = monotonic_time()
         if not self.is_cancelled():
             videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
             videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
@@ -1370,11 +1371,11 @@ class WindowVideoSource(WindowSource):
             #csc speed is not very important compared to encoding speed,
             #so make sure it never degrades quality
             csc_speed = min(speed, 100-quality/2.0)
-            csc_start = time.time()
+            csc_start = monotonic_time()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,
                                    enc_width, enc_height, enc_in_format, csc_speed)
-            csc_end = time.time()
+            csc_end = monotonic_time()
             csclog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
                   csce, csce.get_info(), (csc_end-csc_start)*1000.0)
         else:
@@ -1391,7 +1392,7 @@ class WindowVideoSource(WindowSource):
                 videolog("scaling is now enabled, so skipping %s", encoder_spec)
                 return False
         self._csc_encoder = csce
-        enc_start = time.time()
+        enc_start = monotonic_time()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
         dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
@@ -1406,7 +1407,7 @@ class WindowVideoSource(WindowSource):
         self.min_h = min_h
         self.max_w = max_w
         self.max_h = max_h
-        enc_end = time.time()
+        enc_end = monotonic_time()
         self.start_video_frame = 0
         self._video_encoder = ve
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
@@ -1416,7 +1417,7 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height):
         #tweaks for "real" video:
-        if self.matches_video_subregion(width, height) and self.subregion_is_video() and (time.time()-self.last_scroll_time)>5:
+        if self.matches_video_subregion(width, height) and self.subregion_is_video() and (monotonic_time()-self.last_scroll_time)>5:
             return {
                        "source"     : "video",
                        #could take av-sync into account here to choose the number of b-frames:
@@ -1441,7 +1442,7 @@ class WindowVideoSource(WindowSource):
 
 
     def encode_scrolling(self, scroll_data, image, options={}):
-        start = time.time()
+        start = monotonic_time()
         try:
             del options["av-sync"]
         except:
@@ -1480,14 +1481,14 @@ class WindowVideoSource(WindowSource):
             if flush>0 and self.supports_flush:
                 client_options["flush"] = flush
             coding = "scroll"
-            end = time.time()
+            end = monotonic_time()
             packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet)
             compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
         #send the rest as rectangles:
         if non_scroll:
-            nsstart = time.time()
+            nsstart = monotonic_time()
             #prefer fast encoding in most cases,
             #since video and scroll encoding fire when there are lots of updates:
             order = None
@@ -1498,7 +1499,7 @@ class WindowVideoSource(WindowSource):
             if encoding:
                 encode_fn = self._encoders[encoding]
                 for sy, sh in non_scroll.items():
-                    substart = time.time()
+                    substart = monotonic_time()
                     sub = image.get_sub_image(0, sy, w, sh)
                     ret = encode_fn(encoding, sub, options)
                     if not ret:
@@ -1522,13 +1523,13 @@ class WindowVideoSource(WindowSource):
                     psize = w*sh*4
                     csize = len(data)
                     compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                         (time.time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
-                scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (time.time()-nsstart)*1000, len(non_scroll))
+                         (monotonic_time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
             else:
                 #we can't send the non-scroll areas, ouch!
                 flush = 0
         assert flush==0
-        self.last_scroll_time = time.time()
+        self.last_scroll_time = monotonic_time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         return None
 
@@ -1598,7 +1599,7 @@ class WindowVideoSource(WindowSource):
                           "quality"     : 0,
                           "optimize"    : False,
                           }
-            t = time.time()
+            t = monotonic_time()
             tstr = time.strftime("%H-%M-%S", time.localtime(t))
             filename = "./W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
             videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
@@ -1611,7 +1612,7 @@ class WindowVideoSource(WindowSource):
                 self.scroll_data = None
             else:
                 try:
-                    start = time.time()
+                    start = monotonic_time()
                     if not scroll_data:
                         scroll_data = ScrollData()
                         self.scroll_data = scroll_data
@@ -1632,7 +1633,7 @@ class WindowVideoSource(WindowSource):
                     #marker telling us not to invalidate the scroll data from here on:
                     options["scroll"] = True
                     scroll, count = scroll_data.get_best_match()
-                    end = time.time()
+                    end = monotonic_time()
                     match_pct = int(100*count/h)
                     scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
                     #if enough scrolling is detected, use scroll encoding for this frame:
@@ -1690,7 +1691,7 @@ class WindowVideoSource(WindowSource):
 
         csce, csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
-        start = time.time()
+        start = monotonic_time()
         quality = max(0, min(100, self._current_quality))
         speed = max(0, min(100, self._current_speed))
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
@@ -1718,7 +1719,7 @@ class WindowVideoSource(WindowSource):
                 videolog.error("Error: %s video compression failed", encoding)
             return None
         data, client_options = ret
-        end = time.time()
+        end = monotonic_time()
 
         #populate client options:
         frame = client_options.get("frame", 0)
@@ -1841,9 +1842,9 @@ class WindowVideoSource(WindowSource):
             #no csc step!
             return None, image, image.get_pixel_format(), width, height
 
-        start = time.time()
+        start = monotonic_time()
         csc_image = csce.convert_image(image)
-        end = time.time()
+        end = monotonic_time()
         csclog("csc_image(%s, %s, %s) converted to %s in %.1fms (%.1f MPixels/s)",
                         image, width, height,
                         csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))

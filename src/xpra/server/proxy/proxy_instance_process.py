@@ -1,14 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import socket
 import os
 import signal
 from threading import Timer
+from time import sleep
 
 from xpra.log import Logger
 log = Logger("proxy")
@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid
+from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
@@ -457,7 +457,7 @@ class ProxyInstanceProcess(Process):
                 log.info("waiting for network connections to close")
             else:
                 log("still waiting %i/10 - client.closed=%s, server.closed=%s", i+1, self.client_protocol._closed, self.server_protocol._closed)
-            time.sleep(0.1)
+            sleep(0.1)
         log.info("proxy instance %s stopped", os.getpid())
 
     def stop(self, reason="proxy terminating", skip_proto=None):
@@ -671,7 +671,7 @@ class ProxyInstanceProcess(Process):
                     #not a real packet, this is added by the timeout check:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
-                    now = time.time()
+                    now = monotonic_time()
                     idle_time = now-self.video_encoders_last_used_time.get(wid)
                     if ve and idle_time>VIDEO_TIMEOUT:
                         enclog("timing out the video encoder context for window %s", wid)
@@ -796,7 +796,7 @@ class ProxyInstanceProcess(Process):
                 dst_formats = self.video_encoders_dst_formats
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
-            self.video_encoders_last_used_time[wid] = time.time()       #just to make sure this is always set
+            self.video_encoders_last_used_time[wid] = monotonic_time()      #just to make sure this is always set
         #actual video compression:
         enclog("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         data, out_options = ve.compress_image(image, quality, speed, encoder_options)
@@ -805,14 +805,14 @@ class ProxyInstanceProcess(Process):
         for k in ("timestamp", "rgb_format", "depth", "csc"):
             if k not in out_options and k in client_options:
                 out_options[k] = client_options[k]
-        self.video_encoders_last_used_time[wid] = time.time()
+        self.video_encoders_last_used_time[wid] = monotonic_time()
         return send_updated(ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self):
         #have to be careful as another thread may come in...
         #so we just ask the encode thread (which deals with encoders already)
         #to do what may need to be done if we find a timeout:
-        now = time.time()
+        now = monotonic_time()
         for wid in list(self.video_encoders_last_used_time.keys()):
             idle_time = int(now-self.video_encoders_last_used_time.get(wid))
             if idle_time is None:
@@ -840,7 +840,7 @@ class ProxyInstanceProcess(Process):
 
     def get_window_info(self):
         info = {}
-        now = time.time()
+        now = monotonic_time()
         for wid, encoder in self.video_encoders.items():
             einfo = encoder.get_info()
             einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))

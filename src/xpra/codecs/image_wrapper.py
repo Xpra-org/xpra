@@ -1,11 +1,10 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 
 def clone_plane(plane):
     if isinstance(plane, memoryview):
@@ -36,7 +35,7 @@ class ImageWrapper(object):
         self.planes = planes
         self.thread_safe = thread_safe
         self.freed = False
-        self.timestamp = int(time.time()*1000)
+        self.timestamp = int(monotonic_time()*1000)
         self.palette = palette
 
     def _cn(self):

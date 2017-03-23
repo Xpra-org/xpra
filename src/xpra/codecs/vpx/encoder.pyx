@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, WIN32, OSX
+from xpra.os_util import bytestostr, monotonic_time, WIN32, OSX
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
@@ -490,7 +490,7 @@ cdef class Encoder:
             })
         #calculate fps:
         cdef unsigned int f = 0
-        cdef double now = time.time()
+        cdef double now = monotonic_time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -587,7 +587,7 @@ cdef class Encoder:
         cdef int flags = 0
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
 
-        start = time.time()
+        start = monotonic_time()
         image = <vpx_image_t *> memalign(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
@@ -624,18 +624,18 @@ cdef class Encoder:
             deadline = MAX(2, VPX_DL_GOOD_QUALITY * (90-self.speed) // 100)
             #cap the deadline at 250ms, which is already plenty
             deadline = MIN(250*1000, deadline)
-        start = time.time()
+        start = monotonic_time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
         if ret!=0:
             free(image)
             log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
             return None
-        end = time.time()
+        end = monotonic_time()
         log("vpx_codec_encode for %s took %ims (deadline=%8.3fms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000.0, self.speed, self.quality)
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
-        end = time.time()
+        end = monotonic_time()
         if pkt.kind != VPX_CODEC_CX_FRAME_PKT:
             free(image)
             log.error("%s invalid packet type: %s", self.encoding, PACKET_KIND.get(pkt.kind, pkt.kind))
@@ -647,7 +647,7 @@ cdef class Encoder:
         img = (<char*> pkt.data.frame.buf)[:pkt.data.frame.sz]
         free(image)
         log("vpx returning %s image: %s bytes", self.encoding, len(img))
-        end = time.time()
+        end = monotonic_time()
         self.last_frame_times.append((start, end))
         if self.file and pkt.data.frame.sz>0:
             self.file.write(img)

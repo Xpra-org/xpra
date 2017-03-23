@@ -15,12 +15,12 @@ import atexit
 import signal
 import socket
 import select
-import time
+from time import sleep
 import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, get_group_id, WIN32, OSX
+from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
@@ -510,7 +510,7 @@ def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wai
             sys.stdout.flush()
             counter += 1
             if counter<wait_for_unknown:
-                time.sleep(1)
+                sleep(1)
             state = dotxpra.get_server_state(sockpath)
         if counter>0:
             sys.stdout.write("\n")
@@ -864,10 +864,10 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
                                 stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb
         # waiting up to 10 seconds for it to show up
-        limit = time.time()+10
+        limit = monotonic_time()+10
         buf = ""
-        while time.time()<limit and len(buf)<8:
-            r, _, _ = select.select([r_pipe], [], [], max(0, limit-time.time()))
+        while monotonic_time()<limit and len(buf)<8:
+            r, _, _ = select.select([r_pipe], [], [], max(0, limit-monotonic_time()))
             if r_pipe in r:
                 buf += os.read(r_pipe, 8)
                 if buf[-1] == '\n':

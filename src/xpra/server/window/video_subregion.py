@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import math
 
+from xpra.os_util import monotonic_time
 from xpra.util import MutableInteger, envint, envbool
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
@@ -78,7 +78,7 @@ class VideoSubregion(object):
         self.last_scores = {}
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
-        self.min_time = time.time()
+        self.min_time = monotonic_time()
 
     def reset(self):
         self.cancel_refresh_timer()
@@ -267,10 +267,10 @@ class VideoSubregion(object):
 
         def update_markers():
             self.counter = damage_events_count
-            self.time = time.time()
+            self.time = monotonic_time()
 
         def few_damage_events(event_types, event_count):
-            elapsed = time.time()-self.time
+            elapsed = monotonic_time()-self.time
             #how many damage events occurred since we chose this region:
             event_count = max(0, damage_events_count - self.set_at)
             #make the timeout longer when the region has worked longer:
@@ -286,7 +286,7 @@ class VideoSubregion(object):
             few_damage_events("total", event_count)
             return
 
-        from_time = max(starting_at, time.time()-MAX_TIME, self.min_time)
+        from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
         #create a list (copy) to work on:
         lde = [x for x in list(last_damage_events) if x[0]>=from_time]
         dc = len(lde)
@@ -370,10 +370,10 @@ class VideoSubregion(object):
 
         def updateregion(rect):
             self.rectangle = rect
-            self.time = time.time()
+            self.time = monotonic_time()
             self.inout = inoutcount(rect)
             self.score = scoreinout(ww, wh, rect, *self.inout)
-            elapsed = time.time()-from_time
+            elapsed = monotonic_time()-from_time
             if elapsed<=0:
                 self.fps = 0
             else:

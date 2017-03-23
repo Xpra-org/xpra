@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,11 +9,11 @@
 import binascii
 import os
 import sys
-import time
 import socket
 import signal
 import threading
 import traceback
+from time import sleep
 
 from xpra.log import Logger
 log = Logger("server")
@@ -32,7 +32,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, SIGNAMES, WIN32
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, SIGNAMES, WIN32
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -133,7 +133,7 @@ class ServerCore(object):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        self.start_time = time.time()
+        self.start_time = monotonic_time()
         self.auth_class = None
         self.tcp_auth_class = None
         self.ssl_auth_class = None
@@ -513,7 +513,7 @@ class ServerCore(object):
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
-        time.sleep(0.1)
+        sleep(0.1)
 
 
     def cleanup_all_protocols(self, reason):
@@ -1113,7 +1113,7 @@ class ServerCore(object):
 
 
     def make_hello(self, source=None):
-        now = time.time()
+        now = monotonic_time()
         capabilities = flatten_dict(get_network_caps())
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
@@ -1156,19 +1156,19 @@ class ServerCore(object):
         proto.send_now(("hello", info))
 
     def get_all_info(self, callback, proto=None, *args):
-        start = time.time()
+        start = monotonic_time()
         ui_info = self.get_ui_info(proto, *args)
-        end = time.time()
+        end = monotonic_time()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
         def in_thread(*args):
-            start = time.time()
+            start = monotonic_time()
             #this runs in a non-UI thread
             try:
                 info = self.get_info(proto, *args)
                 merge_dicts(ui_info, info)
             except Exception as e:
                 log.error("error during info collection: %s", e, exc_info=True)
-            end = time.time()
+            end = monotonic_time()
             log("get_all_info: non ui info collected in %ims", (end-start)*1000)
             callback(proto, ui_info)
         start_thread(in_thread, "Info", daemon=True)
@@ -1181,7 +1181,7 @@ class ServerCore(object):
         return get_thread_info(proto)
 
     def get_info(self, proto, *args):
-        start = time.time()
+        start = monotonic_time()
         #this function is for non UI thread info
         info = {}
         def up(prefix, d):
@@ -1222,7 +1222,7 @@ class ServerCore(object):
             info["session"] = {"name" : self.session_name}
         if self.child_reaper:
             info.update(self.child_reaper.get_info())
-        end = time.time()
+        end = monotonic_time()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 

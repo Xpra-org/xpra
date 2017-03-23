@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import binascii
-import time
 import os
 import sys
 import numpy
@@ -13,7 +12,7 @@ from collections import deque
 
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX
+from xpra.os_util import WIN32, OSX, LINUX, monotonic_time
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -1225,7 +1224,7 @@ def get_runtime_factor():
     low_limit = 16
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
-    failure_elapsed = time.time()-last_context_failure
+    failure_elapsed = monotonic_time()-last_context_failure
     #discount factor gradually for 1 minute:
     f /= 61-min(60, failure_elapsed)
     log("nvenc.get_runtime_factor()=%s", f)
@@ -1285,7 +1284,7 @@ def get_info():
         from xpra.scripts.config import python_platform
         info["kernel_version"] = python_platform.uname()[2]
     if last_context_failure>0:
-        info["last_failure"] = int(time.time()-last_context_failure)
+        info["last_failure"] = int(monotonic_time()-last_context_failure)
     return info
 
 
@@ -1456,7 +1455,7 @@ cdef class Encoder:
         self.pixel_format = ""
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
-        start = time.time()
+        start = monotonic_time()
 
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
@@ -1480,7 +1479,7 @@ cdef class Encoder:
             record_device_failure(self.cuda_device_id)
             raise
 
-        end = time.time()
+        end = monotonic_time()
         log("init_context%s took %1.fms", (width, height, src_format, quality, speed, options), (end-start)*1000.0)
 
     def select_cuda_device(self, options={}):
@@ -1544,7 +1543,7 @@ cdef class Encoder:
                 log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <uintptr_t> self.cuda_context_ptr)
             assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
         except driver.MemoryError as e:
-            last_context_failure = time.time()
+            last_context_failure = monotonic_time()
             log("init_cuda %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e)
 
@@ -1815,7 +1814,7 @@ cdef class Encoder:
             info["free_memory_pct"] = int(100.0*self.free_memory/m)
         #calculate fps:
         cdef int f = 0
-        cdef double now = time.time()
+        cdef double now = monotonic_time()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -1979,7 +1978,7 @@ cdef class Encoder:
         if new_pixel_format==self.pixel_format and new_lossless==self.lossless:
             log("set_encoding_quality(%s) keeping current: %s / %s", quality, self.pixel_format, self.lossless)
             return
-        start = time.time()
+        start = monotonic_time()
         memset(&reconfigure_params, 0, sizeof(NV_ENC_RECONFIGURE_PARAMS))
         reconfigure_params.version = NV_ENC_RECONFIGURE_PARAMS_VER
         try:
@@ -1992,7 +1991,7 @@ cdef class Encoder:
         finally:
             if reconfigure_params.reInitEncodeParams.encodeConfig!=NULL:
                 free(reconfigure_params.reInitEncodeParams.encodeConfig)
-        end = time.time()
+        end = monotonic_time()
         log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
         self.pixel_format = new_pixel_format
         self.lossless = new_lossless
@@ -2057,7 +2056,7 @@ cdef class Encoder:
         cdef unsigned int i
         cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
-        start = time.time()
+        start = monotonic_time()
         log("compress_image(%s, %s)", image, options)
         cdef unsigned int w = image.get_width()
         cdef unsigned int h = image.get_height()
@@ -2134,13 +2133,13 @@ cdef class Encoder:
             #scaling so scale exact dimensions, not padded input dimensions:
             in_w, in_h = w, h
 
-        csc_start = time.time()
+        csc_start = monotonic_time()
         args = (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
                self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
                numpy.int32(w), numpy.int32(h))
         log("calling %s%s with block=%s, grid=%s", self.kernel, args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
-        csc_end = time.time()
+        csc_end = monotonic_time()
         log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
 
         #map buffer so nvenc can access it:
@@ -2204,7 +2203,7 @@ cdef class Encoder:
             with nogil:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
-            encode_end = time.time()
+            encode_end = monotonic_time()
             log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
             #lock output buffer:
@@ -2235,7 +2234,7 @@ cdef class Encoder:
                 r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
             raiseNVENC(r, "unmapping input resource")
 
-        download_end = time.time()
+        download_end = monotonic_time()
         log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
         #update info:
         self.free_memory, self.total_memory = driver.mem_get_info()
@@ -2252,7 +2251,7 @@ cdef class Encoder:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
-        end = time.time()
+        end = monotonic_time()
         self.frames += 1
         self.last_frame_times.append((start, end))
         elapsed = end-start
@@ -2515,7 +2514,7 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
-            last_context_failure = time.time()
+            last_context_failure = monotonic_time()
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)

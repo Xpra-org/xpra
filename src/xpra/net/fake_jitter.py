@@ -1,9 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 from threading import Lock
 
 from xpra.log import Logger
@@ -17,7 +16,6 @@ class FakeJitter(object):
         self.real_process_packet_cb = process_packet_cb
         self.delay = delay
         self.ok_delay = 10*1000
-        self.switch_time = time.time()
         self.delaying = False
         self.pending = []
         self.lock = Lock()

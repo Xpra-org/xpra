@@ -8,12 +8,12 @@
 import os
 import re
 import sys
-import time
 import datetime
 import traceback
 import logging
 from collections import deque
 from threading import RLock
+from time import sleep
 
 from xpra.log import Logger, set_global_logging_handler
 log = Logger("client")
@@ -58,7 +58,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, WIN32, OSX
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, WIN32, OSX
 from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -146,7 +146,7 @@ class UIXpraClient(XpraClientBase):
             log.info(" running on %s", osinfo)
         except:
             log("platform name error:", exc_info=True)
-        self.start_time = time.time()
+        self.start_time = monotonic_time()
         self._window_to_id = {}
         self._id_to_window = {}
         self._ui_events = 0
@@ -672,14 +672,14 @@ class UIXpraClient(XpraClientBase):
 
     def suspend(self):
         log.info("system is suspending")
-        self._suspended_at = time.time()
+        self._suspended_at = monotonic_time()
         #tell the server to slow down refresh for all the windows:
         self.control_refresh(-1, True, False)
 
     def resume(self):
         elapsed = 0
         if self._suspended_at>0:
-            elapsed = time.time()-self._suspended_at
+            elapsed = monotonic_time()-self._suspended_at
             self._suspended_at = 0
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
@@ -979,7 +979,7 @@ class UIXpraClient(XpraClientBase):
         delay = 1000
         #if we are suspending, wait longer:
         #(better chance that the suspend-resume cycle will have completed)
-        if self._suspended_at>0 and self._suspended_at-time.time()<5*1000:
+        if self._suspended_at>0 and self._suspended_at-monotonic_time()<5*1000:
             delay = 5*1000
         self.timeout_add(delay, self.do_process_screen_size_change)
 
@@ -1066,7 +1066,7 @@ class UIXpraClient(XpraClientBase):
         if self.screen_size_change_pending:
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
-        if time.time()<self.scale_change_embargo:
+        if monotonic_time()<self.scale_change_embargo:
             scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again", xchange, ychange)
             return
         def clamp(v):
@@ -1101,7 +1101,7 @@ class UIXpraClient(XpraClientBase):
 
     def scale_reinit(self, xchange=1.0, ychange=1.0):
         #wait at least one second before changing again:
-        self.scale_change_embargo = time.time()+SCALING_EMBARGO_TIME
+        self.scale_change_embargo = monotonic_time()+SCALING_EMBARGO_TIME
         if fequ(self.xscale, self.yscale):
             scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
         else:
@@ -1619,7 +1619,7 @@ class UIXpraClient(XpraClientBase):
             return False
         last = self._server_ok
         if FAKE_BROKEN_CONNECTION>0:
-            self._server_ok = (int(time.time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
+            self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
         else:
             self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
         log("check_server_echo(%s) last=%s, server_ok=%s", ping_sent_time, last, self._server_ok)
@@ -1654,7 +1654,7 @@ class UIXpraClient(XpraClientBase):
             self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self):
-        now_ms = int(1000.0*time.time())
+        now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
         self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
         wait = 2.0
@@ -1670,11 +1670,11 @@ class UIXpraClient(XpraClientBase):
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
-        server_ping_latency = time.time()-echoedtime/1000.0
-        self.server_ping_latency.append((time.time(), server_ping_latency))
+        server_ping_latency = monotonic_time()-echoedtime/1000.0
+        self.server_ping_latency.append((monotonic_time(), server_ping_latency))
         self.server_load = l1, l2, l3
         if cl>=0:
-            self.client_ping_latency.append((time.time(), cl/1000.0))
+            self.client_ping_latency.append((monotonic_time(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet):
@@ -2031,7 +2031,7 @@ class UIXpraClient(XpraClientBase):
         rpcid = self.rpc_counter.increase()
         self.rpc_filter_pending()
         #keep track of this request (for timeout / error and reply callbacks):
-        req = time.time(), rpc_type, rpc_args, reply_handler, error_handler
+        req = monotonic_time(), rpc_type, rpc_args, reply_handler, error_handler
         self.rpc_pending_requests[rpcid] = req
         rpclog("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
         packet = ["rpc", rpc_type, rpcid] + rpc_args
@@ -2045,7 +2045,7 @@ class UIXpraClient(XpraClientBase):
             if v is None:
                 continue
             t, rpc_type, _rpc_args, _reply_handler, ecb = v
-            if 1000*(time.time()-t)>=RPC_TIMEOUT:
+            if 1000*(monotonic_time()-t)>=RPC_TIMEOUT:
                 rpclog.warn("%s rpc request: %s has timed out", rpc_type, _rpc_args)
                 try:
                     del self.rpc_pending_requests[k]
@@ -2292,23 +2292,23 @@ class UIXpraClient(XpraClientBase):
             preferred_order = ["jpeg", "png", "png/L", "png/P"]
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
-            start = time.time()
+            start = monotonic_time()
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret and frame.ndim==3
             h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            end = time.time()
+            end = monotonic_time()
             webcamlog("webcam frame capture took %ims", (end-start)*1000)
-            start = time.time()
+            start = monotonic_time()
             from PIL import Image
             image = Image.fromarray(rgb)
             buf = BytesIOClass()
             image.save(buf, format=encoding)
             data = buf.getvalue()
             buf.close()
-            end = time.time()
+            end = monotonic_time()
             webcamlog("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
@@ -2985,7 +2985,7 @@ class UIXpraClient(XpraClientBase):
                 break
             try:
                 self._do_draw(packet)
-                time.sleep(0)
+                sleep(0)
             except KeyboardInterrupt:
                 raise
             except:
@@ -3019,10 +3019,10 @@ class UIXpraClient(XpraClientBase):
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
         drawlog("process_draw: %7i %8s for window %3i, %4ix%4i at %4i,%4i using %6s encoding with options=%s", len(data), dtype, wid, width, height, x, y, coding, options)
-        start = time.time()
+        start = monotonic_time()
         def record_decode_time(success, message=""):
             if success>0:
-                end = time.time()
+                end = monotonic_time()
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
                 dms = "%sms" % (int(decode_time/100)/10.0)
@@ -3120,7 +3120,7 @@ class UIXpraClient(XpraClientBase):
             rx, ry = packet[4:6]
         cx, cy = self.get_mouse_position()
         size = 4
-        start_time = time.time()
+        start_time = monotonic_time()
         mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
         for i,w in self._id_to_window.items():
             #not all window implementations have this method:

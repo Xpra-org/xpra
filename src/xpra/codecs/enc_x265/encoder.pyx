@@ -3,13 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os
 
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
 from xpra.util import envbool
+from xpra.os_util import monotonic_time
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
 from xpra.buffers.membuf cimport object_as_buffer
 
@@ -497,7 +497,7 @@ cdef class Encoder:
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
 
-        start = time.time()
+        start = monotonic_time()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
         if self.frames==0:
@@ -554,7 +554,7 @@ cdef class Encoder:
                 "frame"     : self.frames,
                 "pts"     : image.get_timestamp()-self.first_frame_timestamp,
                 }
-        end = time.time()
+        end = monotonic_time()
         self.time += end-start
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)

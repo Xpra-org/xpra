@@ -10,7 +10,7 @@ import time
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
-from xpra.os_util import is_Ubuntu
+from xpra.os_util import is_Ubuntu, monotonic_time
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -285,7 +285,7 @@ cdef class ColorspaceConverter:
         cdef int i, result
         cdef int width, height, stride
         cdef object planes, strides, out_image
-        start = time.time()
+        start = monotonic_time()
         iplanes = image.get_planes()
         pixels = image.get_pixels()
         stride = image.get_rowstride()
@@ -315,13 +315,13 @@ cdef class ColorspaceConverter:
                            out_planes[2], self.out_stride[2],
                            width, height)
         assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
-        elapsed = time.time()-start
+        elapsed = monotonic_time()-start
         log("libyuv.ARGBToI420 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         planes = []
         strides = []
         if self.scaling:
-            start = time.time()
+            start = monotonic_time()
             scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
@@ -333,7 +333,7 @@ cdef class ColorspaceConverter:
                                scaled_planes[i], self.scaled_stride[i],
                                self.scaled_width[i], self.scaled_height[i],
                                self.filtermode)
-            elapsed = time.time()-start
+            elapsed = monotonic_time()-start
             log("libyuv.ScalePlane took %.1fms", 1000.0*elapsed)
             for i in range(3):
                 strides.append(self.scaled_stride[i])

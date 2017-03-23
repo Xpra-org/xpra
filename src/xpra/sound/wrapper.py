@@ -1,17 +1,16 @@
 # This file is part of Xpra.
-# Copyright (C) 2015,2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 import sys
 
 from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, format_element_options, \
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, monotonic_time
 from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
@@ -283,7 +282,7 @@ class sound_subprocess_wrapper(subprocess_caller):
     def info_update(self, wrapper, info):
         log("info_update: %s", info)
         self.info.update(info)
-        self.info["time"] = int(time.time())
+        self.info["time"] = int(monotonic_time())
         p = self.process
         if p and not p.poll():
             self.info["pid"] = p.pid

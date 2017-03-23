@@ -1,14 +1,14 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
 import sys
-import time
+from time import sleep
 import hashlib
 
 from xpra.log import Logger
@@ -38,7 +38,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, OSX
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, OSX
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
 from xpra.net.bytestreams import set_socket_timeout
@@ -285,7 +285,7 @@ class ServerBase(ServerCore):
     def threaded_init(self):
         log("threaded_init() start")
         #try to load video encoders in advance as this can take some time:
-        time.sleep(0.1)
+        sleep(0.1)
         getVideoHelper().init()
         #re-init list of encodings now that we have video initialized
         self.init_encodings()
@@ -489,7 +489,7 @@ class ServerBase(ServerCore):
                     soundlog.warn(msg)
                 return
             cmd[0] = pa_cmd
-        started_at = time.time()
+        started_at = monotonic_time()
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
             soundlog.warn(" pulseaudio is limited to a single instance per user account,")
@@ -501,7 +501,7 @@ class ServerBase(ServerCore):
             if self.pulseaudio_proc is None or self._closing:
                 #cleared by cleanup already, ignore
                 return
-            elapsed = time.time()-started_at
+            elapsed = monotonic_time()-started_at
             if elapsed<2:
                 self.timeout_add(1000, pulseaudio_warning)
             else:
@@ -1984,10 +1984,10 @@ class ServerBase(ServerCore):
             self.get_all_info(info_callback, proto, *packet[2:])
 
     def send_hello_info(self, proto, flatten=True):
-        start = time.time()
+        start = monotonic_time()
         def cb(proto, info):
             self.do_send_info(proto, info, flatten)
-            end = time.time()
+            end = monotonic_time()
             log.info("processed info request from %s in %ims", proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, self._id_to_window.keys())
 
@@ -2007,7 +2007,7 @@ class ServerBase(ServerCore):
 
 
     def get_info(self, proto=None, client_uuids=None, wids=None, *args):
-        start = time.time()
+        start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
         server_info["pings"] = self.pings
@@ -2043,7 +2043,7 @@ class ServerBase(ServerCore):
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
-        log("ServerBase.get_info took %.1fms", 1000.0*(time.time()-start))
+        log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
 
@@ -2103,7 +2103,7 @@ class ServerBase(ServerCore):
              }
 
     def get_keyboard_info(self):
-        start = time.time()
+        start = monotonic_time()
         info = {
              "sync"             : self.keyboard_sync,
              "repeat"           : {
@@ -2116,7 +2116,7 @@ class ServerBase(ServerCore):
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
-        log("ServerBase.get_keyboard_info took %ims", (time.time()-start)*1000)
+        log("ServerBase.get_keyboard_info took %ims", (monotonic_time()-start)*1000)
         return info
 
     def get_clipboard_info(self):
@@ -2135,7 +2135,7 @@ class ServerBase(ServerCore):
         return webcam_info
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
-        start = time.time()
+        start = monotonic_time()
         info = {}
         def up(prefix, d):
             info[prefix] = d
@@ -2171,7 +2171,7 @@ class ServerBase(ServerCore):
                 sinfo.update(ss.get_window_info(window_ids))
                 cinfo[i] = sinfo
             up("client", cinfo)
-        log("ServerBase.do_get_info took %ims", (time.time()-start)*1000)
+        log("ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
     def add_windows_info(self, info, window_ids):
@@ -2728,11 +2728,11 @@ class ServerBase(ServerCore):
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             def _key_repeat_timeout(when):
                 self.key_repeat_timer = None
-                now = time.time()
+                now = monotonic_time()
                 keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
                 self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
                 self.keys_timedout[keycode] = now
-            now = time.time()
+            now = monotonic_time()
             self.key_repeat_timer = self.timeout_add(delay_ms, _key_repeat_timeout, now)
 
     def _process_key_repeat(self, proto, packet):
@@ -2754,7 +2754,7 @@ class ServerBase(ServerCore):
             when_timedout = self.keys_timedout.get(keycode, None)
             if when_timedout:
                 del self.keys_timedout[keycode]
-            now = time.time()
+            now = monotonic_time()
             if when_timedout and (now-when_timedout)<30:
                 #not so long ago, just re-press it now:
                 keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)

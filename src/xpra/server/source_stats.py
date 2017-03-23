@@ -1,13 +1,12 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from math import sqrt
-import time
 from collections import deque
 
 from xpra.log import Logger
@@ -15,6 +14,7 @@ log = Logger("stats")
 
 from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
 from xpra.simple_stats import get_list_stats
+from xpra.os_util import monotonic_time
 
 NRECS = 500
 
@@ -68,7 +68,7 @@ class GlobalPerformanceStatistics(object):
         self.recent_server_ping_latency = self.DEFAULT_LATENCY
 
     def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
-        now = time.time()
+        now = monotonic_time()
         send_diff = now-start_send_at
         echo_diff = now-end_send_at
         send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
@@ -77,7 +77,7 @@ class GlobalPerformanceStatistics(object):
                 send_diff*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
-        self.client_latency.append((wid, time.time(), pixels, send_latency))
+        self.client_latency.append((wid, monotonic_time(), pixels, send_latency))
 
     def get_damage_pixels(self, wid):
         """ returns the list of (event_time, pixelcount) for the given window id """
@@ -166,7 +166,7 @@ class GlobalPerformanceStatistics(object):
                 "encoding" : {"decode_errors"   : self.decode_errors},
             }
         #client pixels per second:
-        now = time.time()
+        now = monotonic_time()
         time_limit = now-30             #ignore old records (30s)
         #pixels per second: decode time and overall
         total_pixels = 0                #total number of pixels processed

@@ -3,11 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool
+from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
 
@@ -178,7 +178,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
             pystrides.append(strides[i])
             pyplanes.append(memoryview(membuf))
         #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
-        start = time.time()
+        start = monotonic_time()
         with nogil:
             r = tjDecompressToYUVPlanes(decompressor,
                                         buf, buf_len,
@@ -191,7 +191,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
     finally:
         close()
     if LOG_PERF:
-        elapsed = time.time()-start
+        elapsed = monotonic_time()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", subsamp_str, float(total_size)/elapsed//1024//1024, total_size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper._3_PLANES)
 
@@ -232,7 +232,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
     cdef unsigned long size = 0
     try:
         #TODO: add padding and rounding?
-        start = time.time()
+        start = monotonic_time()
         stride = w*4
         size = stride*height
         membuf = getbuf(size)
@@ -249,7 +249,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
     finally:
         close()
     if LOG_PERF:
-        elapsed = time.time()-start
+        elapsed = monotonic_time()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)", rgb_format, float(size)/elapsed//1024//1024, size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, ImageWrapper.PACKED)
 

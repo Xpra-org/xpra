@@ -233,7 +233,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.pending_fbo_paint = []
-        self.last_flush = time.time()
+        self.last_flush = monotonic_time()
         self.default_paint_box_line_width = OPENGL_PAINT_BOX or 1
         self.paint_box_line_width = OPENGL_PAINT_BOX
 
@@ -709,7 +709,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         if self.paint_spinner:
             #add spinner:
             dim = min(bw/3.0, bh/3.0)
-            t = time.time()
+            t = monotonic_time()
             count = int(t*4.0)
             bx = bw//2
             by = bh//2
@@ -737,7 +737,7 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         if self.pointer_overlay:
             x, y, _, _, size, start_time = self.pointer_overlay
-            elapsed = time.time()-start_time
+            elapsed = monotonic_time()-start_time
             if elapsed<6:
                 alpha = max(0, (5.0-elapsed)/5.0)
                 glLineWidth(1)
@@ -766,7 +766,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("%s.do_present_fbo() done", self)
 
     def gl_show(self, rect_count):
-        start = time.time()
+        start = monotonic_time()
         if self.glconfig.is_double_buffered():
             # Show the backbuffer on screen
             log("%s.gl_show() swapping buffers now", self)
@@ -776,7 +776,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             #just ensure stuff gets painted:
             log("%s.gl_show() flushing", self)
             glFlush()
-        end = time.time()
+        end = monotonic_time()
         flush_elapsed = end-self.last_flush
         self.last_flush = end
         fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)

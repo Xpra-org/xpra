@@ -1,7 +1,7 @@
 # coding=utf8
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,7 +12,6 @@
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS = 100
 
-import time
 from math import sqrt
 
 from xpra.log import Logger
@@ -20,6 +19,7 @@ log = Logger("stats")
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
+from xpra.os_util import monotonic_time
 from xpra.util import engs, csv
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
@@ -140,7 +140,7 @@ class WindowPerformanceStatistics(object):
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high system latency
             #so we ignore short elapsed times.
-            elapsed = time.time()-ldet
+            elapsed = monotonic_time()-ldet
             mtime = max(0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
@@ -217,8 +217,8 @@ class WindowPerformanceStatistics(object):
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
-            sent_before = time.time()-(self.target_latency+0.020)
-            dropped_acks_time = time.time()-60      #1 minute
+            sent_before = monotonic_time()-(self.target_latency+0.020)
+            dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
             for sequence, (start_send_at, _, start_bytes, end_send_at, end_bytes, pixels) in self.damage_ack_pending.items():
                 if end_send_at==0 or start_send_at>sent_before:
@@ -248,7 +248,7 @@ class WindowPerformanceStatistics(object):
     def get_packets_backlog(self):
         packets_backlog = 0
         if len(self.damage_ack_pending)>0:
-            sent_before = time.time()-(self.target_latency+0.020)
+            sent_before = monotonic_time()-(self.target_latency+0.020)
             for _, (start_send_at, _, _, end_send_at, _, _) in self.damage_ack_pending.items():
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1

@@ -12,11 +12,11 @@ from xpra.log import Logger
 log = Logger("csc", "cuda")
 
 import os
-import time
 import pycuda
 from pycuda import driver
 
 from xpra.util import engs, print_nested_dict
+from xpra.os_util import monotonic_time
 
 #record when we get failures/success:
 DEVICE_STATE = {}
@@ -343,7 +343,7 @@ def get_CUDA_function(device_id, function_name):
         log(" loaded %s bytes", len(data))
         KERNELS[function_name] = data
     #now load from cubin:
-    start = time.time()
+    start = monotonic_time()
     try:
         mod = driver.module_from_buffer(data)
     except Exception as e:
@@ -354,7 +354,7 @@ def get_CUDA_function(device_id, function_name):
         CUDA_function = mod.get_function(function_name)
     except driver.LogicError as e:
         raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e))
-    end = time.time()
+    end = monotonic_time()
     log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
     return CUDA_function
 

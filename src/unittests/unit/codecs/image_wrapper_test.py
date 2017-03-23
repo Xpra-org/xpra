@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016, 2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import unittest
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import envbool
+from xpra.os_util import monotonic_time
 
 SHOW_PERF = envbool("XPRA_SHOW_PERF")
 
@@ -48,9 +48,9 @@ class TestImageWrapper(unittest.TestCase):
                         #python3 (int already)
                         av = int(av)
                     assert av==v, "expected value %#x for pixel (0, %i) of sub-image %s at (%i, 0), but got %#x" % (v, y, sub, x, av)
-        start = time.time()
+        start = monotonic_time()
         copy = img.get_sub_image(0, 0, W, H)
-        end = time.time()
+        end = monotonic_time()
         if SHOW_PERF:
             print("image wrapper full %ix%i copy speed: %iMB/s" % (W, H, (W*4*H)/(end-start)/1024/1024))
         assert copy.get_pixels()==img.get_pixels()
@@ -58,9 +58,9 @@ class TestImageWrapper(unittest.TestCase):
         N = 10
         for i in range(N):
             region = (W//4-N//2+i, H//4-N//2+i, W//2, H//2)
-            start = time.time()
+            start = monotonic_time()
             copy = img.get_sub_image(*region)
-            end = time.time()
+            end = monotonic_time()
             total += end-start
         if SHOW_PERF:
             print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))
