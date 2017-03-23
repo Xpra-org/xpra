@@ -195,6 +195,9 @@
 				  <li class="list-group-item clipboard">
 				  	<input type="checkbox" id="clipboard"> <span>Clipboard sharing</span>
 				  </li>
+				  <li class="list-group-item printing">
+				  	<input type="checkbox" id="printing"> <span>Printing</span>
+				  </li>
 				  <li class="list-group-item sound">
 					<input type="checkbox" id="sound"> <span>Audio forwarding, codec: </span>
 					<select id="audio_codec">
@@ -283,8 +286,9 @@ function doConnect() {
 	var encoding = document.getElementById("encoding").value;
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	var clipboard = document.getElementById("clipboard").checked;
+	var printing = document.getElementById("printing").checked;
 	// url to client
-	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard;
+	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard+"&printing="+printing;
 	if (username.length>0)
 		url += "&username="+encodeData(username);
 	if (password.length>0)
@@ -399,6 +403,11 @@ $(document).ready(function() {
 	var clipboard = getboolparam("clipboard", true);
    	$('input#clipboard').prop("checked", clipboard);
 
+	var printing = getboolparam("printing", true);
+   	$('input#printing').prop("checked", clipboard);
+	var file_transfer = getboolparam("file_transfer", true);
+   	$('input#file_transfer').prop("checked", file_transfer);
+   	
 	var exit_with_children = getboolparam("exit_with_children");
 	if(exit_with_children) {
 	   	$('input#exit_with_children').prop("checked", exit_with_children);

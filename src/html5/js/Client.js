@@ -55,6 +55,9 @@ function XpraClient(container) {
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
+	// printing / file-transfer:
+	this.file_transfer = false;
+	this.printing = false;
 	// authentication
 	this.insecure = false;
 	this.authentication_key = null;
@@ -793,9 +796,9 @@ XpraClient.prototype._make_hello = function() {
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
 		// printing
-		"file-transfer" 			: true,
-		"printing" 					: true,
-		"file-size-limit"				: 10,
+		"file-transfer" 			: this.file_transfer,
+		"printing" 					: this.printing,
+		"file-size-limit"			: 10,
 	});
 }
 
@@ -1236,7 +1239,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			}
 		}
 	}
-	if (hello["printing"]!=0) {
+	if (hello["printing"]!=0 && ctx.printing) {
 		// send our printer definition
 		var printers = {
 			"HTML5 client": {
@@ -1712,20 +1715,25 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 
 	if (!printit) {
 		ctx.warn("Received non printed file data");
+		return;
 	}
-	else if(mimetype != "application/pdf") {
+	if (!this.printing) {
+		ctx.warn("Received data to print but printing is not enabled!");
+		return;
+	}
+	if (mimetype != "application/pdf") {
 		ctx.warn("Received unsupported print data mimetype: "+mimetype);
-	} else {
-		// check the data size for file
-		if(data.length != datasize) {
-			ctx.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
-		} else {
-			ctx.log("got some data to print");
-			var b64data = btoa(uintToString(data));
-			window.open(
-					'data:application/pdf;base64,'+b64data,
-					'_blank'
-			);
-		}
+		return;
 	}
+	// check the data size for file
+	if(data.length != datasize) {
+		ctx.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
+		return;
+	}
+	ctx.log("got some data to print");
+	var b64data = btoa(uintToString(data));
+	window.open(
+			'data:application/pdf;base64,'+b64data,
+			'_blank'
+	);
 }
