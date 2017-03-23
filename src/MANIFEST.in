@@ -1,4 +1,6 @@
 include COPYING NEWS README
+include xpra/monotonic_ctime.h
+include xpra/monotonic_ctime.c
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
 include xpra/buffers/buffers.h

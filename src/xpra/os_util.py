@@ -194,23 +194,9 @@ def get_user_uuid():
 
 
 monotonic_time = time.time
-if os.environ.get("XPRA_MONOTONIC_TIME") and not (WIN32 or OSX):
+if os.environ.get("XPRA_MONOTONIC_TIME", "1")=="1" and not WIN32:
     try:
-        CLOCK_MONOTONIC_RAW = 4 # see <linux/time.h>
-        class timespec(ctypes.Structure):
-            _fields_ = [
-                ('tv_sec', ctypes.c_long),
-                ('tv_nsec', ctypes.c_long)
-            ]
-        librt = ctypes.CDLL('librt.so.1', use_errno=True)
-        clock_gettime = librt.clock_gettime
-        clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
-        def _monotonic_time():
-            t = timespec()
-            if clock_gettime(CLOCK_MONOTONIC_RAW , ctypes.pointer(t)) != 0:
-                errno_ = ctypes.get_errno()
-                raise OSError(errno_, os.strerror(errno_))
-            return t.tv_sec + t.tv_nsec * 1e-9
+        from xpra.monotonic_time import monotonic_time as _monotonic_time
         _monotonic_time()
         monotonic_time = _monotonic_time
     except Exception as e:

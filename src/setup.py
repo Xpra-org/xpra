@@ -895,6 +895,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     #ensure we remove the files we generate:
     CLEAN_FILES = [
                    "xpra/build_info.py",
+                   "xpra/monotonic_time.c",
                    "xpra/gtk_common/gdk_atoms.c",
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
@@ -1649,6 +1650,16 @@ if OSX:
                 language="objc",
                 **quartz_pkgconfig
                 ))
+
+if not WIN32:
+    monotonic_time_pkgconfig = pkgconfig()
+    if not OSX:
+        add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
+    cython_add(Extension("xpra.monotonic_time",
+                ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
+                **monotonic_time_pkgconfig
+                ))
+
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
