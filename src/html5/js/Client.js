@@ -1720,7 +1720,7 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 		return;
 	}
 	if (printit) {
-		ctx.print_document(data, mimetype);
+		ctx.print_document(basefilename, data, mimetype);
 	}
 	else {
 		ctx.save_file(basefilename, data, mimetype);
@@ -1739,7 +1739,7 @@ XpraClient.prototype.save_file = function(filename, data, mimetype) {
 	Utilities.saveFile(filename, data, {type : mimetype});
 }
 
-XpraClient.prototype.print_document = function(data, mimetype) {
+XpraClient.prototype.print_document = function(filename, data, mimetype) {
 	if (!this.printing) {
 		this.warn("Received data to print but printing is not enabled!");
 		return;
@@ -1755,6 +1755,7 @@ XpraClient.prototype.print_document = function(data, mimetype) {
 			'_blank'
 	);
 	if (!win || win.closed || typeof win.closed=='undefined') {
-		this.warn("popup blocked!");
+		this.warn("popup blocked, saving to file instead");
+		Utilities.saveFile(filename, data, {type : mimetype});
 	}	
 }
