@@ -9,11 +9,12 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 
 from xpra.util import nonl, envint, envbool, typedict, AtomicInteger
-from xpra.os_util import bytestostr, strtobytes, monotonic_time
+from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from collections import deque
 from xpra.buffers.membuf cimport object_as_buffer
 
+from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 
@@ -744,7 +745,7 @@ cdef class Encoder:
         cdef x264_picture_t pic_out
         cdef int frame_size = 0
         assert self.context!=NULL
-        start = monotonic_time()
+        cdef double start = monotonic_time()
 
         if speed>=0:
             self.set_encoding_speed(speed)
@@ -803,7 +804,7 @@ cdef class Encoder:
         if self.export_nals:
             client_options["nals"] = nal_indexes
         #accounting:
-        end = monotonic_time()
+        cdef double end = monotonic_time()
         self.time += end-start
         self.frames += 1
         self.last_frame_times.append((start, end))

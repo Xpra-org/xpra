@@ -8,7 +8,7 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
 import time
-from xpra.os_util import monotonic_time
+from xpra.monotonic_time cimport monotonic_time
 
 cdef extern from "math.h":
     double log(double x)
@@ -32,7 +32,7 @@ def calculate_time_weighted_average(data):
         recent values matter a lot more than more ancient ones.
     """
     assert len(data)>0
-    cdef double now = float(monotonic_time())
+    cdef double now = monotonic_time()
     cdef double tv = 0.0
     cdef double tw = 0.0
     cdef double rv = 0.0
@@ -61,7 +61,7 @@ def time_weighted_average(data, double min_offset=0.1, double rpow=2.0):
         (defaults to 2, which means we square it)
     """
     assert len(data)>0
-    cdef double now = float(monotonic_time())            #@DuplicatedSignature
+    cdef double now = monotonic_time()              #@DuplicatedSignature
     cdef double tv = 0.0                            #@DuplicatedSignature
     cdef double tw = 0.0                            #@DuplicatedSignature
     cdef double w                                   #@DuplicatedSignature
@@ -82,7 +82,7 @@ def calculate_timesize_weighted_average_score(data):
         Data format: (event_time, size, value)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
-    cdef double now = monotonic_time()                   #@DuplicatedSignature
+    cdef double now = monotonic_time()              #@DuplicatedSignature
     cdef double tv = 0.0                            #@DuplicatedSignature
     cdef double tw = 0.0                            #@DuplicatedSignature
     cdef double rv = 0.0                            #@DuplicatedSignature
@@ -114,7 +114,7 @@ def calculate_timesize_weighted_average(data, float sizeunit=1.0):
         Data format: (event_time, size, elapsed_time)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
-    cdef double now = monotonic_time()                   #@DuplicatedSignature
+    cdef double now = monotonic_time()              #@DuplicatedSignature
     cdef double tv = 0.0                            #@DuplicatedSignature
     cdef double tw = 0.0                            #@DuplicatedSignature
     cdef double rv = 0.0                            #@DuplicatedSignature

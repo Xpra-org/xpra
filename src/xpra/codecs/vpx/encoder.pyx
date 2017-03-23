@@ -11,11 +11,12 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, monotonic_time, WIN32, OSX
+from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uint8_t
+from xpra.monotonic_time cimport monotonic_time
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
@@ -587,7 +588,7 @@ cdef class Encoder:
         cdef int flags = 0
         cdef vpx_codec_err_t i                          #@DuplicatedSignature
 
-        start = monotonic_time()
+        cdef double start, end
         image = <vpx_image_t *> memalign(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width

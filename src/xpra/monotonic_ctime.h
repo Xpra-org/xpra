@@ -1,3 +1,1 @@
-#include <sys/time.h>
-
-void get_monotonic_time(struct timespec *ts);
+double get_monotonic_time();

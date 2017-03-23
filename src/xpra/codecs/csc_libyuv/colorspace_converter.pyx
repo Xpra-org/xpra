@@ -10,12 +10,13 @@ import time
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
-from xpra.os_util import is_Ubuntu, monotonic_time
+from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_checks import do_testcsc
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
 
+from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
 
 
@@ -285,7 +286,7 @@ cdef class ColorspaceConverter:
         cdef int i, result
         cdef int width, height, stride
         cdef object planes, strides, out_image
-        start = monotonic_time()
+        cdef double start = monotonic_time()
         iplanes = image.get_planes()
         pixels = image.get_pixels()
         stride = image.get_rowstride()
@@ -315,7 +316,7 @@ cdef class ColorspaceConverter:
                            out_planes[2], self.out_stride[2],
                            width, height)
         assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
-        elapsed = monotonic_time()-start
+        cdef double elapsed = monotonic_time()-start
         log("libyuv.ARGBToI420 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         planes = []

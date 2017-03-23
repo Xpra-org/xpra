@@ -11,16 +11,11 @@ from xpra.log import Logger
 log = Logger("util")
 
 
-cdef extern from "sys/time.h":
-    cdef struct timespec:
-        time_t   tv_sec         #seconds
-        long     tv_nsec        #nanoseconds
-
 cdef extern from "monotonic_ctime.h":
-    void get_monotonic_time(timespec *ts)
+    double get_monotonic_time()
 
+def _monotonic_time():
+    return get_monotonic_time()
 
-def monotonic_time():
-    cdef timespec ts
-    get_monotonic_time(&ts)
-    return ts.tv_sec + ts.tv_nsec/1000000000.0
+cdef inline double monotonic_time():
+    return get_monotonic_time()

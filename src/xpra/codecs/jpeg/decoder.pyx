@@ -7,12 +7,11 @@ from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
-
+from xpra.monotonic_time cimport monotonic_time
 
 LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
 
@@ -164,6 +163,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
     pystrides = []
     pyplanes = []
     cdef unsigned long total_size = 0
+    cdef double start, elapsed
     try:
         for i in range(3):
             stride = tjPlaneWidth(i, w, subsamp)
@@ -230,6 +230,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
     cdef unsigned char *dst_buf
     cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
     cdef unsigned long size = 0
+    cdef double start, elapsed
     try:
         #TODO: add padding and rounding?
         start = monotonic_time()

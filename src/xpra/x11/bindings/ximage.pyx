@@ -7,7 +7,7 @@
 import errno as pyerrno
 from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
-from xpra.os_util import monotonic_time
+from xpra.monotonic_time cimport monotonic_time
 
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")

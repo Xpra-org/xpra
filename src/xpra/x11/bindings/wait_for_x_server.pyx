@@ -8,7 +8,7 @@
 # see http://partiwm.org/ticket/34 for details
 
 from time import sleep
-from xpra.os_util import monotonic_time
+from xpra.monotonic_time cimport monotonic_time
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
@@ -21,7 +21,7 @@ cdef extern from "X11/Xlib.h":
 def wait_for_x_server(display_name, int timeout):
     cdef Display * d
     cdef char* name
-    start = monotonic_time()
+    cdef double start = monotonic_time()
     name = display_name
     first_time = True
     while first_time or (monotonic_time() - start) < timeout:

@@ -10,7 +10,6 @@ import os
 import sys
 import signal
 import uuid
-import ctypes
 import time
 
 #hide some ugly python3 compat:
@@ -194,13 +193,12 @@ def get_user_uuid():
 
 
 monotonic_time = time.time
-if os.environ.get("XPRA_MONOTONIC_TIME", "1")=="1" and not WIN32:
-    try:
-        from xpra.monotonic_time import monotonic_time as _monotonic_time
-        _monotonic_time()
-        monotonic_time = _monotonic_time
-    except Exception as e:
-        pass
+try:
+    from xpra.monotonic_time import _monotonic_time
+    assert _monotonic_time()>0
+    monotonic_time = _monotonic_time
+except Exception as e:
+    pass
 
 def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
     if os.name!="posix":

@@ -1651,14 +1651,13 @@ if OSX:
                 **quartz_pkgconfig
                 ))
 
-if not WIN32:
-    monotonic_time_pkgconfig = pkgconfig()
-    if not OSX:
-        add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
-    cython_add(Extension("xpra.monotonic_time",
-                ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
-                **monotonic_time_pkgconfig
-                ))
+monotonic_time_pkgconfig = pkgconfig()
+if not OSX and not WIN32:
+    add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
+cython_add(Extension("xpra.monotonic_time",
+            ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
+            **monotonic_time_pkgconfig
+            ))
 
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")

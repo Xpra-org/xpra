@@ -6,6 +6,10 @@
  *  Linux, compile with: gcc get_monotonic_time.c -lrt
  */
 
+#ifdef _WIN32
+#define _WIN32_WINNT 0x0600
+#include <Windows.h>
+#else
 #include <time.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -14,24 +18,25 @@
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
+#endif
 
 // Use clock_gettime in linux, clock_get_time in OS X.
-void get_monotonic_time(struct timespec *ts){
-#ifdef __MACH__
-  clock_serv_t cclock;
-  mach_timespec_t mts;
-  host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
-  clock_get_time(cclock, &mts);
-  mach_port_deallocate(mach_task_self(), cclock);
-  ts->tv_sec = mts.tv_sec;
-  ts->tv_nsec = mts.tv_nsec;
+double get_monotonic_time(){
+#ifdef _WIN32
+	ULONGLONG ticks = GetTickCount64();
+	return ((double) ticks) / 1000;
 #else
-  clock_gettime(CLOCK_MONOTONIC, ts);
+#ifdef __MACH__
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	return mts.tv_sec + mts.tv_nsec/1000000000.0;
+#else
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, ts);
+	return ts.tv_sec + ts.tv_nsec/1000000000.0;
 #endif
-}
-
-double get_elapsed_time(struct timespec *before, struct timespec *after){
-  double deltat_s  = after->tv_sec - before->tv_sec;
-  double deltat_ns = after->tv_nsec - before->tv_nsec;
-  return deltat_s + deltat_ns*1e-9;
+#endif
 }

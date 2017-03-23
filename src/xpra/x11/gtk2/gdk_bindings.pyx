@@ -13,7 +13,8 @@ import gtk.gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
-from xpra.os_util import monotonic_time
+
+from xpra.monotonic_time cimport monotonic_time
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
@@ -963,7 +964,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         log("x_event_filter ignoring %s send_event", event_type)
         return GDK_FILTER_CONTINUE
-    start = monotonic_time()
+    cdef double start = monotonic_time()
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)

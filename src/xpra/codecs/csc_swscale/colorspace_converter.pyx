@@ -12,13 +12,15 @@ from xpra.codecs.codec_checks import do_testcsc
 log = Logger("csc", "swscale")
 
 from xpra.util import envbool
-from xpra.os_util import is_Ubuntu, monotonic_time
+from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer
+
 from libc.stdint cimport uintptr_t, uint8_t
+from xpra.monotonic_time cimport monotonic_time
 
 
 ctypedef long AVPixelFormat
@@ -418,7 +420,7 @@ cdef class ColorspaceConverter:
         cdef int stride
         cdef int result
         cdef size_t pad
-        start = monotonic_time()
+        cdef double start = monotonic_time()
         iplanes = image.get_planes()
         pixels = image.get_pixels()
         strides = image.get_rowstride()
@@ -477,7 +479,7 @@ cdef class ColorspaceConverter:
             oplanes = ImageWrapper.PACKED
             strides = self.out_stride[0]
             out = memoryview(output_buf[0])
-        elapsed = monotonic_time()-start
+        cdef double elapsed = monotonic_time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1

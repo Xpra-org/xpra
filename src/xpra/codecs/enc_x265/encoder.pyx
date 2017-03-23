@@ -9,11 +9,11 @@ from xpra.log import Logger
 log = Logger("encoder", "x265")
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
 from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
+from xpra.monotonic_time cimport monotonic_time
 
 
 LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
@@ -497,7 +497,7 @@ cdef class Encoder:
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
 
-        start = monotonic_time()
+        cdef double start = monotonic_time()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
         if self.frames==0:
@@ -554,7 +554,7 @@ cdef class Encoder:
                 "frame"     : self.frames,
                 "pts"     : image.get_timestamp()-self.first_frame_timestamp,
                 }
-        end = monotonic_time()
+        cdef double end = monotonic_time()
         self.time += end-start
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)

@@ -7,7 +7,7 @@
 import unittest
 import random
 
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, WIN32
 try:
 	from xpra.server import cystats
 except ImportError:
@@ -22,6 +22,9 @@ class TestCystats(unittest.TestCase):
 		sample_size = 1000
 		data = []
 		t = now - sample_size
+		if WIN32:
+			print("monotonic can be too low on win32 - skipping cystats tests")
+			return
 		for _ in range(sample_size):
 			s = random.randint(1000, 10000)
 			v = random.random()
@@ -45,18 +48,14 @@ class TestCystats(unittest.TestCase):
 		#compared with one that was taken just now:
 		for v in (1, 10, 10000):
 			#1 day ago:
-			t([(now-1000*60*60*24, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-			t([(now-1000*60*60*24, 1*1000, 1000), (now, v*1000, 1000)], v, v)
+			if now>60*60*24:
+				t([(now-60*60*24, 100*1000, 1000), (now, v*1000, 1000)], v, v)
+				t([(now-60*60*24, 1*1000, 1000), (now, v*1000, 1000)], v, v)
 			#1 hour ago:
-			t([(now-1000*60*60, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-			t([(now-1000*60*60, 1*1000, 1000), (now, v*1000, 1000)], v, v)
-			#1 minute ago:
-			t([(now-1000*60, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-			t([(now-1000*60, 1*1000, 1000), (now, v*1000, 1000)], v, v)
-			#20 seconds ago:
-			t([(now-1000*20, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-			t([(now-1000*20, 1*1000, 1000), (now, v*1000, 1000)], v, v)
-		#but 100ms ago starts to make a difference:
+			if now>60*60:
+				t([(now-60*60, 100*1000, 1000), (now, v*1000, 1000)], v, v)
+				t([(now-60*60, 1*1000, 1000), (now, v*1000, 1000)], v, v)
+		#but 100s ago starts to make a difference:
 		t([(now-100, 100*1000, 1000), (now, 50*1000, 1000)], 51, 50)
 		t([(now-100, 1*1000, 1000), (now, 50*1000, 1000)], 50, 50)
 		#if using the same time, then size matters more:
