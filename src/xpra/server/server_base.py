@@ -57,6 +57,7 @@ if sys.version > '3':
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
+SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 
 
 class ServerBase(ServerCore):
@@ -1918,6 +1919,15 @@ class ServerBase(ServerCore):
             "sha1"       : u.hexdigest(),
             }
         printlog("parsed printer options: %s", options)
+        if SAVE_PRINT_JOBS:
+            try:
+                save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
+                with open(save_filename, "wb") as f:
+                    f.write(file_data)
+                printlog.info("saved print job to: %s", save_filename)
+            except Exception as e:
+                printlog.error("Error: failed to save print job to %s", save_filename)
+                printlog.error(" %s", e)
 
         sent = 0
         for ss in self._server_sources.values():
