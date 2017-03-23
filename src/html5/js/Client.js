@@ -1733,7 +1733,7 @@ XpraClient.prototype.save_file = function(filename, data, mimetype) {
 		return;
 	}
 	if (mimetype == "") {
-		mimetype = "octet/stream";
+		mimetype = "application/octet-binary";
 	}
 	this.log("saving "+data.length+" bytes of "+mimetype+" data to filename "+filename);
 	Utilities.saveFile(filename, data, {type : mimetype});

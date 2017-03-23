@@ -244,7 +244,7 @@ var Utilities = {
 	    var a = document.createElement("a");
 	    a.style = "display: none";
 	    document.body.appendChild(a);
-	    var blob = new Blob(data, mimetype);
+	    var blob = new Blob([data], mimetype);
 	    var url = window.URL.createObjectURL(blob);
         a.href = url;
         a.download = filename;
