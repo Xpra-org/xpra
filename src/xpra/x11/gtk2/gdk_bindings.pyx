@@ -954,17 +954,16 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef XkbAnyEvent * xkb_e
     cdef XkbBellNotifyEvent * bell_e
     cdef XShapeEvent * shape_e
-    cdef double start
     cdef object my_events
     cdef object event_args
     cdef object d
     cdef object pyev
+    cdef double start = monotonic_time()
     e = <XEvent*>e_gdk
     event_type = event_type_names.get(e.type, e.type)
     if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
         log("x_event_filter ignoring %s send_event", event_type)
         return GDK_FILTER_CONTINUE
-    cdef double start = monotonic_time()
     try:
         my_events = _x_event_signals
         event_args = my_events.get(e.type)

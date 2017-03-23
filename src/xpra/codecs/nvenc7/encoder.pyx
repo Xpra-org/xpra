@@ -2159,6 +2159,7 @@ cdef class Encoder:
             log("compress_image(..) device buffer mapped to %#x", <uintptr_t> mappedResource)
         assert mappedResource!=NULL
 
+        cdef double encode_end
         memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
         try:
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -2205,7 +2206,7 @@ cdef class Encoder:
             with nogil:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
-            cdef double encode_end = monotonic_time()
+            encode_end = monotonic_time()
             log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
 
             #lock output buffer:

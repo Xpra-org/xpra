@@ -34,8 +34,8 @@ double get_monotonic_time(){
 	mach_port_deallocate(mach_task_self(), cclock);
 	return mts.tv_sec + mts.tv_nsec/1000000000.0;
 #else
-	timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, ts);
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec + ts.tv_nsec/1000000000.0;
 #endif
 #endif
