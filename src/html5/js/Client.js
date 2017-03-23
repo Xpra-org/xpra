@@ -1708,32 +1708,53 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_send_file = function(packet, ctx) {
+	var basefilename = packet[1];
 	var mimetype = packet[2];
 	var printit = packet[3];
 	var datasize = packet[5];
 	var data = packet[6];
 
-	if (!printit) {
-		ctx.warn("Received non printed file data");
-		return;
-	}
-	if (!this.printing) {
-		ctx.warn("Received data to print but printing is not enabled!");
-		return;
-	}
-	if (mimetype != "application/pdf") {
-		ctx.warn("Received unsupported print data mimetype: "+mimetype);
-		return;
-	}
 	// check the data size for file
 	if(data.length != datasize) {
 		ctx.warn("send-file: invalid data size, received", data.length, "bytes, expected", datasize);
 		return;
 	}
-	ctx.log("got some data to print");
+	if (printit) {
+		ctx.print_document(data, mimetype);
+	}
+	else {
+		ctx.save_file(basefilename, data, mimetype);
+	}
+}
+
+XpraClient.prototype.save_file = function(filename, data, mimetype) {
+	if (!this.file_transfer) {
+		this.warn("Received file-transfer data but this is not enabled!");
+		return;
+	}
+	if (mimetype == "") {
+		mimetype = "octet/stream";
+	}
+	this.log("saving "+data.length+" bytes of "+mimetype+" data to filename "+filename);
+	Utilities.saveFile(filename, data, {type : mimetype});
+}
+
+XpraClient.prototype.print_document = function(data, mimetype) {
+	if (!this.printing) {
+		this.warn("Received data to print but printing is not enabled!");
+		return;
+	}
+	if (mimetype != "application/pdf") {
+		this.warn("Received unsupported print data mimetype: "+mimetype);
+		return;
+	}
+	this.log("got "+data.length+" bytes of PDF to print");
 	var b64data = btoa(uintToString(data));
-	window.open(
+	var win = window.open(
 			'data:application/pdf;base64,'+b64data,
 			'_blank'
 	);
+	if (!win || win.closed || typeof win.closed=='undefined') {
+		this.warn("popup blocked!");
+	}	
 }

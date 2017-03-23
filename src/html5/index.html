@@ -130,6 +130,7 @@
 				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
 				var clipboard = getboolparam("clipboard", true);
 				var printing = getboolparam("printing", true);
+				var file_transfer = getboolparam("file_transfer", true);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -139,6 +140,7 @@
 		    	client.insecure = insecure;
 		    	client.clipboard_enabled = clipboard;
 		    	client.printing = printing;
+		    	client.file_transfer = file_transfer;
 
 			    // mediasource video
 			    if(video) {

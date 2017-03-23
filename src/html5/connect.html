@@ -198,6 +198,9 @@
 				  <li class="list-group-item printing">
 				  	<input type="checkbox" id="printing"> <span>Printing</span>
 				  </li>
+				  <li class="list-group-item file_transfer">
+				  	<input type="checkbox" id="file_transfer"> <span>File transfers</span>
+				  </li>
 				  <li class="list-group-item sound">
 					<input type="checkbox" id="sound"> <span>Audio forwarding, codec: </span>
 					<select id="audio_codec">
@@ -287,8 +290,9 @@ function doConnect() {
 	var keyboard_layout = document.getElementById("keyboard_layout").value;
 	var clipboard = document.getElementById("clipboard").checked;
 	var printing = document.getElementById("printing").checked;
+	var file_transfer = document.getElementById("file_transfer").checked;
 	// url to client
-	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard+"&printing="+printing;
+	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard+"&printing="+printing+"&file_transfer="+file_transfer;
 	if (username.length>0)
 		url += "&username="+encodeData(username);
 	if (password.length>0)
