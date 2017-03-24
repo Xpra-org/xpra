@@ -15,7 +15,7 @@
   <repository type="tarball" name="freedesktop"
               href="ftp://ftp.freedesktop.org/pub/"/>
   <repository type="git" name="github" href="git://github.com/"/>
-  <repository type="tarball" name="github-tarball" href="git://github.com/"/>
+  <repository type="tarball" name="github-tarball" href="https://github.com/"/>
 
   <!-- This module set works a bit differently than for example the
        GNOME ones do. It's split up in seperate pieces:
