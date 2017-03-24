@@ -25,7 +25,10 @@ from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
-WAIT_FOR_UNKNOWN = envint("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", 5)
+#how many times (+1) we try to probe UNKNOWN sockets:
+WAIT_FOR_UNKNOWN = envint("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", 2)
+#what timeout value to use on the socket probe attempt:
+WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 5)
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
@@ -498,31 +501,6 @@ def normalize_local_display_name(local_display_name):
         assert char in "0123456789.", "invalid character in display name: %s" % char
     return local_display_name
 
-# Same as socket_path, but preps for the server:
-def setup_server_socket_path(dotxpra, sockpath, local_display_name, clobber, wait_for_unknown=0):
-    if not clobber:
-        state = dotxpra.get_server_state(sockpath, 1)
-        counter = 0
-        while state==dotxpra.UNKNOWN and counter<wait_for_unknown:
-            if counter==0:
-                sys.stdout.write("%s is not responding, waiting for it to timeout before clearing it" % sockpath)
-            sys.stdout.write(".")
-            sys.stdout.flush()
-            counter += 1
-            if counter<wait_for_unknown:
-                sleep(1)
-            state = dotxpra.get_server_state(sockpath)
-        if counter>0:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-        if state not in (dotxpra.DEAD, dotxpra.UNKNOWN):
-            raise InitException("You already have an xpra server running at %s\n"
-                     "  (did you want 'xpra upgrade'?)"
-                     % (local_display_name,))
-    if os.path.exists(sockpath):
-        os.unlink(sockpath)
-    return sockpath
-
 
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
     if not bind:
@@ -533,17 +511,17 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
     display_name = normalize_local_display_name(display_name)
     from xpra.log import Logger
     defs = []
-    sockpaths = set()
     log = Logger("network")
     try:
+        sockpaths = []
         log("setup_local_sockets: bind=%s", bind)
         for b in bind:
             sockpath = b
             if b=="none" or b=="":
                 continue
             elif b=="auto":
-                try_sockpaths = dotxpra.norm_socket_paths(display_name)
-                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, try_sockpaths, getuid(), getgid())
+                sockpaths += dotxpra.norm_socket_paths(display_name)
+                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, getuid(), getgid())
             else:
                 sockpath = dotxpra.osexpand(b)
                 if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
@@ -551,72 +529,78 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     if not os.path.exists(sockpath):
                         os.makedirs(sockpath)
                     sockpath = norm_makepath(sockpath, display_name)
+                elif os.path.isabs(b):
+                    sockpath = b
                 else:
                     sockpath = dotxpra.socket_path(b)
-                try_sockpaths = [sockpath]
-            assert try_sockpaths, "no socket paths to try for %s" % b
-            for tsp in try_sockpaths:
-                sockpath = dotxpra.osexpand(tsp)
-                if sockpath in sockpaths:
-                    log.warn("Warning: skipping duplicate bind path %s", sockpath)
-                    continue
+                sockpaths += [sockpath]
+            assert sockpaths, "no socket paths to try for %s" % b
+        #expand and remove duplicate paths:
+        tmp = []
+        for tsp in sockpaths:
+            sockpath = dotxpra.osexpand(tsp)
+            if sockpath in tmp:
+                log.warn("Warning: skipping duplicate bind path %s", sockpath)
+                continue
+            tmp.append(sockpath)
+        sockpaths = tmp
+        #create listeners:
+        if WIN32:
+            from xpra.platform.win32.namedpipes.listener import NamedPipeListener
+            for sockpath in sockpaths:
+                npl = NamedPipeListener(sockpath)
+                log.info("created named pipe: %s", sockpath)
+                defs.append((("named-pipe", npl, sockpath), npl.stop))
+        else:
+            def checkstate(sockpath, state):
+                if state not in (dotxpra.DEAD, dotxpra.UNKNOWN):
+                    raise InitException("You already have an xpra server running at %s\n"
+                         "  (did you want 'xpra upgrade'?)"
+                         % (sockpath,))
+            #remove exisiting sockets if clobber is set,
+            #otherwise verify there isn't a server already running
+            #and create the directories for the sockets:
+            for sockpath in sockpaths:
+                if clobber and os.path.exists(sockpath):
+                    os.unlink(sockpath)
+                else:
+                    state = dotxpra.get_server_state(sockpath, 1)
+                    log("state(%s)=%s", sockpath, state)
+                    checkstate(sockpath, state)
                 d = os.path.dirname(sockpath)
                 try:
                     dotxpra.mksockdir(d)
                 except Exception as e:
                     log.warn("Warning: failed to create socket directory '%s'", d)
                     log.warn(" %s", e)
-                    #continue and hope for the best, socket creation is likely to fail..
-                try:
-                    if WIN32:
-                        from xpra.platform.win32.namedpipes.listener import NamedPipeListener
-                        npl = NamedPipeListener(sockpath)
-                        log.info("created named pipe: %s", sockpath)
-                        defs.append((("named-pipe", npl, sockpath), npl.stop))
-                    else:
-                        setup_server_socket_path(dotxpra, sockpath, display_name, clobber, wait_for_unknown=WAIT_FOR_UNKNOWN)
+            #now try to create all the sockets:
+            counter = WAIT_FOR_UNKNOWN
+            while sockpaths and counter>=0:
+                for sockpath in sockpaths:
+                    state = dotxpra.get_server_state(sockpath, 5)
+                    checkstate(sockpath, state)
+                    log("state(%s)=%s", sockpath, state)
+                    if state==dotxpra.UNKNOWN:
+                        if counter==WAIT_FOR_UNKNOWN:
+                            log.warn("%s is not responding, waiting for it to timeout before clearing it", sockpath)
+                        elif counter>0:
+                            continue
+                    try:
+                        if os.path.exists(sockpath):
+                            os.unlink(sockpath)
+                    except:
+                        pass
+                    #create it:
+                    try:
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
                         log.info("created unix domain socket: %s", sockpath)
                         defs.append((("unix-domain", sock, sockpath), cleanup_socket))
-                    sockpaths.add(sockpath)
-                except Exception as e:
-                    log("socket creation error", exc_info=True)
-                    if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
-                        log.warn("Warning: cannot create socket '%s'", sockpath)
-                        log.warn(" %s", e)
-                        dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
-                        if not os.path.exists(dirname):
-                            log.warn(" %s does not exist", dirname)
-                        if os.name=="posix":
-                            uid = getuid()
-                            username = get_username_for_uid(uid)
-                            groups = get_groups(username)
-                            log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
-                            if "xpra" not in groups:
-                                log.warn("  (missing 'xpra' group membership?)")
-                            try:
-                                import stat
-                                stat_info = os.stat(dirname)
-                                log.warn(" permissions on directory %s: %s", dirname, oct(stat.S_IMODE(stat_info.st_mode)))
-                                import pwd,grp      #@UnresolvedImport
-                                user = pwd.getpwuid(stat_info.st_uid)[0]
-                                group = grp.getgrgid(stat_info.st_gid)[0]
-                                log.warn("  ownership %s:%s", user, group)
-                            except:
-                                pass
-                        continue
-                    elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
-                        log.warn("Warning: cannot create socket '%s':", sockpath)
-                        log.warn(" %s", e)
-                        if not os.path.exists("/var/run/user"):
-                            log.warn(" %s does not exist", "/var/run/user")
-                        else:
-                            log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
-                        continue
-                    else:
-                        log.error("Error: failed to create socket '%s':", sockpath)
-                        log.error(" %s", e)
-                        raise InitException("failed to create socket %s" % sockpath)
+                        sockpaths.remove(sockpath)
+                    except Exception as e:
+                        handle_socket_error(sockpath, e)
+                if sockpaths:
+                    sleep(1)
+                counter -= 1
     except:
         for sock, cleanup_socket in defs:
             try:
@@ -626,6 +610,45 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         defs = []
         raise
     return defs
+
+def handle_socket_error(sockpath, e):
+    from xpra.log import Logger
+    log = Logger("network")
+    log("socket creation error", exc_info=True)
+    if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
+        log.warn("Warning: cannot create socket '%s'", sockpath)
+        log.warn(" %s", e)
+        dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
+        if not os.path.exists(dirname):
+            log.warn(" %s does not exist", dirname)
+        if os.name=="posix":
+            uid = getuid()
+            username = get_username_for_uid(uid)
+            groups = get_groups(username)
+            log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
+            if "xpra" not in groups:
+                log.warn("  (missing 'xpra' group membership?)")
+            try:
+                import stat
+                stat_info = os.stat(dirname)
+                log.warn(" permissions on directory %s: %s", dirname, oct(stat.S_IMODE(stat_info.st_mode)))
+                import pwd,grp      #@UnresolvedImport
+                user = pwd.getpwuid(stat_info.st_uid)[0]
+                group = grp.getgrgid(stat_info.st_gid)[0]
+                log.warn("  ownership %s:%s", user, group)
+            except:
+                pass
+    elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
+        log.warn("Warning: cannot create socket '%s':", sockpath)
+        log.warn(" %s", e)
+        if not os.path.exists("/var/run/user"):
+            log.warn(" %s does not exist", "/var/run/user")
+        else:
+            log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
+    else:
+        log.error("Error: failed to create socket '%s':", sockpath)
+        log.error(" %s", e)
+        raise InitException("failed to create socket %s" % sockpath)
 
 
 def close_all_fds(exceptions=[]):
