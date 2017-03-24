@@ -54,7 +54,7 @@
 %global selinux_variants mls targeted
 
 %define libvpx libvpx-xpra
-%define run_tests 0
+%define run_tests 1
 
 # any centos / rhel supported:
 %if 0%{?el7}
