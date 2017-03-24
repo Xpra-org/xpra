@@ -532,6 +532,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/xpra/platform
 %{python2_sitearch}/xpra/scripts
 %{python2_sitearch}/xpra/x11
+%{python2_sitearch}/xpra/monotonic_time.so
 %{python2_sitearch}/xpra/*.py*
 %{python2_sitearch}/xpra-*.egg-info
 
@@ -558,6 +559,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/scripts
 %{python3_sitearch}/xpra/sound
 %{python3_sitearch}/xpra/x11
+%{python3_sitearch}/xpra/monotonic_time.*.so
 %{python3_sitearch}/xpra/*.py*
 %{python3_sitearch}/xpra-*.egg-info
 
