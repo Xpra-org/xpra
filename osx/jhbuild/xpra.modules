@@ -277,6 +277,7 @@
 		checkoutdir="gtkglext-1.2.0"
 		repo="xpra.org">
     <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/xpra-gtkglext.patch" strip="1"/>
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-depth.patch" strip="1"/>
     </branch>
   </autotools>
 
