@@ -54,7 +54,7 @@
 %global selinux_variants mls targeted
 
 %define libvpx libvpx-xpra
-%define run_tests 1
+%define run_tests 0
 
 # any centos / rhel supported:
 %if 0%{?el7}
@@ -433,9 +433,6 @@ popd
 popd
 
 
-%pre common-server
-getent group xpra > /dev/null || groupadd -r xpra
-
 %install
 rm -rf $RPM_BUILD_ROOT
 %if %{with_python3}
@@ -506,6 +503,7 @@ rm -rf $RPM_BUILD_ROOT
 /usr/lib/cups/backend/xpraforwarder
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config /usr/lib/tmpfiles.d/xpra.conf
+%config /usr/lib/sysusers.d/xpra.conf
 %config %{_sysconfdir}/pam.d/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 #we only enable CUDA / NVENC with 64-bit builds:
@@ -598,6 +596,12 @@ popd
 
 
 %post common-server
+%if 0%{?fedora}
+#fedora can use sysusers.d instead
+%sysusers_create xpra.conf
+%else
+getent group xpra > /dev/null || groupadd -r xpra
+%endif
 if [ $1 -eq 1 ]; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
