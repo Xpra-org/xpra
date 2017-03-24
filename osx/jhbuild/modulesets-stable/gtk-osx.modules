@@ -109,7 +109,9 @@
        06fd4a27 breaks the build for gtk-osx, tag v1.3.1 builds
        fine. -->
   <autotools id="libepoxy">
-    <branch repo="github" module="anholt/libepoxy" revision="v1.3.1"/>
+    <branch repo="github" module="anholt/libepoxy/releases/download/1.4.1/libepoxy-1.4.1.tar.xz"
+    	version="1.4.1"
+    	hash="sha256:88c6abf5522fc29bab7d6c555fd51a855cbd9253c4315f8ea44e832baef21aa6"/>
     <dependencies>
       <dep package="xorg-util-macros"/>
     </dependencies>
