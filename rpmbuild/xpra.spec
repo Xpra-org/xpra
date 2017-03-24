@@ -597,6 +597,7 @@ popd
 
 %post common-server
 %if 0%{?fedora}
+%tmpfiles_create xpra.conf
 #fedora can use sysusers.d instead
 %sysusers_create xpra.conf
 %else
