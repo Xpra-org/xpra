@@ -89,6 +89,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
+[\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
+[\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
 .HP
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
@@ -152,6 +154,8 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
+[\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
+[\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
@@ -568,6 +572,8 @@ The default option is \fBauto\fP which allows the server to
 select the best encoding automatically.
 
 .RS
+.IP \fBauto\fP
+default mode: the built-in heuristics will choose the most appropriate encoding
 .IP \fBpng\fP
 compressed and lossless, can be quite slow.
 .IP \fBpng/P\fP
@@ -642,6 +648,17 @@ You may specify each directory using a new \fB\-\-socket\-dirs\fP
 command line argument, or joined together by the path separator (\fB:\fP on Posix).
 The paths will be expanded.
 (ie: \fI\-\-socket-dirs=~/.xpra:/tmp\fP)
+.TP
+
+\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP
+Enable file transfers.
+.TP
+\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP
+This option may be used to allow the remote end to automatically
+open files after they have been uploaded.
+This may be a security risk if you are using xpra to constrain
+what the clients can execute on the server.
+.TP
 
 
 .SS Options for start, upgrade, proxy and shadow

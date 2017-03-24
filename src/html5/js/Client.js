@@ -58,6 +58,9 @@ function XpraClient(container) {
 	// printing / file-transfer:
 	this.file_transfer = false;
 	this.printing = false;
+	this.remote_printing = false;
+	this.remote_file_transfer = false;
+	this.remote_open_files = false;
 	// authentication
 	this.insecure = false;
 	this.authentication_key = null;
@@ -1239,7 +1242,10 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			}
 		}
 	}
-	if (hello["printing"]!=0 && ctx.printing) {
+	ctx.remote_open_files = Boolean(hello["open-files"]);
+	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);
+	ctx.remote_printing = Boolean(hello["printing"]);
+	if (this.remote_printing && ctx.printing) {
 		// send our printer definition
 		var printers = {
 			"HTML5 client": {
@@ -1698,12 +1704,12 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		selection = packet[2],
 		target = packet[3];
 
+	var packet;
 	if(ctx.clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
-		var packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
+		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
 	}
-
 	ctx.protocol.send(packet);
 }
 
@@ -1728,7 +1734,7 @@ XpraClient.prototype._process_send_file = function(packet, ctx) {
 }
 
 XpraClient.prototype.save_file = function(filename, data, mimetype) {
-	if (!this.file_transfer) {
+	if (!this.file_transfer || !this.remote_file_transfer) {
 		this.warn("Received file-transfer data but this is not enabled!");
 		return;
 	}
@@ -1740,7 +1746,7 @@ XpraClient.prototype.save_file = function(filename, data, mimetype) {
 }
 
 XpraClient.prototype.print_document = function(filename, data, mimetype) {
-	if (!this.printing) {
+	if (!this.printing || !this.remote_printing) {
 		this.warn("Received data to print but printing is not enabled!");
 		return;
 	}
@@ -1758,4 +1764,13 @@ XpraClient.prototype.print_document = function(filename, data, mimetype) {
 		this.warn("popup blocked, saving to file instead");
 		Utilities.saveFile(filename, data, {type : mimetype});
 	}	
+}
+
+XpraClient.prototype.send_file = function(filename, mimetype, size, buffer) {
+	if (!this.file_transfer || !this.remote_file_transfer) {
+		this.warn("cannot send file: file transfers are disabled!");
+		return;
+	}
+	var packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
+	this.protocol.send(packet);
 }

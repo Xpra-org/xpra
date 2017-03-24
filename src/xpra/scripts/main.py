@@ -383,9 +383,13 @@ def do_parse_cmdline(cmdline, defaults):
 
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
+    legacy_bool_parse("open-files")
     group.add_option("--file-transfer", action="store", metavar="yes|no",
                       dest="file_transfer", default=defaults.file_transfer,
                       help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
+    group.add_option("--open-files", action="store", metavar="yes|no",
+                      dest="open_files", default=defaults.open_files,
+                      help="Automatically open uploaded files (potentially dangerous). Default: %s." % enabled_str(defaults.file_transfer))
     group.add_option("--printing", action="store", metavar="yes|no",
                       dest="printing", default=defaults.printing,
                       help="Support printing. Default: %s." % enabled_str(defaults.printing))
@@ -409,7 +413,6 @@ def do_parse_cmdline(cmdline, defaults):
     hidden_options["add-printer-options"] = defaults.add_printer_options
     hidden_options["file-size-limit"] = defaults.file_size_limit
     hidden_options["open-command"] = defaults.open_command
-    hidden_options["open-files"] = defaults.open_files
 
     legacy_bool_parse("exit-with-client")
     if (supports_server or supports_shadow):

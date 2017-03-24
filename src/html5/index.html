@@ -300,6 +300,35 @@
 						}
 					});
 			   	}
+			   	//file transfer hooks:
+			   	if (file_transfer) {
+					function send_file(f) {
+						console.log("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
+						var fileReader = new FileReader();
+						fileReader.onloadend = function (evt) {
+							var u8a = new Uint8Array(evt.target.result);
+							var buf = Utilities.Uint8ToString(u8a);
+							client.send_file(f.name, f.type, f.size, buf);
+						};
+						fileReader.readAsArrayBuffer(f);
+					}
+					function handleFileSelect(evt) {
+						evt.stopPropagation();
+						evt.preventDefault();
+						var files = evt.dataTransfer.files;
+						for (var i = 0, f; f = files[i]; i++) {
+							send_file(f);
+						}
+					}
+					function handleDragOver(evt) {
+						evt.stopPropagation();
+						evt.preventDefault();
+						evt.dataTransfer.dropEffect = 'copy';
+					}
+					var screen = document.getElementById('screen');
+					screen.addEventListener('dragover', handleDragOver, false);
+					screen.addEventListener('drop', handleFileSelect, false);
+			   	}
 			});
 		</script>
 	</body>
