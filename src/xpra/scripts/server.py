@@ -559,7 +559,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                         os.makedirs(sockpath)
                     sockpath = norm_makepath(sockpath, display_name)
                 else:
-                    sockpath = dotxpra.socket_path(b)
+                    if os.path.isabs(b):
+                        sockpath = b
+                    else:
+                        sockpath = dotxpra.socket_path(b)
                 try_sockpaths = [sockpath]
             assert try_sockpaths, "no socket paths to try for %s" % b
             for tsp in try_sockpaths:
