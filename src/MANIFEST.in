@@ -20,6 +20,7 @@ recursive-include scripts *
 recursive-include selinux *
 recursive-include service *
 recursive-include tmpfiles.d *
+recursive-include sysusers.d *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
