@@ -1245,7 +1245,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);
 	ctx.remote_printing = Boolean(hello["printing"]);
-	if (this.remote_printing && ctx.printing) {
+	if (ctx.remote_printing && ctx.printing) {
 		// send our printer definition
 		var printers = {
 			"HTML5 client": {
