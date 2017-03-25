@@ -18,23 +18,57 @@
 var XPRA_CLIENT_FORCE_NO_WORKER = false;
 
 function XpraClient(container) {
-	// state
-	var me = this;
+	// the container div is the "screen" on the HTML page where we
+	// are able to draw our windows in.
+	this.container = document.getElementById(container);
+	if (!this.container) {
+		throw "invalid container element";
+	}
+	// assign callback for window resize event
+	if (window.jQuery) {
+		jQuery(window).resize(jQuery.debounce(250, function (e) {
+			me._screen_resized(e, me);
+		}));
+	}
+
+	this.protocol = null;
+
+	this.init_settings();
+	this.init_state();
+}
+
+XpraClient.prototype.init_settings = function(container) {
+	//server:
 	this.host = null;
 	this.port = null;
 	this.ssl = null;
+	this.username = "";
+	this.password = null;
+	this.insecure = false;
+	//connection options:
 	this.debug = false;
 	this.sharing = false;
+	this.steal = true;
 	this.remote_logging = true;
+	this.enabled_encodings = [];
+	this.normal_fullscreen_mode = false;
+	this.start_new_session = null;
+	this.clipboard_enabled = false;
+	this.file_transfer = false;
+	this.printing = false;
+	this.reconnect = true;
+	this.reconnect_count = 5;
+	this.reconnect_delay = 1000;	//wait 1 second before retrying
+}
+
+XpraClient.prototype.init_state = function(container) {
+	// state
+	var me = this;
 	this.server_remote_logging = false;
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
 	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
-	this.enabled_encodings = [];
-	this.normal_fullscreen_mode = false;
-	this.start_new_session = null;
-	this.username = "";
 	this.disconnect_reason = null;
 	// audio
 	this.audio_enabled = false;
@@ -51,20 +85,13 @@ function XpraClient(container) {
 	this.cipher_in_caps = null;
 	this.cipher_out_caps = null;
 	// clipboard
-	this.clipboard_enabled = false;
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
 	// printing / file-transfer:
-	this.file_transfer = false;
-	this.printing = false;
 	this.remote_printing = false;
 	this.remote_file_transfer = false;
 	this.remote_open_files = false;
-	// authentication
-	this.insecure = false;
-	this.authentication_key = null;
-	this.steal = true;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
@@ -79,19 +106,6 @@ function XpraClient(container) {
     this.dQ_interval_id = null;
     this.process_interval = 4;
 
-	// the container div is the "screen" on the HTML page where we
-	// are able to draw our windows in.
-	this.container = document.getElementById(container);
-	if(!this.container) {
-		throw "invalid container element";
-	}
-	// assign callback for window resize event
-	if (window.jQuery) {
-		jQuery(window).resize(jQuery.debounce(250, function (e) {
-			me._screen_resized(e, me);
-		}));
-	}
-
 	// a list of our windows
 	this.id_to_window = {};
 	// basic window management
@@ -99,9 +113,14 @@ function XpraClient(container) {
 	this.topindex = 0;
 	this.focus = -1;
 	// the protocol
-	this.protocol = null;
+	this.reconnect_attempt = 0;
 }
 
+XpraClient.prototype.send = function() {
+	if (this.protocol) {
+		this.protocol.send.apply(this.protocol, arguments);
+	}
+}
 
 XpraClient.prototype.send_log = function(level, args) {
 	if(this.remote_logging && this.server_remote_logging) {
@@ -110,7 +129,7 @@ XpraClient.prototype.send_log = function(level, args) {
 			for(var i = 0; i < args.length; i++) {
 				sargs.push(String(args[i]));
 			}
-			this.protocol.send(["logging", level, sargs]);
+			this.send(["logging", level, sargs]);
 		} catch (e) {
 			console.error("remote logging failed: "+e);
 			for(var i = 0; i < args.length; i++) {
@@ -277,12 +296,9 @@ XpraClient.prototype.callback_close = function(reason) {
 	console.log("connection closed: "+reason);
 }
 
-XpraClient.prototype.connect = function(host, port, ssl) {
+XpraClient.prototype.connect = function() {
 	// open the web socket, started it in a worker if available
-	console.log("connecting to xpra server " + host + ":" + port + " with ssl: " + ssl);
-	this.host = host;
-	this.port = port;
-	this.ssl = ssl;
+	console.log("connecting to xpra server " + this.host + ":" + this.port + " with ssl: " + this.ssl);
 	// check we have enough information for encryption
 	if(this.encryption) {
 		if((!this.encryption_key) || (this.encryption_key == "")) {
@@ -319,6 +335,7 @@ XpraClient.prototype.connect = function(host, port, ssl) {
 	} else {
 		// no webworker support
 		console.log("no webworker support at all.")
+		me._do_connect(false);
 	}
 }
 
@@ -328,6 +345,10 @@ XpraClient.prototype._do_connect = function(with_worker) {
 	} else {
 		this.protocol = new XpraProtocol();
 	}
+	this.open_protocol();
+}
+
+XpraClient.prototype.open_protocol = function() {
 	// set protocol to deliver packets to our packet router
 	this.protocol.set_packet_handler(this._route_packet, this);
 	// make uri
@@ -336,20 +357,47 @@ XpraClient.prototype._do_connect = function(with_worker) {
 		uri = "wss://";
 	uri += this.host;
 	uri += ":" + this.port;
-	// do open
-	this.protocol.open(uri);
 	// wait timeout seconds for a hello, then bomb
 	var me = this;
 	this.hello_timer = setTimeout(function () {
 		me.disconnect_reason = "Did not receive hello before timeout reached, not an Xpra server?";
 		me.close();
 	}, this.HELLO_TIMEOUT);
+	// do open
+	this.protocol.open(uri);
 }
 
 XpraClient.prototype.close = function() {
-	// close all windows
-	// close protocol
-	this.protocol.close();
+	console.error("client closed");
+	this.close_windows();
+	this.clear_timers();
+	this.close_audio();
+	this.close_protocol();
+}
+
+XpraClient.prototype.close_windows = function() {
+	for (var i in this.id_to_window) {
+		var iwin = this.id_to_window[i];
+		iwin.destroy();
+	}
+} 
+
+XpraClient.prototype.close_protocol = function() {
+	if (this.protocol) {
+		this.protocol.close();
+		this.protocol = null;
+	}
+}
+
+XpraClient.prototype.clear_timers = function() {
+	if (this.hello_timer) {
+		clearTimeout(this.hello_timer);
+		this.hello_timer = null;
+	}
+	if (this.ping_timer) {
+		clearTimeout(this.ping_timer);
+		this.ping_timer = null;
+	}
 }
 
 XpraClient.prototype.enable_encoding = function(encoding) {
@@ -388,7 +436,7 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 	// send the desktop_size packet so server knows we changed size
 	var newsize = this._get_desktop_size();
 	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
-	ctx.protocol.send(packet);
+	ctx.send(packet);
 	// call the screen_resized function on all open windows
 	for (var i in ctx.id_to_window) {
 		var iwin = ctx.id_to_window[i];
@@ -463,10 +511,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		//send via a timer so we get a chance to capture the clipboard value,
 		//before we send control-V to the server:
 		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
-		var protocol = this.protocol;
+		var me = this;
 		setTimeout(function () {
 			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
-			protocol.send(packet);
+			me.send(packet);
 		}, 0);
 	}
 	if (this.clipboard_enabled) {
@@ -626,7 +674,7 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 XpraClient.prototype._send_ping = function() {
 	var me = this;
 	var now_ms = Date.now();
-	this.protocol.send(["ping", now_ms]);
+	this.send(["ping", now_ms]);
 	// add timeout to wait for ping timout
 	setTimeout(function () {
 		me._check_echo_timeout(now_ms);
@@ -642,7 +690,7 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	// make the base hello
 	this._make_hello_base();
 	// handle a challenge if we need to
-	if((this.authentication_key) && (!challenge_response)) {
+	if((this.password) && (!challenge_response)) {
 		// tell the server we expect a challenge (this is a partial hello)
 		this.capabilities["challenge"] = true;
 		console.log("sending partial hello");
@@ -673,7 +721,7 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	    }
 	}
 	// send the packet
-	this.protocol.send(["hello", this.capabilities]);
+	this.send(["hello", this.capabilities]);
 }
 
 XpraClient.prototype._make_hello_base = function() {
@@ -843,7 +891,7 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 			}
 		}
 		var geom = win.get_internal_geometry();
-		this.protocol.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
+		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
 		this._window_set_focus(win);
 	}
 }
@@ -869,7 +917,7 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 }
 
 XpraClient.prototype._window_closed = function(win) {
-	win.client.protocol.send(["close-window", win.wid]);
+	win.client.send(["close-window", win.wid]);
 }
 
 XpraClient.prototype._get_client_properties = function(win) {
@@ -887,12 +935,12 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 	if (!win.override_redirect) {
 		win.client._window_set_focus(win);
 	}
-	win.client.protocol.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
+	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
 }
 
 XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons) {
 	var wid = win.wid;
-	win.client.protocol.send(["pointer-position", wid, [x, y], modifiers, buttons]);
+	win.client.send(["pointer-position", wid, [x, y], modifiers, buttons]);
 }
 
 XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
@@ -901,7 +949,7 @@ XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, 
 	if(win.client.focus != wid) {
 		win.client._window_set_focus(win);
 	}
-	win.client.protocol.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+	win.client.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 }
 
 XpraClient.prototype._window_set_focus = function(win) {
@@ -910,7 +958,7 @@ XpraClient.prototype._window_set_focus = function(win) {
 		var wid = win.wid;
 		win.client.focus = wid;
 		win.client.topwindow = wid;
-		win.client.protocol.send(["focus", wid, []]);
+		win.client.send(["focus", wid, []]);
 		//set the focused flag on all windows:
 		for (var i in win.client.id_to_window) {
 			var iwin = win.client.id_to_window[i];
@@ -923,7 +971,7 @@ XpraClient.prototype._window_set_focus = function(win) {
 XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time, error_message) {
 	// this function requires wid as argument because it may be called
 	// without a valid client side window
-	this.protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time, error_message]);
+	this.send(["damage-sequence", packet_sequence, wid, width, height, decode_time, error_message]);
 }
 
 
@@ -944,7 +992,7 @@ XpraClient.prototype._sound_start_receiving = function() {
 
 XpraClient.prototype._send_sound_start = function() {
 	this.log("audio: requesting "+this.audio_codec+" stream from the server");
-	this.protocol.send(["sound-control", "start", this.audio_codec]);
+	this.send(["sound-control", "start", this.audio_codec]);
 }
 
 XpraClient.prototype._sound_start_aurora = function() {
@@ -966,7 +1014,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 		else {
 			me.error(event+" error");
 		}
-		me._close_audio();
+		me.close_audio();
 	}
 
 	//Create a MediaSource:
@@ -1002,7 +1050,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
 		if(codec_string==null) {
 			me.error("invalid codec '"+me.audio_codec+"'");
-			me._close_audio();
+			me.close_audio();
 			return;
 		}
 		me.log("using audio codec string for "+me.audio_codec+": "+codec_string);
@@ -1013,7 +1061,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 			asb = me.media_source.addSourceBuffer(codec_string);
 		} catch (e) {
 			me.error("audio setup error for '"+codec_string+"':", e);
-			me._close_audio();
+			me.close_audio();
 			return;
 		}
 		me.audio_source_buffer = asb;
@@ -1027,8 +1075,10 @@ XpraClient.prototype._sound_start_mediasource = function() {
 	});
 }
 
-XpraClient.prototype._close_audio = function() {
-	this.protocol.send(["sound-control", "stop"]);
+XpraClient.prototype.close_audio = function() {
+	if (this.protocol) {
+		this.send(["sound-control", "stop"]);
+	}
 	if(this.audio_framework=="mediasource") {
 		this._close_audio_mediasource();
 	}
@@ -1045,10 +1095,10 @@ XpraClient.prototype._close_audio_aurora = function() {
 }
 
 XpraClient.prototype._close_audio_mediasource = function() {
-	this.log("close_audio: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
+	this.log("close_audio_mediasource: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
 	this.audio_source_ready = false;
 	if(this.audio) {
-		this.protocol.send(["sound-control", "stop"]);
+		this.send(["sound-control", "stop"]);
 		if(this.media_source) {
 			try {
 				if(this.audio_source_buffer) {
@@ -1077,46 +1127,57 @@ XpraClient.prototype._close_audio_mediasource = function() {
 
 XpraClient.prototype._process_open = function(packet, ctx) {
 	// call the send_hello function
+	console.debug("process_open: protocol=", ctx.protocol);
+	ctx.reconnect_attempt = 0;
 	ctx._send_hello();
 }
 
 XpraClient.prototype._process_error = function(packet, ctx) {
-	// terminate the worker
-	ctx.protocol.terminate();
-	// call the client's close callback
-	ctx.callback_close(ctx.disconnect_reason);
-	// clear the reason
-	ctx.disconnect_reason = null;
-	console.log("error: "+packet[1]);
+	console.error("websocket error: ", packet[1], "reason: ", ctx.disconnect_reason);
+	ctx.close_audio();
+	if (!ctx.reconnect || ctx.reconnect_attempt<ctx.reconnect_count) {
+		// call the client's close callback
+		ctx.callback_close(ctx.disconnect_reason);
+		// clear the reason
+		ctx.disconnect_reason = null;
+	}
 }
 
 XpraClient.prototype._process_close = function(packet, ctx) {
-	ctx._close_audio();
-	// terminate the worker
-	ctx.protocol.terminate();
-	// call the client's close callback
-	ctx.callback_close(ctx.disconnect_reason);
-	// clear the reason
-	ctx.disconnect_reason = null;
-	console.log("close: "+packet[1]);
+	console.log("websocket closed: ", packet[1], "reason: ", ctx.disconnect_reason);
+	ctx.close_windows();
+	ctx.close_audio();
+	ctx.clear_timers();
+	if (ctx.reconnect && ctx.reconnect_attempt<ctx.reconnect_count) {
+		var protocol = ctx.protocol;
+		//try again:
+		ctx.reconnect_attempt++;
+		setTimeout(function(){
+			ctx.init_state();
+			if (protocol) {
+				ctx.open_protocol();
+			}
+			else {
+				ctx.connect();
+			}
+		}, ctx.reconnect_delay);
+	}
+	else {
+		ctx.close_protocol();
+		// call the client's close callback
+		ctx.callback_close(ctx.disconnect_reason);
+		// clear the reason
+		ctx.disconnect_reason = null;
+	}
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
-	// clear the timer if we are waiting for a hello
-	if(ctx.hello_timer) {
-		clearTimeout(ctx.hello_timer);
-		ctx.hello_timer = null;
-	}
-	// stop the ping timer
-	if(ctx.ping_timer) {
-		clearTimeout(ctx.ping_timer);
-		ctx.ping_timer = null;
-	}
 	// save the disconnect reason
 	ctx.disconnect_reason = packet[1];
-	// post a close request to the protocol
-	// this will eventually raise a close packet processed above
 	ctx.close();
+	// call the client's close callback
+	ctx.callback_close(ctx.disconnect_reason);
+	ctx.disconnect_reason = null;
 }
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {
@@ -1256,7 +1317,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 				"mimetypes": ["application/pdf"]
 			}
 		};
-		ctx.protocol.send(["printers", printers]);
+		ctx.send(["printers", printers]);
 	}
 	// start sending our own pings
 	ctx._send_ping();
@@ -1268,7 +1329,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
 	console.log("process challenge");
-	if ((!ctx.authentication_key) || (ctx.authentication_key == "")) {
+	if ((!ctx.password) || (ctx.password == "")) {
 		ctx.callback_close("No password specified for authentication challenge");
 		return;
 	}
@@ -1289,7 +1350,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	salt = Utilities.xorString(salt, client_salt);
 	if (digest == "hmac") {
 		var hmac = forge.hmac.create();
-		hmac.start('md5', ctx.authentication_key);
+		hmac.start('md5', ctx.password);
 		hmac.update(salt);
 		challenge_response = hmac.digest().toHex();
 	} else if (digest == "xor") {
@@ -1297,8 +1358,8 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
 			return;
 		}
-		var trimmed_salt = salt.slice(0, ctx.authentication_key.length);
-		challenge_response = Utilities.xorString(trimmed_salt, ctx.authentication_key);
+		var trimmed_salt = salt.slice(0, ctx.password.length);
+		challenge_response = Utilities.xorString(trimmed_salt, ctx.password);
 	} else {
 		ctx.callback_close("server requested an unsupported digest " + digest);
 		return;
@@ -1309,7 +1370,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 XpraClient.prototype._process_ping = function(packet, ctx) {
 	var echotime = packet[1];
 	var l1=0, l2=0, l3=0;
-	ctx.protocol.send(["ping_echo", echotime, l1, l2, l3, 0]);
+	ctx.send(["ping_echo", echotime, l1, l2, l3, 0]);
 }
 
 XpraClient.prototype._process_ping_echo = function(packet, ctx) {
@@ -1564,7 +1625,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 XpraClient.prototype._process_sound_data = function(packet, ctx) {
 	if(packet[1]!=ctx.audio_codec) {
 		ctx.error("invalid audio codec '"+packet[1]+"' (expected "+ctx.audio_codec+"), stopping audio stream");
-		ctx._close_audio();
+		ctx.close_audio();
 		return;
 	}
 	try {
@@ -1577,7 +1638,7 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 	}
 	catch(e) {
 		ctx.error('error processing audio data:', e);
-		ctx._close_audio();
+		ctx.close_audio();
 	}
 }
 
@@ -1621,7 +1682,7 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 		var MAX_BUFFERS = 250;
 		if(this.audio_buffers.length>=MAX_BUFFERS) {
 			this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
-			this._close_audio();
+			this.close_audio();
 			return;
 		}
 		var MIN_START_BUFFERS = 4;
@@ -1650,7 +1711,7 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 	}
 	catch(e) {
 		this.error("audio failed:", e);
-		this._close_audio();
+		this.close_audio();
 	}
 }
 
@@ -1667,7 +1728,7 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 		console.debug("sending clipboard token with data:", data);
 	}
 	var packet = ["clipboard-token", "CLIPBOARD", [], "STRING", "STRING", data.length, "bytes", data, false, true, true];
-	this.protocol.send(packet);
+	this.send(packet);
 }
 
 XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
@@ -1712,7 +1773,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	} else {
 		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
 	}
-	ctx.protocol.send(packet);
+	ctx.send(packet);
 }
 
 XpraClient.prototype._process_send_file = function(packet, ctx) {
@@ -1774,5 +1835,5 @@ XpraClient.prototype.send_file = function(filename, mimetype, size, buffer) {
 		return;
 	}
 	var packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
-	this.protocol.send(packet);
+	this.send(packet);
 }

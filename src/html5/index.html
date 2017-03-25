@@ -132,6 +132,7 @@
 				var printing = getboolparam("printing", true);
 				var file_transfer = getboolparam("file_transfer", true);
 				var steal = getboolparam("steal", true);
+				var reconnect = getboolparam("reconnect", true);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -143,6 +144,7 @@
 		    	client.printing = printing;
 		    	client.file_transfer = file_transfer;
 		    	client.steal = steal;
+		    	client.reconnect = reconnect;
 
 			    // mediasource video
 			    if(video) {
@@ -258,9 +260,13 @@
 				}
 			    client.init(ignore_audio_blacklist);
 
-			    // and connect
 				var ssl = document.location.protocol=="https:";
-			    client.connect(server, port, ssl);
+			    client.host = server;
+			    client.port = port;
+			    client.ssl = ssl;
+
+			    // and connect
+			    client.connect();
 
 			   	if (clipboard) {
 				    //clipboard hooks:

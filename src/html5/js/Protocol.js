@@ -29,6 +29,11 @@ function XpraProtocolWorkerHost() {
 
 XpraProtocolWorkerHost.prototype.open = function(uri) {
 	var me = this;
+	if (this.worker) {
+		//re-use the existing worker:
+		this.worker.postMessage({'c': 'o', 'u': uri});
+		return;
+	}
 	this.worker = new Worker('js/Protocol.js');
 	this.worker.addEventListener('message', function(e) {
 		var data = e.data;
@@ -101,9 +106,12 @@ function XpraProtocol() {
 
 XpraProtocol.prototype.open = function(uri) {
 	var me = this;
-	// init
-	this.rQ		 = [];
-	this.sQ		 = [];
+	// (re-)init
+	this.raw_packets = [];
+	this.rQ = [];
+	this.sQ	= [];
+	this.mQ = [];
+	this.header  = [];
 	this.websocket  = null;
 	// connect the socket
 	this.websocket = new WebSocket(uri, 'binary');
@@ -124,26 +132,14 @@ XpraProtocol.prototype.open = function(uri) {
 				me.process_receive_queue();
 			}, this.process_interval);
 	};
-	this.start_processing();
 }
 
 XpraProtocol.prototype.close = function() {
-	this.stop_processing();
-	this.websocket.close();
+	if (this.websocket) {
+		this.websocket.close();
+		this.websocket = null;
+	}
 }
-
-XpraProtocol.prototype.terminate = function() {
-	this.stop_processing();
-	// if this is called here we are not in a worker, so
-	// do nothing
-	return;
-}
-
-XpraProtocol.prototype.start_processing = function() {
-}
-XpraProtocol.prototype.stop_processing = function() {
-}
-
 
 XpraProtocol.prototype.process_receive_queue = function() {
 	var i = 0, j = 0;
@@ -334,7 +330,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 }
 
 XpraProtocol.prototype.process_send_queue = function() {
-	while(this.sQ.length !== 0) {
+	while(this.sQ.length !== 0 && this.websocket) {
 		var packet = this.sQ.shift();
 		if(!packet){
 			return;
@@ -375,7 +371,9 @@ XpraProtocol.prototype.process_send_queue = function() {
 		header = header.concat(cdata);
 		//debug("send("+packet+") "+cdata.length+" bytes in packet for: "+bdata.substring(0, 32)+"..");
 		// put into buffer before send
-		this.websocket.send((new Uint8Array(header)).buffer);
+		if (this.websocket) {
+			this.websocket.send((new Uint8Array(header)).buffer);
+		}
 	}
 }
 
