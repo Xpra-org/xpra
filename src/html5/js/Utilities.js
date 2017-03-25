@@ -127,11 +127,15 @@ var Utilities = {
 	},
 
 	getAudioContext : function() {
+		if (Utilities.audio_context) {
+			return Utilities.audio_context;
+		}
 		var acc = Utilities.getAudioContextClass();
 		if(!acc) {
 			return null;
 		}
-		return new acc();
+		Utilities.audio_context = new acc();
+		return Utilities.audio_context;
 	},
 
 	isFirefox : function() {
