@@ -223,6 +223,8 @@
 				    		var props = {
 				    				"username"			: username,
 				    				"password"			: password,
+				    				"server"			: server,
+				    				"port"				: port,
 				    				"encoding"			: encoding,
 				    				"keyboard_layout"	: keyboard_layout,
 				    				"action"			: action,
@@ -243,7 +245,7 @@
 				    				}
 				    		for (var name in props) {
 				    			var value = props[name];
-				    			if(value !== undefined) {
+				    			if(value !== undefined && value !== null) {
 					    			url += "&"+name+"="+encodeData(value);
 				    			}
 				    		}

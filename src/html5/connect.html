@@ -285,21 +285,16 @@ function encodeData(s) {
 }
 
 function doConnect() {
-	var server = document.getElementById("server").value;
-	var username = document.getElementById("username").value;
-	var password = document.getElementById("password").value;
-	var port = parseInt(document.getElementById("port").value);
-	var encoding = document.getElementById("encoding").value;
-	var keyboard_layout = document.getElementById("keyboard_layout").value;
-	var clipboard = document.getElementById("clipboard").checked;
-	var printing = document.getElementById("printing").checked;
-	var file_transfer = document.getElementById("file_transfer").checked;
 	// url to client
-	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true";
-	if (username.length>0)
-		url += "&username="+encodeData(username);
-	if (password.length>0)
-		url += "&password="+encodeData(password);
+	var url = "/index.html?submit=true";
+	var val_props = ["server", "port", "username", "password", "encoding", "keyboard_layout"];
+	for (var i = 0; i < val_props.length; i++) {
+		var prop = val_props[i];
+		var value = document.getElementById(prop).value;
+		if (value.length>0) {
+			url = url + "&"+prop+"="+value;
+		}
+	}
 
 	var sound = document.getElementById("sound").checked;
 	if(sound) {
@@ -361,9 +356,9 @@ $(document).ready(function() {
 	var url = window.location.href;
 	var link = document.createElement('a');
 	link.setAttribute('href', url);
-	document.getElementById("server").value = link.hostname;
-	document.getElementById("port").value = link.port;
-	var username = window.location.getParameter("username") || "";
+	document.getElementById("server").value = getparam("server") || link.hostname;
+	document.getElementById("port").value = getparam("port") || link.port;
+	var username = getparam("username") || "";
 	document.getElementById("username").value = username;
 	if(ssl) {
 	   	$('div.password-warning-box').hide();
