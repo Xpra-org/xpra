@@ -106,9 +106,6 @@
             module="xorg/individual/util/util-macros-1.19.0.tar.bz2"/>
   </autotools>
 
-  <!-- There is no stable release yet that works here, but commit
-       06fd4a27 breaks the build for gtk-osx, tag v1.3.1 builds
-       fine. -->
   <autotools id="libepoxy" autogen-sh="configure">
     <branch repo="github-tarball" module="anholt/libepoxy/releases/download/1.4.1/libepoxy-1.4.1.tar.xz"
     	version="1.4.1"
