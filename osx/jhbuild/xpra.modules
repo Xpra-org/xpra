@@ -955,7 +955,7 @@
       <dep package="openssl"/>
       <dep package="mpfr"/>
       <dep package="setuptools"/>
-      <dep package="python-zeroconf"
+      <dep package="python-zeroconf"/>
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
       <dep package="python-pyasn1"/>
