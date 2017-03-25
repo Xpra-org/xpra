@@ -539,6 +539,9 @@ fi
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
 %post common
+%if 0%{?fedora}
+%tmpfiles_create xpra.conf
+%endif
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 %if 0%{?with_selinux}
 for selinuxvariant in %{selinux_variants}
