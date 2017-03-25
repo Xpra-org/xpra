@@ -64,6 +64,7 @@ function XpraClient(container) {
 	// authentication
 	this.insecure = false;
 	this.authentication_key = null;
+	this.steal = true;
 	// hello
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
@@ -686,6 +687,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"platform.platform"			: navigator.appVersion,
 		"namespace"			 		: true,
 		"share"						: this.sharing,
+		"steal"						: this.steal,
 		"client_type"				: "HTML5",
 		"encoding.generic" 			: true,
 		"username" 					: this.username,

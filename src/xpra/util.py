@@ -37,6 +37,7 @@ CLIENT_REQUEST          = "client request"
 DETACH_REQUEST          = "detach request"
 NEW_CLIENT              = "new client"
 IDLE_TIMEOUT            = "idle timeout"
+SESSION_BUSY            = "session busy"
 #client telling the server:
 CLIENT_EXIT             = "client exit"
 

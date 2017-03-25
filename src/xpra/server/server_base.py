@@ -40,7 +40,7 @@ from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, OSX
 from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
-    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT
+    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
@@ -1044,6 +1044,9 @@ class ServerBase(ServerCore):
     def hello_oked(self, proto, packet, c, auth_caps):
         if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
             #has been handled
+            return
+        if not c.boolget("steal", True) and self._server_sources:
+            self.disconnect_client(proto, SESSION_BUSY, "this session is already active")
             return
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)

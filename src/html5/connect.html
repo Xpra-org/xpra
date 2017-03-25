@@ -217,6 +217,9 @@
 				  	<input type="checkbox" id="sharing"> <span>Share session</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<input type="checkbox" id="steal"> <span>Steal session from existing client</span>
+				  </li>
+				  <li class="list-group-item">
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
@@ -292,7 +295,7 @@ function doConnect() {
 	var printing = document.getElementById("printing").checked;
 	var file_transfer = document.getElementById("file_transfer").checked;
 	// url to client
-	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true&clipboard="+clipboard+"&printing="+printing+"&file_transfer="+file_transfer;
+	var url = "/index.html?server="+encodeData(server)+"&port="+port+"&encoding="+encodeData(encoding)+"&keyboard_layout="+encodeData(keyboard_layout)+"&submit=true";
 	if (username.length>0)
 		url += "&username="+encodeData(username);
 	if (password.length>0)
@@ -328,11 +331,17 @@ function doConnect() {
 		url = url + "&start="+encodeData(start);
 	}
 
-	var bool_props = ["sound", "exit_with_children", "exit_with_client", "sharing", "video", "mediasource_video", "normal_fullscreen", "debug", "insecure"];
+	var bool_props = ["clipboard", "printing", "file_transfer",
+		"exit_with_children", "exit_with_client",
+		"sharing", "steal", "video",
+		"mediasource_video", "normal_fullscreen", "debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
 		if(document.getElementById(prop).checked) {
 			url = url + "&"+prop+"=true";
+		}
+		else {
+			url = url + "&"+prop+"=false";
 		}
 	}
 	window.location = url;
@@ -404,23 +413,6 @@ $(document).ready(function() {
 	var keyboard_layout = Utilities.getKeyboardLayout();
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 
-	var clipboard = getboolparam("clipboard", true);
-   	$('input#clipboard').prop("checked", clipboard);
-
-	var printing = getboolparam("printing", true);
-   	$('input#printing').prop("checked", clipboard);
-	var file_transfer = getboolparam("file_transfer", true);
-   	$('input#file_transfer').prop("checked", file_transfer);
-   	
-	var exit_with_children = getboolparam("exit_with_children");
-	if(exit_with_children) {
-	   	$('input#exit_with_children').prop("checked", exit_with_children);
-	}
-	var exit_with_client = getparam("exit_with_client");
-	if(exit_with_client) {
-		$('input#exit_with_client').prop("checked", exit_with_client);
-	}
-
 	var audio_codec = getparam("audio_codec") || "";
 	var audio_codec_select = document.getElementById("audio_codec");
 	var ignore_audio_blacklist = getparam("ignore_audio_blacklist");
@@ -484,10 +476,15 @@ $(document).ready(function() {
 	video.onchange = toggle_mediasource_video;
 	toggle_mediasource_video();
 
-	var bool_props = ["exit_with_children", "exit_with_client", "sharing", "video", "mediasource_video", "normal_fullscreen", "debug", "insecure"];
+	var bool_props = ["clipboard", "printing", "file_transfer",
+			"exit_with_children", "exit_with_client",
+			"sharing", "steal", "video",
+			"mediasource_video", "normal_fullscreen", "debug", "insecure"];
+	var default_on = ["steal", "clipboard", "printing", "file_transfer", "exit_with_children", "exit_with_client"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
-		document.getElementById(prop).checked = getparam(prop);
+		var def = default_on.indexOf(prop)>=0;
+		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
 
 	$("#expandopts").click(function() {

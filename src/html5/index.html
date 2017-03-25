@@ -131,6 +131,7 @@
 				var clipboard = getboolparam("clipboard", true);
 				var printing = getboolparam("printing", true);
 				var file_transfer = getboolparam("file_transfer", true);
+				var steal = getboolparam("steal", true);
 
 				// create the client
 				var client = new XpraClient('screen');
@@ -141,6 +142,7 @@
 		    	client.clipboard_enabled = clipboard;
 		    	client.printing = printing;
 		    	client.file_transfer = file_transfer;
+		    	client.steal = steal;
 
 			    // mediasource video
 			    if(video) {
@@ -230,6 +232,7 @@
 				    				"exit_with_children": exit_with_children,
 				    				"exit_with_client"	: exit_with_client,
 				    				"sharing"			: sharing,
+				    				"steal"				: steal,
 				    				"normal_fullscreen"	: normal_fullscreen,
 				    				"video"				: video,
 				    				"mediasource_video"	: mediasource_video,
@@ -240,7 +243,7 @@
 				    				}
 				    		for (var name in props) {
 				    			var value = props[name];
-				    			if(value) {
+				    			if(value !== undefined) {
 					    			url += "&"+name+"="+encodeData(value);
 				    			}
 				    		}
