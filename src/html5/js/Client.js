@@ -1309,6 +1309,10 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 XpraClient.prototype._process_lost_window = function(packet, ctx) {
 	var wid = packet[1];
 	var win = ctx.id_to_window[wid];
+	try {
+		delete ctx.id_to_window[wid];
+	}
+	catch (e) {}
 	if (win!=null) {
 		win.destroy();
 	}
