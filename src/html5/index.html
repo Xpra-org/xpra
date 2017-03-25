@@ -146,6 +146,22 @@
 		    	client.steal = steal;
 		    	client.reconnect = reconnect;
 
+		    	if (debug) {
+		    		//example of client event hooks:
+			    	client.on_open = function() {
+			    		console.debug("connection open");
+			    	};
+			    	client.on_connect = function() {
+			    		console.debug("connection established");
+			    	};
+			    	client.on_first_ui_event = function() {
+			    		console.debug("first ui event");
+			    	};
+			    	client.on_last_window = function() {
+			    		console.debug("last window disappeared");
+			    	};
+		    	}
+
 			    // mediasource video
 			    if(video) {
 			    	client.supported_encodings.push("h264");

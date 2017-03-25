@@ -108,6 +108,7 @@ XpraClient.prototype.init_state = function(container) {
 
 	// a list of our windows
 	this.id_to_window = {};
+	this.ui_events = 0;
 	// basic window management
 	this.topwindow = null;
 	this.topindex = 0;
@@ -855,6 +856,18 @@ XpraClient.prototype._make_hello = function() {
 	});
 }
 
+
+XpraClient.prototype.on_first_ui_event = function() {
+	//this hook can be overriden
+}
+
+XpraClient.prototype._new_ui_event = function() {
+	if (this.ui_events==0) {
+		this.on_first_ui_event();
+	}
+	this.ui_events++;
+}
+
 /*
  * Window callbacks
  */
@@ -914,6 +927,7 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 	if (packet.length>=8)
 		client_properties = packet[7];
 	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+	this._new_ui_event();
 }
 
 XpraClient.prototype._window_closed = function(win) {
@@ -1125,11 +1139,16 @@ XpraClient.prototype._close_audio_mediasource = function() {
  * packet processing functions start here
  */
 
+XpraClient.prototype.on_open = function() {
+	//this hook can be overriden
+}
+
 XpraClient.prototype._process_open = function(packet, ctx) {
 	// call the send_hello function
 	console.debug("process_open: protocol=", ctx.protocol);
 	ctx.reconnect_attempt = 0;
 	ctx._send_hello();
+	ctx.on_open();
 }
 
 XpraClient.prototype._process_error = function(packet, ctx) {
@@ -1325,6 +1344,11 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx._send_ping();
 		return true;
 	}, 10000);
+	ctx.on_connect();
+}
+
+XpraClient.prototype.on_connect = function() {
+	//this hook can be overriden
 }
 
 XpraClient.prototype._process_challenge = function(packet, ctx) {
@@ -1396,11 +1420,23 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 	}
 }
 
+XpraClient.prototype.on_last_window = function() {
+	//this hook can be overriden
+}
+
 XpraClient.prototype._process_lost_window = function(packet, ctx) {
 	var wid = packet[1];
 	var win = ctx.id_to_window[wid];
+	try {
+		delete ctx.id_to_window[wid];
+	}
+	catch (e) {}
 	if (win!=null) {
 		win.destroy();
+	}
+	console.log("lost window", wid, ", remaining: ", Object.keys(ctx.id_to_window));
+	if (Object.keys(ctx.id_to_window).length==0) {
+		ctx.on_last_window();
 	}
 }
 
@@ -1492,6 +1528,7 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	if(window.doNotification) {
 		window.doNotification("info", nid, summary, body, expire_timeout);
 	}
+	ctx._new_ui_event();
 }
 
 XpraClient.prototype._process_notify_close = function(packet, ctx) {
