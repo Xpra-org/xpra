@@ -1,0 +1,28 @@
+--- a/gdk/quartz/gdkglconfig-quartz.m	2017-03-24 14:11:48.000000000 +0700
++++ b/gdk/quartz/gdkglconfig-quartz.m	2017-03-24 14:16:42.000000000 +0700
+@@ -12,6 +12,25 @@
+ 
+ static gpointer parent_class = NULL;
+ 
++/**
++ * Gets the color depth of the OpenGL-capable visual.
++ *
++ * Return value: number of bits per pixel
++ **/
++gint
++gdk_gl_config_get_depth (GdkGLConfig *glconfig)
++{
++  g_return_val_if_fail (GDK_IS_GL_CONFIG_IMPL_QUARTZ (glconfig), 0);
++  GdkGLConfigImplQuartz *glQuartzConfig = GDK_GL_CONFIG_IMPL_QUARTZ(glconfig);
++  NSArray *array = [NSScreen screens];
++  int i = glQuartzConfig->screen_num;
++  if (array.count<=i) {
++    return 24;
++  }
++  NSScreen *nsscreen = [array objectAtIndex:i];
++  return NSBitsPerPixelFromDepth(nsscreen.depth);
++}
++
+ 
+ GType
+ gdk_gl_config_impl_quartz_get_type (void)

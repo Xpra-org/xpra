@@ -277,6 +277,7 @@
 		hash="md5:04a7009a4efea2844075949c111f5e4d"
 		repo="gstreamer.freedesktop.org"/>
 	<dependencies>
+    <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-depth.patch" strip="1"/>
 		<dep package="x264"/>
 	</dependencies>
 	<after>

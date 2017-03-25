@@ -407,12 +407,6 @@ index f3f8e69..37fb930 100644
    (return-type "GdkVisual*")
  )
  
--(define-method get_depth
--  (of-object "GdkGLConfig")
--  (c-name "gdk_gl_config_get_depth")
--  (return-type "gint")
--)
--
  (define-method get_layer_plane
    (of-object "GdkGLConfig")
    (c-name "gdk_gl_config_get_layer_plane")
