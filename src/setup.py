@@ -1935,6 +1935,8 @@ if nvenc7_ENABLED:
             print("CUDA version %s is very unlikely to work")
             print("try upgrading to version 7.5 or later")
         if version>="7.5":
+            comp_code_options.append((50, 50))
+            comp_code_options.append((52, 52))
             comp_code_options.append((53, 53))
         if version>="8.0":
             comp_code_options.append((60, 60))
