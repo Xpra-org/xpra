@@ -347,7 +347,9 @@ def get_CUDA_function(device_id, function_name):
     try:
         mod = driver.module_from_buffer(data)
     except Exception as e:
+        log("module_from_buffer(%s)", data, exc_info=True)
         log.error("Error: failed to load module from buffer for '%s'", function_name)
+        log.error(" %s", e)
         return None
     log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
     try:
