@@ -595,9 +595,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                         sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
                         log.info("created unix domain socket: %s", sockpath)
                         defs.append((("unix-domain", sock, sockpath), cleanup_socket))
-                        sockpaths.remove(sockpath)
                     except Exception as e:
                         handle_socket_error(sockpath, e)
+                    sockpaths.remove(sockpath)
+                            
                 if sockpaths:
                     sleep(1)
                 counter -= 1
