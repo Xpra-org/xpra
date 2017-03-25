@@ -350,6 +350,45 @@
         </after>
   </distutils>
 
+  <distutils id="python-enum34">
+	<branch repo="pypi.python.org"
+		module="https://pypi.python.org/packages/bf/3e/31d502c25302814a7c2f1d3959d2a3b3f78e509002ba91aea64993936876/enum34-1.1.6.tar.gz"
+		hash="sha256:8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
+		version="1.1.6"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
+
+  <distutils id="python-enum-compat">
+	<branch repo="pypi.python.org"
+		module="/packages/95/6e/26bdcba28b66126f66cf3e4cd03bcd63f7ae330d29ee68b1f6b623550bfa/enum-compat-0.0.2.tar.gz"
+		hash="sha256:939ceff18186a5762ae4db9fa7bfe017edbd03b66526b798dd8245394c8a4192"
+		version="0.0.2"/>
+        <dependencies>
+                <dep package="python-enum34"/>
+        </dependencies>
+        <after>
+                <dep package="python-enum34"/>
+        </after>
+  </distutils>
+
+  <distutils id="python-zeroconf">
+	<branch repo="pypi.python.org"
+		module="/packages/31/a3/cb195bd6f7f052e8ad48b1c04be2ca60012ecb3e6ed7104bf1e7a67d5ca4/zeroconf-0.19.0.tar.gz"
+		hash="sha256:8c58d649fb4fa2a850f93b2a2af2e44db9c6c4a41081c614e1040aec4a6d1177"
+		version="0.19.0"/>
+        <dependencies>
+                <dep package="python-enum-compat"/>
+        </dependencies>
+        <after>
+                <dep package="python-enum-compat"/>
+        </after>
+  </distutils>
+
   <distutils id="python-netifaces">
 	<branch repo="pypi.python.org"
 		module="/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz"
@@ -929,6 +968,7 @@
       <dep package="openssl"/>
       <dep package="mpfr"/>
       <dep package="setuptools"/>
+      <dep package="python-zeroconf"
       <dep package="python-netifaces"/>
       <dep package="python-pam"/>
       <dep package="python-pyasn1"/>
