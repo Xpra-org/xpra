@@ -499,11 +499,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 
 %files common-server
-/usr/lib/systemd/system/xpra.service
-/usr/lib/cups/backend/xpraforwarder
+%{_prefix}/lib/systemd/system/xpra.service
+%{_prefix}/lib/cups/backend/xpraforwarder
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
-%config /usr/lib/tmpfiles.d/xpra.conf
-%config /usr/lib/sysusers.d/xpra.conf
+%config /lib/tmpfiles.d/xpra.conf
+%config /lib/sysusers.d/xpra.conf
 %config %{_sysconfdir}/pam.d/xpra
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 #we only enable CUDA / NVENC with 64-bit builds:
