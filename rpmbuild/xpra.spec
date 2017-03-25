@@ -600,17 +600,23 @@ fi
 
 
 %changelog
-* Tue Mar 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+* Sat Mar 25 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix compatibility with python-lz4 0.9.0 (API breakage)
-- fix painting of scroll events with HTML5 client
+- fix paint order with HTML5 client
+- fix scroll paints with HTML5 client
 - fix spurious errors recorded in a rare race condition running lpinfo for printer forwarding (server side)
+- fix RPM dependencies of python3 package
+- fix missing screen bit depth with Mac OS clients
+- fix absolute bind paths handled as relative locations
+- try to ensure the tmpfiles.d directory is created on package installation
+- workaround lost window events using a higher default initial resolution (4k)
 - add missing "auto" encoding option to the MacOS menu
 - try harder to ensure the correct sound dependencies are installed (Debian)
 - increase socket timeout to prevent session probing failures with many sockets
 - better xsettings synchronization code (actually catch errors there)
 - remove XShm debug logging from regular output
-- add missing identation in man page
-- MacOS library updates: libpng, python-lz4
+- add missing indentation in man page, help page
+- MacOS library updates: libpng, python-lz4, libepoxy, python-cryptography, libpng
 
 * Fri Mar 10 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1
 - fix info queries causing server crashes
