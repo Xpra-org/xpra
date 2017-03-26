@@ -26,6 +26,7 @@ function XpraClient(container) {
 	}
 	// assign callback for window resize event
 	if (window.jQuery) {
+		var me = this;
 		jQuery(window).resize(jQuery.debounce(250, function (e) {
 			me._screen_resized(e, me);
 		}));
@@ -63,7 +64,6 @@ XpraClient.prototype.init_settings = function(container) {
 
 XpraClient.prototype.init_state = function(container) {
 	// state
-	var me = this;
 	this.server_remote_logging = false;
 	// some client stuff
 	this.capabilities = {};
