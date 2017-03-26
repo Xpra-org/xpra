@@ -1512,8 +1512,12 @@ else:
         add_packages("xpra.platform.xposix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         #not supported by all distros, but doesn't hurt to install it anyway:
-        add_data_files("/lib/tmpfiles.d", ["tmpfiles.d/xpra.conf"])
-        add_data_files("/lib/sysusers.d", ["sysusers.d/xpra.conf"])
+        prefix = "/usr/lib"
+        from xpra.os_util import is_Fedora, is_CentOS
+        if is_Fedora() or is_CentOS():
+            prefix = "/lib"
+        add_data_files("%s/tmpfiles.d" % prefix, ["tmpfiles.d/xpra.conf"])
+        add_data_files("%s/sysusers.d" % prefix, ["sysusers.d/xpra.conf"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
