@@ -11,6 +11,26 @@ div#connect_form {
 div#disconnect_form {
 	display: none;
 }
+.overlay {
+	background-color: black;
+	position: fixed;
+	top: 0; right: 0; bottom: 0; left: 0;
+	opacity: 0.5;
+	z-index: 100000;
+	text-align: center;
+}
+#progress-label {
+	font-size: 1.4em;
+	color: white;
+	line-height: 2em;
+	height: 2em;
+}
+#progress-details {
+	font-size: 1.2em;
+	color: white;
+	line-height: 1.5em;
+	height: 1.5em;
+}
 canvas {
 	border: none;
 	padding: 0;

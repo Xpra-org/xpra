@@ -47,6 +47,12 @@
 		<div id="dpi" style="width: 1in; height: 1in; left: -100%; top: -100%; position: absolute;">
 		</div>
 
+		<div id="progress" class="overlay" style="display: none">
+			<p id="progress-label"></p>
+			<p id="progress-details"></p>
+			<progress id="progress-bar" max="100" value="10"></progress>
+		</div>
+
 		<div id="screen" style="width: 100%; height:100%;">
 		</div>
 
@@ -134,6 +140,20 @@
 				var steal = getboolparam("steal", true);
 				var reconnect = getboolparam("reconnect", true);
 
+				// show connection progress:
+				function connection_progress(state, details, progress) {
+					console.log("connection_progress(", state, ", ", details, ", ", progress, ")");
+					if (progress>=100) {
+						$('#progress').hide();
+					}
+					else {
+						$('#progress').show();
+					}
+					$('#progress-bar').val(progress);
+					$('#progress-label').text(state || " ");
+					$('#progress-details').text(details || " ");
+				}
+
 				// create the client
 				var client = new XpraClient('screen');
 				client.debug = debug;
@@ -145,6 +165,12 @@
 		    	client.file_transfer = file_transfer;
 		    	client.steal = steal;
 		    	client.reconnect = reconnect;
+		    	client.on_connection_progress = connection_progress;
+		    	//example overrides:
+		    	//client.HELLO_TIMEOUT = 3600000;
+		    	//client.PING_TIMEOUT = 60000;
+		    	//client.PING_GRACE = 30000;
+		    	//client.PING_FREQUENCY = 15000;
 
 		    	if (debug) {
 		    		//example of client event hooks:

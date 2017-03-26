@@ -161,6 +161,7 @@ XpraClient.prototype.log = function() {
 
 
 XpraClient.prototype.init = function(ignore_blacklist) {
+	this.on_connection_progress("Initializing", "", 20);
 	this.init_audio(ignore_blacklist);
 	this.init_packet_handlers();
 	this.init_keyboard();
@@ -293,6 +294,10 @@ XpraClient.prototype.init_packet_handlers = function() {
 	};
 }
 
+XpraClient.prototype.on_connection_progress = function(state, details, progress) {
+	//can be overriden
+	console.log(state, details);
+}
 
 XpraClient.prototype.callback_close = function(reason) {
 	if (reason === undefined) {
@@ -302,8 +307,12 @@ XpraClient.prototype.callback_close = function(reason) {
 }
 
 XpraClient.prototype.connect = function() {
+	var details = this.host + ":" + this.port;
+	if (this.ssl) {
+		details += " with ssl";
+	}
+	this.on_connection_progress("Connecting to server", details, 40);
 	// open the web socket, started it in a worker if available
-	console.log("connecting to xpra server " + this.host + ":" + this.port + " with ssl: " + this.ssl);
 	// check we have enough information for encryption
 	if(this.encryption) {
 		if((!this.encryption_key) || (this.encryption_key == "")) {
@@ -369,6 +378,7 @@ XpraClient.prototype.open_protocol = function() {
 		me.close();
 	}, this.HELLO_TIMEOUT);
 	// do open
+	this.on_connection_progress("Opening WebSocket connection", uri, 60);
 	this.protocol.open(uri);
 }
 
@@ -1164,7 +1174,7 @@ XpraClient.prototype.on_open = function() {
 
 XpraClient.prototype._process_open = function(packet, ctx) {
 	// call the send_hello function
-	console.debug("process_open: protocol=", ctx.protocol);
+	ctx.on_connection_progress("WebSocket connection established", "", 80);
 	ctx.reconnect_attempt = 0;
 	ctx._send_hello();
 	ctx.on_open();
@@ -1371,6 +1381,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx._send_ping();
 		return true;
 	}, ctx.PING_FREQUENCY);
+	ctx.on_connection_progress("Session started", "", 100);
 	ctx.on_connect();
 }
 
