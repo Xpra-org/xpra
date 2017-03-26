@@ -710,6 +710,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if self.opengl_enabled:
                 #try to render using a temporary window:
                 draw_result = {}
+                window = None
                 try:
                     w, h = 50, 50
                     window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size)
@@ -736,7 +737,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     opengllog("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
                     window.draw_region(0, 0, w, h, coding, img_data, stride, 1, options, [paint_callback])
                 finally:
-                    window.destroy()
+                    if window:
+                        window.destroy()
                 if not draw_result.get("success"):
                     err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
                     return
