@@ -1513,10 +1513,7 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         #not supported by all distros, but doesn't hurt to install them anyway:
         for x in ("tmpfiles.d", "sysusers.d"):
-            prefix = "/usr/lib"
-            if os.path.exists("/lib/%s" % x):
-                prefix = "/lib"
-            add_data_files("%s/%s" % (prefix, x), ["%s/xpra.conf" % x])
+            add_data_files("/usr/lib/%s" % x, ["%s/xpra.conf" % x])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
