@@ -96,7 +96,11 @@ XpraClient.prototype.init_state = function(container) {
 	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
 	// ping
-	this.PING_TIMEOUT = 60000;
+	this.PING_TIMEOUT = 15000;
+	this.ping_timeout_timer = null;
+	this.PING_GRACE = 2000;
+	this.ping_grace_timer = null;
+	this.PING_FREQUENCY = 5000;
 	this.ping_timer = null;
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
@@ -399,6 +403,14 @@ XpraClient.prototype.clear_timers = function() {
 		clearTimeout(this.ping_timer);
 		this.ping_timer = null;
 	}
+	if (this.ping_timeout_timer) {
+		clearTimeout(this.ping_timeout_timer);
+		this.ping_timeout_timer = null;
+	}
+	if (this.ping_grace_timer) {
+		clearTimeout(this.ping_grace_timer);
+		this.ping_grace_timer = null;
+	}
 }
 
 XpraClient.prototype.enable_encoding = function(encoding) {
@@ -667,8 +679,15 @@ XpraClient.prototype._check_server_echo = function(ping_sent_time) {
 
 XpraClient.prototype._check_echo_timeout = function(ping_time) {
 	if(this.last_ping_echoed_time < ping_time) {
-		// no point in telling the server here...
-		this.callback_close("server ping timeout, waited "+ this.PING_TIMEOUT +"ms without a response");
+		if (this.reconnect && this.reconnect_attempt<this.reconnect_count) {
+			this.warn("ping timeout - reconnecting");
+			this.reconnect_attempt++;
+			this.do_reconnect();
+		}
+		else {
+			// no point in telling the server here...
+			this.callback_close("server ping timeout, waited "+ this.PING_TIMEOUT +"ms without a response");
+		}
 	}
 }
 
@@ -677,12 +696,12 @@ XpraClient.prototype._send_ping = function() {
 	var now_ms = Date.now();
 	this.send(["ping", now_ms]);
 	// add timeout to wait for ping timout
-	setTimeout(function () {
+	this.ping_timeout_timer = setTimeout(function () {
 		me._check_echo_timeout(now_ms);
 	}, this.PING_TIMEOUT);
 	// add timeout to detect temporary ping miss for spinners
 	var wait = 2000;
-	setTimeout(function () {
+	this.ping_grace_timer = setTimeout(function () {
 		me._check_server_echo(now_ms);
 	}, wait);
 }
@@ -1162,26 +1181,34 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 	}
 }
 
+
+XpraClient.prototype.do_reconnect = function() {
+	//try again:
+	var me = this;
+	setTimeout(function(){
+		me.close_windows();
+		me.close_audio();
+		me.clear_timers();
+		me.init_state();
+		if (me.protocol) {
+			me.open_protocol();
+		}
+		else {
+			me.connect();
+		}
+	}, this.reconnect_delay);
+}
+
 XpraClient.prototype._process_close = function(packet, ctx) {
 	console.log("websocket closed: ", packet[1], "reason: ", ctx.disconnect_reason);
-	ctx.close_windows();
-	ctx.close_audio();
-	ctx.clear_timers();
 	if (ctx.reconnect && ctx.reconnect_attempt<ctx.reconnect_count) {
-		var protocol = ctx.protocol;
-		//try again:
 		ctx.reconnect_attempt++;
-		setTimeout(function(){
-			ctx.init_state();
-			if (protocol) {
-				ctx.open_protocol();
-			}
-			else {
-				ctx.connect();
-			}
-		}, ctx.reconnect_delay);
+		ctx.do_reconnect();
 	}
 	else {
+		ctx.close_windows();
+		ctx.close_audio();
+		ctx.clear_timers();
 		ctx.close_protocol();
 		// call the client's close callback
 		ctx.callback_close(ctx.disconnect_reason);
@@ -1343,7 +1370,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.ping_timer = setInterval(function () {
 		ctx._send_ping();
 		return true;
-	}, 10000);
+	}, ctx.PING_FREQUENCY);
 	ctx.on_connect();
 }
 
