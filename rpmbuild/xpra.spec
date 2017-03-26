@@ -28,7 +28,8 @@
 %define requires_webcam , python-inotify
 %define requires_jpeg , turbojpeg
 %define requires_shadow shadow-utils
-%define requires_cython Cython
+%define requires_cython python2-Cython
+%define requires_cython3 python3-Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
@@ -236,6 +237,7 @@ Recommends: cups-pdf
 Recommends: cups-filters
 %endif
 BuildRequires: pkgconfig
+BuildRequires: gcc, gcc-c++
 BuildRequires: %{requires_cython}
 BuildRequires: python, %{requires_setuptools}
 BuildRequires: libxkbfile-devel
@@ -297,6 +299,8 @@ Requires: xpra-common-server = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
 Requires: %{requires_websockify} %{requires_printing} %{requires_server_printing}
 BuildRequires: pam-devel
+BuildRequires: gcc
+BuildRequires: %{requires_cython}
 %ifarch x86_64
 Requires: python2-pynvml
 %endif
@@ -327,7 +331,8 @@ Requires: libyuv
 %endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
-#for running the tests:
+BuildRequires: gcc, gcc-c++
+BuildRequires: %{requires_cython3}
 BuildRequires: %{py3requires_crypto}
 BuildRequires: python3-devel
 BuildRequires: python3-Cython
@@ -369,6 +374,8 @@ Requires: python3-xpra = %{version}-%{build_no}%{dist}
 #Requires: %{requires_websockify}
 Requires: %{py3requires_printing} %{requires_server_printing}
 Requires: gtk3-immodule-xim
+BuildRequires: gcc, gcc-c++
+BuildRequires: %{requires_cython3}
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
 %endif
