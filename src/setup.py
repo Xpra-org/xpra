@@ -1511,13 +1511,12 @@ else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
-        #not supported by all distros, but doesn't hurt to install it anyway:
-        prefix = "/usr/lib"
-        from xpra.os_util import is_Fedora, is_CentOS
-        if is_Fedora() or is_CentOS():
-            prefix = "/lib"
-        add_data_files("%s/tmpfiles.d" % prefix, ["tmpfiles.d/xpra.conf"])
-        add_data_files("%s/sysusers.d" % prefix, ["sysusers.d/xpra.conf"])
+        #not supported by all distros, but doesn't hurt to install them anyway:
+        for x in ("tmpfiles.d", "sysusers.d"):
+            prefix = "/usr/lib"
+            if os.path.exists("/lib/%s" % x):
+                prefix = "/lib"
+            add_data_files("%s/%s" % (prefix, x), ["%s/xpra.conf" % x])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
