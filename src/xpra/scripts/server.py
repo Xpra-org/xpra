@@ -15,7 +15,6 @@ import atexit
 import signal
 import socket
 import select
-from time import sleep
 import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
@@ -25,10 +24,8 @@ from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
-#how many times (+1) we try to probe UNKNOWN sockets:
-WAIT_FOR_UNKNOWN = envint("XPRA_WAIT_FOR_UNKNOWN_SOCKETS", 2)
 #what timeout value to use on the socket probe attempt:
-WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 5)
+WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 8)
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
@@ -553,13 +550,14 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 defs.append((("named-pipe", npl, sockpath), npl.stop))
         else:
             def checkstate(sockpath, state):
-                if state not in (dotxpra.DEAD, dotxpra.UNKNOWN):
+                if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
                     raise InitException("You already have an xpra server running at %s\n"
                          "  (did you want 'xpra upgrade'?)"
                          % (sockpath,))
             #remove exisiting sockets if clobber is set,
             #otherwise verify there isn't a server already running
             #and create the directories for the sockets:
+            unknown = []
             for sockpath in sockpaths:
                 if clobber and os.path.exists(sockpath):
                     os.unlink(sockpath)
@@ -567,41 +565,60 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     state = dotxpra.get_server_state(sockpath, 1)
                     log("state(%s)=%s", sockpath, state)
                     checkstate(sockpath, state)
+                    if state==dotxpra.UNKNOWN:
+                        unknown.append(sockpath)
                 d = os.path.dirname(sockpath)
                 try:
                     dotxpra.mksockdir(d)
                 except Exception as e:
                     log.warn("Warning: failed to create socket directory '%s'", d)
                     log.warn(" %s", e)
+            #wait for all the unknown ones:
+            log("sockets in unknown state: %s", unknown)
+            if unknown:
+                #re-probe them using threads so we can do them in parallel:
+                from time import sleep
+                from xpra.make_thread import start_thread
+                threads = []
+                def timeout_probe(sockpath):
+                    #we need a loop because "DEAD" sockets may return immediately
+                    #(ie: when the server is starting up)
+                    start = monotonic_time()
+                    while monotonic_time()-start<WAIT_PROBE_TIMEOUT:
+                        state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
+                        log("timeout_probe() get_server_state(%s)=%s", sockpath, state)
+                        if state not in (DotXpra.UNKNOWN, DotXpra.DEAD):
+                            break
+                        sleep(1)
+                log.warn("Warning: some of the sockets are in an unknown state:")
+                for sockpath in unknown:
+                    log.warn(" %s", sockpath)
+                    t = start_thread(timeout_probe, "probe-%s" % sockpath, daemon=True, args=(sockpath,))
+                    threads.append(t)
+                log.warn(" please wait as we allow the socket probing to timeout")
+                #wait for all the threads to do their job:
+                for t in threads:
+                    t.join(WAIT_PROBE_TIMEOUT+1)
+            #now we can re-check quickly:
+            #(they should all be DEAD or UNKNOWN):
+            for sockpath in sockpaths:
+                state = dotxpra.get_server_state(sockpath, 1)
+                log("state(%s)=%s", sockpath, state)
+                checkstate(sockpath, state)
+                try:
+                    if os.path.exists(sockpath):
+                        os.unlink(sockpath)
+                except:
+                    pass
             #now try to create all the sockets:
-            counter = WAIT_FOR_UNKNOWN
-            while sockpaths and counter>=0:
-                for sockpath in sockpaths:
-                    state = dotxpra.get_server_state(sockpath, 5)
-                    checkstate(sockpath, state)
-                    log("state(%s)=%s", sockpath, state)
-                    if state==dotxpra.UNKNOWN:
-                        if counter==WAIT_FOR_UNKNOWN:
-                            log.warn("%s is not responding, waiting for it to timeout before clearing it", sockpath)
-                        elif counter>0:
-                            continue
-                    try:
-                        if os.path.exists(sockpath):
-                            os.unlink(sockpath)
-                    except:
-                        pass
-                    #create it:
-                    try:
-                        sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
-                        log.info("created unix domain socket: %s", sockpath)
-                        defs.append((("unix-domain", sock, sockpath), cleanup_socket))
-                    except Exception as e:
-                        handle_socket_error(sockpath, e)
-                    sockpaths.remove(sockpath)
-                            
-                if sockpaths:
-                    sleep(1)
-                counter -= 1
+            for sockpath in sockpaths:
+                #create it:
+                try:
+                    sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
+                    log.info("created unix domain socket: %s", sockpath)
+                    defs.append((("unix-domain", sock, sockpath), cleanup_socket))
+                except Exception as e:
+                    handle_socket_error(sockpath, e)
     except:
         for sock, cleanup_socket in defs:
             try:
