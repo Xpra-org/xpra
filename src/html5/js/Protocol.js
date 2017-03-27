@@ -114,7 +114,13 @@ XpraProtocol.prototype.open = function(uri) {
 	this.header  = [];
 	this.websocket  = null;
 	// connect the socket
-	this.websocket = new WebSocket(uri, 'binary');
+	try {
+		this.websocket = new WebSocket(uri, 'binary');
+	}
+	catch (e) {
+		this.packet_handler(['error', ""+e], this.packet_ctx);
+		return;
+	}
 	this.websocket.binaryType = 'arraybuffer';
 	this.websocket.onopen = function () {
 		me.packet_handler(['open'], me.packet_ctx);
