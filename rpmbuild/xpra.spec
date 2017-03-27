@@ -60,7 +60,7 @@
 %global selinux_variants mls targeted
 
 %define libvpx libvpx-xpra
-%define run_tests 1
+%define run_tests 0
 
 # any centos / rhel supported:
 %if 0%{?el6}%{?el7}
@@ -600,14 +600,16 @@ fi
 
 
 %changelog
-* Sat Mar 25 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+* Mon Mar 27 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix compatibility with python-lz4 0.9.0 (API breakage)
 - fix paint order with HTML5 client
 - fix scroll paints with HTML5 client
+- fix resource leak in HTML5 client
 - fix spurious errors recorded in a rare race condition running lpinfo for printer forwarding (server side)
 - fix RPM dependencies of python3 package
 - fix missing screen bit depth with Mac OS clients
 - fix absolute bind paths handled as relative locations
+- support more CUDA architectures for NVENC
 - try to ensure the tmpfiles.d directory is created on package installation
 - workaround lost window events using a higher default initial resolution (4k)
 - add missing "auto" encoding option to the MacOS menu
@@ -616,6 +618,7 @@ fi
 - better xsettings synchronization code (actually catch errors there)
 - remove XShm debug logging from regular output
 - add missing indentation in man page, help page
+- RPM packaging of tmpfiles.d config
 - MacOS library updates: libpng, python-lz4, libepoxy, python-cryptography, libpng
 
 * Fri Mar 10 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.4-1

@@ -2,10 +2,12 @@ xpra (1.0.5-1) UNRELEASED; urgency=low
   * fix compatibility with python-lz4 0.9.0 (API breakage)
   * fix paint order with HTML5 client
   * fix scroll paints with HTML5 client
+  * fix resource leak in HTML5 client
   * fix spurious errors recorded in a rare race condition running lpinfo for printer forwarding (server side)
   * fix RPM dependencies of python3 package
   * fix missing screen bit depth with Mac OS clients
   * fix absolute bind paths handled as relative locations
+  * support more CUDA architectures for NVENC
   * try to ensure the tmpfiles.d directory is created on package installation
   * workaround lost window events using a higher default initial resolution (4k)
   * add missing "auto" encoding option to the MacOS menu
@@ -14,9 +16,10 @@ xpra (1.0.5-1) UNRELEASED; urgency=low
   * better xsettings synchronization code (actually catch errors there)
   * remove XShm debug logging from regular output
   * add missing indentation in man page, help page
+  * RPM packaging of tmpfiles.d config
   * MacOS library updates: libpng, python-lz4, libepoxy, python-cryptography, libpng
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 25 Mar 2017 11:05:15 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 Mar 2017 15:20:40 +0700
 
 xpra (1.0.4-1) UNRELEASED; urgency=low
   * fix info queries causing server crashes
