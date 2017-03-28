@@ -21,7 +21,7 @@
 #endif
 
 // Use clock_gettime in linux, clock_get_time in OS X.
-double get_monotonic_time(){
+double get_monotonic_time(void){
 #ifdef _WIN32
 	ULONGLONG ticks = GetTickCount64();
 	return ((double) ticks) / 1000;

@@ -1,1 +1,1 @@
-double get_monotonic_time();
+double get_monotonic_time(void);
