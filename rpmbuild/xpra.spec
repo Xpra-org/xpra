@@ -600,7 +600,8 @@ fi
 
 
 %changelog
-* Mon Mar 27 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+* Tue Mar 28 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+- fix X11 server crashes with very short-lived OR windows
 - fix compatibility with python-lz4 0.9.0 (API breakage)
 - fix paint order with HTML5 client
 - fix scroll paints with HTML5 client

@@ -1,4 +1,5 @@
 xpra (1.0.5-1) UNRELEASED; urgency=low
+  * fix X11 server crashes with very short-lived OR windows
   * fix compatibility with python-lz4 0.9.0 (API breakage)
   * fix paint order with HTML5 client
   * fix scroll paints with HTML5 client
@@ -19,7 +20,7 @@ xpra (1.0.5-1) UNRELEASED; urgency=low
   * RPM packaging of tmpfiles.d config
   * MacOS library updates: libpng, python-lz4, libepoxy, python-cryptography, libpng
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 Mar 2017 15:20:40 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Mar 2017 17:57:42 +0700
 
 xpra (1.0.4-1) UNRELEASED; urgency=low
   * fix info queries causing server crashes
