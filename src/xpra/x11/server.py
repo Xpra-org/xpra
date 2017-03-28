@@ -552,9 +552,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #we could try to re-use the existing model and window ID,
             #but for now it is just easier to create a new one:
             self._lost_window(window)
-        tray_window = get_tray_window(raw_window)
-        windowlog("Discovered new override-redirect window: %#x (tray=%s)", xid, tray_window)
         try:
+            with xsync:
+                geom = X11Window.getGeometry(xid)
+                windowlog("Discovered new override-redirect window: %#x X11 geometry=%s", xid, geom)
+        except Exception as e:
+            windowlog("Window error (vanished already?): %s", e)
+            return
+        try:
+            tray_window = get_tray_window(raw_window)
             if tray_window is not None:
                 assert self._tray
                 window = SystemTrayWindowModel(raw_window)
