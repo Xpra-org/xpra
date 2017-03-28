@@ -952,6 +952,7 @@
       <dep package="flac"/>
       <dep package="opus"/>
       <dep package="lzo"/>
+      <dep package="libyuv"/>
       <dep package="libvpx"/>
       <dep package="x264"/>
       <dep package="ffmpeg"/>
