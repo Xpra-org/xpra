@@ -459,7 +459,7 @@
   <distutils id="pyparsing">
 	<branch repo="pypi.python.org"
 		module="/packages/6f/2c/47457771c02a8ff0f302b695e094ec309e30452232bd79198ee94fda689f/pyparsing-1.5.7.tar.gz"
-		hash="sha256:0832bcf47acd283788593e7a0f542407bd9550a55a8a8435214a1960e04bcb04"
+		hash="sha256:646e14f90b3689b005c19ac9b6b390c9a39bf976481849993e277d7380e6e79f"
 		version="1.5.7"/>
 	<dependencies>
 		<dep package="python"/>
