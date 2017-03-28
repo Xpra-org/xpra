@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time
+from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import local_version
@@ -252,7 +252,8 @@ class ProxyInstanceProcess(Process):
 
     def create_control_socket(self):
         assert self.socket_dir
-        dotxpra = DotXpra(self.socket_dir)
+        username = get_username_for_uid(self.uid)
+        dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
         sockpath = dotxpra.socket_path(":proxy-%s" % os.getpid())
         state = dotxpra.get_server_state(sockpath)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
