@@ -254,7 +254,9 @@ class ProxyInstanceProcess(Process):
         assert self.socket_dir
         username = get_username_for_uid(self.uid)
         dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
-        sockpath = dotxpra.socket_path(":proxy-%s" % os.getpid())
+        sockname = ":proxy-%s" % os.getpid()
+        sockpath = dotxpra.socket_path(sockname)
+        log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
         state = dotxpra.get_server_state(sockpath)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
