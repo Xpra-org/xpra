@@ -351,6 +351,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
 
 
 def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
+    from xpra.log import Logger
     if mmap_group:
         #when using the mmap group option, use '660'
         umask = 0o117
@@ -386,11 +387,16 @@ def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
     if uid==0 or "xpra" in groups:
         group_id = get_group_id("xpra")
         if group_id>=0:
-            os.chown(sockpath, -1, group_id)
+            try:
+                os.chown(sockpath, -1, group_id)
+            except Exception as e:
+                log = Logger("network")
+                log.warn("Warning: failed to set 'xpra' group ownership")
+                log.warn(" on socket '%s':", sockpath)
+                log.warn(" %s", e)
             #don't know why this doesn't work:
             #os.fchown(listener.fileno(), -1, group_id)
     def cleanup_socket():
-        from xpra.log import Logger
         log = Logger("network")
         try:
             cur_inode = os.stat(sockpath).st_ino
