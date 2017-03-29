@@ -256,11 +256,17 @@ class ProxyInstanceProcess(Process):
         dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
         sockpath = dotxpra.socket_path(":proxy-%s" % os.getpid())
         state = dotxpra.get_server_state(sockpath)
+        log("create_control_socket: socket path='%s', uid=%i, gid=%i, state=%s", sockpath, getuid(), getgid(), state)
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
             log.error(" the control socket will not be created")
             return False
-        log("create_control_socket: socket path='%s', uid=%i, gid=%i", sockpath, getuid(), getgid())
+        d = os.path.dirname(sockpath)
+        try:
+            dotxpra.mksockdir(d)
+        except Exception as e:
+            log.warn("Warning: failed to create socket directory '%s'", d)
+            log.warn(" %s", e)
         try:
             sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, None, 0o600)
             sock.listen(5)
