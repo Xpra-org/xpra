@@ -422,6 +422,7 @@ class ServerCore(object):
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
+        self._closing = True
         log.info("xpra is terminating.")
         sys.stdout.flush()
         self.do_quit()
@@ -1109,7 +1110,7 @@ class ServerCore(object):
 
     def server_idle_timedout(self, *args):
         timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
-        self.quit(False)
+        self.clean_quit(False)
 
 
     def make_hello(self, source=None):
