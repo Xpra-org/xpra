@@ -1,3 +1,8 @@
+xpra (1.0.5-2) UNRELEASED; urgency=low
+  * remove unavailable gstreamer dependencies for Wheezy / Precise
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 29 Mar 2017 18:59:26 +0700
+
 xpra (1.0.5-1) UNRELEASED; urgency=low
   * fix X11 server crashes with very short-lived OR windows
   * fix compatibility with python-lz4 0.9.0 (API breakage)
