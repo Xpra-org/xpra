@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envbool, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.os_util import getuid, getgid, monotonic_time, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
@@ -34,6 +34,7 @@ NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
+WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 15)
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -2444,7 +2445,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     if display_name:
         match_display_name = "server.display=%s" % display_name
     from xpra.platform.paths import get_nodock_command
-    while monotonic_time()-start<15 and (proc is None or proc.poll() in (None, 0)):
+    while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
         for socket_path in new_sockets:
