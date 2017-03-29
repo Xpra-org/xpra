@@ -42,7 +42,7 @@ from xpra.make_thread import start_thread
 from xpra.scripts.fdproxy import XpraProxy
 from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, \
-        SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST
+        SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT
 
 main_thread = threading.current_thread()
 
@@ -1051,6 +1051,9 @@ class ServerCore(object):
         if c.boolget("info_request", False):
             flatten = not c.boolget("info-namespace", False)
             self.send_hello_info(proto, flatten)
+            return True
+        if self._closing:
+            self.disconnect_client(proto, SERVER_EXIT, "server is shutting down")
             return True
         return False
 
