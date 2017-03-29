@@ -34,6 +34,8 @@ class DotXpra(object):
                 sockdir = sockdirs[0]
             else:
                 sockdir = "undefined"
+        elif sockdir not in sockdirs:
+            sockdirs.insert(0, sockdir)
         self._sockdir = self.osexpand(sockdir)
         self._sockdirs = [self.osexpand(x) for x in sockdirs]
 
@@ -51,6 +53,9 @@ class DotXpra(object):
 
     def socket_expand(self, path):
         return self.osexpand(path, uid=self.uid, gid=self.gid)
+
+    def norm_socket_paths(self, local_display_name):
+        return [norm_makepath(x, local_display_name) for x in self._sockdirs]
 
     def socket_path(self, local_display_name):
         return norm_makepath(self._sockdir, local_display_name)
