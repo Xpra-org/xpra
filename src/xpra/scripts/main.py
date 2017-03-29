@@ -2584,8 +2584,8 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
             if stat_info.st_uid==os.getuid():
                 os.unlink(sockpath)
                 sys.stdout.write(" (cleaned up)")
-        except OSError:
-            pass
+        except OSError as e:
+            sys.stdout.write(" (delete failed: %s)" % e)
     sys.stdout.write("\n")
 
 def run_mdns_gui(error_cb, opts, extra_args):
