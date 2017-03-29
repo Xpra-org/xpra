@@ -32,6 +32,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #stretch:        ,xserver-xorg-video-dummy
 #xenial:        ,xvfb
 #yakkety:        ,xserver-xorg-video-dummy
+#zesty:        ,xserver-xorg-video-dummy
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -42,6 +43,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
 #yakkety:         ,libturbojpeg
+#zesty:         ,libturbojpeg
 #sid:         ,libturbojpeg0
 #stretch:         ,libturbojpeg0
 # ffmpeg based codecs:
@@ -53,12 +55,14 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # if you use Ubuntu, you will "want" this mess:
 #xenial:        ,python-appindicator
 #yakkety:        ,python-appindicator
+#zesty:        ,python-appindicator
 Recommends:
 # x264:
 #jessie:        ,libx264-142
 #stretch:        ,libx264-146
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
+#zesty:        ,libx264-148
 # AES encryption:
         ,python-cryptography
 # audio-related:
