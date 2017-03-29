@@ -600,7 +600,7 @@ fi
 
 
 %changelog
-* Tue Mar 28 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
+* Wed Mar 29 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix X11 server crashes with very short-lived OR windows
 - fix compatibility with python-lz4 0.9.0 (API breakage)
 - fix paint order with HTML5 client
@@ -610,6 +610,12 @@ fi
 - fix RPM dependencies of python3 package
 - fix missing screen bit depth with Mac OS clients
 - fix absolute bind paths handled as relative locations
+- fix absolute bind paths handled as relative locations
+- fix handling of "socket-dir" option in backwards compatible way
+- fix socket group permissions failures more gracefully
+- fix proxy server control socket path issues
+- fix exit-with-client and server shutdown race conditions
+- fix missing window paint refresh with some posix window managers
 - support more CUDA architectures for NVENC
 - try to ensure the tmpfiles.d directory is created on package installation
 - workaround lost window events using a higher default initial resolution (4k)

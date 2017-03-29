@@ -8,6 +8,11 @@ xpra (1.0.5-1) UNRELEASED; urgency=low
   * fix RPM dependencies of python3 package
   * fix missing screen bit depth with Mac OS clients
   * fix absolute bind paths handled as relative locations
+  * fix handling of "socket-dir" option in backwards compatible way
+  * fix socket group permissions failures more gracefully
+  * fix proxy server control socket path issues
+  * fix exit-with-client and server shutdown race conditions
+  * fix missing window paint refresh with some posix window managers
   * support more CUDA architectures for NVENC
   * try to ensure the tmpfiles.d directory is created on package installation
   * workaround lost window events using a higher default initial resolution (4k)
@@ -20,7 +25,7 @@ xpra (1.0.5-1) UNRELEASED; urgency=low
   * RPM packaging of tmpfiles.d config
   * MacOS library updates: libpng, python-lz4, libepoxy, python-cryptography, libpng
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 28 Mar 2017 17:57:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 29 Mar 2017 14:13:34 +0700
 
 xpra (1.0.4-1) UNRELEASED; urgency=low
   * fix info queries causing server crashes
