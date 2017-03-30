@@ -82,6 +82,7 @@ def validate_backend(try_backend):
 
 
 def get_digest_module(digest):
+    log("get_digest_module(%s)", digest)
     if not digest or not digest.startswith("hmac"):
         return None
     import hashlib
@@ -96,6 +97,7 @@ def get_digest_module(digest):
 
 def choose_digest(options):
     assert len(options)>0, "no digest options"
+    log("choose_digest(%s)", options)
     #prefer stronger hashes:
     for h in ("sha512", "sha384", "sha256", "sha224", "sha1", "md5"):
         hname = "hmac+%s" % h

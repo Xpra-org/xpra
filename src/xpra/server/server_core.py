@@ -935,6 +935,7 @@ class ServerCore(object):
                 proto.authenticator = ainstance
                 authlog("authenticator(%s)=%s", auth, ainstance)
             except Exception as e:
+                authlog("instantiating authenticator for %s", proto, exc_info=True)
                 authlog.error("Error instantiating %s:", proto.auth_class)
                 authlog.error(" %s", e)
                 auth_failed("authentication failed")
@@ -995,7 +996,7 @@ class ServerCore(object):
                         salt, digest = get_salt(), "hmac"
                     else:
                         salt, digest = challenge
-                        authlog("challenge: %s, %s", salt, nonl(challenge))
+                        authlog("get_challenge(%s)= %s, %s", digest_modes, salt, nonl(challenge))
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                         authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
                     if digest not in digest_modes:
