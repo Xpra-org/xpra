@@ -101,6 +101,9 @@ def choose_digest(options):
         hname = "hmac+%s" % h
         if hname in options:
             return hname
+    #legacy name for "hmac+md5":
+    if "hmac" in options:
+        return "hmac"
     if "xor" in options:
         return "xor"
     raise Exception("no known digest options found in '%s'" % csv(options))
