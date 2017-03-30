@@ -38,14 +38,14 @@ $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi
 #python libraries and install and packaging tools:
-$PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2 ${XPKG}python2-setuptools ${XPKG}python2-cx_Freeze
+$PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2 ${XPKG}python2-setuptools ${XPKG}python2-cx_Freeze zip
 #python3 versions (not all are really needed if just using python3 for sound):
 $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython ${XPKG}python3-cx_Freeze
 #using easy-install for python libraries which are not packaged by mingw:
 # Note: a specific version of netifaces is installed as a dependency of 'zeroconf' because of this bug:
 # https://bitbucket.org/al45tair/netifaces/issues/39
 easy_install-2.7 -U -Z enum34 enum-compat
-for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py; do
+for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs; do
     easy_install-2.7 -U -Z $x
     easy_install-3.5 -U -Z $x
 done
