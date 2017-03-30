@@ -208,7 +208,7 @@
 				    		if(reason) {
 				    			message = reason;
 				    		}
-				    		var url = "/connect.html?disconnect="+message;
+				    		var url = "/connect.html?disconnect="+encodeData(message);
 				    		var props = {
 				    				"username"			: username,
 				    				"password"			: password,
