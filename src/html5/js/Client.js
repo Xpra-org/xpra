@@ -749,6 +749,17 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 
 XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
+	var digests = ["hmac", "hmac+md5", "xor"]
+	try {
+		console.debug("forge.md.algorithms=", forge.md.algorithms);
+		for (var hash in forge.md.algorithms) {
+			digests.push("hmac+"+hash);
+		}
+		console.debug("digests:", digests);
+	}
+	catch (e) {
+		console.error("Error probing forge crypto digests:", e);
+	}
 	this._update_capabilities({
 		// version and platform
 		"version"					: Utilities.VERSION,
@@ -764,7 +775,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"username" 					: this.username,
 		"uuid"						: Utilities.getHexUUID(),
 		"argv" 						: [window.location.href],
-		"digest" 					: ["hmac", "xor"],
+		"digest" 					: digests,
 		//compression bits:
 		"zlib"						: true,
 		"lzo"						: false,
@@ -1414,9 +1425,15 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	var challenge_response = null;
 	client_salt = Utilities.getSalt(salt.length);
 	salt = Utilities.xorString(salt, client_salt);
-	if (digest == "hmac") {
+	console.log("challenge using digest", digest);
+	if (digest.startsWith("hmac")) {
+		var hash="md5";
+		if (digest.indexOf("+")>0) {
+			hash = digest.split("+")[1];
+		}
+		console.log("hmac using hash", hash);
 		var hmac = forge.hmac.create();
-		hmac.start('md5', ctx.password);
+		hmac.start(hash, ctx.password);
 		hmac.update(salt);
 		challenge_response = hmac.digest().toHex();
 	} else if (digest == "xor") {
