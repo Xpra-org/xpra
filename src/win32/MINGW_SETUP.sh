@@ -50,4 +50,4 @@ for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL
     easy_install-3.5 -U -Z $x
 done
 #for webcam support:
-$PACMAN -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
+$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
