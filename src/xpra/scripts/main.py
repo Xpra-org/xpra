@@ -1799,11 +1799,12 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
+        tcp_endpoint = (display_desc["host"], display_desc["port"])
+        conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
-        tcp_endpoint = (display_desc["host"], display_desc["port"])
-        conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
+            conn._socket = sock
         conn.timeout = SOCKET_TIMEOUT
 
         #wrap in a websocket:
