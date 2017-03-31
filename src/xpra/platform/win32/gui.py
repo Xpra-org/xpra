@@ -33,6 +33,7 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         GetDeviceCaps,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
+from xpra.os_util import monotonic_time
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
@@ -535,7 +536,12 @@ def add_window_hooks(window):
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
-                cval = getattr(window, "_win32_%swheel" % orientation, 0)
+                last_event_time = getattr(window, "_wheel_event_time", 0)
+                #only accumulate if the last event was less than 5 seconds ago:
+                if monotonic_time()-last_event_time<5:
+                    cval = getattr(window, "_win32_%swheel" % orientation, 0)
+                else:
+                    cval = 0
                 nval = cval + distance
                 units = abs(nval) // WHEEL_DELTA
                 client = getattr(window, "_client")
@@ -569,6 +575,7 @@ def add_window_hooks(window):
                     mouselog("mousewheel: sent %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
                     nval = v
                 setattr(window, "_win32_%swheel" % orientation, nval)
+                setattr(window, "_wheel_event_time", monotonic_time())
             def mousewheel(hwnd, event, wParam, lParam):
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0
