@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import zlib
 import posixpath
 import urllib
 
@@ -89,6 +90,68 @@ class WSRequestHandler(WebSocketRequestHandler):
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
+
+
+    def do_GET(self):
+        """Handle GET request. Calls handle_websocket(). If unsuccessful,
+        and web server is enabled, SimpleHTTPRequestHandler.do_GET will be called."""
+        if not self.handle_websocket():
+            if self.only_upgrade:
+                self.send_error(405, "Method Not Allowed")
+            else:
+                content = self.send_head()
+                if content:
+                    self.wfile.write(content)
+
+    def do_HEAD(self):
+        if self.only_upgrade:
+            self.send_error(405, "Method Not Allowed")
+        else:
+            self.send_head()
+
+    #code taken from MIT licensed code in GzipSimpleHTTPServer.py
+    def send_head(self):
+        path = self.translate_path(self.path)
+        f = None
+        if os.path.isdir(path):
+            if not self.path.endswith('/'):
+                # redirect browser - doing basically what apache does
+                self.send_response(301)
+                self.send_header("Location", self.path + "/")
+                self.end_headers()
+                return None
+            for index in "index.html", "index.htm":
+                index = os.path.join(path, index)
+                if os.path.exists(index):
+                    path = index
+                    break
+            else:
+                #self.send_error(403, "Directory listing forbidden")
+                return self.list_directory(path).read()            
+        ctype = self.guess_type(path)
+        try:
+            # Always read in binary mode. Opening files in text mode may cause
+            # newline translations, making the actual size of the content
+            # transmitted *less* than the content-length!
+            f = open(path, 'rb')
+        except IOError:
+            self.send_error(404, "File not found")
+            return None
+        fs = os.fstat(f.fileno())
+        raw_content_length = fs[6]
+        content = f.read()
+        self.send_response(200)
+        self.send_header("Content-type", ctype)
+        if 'gzip' in self.headers.get('accept-encoding', []) and len(content)>128:
+            self.send_header("Content-Encoding", "gzip")
+            gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+            content = gzip_compress.compress(content) + gzip_compress.flush()
+        compressed_content_length = len(content)
+        f.close()
+        self.send_header("Content-Length", max(raw_content_length, compressed_content_length))
+        self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+        self.end_headers()
+        return content
 
 
 class WebSocketConnection(SocketConnection):
