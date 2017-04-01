@@ -681,6 +681,8 @@ XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
 
 XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 	if (encoding=="png") {
+		//move title to the right:
+		$("#title"+ String(this.wid)).css('left', 32);
 		jQuery('#windowicon' + String(this.wid)).attr('src', "data:image/"+encoding+";base64," + this._arrayBufferToBase64(img_data));
 	}
 };

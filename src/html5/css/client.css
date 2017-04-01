@@ -102,7 +102,7 @@ canvas {
 	float: left;
 	position: absolute;
 	top: 0px;
-	left: 30px;
+	left: 0px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	padding: 5px;
