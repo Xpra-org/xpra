@@ -660,7 +660,7 @@ class ServerCore(object):
         if not peek_data:
             netlog("may_wrap_socket: no data, not wrapping")
             return True, conn, peek_data
-        if peek_data[0] in ("P", ord("P")):
+        if peek_data[0] in ("P", ord("P")) and peek_data[:5]!=b"POST ":
             netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
@@ -681,7 +681,9 @@ class ServerCore(object):
             v = None
         is_ssl = socktype=="SSL"
         if self._html and self.ssl_mode!="tcp":
+            httplog("peek_data=%s", nonl(peek_data))
             line1 = peek_data.splitlines()[0]
+            httplog("line 1=%s", repr_ellipsized(line1))
             if line1.find("HTTP/")>0 or (is_ssl and (self.ssl_mode=="www" or (self.ssl_mode=="auto" and peek_data.find("\x08http/1.1")>0))):
                 http_proto = "http"+["","s"][int(is_ssl)]
                 if line1.startswith("GET ") or line1.startswith("POST "):
@@ -703,6 +705,7 @@ class ServerCore(object):
         return True, conn, v
 
     def invalid_header(self, proto, data, msg=""):
+        traceback.print_stack()
         netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s", proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         err = "invalid packet format, %s" % self.guess_header_protocol(data)
         proto.gibberish(err, data)

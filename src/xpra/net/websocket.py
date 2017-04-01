@@ -92,6 +92,15 @@ class WSRequestHandler(WebSocketRequestHandler):
         self.send_header("Expires", "0")
 
 
+    def do_POST(self):
+        try:
+            length = int(self.headers.getheader('content-length'))
+            data = self.rfile.read(length)
+            log("POST data=%s (%i bytes)", data, length)
+            self.do_GET()
+        except Exception:
+            log.error("Error processing POST request", exc_info=True)
+
     def do_GET(self):
         """Handle GET request. Calls handle_websocket(). If unsuccessful,
         and web server is enabled, SimpleHTTPRequestHandler.do_GET will be called."""
