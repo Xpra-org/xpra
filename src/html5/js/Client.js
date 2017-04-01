@@ -376,7 +376,7 @@ XpraClient.prototype.open_protocol = function() {
 }
 
 XpraClient.prototype.close = function() {
-	console.error("client closed");
+	console.log("client closed");
 	this.close_windows();
 	this.clear_timers();
 	this.close_audio();
@@ -1197,8 +1197,6 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 	if (!ctx.reconnect || ctx.reconnect_attempt>=ctx.reconnect_count) {
 		// call the client's close callback
 		ctx.callback_close(ctx.disconnect_reason);
-		// clear the reason
-		ctx.disconnect_reason = null;
 	}
 }
 
@@ -1236,18 +1234,17 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 		ctx.close_protocol();
 		// call the client's close callback
 		ctx.callback_close(ctx.disconnect_reason);
-		// clear the reason
-		ctx.disconnect_reason = null;
 	}
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
 	// save the disconnect reason
-	ctx.disconnect_reason = packet[1];
+	var reason = packet[1];
+	console.debug("disconnect reason:", reason);
+	ctx.disconnect_reason = reason;
 	ctx.close();
 	// call the client's close callback
-	ctx.callback_close(ctx.disconnect_reason);
-	ctx.disconnect_reason = null;
+	ctx.callback_close(reason);
 }
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {

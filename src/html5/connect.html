@@ -354,7 +354,7 @@ function doConnect() {
 $(document).ready(function() {
 
 	var ssl = document.location.protocol=="https:";
-	var disconnect_reason = window.location.getParameter("disconnect") || null;
+	var disconnect_reason = getparam("disconnect") || null;
 
 	if(disconnect_reason) {
 		document.getElementById("alert-disconnect").style.display = "block";
