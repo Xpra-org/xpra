@@ -82,6 +82,9 @@ class WSRequestHandler(WebSocketRequestHandler):
 
 
     def end_headers(self):
+        #magic for querying request header values:
+        if self.path.endswith("?echo-headers"):
+            self.send_header("Echo-Accept-Language", self.headers.getheader("Accept-Language") or "")
         if HTTP_NOCACHE:
             self.send_nocache_headers()
         WebSocketRequestHandler.end_headers(self)
