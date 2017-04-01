@@ -89,28 +89,37 @@ canvas {
 }
 .windowicon {
 	display: inline-block;
-	float: left;
+	position: absolute;
 	width: 30px;
 	height: 30px;
+	left: 0px;
+	top: 0px;
 	overflow: hidden;
 	cursor: default;
 }
 .windowtitle {
 	display: inline-block;
 	float: left;
-	width: 70%;
+	position: absolute;
+	top: 0px;
+	left: 30px;
 	overflow: hidden;
-	text-overflow:ellipsis;
-	white-space: nowrap;
+	text-overflow: ellipsis;
 	padding: 5px;
+	padding-right: 48px;
+	white-space: nowrap;
 	cursor: default;
 }
 .windowbuttons {
 	display: inline-block;
-	float: right;
+	position: absolute;
+	z-index: 1;
+	top: 0px;
+	right: 0px;
 	padding-right: 5px;
 	cursor: pointer;
 	padding-top: 7px;
+	background-color: #c0c0c0;
 }
 .windowinfocus {
 	z-index: 10000;
