@@ -11,7 +11,7 @@ import urllib
 from xpra.log import Logger
 log = Logger("network", "websocket")
 
-from xpra.util import AdHocStruct, envbool
+from xpra.util import AdHocStruct, envbool, std
 from xpra.os_util import memoryview_to_bytes
 from xpra.net.bytestreams import SocketConnection
 from websockify.websocket import WebSocketRequestHandler
@@ -84,7 +84,10 @@ class WSRequestHandler(WebSocketRequestHandler):
     def end_headers(self):
         #magic for querying request header values:
         if self.path.endswith("?echo-headers"):
-            self.send_header("Echo-Accept-Language", self.headers.getheader("Accept-Language") or "")
+            #ie: "en-GB,en-US;q=0.8,en;q=0.6"
+            accept = self.headers.getheader("Accept-Language")
+            if accept:
+                self.send_header("Echo-Accept-Language", std(accept, extras="-,./:;="))
         if HTTP_NOCACHE:
             self.send_nocache_headers()
         WebSocketRequestHandler.end_headers(self)
