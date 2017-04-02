@@ -2240,15 +2240,19 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
             if v:
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
+
+    def connect():
+        return connect_or_fail(params, opts)
+
     if opts.attach is False:
-        app = None
+        from xpra.client.gobject_client_base import ConnectTestXpraClient
+        app = ConnectTestXpraClient((connect(), params), opts)
     else:
         app = make_client(error_cb, opts)
-    app.init(opts)
-    app.init_ui(opts)
-    app.hello_extra = hello_extra
-    conn = connect_or_fail(params, opts)
-    app.setup_connection(conn)
+        app.init(opts)
+        app.init_ui(opts)
+        app.hello_extra = hello_extra
+        app.setup_connection(connect())
     do_run_client(app)
 
 def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
