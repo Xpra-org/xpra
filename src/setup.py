@@ -1834,6 +1834,8 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
+    add_data_files('', glob.glob("win32\\bundle-extra\\*"))
+
     #END OF win32
 #*******************************************************************************
 else:
