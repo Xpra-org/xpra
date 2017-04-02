@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.os_util import getuid, getgid, monotonic_time, setsid, WIN32, OSX
-from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, XpraConfig, \
+from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
@@ -2240,8 +2240,10 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
             if v:
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
-    #TODO: run remote connection only if attach is False
-    app = make_client(error_cb, opts)
+    if opts.attach is False:
+        app = None
+    else:
+        app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
     app.hello_extra = hello_extra

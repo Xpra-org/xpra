@@ -91,6 +91,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
 [\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
 [\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
+[\fB\-\-attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
 .HP
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
 [\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
@@ -661,7 +662,7 @@ what the clients can execute on the server.
 .TP
 
 
-.SS Options for start, upgrade, proxy and shadow
+.SS Options for start, start-desktop, upgrade, proxy and shadow
 .TP
 \fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
 By default, the xpra server puts itself into the background,
@@ -791,7 +792,7 @@ process.
 .TP
 
 
-.SS Options for start, upgrade
+.SS Options for start, start-desktop, upgrade
 .TP
 \fB\-\-start\fP=\fICMD\fP
 After starting the server, runs the command \fICMD\fP using the
@@ -848,9 +849,12 @@ a configurable delay (in milliseconds).
 Warning: this extra painting is expensive and quite slow, which is why
 it is not enabled by default.
 .TP
+\fB\-\-attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+Once the server has started, immediately connect a client to it.
+.TP
 
 
-.SS Options for start, upgrade, shadow
+.SS Options for start, start-desktop, upgrade, shadow
 .TP
 \fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP
 Specifies the address to which non-xpra packets will be forwarded.
@@ -898,7 +902,7 @@ Defaults to 600. This is ignored when \fImmap\-group\fP is enabled.
 .TP
 
 
-.SS Options for start, upgrade and attach
+.SS Options for start, start-desktop, upgrade and attach
 .TP
 \fB\-\-encryption\fP=\fICIPHER\fP
 Specifies the cipher to use for securing the connection from
