@@ -291,6 +291,7 @@ class ServerCore(object):
         auth_options = {}
         if len(parts)>1:
             auth_options = parse_simple_dict(parts[1])
+        auth_options["exec_cwd"] = self.exec_cwd
         if auth=="sys":
             #resolve virtual "sys" auth:
             if WIN32:
