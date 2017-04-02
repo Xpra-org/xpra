@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.5
+%define version 1.0.6
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -600,6 +600,14 @@ fi
 
 
 %changelog
+* Sun Apr 02 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
+- fix SSL connection failures
+- fix missed characters in HTML5 client disconnection message
+- fix HTML5 password field wrongly greyed out
+- fix HTML5 window title bar wrapping
+- fix backwards compatibility for hmac authentication
+- support relative file paths in authentication modules
+
 * Wed Mar 29 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix X11 server crashes with very short-lived OR windows
 - fix compatibility with python-lz4 0.9.0 (API breakage)
@@ -740,7 +748,7 @@ fi
 - fix encoding quality tray tooltip message when disabled by mmap
 - fix systray forwarding window position
 
-* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.5
+* Tue Dec 06 2016 Antoine Martin <antoine@devloop.org.uk> 1.0.6
 - support all current versions of Ubuntu and Debian using a private ffmpeg library
 - proxy server can start new sessions on demand
 - SSH start server support on OSX < 10.11
@@ -1127,7 +1135,7 @@ fi
 - fix paint issue with transparent tooltips on OSX and MS Windows
 - fix pixel format typo in OpenGL logging
 
-* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0.5
+* Mon Jan 20 2014 Antoine Martin <antoine@devloop.org.uk> 0.11.0.6
 - NVENC hardware h264 encoding acceleration
 - OpenCL and CUDA colourspace conversion acceleration
 - proxy server mode for serving multiple sessions through one port
@@ -1358,7 +1366,7 @@ fi
 - safer test for windows to ignore (window IDs starts at 1 again)
 - expose more version and statistical data via xpra info
 - improved OpenGL client rendering (still disabled by default)
-- upgrade to rencode 1.0.5
+- upgrade to rencode 1.0.6
 
 * Thu Mar 07 2013 Antoine Martin <antoine@devloop.org.uk> 0.8.8-1
 - fix server deadlock on dead connections
@@ -1657,7 +1665,7 @@ fi
 - per-window update batching auto-tuning, which is fairer
 - windows update batching now takes into account the number of pixels rather than just the number of regions to update
 - support --socket-dir option over ssh
-- IPv6 support using the syntax: ssh/::ffff:192.168.1.1.0.50 or tcp/::ffff:192.168.1.1.0.50000
+- IPv6 support using the syntax: ssh/::ffff:192.168.1.1.0.60 or tcp/::ffff:192.168.1.1.0.60000
 - all commands now return a non-zero exit code in case of failure
 - new "xpra info" command to report server statistics
 - prettify some of the logging and error messages
@@ -1675,7 +1683,7 @@ fi
 - show more system version information in session information dialog
 - hide window decorations for openoffice splash screen (workaround)
 
-* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0.5
+* Wed Mar 21 2012 Antoine Martin <antoine@devloop.org.uk> 0.1.0.6
 - security: strict filtering of packet handlers until connection authenticated
 - prevent DoS: limit number of concurrent connections attempting login (20)
 - prevent DoS: limit initial packet size (memory exhaustion: 32KB)

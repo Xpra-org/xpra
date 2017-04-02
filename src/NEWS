@@ -1,3 +1,13 @@
+v1.0.6 (2017-04-02)
+======================
+	-- fix SSL connection failures
+	-- fix missed characters in HTML5 client disconnection message
+	-- fix HTML5 password field wrongly greyed out
+	-- fix HTML5 window title bar wrapping
+	-- fix backwards compatibility for hmac authentication
+	-- support relative file paths in authentication modules
+
+
 v1.0.5 (2017-03-29)
 ======================
 	-- fix X11 server crashes with very short-lived OR windows

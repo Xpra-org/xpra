@@ -1,3 +1,13 @@
+xpra (1.0.6-1) UNRELEASED; urgency=low
+  * fix SSL connection failures
+  * fix missed characters in HTML5 client disconnection message
+  * fix HTML5 password field wrongly greyed out
+  * fix HTML5 window title bar wrapping
+  * fix backwards compatibility for hmac authentication
+  * support relative file paths in authentication modules
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Apr 2017 18:52:06 +0700
+
 xpra (1.0.5-2) UNRELEASED; urgency=low
   * remove unavailable gstreamer dependencies for Wheezy / Precise
 
