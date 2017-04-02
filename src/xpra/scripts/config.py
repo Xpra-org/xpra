@@ -11,7 +11,6 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.util import AdHocStruct
 from xpra.os_util import WIN32, OSX
 
 def warn(msg):
@@ -521,6 +520,7 @@ OPTION_TYPES = {
                     "auto-refresh-delay": float,
                     #boolean options:
                     "daemon"            : bool,
+                    "attach"            : bool,
                     "use-display"       : bool,
                     "fake-xinerama"     : bool,
                     "resize_display"    : bool,
@@ -580,6 +580,39 @@ OPTION_TYPES = {
                     "start-env"         : list,
                     "env"               : list,
                }
+
+CLIENT_OPTIONS = ["title", "username", "password", "session-name",
+                  "dock-icon", "tray-icon", "window-icon",
+                  "clipboard", "clipboard-direction", "clipboard-filter-file",
+                  "remote-clipboard", "local-clipboard",
+                  "tcp-encryption", "tcp-encryption-keyfile", "encryption",  "encryption-keyfile",
+                  "systemd-run", "systemd-run-args",
+                  "socket-dir", "socket-dirs",
+                  "border", "window-close", "max-size", "desktop-scaling",
+                  "file-transfer", "file-size-limit", "download-path", "open-command", "open-files", "printing",
+                  "dbus-proxy",
+                  "remote-logging",
+                  "lpadmin", "lpinfo",
+                  "debug",
+                  "microphone", "speaker", "sound-source",
+                  "microphone-codec", "speaker-codec",
+                  "mmap", "encodings", "encoding",
+                  "quality", "min-quality", "speed", "min-speed",
+                  "compression_level",
+                  "dpi", "video-scaling", "auto-refresh-delay",
+                  "webcam", "pings",
+                  "tray", "keyboard-sync", "cursors", "bell", "notifications",
+                  "xsettings", "system-tray", "sharing",
+                  "delay-tray", "windows", "readonly",
+                  "av-sync", "swap-keys",
+                  "opengl",
+                  "start-new-commands",
+                  "desktop-fullscreen", "global-menus",
+                  "video-encoders", "csc-modules", "video-decoders",
+                  "compressors", "packet-encoders",
+                  "key-shortcut",
+                  "env"]
+
 
 def get_default_key_shortcuts():
     return [shortcut for e,shortcut in [
@@ -760,6 +793,7 @@ def get_defaults():
                     "pixel-depth"       : 24,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
+                    "attach"            : None,
                     "use-display"       : False,
                     "fake-xinerama"     : not OSX and not WIN32,
                     "resize-display"    : not OSX and not WIN32,
@@ -957,10 +991,14 @@ def dict_to_validated_config(d={}, extras_defaults={}, extras_types={}, extras_v
     for k,v in CLONES.items():
         if k in options:
             options[v] = options[k]
-    config = AdHocStruct()
+    config = XpraConfig()
     for k,v in options.items():
         setattr(config, name_to_field(k), v)
     return config
+
+class XpraConfig(object):
+    def __repr__(self):
+        return ("XpraConfig(%s)" % self.__dict__)
 
 
 def fixup_debug_option(value):

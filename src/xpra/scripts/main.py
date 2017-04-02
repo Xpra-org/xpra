@@ -21,10 +21,9 @@ import traceback
 from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
-from xpra.platform.options import add_client_options
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
-from xpra.os_util import getuid, getgid, monotonic_time, WIN32, OSX
-from xpra.scripts.config import OPTION_TYPES, \
+from xpra.os_util import getuid, getgid, monotonic_time, setsid, WIN32, OSX
+from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, XpraConfig, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
@@ -357,10 +356,14 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"tcp_proxy" : "",
                 "html"      : ""})
     legacy_bool_parse("daemon")
+    legacy_bool_parse("attach")
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
+        group.add_option("--attach", action="store", metavar="yes|no|auto",
+                          dest="attach", default=defaults.attach,
+                          help="Attach a client as soon as the server has started (default: %s)" % enabled_or_auto(defaults.attach))
         group.add_option("--pidfile", action="store",
                       dest="pidfile", default=defaults.pidfile,
                       help="Write the process id to this file (default: '%default')")
@@ -377,6 +380,7 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({
                 "daemon"    : False,
+                "attach"    : "no",
                 "pidfile"   : defaults.pidfile,
                 "log_file"  : defaults.log_file,
                 "log_dir"   : defaults.log_dir,
@@ -612,7 +616,7 @@ def do_parse_cmdline(cmdline, defaults):
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
-                "They may also be specified on the server as default values for those clients that do not set them.")
+                "They may also be specified on the server as default settings.")
     parser.add_option_group(group)
     group.add_option("--encodings", action="store",
                       dest="encodings", default=defaults.encodings,
@@ -716,17 +720,38 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--title", action="store",
                       dest="title", default=defaults.title,
                       help="Text which is shown as window title, may use remote metadata variables. Default: '%default'.")
-    group.add_option("--window-icon", action="store",
-                          dest="window_icon", default=defaults.window_icon,
-                          help="Path to the default image which will be used for all windows (the application may override this)")
     group.add_option("--window-close", action="store",
                           dest="window_close", default=defaults.window_close,
                           help="The action to take when a window is closed by the client. Valid options are: 'forward', 'ignore', 'disconnect'. Default: '%default'.")
-    # let the platform specific code add its own options:
-    # adds "--no-tray" for platforms that support it
-    add_client_options(cmdline, group, defaults)
-    hidden_options["tray"] =  True
-    hidden_options["delay-tray"] =  False
+    group.add_option("--window-icon", action="store",
+                          dest="window_icon", default=defaults.window_icon,
+                          help="Path to the default image which will be used for all windows (the application may override this)")
+    if OSX:
+        group.add_option("--dock-icon", action="store",
+                              dest="dock_icon", default=defaults.dock_icon,
+                              help="Path to the icon shown in the dock")
+        do_legacy_bool_parse(cmdline, "swap-keys")
+        group.add_option("--swap-keys", action="store", metavar="yes|no",
+                          dest="swap_keys", default=defaults.swap_keys,
+                          help="Swap the 'Command' and 'Control' keys. Default: %s" % enabled_str(defaults.swap_keys))
+        ignore({"tray"                : defaults.tray})
+        ignore({"delay-tray"          : defaults.delay_tray})
+    else:
+        ignore({"swap-keys"           : defaults.swap_keys})
+        ignore({"dock-icon"           : defaults.dock_icon})
+        do_legacy_bool_parse(cmdline, "tray")
+        if WIN32:
+            extra_text = ", this will also disable notifications"
+        else:
+            extra_text = ""
+        parser.add_option("--tray", action="store", metavar="yes|no",
+                          dest="tray", default=defaults.tray,
+                          help="Enable Xpra's own system tray menu%s. Default: %s" % (extra_text, enabled_str(defaults.tray)))
+        do_legacy_bool_parse(cmdline, "delay-tray")
+        parser.add_option("--delay-tray", action="store", metavar="yes|no",
+                          dest="delay_tray", default=defaults.delay_tray,
+                          help="Waits for the first events before showing the system tray%s. Default: %s" % (extra_text, enabled_str(defaults.delay_tray)))
+
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
@@ -1151,9 +1176,8 @@ def systemd_run_wrap(mode, args, systemd_run_args):
     cmd.append("--systemd-run=no")
     print("using systemd-run to wrap '%s' server command" % mode)
     print("%s" % " ".join(["'%s'" % x for x in cmd]))
-    import subprocess
     try:
-        p = subprocess.Popen(cmd)
+        p = Popen(cmd)
         p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
@@ -1208,13 +1232,42 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_remote_server(error_cb, options, args, mode, defaults)
         elif (mode in ("start", "start-desktop", "upgrade") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
+            cwd = os.getcwd()
+            env = os.environ.copy()
             current_display = nox()
             try:
                 from xpra import server
                 assert server
-                from xpra.scripts.server import run_server
+                from xpra.scripts.server import run_server, add_when_ready
             except ImportError as e:
                 error_cb("Xpra server is not installed")
+            if options.attach is True:
+                def attach_client():
+                    from xpra.platform.paths import get_xpra_command
+                    cmd = get_xpra_command()+["attach"]
+                    display_name = os.environ.get("DISPLAY")
+                    if display_name:
+                        cmd += [display_name]
+                    #options has been "fixed up", make sure this has too:
+                    fixup_options(defaults)
+                    for x in CLIENT_OPTIONS:
+                        f = x.replace("-", "_")
+                        try:
+                            d = getattr(defaults, f)
+                            c = getattr(options, f)
+                        except Exception as e:
+                            print("error on %s: %s" % (f, e))
+                            continue
+                        if c!=d:
+                            if OPTION_TYPES.get(x)==list:
+                                v = csv(c)
+                            else:
+                                v = str(c)
+                            cmd.append("--%s=%s" % (x, v))
+                    proc = Popen(cmd, close_fds=True, preexec_fn=setsid, cwd=cwd, env=env)
+                    from xpra.child_reaper import getChildReaper
+                    getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
+                add_when_ready(attach_client)
             return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test"):
             return run_client(error_cb, options, args, mode)
@@ -1587,9 +1640,6 @@ def ssh_connect_failed(message):
         from xpra.gtk_common.quit import gtk_main_quit_really
         gtk_main_quit_really()
 
-def setsid():
-    #run in a new session
-    os.setsid()
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
@@ -1604,7 +1654,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             kwargs = {}
             env = display_desc.get("env")
             kwargs["stderr"] = sys.stderr
-            if not display_desc.get("exit_ssh", False) and os.name=="posix" and not OSX:
+            if not display_desc.get("exit_ssh", False) and not OSX:
                 kwargs["preexec_fn"] = setsid
             elif WIN32:
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
@@ -2190,6 +2240,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
             if v:
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
+    #TODO: run remote connection only if attach is False
     app = make_client(error_cb, opts)
     app.init(opts)
     app.init_ui(opts)
@@ -2453,9 +2504,8 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
             #verify that this is the right server:
             try:
                 #we must use a subprocess to avoid messing things up - yuk
-                import subprocess
                 cmd = get_nodock_command()+["info", "socket:%s" % socket_path]
-                p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                p = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE)
                 stdout, _ = p.communicate()
                 if p.returncode==0:
                     try:

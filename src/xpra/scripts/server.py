@@ -19,7 +19,7 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
+from xpra.os_util import SIGNAMES, setsid, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
@@ -885,11 +885,6 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
             "XPRA_LOG_DIR"  : os.environ.get("XPRA_LOG_DIR"),
             }
     xvfb_str = shellsub(xvfb_str, subs)
-
-    def setsid():
-        #run in a new session
-        if os.name=="posix":
-            os.setsid()
 
     xvfb_cmd = xvfb_str.split()
     if not xvfb_cmd:
