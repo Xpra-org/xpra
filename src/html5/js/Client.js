@@ -531,6 +531,9 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		setTimeout(function () {
 			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
 			me.send(packet);
+			if (me.debug) {
+				console.debug(packet);
+			}
 		}, 0);
 	}
 	if (this.clipboard_enabled) {
