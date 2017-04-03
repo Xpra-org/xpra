@@ -56,6 +56,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.start_new_session = null;
 	this.clipboard_enabled = false;
 	this.file_transfer = false;
+	this.keyboard_layout = null;
 	this.printing = false;
 	this.reconnect = true;
 	this.reconnect_count = 5;
@@ -224,7 +225,6 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 
 XpraClient.prototype.init_keyboard = function() {
 	var me = this;
-	this.keyboard_layout = null;
 	// modifier keys:
 	this.caps_lock = null;
 	this.num_lock = true;
