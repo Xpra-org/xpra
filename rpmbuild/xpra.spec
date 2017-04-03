@@ -486,7 +486,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/README
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
-%{_datadir}/xpra/webm
 %ifarch x86_64
 %{_datadir}/xpra/cuda
 %endif
