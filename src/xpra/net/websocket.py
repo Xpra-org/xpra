@@ -129,10 +129,10 @@ class WSRequestHandler(WebSocketRequestHandler):
         path = self.translate_path(self.path)
         f = None
         if os.path.isdir(path):
-            if not self.path.endswith('/'):
+            if not path.endswith('/'):
                 # redirect browser - doing basically what apache does
                 self.send_response(301)
-                self.send_header("Location", self.path + "/")
+                self.send_header("Location", path + "/")
                 self.end_headers()
                 return None
             for index in "index.html", "index.htm":
