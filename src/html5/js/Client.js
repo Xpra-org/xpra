@@ -492,20 +492,35 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	// MSIE hack
 	if (window.event)
 		event = window.event;
-	//show("processKeyEvent("+pressed+", "+event+") keyCode="+event.keyCode+", charCode="+event.charCode+", which="+event.which);
 
-	var keyname = "";
-	var keycode = 0;
-	if (event.which)
-		keycode = event.which;
-	else
-		keycode = event.keyCode;
-	if (keycode==144 && pressed)
+	var keyname = event.code || "";
+	var keycode = event.which || event.keyCode;
+	var str = event.key || String.fromCharCode(keycode);
+
+	if (this.debug) {
+		console.debug("processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);
+	}
+
+	//sync numlock
+	if (keycode==144 && pressed) {
 		this.num_lock = !this.num_lock;
-	if (keycode in CHARCODE_TO_NAME)
+	}
+
+	//some special keys are better mapped by name:
+	if (keyname in KEY_TO_NAME){
+		keyname = KEY_TO_NAME[keyname];
+	}
+	//next try mapping the actual character
+	else if (str in CHAR_TO_NAME) {
+		keyname = CHAR_TO_NAME[str];
+	}
+	//fallback to keycode map:
+	else if (keycode in CHARCODE_TO_NAME) {
 		keyname = CHARCODE_TO_NAME[keycode];
-	if (this.num_lock && keycode>=96 && keycode<106)
-		keyname = "KP_"+(keycode-96);
+	}
+
+	//if (this.num_lock && keycode>=96 && keycode<106)
+	//	keyname = "KP_"+(keycode-96);
 	var DOM_KEY_LOCATION_RIGHT = 2;
 	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
 		keyname = keyname.replace("_L", "_R")
@@ -516,7 +531,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if (this.num_lock && this.num_lock_mod)
 		modifiers.push(this.num_lock_mod);
 	var keyval = keycode;
-	var str = String.fromCharCode(event.which);
 	var group = 0;
 
 	var shift = modifiers.indexOf("shift")>=0;
@@ -599,6 +613,7 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 };
 
 XpraClient.prototype._get_keyboard_layout = function() {
+	console.warn("_get_keyboard_layout() keyboard_layout=", this.keyboard_layout);
 	if (this.keyboard_layout)
 		return this.keyboard_layout;
 	return Utilities.getKeyboardLayout();
