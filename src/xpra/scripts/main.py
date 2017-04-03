@@ -433,10 +433,11 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
                       help="Exits the server when idle (0 to disable). Default: %s seconds" % defaults.server_idle_timeout)
     legacy_bool_parse("fake-xinerama")
+    legacy_bool_parse("use-display")
     if supports_server:
-        group.add_option("--use-display", action="store_true",
+        group.add_option("--use-display", action="store", metavar="yes|no",
                           dest="use_display", default=defaults.use_display,
-                          help="Use an existing display rather than starting one with xvfb")
+                          help="Use an existing display rather than starting one with the xvfb command. Default: %s" % enabled_str(defaults.use_display))
         group.add_option("--xvfb", action="store",
                           dest="xvfb",
                           default=defaults.xvfb,
