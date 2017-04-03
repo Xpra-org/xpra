@@ -368,7 +368,7 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	if ("title" in metadata) {
 		this.title = metadata["title"];
-		jQuery('#title' + this.wid).html(this.title);
+		jQuery('#title' + this.wid).html(decodeURIComponent(escape(this.title)));
 	}
 	if ("window-type" in metadata) {
 		this.windowtype = metadata["window-type"][0];
@@ -387,7 +387,7 @@ XpraWindow.prototype.set_metadata = function(metadata) {
 	}
 	if ("title" in metadata) {
 		this.title = metadata["title"];
-		jQuery('#title' + this.wid).html(this.title);
+		jQuery('#title' + this.wid).html(decodeURIComponent(escape(this.title)));
 	}
 	if ("window-type" in metadata) {
 		this.windowtype = metadata["window-type"][0];
