@@ -253,6 +253,10 @@ def get_icc_info():
                     "data"      : data,
                     }
             if version:
+                try:
+                    version = ord(version)
+                except:
+                    pass
                 icc["version"] = version
             return icc
     except Exception as e:
