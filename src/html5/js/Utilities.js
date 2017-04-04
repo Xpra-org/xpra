@@ -120,7 +120,9 @@ var Utilities = {
 		}
 		// support for other well known properties in browsers
 		for (i = 0; i < browserLanguagePropertyKeys.length; i++) {
-			language = nav[browserLanguagePropertyKeys[i]];
+			var prop = browserLanguagePropertyKeys[i];
+			language = nav[prop];
+			//console.debug(prop, "=", language);
 			if (language && language.length) {
 				return language;
 			}
@@ -144,7 +146,9 @@ var Utilities = {
 			return '';
 		}
 		//ie: "gb"
-		return l[1].toLowerCase();
+		var layout=l[1].toLowerCase();
+		console.debug("getKeyboardLayout()=", layout);
+		return layout;
 	},
 
 	getAudioContextClass : function() {

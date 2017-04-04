@@ -86,6 +86,9 @@ XpraClient.prototype.init_state = function(container) {
 	this.encryption_key = null;
 	this.cipher_in_caps = null;
 	this.cipher_out_caps = null;
+	// detect locale change:
+	this.browser_language = Utilities.getFirstBrowserLanguage();
+	this.browser_language_change_embargo_time = 0;
 	// clipboard
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
@@ -483,6 +486,33 @@ XpraClient.prototype._keyb_get_modifiers = function(event) {
 	return modifiers;
 }
 
+XpraClient.prototype._check_browser_language = function() {
+	/**
+	 * If the browser's language changes,
+	 * send the new detected keyboard layout.
+	 * (ignoring the keyboard_layout preference)
+	 */
+	var now = new Date().getTime();
+	if (now<this.browser_language_change_embargo_time) {
+		return;
+	}
+	var l = Utilities.getFirstBrowserLanguage();
+	if (l && this.browser_language != l) {
+		var layout = Utilities.getKeyboardLayout();
+		console.log("browser language changed from", this.browser_language, "to", l, ", sending new keyboard layout:", layout);
+		this.browser_language = l;
+		this.send(["layout-changed", layout, ""]);
+		//changing the language too quickly can cause problems server side,
+		//wait at least 2 seconds before checking again:
+		this.browser_language_change_embargo_time = now + 2000;
+	}
+	else {
+		//check again after 100ms minimum
+		this.browser_language_change_embargo_time = now + 100;
+	}
+}
+
+
 XpraClient.prototype._keyb_process = function(pressed, event) {
 	/**
 	 * Process a key event: key pressed or key released.
@@ -492,6 +522,8 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	// MSIE hack
 	if (window.event)
 		event = window.event;
+
+	this._check_browser_language();
 
 	var keyname = event.code || "";
 	var keycode = event.which || event.keyCode;
@@ -613,7 +645,7 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 };
 
 XpraClient.prototype._get_keyboard_layout = function() {
-	console.warn("_get_keyboard_layout() keyboard_layout=", this.keyboard_layout);
+	console.debug("_get_keyboard_layout() keyboard_layout=", this.keyboard_layout);
 	if (this.keyboard_layout)
 		return this.keyboard_layout;
 	return Utilities.getKeyboardLayout();
@@ -1004,6 +1036,7 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 }
 
 XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons) {
+	win.client._check_browser_language();
 	var wid = win.wid;
 	win.client.send(["pointer-position", wid, [x, y], modifiers, buttons]);
 }
