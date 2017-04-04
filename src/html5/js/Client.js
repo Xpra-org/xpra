@@ -549,8 +549,15 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	}
 
 	var key_language = null;
+	//special case for numpad,
+	//try to distinguish arrowpad and numpad:
+	//(for arrowpad, keyname==str)
+	if (keyname!=str && str in NUMPAD_TO_NAME) {
+		keyname = NUMPAD_TO_NAME[str];
+		this.num_lock = ("0123456789.".indexOf(keyname))>=0;
+	}
 	//some special keys are better mapped by name:
-	if (keyname in KEY_TO_NAME){
+	else if (keyname in KEY_TO_NAME){
 		keyname = KEY_TO_NAME[keyname];
 	}
 	//next try mapping the actual character
@@ -591,6 +598,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		//send via a timer so we get a chance to capture the clipboard value,
 		//before we send control-V to the server:
 		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
+		console.debug(packet);
 		var me = this;
 		setTimeout(function () {
 			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);

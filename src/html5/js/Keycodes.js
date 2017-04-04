@@ -29,8 +29,17 @@ KEY_TO_NAME = {
 		//special keys:
 		"ScrollLock"		: "Scroll_Lock",
 		"Pause"				: "Pause",
-		//Num pad:
 		"NumLock"			: "Num_Lock",
+		//Arrow pad:
+		"Insert"			: "Insert",
+		"Home"				: "Home",
+		"PageUp"			: "Prior",
+		"Delete"			: "Delete",
+		"End"				: "End",
+		"PageDown"			: "Next",
+};
+NUMPAD_TO_NAME = {
+		//Num pad:
 		"NumpadDivide"		: "KP_Divide",
 		"NumpadMultiply"	: "KP_Multiply",
 		"NumpadSubstract"	: "KP_Substract",
@@ -48,13 +57,6 @@ KEY_TO_NAME = {
 		"Home"				: "KP_Home",
 		"ArrowUp"			: "KP_Up",
 		"PageUp"			: "KP_Prior",
-		//Arrow pad:
-		//"Insert"			: "KP_Insert",		//dupe of numpad
-		//"Home"				: "KP_Home",		//dupe of numpad
-		//"PageUp"			: "Prior",			//dupe of numpad (with a different mapping..)
-		"Delete"			: "Delete",
-		//"End"				: "End",			//dupe of numpad (with a different mapping..)
-		//"PageDown"			: "Next",
 };
 for (var i=0; i<=9; i++) {
 	KEY_TO_NAME["Numpad"+i]	= ""+i;
