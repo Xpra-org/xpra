@@ -341,19 +341,19 @@
 				    var pasteboard = $('#pasteboard');
 					pasteboard.on('paste', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-				        client.send_clipboard_token(paste_data);
+				        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
 				        return false;
 					});
 					pasteboard.on('copy', function (e) {
 				        var clipboard_buffer = client.get_clipboard_buffer();
-						$('#pasteboard').text(clipboard_buffer);
+						$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 				        $('#pasteboard').select();
 				        client.clipboard_pending = false;
 				        return true;
 					});
 					pasteboard.on('cut', function (e) {
 				        var clipboard_buffer = client.get_clipboard_buffer();
-				        $('#pasteboard').text(clipboard_buffer);
+				        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 				        $('#pasteboard').select();
 				        client.clipboard_pending = false;
 				        return true;
