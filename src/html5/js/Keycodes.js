@@ -1629,6 +1629,22 @@ for (var keysym in KEYSYM_TO_UNICODE) {
 //console.debug("CHAR_TO_NAME=", KEYSYM_TO_UNICODE);
 
 
+//some keysyms require specific layouts
+KEYSYM_TO_LAYOUT = {
+	"kana"		: "jp",
+	"Farsi"		: "ir",
+	"Arabic"	: "ar",
+	"Cyrillic"	: "ru",
+	"Ukrainian"	: "uk",
+	"Macedonia"	: "mk",
+	"Greek"		: "gr",
+	"hebrew"	: "he",
+	"Thai"		: "th",
+	"Armenian"	: "am",
+	"Georgian"	: "ge",
+	"braille"	: "brai",
+}
+
 
 /**
  * Maps web keycodes to the corresponding X11 keysym:

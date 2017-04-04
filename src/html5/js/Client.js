@@ -89,6 +89,7 @@ XpraClient.prototype.init_state = function(container) {
 	// detect locale change:
 	this.browser_language = Utilities.getFirstBrowserLanguage();
 	this.browser_language_change_embargo_time = 0;
+	this.key_layout = null;
 	// clipboard
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
@@ -486,22 +487,33 @@ XpraClient.prototype._keyb_get_modifiers = function(event) {
 	return modifiers;
 }
 
-XpraClient.prototype._check_browser_language = function() {
+XpraClient.prototype._check_browser_language = function(key_layout) {
 	/**
-	 * If the browser's language changes,
-	 * send the new detected keyboard layout.
+	 * Use the "key_language" if we have it,
+	 * otherwise use the browser's language.
+	 * This function may ssend the new detected keyboard layout.
 	 * (ignoring the keyboard_layout preference)
 	 */
 	var now = new Date().getTime();
 	if (now<this.browser_language_change_embargo_time) {
 		return;
 	}
-	var l = Utilities.getFirstBrowserLanguage();
-	if (l && this.browser_language != l) {
-		var layout = Utilities.getKeyboardLayout();
-		console.log("browser language changed from", this.browser_language, "to", l, ", sending new keyboard layout:", layout);
-		this.browser_language = l;
-		this.send(["layout-changed", layout, ""]);
+	var new_layout = null;
+	if (key_layout && this.key_layout!=key_layout) {
+		console.log("input language changed from", this.key_layout, "to", key_layout);
+		new_layout = key_layout;
+		this.key_layout = key_layout;
+	}
+	else {
+		var l = Utilities.getFirstBrowserLanguage();
+		if (l && this.browser_language != l) {
+			new_layout = Utilities.getKeyboardLayout();
+			console.log("browser language changed from", this.browser_language, "to", l, ", sending new keyboard layout:", layout);
+			this.browser_language = l;
+		}
+	}
+	if (new_layout!=null) {
+		this.send(["layout-changed", new_layout, ""]);
 		//changing the language too quickly can cause problems server side,
 		//wait at least 2 seconds before checking again:
 		this.browser_language_change_embargo_time = now + 2000;
@@ -523,8 +535,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if (window.event)
 		event = window.event;
 
-	this._check_browser_language();
-
 	var keyname = event.code || "";
 	var keycode = event.which || event.keyCode;
 	var str = event.key || String.fromCharCode(keycode);
@@ -538,6 +548,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		this.num_lock = !this.num_lock;
 	}
 
+	var key_language = null;
 	//some special keys are better mapped by name:
 	if (keyname in KEY_TO_NAME){
 		keyname = KEY_TO_NAME[keyname];
@@ -545,11 +556,18 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//next try mapping the actual character
 	else if (str in CHAR_TO_NAME) {
 		keyname = CHAR_TO_NAME[str];
+		if (keyname.indexOf("_")>0) {
+			//ie: Thai_dochada
+			var lang = keyname.split("_")[0];
+			key_language = KEYSYM_TO_LAYOUT[lang];
+		}
 	}
 	//fallback to keycode map:
 	else if (keycode in CHARCODE_TO_NAME) {
 		keyname = CHARCODE_TO_NAME[keycode];
 	}
+
+	this._check_browser_language(key_language);
 
 	//if (this.num_lock && keycode>=96 && keycode<106)
 	//	keyname = "KP_"+(keycode-96);
