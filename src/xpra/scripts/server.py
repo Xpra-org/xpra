@@ -25,7 +25,7 @@ from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
 
 #what timeout value to use on the socket probe attempt:
-WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 8)
+WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
