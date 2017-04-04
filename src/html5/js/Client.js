@@ -62,6 +62,10 @@ XpraClient.prototype.init_settings = function(container) {
 	this.reconnect_count = 5;
 	this.reconnect_delay = 1000;	//wait 1 second before retrying
 	this.reconnect_attempt = 0;
+	this.HELLO_TIMEOUT = 2000;
+	this.PING_TIMEOUT = 15000;
+	this.PING_GRACE = 2000;
+	this.PING_FREQUENCY = 5000;
 }
 
 XpraClient.prototype.init_state = function(container) {
@@ -99,14 +103,10 @@ XpraClient.prototype.init_state = function(container) {
 	this.remote_file_transfer = false;
 	this.remote_open_files = false;
 	// hello
-	this.HELLO_TIMEOUT = 2000;
 	this.hello_timer = null;
 	// ping
-	this.PING_TIMEOUT = 15000;
 	this.ping_timeout_timer = null;
-	this.PING_GRACE = 2000;
 	this.ping_grace_timer = null;
-	this.PING_FREQUENCY = 5000;
 	this.ping_timer = null;
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
