@@ -52,7 +52,6 @@ XpraClient.prototype.init_settings = function(container) {
 	this.steal = true;
 	this.remote_logging = true;
 	this.enabled_encodings = [];
-	this.normal_fullscreen_mode = false;
 	this.start_new_session = null;
 	this.clipboard_enabled = false;
 	this.file_transfer = false;
@@ -598,7 +597,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		//send via a timer so we get a chance to capture the clipboard value,
 		//before we send control-V to the server:
 		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
-		console.debug(packet);
 		var me = this;
 		setTimeout(function () {
 			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
@@ -896,6 +894,12 @@ XpraClient.prototype._make_hello = function() {
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
+        "metadata.supported"		: [
+        								"fullscreen", "maximized", "above", "below",
+        								//"set-initial-position", "group-leader",
+        								"title", "size-hints", "class-instance", "transient-for", "window-type",
+        								"decorations", "override-redirect", "tray", "modal", "opacity",
+        								],
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
 		"encoding.icons.max_size"	: [30, 30],
@@ -1006,12 +1010,6 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 	win.debug = this.debug;
 	this.id_to_window[wid] = win;
 	if (!override_redirect) {
-		if(this.normal_fullscreen_mode) {
-			if(win.windowtype == "NORMAL") {
-				win.undecorate();
-				win.set_maximized(true);
-			}
-		}
 		var geom = win.get_internal_geometry();
 		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
 		this._window_set_focus(win);
@@ -1069,23 +1067,26 @@ XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons
 
 XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
 	var wid = win.wid;
+	var client = win.client;
+	//console.debug("click focus=", client.focus, ", wid=", wid);
 	// dont call set focus unless the focus has actually changed
-	if(win.client.focus != wid) {
-		win.client._window_set_focus(win);
+	if(client.focus != wid) {
+		client._window_set_focus(win);
 	}
-	win.client.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+	client.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
 }
 
 XpraClient.prototype._window_set_focus = function(win) {
 	// don't send focus packet for override_redirect windows!
 	if(!win.override_redirect) {
+		var client = win.client;
 		var wid = win.wid;
-		win.client.focus = wid;
-		win.client.topwindow = wid;
-		win.client.send(["focus", wid, []]);
+		client.focus = wid;
+		client.topwindow = wid;
+		client.send(["focus", wid, []]);
 		//set the focused flag on all windows:
-		for (var i in win.client.id_to_window) {
-			var iwin = win.client.id_to_window[i];
+		for (var i in client.id_to_window) {
+			var iwin = client.id_to_window[i];
 			iwin.focused = (i==wid);
 			iwin.updateFocus();
 		}

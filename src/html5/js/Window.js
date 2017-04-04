@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
  * Copyright (c) 2015-2016 Spikes, Inc.
  * Licensed under MPL 2.0
@@ -61,6 +61,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.saved_geometry = null;
 	this.maximized = false;
 	this.focused = false;
+	this.decorations = true;
 
 	//these values represent the internal geometry
 	//i.e. geometry as windows appear to the compositor
@@ -136,13 +137,13 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 			// adjust top offset
 			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
 			// assign some interesting callbacks
-			jQuery('#head' + String(wid)).click(function() {
+			jQuery(this.d_header).click(function() {
 				set_focus_cb(me);
 			});
-			jQuery('#close' + String(wid)).click(function() {
+			jQuery(this.d_closebtn).click(function() {
 				window_closed_cb(me);
 			});
-			jQuery('#maximize' + String(wid)).click(function() {
+			jQuery(this.d_maximizebtn).click(function() {
 				me.toggle_maximized();
 			});
 		} else {
@@ -430,18 +431,48 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
  * Apply new metadata settings.
  */
 XpraWindow.prototype.set_metadata = function(metadata) {
+	this.set_metadata_safe(metadata);
 	if ("fullscreen" in metadata) {
 		this.set_fullscreen(metadata["fullscreen"]==1);
 	}
 	if ("maximized" in metadata) {
 		this.set_maximized(metadata["maximized"]==1);
 	}
-	if ("title" in metadata) {
-		this.title = metadata["title"];
-		jQuery('#title' + this.wid).html(decodeURIComponent(escape(this.title)));
+	if ("decorations" in metadata) {
+		this.decorations = metadata["decorations"];
+		this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
+		if (this.decorations) {
+			jQuery('#head' + this.wid).show();
+			jQuery(this.div).removeClass("undecorated");
+			jQuery(this.div).addClass("window");
+			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+		}
+		else {
+			jQuery('#head' + this.wid).hide();
+			jQuery(this.div).removeClass("window");
+			jQuery(this.div).addClass("undecorated");
+		}
+		// update geometry
+		this.updateCSSGeometry();
+		this.handle_resized();
 	}
-	if ("window-type" in metadata) {
-		this.windowtype = metadata["window-type"][0];
+	if ("opacity" in metadata) {
+		var opacity = metadata["opacity"];
+		jQuery(this.div).css('opacity', ''+(opacity/100.0));
+	}
+	//if the attribute is set, add the corresponding css class:
+	var attrs = ["modal", "above", "below"];
+	for (var i = 0; i < attrs.length; i++) {
+		var attr = attrs[i];
+		if (attr in metadata) {
+			var value = metadata[attr];
+			if (value) {
+				jQuery(this.div).addClass(attr);
+			}
+			else {
+				jQuery(this.div).removeClass(attr);
+			}
+		}
 	}
 };
 
@@ -550,20 +581,6 @@ XpraWindow.prototype.fill_screen = function() {
 	this.h = (screen_size[1] - this.topoffset) - this.bottomoffset;
 };
 
-XpraWindow.prototype.undecorate = function() {
-	// hide the window decoration
-	jQuery(this.d_header).hide();
-	// replace window style
-	jQuery(this.div).removeClass("window");
-	jQuery(this.div).addClass("undecorated");
-	// reset the offsets
-	this.leftoffset = parseInt(jQuery(this.div).css('border-left-width'), 10);
-	this.rightoffset = parseInt(jQuery(this.div).css('border-right-width'), 10);
-	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
-	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
-	// update geometry
-	this.updateCSSGeometry();
-}
 
 /**
  * We have resized the window, so we need to:
@@ -830,7 +847,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video.setAttribute('height', height);
 	this.video.style.pointerEvents = "all";
 	this.video.style.position = "absolute";
-	this.video.style.zIndex = "1";
+	this.video.style.zIndex = this.div.css("z-index")+1;
 	this.video.style.left  = ""+this.leftoffset+"px";
 	this.video.style.top = ""+this.topoffset+"px";
 	if(this.debug) {
@@ -1042,9 +1059,9 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			var level  = options["level"] || "3.0";
 			this._init_video(width, height, coding, profile, level);
 		}
-		else if (this.video.style.zIndex != "1"){
-			//make sure video is on the top layer:
-			this.video.style.zIndex = "1";
+		else {
+			//keep it above the div:
+			this.video.style.zIndex = this.div.css("z-index")+1;
 		}
 		if(img_data.length>0) {
 			if(this.debug) {

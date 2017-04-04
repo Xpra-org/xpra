@@ -226,9 +226,6 @@
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
-				  	<input type="checkbox" id="normal_fullscreen"> <span>Normal fullscreen windows</span>
-				  </li>
-				  <li class="list-group-item">
 				  	<input type="checkbox" id="debug"> <span>Debugging</span>
 				  </li>
 				</ul>
@@ -343,7 +340,7 @@ function doConnect() {
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect",
 		"video", "mediasource_video",
-		"normal_fullscreen", "debug", "insecure"];
+		"debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
 		add_prop(prop, document.getElementById(prop).checked);
@@ -519,7 +516,7 @@ $(document).ready(function() {
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect",
 			"video", "mediasource_video",
-			"normal_fullscreen", "debug", "insecure"];
+			"debug", "insecure"];
 	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "exit_with_children", "exit_with_client"];
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];

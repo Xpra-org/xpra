@@ -121,8 +121,17 @@ canvas {
 	padding-top: 7px;
 	background-color: #c0c0c0;
 }
-.windowinfocus {
+.above {
 	z-index: 10000;
+}
+.below {
+	z-index: 0;
+}
+div.windowinfocus {
+	z-index: 5000;
+}
+.modal {
+	z-index: 20000;
 }
 .spinneroverlay {
 	width: 100%;

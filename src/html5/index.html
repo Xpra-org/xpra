@@ -133,7 +133,6 @@
 				var sharing = getboolparam("sharing", false);
 				var video = getboolparam("video", false);
 				var mediasource_video = getboolparam("mediasource_video", false);
-				var normal_fullscreen = getboolparam("normal_fullscreen", false);
 				var remote_logging = getboolparam("remote_logging", true);
 				var debug = getboolparam("debug", false);
 				var insecure = getboolparam("insecure", false);
@@ -228,11 +227,6 @@
 			    	client.start_new_session = sns
 			    }
 
-			    // see if we should undecorate and maximise normal windows
-			    if(normal_fullscreen) {
-			    	client.normal_fullscreen_mode = true;
-			    }
-
 			    // sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
@@ -307,7 +301,6 @@
 				    				"exit_with_client"	: exit_with_client,
 				    				"sharing"			: sharing,
 				    				"steal"				: steal,
-				    				"normal_fullscreen"	: normal_fullscreen,
 				    				"video"				: video,
 				    				"mediasource_video"	: mediasource_video,
 				    				"debug"				: debug,
