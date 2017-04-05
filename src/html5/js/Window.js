@@ -83,6 +83,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
 	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
 
+	this.mousedown_event = null;
 	// Hook up the events we want to receive:
 	jQuery(this.canvas).mousedown(function (e) {
 		me.on_mousedown(e);
@@ -105,50 +106,50 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 
 	// create the decoration as part of the window, style is in CSS
 	jQuery(this.div).addClass("window");
-	jQuery(this.div).addClass("window-" + this.windowtype);
-	// add a title bar to this window if we need to
-	if((this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
-		if(!this.override_redirect) {
-			// create header
-			jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
-					'<span class="windowicon"><img src="../icons/noicon.png" id="windowicon' + String(wid) + '" /></span> '+
-					'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
-					'<span class="windowbuttons"> '+
-					'<span id="maximize' + String(wid) + '"><img src="../icons/maximize.png" /></span> '+
-					'<span id="close' + String(wid) + '"><img src="../icons/close.png" /></span> '+
-					'</span></div>');
-			// make draggable
-			jQuery(this.div).draggable({
-				cancel: "canvas",
-				stop: function(e, ui) {
-					me.handle_moved(ui);
-				}
-			});
-			// attach resize handles
-			jQuery(this.div).resizable({
-			  helper: "ui-resizable-helper",
-			  stop: function(e, ui) {
-			  	me.handle_resized(ui);
-			  }
-			});
-			this.d_header = '#head' + String(wid);
-			this.d_closebtn = '#close' + String(wid);
-			this.d_maximizebtn = '#maximize' + String(wid);
-			// adjust top offset
-			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
-			// assign some interesting callbacks
-			jQuery(this.d_header).click(function() {
-				set_focus_cb(me);
-			});
-			jQuery(this.d_closebtn).click(function() {
-				window_closed_cb(me);
-			});
-			jQuery(this.d_maximizebtn).click(function() {
-				me.toggle_maximized();
-			});
-		} else {
-			jQuery(this.div).addClass("override-redirect");
-		}
+	if (this.windowtype) {
+		jQuery(this.div).addClass("window-" + this.windowtype);
+	}
+
+	if(this.override_redirect) {
+		jQuery(this.div).addClass("override-redirect");
+	}
+	else if((this.windowtype == "") || (this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
+		// add a title bar to this window if we need to
+		// create header
+		jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
+				'<span class="windowicon"><img src="../icons/noicon.png" id="windowicon' + String(wid) + '" /></span> '+
+				'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
+				'<span class="windowbuttons"> '+
+				'<span id="maximize' + String(wid) + '"><img src="../icons/maximize.png" /></span> '+
+				'<span id="close' + String(wid) + '"><img src="../icons/close.png" /></span> '+
+				'</span></div>');
+		// make draggable
+		jQuery(this.div).draggable({ cancel: "canvas" });
+		jQuery(this.div).on("dragstop",function(ev,ui){
+			me.handle_moved(ui);
+		});
+		// attach resize handles
+		jQuery(this.div).resizable({
+		  helper: "ui-resizable-helper",
+		  stop: function(e, ui) {
+		  	me.handle_resized(ui);
+		  }
+		});
+		this.d_header = '#head' + String(wid);
+		this.d_closebtn = '#close' + String(wid);
+		this.d_maximizebtn = '#maximize' + String(wid);
+		// adjust top offset
+		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+		// assign some interesting callbacks
+		jQuery(this.d_header).click(function() {
+			set_focus_cb(me);
+		});
+		jQuery(this.d_closebtn).click(function() {
+			window_closed_cb(me);
+		});
+		jQuery(this.d_maximizebtn).click(function() {
+			me.toggle_maximized();
+		});
 	}
 
 	// create the spinner overlay div
@@ -325,8 +326,8 @@ XpraWindow.prototype.on_mousedown = function(e) {
 	// pass the click to the area:
 	var modifiers = [];
 	var buttons = [];
+	this.mousedown_event = e;
 	this.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
-	return;
 };
 
 XpraWindow.prototype.on_mouseup = function(e) {
@@ -334,13 +335,10 @@ XpraWindow.prototype.on_mouseup = function(e) {
 	var mouse = this.getMouse(e),
 			mx = Math.round(mouse.x),
 			my = Math.round(mouse.y);
-	if (!this.dragging) {
-		var modifiers = [];
-		var buttons = [];
-		this.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
-	}
-
-	this.dragging = false;
+	var modifiers = [];
+	var buttons = [];
+	this.mousedown_event = null;
+	this.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
 };
 
 XpraWindow.prototype.on_mousescroll = function(e) {
@@ -664,6 +662,23 @@ XpraWindow.prototype.move = function(x, y) {
 XpraWindow.prototype.resize = function(w, h) {
 	this.move_resize(this.x, this.y, w, h);
 };
+
+XpraWindow.prototype.initiate_moveresize = function(x_root, y_root, direction, button, source_indication) {
+	var dir_str = MOVERESIZE_DIRECTION_STRING[direction];
+	this.log("initiate_moveresize", dir_str, [x_root, y_root, direction, button, source_indication]);
+	if (direction==MOVERESIZE_MOVE) {
+		var e = this.mousedown_event;
+		e.type = "mousedown.draggable";
+		e.target = this.div[0];
+		this.div.trigger(e);
+		//jQuery(this.div).trigger("mousedown");
+	}
+	else if (direction==MOVERESIZE_CANCEL) {
+		jQuery(this.div).draggable('disable');
+		jQuery(this.div).draggable('enable');
+	}
+}
+
 
 /**
  * Returns the geometry of the window backing image,

@@ -281,6 +281,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'window-icon': this._process_window_icon,
 		'window-resized': this._process_window_resized,
 		'window-move-resize': this._process_window_move_resize,
+		'initiate-moveresize': this._process_initiate_moveresize,
 		'configure-override-redirect': this._process_configure_override_redirect,
 		'desktop_size': this._process_desktop_size,
 		'draw': this._process_draw,
@@ -894,6 +895,7 @@ XpraClient.prototype._make_hello = function() {
 		"notify-startup-complete"	: true,
 		"generic-rgb-encodings"		: true,
 		"window.raise"				: true,
+        "window.initiate-moveresize": true,
         "metadata.supported"		: [
         								"fullscreen", "maximized", "above", "below",
         								//"set-initial-position", "group-leader",
@@ -1553,6 +1555,20 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 		win.update_metadata(metadata);
 	}
 }
+
+XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
+    var wid = packet[1],
+    	win = ctx.id_to_window[wid];
+	if (win!=null) {
+		var x_root = packet[2],
+			y_root = packet[3],
+			direction = packet[4],
+			button = packet[5],
+			source_indication = packet[6];
+        win.initiate_moveresize(x_root, y_root, direction, button, source_indication)
+	}
+}
+
 
 XpraClient.prototype.on_last_window = function() {
 	//this hook can be overriden
