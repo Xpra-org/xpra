@@ -7,6 +7,6 @@ proxy-start-sessions = True
 # The video encoders that the proxy will claim:
 # (so the video encoding will happen in the proxy process
 #  for these encoders)
-#proxy-video-encoders = nvenc7
+#proxy-video-encoders = nvenc
 #proxy-video-encoders = all
 proxy-video-encoders = none
