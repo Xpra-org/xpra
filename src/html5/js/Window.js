@@ -458,7 +458,13 @@ XpraWindow.prototype.set_metadata = function(metadata) {
 	}
 	if ("opacity" in metadata) {
 		var opacity = metadata["opacity"];
-		jQuery(this.div).css('opacity', ''+(opacity/100.0));
+		if (opacity<0) {
+			opacity = 1.0;
+		}
+		else {
+			opacity = opacity / 0x100000000
+		}
+		jQuery(this.div).css('opacity', ''+opacity);
 	}
 	//if the attribute is set, add the corresponding css class:
 	var attrs = ["modal", "above", "below"];

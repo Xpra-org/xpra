@@ -463,7 +463,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 pass
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
-        #we need the bindings to support initiate-moveresize (posix only for now):
         updict(capabilities, "window", {
                "initiate-moveresize"    : True,
                "configure.pointer"      : True,

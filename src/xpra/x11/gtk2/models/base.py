@@ -174,13 +174,13 @@ class BaseWindowModel(CoreX11WindowModel):
                        gobject.PARAM_READWRITE),
         })
     _property_names = CoreX11WindowModel._property_names + [
-                      "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut",
+                      "transient-for", "fullscreen-monitors", "bypass-compositor", "group-leader", "window-type", "workspace", "strut", "opacity",
                       "menu",
                       #virtual attributes:
                       "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested",
-                              "menu", "workspace",
+                              "menu", "workspace", "opacity",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded", "skip-taskbar", "skip-pager", "sticky"]
     _internal_property_names = CoreX11WindowModel._internal_property_names+["state"]
     _initial_x11_properties = CoreX11WindowModel._initial_x11_properties + [
