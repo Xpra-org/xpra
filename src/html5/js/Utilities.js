@@ -347,3 +347,13 @@ var MOVERESIZE_DIRECTION_STRING = {
                                10   : "MOVE_KEYBOARD",
                                11	: "CANCEL",
                                };
+var MOVERESIZE_DIRECTION_JS_NAME = {
+        0	: "nw",
+        1	: "n",
+        2	: "ne",
+        3	: "e",
+        4	: "se",
+        5	: "s",
+        6	: "sw",
+        7	: "w",
+        };

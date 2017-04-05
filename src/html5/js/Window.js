@@ -129,11 +129,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 			me.handle_moved(ui);
 		});
 		// attach resize handles
-		jQuery(this.div).resizable({
-		  helper: "ui-resizable-helper",
-		  stop: function(e, ui) {
+		jQuery(this.div).resizable({ helper: "ui-resizable-helper", "handles": "n, e, s, w, ne, se, sw, nw" });
+		jQuery(this.div).on("resizestop",function(ev,ui){
 		  	me.handle_resized(ui);
-		  }
 		});
 		this.d_header = '#head' + String(wid);
 		this.d_closebtn = '#close' + String(wid);
@@ -676,6 +674,16 @@ XpraWindow.prototype.initiate_moveresize = function(x_root, y_root, direction, b
 	else if (direction==MOVERESIZE_CANCEL) {
 		jQuery(this.div).draggable('disable');
 		jQuery(this.div).draggable('enable');
+	}
+	else if (direction in MOVERESIZE_DIRECTION_JS_NAME) {
+		var js_dir = MOVERESIZE_DIRECTION_JS_NAME[direction];
+		var resize_widget = jQuery(this.div).find(".ui-resizable-handle.ui-resizable-"+js_dir).first();
+		if (resize_widget) {
+			var pageX = resize_widget.offset().left;
+			var pageY = resize_widget.offset().top;
+			resize_widget.trigger("mouseover");
+			resize_widget.trigger({ type: "mousedown", which: 1, pageX: pageX, pageY: pageY });
+		}
 	}
 }
 
