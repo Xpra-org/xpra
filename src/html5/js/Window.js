@@ -325,7 +325,10 @@ XpraWindow.prototype.on_mousedown = function(e) {
 	var modifiers = [];
 	var buttons = [];
 	this.mousedown_event = e;
-	this.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
+	var me = this;
+	setTimeout(function() {
+		me.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
+	}, 0);
 };
 
 XpraWindow.prototype.on_mouseup = function(e) {
@@ -336,7 +339,10 @@ XpraWindow.prototype.on_mouseup = function(e) {
 	var modifiers = [];
 	var buttons = [];
 	this.mousedown_event = null;
-	this.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
+	var me = this;
+	setTimeout(function() {
+		me.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
+	}, 0);
 };
 
 XpraWindow.prototype.on_mousescroll = function(e) {
