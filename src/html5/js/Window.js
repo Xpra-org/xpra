@@ -602,6 +602,8 @@ XpraWindow.prototype.handle_resized = function(e) {
 	// remote resize will call this.resize()
 	// need to update the internal geometry
 	if(e) {
+		this.x = this.x + Math.round(e.position.left - e.originalPosition.left);
+		this.y = this.y + Math.round(e.position.top - e.originalPosition.top);
 		this.w = Math.round(e.size.width) - this.leftoffset - this.rightoffset;
 		this.h = Math.round(e.size.height) - this.topoffset - this.bottomoffset;
 	}
