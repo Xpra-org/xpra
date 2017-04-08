@@ -69,6 +69,8 @@ XpraClient.prototype.init_settings = function(container) {
 
 XpraClient.prototype.init_state = function(container) {
 	// state
+	this.desktop_width = 0;
+	this.desktop_height = 0;
 	this.server_remote_logging = false;
 	// some client stuff
 	this.capabilities = {};
@@ -454,7 +456,12 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 
 XpraClient.prototype._screen_resized = function(event, ctx) {
 	// send the desktop_size packet so server knows we changed size
-	var newsize = this._get_desktop_size();
+	if (this.container.clientWidth==this.desktop_width && this.container.clientHeight==this.desktop_height) {
+		this.desktop_width = this.container.clientWidth;
+		this.desktop_height = this.container.clientHeight;
+		return;
+	}
+	var newsize = [this.desktop_width, this.desktop_height];
 	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
 	ctx.send(packet);
 	// call the screen_resized function on all open windows
@@ -689,7 +696,7 @@ XpraClient.prototype._get_keycodes = function() {
 }
 
 XpraClient.prototype._get_desktop_size = function() {
-	return [this.container.clientWidth, this.container.clientHeight];
+	return [this.desktop_width, this.desktop_height];
 }
 
 XpraClient.prototype._get_DPI = function() {
@@ -709,7 +716,7 @@ XpraClient.prototype._get_DPI = function() {
 
 XpraClient.prototype._get_screen_sizes = function() {
 	var dpi = this._get_DPI();
-	var screen_size = this._get_desktop_size();
+	var screen_size = [this.container.clientWidth, this.container.clientHeight];
 	var wmm = Math.round(screen_size[0]*25.4/dpi);
 	var hmm = Math.round(screen_size[1]*25.4/dpi);
 	var monitor = ["Canvas", 0, 0, screen_size[0], screen_size[1], wmm, hmm];
@@ -887,6 +894,8 @@ XpraClient.prototype._make_hello_base = function() {
 }
 
 XpraClient.prototype._make_hello = function() {
+	this.desktop_width = this.container.clientWidth;
+	this.desktop_height = this.container.clientHeight;
 	this._update_capabilities({
 		"auto_refresh_delay"		: 500,
 		"randr_notify"				: true,
@@ -950,7 +959,7 @@ XpraClient.prototype._make_hello = function() {
 		"xkbmap_keycodes"			: this._get_keycodes(),
 		"xkbmap_print"				: "",
 		"xkbmap_query"				: "",
-		"desktop_size"				: this._get_desktop_size(),
+		"desktop_size"				: [this.desktop_width, this.desktop_height],
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
