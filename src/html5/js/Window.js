@@ -62,6 +62,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.maximized = false;
 	this.focused = false;
 	this.decorations = true;
+	this.resizable = false;
 
 	//these values represent the internal geometry
 	//i.e. geometry as windows appear to the compositor
@@ -114,6 +115,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		jQuery(this.div).addClass("override-redirect");
 	}
 	else if((this.windowtype == "") || (this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
+		this.resizable = true;
 		// add a title bar to this window if we need to
 		// create header
 		jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
@@ -427,7 +429,6 @@ XpraWindow.prototype.update_zindex = function() {
 	if (this.focused) {
 		z += 1000;
 	}
-	console.log("z-index", z);
 	jQuery(this.div).css('z-index', z);
 }
 
@@ -438,6 +439,9 @@ XpraWindow.prototype.update_zindex = function() {
  */
 XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	//update our metadata cache with new key-values:
+	if (this.debug) {
+		console.debug("update_metadata(", metadata, ")");
+	}
 	for (var attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
 	}
@@ -460,34 +464,9 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	if ("window-type" in metadata) {
 		this.windowtype = metadata["window-type"][0];
 	}
-};
-
-/**
- * Apply new metadata settings.
- */
-XpraWindow.prototype.set_metadata = function(metadata) {
-	this.set_metadata_safe(metadata);
-	if ("fullscreen" in metadata) {
-		this.set_fullscreen(metadata["fullscreen"]==1);
-	}
-	if ("maximized" in metadata) {
-		this.set_maximized(metadata["maximized"]==1);
-	}
 	if ("decorations" in metadata) {
 		this.decorations = metadata["decorations"];
-		this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
-		if (this.decorations) {
-			jQuery('#head' + this.wid).show();
-			jQuery(this.div).removeClass("undecorated");
-			jQuery(this.div).addClass("window");
-			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
-		}
-		else {
-			jQuery('#head' + this.wid).hide();
-			jQuery(this.div).removeClass("window");
-			jQuery(this.div).addClass("undecorated");
-		}
-		// update geometry
+		this._set_decorated(this.decorations);
 		this.updateCSSGeometry();
 		this.handle_resized();
 	}
@@ -514,6 +493,62 @@ XpraWindow.prototype.set_metadata = function(metadata) {
 				jQuery(this.div).removeClass(attr);
 			}
 		}
+	}
+	if (this.resizable && "size-constraints" in metadata) {
+		var mw, mh;
+		var size_constraints = metadata["size-constraints"];
+		var min_size = size_constraints["minimum-size"];
+		mw=null, mh=null;
+		if (min_size) {
+			mw = min_size[0];
+			mh = min_size[1];
+		}
+		jQuery(this.div).resizable("option", "minWidth", mw);
+		jQuery(this.div).resizable("option", "minHeight", mh);
+		var max_size = size_constraints["maximum-size"];
+		mw=null, mh=null;
+		if (max_size) {
+			mw = max_size[0];
+			mh = max_size[1];
+		}
+		jQuery(this.div).resizable("option", "maxWidth", mw);
+		jQuery(this.div).resizable("option", "maxHeight", mh);
+		//TODO: aspectRatio, grid
+	}
+	if ("class-instance" in metadata) {
+		var wm_class = metadata["class-instance"];
+		var classes = jQuery(this.div).prop("classList");
+		if (classes) {
+			//remove any existing "wmclass-" classes not in the new wm_class list:
+			for (var i = 0; i < classes.length; i++) {
+				var _class = classes[i];
+				if (_class.startsWith("wmclass-") && wm_class && wm_class.indexOf(_class)<0) {
+					jQuery(this.div).removeClass(_class);
+				}
+			}
+		}
+		if (wm_class) {
+			//add new wm-class:
+			for (var i = 0; i < wm_class.length; i++) {
+				var _class = wm_class[i].replace(/[^0-9a-zA-Z]/g, '');
+				if (_class && !jQuery(this.div).hasClass(_class)) {
+					jQuery(this.div).addClass("wmclass-"+_class);
+				}
+			}
+		}
+	}
+};
+
+/**
+ * Apply new metadata settings.
+ */
+XpraWindow.prototype.set_metadata = function(metadata) {
+	this.set_metadata_safe(metadata);
+	if ("fullscreen" in metadata) {
+		this.set_fullscreen(metadata["fullscreen"]==1);
+	}
+	if ("maximized" in metadata) {
+		this.set_maximized(metadata["maximized"]==1);
 	}
 };
 
@@ -549,14 +584,13 @@ XpraWindow.prototype.restore_geometry = function() {
  * Maximize / unmaximizes the window.
  */
 XpraWindow.prototype.set_maximized = function(maximized) {
-	//show("set_maximized("+maximized+")");
 	if (this.maximized==maximized) {
 		return;
 	}
 	this.max_save_restore(maximized);
 	this.maximized = maximized;
 	this.handle_resized();
-	// enable or disable the draggable event
+	// disable the draggable event when maximized
 	if(this.maximized) {
 		jQuery(this.div).draggable('disable');
 	} else {
@@ -568,30 +602,45 @@ XpraWindow.prototype.set_maximized = function(maximized) {
  * Toggle maximized state
  */
 XpraWindow.prototype.toggle_maximized = function() {
-	//show("set_maximized("+maximized+")");
-	if (this.maximized==true) {
-		this.set_maximized(false);
-	} else {
-		this.set_maximized(true);
-	}
+	this.set_maximized(!this.maximized);
 };
 
 /**
  * Fullscreen / unfullscreen the window.
  */
 XpraWindow.prototype.set_fullscreen = function(fullscreen) {
-	/*
-	TODO
-	//show("set_fullscreen("+fullscreen+")");
 	if (this.fullscreen==fullscreen) {
 		return;
 	}
+	if (this.resizable) {
+		if (fullscreen) {
+			this._set_decorated(false);
+		}
+		else {
+			this._set_decorated(this.decorations);
+		}
+	}
 	this.max_save_restore(fullscreen);
 	this.fullscreen = fullscreen;
-	this.calculate_offsets();
-	this.handle_resize();
-	*/
+	this.updateCSSGeometry();
+	this.handle_resized();
 };
+
+
+XpraWindow.prototype._set_decorated = function(decorated) {
+	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
+	if (decorated) {
+		jQuery('#head' + this.wid).show();
+		jQuery(this.div).removeClass("undecorated");
+		jQuery(this.div).addClass("window");
+		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+	}
+	else {
+		jQuery('#head' + this.wid).hide();
+		jQuery(this.div).removeClass("window");
+		jQuery(this.div).addClass("undecorated");
+	}
+}
 
 /**
  * Either:
