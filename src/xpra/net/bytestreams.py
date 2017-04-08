@@ -100,6 +100,8 @@ def init_ssl():
     assert ssl
     global CONTINUE_EXCEPTIONS
     CONTINUE_EXCEPTIONS[ssl.SSLError] = "SSLError"
+    CONTINUE_EXCEPTIONS[ssl.SSLWantReadError] = "SSLWantReadError"
+    CONTINUE_EXCEPTIONS[ssl.SSLWantWriteError] = "SSLWantWriteError"
     return ssl
 
 
