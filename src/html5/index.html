@@ -106,7 +106,7 @@
 				if(v===null) {
 					return default_value;
 				}
-				return ["true", "on", "1"].indexOf(String(v).toLowerCase())>=0;
+				return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())>=0;
 			}
 
 			function encodeData(s) {
@@ -117,19 +117,19 @@
 				// look at url parameters
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
-				var sound = getparam("sound") || null;
+				var sound = getboolparam("sound") || null;
 				var audio_codec = getparam("audio_codec") || null;
 				var encoding = getparam("encoding") || null;
 				var action = getparam("action") || "connect";
-				var submit = getparam("submit") || null;
+				var submit = getboolparam("submit", true);
 				var server = getparam("server") || window.location.hostname;
 				var port = getparam("port") || window.location.port;
-				var encryption = getparam("encryption") || null;
+				var encryption = getboolparam("encryption", false);
 				var key = getparam("key") || null;
 				var keyboard_layout = getparam("keyboard_layout") || null;
 				var start = getparam("start");
-				var exit_with_children = getparam("exit_with_children") || "";
-				var exit_with_client = getparam("exit_with_client") || "";
+				var exit_with_children = getboolparam("exit_with_children", false);
+				var exit_with_client = getboolparam("exit_with_client", false);
 				var sharing = getboolparam("sharing", false);
 				var video = getboolparam("video", false);
 				var mediasource_video = getboolparam("mediasource_video", false);
