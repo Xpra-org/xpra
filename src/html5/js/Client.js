@@ -457,10 +457,10 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 XpraClient.prototype._screen_resized = function(event, ctx) {
 	// send the desktop_size packet so server knows we changed size
 	if (this.container.clientWidth==this.desktop_width && this.container.clientHeight==this.desktop_height) {
-		this.desktop_width = this.container.clientWidth;
-		this.desktop_height = this.container.clientHeight;
 		return;
 	}
+	this.desktop_width = this.container.clientWidth;
+	this.desktop_height = this.container.clientHeight;
 	var newsize = [this.desktop_width, this.desktop_height];
 	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
 	ctx.send(packet);
