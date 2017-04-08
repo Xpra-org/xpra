@@ -400,6 +400,38 @@ XpraWindow.prototype.toString = function() {
 	return "Window("+this.wid+")";
 };
 
+
+XpraWindow.prototype.update_zindex = function() {
+	var z = 5000;
+	if (this.override_redirect) {
+		z = 15000;
+	}
+	else if (this.windowtype=="DROPDOWN" || this.windowtype=="TOOLTIP" ||
+			this.windowtype=="POPUP_MENU" || this.windowtype=="MENU" ||
+			this.windowtype=="COMBO") {
+		z = 20000;
+	}
+	else if (this.windowtype=="UTILITY" || this.windowtype=="DIALOG") {
+		z = 15000;
+	}
+	var above = this.metadata["above"];
+	if (above) {
+		z += 5000;
+	}
+	else {
+		var below = this.metadata["below"];
+		if (below) {
+			z -= 5000;
+		}
+	}
+	if (this.focused) {
+		z += 1000;
+	}
+	console.log("z-index", z);
+	jQuery(this.div).css('z-index', z);
+}
+
+
 /**
  * Update our metadata cache with new key-values,
  * then call set_metadata with these new key-values.
@@ -414,6 +446,7 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	} else {
 		this.set_metadata(metadata)
 	}
+	this.update_zindex();
 };
 
 /**

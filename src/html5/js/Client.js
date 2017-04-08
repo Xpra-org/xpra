@@ -1091,6 +1091,7 @@ XpraClient.prototype._window_set_focus = function(win) {
 			var iwin = client.id_to_window[i];
 			iwin.focused = (i==wid);
 			iwin.updateFocus();
+			iwin.update_zindex();
 		}
 	}
 }
