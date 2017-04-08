@@ -52,6 +52,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.steal = true;
 	this.remote_logging = true;
 	this.enabled_encodings = [];
+	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
 	this.start_new_session = null;
 	this.clipboard_enabled = false;
 	this.file_transfer = false;
@@ -75,7 +76,6 @@ XpraClient.prototype.init_state = function(container) {
 	// some client stuff
 	this.capabilities = {};
 	this.RGB_FORMATS = ["RGBX", "RGBA"];
-	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
 	this.disconnect_reason = null;
 	// audio
 	this.audio_enabled = false;
@@ -914,7 +914,7 @@ XpraClient.prototype._make_hello = function() {
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
 		"encoding.icons.max_size"	: [30, 30],
-		"encodings.core"			: this.supported_encodings,
+		"encodings.core"			: this._get_encodings(),
 		"encodings.rgb_formats"	 	: this.RGB_FORMATS,
 		"encodings.window-icon"		: ["png"],
 		"encodings.cursor"			: ["png"],
