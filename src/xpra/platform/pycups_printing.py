@@ -337,6 +337,11 @@ def init_dbus_listener():
             sig_match = system_bus.add_signal_receiver(handle_dbus_signal, path=DBUS_PATH, dbus_interface=DBUS_IFACE)
             log("system_bus.add_signal_receiver(..)=%s", sig_match)
             dbus_init = True
+        except ImportError as e:
+            log.warn("Warning: cannot watch for printer device changes,")
+            log.warn(" the dbus bindings seem to be missing:")
+            log.warn(" %s", e)
+            dbus_init = False
         except Exception:
             if sys.platform.startswith("darwin"):
                 log("no dbus on osx")
