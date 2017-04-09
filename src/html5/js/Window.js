@@ -132,6 +132,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		});
 		// attach resize handles
 		jQuery(this.div).resizable({ helper: "ui-resizable-helper", "handles": "n, e, s, w, ne, se, sw, nw" });
+		//jQuery(this.div).on("resize",jQuery.debounce(50, function(ev,ui) {
+		//  	me.handle_resized(ui);
+		//}));
 		jQuery(this.div).on("resizestop",function(ev,ui){
 		  	me.handle_resized(ui);
 		});
@@ -828,10 +831,12 @@ XpraWindow.prototype.reset_cursor = function() {
 	jQuery("#"+String(this.wid)).css("cursor", 'default');
 };
 
-XpraWindow.prototype.set_cursor = function(encoding, w, h, img_data) {
+XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data) {
 	if (encoding=="png") {
-		var cursor_url = "url('data:image/"+encoding+";base64," + window.btoa(img_data) + "'),default";
-		jQuery("#"+String(this.wid)).css("cursor", cursor_url);
+		var cursor_url = "url('data:image/"+encoding+";base64," + window.btoa(img_data) + "')";
+		jQuery("#"+String(this.wid)).css("cursor", cursor_url+", default");
+		//CSS3 with hotspot:
+		jQuery("#"+String(this.wid)).css("cursor", cursor_url+" "+xhot+" "+yhot+", auto");
 	}
 };
 
