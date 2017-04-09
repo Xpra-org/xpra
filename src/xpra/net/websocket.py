@@ -127,7 +127,6 @@ class WSRequestHandler(WebSocketRequestHandler):
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
         path = self.translate_path(self.path)
-        f = None
         if os.path.isdir(path):
             if not path.endswith('/'):
                 # redirect browser - doing basically what apache does
@@ -169,8 +168,10 @@ class WSRequestHandler(WebSocketRequestHandler):
                     log("sending pre-compressed file '%s'", compressed_path)
                     #read pre-gzipped file:
                     f.close()
+                    f = None
                     f = open(compressed_path, 'rb')
                     content = f.read()
+                    assert content, "no data in %s" % compressed_path
                     headers["Content-Encoding"] = enc
                     break
             if not content:
@@ -186,6 +187,7 @@ class WSRequestHandler(WebSocketRequestHandler):
                         headers["Content-Encoding"] = "gzip"
                         content = compressed_content
             f.close()
+            f = None
             headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
             #send back response headers:
             self.send_response(200)
@@ -194,6 +196,11 @@ class WSRequestHandler(WebSocketRequestHandler):
             self.end_headers()
         except IOError:
             self.send_error(404, "File not found")
+            if f:
+                try:
+                    f.close()
+                except:
+                    pass
             return None
         return content
 
