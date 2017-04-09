@@ -1089,28 +1089,35 @@ XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, 
 
 XpraClient.prototype._window_set_focus = function(win) {
 	// don't send focus packet for override_redirect windows!
-	if(!win.override_redirect) {
-		var client = win.client;
-		var wid = win.wid;
-		client.focus = wid;
-		client.topwindow = wid;
-		client.send(["focus", wid, []]);
-		//set the focused flag on all windows:
-		for (var i in client.id_to_window) {
-			var iwin = client.id_to_window[i];
-			iwin.focused = (i==wid);
-			iwin.updateFocus();
-			iwin.update_zindex();
-		}
-		//set favicon to the icon of this window:
-		var icon = jQuery('#windowicon' + String(wid)).attr('src');
-		console.log("icon=", icon);
-		if (!icon || icon.endsWith("/noicon.png")) {
-			//none available, use the default instead:
-			icon = "/favicon.png";
-		}
-		jQuery("#favicon").attr("href", icon);
+	if (win.override_redirect) {
+		return;
 	}
+	var client = win.client;
+	var wid = win.wid;
+	if (client.focus == wid) {
+		return;
+	}
+	client.focus = wid;
+	client.topwindow = wid;
+	client.send(["focus", wid, []]);
+	//set the focused flag on all windows:
+	for (var i in client.id_to_window) {
+		var iwin = client.id_to_window[i];
+		iwin.focused = (i==wid);
+		iwin.updateFocus();
+		iwin.update_zindex();
+	}
+	client._set_favicon(wid);
+}
+
+XpraClient.prototype._set_favicon = function(wid) {
+	//set favicon to the icon of this window:
+	var icon = jQuery('#windowicon' + String(wid)).attr('src');
+	if (!icon || icon.endsWith("/noicon.png")) {
+		//none available, use the default instead:
+		icon = "/favicon.png";
+	}
+	jQuery("#favicon").attr("href", icon);
 }
 
 XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time, error_message) {
@@ -1753,6 +1760,10 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	var win = ctx.id_to_window[wid];
 	if (win) {
 		win.update_icon(w, h, encoding, img_data);
+	}
+	//update favicon too:
+	if (wid==ctx.focus) {
+		ctx._set_favicon(wid);
 	}
 }
 
