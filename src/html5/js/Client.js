@@ -394,7 +394,7 @@ XpraClient.prototype.close_windows = function() {
 		var iwin = this.id_to_window[i];
 		iwin.destroy();
 	}
-} 
+}
 
 XpraClient.prototype.close_protocol = function() {
 	if (this.protocol) {
@@ -1102,6 +1102,14 @@ XpraClient.prototype._window_set_focus = function(win) {
 			iwin.updateFocus();
 			iwin.update_zindex();
 		}
+		//set favicon to the icon of this window:
+		var icon = jQuery('#windowicon' + String(wid)).attr('src');
+		console.log("icon=", icon);
+		if (!icon || icon.endsWith("/noicon.png")) {
+			//none available, use the default instead:
+			icon = "/favicon.png";
+		}
+		jQuery("#favicon").attr("href", icon);
 	}
 }
 
@@ -1724,10 +1732,12 @@ XpraClient.prototype._process_cursor = function(packet, ctx) {
 	}
 	var w = packet[4];
 	var h = packet[5];
+	var xhot = packet[6];
+	var yhot = packet[7];
 	var img_data = packet[9];
 	for (var wid in ctx.id_to_window) {
 		var window = ctx.id_to_window[wid];
-		window.set_cursor(encoding, w, h, img_data);
+		window.set_cursor(encoding, w, h, xhot, yhot, img_data);
 	}
 }
 
