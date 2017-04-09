@@ -256,7 +256,7 @@ def getUbuntuVersion():
     return []
 
 def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower() == "unity"
+    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("unity")
 
 
 def load_binary_file(filename):
