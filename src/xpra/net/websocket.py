@@ -173,15 +173,18 @@ class WSRequestHandler(WebSocketRequestHandler):
                     content = f.read()
                     headers["Content-Encoding"] = enc
                     break
-            if (not content) and content_length>128 and ("gzip" in accept) and (ext not in (".png", )):
-                #gzip it on the fly:
+            if not content:
                 content = f.read()
-                gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
-                compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
-                if len(compressed_content)<content_length:
-                    log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
-                    headers["Content-Encoding"] = "gzip"
-                    content = compressed_content
+                assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
+                if content_length>128 and ("gzip" in accept) and (ext not in (".png", )):
+                    #gzip it on the fly:
+                    assert len(content)==content_length, "expected %s to contain %i bytes but read %i bytes" % (path, content_length, len(content))
+                    gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+                    compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
+                    if len(compressed_content)<content_length:
+                        log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
+                        headers["Content-Encoding"] = "gzip"
+                        content = compressed_content
             f.close()
             headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
             #send back response headers:
