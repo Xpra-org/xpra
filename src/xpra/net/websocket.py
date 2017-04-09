@@ -149,23 +149,39 @@ class WSRequestHandler(WebSocketRequestHandler):
             # newline translations, making the actual size of the content
             # transmitted *less* than the content-length!
             f = open(path, 'rb')
+            fs = os.fstat(f.fileno())
+            content_length = fs[6]
+            headers = {
+                "Content-type"      : ctype,
+                "Content-Length"    : content_length,
+                }
+            gzip = 'gzip' in self.headers.get('accept-encoding', [])
+            gz_path = "%s.gz" % path
+            if gzip and os.path.exists(gz_path):
+                log("sending pre-gzipped file '%s'", gz_path)
+                #read pre-gzipped file:
+                f.close()
+                f = open(gz_path, 'rb')
+                content = f.read()
+                headers["Content-Encoding"] = "gzip"
+            else:
+                content = f.read()
+                if gzip and len(content)>128:
+                    gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+                    compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
+                    if len(compressed_content)<content_length:
+                        log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
+                        headers["Content-Encoding"] = "gzip"
+                        content = compressed_content
+            f.close()
+            headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
+            self.send_response(200)
+            for k,v in headers.items():
+                self.send_header(k, v)
+            self.end_headers()
         except IOError:
             self.send_error(404, "File not found")
             return None
-        fs = os.fstat(f.fileno())
-        raw_content_length = fs[6]
-        content = f.read()
-        self.send_response(200)
-        self.send_header("Content-type", ctype)
-        if 'gzip' in self.headers.get('accept-encoding', []) and len(content)>128:
-            self.send_header("Content-Encoding", "gzip")
-            gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
-            content = gzip_compress.compress(content) + gzip_compress.flush()
-        compressed_content_length = len(content)
-        f.close()
-        self.send_header("Content-Length", max(raw_content_length, compressed_content_length))
-        self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
-        self.end_headers()
         return content
 
 
