@@ -144,6 +144,7 @@ class WSRequestHandler(WebSocketRequestHandler):
                 #self.send_error(403, "Directory listing forbidden")
                 return self.list_directory(path).read()            
         ctype = self.guess_type(path)
+        _, ext = os.path.splitext(path)
         try:
             # Always read in binary mode. Opening files in text mode may cause
             # newline translations, making the actual size of the content
@@ -155,26 +156,35 @@ class WSRequestHandler(WebSocketRequestHandler):
                 "Content-type"      : ctype,
                 "Content-Length"    : content_length,
                 }
-            gzip = 'gzip' in self.headers.get('accept-encoding', [])
-            gz_path = "%s.gz" % path
-            if gzip and os.path.exists(gz_path):
-                log("sending pre-gzipped file '%s'", gz_path)
-                #read pre-gzipped file:
-                f.close()
-                f = open(gz_path, 'rb')
+            accept = self.headers.get('accept-encoding', []).split(",")
+            accept = [x.split(";")[0].strip() for x in accept]
+            content = None
+            log("accept-encoding=%s", accept)
+            for enc in ("br", "gzip"):
+                #find a matching pre-compressed file:
+                if enc not in accept:
+                    continue
+                compressed_path = "%s.%s" % (path, enc)     #ie: "/path/to/index.html.br"
+                if os.path.exists(compressed_path):
+                    log("sending pre-compressed file '%s'", compressed_path)
+                    #read pre-gzipped file:
+                    f.close()
+                    f = open(compressed_path, 'rb')
+                    content = f.read()
+                    headers["Content-Encoding"] = enc
+                    break
+            if (not content) and content_length>128 and ("gzip" in accept) and (ext not in (".png", )):
+                #gzip it on the fly:
                 content = f.read()
-                headers["Content-Encoding"] = "gzip"
-            else:
-                content = f.read()
-                if gzip and len(content)>128:
-                    gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
-                    compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
-                    if len(compressed_content)<content_length:
-                        log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
-                        headers["Content-Encoding"] = "gzip"
-                        content = compressed_content
+                gzip_compress = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+                compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
+                if len(compressed_content)<content_length:
+                    log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
+                    headers["Content-Encoding"] = "gzip"
+                    content = compressed_content
             f.close()
             headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
+            #send back response headers:
             self.send_response(200)
             for k,v in headers.items():
                 self.send_header(k, v)

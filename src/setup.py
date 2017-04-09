@@ -155,6 +155,8 @@ gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
 gtk3_ENABLED = DEFAULT and client_ENABLED and PYTHON3
 opengl_ENABLED = DEFAULT and client_ENABLED
 html5_ENABLED = DEFAULT
+html5_gzip_ENABLED = DEFAULT
+html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
@@ -218,7 +220,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "clipboard",
             "server", "client", "dbus", "x11", "gtk_x11", "service",
             "gtk2", "gtk3",
-            "html5", "minify",
+            "html5", "minify", "html5_gzip", "html5_brotli",
             "pam",
             "sound", "opengl", "printing", "webcam",
             "rebuild",
@@ -1053,6 +1055,24 @@ def install_html5(install_dir="www"):
             if r!=0:
                 shutil.copyfile(src, dst)
                 os.chmod(dst, 0o644)
+                if ftype not in ("png", ):
+                    if html5_gzip_ENABLED:
+                        gzip_dst = "%s.gz" % dst
+                        if os.path.exists(gzip_dst):
+                            os.unlink(gzip_dst)
+                        cmd = ["gzip", "-9", "-k", dst]
+                        get_status_output(cmd)
+                        if os.path.exists(gzip_dst):
+                            os.chmod(gzip_dst, 0o644)
+                    if html5_brotli_ENABLED:
+                        br_dst = "%s.br" % dst
+                        if os.path.exists(br_dst):
+                            os.unlink(br_dst)
+                        cmd = ["bro", "--input", dst, "--output", br_dst]
+                        get_status_output(cmd)
+                        if os.path.exists(br_dst):
+                            os.chmod(br_dst, 0o644)
+                        
 
 
 #*******************************************************************************
