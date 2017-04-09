@@ -602,10 +602,18 @@ fi
 %changelog
 * Sun Apr 02 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
 - fix SSL connection failures
+- fix SSL servers on MS Windows
+- fix X11 ICC profile version format
+- fix window opacity forwarding
+- fix missing system tray with Ubuntu Zesty
+- fix nvenc codec name shown in config file example
 - fix missed characters in HTML5 client disconnection message
 - fix HTML5 password field wrongly greyed out
 - fix HTML5 window title bar wrapping
+- fix HTML5 handling of Unicode window titles
 - fix backwards compatibility for hmac authentication
+- more helpful warning message when dbus bindings are missing
+- workaround broken MSYS2 dependencies
 - support relative file paths in authentication modules
 
 * Wed Mar 29 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
