@@ -177,7 +177,9 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("metadata"     , "Window metadata"),
                 ("state"        , "Window state"),
                 ("icon"         , "Window icons"),
-                ("frame"        , "Window frame")
+                ("frame"        , "Window frame"),
+                ("grab"         , "Window grabs (both keyboard and mouse)"),
+                ("dragndrop"    , "Window drag-n-drop events"),
                 ])),
     ("Encoding", OrderedDict([
                 ("codec"        , "Codec loader and video helper"),
@@ -224,7 +226,6 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("gtk"          , "All GTK code: bindings, client, etc"),
                 ("util"         , "All utility functions"),
                 ("gobject"      , "Command line clients"),
-                ("grab"         , "Window grabs (both keyboard and mouse)"),
                 #server bits:
                 ("test"         , "Test code"),
                 ("verbose"      , "Very verbose flag"),

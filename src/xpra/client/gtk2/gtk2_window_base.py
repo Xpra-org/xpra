@@ -15,12 +15,17 @@ eventslog = Logger("events")
 workspacelog = Logger("workspace")
 grablog = Logger("grab")
 mouselog = Logger("mouse")
+draglog = Logger("dragndrop")
 
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool
+from xpra.os_util import strtobytes
+
+
+DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 
 try:
     from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
@@ -89,6 +94,8 @@ class GTK2WindowBase(GTKClientWindowBase):
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
         self.set_data("_kde_no_window_grab", 1)
+        if DRAGNDROP:
+            self.init_dragndrop()
 
     def destroy(self):
         self.cancel_show_pointer_overlay_timer()
@@ -129,6 +136,103 @@ class GTK2WindowBase(GTKClientWindowBase):
             self.do_xpra_focus_out_event(event)
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
+
+
+    ######################################################################
+    # drag and drop:
+    def init_dragndrop(self):
+        targets = [
+            ("text/uri-list", 0, 80),
+            ]
+        flags = gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_HIGHLIGHT
+        actions = gdk.ACTION_COPY   # | gdk.ACTION_LINK
+        self.drag_dest_set(flags, targets, actions)
+        self.connect('drag_drop', self.drag_drop_cb)  
+        self.connect('drag_motion', self.drag_motion_cb)
+        self.connect('drag_data_received', self.drag_got_data_cb)
+
+    def drag_drop_cb(self, widget, context, x, y, time):
+        draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), context.targets)
+        if "text/uri-list" not in context.targets:
+            draglog("Warning: cannot handle targets:")
+            draglog(" %s", csv(context.targets))
+            return
+        self.drag_get_data(context, "text/uri-list", time)
+
+    def drag_motion_cb(self, wid, context, x, y, time):
+        draglog("drag_motion_cb%s", (wid, context, x, y, time))
+        context.drag_status(gtk.gdk.ACTION_COPY, time)
+        return True #accept this data
+
+    def drag_got_data_cb(self, wid, context, x, y, selection, info, time):
+        draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
+        #draglog("%s: %s", type(selection), dir(selection))
+        #draglog("%s: %s", type(context), dir(context))
+        targets = context.targets
+        actions = context.actions
+        def xid(w):
+            if w:
+                return w.xid
+            return 0
+        dest_window = xid(context.dest_window)
+        source_window = xid(context.get_source_window())
+        suggested_action = context.get_suggested_action()
+        draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x, suggested_action=%s, actions=%s, targets=%s", source_window, dest_window, suggested_action, actions, targets)
+        dtype = selection.get_data_type()
+        fmt = selection.get_format()
+        l = selection.get_length()
+        target = selection.get_target()
+        text = selection.get_text()
+        uris = selection.get_uris()
+        draglog("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s", dtype, fmt, l, target, text, uris)
+        if not uris:
+            return
+        filelist = []
+        for uri in uris:
+            if not uri:
+                continue
+            if not uri.startswith("file://"):
+                draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
+                continue
+            filename = strtobytes(uri[len("file://"):].rstrip("\n\r"))
+            filelist.append(filename)
+        draglog("drag_got_data_cb: will try to upload: %s", filelist)
+        pending = set(filelist)
+        #when all the files have been loaded / failed,
+        #finish the drag and drop context so the source knows we're done with them:
+        def file_done(filename):
+            if not pending:
+                return
+            try:
+                pending.remove(filename)
+            except:
+                pass
+            if not pending:
+                context.finish(True, False, time)
+        for filename in filelist:
+            def got_file_info(gfile, result):
+                draglog("got_file_info(%s, %s)", gfile, result)
+                file_info = gfile.query_info_finish(result)
+                ctype = file_info.get_content_type()
+                size = file_info.get_size()
+                draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
+                def got_file_data(gfile, result, user_data=None):
+                    data, filesize, entity = gfile.load_contents_finish(result)
+                    draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
+                    file_done(filename)
+                    openit = self._client.remote_open_files
+                    self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
+                gfile.load_contents_async(got_file_data, user_data=(filename, True))
+            try:
+                import gio
+                gfile = gio.File(filename)
+                #basename = gf.get_basename()
+                gfile.query_info_async("standard::*", got_file_info, flags=gio.FILE_QUERY_INFO_NONE)
+            except Exception as e:
+                log.error("Error: cannot upload '%s':", filename)
+                log.error(" %s", e)
+                file_done(filename)
+
 
     ######################################################################
     # focus:
