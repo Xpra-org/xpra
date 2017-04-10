@@ -1274,26 +1274,27 @@ if WIN32:
             add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
             #END OF SOUND
 
-            if server_ENABLED:
-                #used by proxy server:
-                external_includes += ["multiprocessing"]
-            external_includes += ["encodings"]
-            #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
-            os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
-            bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL", "libsqlite3-0.dll"]
-            cx_freeze_options = {
-                                "compressed"        : True,
-                                "includes"          : external_includes,
-                                "packages"          : packages,
-                                "include_files"     : data_files,
-                                "excludes"          : excludes,
-                                "include_msvcr"     : True,
-                                "bin_excludes"      : bin_excludes,
-                                "create_shared_zip" : zip_ENABLED,
-                                }
-            setup_options["options"] = {"build_exe" : cx_freeze_options}
-            executables = []
-            setup_options["executables"] = executables
+        if server_ENABLED:
+            #used by proxy server:
+            external_includes += ["multiprocessing"]
+
+        external_includes += ["encodings"]
+        #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
+        os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
+        bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL", "libsqlite3-0.dll"]
+        cx_freeze_options = {
+                            "compressed"        : True,
+                            "includes"          : external_includes,
+                            "packages"          : packages,
+                            "include_files"     : data_files,
+                            "excludes"          : excludes,
+                            "include_msvcr"     : True,
+                            "bin_excludes"      : bin_excludes,
+                            "create_shared_zip" : zip_ENABLED,
+                            }
+        setup_options["options"] = {"build_exe" : cx_freeze_options}
+        executables = []
+        setup_options["executables"] = executables
 
         def add_exe(script, icon, base_name, base="Console"):
             executables.append(Executable(
