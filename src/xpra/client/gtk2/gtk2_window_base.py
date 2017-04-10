@@ -7,6 +7,7 @@
 
 import gtk
 from gtk import gdk
+import os.path
 
 from xpra.log import Logger
 log = Logger("window")
@@ -195,7 +196,11 @@ class GTK2WindowBase(GTKClientWindowBase):
                 draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
                 continue
             filename = strtobytes(uri[len("file://"):].rstrip("\n\r"))
-            filelist.append(filename)
+            abspath = os.path.abspath(filename)
+            if not os.path.isfile(abspath):
+                draglog.warn("Warning: '%s' is not a file", abspath)
+                continue
+            filelist.append(abspath)
         draglog("drag_got_data_cb: will try to upload: %s", filelist)
         pending = set(filelist)
         #when all the files have been loaded / failed,
@@ -213,6 +218,7 @@ class GTK2WindowBase(GTKClientWindowBase):
             def got_file_info(gfile, result):
                 draglog("got_file_info(%s, %s)", gfile, result)
                 file_info = gfile.query_info_finish(result)
+                basename = gfile.get_basename()
                 ctype = file_info.get_content_type()
                 size = file_info.get_size()
                 draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
@@ -221,6 +227,7 @@ class GTK2WindowBase(GTKClientWindowBase):
                     draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
                     file_done(filename)
                     openit = self._client.remote_open_files
+                    draglog.info("sending file %s (%i bytes)", basename, filesize)
                     self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
                 gfile.load_contents_async(got_file_data, user_data=(filename, True))
             try:
