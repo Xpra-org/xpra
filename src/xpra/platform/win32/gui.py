@@ -557,11 +557,13 @@ def add_window_hooks(window):
                         button = 4 + int(nval<0)        #4 for UP, 5 for DOWN
                     else:
                         button = 7 - int(nval<0)        #6 for LEFT, 7 for RIGHT
+                    button = client.wheel_map.get(button)
                     buttons = []
                     modifiers = client.get_current_modifiers()
                     pointer = window._pointer(x, y)
                     def send_button(pressed):
-                        client.send_button(wid, button, pressed, pointer, modifiers, buttons)
+                        if button:
+                            client.send_button(wid, button, pressed, pointer, modifiers, buttons)
                     count = 0
                     v = nval
                     while abs(v)>=WHEEL_DELTA:
@@ -572,7 +574,7 @@ def add_window_hooks(window):
                         else:
                             v += WHEEL_DELTA
                         count += 1
-                    mouselog("mousewheel: sent %i wheel events to the server for distance=%s, remainder=%s", count, nval, v)
+                    mouselog("mousewheel: sent %i wheel events to the server for button=%s, distance=%s, remainder=%s", count, button, nval, v)
                     nval = v
                 setattr(window, "_win32_%swheel" % orientation, nval)
                 setattr(window, "_wheel_event_time", monotonic_time())
