@@ -19,6 +19,14 @@ title = @title@ on @client-machine@
 #ssh = ssh -x
 ssh = %(ssh_command)s
 
+# Mouse wheel:
+#mousewheel=invert
+#mousewheel=invert-x
+#mousewheel=invert-y
+#mousewheel=off
+#mousewheel=on
+mousewheel=%(mousewheel)s
+
 # Key Shortcuts:
 %(key_shortcuts)s
 

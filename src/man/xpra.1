@@ -107,6 +107,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|
+[\fB\-\-mousewheel\fP=\fIon\fP|\fIoff\fP|\fIinvert\fP|\fIinvert-x\fP|\fIinvert-y\fP|\fIinvert-z\fP]
 \fIDEVICEID\fP]
 [\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP]
 [\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
@@ -1005,6 +1006,10 @@ Enable or disable forwarding of the system bell.
 .TP
 \fB\-\-webcam\fP=\fIyes\fP|\fIno\fP
 Enable or disable webcam forwarding.
+.TP
+\fB\-\-mousewheel\fP=\fIon\fP|\fIoff\fP|\fIinvert\fP|\fIinvert-x\fP|\fIinvert-y\fP|\fIinvert-z\fP
+Mouse wheel handling: can be used to disable mouse wheel forwarding
+or to invert some or all axes.
 .TP
 \fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP
 Allow the client to forward its log output to the server.
