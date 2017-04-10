@@ -286,6 +286,31 @@ def do_init():
     sys.stderr = sys.stdout
 
 
+MB_ICONEXCLAMATION  = 0x00000030
+MB_ICONINFORMATION  = 0x00000040
+MB_SYSTEMMODAL      = 0x00001000
+def _show_message(message, uType):
+    global prg_name
+    #TODO: detect cx_freeze equivallent
+    GUI_MODE = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
+    from xpra.util import envbool
+    SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
+    if SHOW_MESSAGEBOX and GUI_MODE:
+        #try to use an alert box since no console output will be shown:
+        try:
+            MessageBoxA(0, message, prg_name, uType)
+            return
+        except:
+            pass
+    print(message)
+
+def command_info(message):
+    _show_message(message, MB_ICONINFORMATION | MB_SYSTEMMODAL)
+
+def command_error(message):
+    _show_message(message, MB_ICONEXCLAMATION | MB_SYSTEMMODAL)
+
+
 def get_main_fallback():
     set_wait_for_input()
     global _wait_for_input
