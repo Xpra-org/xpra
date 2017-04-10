@@ -189,6 +189,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             features_menu.add(self.make_cursorsmenuitem())
             features_menu.add(self.make_notificationsmenuitem())
             features_menu.add(self.make_swapkeysmenuitem())
+            features_menu.add(self.make_invertmousewheelmenuitem())
             features_menu.add(self.make_numlockmenuitem())
             features_menu.add(self.make_openglmenuitem())
             features_menu.add(self.make_scalingmenuitem())
@@ -336,7 +337,21 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 log("set_swapkeys_menuitem(%s) no keyboard!", args)
                 self.swapkeys_menuitem.set_sensitive(False)
         self.client.after_handshake(set_swapkeys_menuitem)
-        return  self.swapkeys_menuitem
+        return self.swapkeys_menuitem
+
+    def make_invertmousewheelmenuitem(self):
+        def invert_toggled(*args):
+            v = self.mousewheel_menuitem.get_active()
+            log.info("invert_toggled(%s) invert enabled=%s", args, v)
+            if v:
+                self.client.wheel_map[4] = 5
+                self.client.wheel_map[5] = 4
+            else:
+                self.client.wheel_map[4] = 4
+                self.client.wheel_map[5] = 5
+        self.mousewheel_menuitem = self.checkitem("Invert Mouse Wheel", invert_toggled)
+        self.mousewheel_menuitem.set_active(self.client.wheel_map.get(4)!=4)
+        return self.mousewheel_menuitem
 
     def make_numlockmenuitem(self):
         def numlock_toggled(*args):

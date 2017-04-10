@@ -566,13 +566,15 @@ class Delegate(NSObject):
         dx = getattr(window, "deltax", 0)+deltax
         dy = getattr(window, "deltay", 0)+deltay
         if abs(dx)>0.1:
-            button = 6+int(dx>0)            #RIGHT=7, LEFT=6
-            send_button(button, dx)
-            dx = 0
+            button = client.wheel_map.get(6+int(dx>0))            #RIGHT=7, LEFT=6
+            if button>0:
+                send_button(button, dx)
+                dx = 0
         if abs(dy)>0.1:
-            button = 5-int(dy>0)            #UP=4, DOWN=5
-            send_button(button, dy)
-            dy = 0
+            button = client.wheel_map.get(5-int(dy>0))            #UP=4, DOWN=5
+            if button>0:
+                send_button(button, dy)
+                dy = 0
         setattr(window, "deltax", dx)
         setattr(window, "deltax", dy)
         return True
