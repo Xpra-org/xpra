@@ -30,10 +30,11 @@ STDOUT_FILENO = 1
 STDERR_FILENO = 2
 WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID)(("WriteConsoleW", kernel32))
 
+GetConsoleCP = kernel32.GetConsoleCP
 
-#redirect output if we are launched from py2exe's gui mode:
+#redirect output if we're not running from a console:
 frozen = getattr(sys, 'frozen', False)
-REDIRECT_OUTPUT = frozen=="windows_exe"
+REDIRECT_OUTPUT = frozen is True and GetConsoleCP()==0
 if frozen:
     #cx_freeze paths:
     def jedir(relpathname):
@@ -283,31 +284,6 @@ def do_init():
     log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
     sys.stderr = sys.stdout
-
-
-MB_ICONEXCLAMATION  = 0x00000030
-MB_ICONINFORMATION  = 0x00000040
-MB_SYSTEMMODAL      = 0x00001000
-def _show_message(message, uType):
-    global prg_name
-    #TODO: detect cx_freeze equivallent
-    GUI_MODE = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
-    from xpra.util import envbool
-    SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
-    if SHOW_MESSAGEBOX and GUI_MODE:
-        #try to use an alert box since no console output will be shown:
-        try:
-            MessageBoxA(0, message, prg_name, uType)
-            return
-        except:
-            pass
-    print(message)
-
-def command_info(message):
-    _show_message(message, MB_ICONINFORMATION | MB_SYSTEMMODAL)
-
-def command_error(message):
-    _show_message(message, MB_ICONEXCLAMATION | MB_SYSTEMMODAL)
 
 
 def get_main_fallback():
