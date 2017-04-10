@@ -37,12 +37,14 @@ from xpra.util import (AdHocStruct, typedict, envint, envbool,
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data, get_default_root_window, is_realized, WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS
+from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized,
+    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT)
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
 from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
+
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
@@ -117,6 +119,14 @@ UNDECORATED_TYPE_HINTS = set((
                     "NOTIFICATION",
                     "COMBO",
                     "DND"))
+
+GDK_SCROLL_MAP = {
+    SCROLL_UP       : 4,
+    SCROLL_DOWN     : 5,
+    SCROLL_LEFT     : 6,
+    SCROLL_RIGHT    : 7,
+    }
+
 
 PYTHON3 = sys.version_info[0] == 3
 if PYTHON3:
@@ -1378,6 +1388,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         w.present()
                         return focused
         return self._id
+
+
+    def do_scroll_event(self, event):
+        if self._client.readonly:
+            return
+        button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
+        mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s", self._device_info(event), event.direction, button_mapping)
+        if button_mapping>=0:
+            self._button_action(button_mapping, event, True)
+            self._button_action(button_mapping, event, False)
 
 
     def update_icon(self, width, height, coding, data):

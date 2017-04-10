@@ -488,6 +488,7 @@ OPTION_TYPES = {
                     "exec-wrapper"      : str,
                     "dbus-launch"       : str,
                     "webcam"            : str,
+                    "mousewheel"        : str,
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
@@ -600,7 +601,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "quality", "min-quality", "speed", "min-speed",
                   "compression_level",
                   "dpi", "video-scaling", "auto-refresh-delay",
-                  "webcam", "pings",
+                  "webcam", "mousewheel", "pings",
                   "tray", "keyboard-sync", "cursors", "bell", "notifications",
                   "xsettings", "system-tray", "sharing",
                   "delay-tray", "windows", "readonly",
@@ -765,6 +766,7 @@ def get_defaults():
                     "exec-wrapper"      : "",
                     "dbus-launch"       : "dbus-launch --close-stderr",
                     "webcam"            : ["auto", "no"][OSX],
+                    "mousewheel"        : "on",
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",
@@ -937,7 +939,7 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
             continue
         vt = option_types.get(k)
         if vt is None:
-            warn("Warning: invalid option: '%s'" % k)
+            warn("Warning: invalid optio2n: '%s'" % k)
             continue
         if vt==str:
             if type(v)!=str:

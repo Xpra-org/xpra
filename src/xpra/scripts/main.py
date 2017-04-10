@@ -557,6 +557,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--webcam", action="store",
                       dest="webcam", default=defaults.webcam,
                       help="Webcam forwarding, can be used to specify a device. Default: %s." % defaults.webcam)
+    legacy_bool_parse("mousewheel")
+    group.add_option("--mousewheel", action="store",
+                      dest="mousewheel", default=defaults.mousewheel,
+                      help="Mouse wheel forwarding, can be used to disable the device or invert some axes. Default: %s." % defaults.webcam)
     legacy_bool_parse("global-menus")
     group.add_option("--global-menus", action="store",
                       dest="global_menus", default=defaults.global_menus, metavar="yes|no",

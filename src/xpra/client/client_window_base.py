@@ -655,8 +655,22 @@ class ClientWindowBase(ClientWidgetBase):
         pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
+        #map wheel buttons via translation table to support inverted axes:
+        server_button = button
+        if button>3:
+            server_button = self._client.wheel_map.get(button)
+            if not server_button:
+                return
+        server_buttons = []
+        for b in buttons:
+            if b>3:
+                sb = self._client.wheel_map.get(button)
+                if not sb:
+                    continue
+                b = sb
+            server_buttons.append(b)
         def send_button(pressed):
-            self._client.send_button(wid, button, pressed, pointer, modifiers, buttons)
+            self._client.send_button(wid, server_button, pressed, pointer, modifiers, server_buttons)
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
             mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
@@ -670,12 +684,3 @@ class ClientWindowBase(ClientWidgetBase):
 
     def do_button_release_event(self, event):
         self._button_action(event.button, event, False)
-
-    def do_scroll_event(self, event):
-        if self._client.readonly:
-            return
-        button_mapping = self.SCROLL_MAP.get(event.direction, -1)
-        mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s", self._device_info(event), event.direction, button_mapping)
-        if button_mapping>=0:
-            self._button_action(button_mapping, event, True)
-            self._button_action(button_mapping, event, False)

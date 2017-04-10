@@ -284,6 +284,7 @@ class UIXpraClient(XpraClientBase):
         self.bell_enabled = False
         self.border = None
         self.window_close_action = "forward"
+        self.wheel_map = {}
 
         self.supports_mmap = MMAP_SUPPORTED
 
@@ -421,7 +422,21 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_sharing = opts.sharing
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
-
+        #mouse wheel:
+        mw = (opts.mousewheel or "").lower().replace("-", "")
+        if mw not in FALSE_OPTIONS:
+            UP = 4
+            LEFT = 6
+            Z1 = 8
+            for i in range(20):
+                btn = 4+i*2
+                invert = mw=="invert" or (btn==UP and mw=="inverty") or (btn==LEFT and mw=="invertx") or (btn==Z1 and mw=="invertz")
+                if not invert:
+                    self.wheel_map[btn] = btn
+                    self.wheel_map[btn+1] = btn+1
+                else:
+                    self.wheel_map[btn+1] = btn
+                    self.wheel_map[btn] = btn+1
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
         load_codecs(encoders=False)

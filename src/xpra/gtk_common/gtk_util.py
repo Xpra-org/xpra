@@ -168,6 +168,11 @@ if is_gtk3():
     TRUE_COLOR      = gdk.VisualType.TRUE_COLOR
     DIRECT_COLOR    = gdk.VisualType.DIRECT_COLOR
 
+    SCROLL_UP       = gdk.ScrollDirection.UP
+    SCROLL_DOWN     = gdk.ScrollDirection.DOWN
+    SCROLL_LEFT     = gdk.ScrollDirection.LEFT
+    SCROLL_RIGHT    = gdk.ScrollDirection.RIGHT
+
     mt = gdk.ModifierType
     SHIFT_MASK      = mt.SHIFT_MASK
     LOCK_MASK       = mt.LOCK_MASK
@@ -322,6 +327,11 @@ else:
     PSEUDO_COLOR    = gdk.VISUAL_PSEUDO_COLOR
     TRUE_COLOR      = gdk.VISUAL_TRUE_COLOR
     DIRECT_COLOR    = gdk.VISUAL_DIRECT_COLOR
+
+    SCROLL_UP       = gdk.SCROLL_UP
+    SCROLL_DOWN     = gdk.SCROLL_DOWN
+    SCROLL_LEFT     = gdk.SCROLL_LEFT
+    SCROLL_RIGHT    = gdk.SCROLL_RIGHT
 
     SHIFT_MASK      = gdk.SHIFT_MASK
     LOCK_MASK       = gdk.LOCK_MASK

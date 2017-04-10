@@ -21,15 +21,6 @@ paintlog = Logger("paint")
 metalog = Logger("metadata")
 
 
-GTK3_SCROLL_MAP = {
-                   Gdk.ScrollDirection.UP   : 4,
-                   Gdk.ScrollDirection.DOWN : 5,
-                   Gdk.ScrollDirection.LEFT : 6,
-                   Gdk.ScrollDirection.RIGHT: 7,
-                   #Gdk.ScrollDirection.SMOOTH would require special handling
-                   # calling gdk_event_get_scroll_deltas()
-                  }
-
 GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.MENU,
                       Gdk.WindowTypeHint.TOOLBAR,
@@ -55,7 +46,6 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
     WINDOW_EVENT_MASK   = WINDOW_EVENT_MASK
     BUTTON_MASK         = BUTTON_MASK
-    SCROLL_MAP          = GTK3_SCROLL_MAP
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
