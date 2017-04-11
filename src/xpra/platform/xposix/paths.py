@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,8 +9,7 @@ import sys
 import site
 
 from xpra.util import envbool
-from xpra.os_util import is_Fedora, is_CentOS, is_RedHat
-SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", is_Fedora() or is_CentOS() or is_RedHat())
+SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", False)
 
 
 def do_get_install_prefix():
