@@ -10,11 +10,11 @@ from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
 
-from xpra.util import envbool
+from xpra.util import envint
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 
-POLL_POINTER = envbool("XPRA_POLL_POINTER", True)
+POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
@@ -32,10 +32,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         #the pointer position timer:
         self.last_pointer_position = None
         self.pointer_position_timer = None
-        if POLL_POINTER:
-            self.pointer_position_timer = self.timeout_add(20, self.poll_pointer_position)
+        if POLL_POINTER>0:
+            self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
         
-
     def init(self, opts):
         GTKServerBase.init(self, opts)
         self.tray = opts.tray

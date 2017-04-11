@@ -8,7 +8,7 @@
 from xpra.x11.x11_server_base import X11ServerBase
 
 from xpra.os_util import monotonic_time
-from xpra.util import envbool, XPRA_APP_ID
+from xpra.util import envbool, envint, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
@@ -21,6 +21,7 @@ log = Logger("x11", "shadow")
 traylog = Logger("tray")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
+POLL_CURSOR = envint("XPRA_POLL_CURSOR", 0)
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
@@ -83,6 +84,19 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         X11ServerBase.init(self, opts)
+        #the cursor poll timer:
+        self.cursor_poll_timer = None
+        if POLL_CURSOR>0:
+            self.cursor_poll_timer = self.timeout_add(POLL_CURSOR, self.poll_cursor)
+
+    def cleanup(self):
+        cpt = self.cursor_poll_timer
+        if cpt:
+            self.cursor_poll_timer = None
+            self.source_remove(cpt)
+        GTKShadowServerBase.cleanup(self)
+        X11ServerBase.cleanup(self)
+
 
     def make_tray_widget(self):
         from xpra.platform.xposix.gui import get_native_system_tray_classes
@@ -115,6 +129,15 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
     def last_client_exited(self):
         GTKShadowServerBase.last_client_exited(self)
         X11ServerBase.last_client_exited(self)
+
+
+    def poll_cursor(self):
+        prev = self.last_cursor_data
+        X11ServerBase.get_cursor_data(self)
+        if prev!=self.last_cursor_data:
+            for ss in self._server_sources.values():
+                ss.send_cursor()
+        return True
 
 
     def set_icc_profile(self):

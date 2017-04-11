@@ -381,15 +381,23 @@ class X11ServerBase(GTKServerBase):
         X11Keyboard.unpress_all_keys()
 
 
-    def get_cursor_data(self):
+    def get_cursor_sizes(self):
+        display = gdk.display_get_default()
+        return display.get_default_cursor_size(), display.get_maximal_cursor_size()
+
+    def do_get_cursor_data(self):
         #must be called from the UI thread!
         try:
             with xsync:
-                cursor_data = X11Keyboard.get_cursor_image()
+                return X11Keyboard.get_cursor_image()
         except Exception as e:
             cursorlog.error("Error getting cursor data:")
             cursorlog.error(" %s", e)
-            return None, []
+            return None
+
+    def get_cursor_data(self):
+        #must be called from the UI thread!
+        cursor_data = self.do_get_cursor_data()
         if cursor_data is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
@@ -399,8 +407,7 @@ class X11ServerBase(GTKServerBase):
         if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_data = None
-        display = gdk.display_get_default()
-        cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
+        cursor_sizes = self.get_cursor_sizes()
         return (cursor_data, cursor_sizes)
 
 
