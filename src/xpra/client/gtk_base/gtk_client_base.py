@@ -531,19 +531,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                         missing_cursor_names.add(cursor_name)
         #create cursor from the pixel data:
         encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
-        if encoding==b"png":
-            from xpra.os_util import BytesIOClass
-            from PIL import Image
-            buf = BytesIOClass(pixels)
-            img = Image.open(buf)
-            pixels = img.tobytes("raw", "BGRA")
-            cursorlog("used PIL to convert png cursor to raw")
-        elif encoding!=b"raw":
+        if encoding!=b"raw":
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
         if len(pixels)<w*h*4:
             import binascii
-            cursorlog.warn("not enough pixels provided in cursor data: %s needed and only %s bytes found (%s)", w*h*4, len(pixels), binascii.hexlify(pixels)[:100])
+            cursorlog.warn("Warning: not enough pixels provided in cursor data")
+            cursorlog.warn(" %s needed and only %s bytes found:", w*h*4, len(pixels))
+            cursorlog.warn(" '%s')", binascii.hexlify(pixels)[:100])
             return None
         pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
         x = max(0, min(xhot, w-1))

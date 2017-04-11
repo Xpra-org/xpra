@@ -37,6 +37,7 @@ clipboardlog = Logger("clipboard")
 scalinglog = Logger("scaling")
 webcamlog = Logger("webcam")
 notifylog = Logger("notify")
+cursorlog = Logger("cursor")
 
 
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -3086,6 +3087,18 @@ class UIXpraClient(XpraClientBase):
             else:
                 #prepend "raw" which is the default
                 new_cursor = ["raw"] + packet
+            encoding = packet[0]
+            pixels = packet[8]
+            if encoding==b"png":
+                from PIL import Image
+                buf = BytesIOClass(pixels)
+                img = Image.open(buf)
+                pixels = img.tobytes("raw", "BGRA")
+                cursorlog("used PIL to convert png cursor to raw")
+                packet[0] = b"raw"
+            elif encoding!=b"raw":
+                cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
+                return
         self.set_windows_cursor(self._id_to_window.values(), new_cursor)
 
     def _process_bell(self, packet):
