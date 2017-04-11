@@ -77,6 +77,18 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
+    def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
+        data = array.array('B', strtobytes(rgb_data))
+        return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
+                                         True, 8, w, h, rowstride,
+                                         None, None)
+
+    def get_preferred_size(widget):
+        #ignore "min", we only care about "natural":
+        _, w = widget.get_preferred_width()
+        _, h = widget.get_preferred_height()
+        return w, h
+
     def color_parse(*args):
         ok, v = gdk.Color.parse(*args)
         if not ok:
@@ -252,6 +264,12 @@ if is_gtk3():
             gdk.threads_leave()
 
 else:
+    def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
+        return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+
+    def get_preferred_size(widget):
+        return widget.size_request()
+
     def get_xwindow(w):
         return w.xid
     #gtk2:
@@ -757,27 +775,11 @@ def get_display_info():
     return info
 
 
-def get_preferred_size(widget):
-    if is_gtk3():
-        #ignore "min", we only care about "natural":
-        _, w = widget.get_preferred_width()
-        _, h = widget.get_preferred_height()
-        return w, h
-    return widget.size_request()
-
 def scaled_image(pixbuf, icon_size=None):
     if icon_size:
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR)
     return image_new_from_pixbuf(pixbuf)
 
-
-def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
-    if is_gtk3():
-        data = array.array('B', strtobytes(rgb_data))
-        return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
-                                         True, 8, w, h, rowstride,
-                                         None, None)
-    return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
 
 
 def get_icon_from_file(filename):
