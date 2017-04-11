@@ -845,7 +845,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         glEnd()
 
     def set_cursor_data(self, cursor_data):
-        if not cursor_data or len(cursor_data)==1:
+        if (not cursor_data or len(cursor_data)==1) and self.default_cursor_data:
             cursor_data = ["raw"] + self.default_cursor_data
         if not cursor_data:
             return
