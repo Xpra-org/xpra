@@ -19,6 +19,7 @@ XImage = XImageBindings()
 from xpra.log import Logger
 log = Logger("x11", "shadow")
 traylog = Logger("tray")
+cursorlog = Logger("cursor")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 0)
@@ -143,10 +144,24 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
     def poll_cursor(self):
         prev = self.last_cursor_data
         X11ServerBase.get_cursor_data(self)
-        if prev!=self.last_cursor_data:
+        def cmpv(v):
+            if v and len(v)>2:
+                return v[2:]
+            return None
+        if cmpv(prev)!=cmpv(self.last_cursor_data):
+            fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
+            if len(prev or [])==len(self.last_cursor_data or []) and len(prev or [])==len(fields):
+                diff = []
+                for i in range(len(prev)):
+                    if prev[i]!=self.last_cursor_data[i]:
+                        diff.append(fields[i])
+                cursorlog("poll_cursor() attributes changed: %s", diff)
             for ss in self._server_sources.values():
                 ss.send_cursor()
         return True
+
+    def get_cursor_data(self):
+        return X11ServerBase.get_cursor_data(self)
 
 
     def set_icc_profile(self):

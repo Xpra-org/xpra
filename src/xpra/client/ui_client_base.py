@@ -282,6 +282,7 @@ class UIXpraClient(XpraClientBase):
         self.client_clipboard_direction = "both"
         self.clipboard_enabled = False
         self.cursors_enabled = False
+        self.default_cursor_data = None
         self.bell_enabled = False
         self.border = None
         self.window_close_action = "forward"
@@ -1441,6 +1442,7 @@ class UIXpraClient(XpraClientBase):
             #generic server flags:
             "notify-startup-complete"   : True,
             "wants_events"              : True,
+            "wants_default_cursor"      : True,
             "randr_notify"              : True,
             "screen-scaling"            : True,
             "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
@@ -1777,6 +1779,7 @@ class UIXpraClient(XpraClientBase):
         self.notifications_enabled = self.client_supports_notifications
         self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
+        self.default_cursor_data = c.listget("cursor.default", None)
         self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_supports_bell and self.client_supports_bell
         self.server_supports_clipboard = c.boolget("clipboard")
@@ -2824,7 +2827,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border, self.max_window_size)
+                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border, self.max_window_size, self.default_cursor_data)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
@@ -3075,6 +3078,7 @@ class UIXpraClient(XpraClientBase):
         #trim packet type:
         packet = packet[1:]
         if len(packet)==1:
+            #marker telling us to use the default cursor:
             new_cursor = packet[0]
         else:
             if len(packet)<7:
@@ -3086,16 +3090,16 @@ class UIXpraClient(XpraClientBase):
                 new_cursor = packet
             else:
                 #prepend "raw" which is the default
-                new_cursor = ["raw"] + packet
-            encoding = packet[0]
-            pixels = packet[8]
+                new_cursor = [b"raw"] + packet
+            encoding = new_cursor[0]
+            pixels = new_cursor[8]
             if encoding==b"png":
                 from PIL import Image
                 buf = BytesIOClass(pixels)
                 img = Image.open(buf)
-                pixels = img.tobytes("raw", "BGRA")
+                new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")
-                packet[0] = b"raw"
+                new_cursor[0] = b"raw"
             elif encoding!=b"raw":
                 cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
                 return

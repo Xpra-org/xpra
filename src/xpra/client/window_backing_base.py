@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -82,6 +82,8 @@ class WindowBackingBase(object):
         self._decoder_lock = Lock()
         self._PIL_encodings = []
         self.pointer_overlay = None
+        self.cursor_data = None
+        self.default_cursor_data = None
         PIL = get_codec("dec_pillow")
         if PIL:
             self._PIL_encodings = PIL.get_encodings()
@@ -154,6 +156,10 @@ class WindowBackingBase(object):
             except:
                 log.warn("failed to unpremultiply %s (len=%s)" % (type(img_data), len(img_data)))
         return unpremultiply_argb(img_data)
+
+
+    def set_cursor_data(self, cursor_data):
+        self.cursor_data = cursor_data
 
 
     def process_delta(self, raw_data, width, height, rowstride, options):

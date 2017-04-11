@@ -259,6 +259,8 @@ class X11ServerBase(GTKServerBase):
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
                     })
+            if self.default_cursor_data and source.wants_default_cursor:
+                capabilities["cursor.default"] = self.default_cursor_data
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):

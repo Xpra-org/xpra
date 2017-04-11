@@ -8,7 +8,7 @@ import os
 import time, math
 
 from xpra.os_util import monotonic_time
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
@@ -18,6 +18,8 @@ OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX", 0)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
+
+CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS")
 if SAVE_BUFFERS not in ("png", "jpeg", None):
@@ -95,7 +97,7 @@ from OpenGL.GL import \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
     glLineStipple, GL_LINE_STIPPLE, \
-    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, \
+    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, GL_TEXTURE_2D, \
     glHint, \
     glBlendFunc, \
     glActiveTexture, glTexSubImage2D, \
@@ -196,6 +198,7 @@ TEX_V = 2
 TEX_RGB = 3
 TEX_FBO = 4         #FBO texture (guaranteed up-to-date window contents)
 TEX_TMP_FBO = 5
+TEX_CURSOR = 6
 
 # Shader number assignment
 YUV2RGB_SHADER = 0
@@ -364,7 +367,7 @@ class GLWindowBackingBase(GTKWindowBacking):
     def gl_init_textures(self):
         assert self.offscreen_fbo is None
         assert self.shaders is None
-        self.textures = glGenTextures(6)
+        self.textures = glGenTextures(7)
         self.offscreen_fbo = self._gen_fbo()
         self.tmp_fbo = self._gen_fbo()
         log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s", self, self.textures, self.offscreen_fbo, self.tmp_fbo)
@@ -593,11 +596,11 @@ class GLWindowBackingBase(GTKWindowBacking):
         #    no fragment program
         #    only tex unit #0 active
         self.gl_marker("Switching to RGB paint state")
-        glDisable(GL_FRAGMENT_PROGRAM_ARB);
+        glDisable(GL_FRAGMENT_PROGRAM_ARB)
         for texture in (GL_TEXTURE1, GL_TEXTURE2):
             glActiveTexture(texture)
             glDisable(GL_TEXTURE_RECTANGLE_ARB)
-        glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE0)
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
     def unset_rgb_paint_state(self):
@@ -622,7 +625,12 @@ class GLWindowBackingBase(GTKWindowBacking):
             return
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
-            self.do_present_fbo()
+            try:
+                self.do_present_fbo()
+            except Exception as e:
+                log.error("Error presenting FBO:")
+                log.error(" %s", e)
+                log("Error presenting FBO", exc_info=True)
 
     def do_present_fbo(self):
         bw, bh = self.size
@@ -640,9 +648,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             # plain white no alpha:
             glClearColor(1.0, 1.0, 1.0, 1.0)
 
-        # Draw FBO texture on screen
-        self.set_rgb_paint_state()
-
         rect_count = len(self.pending_fbo_paint)
         if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
             #refresh the whole window:
@@ -653,44 +658,23 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.pending_fbo_paint = []
         log("do_present_fbo: painting %s", rectangles)
 
-        glEnable(GL_TEXTURE_RECTANGLE_ARB)
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-        if self._alpha_enabled:
-            # support alpha channel if present:
-            glEnablei(GL_BLEND, self.textures[TEX_FBO])
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-
-        if SAVE_BUFFERS:
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
-            glReadBuffer(GL_COLOR_ATTACHMENT0)
-            glViewport(0, 0, bw, bh)
-            size = bw*bh*4
-            data = numpy.empty(size)
-            img_data = glGetTexImage(GL_TEXTURE_RECTANGLE_ARB, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
-            img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
-            img = ImageOps.flip(img)
-            kwargs = {}
-            if SAVE_BUFFERS=="jpeg":
-                kwargs = {
-                          "quality"     : 0,
-                          "optimize"    : False,
-                          }
-            t = time.time()
-            tstr = time.strftime("%H-%M-%S", time.localtime(t))
-            filename = "./W%i-FBO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_BUFFERS)
-            log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", bw, bh, size, filename)
-            img.save(filename, SAVE_BUFFERS, **kwargs)
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
-
         #viewport for painting to window:
         glViewport(0, 0, ww, wh)
         if ww!=bw or wh!=bh:
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
+        # Draw FBO texture on screen
+        self.set_rgb_paint_state()
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)      #redundant
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        if self._alpha_enabled:
+            # support alpha channel if present:
+            glEnablei(GL_BLEND, self.textures[TEX_FBO])
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+        if SAVE_BUFFERS:
+            self.save_FBO()
         glBegin(GL_QUADS)
         for x,y,w,h in rectangles:
             #note how we invert coordinates..
@@ -707,50 +691,16 @@ class GLWindowBackingBase(GTKWindowBacking):
         glEnd()
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
+        if self.pointer_overlay:
+            self.draw_pointer()
+
         if self.paint_spinner:
             #add spinner:
-            dim = min(bw/3.0, bh/3.0)
-            t = monotonic_time()
-            count = int(t*4.0)
-            bx = bw//2
-            by = bh//2
-            for i in range(8):      #8 lines
-                glBegin(GL_POLYGON)
-                c = cv.trs[count%8][i]
-                glColor4f(c, c, c, 1)
-                mi1 = math.pi*i/4-math.pi/16
-                mi2 = math.pi*i/4+math.pi/16
-                glVertex2i(int(bx+math.sin(mi1)*10), int(by+math.cos(mi1)*10))
-                glVertex2i(int(bx+math.sin(mi1)*dim), int(by+math.cos(mi1)*dim))
-                glVertex2i(int(bx+math.sin(mi2)*dim), int(by+math.cos(mi2)*dim))
-                glVertex2i(int(bx+math.sin(mi2)*10), int(by+math.cos(mi2)*10))
-                glEnd()
+            self.draw_spinner()
 
         #if desired, paint window border
         if self.border and self.border.shown:
-            #double size since half the line will be off-screen
-            glLineWidth(self.border.size*2)
-            glBegin(GL_LINE_LOOP)
-            glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
-            for px,py in ((0, 0), (bw, 0), (bw, bh), (0, bh)):
-                glVertex2i(px, py)
-            glEnd()
-
-        if self.pointer_overlay:
-            x, y, _, _, size, start_time = self.pointer_overlay
-            elapsed = monotonic_time()-start_time
-            if elapsed<6:
-                alpha = max(0, (5.0-elapsed)/5.0)
-                glLineWidth(1)
-                glBegin(GL_LINES)
-                glColor4f(0, 0, 0, alpha)
-                glVertex2i(x-size, y)
-                glVertex2i(x+size, y)
-                glVertex2i(x, y-size)
-                glVertex2i(x, y+size)
-                glEnd()
-            else:
-                self.pointer_overlay = None
+            self.draw_border()
 
         # Show the backbuffer on screen
         self.gl_show(rect_count)
@@ -765,6 +715,142 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.do_present_fbo() done", self)
+
+    def save_FBO(self):
+        bw, bh = self.size
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+        glReadBuffer(GL_COLOR_ATTACHMENT0)
+        glViewport(0, 0, bw, bh)
+        size = bw*bh*4
+        data = numpy.empty(size)
+        img_data = glGetTexImage(GL_TEXTURE_RECTANGLE_ARB, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
+        img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
+        img = ImageOps.flip(img)
+        kwargs = {}
+        if SAVE_BUFFERS=="jpeg":
+            kwargs = {
+                      "quality"     : 0,
+                      "optimize"    : False,
+                      }
+        t = time.time()
+        tstr = time.strftime("%H-%M-%S", time.localtime(t))
+        filename = "./W%i-FBO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_BUFFERS)
+        log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", bw, bh, size, filename)
+        img.save(filename, SAVE_BUFFERS, **kwargs)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
+
+    def draw_pointer(self):
+        x, y, _, _, size, start_time = self.pointer_overlay
+        elapsed = monotonic_time()-start_time
+        log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s", self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
+        if elapsed>=CURSOR_IDLE_TIMEOUT:
+            #timeout - stop showing it:
+            self.pointer_overlay = None
+            return
+        if self.cursor_data and False:
+            #paint the texture containing the cursor:
+            cw = self.cursor_data[3]
+            ch = self.cursor_data[4]
+
+            glActiveTexture(GL_TEXTURE1)
+            glBindTexture(GL_TEXTURE_2D, self.textures[TEX_CURSOR])
+            glEnable(GL_TEXTURE_2D)
+            self.upload_cursor_texture(self.cursor_data)
+
+            glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND)
+
+            glBegin(GL_QUADS)
+            glTexCoord2i(0, 0)
+            glVertex2i(x, y)
+            glTexCoord2i(0, 1)
+            glVertex2i(x, y+ch)
+            glTexCoord2i(1, 1)
+            glVertex2i(x+cw, y+ch)
+            glTexCoord2i(1, 0)
+            glVertex2i(x+cw, y)
+            glEnd()
+
+            glDisable(GL_TEXTURE_2D)
+            glActiveTexture(GL_TEXTURE0)
+            glEnable(GL_TEXTURE_RECTANGLE_ARB)
+        else:
+            #paint a fake one:
+            alpha = max(0, (5.0-elapsed)/5.0)
+            glLineWidth(2)
+            glBegin(GL_LINES)
+            glColor4f(0, 0, 0, alpha)
+            glVertex2i(x-size, y)
+            glVertex2i(x+size, y)
+            glVertex2i(x, y-size)
+            glVertex2i(x, y+size)
+            glEnd()
+
+    def upload_cursor_texture(self, cursor_data):
+        width = cursor_data[3]
+        height = cursor_data[4]
+        pixels = cursor_data[8]
+        if len(pixels)<width*4*height:
+            import binascii
+            log.error("Error: invalid cursor pixel buffer for %ix%i", width, height)
+            log.error(" expected %i bytes but got %i", width*height*4, len(pixels))
+            log.error(" %s", repr_ellipsized(binascii.hexlify(pixels)))
+            return
+        upload, pixel_data = self.pixels_for_upload(pixels)
+        rgb_format = "BGRA"
+        pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)      #GL_BGRA
+        self.set_alignment(width, width*4, rgb_format)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        set_texture_level()
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexImage2D(GL_TEXTURE_2D, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, pixel_data)
+        log.info("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s", width, height, len(pixels), rgb_format, upload)
+
+    def draw_spinner(self):
+        bw, bh = self.size
+        dim = min(bw/3.0, bh/3.0)
+        t = monotonic_time()
+        count = int(t*4.0)
+        bx = bw//2
+        by = bh//2
+        for i in range(8):      #8 lines
+            c = cv.trs[count%8][i]
+            mi1 = math.pi*i/4-math.pi/16
+            mi2 = math.pi*i/4+math.pi/16
+            si1 = math.sin(mi1)
+            si2 = math.sin(mi2)
+            ci1 = math.cos(mi1)
+            ci2 = math.cos(mi2)
+            glBegin(GL_POLYGON)
+            glColor4f(c, c, c, 1)
+            glVertex2i(int(bx+si1*10), int(by+ci1*10))
+            glVertex2i(int(bx+si1*dim), int(by+ci1*dim))
+            glVertex2i(int(bx+si2*dim), int(by+ci2*dim))
+            glVertex2i(int(bx+si2*10), int(by+ci2*10))
+            glEnd()
+
+    def draw_border(self):
+        bw, bh = self.size
+        #double size since half the line will be off-screen
+        glLineWidth(self.border.size*2)
+        glBegin(GL_LINE_LOOP)
+        glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+        for px,py in ((0, 0), (bw, 0), (bw, bh), (0, bh)):
+            glVertex2i(px, py)
+        glEnd()
+
+    def set_cursor_data(self, cursor_data):
+        if not cursor_data or len(cursor_data)==1:
+            cursor_data = ["raw"] + self.default_cursor_data
+        if not cursor_data:
+            return
+        self.cursor_data = cursor_data
+
 
     def gl_show(self, rect_count):
         start = monotonic_time()
@@ -987,6 +1073,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
+            glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
             self.set_alignment(width//div_w, rowstrides[index], "YUV"[index])

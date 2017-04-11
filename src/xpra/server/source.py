@@ -434,6 +434,7 @@ class ServerSource(FileTransferHandler):
         self.wants_display = True
         self.wants_sound = True
         self.wants_events = False
+        self.wants_default_cursor = False
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
@@ -677,6 +678,7 @@ class ServerSource(FileTransferHandler):
         self.wants_aliases = c.boolget("wants_aliases", True)
         self.wants_versions = c.boolget("wants_versions", True)
         self.wants_features = c.boolget("wants_features", True)
+        self.wants_default_cursor = c.boolget("wants_default_cursor", False)
 
         self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
         self.default_batch_config.min_delay = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
@@ -1711,7 +1713,8 @@ class ServerSource(FileTransferHandler):
             cd = self.get_cursor_data_cb()
             if cd and cd[0]:
                 cursor_data, cursor_sizes = cd
-                if self.last_cursor_sent and self.last_cursor_sent==cursor_data[:9]:
+                #skip first two fields (if present) as those are coordinates:
+                if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
                     cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
                     return
                 self.last_cursor_sent = cursor_data[:9]

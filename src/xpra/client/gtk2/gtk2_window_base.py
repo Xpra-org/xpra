@@ -22,10 +22,11 @@ draglog = Logger("dragndrop")
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint
 from xpra.os_util import strtobytes
 
 
+CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 
 try:
@@ -393,7 +394,7 @@ class GTK2WindowBase(GTKClientWindowBase):
             def remove_pointer_overlay():
                 self.remove_pointer_overlay_timer = None
                 self.show_pointer_overlay(None)
-            self.remove_pointer_overlay_timer = self.timeout_add(500, remove_pointer_overlay)
+            self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
             px, py, psize = prev[2:5]
             self.queue_draw(px-psize, py-psize, psize*2, psize*2)

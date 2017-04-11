@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -29,8 +29,8 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size):
-        log("%s%s", type(self), (client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size))
+    def __init__(self, client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size, default_cursor_data):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size, default_cursor_data))
         ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -52,6 +52,8 @@ class ClientWindowBase(ClientWidgetBase):
         self._iconified = False
         self._focused = False
         self.border = border
+        self.cursor_data = None
+        self.default_cursor_data = default_cursor_data 
         self.max_window_size = max_window_size
         self.button_state = {}
 
@@ -91,6 +93,12 @@ class ClientWindowBase(ClientWidgetBase):
         return None
 
 
+    def set_cursor_data(self, cursor_data):
+        self.cursor_data = cursor_data
+        b = self._backing
+        if b:
+            b.set_cursor_data(cursor_data)
+
     def new_backing(self, bw, bh):
         backing_class = self.get_backing_class()
         log("new_backing(%s, %s) backing_class=%s", bw, bh, backing_class)
@@ -98,6 +106,8 @@ class ClientWindowBase(ClientWidgetBase):
         w, h = self._size
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
+        self._backing.default_cursor_data = self.default_cursor_data
+        self._backing.set_cursor_data(self.cursor_data)
         return self._backing._backing
 
 

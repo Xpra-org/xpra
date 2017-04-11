@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -506,6 +506,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 #use default:
                 cursor = get_default_cursor()
         for w in windows:
+            w.set_cursor_data(cursor_data)
             gdkwin = w.get_window()
             #trays don't have a gdk window
             if gdkwin:
@@ -707,7 +708,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 window = None
                 try:
                     w, h = 50, 50
-                    window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size)
+                    window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data)
                     window.realize()
                     pixel_format = "BGRX"
                     bpp = len(pixel_format)
@@ -748,6 +749,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             err("OpenGL support could not be enabled on this hardware:", e)
         except Exception as e:
             err("Error loading OpenGL support:", e)
+            opengllog("init_opengl(%s)", enable_opengl, exc_info=True)
 
     def get_client_window_classes(self, w, h, metadata, override_redirect):
         log("get_client_window_class(%i, %i, %s, %s) GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s", w, h, metadata, override_redirect, self.GLClientWindowClass, self.opengl_enabled, self.mmap_enabled, self.encoding)
