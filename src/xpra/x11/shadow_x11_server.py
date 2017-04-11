@@ -84,18 +84,15 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         X11ServerBase.init(self, opts)
-        #the cursor poll timer:
-        self.cursor_poll_timer = None
-        if POLL_CURSOR>0:
-            self.cursor_poll_timer = self.timeout_add(POLL_CURSOR, self.poll_cursor)
 
-    def cleanup(self):
-        cpt = self.cursor_poll_timer
-        if cpt:
-            self.cursor_poll_timer = None
-            self.source_remove(cpt)
-        GTKShadowServerBase.cleanup(self)
-        X11ServerBase.cleanup(self)
+
+    def start_refresh(self):
+        GTKShadowServerBase.start_refresh(self)
+        self.start_poll_cursor()
+
+    def stop_refresh(self):
+        GTKShadowServerBase.stop_refresh(self)
+        self.stop_poll_cursor()
 
 
     def make_tray_widget(self):
@@ -130,6 +127,18 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         GTKShadowServerBase.last_client_exited(self)
         X11ServerBase.last_client_exited(self)
 
+
+    def start_poll_cursor(self):
+        #the cursor poll timer:
+        self.cursor_poll_timer = None
+        if POLL_CURSOR>0:
+            self.cursor_poll_timer = self.timeout_add(POLL_CURSOR, self.poll_cursor)
+
+    def stop_poll_cursor(self):
+        cpt = self.cursor_poll_timer
+        if cpt:
+            self.cursor_poll_timer = None
+            self.source_remove(cpt)
 
     def poll_cursor(self):
         prev = self.last_cursor_data

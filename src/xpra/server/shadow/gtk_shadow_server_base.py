@@ -30,10 +30,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray = False
         self.tray_icon = None
         #the pointer position timer:
-        self.last_pointer_position = None
-        self.pointer_position_timer = None
-        if POLL_POINTER>0:
-            self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
+        self.start_poll_pointer_position()
         
     def init(self, opts):
         GTKServerBase.init(self, opts)
@@ -43,15 +40,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.setup_tray()
 
     def cleanup(self):
-        tw = self.tray_widget
-        traylog("cleanup() tray_widget=%s", tw)
-        if tw:
-            self.tray_widget = None
-            tw.cleanup()
-        ppt = self.pointer_position_timer
-        if ppt:
-            self.pointer_position_timer = None
-            self.source_remove(ppt)
+        self.cleanup_tray()
+        self.stop_poll_pointer_position()
         GTKServerBase.cleanup(self)
 
 
@@ -67,6 +57,19 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.set_tray_icon("server-notconnected")
         GTKServerBase.last_client_exited(self)
 
+
+    def stop_poll_pointer_position(self):
+        ppt = self.pointer_position_timer
+        if ppt:
+            self.pointer_position_timer = None
+            self.source_remove(ppt)
+
+    def start_poll_pointer_position(self):
+        #the pointer position timer:
+        self.last_pointer_position = None
+        self.pointer_position_timer = None
+        if POLL_POINTER>0:
+            self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
 
     def poll_pointer_position(self):
         wid = self._window_to_id.get(self.root_window_model)
@@ -85,6 +88,13 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     ############################################################################
     # system tray methods, mostly copied from the gtk client...
     # (most of these should probably be moved to a common location instead)
+
+    def cleanup_tray(self):
+        tw = self.tray_widget
+        traylog("cleanup_tray() tray_widget=%s", tw)
+        if tw:
+            self.tray_widget = None
+            tw.cleanup()
 
     def setup_tray(self):
         try:
