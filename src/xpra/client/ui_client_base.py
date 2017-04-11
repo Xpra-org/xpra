@@ -3133,6 +3133,8 @@ class UIXpraClient(XpraClientBase):
         wid, x, y = packet[1:4]
         if len(packet)>=6:
             rx, ry = packet[4:6]
+        else:
+            rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
         size = 4
         start_time = monotonic_time()
