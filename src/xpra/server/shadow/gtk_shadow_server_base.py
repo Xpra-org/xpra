@@ -8,9 +8,13 @@ import os
 
 from xpra.log import Logger
 traylog = Logger("tray")
+mouselog = Logger("mouse")
 
+from xpra.util import envbool
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+
+POLL_POINTER = envbool("XPRA_POLL_POINTER", True)
 
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
@@ -25,6 +29,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_widget = None
         self.tray = False
         self.tray_icon = None
+        #the pointer position timer:
+        self.last_pointer_position = None
+        self.pointer_position_timer = None
+        if POLL_POINTER:
+            self.pointer_position_timer = self.timeout_add(20, self.poll_pointer_position)
+        
 
     def init(self, opts):
         GTKServerBase.init(self, opts)
@@ -39,6 +49,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if tw:
             self.tray_widget = None
             tw.cleanup()
+        ppt = self.pointer_position_timer
+        if ppt:
+            self.pointer_position_timer = None
+            self.source_remove(ppt)
         GTKServerBase.cleanup(self)
 
 
@@ -53,6 +67,20 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.tray_icon:
             self.set_tray_icon("server-notconnected")
         GTKServerBase.last_client_exited(self)
+
+
+    def poll_pointer_position(self):
+        wid = self._window_to_id.get(self.root_window_model)
+        if not wid:
+            self.pointer_position_timer = None
+            return False
+        x, y, _ = self.root.get_pointer()
+        mouselog("poll_pointer_position() wid=%i, position=%s", wid, (x, y))
+        if self.last_pointer_position!=(x, y):
+            self.last_pointer_position = (x, y)
+            for ss in self._server_sources.values():
+                ss.update_mouse(wid, x, y, x, y)
+        return True
 
 
     ############################################################################
