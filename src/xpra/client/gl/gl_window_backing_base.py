@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import struct
 import time, math
 
 from xpra.os_util import monotonic_time
@@ -97,7 +98,7 @@ from OpenGL.GL import \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
-    glLineStipple, GL_LINE_STIPPLE, \
+    glLineStipple, GL_LINE_STIPPLE, GL_POINTS, \
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, GL_TEXTURE_2D, \
     glHint, \
     glBlendFunc, \
@@ -733,11 +734,24 @@ class GLWindowBackingBase(GTKWindowBacking):
             #timeout - stop showing it:
             self.pointer_overlay = None
             return
-        if self.cursor_data and TEXTURE_CURSOR:
-            #paint the texture containing the cursor:
-            cw = self.cursor_data[3]
-            ch = self.cursor_data[4]
 
+        if not self.cursor_data:
+            #paint a fake one:
+            alpha = max(0, (5.0-elapsed)/5.0)
+            lw = 2
+            glLineWidth(lw)
+            glBegin(GL_LINES)
+            glColor4f(0, 0, 0, alpha)
+            glVertex2i(x-size, y-lw//2)
+            glVertex2i(x+size, y-lw//2)
+            glVertex2i(x, y-size)
+            glVertex2i(x, y+size)
+            glEnd()
+
+        cw = self.cursor_data[3]
+        ch = self.cursor_data[4]
+        if TEXTURE_CURSOR:
+            #paint the texture containing the cursor:
             #glActiveTexture(GL_TEXTURE1)
             target = GL_TEXTURE_2D
             glEnable(target)
@@ -764,17 +778,19 @@ class GLWindowBackingBase(GTKWindowBacking):
             glDisable(target)
             #glActiveTexture(GL_TEXTURE0)
         else:
-            #paint a fake one:
-            alpha = max(0, (5.0-elapsed)/5.0)
-            lw = 2
-            glLineWidth(lw)
-            glBegin(GL_LINES)
-            glColor4f(0, 0, 0, alpha)
-            glVertex2i(x-size, y-lw//2)
-            glVertex2i(x+size, y-lw//2)
-            glVertex2i(x, y-size)
-            glVertex2i(x, y+size)
-            glEnd()
+            #FUGLY: paint each pixel separately..
+            pixels = self.cursor_data[8]
+            p = struct.unpack("B"*(cw*ch*4), pixels)
+            glLineWidth(1)
+            #TODO: use VBO arrays to make this faster
+            for cx in range(cw):
+                for cy in range(ch):
+                    i = cx*4+cy*cw*4
+                    if p[i+3]>=64:
+                        glBegin(GL_POINTS)
+                        glColor4f(p[i]/256.0, p[i+1]/256.0, p[i+2]/256.0, p[i+3]/256.0)
+                        glVertex2i(x+cx, y+cy)
+                        glEnd()
 
     def upload_cursor_texture(self, target, cursor_data):
         width = cursor_data[3]
