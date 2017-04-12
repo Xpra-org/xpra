@@ -22,7 +22,7 @@ traylog = Logger("tray")
 cursorlog = Logger("cursor")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
-POLL_CURSOR = envint("XPRA_POLL_CURSOR", 0)
+POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
