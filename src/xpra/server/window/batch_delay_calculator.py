@@ -122,6 +122,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     dam_lat_abs = max(0, ((statistics.avg_damage_in_latency or 0)-ref_damage_latency) / (ref_damage_latency * 4.0))
 
     if batch.locked:
+        target_damage_latency = ref_damage_latency
         dam_lat_rel = 0
         frame_delay = 0
     else:
