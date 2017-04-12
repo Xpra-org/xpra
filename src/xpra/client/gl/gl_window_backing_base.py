@@ -767,7 +767,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             #paint a fake one:
             alpha = max(0, (5.0-elapsed)/5.0)
             lw = 2
-            glLineWidth(2)
+            glLineWidth(lw)
             glBegin(GL_LINES)
             glColor4f(0, 0, 0, alpha)
             glVertex2i(x-size, y-lw//2)
@@ -1073,6 +1073,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 pass
             glTexSubImage2D(target, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             glBindTexture(target, 0)
+        #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
         log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
@@ -1107,3 +1108,4 @@ class GLWindowBackingBase(GTKWindowBacking):
         if self.pixel_format == "GBRP":
             # Reset state to our default (YUV painting)
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
+        glActiveTexture(GL_TEXTURE0)
