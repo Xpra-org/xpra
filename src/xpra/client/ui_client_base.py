@@ -3153,7 +3153,7 @@ class UIXpraClient(XpraClientBase):
         else:
             rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
-        size = 4
+        size = 10
         start_time = monotonic_time()
         mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
         for i,w in self._id_to_window.items():
