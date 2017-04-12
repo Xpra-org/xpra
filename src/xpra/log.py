@@ -349,7 +349,9 @@ class Logger(object):
 
     def log(self, level, msg, *args, **kwargs):
         if kwargs.get("exc_info") is True:
-            kwargs["exc_info"] = sys.exc_info()
+            ei = sys.exc_info()
+            if ei!=(None, None, None):
+                kwargs["exc_info"] = sys.exc_info()
         global global_logging_handler
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
