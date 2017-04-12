@@ -25,8 +25,9 @@ def main():
         if log is None:
             log = Logger("keyboard")
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv or \
-            (WIN32 and not ("-q" in sys.argv or "--quiet")):
+        verbose = "-v" in sys.argv or "--verbose" in sys.argv or \
+            (WIN32 and not ("-q" in sys.argv or "--quiet"))
+        if verbose:
             log.enable_debug()
 
         #naughty, but how else can I hook this up?
@@ -55,6 +56,13 @@ def main():
         print("Variants:   %s" % csv("'%s'" % x for x in (variants or [])))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))
+        if verbose and os.name=="posix":
+            keysyms = keyboard.get_x11_keymap()
+            if keysyms:
+                print("Keysyms:")
+                for keycode,keysyms in keysyms.items():
+                    print(" %3i    : %s" % (keycode, csv(keysyms)))
+
 
 if __name__ == "__main__":
     main()
