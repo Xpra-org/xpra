@@ -53,6 +53,9 @@ class ClientWidgetBase(object):
     def workspace_changed(self):
         pass
 
+    def set_cursor_data(self, cursor_data):
+        pass
+
     def new_backing(self, w, h):
         raise Exception("override me!")
 
