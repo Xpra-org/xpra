@@ -91,7 +91,7 @@ from OpenGL.GL import \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
-    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, \
+    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, \
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB10_A2, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
@@ -180,11 +180,11 @@ except:
     buffer_type = None
 
 
-def set_texture_level():
+def set_texture_level(target=GL_TEXTURE_RECTANGLE_ARB):
     #only really needed with some drivers (NVidia)
     #may cause errors with older drivers:
     try:
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     except:
         pass
 
@@ -260,10 +260,10 @@ class GLWindowBackingBase(GTKWindowBacking):
             #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
             self.texture_pixel_type = GL_UNSIGNED_BYTE
             if self._alpha_enabled:
-                self.internal_format = GL_RGBA
+                self.internal_format = GL_RGBA8
                 self.texture_pixel_format = GL_RGBA
             else:
-                self.internal_format = GL_RGB
+                self.internal_format = GL_RGB8
                 self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
         self._backing.show()
@@ -459,21 +459,24 @@ class GLWindowBackingBase(GTKWindowBacking):
                 self.gl_init_textures()
 
             # Define empty tmp FBO
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
-            set_texture_level()
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
+            target = GL_TEXTURE_RECTANGLE_ARB
+            glBindTexture(target, self.textures[TEX_TMP_FBO])
+            set_texture_level(target)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
 
             # Define empty FBO texture and set rendering to FBO
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+            glBindTexture(target, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
-            set_texture_level()
-            glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
+            set_texture_level(target)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
+
+            glBindTexture(target, 0)
 
             # Create and assign fragment programs
             if not self.shaders:
@@ -481,7 +484,6 @@ class GLWindowBackingBase(GTKWindowBacking):
 
             # Bind program 0 for YUV painting by default
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
-            glEnable(GL_FRAGMENT_PROGRAM_ARB)
             self.gl_setup = True
 
     def close(self):
@@ -518,13 +520,14 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.set_rgb_paint_state()
             #paste from offscreen to tmp with delta offset:
             glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            target = GL_TEXTURE_RECTANGLE_ARB
+            glBindTexture(target, self.textures[TEX_FBO])
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glReadBuffer(GL_COLOR_ATTACHMENT0)
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO])
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_TMP_FBO], 0)
+            glBindTexture(target, self.textures[TEX_TMP_FBO])
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
             glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
             #copy current fbo:
@@ -581,12 +584,12 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.textures[TEX_TMP_FBO] = tmp
 
             #restore normal paint state:
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
 
-            self.unset_rgb_paint_state()
+            glBindTexture(target, 0)
             self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
             self.present_fbo(0, 0, bw, bh, flush)
             fire_paint_callbacks(callbacks, True)
@@ -596,27 +599,12 @@ class GLWindowBackingBase(GTKWindowBacking):
         #    no fragment program
         #    only tex unit #0 active
         self.gl_marker("Switching to RGB paint state")
-        glDisable(GL_FRAGMENT_PROGRAM_ARB)
         for texture in (GL_TEXTURE1, GL_TEXTURE2):
             glActiveTexture(texture)
             glDisable(GL_TEXTURE_RECTANGLE_ARB)
         glActiveTexture(GL_TEXTURE0)
         glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
-    def unset_rgb_paint_state(self):
-        # Reset state to our default
-        self.gl_marker("Switching back to YUV paint state")
-        glEnable(GL_FRAGMENT_PROGRAM_ARB)
-
-    def set_rgbP_paint_state(self):
-        # Set GL state for planar RGB:
-        #   change fragment program
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[RGBP2RGB_SHADER])
-
-    def unset_rgbP_paint_state(self):
-        # Reset state to our default (YUV painting):
-        #   change fragment program
-        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
 
     def present_fbo(self, x, y, w, h, flush=0):
         log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s", (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
@@ -635,6 +623,18 @@ class GLWindowBackingBase(GTKWindowBacking):
     def do_present_fbo(self):
         bw, bh = self.size
         ww, wh = self.render_size
+        rect_count = len(self.pending_fbo_paint)
+        if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
+            #refresh the whole window:
+            rectangles = ((0, 0, bw, bh), )
+        else:
+            #paint just the rectangles we have accumulated:
+            rectangles = self.pending_fbo_paint
+        self.pending_fbo_paint = []
+        log("do_present_fbo: painting %s", rectangles)
+
+        if SAVE_BUFFERS:
+            self.save_FBO()
 
         self.gl_marker("Presenting FBO on screen")
         # Change state to target screen instead of our FBO
@@ -648,33 +648,22 @@ class GLWindowBackingBase(GTKWindowBacking):
             # plain white no alpha:
             glClearColor(1.0, 1.0, 1.0, 1.0)
 
-        rect_count = len(self.pending_fbo_paint)
-        if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
-            #refresh the whole window:
-            rectangles = ((0, 0, bw, bh), )
-        else:
-            #paint just the rectangles we have accumulated:
-            rectangles = self.pending_fbo_paint
-        self.pending_fbo_paint = []
-        log("do_present_fbo: painting %s", rectangles)
-
         #viewport for painting to window:
         glViewport(0, 0, ww, wh)
+        target = GL_TEXTURE_RECTANGLE_ARB
         if ww!=bw or wh!=bh:
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         # Draw FBO texture on screen
         self.set_rgb_paint_state()
-        glEnable(GL_TEXTURE_RECTANGLE_ARB)      #redundant
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
+        glEnable(target)      #redundant - done in rgb paint state
+        glBindTexture(target, self.textures[TEX_FBO])
         if self._alpha_enabled:
             # support alpha channel if present:
             glEnablei(GL_BLEND, self.textures[TEX_FBO])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-        if SAVE_BUFFERS:
-            self.save_FBO()
         glBegin(GL_QUADS)
         for x,y,w,h in rectangles:
             #note how we invert coordinates..
@@ -689,7 +678,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glTexCoord2i(tx2, ty1)
             glVertex2i(vx2, vy1)        #top-right of window viewport
         glEnd()
-        glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glDisable(target)
+        glBindTexture(target, 0)
 
         if self.pointer_overlay:
             self.draw_pointer()
@@ -698,7 +688,6 @@ class GLWindowBackingBase(GTKWindowBacking):
             #add spinner:
             self.draw_spinner()
 
-        #if desired, paint window border
         if self.border and self.border.shown:
             self.draw_border()
 
@@ -708,10 +697,8 @@ class GLWindowBackingBase(GTKWindowBacking):
 
         #restore pbo viewport
         glViewport(0, 0, bw, bh)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-
-        self.unset_rgb_paint_state()
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         log("%s(%s, %s)", glBindFramebuffer, GL_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
         log("%s.do_present_fbo() done", self)
@@ -722,6 +709,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO])
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_FBO], 0)
         glReadBuffer(GL_COLOR_ATTACHMENT0)
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glViewport(0, 0, bw, bh)
         size = bw*bh*4
         data = numpy.empty(size)
@@ -740,6 +728,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", bw, bh, size, filename)
         img.save(filename, SAVE_BUFFERS, **kwargs)
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0)
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0)
+        glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
     def draw_pointer(self):
         x, y, _, _, size, start_time = self.pointer_overlay
@@ -754,14 +744,15 @@ class GLWindowBackingBase(GTKWindowBacking):
             cw = self.cursor_data[3]
             ch = self.cursor_data[4]
 
-            glActiveTexture(GL_TEXTURE1)
-            glBindTexture(GL_TEXTURE_2D, self.textures[TEX_CURSOR])
-            glEnable(GL_TEXTURE_2D)
-            self.upload_cursor_texture(self.cursor_data)
+            #glActiveTexture(GL_TEXTURE1)
+            target = GL_TEXTURE_2D
+            glEnable(target)
+            glBindTexture(target, self.textures[TEX_CURSOR])
+            self.upload_cursor_texture(target, self.cursor_data)
 
             glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)  #GL_REPLACE, GL_BLEND)  #GL_MODULATE) #GL_BLEND)
 
             glBegin(GL_QUADS)
             glTexCoord2i(0, 0)
@@ -773,10 +764,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glTexCoord2i(1, 0)
             glVertex2i(x+cw, y)
             glEnd()
-
-            glDisable(GL_TEXTURE_2D)
-            glActiveTexture(GL_TEXTURE0)
-            glEnable(GL_TEXTURE_RECTANGLE_ARB)
+            glDisable(target)
+            #glActiveTexture(GL_TEXTURE0)
         else:
             #paint a fake one:
             alpha = max(0, (5.0-elapsed)/5.0)
@@ -789,7 +778,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glVertex2i(x, y+size)
             glEnd()
 
-    def upload_cursor_texture(self, cursor_data):
+    def upload_cursor_texture(self, target, cursor_data):
         width = cursor_data[3]
         height = cursor_data[4]
         pixels = cursor_data[8]
@@ -801,14 +790,13 @@ class GLWindowBackingBase(GTKWindowBacking):
             return
         upload, pixel_data = self.pixels_for_upload(pixels)
         rgb_format = "BGRA"
-        pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)      #GL_BGRA
         self.set_alignment(width, width*4, rgb_format)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        set_texture_level()
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-        glTexImage2D(GL_TEXTURE_2D, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, pixel_data)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        set_texture_level(target)
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexImage2D(target, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixel_data)
         log.info("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s", width, height, len(pixels), rgb_format, upload)
 
     def draw_spinner(self):
@@ -873,8 +861,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         #show region being painted if debug paint box is enabled only:
         if self.paint_box_line_width<=0:
             return
-        glDisable(GL_TEXTURE_RECTANGLE_ARB)
-        glDisable(GL_FRAGMENT_PROGRAM_ARB)
         glLineWidth(self.paint_box_line_width+0.5+int(encoding=="scroll")*2)
         if is_delta:
             glLineStipple(1, 0xaaaa)
@@ -965,14 +951,16 @@ class GLWindowBackingBase(GTKWindowBacking):
                                rgb_format, x, y, width, height, len(img_data), upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
 
                 # Upload data as temporary RGB texture
-                glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[TEX_RGB])
+                target = GL_TEXTURE_RECTANGLE_ARB
+                glEnable(target)
+                glBindTexture(target, self.textures[TEX_RGB])
                 self.set_alignment(width, rowstride, rgb_format)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                set_texture_level()
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, img_data)
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                set_texture_level(target)
+                glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+                glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+                glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, img_data)
 
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
@@ -986,6 +974,8 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glVertex2i(x+width, y)
                 glEnd()
 
+                glBindTexture(target, 0)
+                glDisable(GL_TEXTURE_RECTANGLE_ARB)
                 self.paint_box(options.get("encoding"), options.get("delta", -1)>=0, x, y, width, height)
 
                 # Present update to screen
@@ -1051,20 +1041,19 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.texture_size = (width, height)
             self.gl_marker("Creating new planar textures, pixel format %s", pixel_format)
             # Create textures of the same size as the window's
-            glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
             for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
                 (div_w, div_h) = divs[index]
                 glActiveTexture(texture)
-                glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
-                glEnable(GL_TEXTURE_RECTANGLE_ARB)
+                target = GL_TEXTURE_RECTANGLE_ARB
+                glBindTexture(target, self.textures[index])
                 mag_filter = GL_NEAREST
                 if scaling or (div_w > 1 or div_h > 1):
                     mag_filter = GL_LINEAR
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, mag_filter)
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
+                glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 set_texture_level()
-                glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
+                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
@@ -1073,18 +1062,18 @@ class GLWindowBackingBase(GTKWindowBacking):
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             (div_w, div_h) = divs[index]
             glActiveTexture(texture)
-            glEnable(GL_TEXTURE_RECTANGLE_ARB)
 
-            glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[index])
+            target = GL_TEXTURE_RECTANGLE_ARB
+            glBindTexture(target, self.textures[index])
             self.set_alignment(width//div_w, rowstrides[index], "YUV"[index])
             upload, pixel_data = self.pixels_for_upload(img_data[index])
             log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data), upload)
-            glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_BASE_LEVEL, 0)
+            glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
-                glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAX_LEVEL, 0)
+                glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except:
                 pass
-            glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
+            glTexSubImage2D(target, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
 
     def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
         log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
@@ -1092,9 +1081,11 @@ class GLWindowBackingBase(GTKWindowBacking):
             #not ready to render yet
             return
         if self.pixel_format == "GBRP":
-            self.set_rgbP_paint_state()
+            # Set GL state for planar RGB: change fragment program
+            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[RGBP2RGB_SHADER])
         self.gl_marker("painting planar update, format %s", self.pixel_format)
         divs = get_subsampling_divs(self.pixel_format)
+        glEnable(GL_TEXTURE_RECTANGLE_ARB)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
         for texture, index in ((GL_TEXTURE0, 0), (GL_TEXTURE1, 1), (GL_TEXTURE2, 2)):
             glActiveTexture(texture)
@@ -1111,5 +1102,8 @@ class GLWindowBackingBase(GTKWindowBacking):
                 glMultiTexCoord2i(texture, ax//div_w, ay//div_h)
             glVertex2i(int(rx+ax*x_scale), int(ry+ay*y_scale))
         glEnd()
+        glDisable(GL_TEXTURE_RECTANGLE_ARB)
+        glDisable(GL_FRAGMENT_PROGRAM_ARB)
         if self.pixel_format == "GBRP":
-            self.unset_rgbP_paint_state()
+            # Reset state to our default (YUV painting)
+            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
