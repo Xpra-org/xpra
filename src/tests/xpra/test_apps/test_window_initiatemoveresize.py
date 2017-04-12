@@ -3,9 +3,9 @@
 import gtk
 
 from xpra.util import MOVERESIZE_DIRECTION_STRING, MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, \
-                        MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_BOTTOMRIGHT, \
-                        MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
-                        MOVERESIZE_MOVE, MOVERESIZE_CANCEL
+						MOVERESIZE_SIZE_TOPRIGHT, MOVERESIZE_SIZE_RIGHT, MOVERESIZE_SIZE_BOTTOMRIGHT, \
+						MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
+						MOVERESIZE_MOVE, MOVERESIZE_CANCEL
 
 width = 400
 height = 200
@@ -50,6 +50,7 @@ def main():
 		button = 1
 		direction = MOVERESIZE_MOVE
 		initiate(x, y, direction, button, source_indication)
+		gtk.timeout_add(5*1000, cancel)
 	btn.connect('button-press-event', initiate_move)
 
 	def btn_callback(btn, event, direction):
@@ -58,6 +59,7 @@ def main():
 		source_indication = 1	#normal
 		button = 1
 		initiate(x, y, direction, button, source_indication)
+		gtk.timeout_add(5*1000, cancel)
 	def add_button(x, y, direction):
 		btn = gtk.Button(MOVERESIZE_DIRECTION_STRING[direction])
 		table.attach(btn, x, x+1, y, y+1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.EXPAND|gtk.FILL)
