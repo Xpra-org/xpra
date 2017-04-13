@@ -61,6 +61,15 @@ DISCARD_TARGETS = [re.compile(x) for x in DISCARD_TARGETS]
 TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 
+def must_discard(target):
+    return any(x for x in DISCARD_TARGETS if x.match(target))
+
+def _filter_targets(targets):
+    f = [target for target in targets if not must_discard(target)]
+    log("_filter_targets(%s)=%s", targets, f)
+    return f
+
+
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.send = send_packet_cb
@@ -205,10 +214,9 @@ class ClipboardProtocolHelperBase(object):
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def _get_clipboard_from_remote_handler(self, proxy, selection, target):
-        for x in DISCARD_TARGETS:
-            if x.match(target):
-                log("invalid target '%s'", target)
-                return None
+        if must_discard(target):
+            log("invalid target '%s'", target)
+            return None
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         log("get clipboard from remote handler id=%s", request_id)
@@ -299,21 +307,8 @@ class ClipboardProtocolHelperBase(object):
             #targets is special cased here
             #because we get the values in wire format already (not atoms)
             #thanks to the request_targets() function (required on win32)
-            return "atoms", self._filter_targets(data)
+            return "atoms", _filter_targets(data)
         return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
-
-    def _filter_targets(self, targets):
-        remove = []
-        for target in targets:
-            for x in DISCARD_TARGETS:
-                if x.match(target):
-                    remove.append(target)
-                    break
-        f = list(targets)
-        for t in remove:
-            f.remove(t)
-        log("_filter_targets(%s)=%s", targets, f)
-        return f
 
     def _do_munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         """ this method is overriden in xclipboard to parse X11 atoms """
@@ -373,11 +368,10 @@ class ClipboardProtocolHelperBase(object):
         request_id, selection, target = packet[1:4]
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
-        for x in DISCARD_TARGETS:
-            if x.match(target):
-                log("invalid target '%s'", target)
-                no_contents()
-                return
+        if must_discard(target):
+            log("invalid target '%s'", target)
+            no_contents()
+            return
         name = self.remote_to_local(selection)
         log("process clipboard request, request_id=%s, selection=%s, local name=%s, target=%s", request_id, selection, name, target)
         proxy = self._clipboard_proxies.get(name)
