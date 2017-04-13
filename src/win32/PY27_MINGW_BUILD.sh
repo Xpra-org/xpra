@@ -17,8 +17,12 @@ DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
+PROGRAMFILES_X86="C:\\Program Files (x86)"
 KEY_FILE="E:\\xpra.pfx"
-SIGNTOOL="C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
+SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool"
+fi
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 CLIENT_ONLY="0"
@@ -30,7 +34,6 @@ else
 	# Find a java interpreter we can use for the html5 minifier
 	$JAVA -version >& /dev/null
 	if [ "$?" != "0" ]; then
-		PROGRAMFILES_X86=`env | sed -n s,'^PROGRAMFILES(X86)=',,p`
 		export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
 	fi
 fi
