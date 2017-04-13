@@ -210,7 +210,11 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 
 	if [ "${DO_SIGN}" == "1" ]; then
 		echo "* Signing EXE"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" || exit 1
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ./signtool.log
+		if [ "$?" != 0 ]; then
+			echo "signtool command failed, see signtool.log:"
+			cat signtool.log
+		fi
 	fi
 	ls -la "${INSTALLER_FILENAME}"
 
@@ -237,6 +241,10 @@ if [ "${DO_MSI}" == "1" ]; then
 	"${MSIWRAPPER}" "msi.xml"
 	if [ "${DO_SIGN}" == "1" ]; then
 		echo "* Signing MSI"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" || exit 1
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > signtool.log
+		if [ "$?" != 0 ]; then
+			echo "signtool command failed, see signtool.log:"
+			cat signtool.log
+		fi
 	fi
 fi
