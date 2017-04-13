@@ -2212,6 +2212,12 @@ class ServerBase(ServerCore):
         return info
 
 
+    def get_http_info(self):
+        info = ServerCore.get_http_info(self)
+        info["clients"] = len(self._server_sources)
+        return info
+
+
     def clipboard_progress(self, local_requests, remote_requests):
         assert self._clipboard_helper is not None
         if self._clipboard_client and self._clipboard_client.clipboard_notifications:

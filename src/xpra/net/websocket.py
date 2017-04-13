@@ -28,9 +28,10 @@ class WSRequestHandler(WebSocketRequestHandler):
     keep_alive = WEBSOCKET_TCP_KEEPALIVE
     server_version = "Xpra-WebSockify"
 
-    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/"):
+    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", script_paths={}):
         self.web_root = web_root
         self._new_websocket_client = new_websocket_client
+        self.script_paths = script_paths
         server = AdHocStruct()
         server.logger = log
         server.run_once = True
@@ -103,13 +104,18 @@ class WSRequestHandler(WebSocketRequestHandler):
             length = int(self.headers.getheader('content-length'))
             data = self.rfile.read(length)
             log("POST data=%s (%i bytes)", data, length)
-            self.do_GET()
+            self.handle_request()
         except Exception:
             log.error("Error processing POST request", exc_info=True)
 
     def do_GET(self):
-        """Handle GET request. Calls handle_websocket(). If unsuccessful,
-        and web server is enabled, SimpleHTTPRequestHandler.do_GET will be called."""
+        self.handle_request()
+
+    def handle_request(self):
+        """
+        Calls handle_websocket(). If unsuccessful,
+        and web server is enabled, SimpleHTTPRequestHandler.do_GET will be called.
+        """
         if not self.handle_websocket():
             if self.only_upgrade:
                 self.send_error(405, "Method Not Allowed")
@@ -126,6 +132,13 @@ class WSRequestHandler(WebSocketRequestHandler):
 
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
+        path = self.path.split("?",1)[0].split("#",1)[0]
+        script = self.script_paths.get(path)
+        log("send_head() script(%s)=%s", path, script)
+        if script:
+            log("request for %s handled using %s", path, script)
+            content = script(self)
+            return content
         path = self.translate_path(self.path)
         if os.path.isdir(path):
             if not path.endswith('/'):
@@ -141,9 +154,10 @@ class WSRequestHandler(WebSocketRequestHandler):
                     break
             else:
                 #self.send_error(403, "Directory listing forbidden")
-                return self.list_directory(path).read()            
+                return self.list_directory(path).read()
         ctype = self.guess_type(path)
         _, ext = os.path.splitext(path)
+        f = None
         try:
             # Always read in binary mode. Opening files in text mode may cause
             # newline translations, making the actual size of the content

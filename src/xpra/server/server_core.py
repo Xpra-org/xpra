@@ -743,7 +743,11 @@ class ServerCore(object):
                 sock.recv = recv
                 sock.send = send
                 self.make_protocol("tcp", wsc, frominfo)
-            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir)
+            scripts = {
+                "/Status"   : self.http_status_request,
+                "/Info"     : self.http_info_request,
+                }
+            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts)
             return
         except IOError as e:
             wslog("", exc_info=True)
@@ -756,6 +760,33 @@ class ServerCore(object):
             conn.close()
         except Exception as ce:
             wslog("error closing connection following error: %s", ce)
+
+    def http_info_request(self, handler):
+        import json
+        ji = json.dumps(self.get_http_info())
+        return self.send_http_response(handler, ji, "application/json")
+
+    def get_http_info(self):
+        return {
+            "mode"              : self.get_server_mode(),
+            "type"              : "Python",
+            "uuid"              : self.uuid,
+            }
+
+    def http_status_request(self, handler):
+        return self.send_http_response(handler, "ready")
+
+    def send_http_response(self, handler, content, content_type="text/plain"):
+        handler.send_response(200)
+        headers = {
+            "Content-type"      : content_type,
+            "Content-Length"    : len(content),
+            }
+        for k,v in headers.items():
+            handler.send_header(k, v)
+        handler.end_headers()
+        return content
+
 
     def start_tcp_proxy(self, conn, frominfo):
         proxylog("start_tcp_proxy(%s, %s)", conn, frominfo)
