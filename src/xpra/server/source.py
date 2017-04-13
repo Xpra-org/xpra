@@ -407,6 +407,8 @@ class ServerSource(FileTransferHandler):
         self.window_initiate_moveresize = False
         self.clipboard_enabled = False
         self.clipboard_notifications = False
+        self.clipboard_notifications_current = 0
+        self.clipboard_notifications_pending = 0
         self.clipboard_set_enabled = False
         self.share = False
         self.desktop_size = None
@@ -1659,6 +1661,19 @@ class ServerSource(FileTransferHandler):
 
     def send_clipboard_enabled(self, reason=""):
         self.send("set-clipboard-enabled", self.clipboard_enabled, reason)
+
+    def send_clipboard_progress(self, count):
+        if not self.clipboard_notifications:
+            return
+        #always set "pending" to the latest value:
+        self.clipboard_notifications_pending = count
+        #but send the latest value via a timer to tame toggle storms:
+        def may_send_progress_update():
+            if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
+                self.clipboard_notifications_current = self.clipboard_notifications_pending
+                log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
+                self.send("clipboard-pending-requests", self.clipboard_notifications_current)
+        self.timeout_add(100, may_send_progress_update)
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:

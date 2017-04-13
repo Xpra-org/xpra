@@ -2220,9 +2220,8 @@ class ServerBase(ServerCore):
 
     def clipboard_progress(self, local_requests, remote_requests):
         assert self._clipboard_helper is not None
-        if self._clipboard_client and self._clipboard_client.clipboard_notifications:
-            log("sending clipboard-pending-requests=%s to %s", local_requests, self._clipboard_client)
-            self._clipboard_client.send("clipboard-pending-requests", local_requests)
+        if self._clipboard_client:
+            self._clipboard_client.send_clipboard_progress(local_requests)
 
     def send_clipboard_packet(self, *parts):
         assert self._clipboard_helper is not None
