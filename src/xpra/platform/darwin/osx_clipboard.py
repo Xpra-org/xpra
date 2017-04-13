@@ -119,8 +119,8 @@ class OSXClipboardProxy(ClipboardProxy):
         global change_callbacks
         change_callbacks.append(self.local_clipboard_changed)
 
-    def got_token(self, targets, target_data, claim):
-        ClipboardProxy.got_token(self, targets, target_data, claim)
+    def got_token(self, targets, target_data, claim=True, synchronous_client=False):
+        ClipboardProxy.got_token(self, targets, target_data, claim, synchronous_client)
         #prevent any change from firing another clipboard update:
         if update_clipboard_change_count:
             c = update_clipboard_change_count()
