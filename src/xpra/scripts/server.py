@@ -1316,7 +1316,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except ValueError as e:
             raise InitException("invalid value '%s' for pixel depth, must be a number" % opts.pixel_depth)
         if pixel_depth not in (8, 16, 24, 30):
-            raise InitException("invalid pixel depth: %s (%s)" % pixel_depth)
+            raise InitException("invalid pixel depth: %s" % pixel_depth)
         if not starting_desktop and pixel_depth==8:
             raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
         try:
