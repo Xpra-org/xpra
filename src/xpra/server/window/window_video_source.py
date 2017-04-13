@@ -1544,7 +1544,7 @@ class WindowVideoSource(WindowSource):
         if self.image_depth==8:
             return "png/P"
         elif self.image_depth==30:
-            return "rgb"
+            return "rgb32"
         elif self.image_depth not in (24, 32):
             #jpeg cannot handle other bit depths
             fallback_encodings = [x for x in fallback_encodings if x!="jpeg"]
