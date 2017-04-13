@@ -29,6 +29,7 @@ mmaplog = Logger("mmap")
 dbuslog = Logger("dbus")
 statslog = Logger("stats")
 notifylog = Logger("notify")
+clipboardlog = Logger("clipboard")
 
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -726,6 +727,7 @@ class ServerSource(FileTransferHandler):
         self.clipboard_enabled = c.boolget("clipboard", True)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
+        clipboardlog("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
         self.share = c.boolget("share")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
@@ -1671,9 +1673,10 @@ class ServerSource(FileTransferHandler):
         def may_send_progress_update():
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
-                log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
+                clipboardlog("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
                 self.send("clipboard-pending-requests", self.clipboard_notifications_current)
-        self.timeout_add(100, may_send_progress_update)
+        delay = (count==0)*100
+        self.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended:
@@ -1684,7 +1687,7 @@ class ServerSource(FileTransferHandler):
             elapsed = now-self.clipboard_stats[0]
             if elapsed<1:
                 msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_PER_SECOND
-                log.warn("clipboard disabled: %s", msg)
+                clipboardlog.warn("clipboard disabled: %s", msg)
                 self.clipboard_enabled = False
                 self.send_clipboard_enabled(msg)
                 return
