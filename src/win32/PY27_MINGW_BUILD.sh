@@ -13,8 +13,12 @@ DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
+DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
+
+KEY_FILE="E:\\xpra.pfx"
+SIGNTOOL="C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 CLIENT_ONLY="0"
@@ -201,6 +205,12 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	rm "xpra.iss"
 	mv "dist\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
 
+	if [ "${DO_SIGN}" == "1" ]; then
+		echo "* Signing EXE"
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" || exit 1
+	fi
+	ls -la "${INSTALLER_FILENAME}"
+
 	if [ "${RUN_INSTALLER}" == "1" ]; then
 		echo "* Finished - running the new installer"
 		#we need to escape slashes!
@@ -208,7 +218,6 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 		CMD_ARGS=`echo ${ARGS} | sed 's+/+//+g'`
 		"./${INSTALLER_FILENAME}" "${CMD_ARGS}"
 	fi
-	ls -la "${INSTALLER_FILENAME}"
 fi
 
 if [ "${DO_MSI}" == "1" ]; then
@@ -223,4 +232,8 @@ if [ "${DO_MSI}" == "1" ]; then
 	ZERO_PADDED_VERSION=`python2.7.exe -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:4]))'`
 	cat "win32\msi.xml" | sed "s/INPUT/${INSTALLER_FILENAME}/g" | sed "s/OUTPUT/${MSI_FILENAME}/g" | sed "s/ZERO_PADDED_VERSION/${ZERO_PADDED_VERSION}/g" | sed "s/FULL_VERSION/${FULL_VERSION}/g" > msi.xml
 	"${MSIWRAPPER}" "msi.xml"
+	if [ "${DO_SIGN}" == "1" ]; then
+		echo "* Signing MSI"
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" || exit 1
+	fi
 fi
