@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -59,6 +59,10 @@ log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 DISCARD_TARGETS = [re.compile(x) for x in DISCARD_TARGETS]
 
 TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+
+TRANSLATED_TARGETS = {
+    "application/x-moz-nativehtml" : "UTF8_STRING"
+    }
 
 
 def must_discard(target):
@@ -483,6 +487,7 @@ class ClipboardProxy(gtk.Invisible):
         self._got_token_events = 0
         self._get_contents_events = 0
         self._request_contents_events = 0
+        self._last_targets = ()
 
         try:
             from xpra.x11.gtk_x11.prop import prop_get
@@ -502,6 +507,7 @@ class ClipboardProxy(gtk.Invisible):
                 "enabled"               : self._enabled,
                 "greedy_client"         : self._greedy_client,
                 "blocked_owner_change"  : self._block_owner_change,
+                "last-targets"          : self._last_targets,
                 "event"         : {
                                    "selection_request"     : self._selection_request_events,
                                    "selection_get"         : self._selection_get_events,
@@ -725,6 +731,7 @@ class ClipboardProxy(gtk.Invisible):
             def got_targets(c, targets, *args):
                 log("got_targets(%s, %s, %s)", c, targets, args)
                 cb("ATOM", 32, targets)
+                self._last_targets = targets or ()
             self._clipboard.request_targets(got_targets)
             return
         def unpack(clipboard, selection_data, user_data):
@@ -742,6 +749,13 @@ class ClipboardProxy(gtk.Invisible):
                     log("stripping end of string null byte")
                     data = data[:-1]
             cb(str(selection_data.type), selection_data.format, data)
+        #some applications (ie: firefox, thunderbird) can request invalid targets,
+        #when that happens, translate it to something the application can handle (if any)
+        translated_target = TRANSLATED_TARGETS.get(target)
+        if (translated_target is not None) and self._last_targets and (target not in self._last_targets) and \
+            (translated_target in self._last_targets) and (not must_discard(translated_target)):
+            log("invalid target %s, replaced with %s", target, translated_target)
+            target = translated_target
         self._clipboard.request_contents(target, unpack)
 
 gobject.type_register(ClipboardProxy)
