@@ -8,7 +8,7 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
+from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -113,11 +113,12 @@ def argb_swap(image, rgb_formats, supports_transparency):
     assert pixels, "failed to get pixels from %s" % image
     rs = image.get_rowstride()
     if pixel_format=="r210":
-        if supports_transparency and "RGBA" in rgb_formats:
-            log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(r210_to_rgba(pixels))
-            image.set_pixel_format("RGBA")
-            return True
+        #r210 never contains any transparency at present
+        #if supports_transparency and "RGBA" in rgb_formats:
+        #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
+        #    image.set_pixels(r210_to_rgba(pixels))
+        #    image.set_pixel_format("RGBA")
+        #    return True
         if "RGB" in rgb_formats:
             log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(r210_to_rgb(pixels))
