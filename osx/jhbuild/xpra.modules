@@ -230,7 +230,7 @@
 
   <autotools id="ffmpeg"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
-		autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
+		autogenargs="--enable-runtime-cpudetect --enable-pic
 					--enable-static --enable-shared --enable-gpl
 					--disable-everything
 					--enable-swscale --enable-decoder=h264 --enable-decoder=mpeg4
