@@ -16,15 +16,16 @@ import Quartz                       #@UnresolvedImport
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
 from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
-from AppKit import NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+from AppKit import NSApp, NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 
-from xpra.util import envbool, roundup
+from xpra.util import envbool, envint, roundup
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 scrolllog = Logger("osx", "events", "scroll")
 
 
+OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 WHEEL = envbool("XPRA_WHEEL", True)
 
@@ -646,6 +647,13 @@ class Delegate(NSObject):
 
 class ClientExtras(object):
     def __init__(self, client, opts):
+        if OSX_FOCUS_WORKAROUND:
+            def disable_focus_workaround(*args):
+                NSApp.activateIgnoringOtherApps_(False)
+            def enable_focus_workaround(*args):
+                NSApp.activateIgnoringOtherApps_(True)
+                client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
+            client.connect("first-ui-received", enable_focus_workaround)
         swap_keys = opts and opts.swap_keys
         log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
         self.client = client
