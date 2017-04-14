@@ -20,11 +20,14 @@ log = Logger("stats")
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
 from xpra.os_util import monotonic_time
-from xpra.util import engs, csv
+from xpra.util import engs, csv, envint
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
     calculate_timesize_weighted_average,    #@UnresolvedImport
     calculate_for_average)                  #@UnresolvedImport
+
+
+TARGET_LATENCY_TOLERANCE = envint("XPRA_TARGET_LATENCY_TOLERANCE", 20)/1000.0
 
 
 class WindowPerformanceStatistics(object):
@@ -217,7 +220,7 @@ class WindowPerformanceStatistics(object):
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if len(self.damage_ack_pending)>0:
-            sent_before = monotonic_time()-(self.target_latency+0.020)
+            sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
             for sequence, (start_send_at, _, start_bytes, end_send_at, end_bytes, pixels) in self.damage_ack_pending.items():
