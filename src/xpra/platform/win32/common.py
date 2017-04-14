@@ -57,7 +57,7 @@ GetKeyState = user32.GetKeyState
 GetKeyState.restype = SHORT
 GetKeyboardLayout = user32.GetKeyboardLayout
 GetKeyboardLayoutList = user32.GetKeyboardLayoutList
-GetKeyboardLayoutList.argtypes = [INT, POINTER(HANDLE*32)]
+GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE*32)]
 SystemParametersInfoA = user32.SystemParametersInfoA
 EnumWindows = user32.EnumWindows
 EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
@@ -84,7 +84,6 @@ ReleaseDC = user32.ReleaseDC
 PostQuitMessage = user32.PostQuitMessage
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
-GetDeviceCaps = gdi32.GetDeviceCaps
 CreateCompatibleDC = gdi32.CreateCompatibleDC
 CreateCompatibleDC.restype = HDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
@@ -99,8 +98,8 @@ SelectObject.argtypes = [HDC, HGDIOBJ]
 SelectObject.restype = HGDIOBJ
 BitBlt = gdi32.BitBlt
 GetDeviceCaps = gdi32.GetDeviceCaps
-GetDeviceCaps.argtypes = [HDC, INT]
-GetDeviceCaps.restype = INT
+GetDeviceCaps.argtypes = [HDC, c_int]
+GetDeviceCaps.restype = c_int
 GetSystemPaletteEntries = gdi32.GetSystemPaletteEntries
 GetSystemPaletteEntries.restype = UINT
 GetStockObject = gdi32.GetStockObject
