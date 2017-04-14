@@ -22,7 +22,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, monotonic_time
 from xpra.util import csv, envint, envbool, repr_ellipsized
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -41,7 +41,7 @@ if CLIPBOARDS_ENV is not None:
 
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 STORE_ON_EXIT = envbool("XPRA_CLIPBOARD_STORE_ON_EXIT", True)
-DELAY_SEND_TOKEN = envbool("XPRA_DELAY_SEND_TOKEN", True)
+DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 200)
 
 _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
 if _discard_target_strs_ is not None:
@@ -246,14 +246,6 @@ class ClipboardProtocolHelperBase(object):
         loop.done({"type": dtype, "format": dformat, "data": data})
 
     def _send_clipboard_token_handler(self, proxy):
-        #send via idle_add so the main loop can run
-        #(prevents tight clipboard loops from completely hogging the main loop)
-        if DELAY_SEND_TOKEN:
-            glib.idle_add(self.do_send_clipboard_token_handler, proxy)
-        else:
-            self.do_send_clipboard_token_handler(proxy)
-
-    def do_send_clipboard_token_handler(self, proxy):
         selection = proxy._selection
         log("send clipboard token: %s", selection)
         rsel = self.local_to_remote(selection)
@@ -479,6 +471,8 @@ class ClipboardProxy(gtk.Invisible):
         self._greedy_client = False
         #semaphore to block the sending of the token when we change the owner ourselves:
         self._block_owner_change = False
+        self._last_emit_token = 0
+        self._emit_token_timer = 0
         #counters for info:
         self._selection_request_events = 0
         self._selection_get_events = 0
@@ -521,6 +515,7 @@ class ClipboardProxy(gtk.Invisible):
         return info
 
     def cleanup(self):
+        self.cancel_emit_token()
         if self._can_receive and not self._have_token and STORE_ON_EXIT:
             self._clipboard.store()
         self.destroy()
@@ -546,11 +541,39 @@ class ClipboardProxy(gtk.Invisible):
         if not self._enabled or self._block_owner_change:
             return
         if self._can_send and (self._greedy_client or self._have_token):
-            self._block_owner_change = True
-            self._have_token = False
-            self.emit("send-clipboard-token")
-            self._sent_token_events += 1
+            if self._have_token or DELAY_SEND_TOKEN<0:
+                #token ownership will change or told not to wait
+                self.emit_token()
+            elif not self._emit_token_timer:
+                #we had it already, this can wait:
+                self.schedule_emit_token()
+
+    def schedule_emit_token(self):
+        now = monotonic_time()
+        elapsed = int((now-self._last_emit_token)*1000)
+        log("schedule_emit_token() elapsed=%i (max=%i)", elapsed, DELAY_SEND_TOKEN)
+        if elapsed>=DELAY_SEND_TOKEN:
+            #enough time has passed
+            self.emit_token()
+        else:
+            self._emit_token_timer = glib.timeout_add(DELAY_SEND_TOKEN-elapsed, self.emit_token)
+
+    def emit_token(self):
+        self._emit_token_timer = None
+        boc = self._block_owner_change
+        self._block_owner_change = True
+        self._have_token = False
+        self._last_emit_token = monotonic_time()
+        self.emit("send-clipboard-token")
+        self._sent_token_events += 1
+        if boc is False:
             glib.idle_add(self.remove_block)
+
+    def cancel_emit_token(self):
+        ett = self._emit_token_timer
+        if ett:
+            self._emit_token_timer = None
+            glib.source_remove(ett)
 
     def do_selection_request_event(self, event):
         log("do_selection_request_event(%s)", event)
@@ -655,15 +678,12 @@ class ClipboardProxy(gtk.Invisible):
             # ours now"
             # Send off the anti-token.
             if send:
-                boc = self._block_owner_change
-                self._block_owner_change = True
-                self.emit("send-clipboard-token")
-                if boc is False:
-                    glib.idle_add(self.remove_block)
+                self.emit_token()
         gtk.Invisible.do_selection_clear_event(self, event)
 
     def got_token(self, targets, target_data, claim=True, synchronous_client=False):
         # We got the anti-token.
+        self.cancel_emit_token()
         if not self._enabled:
             return
         self._got_token_events += 1
