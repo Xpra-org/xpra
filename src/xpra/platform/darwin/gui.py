@@ -88,16 +88,21 @@ def do_init():
 
 def do_ready():
     osxapp = get_OSXApplication()
-    osxapp.ready()
+    if osxapp:
+        osxapp.ready()
 
 
 def get_native_tray_menu_helper_classes():
-    from xpra.platform.darwin.osx_menu import getOSXMenuHelper
-    return [getOSXMenuHelper]
+    if get_OSXApplication():
+        from xpra.platform.darwin.osx_menu import getOSXMenuHelper
+        return [getOSXMenuHelper]
+    return []
 
 def get_native_tray_classes():
-    from xpra.platform.darwin.osx_tray import OSXTray
-    return [OSXTray]
+    if get_OSXApplication():
+        from xpra.platform.darwin.osx_tray import OSXTray
+        return [OSXTray]
+    return []
 
 def system_bell(*args):
     NSBeep()

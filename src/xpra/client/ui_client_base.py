@@ -879,8 +879,9 @@ class UIXpraClient(XpraClientBase):
                 if v:
                     return v
             except:
+                log("make_instance(%s, %s)", class_options, args, exc_info=True)
                 log.error("Error: cannot instantiate %s:", c)
-                log.error(" arguments=%s", list(args), exc_info=True)
+                log.error(" with arguments %s", list(args))
         return None
 
 
