@@ -95,6 +95,7 @@ class NamedPipeListener(Thread):
                 r = WaitForSingleObject(event, INFINITE)
                 log("WaitForSingleObject(..)=%s", WAIT_STR.get(r, r))
                 if r:
+                    log("do_run() error on WaitForSingleObject", exc_info=True)
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
                     CloseHandle(pipe_handle)
                     continue
@@ -102,10 +103,12 @@ class NamedPipeListener(Thread):
                 CloseHandle(pipe_handle)
                 break
             if r==0 and False:
-                if GetLastError()==ERROR_PIPE_CONNECTED:
+                e = GetLastError()
+                if e==ERROR_PIPE_CONNECTED:
                     pass
                 else:
                     log.error("Error: cannot connect to named pipe '%s'", self.pipe_name)
+                    log.error(" error %s", e)
                     CloseHandle(pipe_handle)
                     continue
             #from now on, the pipe_handle will be managed elsewhere:
