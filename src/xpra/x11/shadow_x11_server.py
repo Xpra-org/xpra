@@ -36,10 +36,13 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def suspend(self):
         #we can cleanup the current xshm area and we'll create a new one later
-        self.cleanup()
+        self.close_xshm()
 
     def cleanup(self):
+        self.close_xshm()
         GTKRootWindowModel.cleanup(self)
+
+    def close_xshm(self):
         if self.xshm:
             with xsync:
                 self.xshm.cleanup()
