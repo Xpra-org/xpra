@@ -336,6 +336,8 @@ class Win32RootWindowModel(RootWindowModel):
         from PIL import Image               #@UnresolvedImport
         x, y, w, h = get_virtualscreenmetrics()
         image = self.get_image(x, y, w, h)
+        if not image:
+            return None
         assert image.get_width()==w and image.get_height()==h
         assert image.get_pixel_format()=="BGRX"
         img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
