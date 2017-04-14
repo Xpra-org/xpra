@@ -157,7 +157,9 @@ class WindowPerformanceStatistics(object):
 
     def get_info(self):
         info = {"damage"    : {"events"         : self.damage_events_count,
-                               "packets_sent"   : self.packet_count}
+                               "packets_sent"   : self.packet_count,
+                               "target-latency" : int(1000*self.target_latency),
+                               }
                 }
         #encoding stats:
         if len(self.encoding_stats)>0:
