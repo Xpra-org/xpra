@@ -25,6 +25,7 @@ def set_exit_cb(ecb):
     global exit_cb
     exit_cb = ecb
 
+OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 
 macapp = None
 def get_OSXApplication():
@@ -593,6 +594,17 @@ class Delegate(NSObject):
 
 class ClientExtras(object):
     def __init__(self, client, opts):
+        try:
+            from AppKit import NSApp
+        except:
+            AppKit = None
+        if AppKit and OSX_FOCUS_WORKAROUND:
+            def disable_focus_workaround(*args):
+                NSApp.activateIgnoringOtherApps_(False)
+            def enable_focus_workaround(*args):
+                NSApp.activateIgnoringOtherApps_(True)
+                client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
+            client.connect("first-ui-received", enable_focus_workaround)
         swap_keys = opts and opts.swap_keys
         log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
         self.client = client
