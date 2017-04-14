@@ -88,6 +88,19 @@ class PALETTEENTRY(ctypes.Structure):
         ('peFlags', ctypes.c_ubyte),
         ]
 
+DWM_EC_DISABLECOMPOSITION = 0
+DWM_EC_ENABLECOMPOSITION = 1
+def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
+    try:
+        from ctypes import windll
+        windll.dwmapi.DwmEnableComposition(value)
+        log("DwmEnableComposition(%s) succeeded", value)
+        return True
+    except Exception as e:
+        log.error("Error: cannot change dwm composition:")
+        log.error(" %s", e)
+        return False
+
 
 class Win32RootWindowModel(RootWindowModel):
 
@@ -97,20 +110,17 @@ class Win32RootWindowModel(RootWindowModel):
         self.dc, self.memdc, self.bitmap = None, None, None
         self.bit_depth = 32
         self.bitblt_err_time = 0
-        if DISABLE_DWM_COMPOSITION:
-            try:
-                from ctypes import windll
-                DWM_EC_DISABLECOMPOSITION = 0
-                windll.dwmapi.DwmEnableComposition(DWM_EC_DISABLECOMPOSITION)
-            except Exception as e:
-                log.error("Error: cannot disable composition:")
-                log.error(" %s", e)
+        self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
 
+    def cleanup(self):
+        RootWindowModel.cleanup(self)
+        if self.disabled_dwm_composition:
+            set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()

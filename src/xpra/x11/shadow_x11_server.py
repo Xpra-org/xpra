@@ -39,6 +39,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         self.cleanup()
 
     def cleanup(self):
+        GTKRootWindowModel.cleanup(self)
         if self.xshm:
             with xsync:
                 self.xshm.cleanup()
@@ -81,6 +82,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         X11ServerBase.__init__(self)
+        self.cursor_poll_timer = None
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)

@@ -864,7 +864,9 @@ def take_screenshot():
     #would be better to refactor the code..
     from xpra.platform.win32.shadow_server import Win32RootWindowModel
     rwm = Win32RootWindowModel(object())
-    return rwm.take_screenshot()
+    v = rwm.take_screenshot()
+    rwm.cleanup()
+    return v
 
 
 def show_desktop(b):

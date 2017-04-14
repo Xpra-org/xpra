@@ -43,6 +43,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.cleanup_tray()
         self.stop_poll_pointer_position()
         GTKServerBase.cleanup(self)
+        ShadowServerBase.cleanup(self)
 
 
     def client_startup_complete(self, ss):

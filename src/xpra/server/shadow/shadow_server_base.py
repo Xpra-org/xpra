@@ -21,6 +21,7 @@ class ShadowServerBase(object):
 
     def __init__(self, root_window):
         self.root = root_window
+        self.root_window_model = None
         self.mapped = False
         self.pulseaudio = False
         self.sharing = False
@@ -28,6 +29,14 @@ class ShadowServerBase(object):
         self.timer = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
+
+    def cleanup(self):
+        self.stop_refresh()
+        rwm = self.root_window_model
+        if rwm:
+            rwm.cleanup()
+            self.root_window_model = None
+
 
     def get_server_mode(self):
         return "shadow"

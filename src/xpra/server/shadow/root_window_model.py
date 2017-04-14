@@ -21,6 +21,9 @@ class RootWindowModel(object):
         self.dynamic_property_names = []
         self.internal_property_names = []
 
+    def cleanup(self):
+        pass
+
     def suspend(self):
         pass
 
