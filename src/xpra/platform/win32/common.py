@@ -6,9 +6,10 @@
 
 import ctypes
 
-from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_uint, c_double
+from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_uint, c_double, c_long
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP
+LRESULT = c_long
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
@@ -111,7 +112,7 @@ DeleteObject = gdi32.DeleteObject
 
 
 #wrap EnumDisplayMonitors to hide the callback function:
-MonitorEnumProc = ctypes.WINFUNCTYPE(c_int, c_ulong, c_ulong, POINTER(RECT), c_double)
+MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
 _EnumDisplayMonitors = EnumDisplayMonitors
 def EnumDisplayMonitors():
     results = []
@@ -123,7 +124,7 @@ def EnumDisplayMonitors():
     return results
 
 
-WNDPROC = WINFUNCTYPE(c_int, HANDLE, c_uint, WPARAM, LPARAM)
+WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)
 
 class WNDCLASSEX(Structure):
     _fields_ = [

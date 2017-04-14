@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes.wintypes import HANDLE, INT
+from ctypes.wintypes import HANDLE
 
 from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, SystemParametersInfoA
 from xpra.platform.win32 import constants as win32con
@@ -21,7 +21,7 @@ def _GetKeyboardLayoutList():
     max_items = 32
     #PHANDLE = ctypes.POINTER(HANDLE)
     handle_list = (HANDLE*max_items)()
-    GetKeyboardLayoutList.argtypes = [INT, ctypes.POINTER(HANDLE*max_items)]
+    GetKeyboardLayoutList.argtypes = [ctypes.c_int, ctypes.POINTER(HANDLE*max_items)]
     count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
     layouts = []
     for i in range(count):
