@@ -747,6 +747,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glVertex2i(x, y-size)
             glVertex2i(x, y+size)
             glEnd()
+            return
 
         cw = self.cursor_data[3]
         ch = self.cursor_data[4]
