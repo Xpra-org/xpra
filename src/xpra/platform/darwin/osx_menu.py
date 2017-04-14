@@ -73,7 +73,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         #if we call add_about before the main loop is ready,
         #things don't work...
         if client and SHOW_ABOUT_XPRA:
-            self.client.after_handshake(self.add_about)
+            client.after_handshake(self.add_about)
 
     def show_menu(self, button, time):
         #does not mean anything on OSX since the menu is controlled by the OS
@@ -166,10 +166,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
 
     def add_full_menu(self):
         log("OSXMenuHelper.add_full_menu()")
-        if self.full:
+        if self.full or not self.client:
             return
         self.full = True
-        assert self.client
         menus = self.get_extra_menus()
         for label, submenu in reversed(menus):
             self.add_top_level_menu(label, submenu)
