@@ -14,6 +14,7 @@ def debug(*msg):
     return None
 
 
+_gtkosx_warning_ = False
 def do_get_resources_dir():
     rsc = None
     RESOURCES = "/Resources/"
@@ -29,10 +30,13 @@ def do_get_resources_dir():
                 #maybe we're not running from an app bundle?
                 pass
         except:
-            #delayed import to prevent cycles:
-            from xpra.log import Logger
-            log = Logger("util")
-            log.error("ERROR: gtkosx_application module is missing - trying to continue anyway")
+            global _gtkosx_warning_
+            if _gtkosx_warning_ is False:
+                _gtkosx_warning_ = True
+                #delayed import to prevent cycles:
+                from xpra.log import Logger
+                log = Logger("util")
+                log.error("ERROR: gtkosx_application module is missing - trying to continue anyway")
     else:
         debug("XPRA_SKIP_UI is set, not importing gtkosx_application")
     if rsc is None:
