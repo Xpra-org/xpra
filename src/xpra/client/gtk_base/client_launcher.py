@@ -821,6 +821,9 @@ class ApplicationWindow:
     def save_clicked(self, *args):
         self.update_options_from_gui()
         def do_save(filename):
+            #make sure the file extension is .xpra
+            if os.path.splitext(filename)!=".xpra":
+                filename += ".xpra"
             save_config(filename, self.config, self.config_keys, extras_types=LAUNCHER_OPTION_TYPES)
         self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
