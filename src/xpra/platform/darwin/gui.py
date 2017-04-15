@@ -597,8 +597,8 @@ class ClientExtras(object):
         try:
             from AppKit import NSApp
         except:
-            AppKit = None
-        if AppKit and OSX_FOCUS_WORKAROUND:
+            NSApp = None
+        if NSApp and OSX_FOCUS_WORKAROUND:
             def disable_focus_workaround(*args):
                 NSApp.activateIgnoringOtherApps_(False)
             def enable_focus_workaround(*args):
