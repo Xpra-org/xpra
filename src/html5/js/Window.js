@@ -498,25 +498,7 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		}
 	}
 	if (this.resizable && "size-constraints" in metadata) {
-		var mw, mh;
-		var size_constraints = metadata["size-constraints"];
-		var min_size = size_constraints["minimum-size"];
-		mw=null, mh=null;
-		if (min_size) {
-			mw = min_size[0];
-			mh = min_size[1];
-		}
-		jQuery(this.div).resizable("option", "minWidth", mw);
-		jQuery(this.div).resizable("option", "minHeight", mh);
-		var max_size = size_constraints["maximum-size"];
-		mw=null, mh=null;
-		if (max_size) {
-			mw = max_size[0];
-			mh = max_size[1];
-		}
-		jQuery(this.div).resizable("option", "maxWidth", mw);
-		jQuery(this.div).resizable("option", "maxHeight", mh);
-		//TODO: aspectRatio, grid
+		this.apply_size_constraints();
 	}
 	if ("class-instance" in metadata) {
 		var wm_class = metadata["class-instance"];
@@ -541,6 +523,52 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		}
 	}
 };
+
+XpraWindow.prototype.apply_size_constraints = function() {
+	var size_constraints = this.metadata["size-constraints"];
+	if (this.maximized) {
+		jQuery(this.div).draggable('disable');
+	}
+	else {
+		jQuery(this.div).draggable('enable');
+	} 
+	var min_size = null, max_size = null;
+	if (size_constraints) {
+		min_size = size_constraints["minimum-size"];
+		max_size = size_constraints["maximum-size"];
+	}
+	var minw=null, minh=null;
+	if (min_size) {
+		minw = min_size[0];
+		minh = min_size[1];
+	}
+	var maxw=null, maxh=null;
+	if (max_size) {
+		maxw = max_size[0];
+		maxh = max_size[1];
+	}
+	//TODO: adjust size for title bar!
+	if(minw>0 && minw==maxw && minh>0 && minh==maxh) {
+		jQuery(this.d_maximizebtn).hide();
+		jQuery(this.div).resizable('disable');
+	} else {
+		jQuery(this.d_maximizebtn).show();
+		if (!this.maximized) {
+			jQuery(this.div).resizable('enable');
+		}
+		else {
+			jQuery(this.div).resizable('disable');
+		}
+	}
+	if (!this.maximized) {
+		jQuery(this.div).resizable("option", "minWidth", minw);
+		jQuery(this.div).resizable("option", "minHeight", minh);
+		jQuery(this.div).resizable("option", "maxWidth", maxw);
+		jQuery(this.div).resizable("option", "maxHeight", maxh);
+	}
+	//TODO: aspectRatio, grid
+}
+
 
 /**
  * Apply new metadata settings.
@@ -593,12 +621,8 @@ XpraWindow.prototype.set_maximized = function(maximized) {
 	this.max_save_restore(maximized);
 	this.maximized = maximized;
 	this.handle_resized();
-	// disable the draggable event when maximized
-	if(this.maximized) {
-		jQuery(this.div).draggable('disable');
-	} else {
-		jQuery(this.div).draggable('enable');
-	}
+	// this will take care of disabling the "draggable" code:
+	this.apply_size_constraints();
 };
 
 /**
