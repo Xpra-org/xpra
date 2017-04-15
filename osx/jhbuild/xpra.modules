@@ -238,7 +238,7 @@
 
   <autotools id="ffmpeg"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
-		autogenargs="--enable-runtime-cpudetect --enable-pic --enable-memalign-hack
+		autogenargs="--enable-runtime-cpudetect --enable-pic
 					--enable-static --enable-shared --enable-gpl
 					--disable-everything
 					--enable-swscale --enable-decoder=h264 --enable-decoder=mpeg4
@@ -249,12 +249,11 @@
 					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
 					--disable-filter=anull --disable-filter=format --disable-filter=trim
 					--disable-filter=atrim --disable-filter=null
-					--disable-programs --disable-avfilter --disable-doc
-					--disable-audiotoolbox --disable-videotoolbox"
+					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.2.2.tar.bz2"
-		version="3.2.2"
-		hash="sha256:0b129a56d1b8d06101b1fcbfaa9f4f5eee3182d1ad6e44f511a84c12113a366b"
+	<branch module="/releases/ffmpeg-3.3.tar.bz2"
+		version="3.3"
+		hash="sha256:21e08647c9e740a4d3b85bf455b31d079fe0faba9555fa9329230e8541cf6bdc"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
