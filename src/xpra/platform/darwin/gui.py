@@ -7,7 +7,7 @@
 from xpra.log import Logger
 log = Logger("osx", "events")
 
-from xpra.util import envbool
+from xpra.util import envbool,envint
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 
 
