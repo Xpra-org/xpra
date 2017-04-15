@@ -176,6 +176,15 @@
 		repo="downloads.xiph.org"/>
   </autotools>
 
+  <cmake id="libyuv">
+	<branch module="/src/libyuv-cb9a58f25fbdf8382d68680f022959022f746ef2.tar.xz"
+		version="cb9a58f"
+		hash="sha256:eb76578955cfd005fc4964b06374cee0f125472bf433ebf038a377c5b82906d6"
+		repo="xpra.org">
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/libyuv-nojpeg.patch" strip="1" />
+        </branch>
+  </cmake>
+
   <autotools id="libvpx-13"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --libdir=%(libdir)s %(autogenargs)s"
              autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --target=x86-darwin13-gcc --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect"
@@ -943,6 +952,7 @@
      <dependencies>
       <dep package="apr-util"/>
       <dep package="serf"/>
+      <dep package="libyuv"/>
     </dependencies>
   </autotools>
 
