@@ -1097,16 +1097,35 @@ XpraClient.prototype._window_set_focus = function(win) {
 	if (client.focus == wid) {
 		return;
 	}
+	var top_stacking_layer = Object.keys(client.id_to_window).length;
+	var old_stacking_layer = win.stacking_layer;
 	client.focus = wid;
 	client.topwindow = wid;
 	client.send(["focus", wid, []]);
-	//set the focused flag on all windows:
+	//set the focused flag on all windows,
+	//adjust stacking order:
+	var iwin = null;
 	for (var i in client.id_to_window) {
-		var iwin = client.id_to_window[i];
+		iwin = client.id_to_window[i];
 		iwin.focused = (i==wid);
+		if (iwin.focused) {
+			iwin.stacking_layer = top_stacking_layer;
+		}
+		else {
+			//move it down to fill the gap:
+			if (iwin.stacking_layer>old_stacking_layer) {
+				iwin.stacking_layer--;
+			}
+		}
 		iwin.updateFocus();
 		iwin.update_zindex();
 	}
+	//set stacking order:
+	iwin = client.id_to_window[last_focused];
+	if (iwin) {
+		iwin.stacking_layer = stacking_layer--;
+	}
+	
 	client._set_favicon(wid);
 }
 

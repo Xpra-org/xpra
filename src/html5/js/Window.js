@@ -63,6 +63,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.focused = false;
 	this.decorations = true;
 	this.resizable = false;
+	this.stacking_layer = 0;
 
 	//these values represent the internal geometry
 	//i.e. geometry as windows appear to the compositor
@@ -407,7 +408,7 @@ XpraWindow.prototype.toString = function() {
 
 
 XpraWindow.prototype.update_zindex = function() {
-	var z = 5000;
+	var z = 5000 + this.stacking_layer;
 	if (this.override_redirect) {
 		z = 15000;
 	}
@@ -430,7 +431,7 @@ XpraWindow.prototype.update_zindex = function() {
 		}
 	}
 	if (this.focused) {
-		z += 1000;
+		z += 2500;
 	}
 	jQuery(this.div).css('z-index', z);
 }
@@ -537,7 +538,6 @@ XpraWindow.prototype.apply_size_constraints = function() {
 	if (this.decorations) {
 		//adjust for header
 		hdec = jQuery('#head' + this.wid).outerHeight(true);
-		console.log("hdec=", hdec);
 	}
 	var min_size = null, max_size = null;
 	if (size_constraints) {
