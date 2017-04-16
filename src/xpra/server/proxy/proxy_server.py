@@ -303,7 +303,8 @@ class ProxyServer(ServerCore):
         except Exception as e:
             log("cannot connect", exc_info=True)
             log.error("Error: cannot start proxy connection:")
-            log.error(" %s", e)
+            for x in str(e).splitlines():
+                log.error(" %s", x)
             log.error(" connection definition:")
             print_nested_dict(disp_desc, prefix=" ", lchar="*", pad=20, print_fn=log.error)
             disconnect(SESSION_NOT_FOUND, "failed to connect to display")
