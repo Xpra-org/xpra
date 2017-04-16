@@ -5,9 +5,9 @@ import gtk
 width = 400
 height = 200
 
-def make_win(min_width=0, min_height=0, max_width=0, max_height=0):
+def make_win(min_width=-1, min_height=-1, max_width=-1, max_height=-1):
 	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-	window.set_title("Size Hints Test")
+	window.set_title("min=%s - max=%s" % ((min_width, min_height), (max_width, max_height)))
 	#window.set_size_request(width, height)
 	window.connect("delete_event", gtk.mainquit)
 	window.set_geometry_hints(window,

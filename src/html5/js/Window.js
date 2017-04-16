@@ -472,6 +472,7 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		this._set_decorated(this.decorations);
 		this.updateCSSGeometry();
 		this.handle_resized();
+		this.apply_size_constraints();
 	}
 	if ("opacity" in metadata) {
 		var opacity = metadata["opacity"];
@@ -531,7 +532,13 @@ XpraWindow.prototype.apply_size_constraints = function() {
 	}
 	else {
 		jQuery(this.div).draggable('enable');
-	} 
+	}
+	var hdec = 0, wdec = 0;
+	if (this.decorations) {
+		//adjust for header
+		hdec = jQuery('#head' + this.wid).outerHeight(true);
+		console.log("hdec=", hdec);
+	}
 	var min_size = null, max_size = null;
 	if (size_constraints) {
 		min_size = size_constraints["minimum-size"];
@@ -539,15 +546,14 @@ XpraWindow.prototype.apply_size_constraints = function() {
 	}
 	var minw=null, minh=null;
 	if (min_size) {
-		minw = min_size[0];
-		minh = min_size[1];
+		minw = min_size[0]+wdec;
+		minh = min_size[1]+hdec;
 	}
 	var maxw=null, maxh=null;
 	if (max_size) {
-		maxw = max_size[0];
-		maxh = max_size[1];
+		maxw = max_size[0]+wdec;
+		maxh = max_size[1]+hdec;
 	}
-	//TODO: adjust size for title bar!
 	if(minw>0 && minw==maxw && minh>0 && minh==maxh) {
 		jQuery(this.d_maximizebtn).hide();
 		jQuery(this.div).resizable('disable');
