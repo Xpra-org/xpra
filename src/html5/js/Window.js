@@ -128,6 +128,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 				'</span></div>');
 		// make draggable
 		jQuery(this.div).draggable({ cancel: "canvas" });
+		jQuery(this.div).on("dragstart",function(ev,ui){
+			set_focus_cb(me);
+		});
 		jQuery(this.div).on("dragstop",function(ev,ui){
 			me.handle_moved(ui);
 		});
