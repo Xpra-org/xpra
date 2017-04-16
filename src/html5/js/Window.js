@@ -531,6 +531,9 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 
 XpraWindow.prototype.apply_size_constraints = function() {
 	var size_constraints = this.metadata["size-constraints"];
+	if (!this.resizable) {
+		return;
+	}
 	if (this.maximized) {
 		jQuery(this.div).draggable('disable');
 	}

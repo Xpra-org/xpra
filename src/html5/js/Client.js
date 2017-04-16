@@ -1120,12 +1120,6 @@ XpraClient.prototype._window_set_focus = function(win) {
 		iwin.updateFocus();
 		iwin.update_zindex();
 	}
-	//set stacking order:
-	iwin = client.id_to_window[last_focused];
-	if (iwin) {
-		iwin.stacking_layer = stacking_layer--;
-	}
-	
 	client._set_favicon(wid);
 }
 
