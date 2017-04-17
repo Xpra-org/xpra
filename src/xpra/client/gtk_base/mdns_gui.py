@@ -193,7 +193,10 @@ class mdns_sessions(gtk.Window):
             def k(v):
                 text = v[-1]    #the text record
                 mode = (text or {}).get("mode", v)
-                return order.get(mode, mode)
+                host = v[6]
+                host_len = len(host)
+                #prefer order (from mode), then shorter host string:
+                return "%s-%s" % (order.get(mode, mode), host_len)
             return cmp(k(a), k(b))
         srecs = sorted(recs, cmp=cmp_rec)
         for rec in srecs:
