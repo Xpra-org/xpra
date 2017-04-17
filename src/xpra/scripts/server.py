@@ -1251,6 +1251,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if opts.mdns:
             rec = "tcp", [(host, iport)]
             mdns_recs.append(rec)
+            if ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert):
+                #SSL is also available on this TCP socket:
+                rec = "ssl", [(host, iport)]
+                mdns_recs.append(rec)
 
     # VSOCK:
     for cid, iport in bind_vsock:
