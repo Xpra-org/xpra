@@ -13,4 +13,4 @@ while (($#)); do
 done
 args="$args]"
 
-exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;main('xpra', $args)"
+exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.scripts.main import main;sys.exit(main('xpra', $args));"
