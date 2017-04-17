@@ -142,8 +142,10 @@ def untilConcludes(is_active_cb, f, *a, **kw):
 
 def pretty_socket(s):
     try:
-        assert len(s)==2
-        return "%s:%s" % (s[0], s[1])
+        if len(s)==2:
+            return "%s:%s" % (s[0], s[1])
+        assert len(s)==4
+        return ", ".join(str(x) for x in s)
     except:
         return str(s)
 

@@ -434,6 +434,7 @@ def setup_tcp_socket(host, iport, socktype="TCP"):
     try:
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
+        log("create_tcp_socket%s", (host, iport), exc_info=True)
         raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
     def cleanup_tcp_socket():
         log.info("closing %s socket %s:%s", socktype, host, iport)
