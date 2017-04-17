@@ -22,6 +22,7 @@ from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
+from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import getuid, getgid, monotonic_time, setsid, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, \
     InitException, InitInfo, InitExit, \
@@ -1632,6 +1633,10 @@ def connect_or_fail(display_desc, opts):
         return connect_to(display_desc, opts)
     except InitException:
         raise
+    except InitExit:
+        raise
+    except InitInfo:
+        raise
     except Exception as e:
         from xpra.log import Logger
         log = Logger("network")
@@ -1718,7 +1723,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 sys.stdout.write("executing ssh command: %s\n" % (" ".join("\"%s\"" % x for x in cmd)))
             child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
         except OSError as e:
-            raise InitException("Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
+            raise InitExit(EXIT_SSH_FAILURE, "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
         def abort_test(action):
             """ if ssh dies, we don't need to try to read/write from its sockets """
             e = child.poll()
@@ -2037,7 +2042,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
-            raise
+            raise InitExit(EXIT_SSL_FAILURE, str(e))
         #ensure we handle ssl exceptions as we should from now on:
         from xpra.net.bytestreams import init_ssl
         init_ssl()
