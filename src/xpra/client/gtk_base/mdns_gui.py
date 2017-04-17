@@ -19,6 +19,7 @@ from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
+from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("mdns", "util")
 
@@ -182,7 +183,19 @@ class mdns_sessions(gtk.Window):
         #multiple modes / uris
         uri_menu = gtk.combo_box_new_text()
         d = {}
-        for rec in sorted(recs):
+        #sort by protocol so TCP comes first
+        order = {"ssl" : 10, "tcp" : 5, "ssh" : 0}
+        if WIN32:
+            #on MS Windows, prefer ssh which has a GUI for accepting keys
+            #and entering the password:
+            order["ssh"] = 8
+        def cmp_rec(a, b):
+            log.info("cmp_rec(%s, %s)", a, b)
+            def k(v):
+                text = v[-1]
+                return (text or {}).get("mode", v)
+            return cmp(k(a), k(b))
+        for rec in sorted(recs, cmp=cmp_rec):
             uri = self.get_uri(None, *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
