@@ -137,6 +137,30 @@ class ApplicationWindow:
         return {"mode"              : lambda x : validate_in_list(x, modes)}
 
 
+    def has_mdns(self):
+        try:
+            from xpra.net.mdns import get_listener_class
+            lc = get_listener_class()
+            log("mdns listener class: %s", lc)
+            if lc:
+                return True
+        except ImportError as e:
+            log("no mdns support: %s", e)
+        return False
+
+
+    def image_button(self, label="", tooltip="", icon_pixbuf=None, clicked_cb=None):
+        button = gtk.Button(label)
+        settings = button.get_settings()
+        settings.set_property('gtk-button-images', True)
+        button.connect("clicked", clicked_cb)
+        button.set_tooltip_text(tooltip)
+        if icon_pixbuf:
+            image = gtk.Image()
+            image.set_from_pixbuf(icon_pixbuf)
+            button.set_image(image)
+        return button
+
     def create_window(self):
         self.window = gtk.Window()
         self.window.connect("destroy", self.destroy)
@@ -145,44 +169,50 @@ class ApplicationWindow:
         self.window.set_title("Xpra Launcher")
         self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
-        icon_pixbuf = self.get_icon("xpra.png")
-        if icon_pixbuf:
-            self.window.set_icon(icon_pixbuf)
         self.window.set_position(WIN_POS_CENTER)
 
         vbox = gtk.VBox(False, 0)
         vbox.set_spacing(15)
 
-        # Title
+        #top row:
         hbox = gtk.HBox(False, 0)
+        # About dialog (and window icon):
+        icon_pixbuf = self.get_icon("xpra.png")
         if icon_pixbuf:
-            logo_button = gtk.Button("")
-            settings = logo_button.get_settings()
-            settings.set_property('gtk-button-images', True)
-            logo_button.connect("clicked", about)
-            logo_button.set_tooltip_text("About")
-            image = gtk.Image()
-            image.set_from_pixbuf(icon_pixbuf)
-            logo_button.set_image(image)
+            self.window.set_icon(icon_pixbuf)
+            logo_button = self.image_button("", "About", icon_pixbuf, about)
             hbox.pack_start(logo_button, expand=False, fill=False)
+        # Bug report tool link:
         icon_pixbuf = self.get_icon("bugs.png")
         self.bug_tool = None
         if icon_pixbuf:
-            bug_button = gtk.Button("")
-            settings = bug_button.get_settings()
-            settings.set_property('gtk-button-images', True)
             def bug(*args):
                 if self.bug_tool==None:
                     from xpra.client.gtk_base.bug_report import BugReport
                     self.bug_tool = BugReport()
                     self.bug_tool.init(show_about=False)
                 self.bug_tool.show()
-            bug_button.connect("clicked", bug)
-            bug_button.set_tooltip_text("Bug Report")
-            image = gtk.Image()
-            image.set_from_pixbuf(icon_pixbuf)
-            bug_button.set_image(image)
+            bug_button = self.image_button("", "Bug Report", icon_pixbuf, bug)
             hbox.pack_start(bug_button, expand=False, fill=False)
+        # Session browser link:
+        icon_pixbuf = self.get_icon("mdns.png")
+        self.mdns_gui = None
+        log.info("mdns icon=%s, has_mdns=%s", icon_pixbuf, self.has_mdns())
+        if icon_pixbuf and self.has_mdns():
+            def mdns(*args):
+                if self.mdns_gui==None:
+                    from xpra.client.gtk_base.mdns_gui import mdns_sessions
+                    self.mdns_gui = mdns_sessions()
+                    def close_mdns():
+                        self.mdns_gui.destroy()
+                        self.mdns_gui = None
+                    self.mdns_gui.do_quit = close_mdns
+                else:
+                    self.mdns_gui.present()
+            mdns_button = self.image_button("", "Browse Sessions", icon_pixbuf, mdns)
+            hbox.pack_start(mdns_button, expand=False, fill=False)
+            
+        # Title
         label = gtk.Label("Connect to xpra server")
         label.modify_font(pango.FontDescription("sans 14"))
         hbox.pack_start(label, expand=True, fill=True)
@@ -849,125 +879,128 @@ def exception_dialog(title):
 
 
 def main():
+    from xpra.platform import program_context
+    from xpra.log import enable_color
+    with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
+        enable_color()
+        return do_main()
+
+def do_main():
     from xpra.os_util import SIGNAMES
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
 
-    from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
-    from xpra.log import enable_color
-    with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
-        enable_color()
-        gui_init()
-        try:
-            from xpra.scripts.main import parse_cmdline, fixup_debug_option
-            options, args = parse_cmdline(sys.argv)
-            debug = fixup_debug_option(options.debug)
-            if debug:
-                for x in debug.split(","):
-                    enable_debug_for(x)
-        except Exception:
-            exception_dialog("Error parsing command line")
-            return 1
+    gui_init()
+    try:
+        from xpra.scripts.main import parse_cmdline, fixup_debug_option
+        options, args = parse_cmdline(sys.argv)
+        debug = fixup_debug_option(options.debug)
+        if debug:
+            for x in debug.split(","):
+                enable_debug_for(x)
+    except Exception:
+        exception_dialog("Error parsing command line")
+        return 1
 
-        #allow config to be debugged:
-        from xpra.scripts import config
-        config.debug = log.debug
+    #allow config to be debugged:
+    from xpra.scripts import config
+    config.debug = log.debug
 
+    try:
+        app = ApplicationWindow()
+        def app_signal(signum, frame):
+            print("")
+            log("got signal %s" % SIGNAMES.get(signum, signum))
+            def show_signal():
+                app.show()
+                app.client.cleanup()
+                glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
+                glib.timeout_add(1000, app.set_info_color, True)
+            #call from UI thread:
+            glib.idle_add(show_signal)
+        if sys.version_info[0]<3:
+            #breaks GTK3..
+            signal.signal(signal.SIGINT, app_signal)
+        signal.signal(signal.SIGTERM, app_signal)
+        has_file = len(args) == 1
+        if has_file:
+            app.update_options_from_file(args[0])
+            #the compressors and packet encoders cannot be changed from the UI
+            #so apply them now:
+            configure_network(app.config)
+        debug = fixup_debug_option(app.config.debug)
+        if debug:
+            for x in debug.split(","):
+                enable_debug_for(x)
+        #suspend tray workaround for our window widgets:
         try:
-            app = ApplicationWindow()
-            def app_signal(signum, frame):
-                print("")
-                log("got signal %s" % SIGNAMES.get(signum, signum))
-                def show_signal():
-                    app.show()
-                    app.client.cleanup()
-                    glib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
-                    glib.timeout_add(1000, app.set_info_color, True)
-                #call from UI thread:
-                glib.idle_add(show_signal)
-            if sys.version_info[0]<3:
-                #breaks GTK3..
-                signal.signal(signal.SIGINT, app_signal)
-            signal.signal(signal.SIGTERM, app_signal)
-            has_file = len(args) == 1
-            if has_file:
-                app.update_options_from_file(args[0])
-                #the compressors and packet encoders cannot be changed from the UI
-                #so apply them now:
-                configure_network(app.config)
-            debug = fixup_debug_option(app.config.debug)
-            if debug:
-                for x in debug.split(","):
-                    enable_debug_for(x)
-            #suspend tray workaround for our window widgets:
-            try:
-                set_use_tray_workaround(False)
-                app.create_window()
-            finally:
-                set_use_tray_workaround(True)
-            app.update_gui_from_config()
-        except Exception:
-            exception_dialog("Error creating launcher form")
-            return 1
-        try:
-            if app.config.autoconnect:
-                #file says we should connect,
-                #do that only (not showing UI unless something goes wrong):
-                glib.idle_add(app.do_connect)
-            if not has_file:
-                app.reset_errors()
-            gui_ready()
-            if not app.config.autoconnect or app.config.debug:
-                #FIXME: this is ugly as hell
-                #We have to wait for the main loop to be running
-                #to get the NSApplicationOpneFile signal,
-                #so we end up duplicating some of the logic from just above
-                #maybe we should always run this code from the main loop instead
-                if OSX:
-                    #wait a little bit for the "openFile" signal
-                    app.__osx_open_signal = False
-                    def do_open_file(filename):
-                        app.update_options_from_file(filename)
-                        #the compressors and packet encoders cannot be changed from the UI
-                        #so apply them now:
-                        configure_network(app.config)
-                        app.update_gui_from_config()
-                        if app.config.autoconnect:
-                            app.__osx_open_signal = True
-                            glib.idle_add(app.do_connect)
-                    def open_file(_, filename):
-                        log("open_file(%s)", filename)
-                        glib.idle_add(do_open_file, filename)
-                    def do_open_URL(url):
+            set_use_tray_workaround(False)
+            app.create_window()
+        finally:
+            set_use_tray_workaround(True)
+        app.update_gui_from_config()
+    except Exception:
+        exception_dialog("Error creating launcher form")
+        return 1
+    try:
+        if app.config.autoconnect:
+            #file says we should connect,
+            #do that only (not showing UI unless something goes wrong):
+            glib.idle_add(app.do_connect)
+        if not has_file:
+            app.reset_errors()
+        gui_ready()
+        if not app.config.autoconnect or app.config.debug:
+            #FIXME: this is ugly as hell
+            #We have to wait for the main loop to be running
+            #to get the NSApplicationOpneFile signal,
+            #so we end up duplicating some of the logic from just above
+            #maybe we should always run this code from the main loop instead
+            if OSX:
+                #wait a little bit for the "openFile" signal
+                app.__osx_open_signal = False
+                def do_open_file(filename):
+                    app.update_options_from_file(filename)
+                    #the compressors and packet encoders cannot be changed from the UI
+                    #so apply them now:
+                    configure_network(app.config)
+                    app.update_gui_from_config()
+                    if app.config.autoconnect:
                         app.__osx_open_signal = True
-                        app.update_options_from_URL(url)
-                        #the compressors and packet encoders cannot be changed from the UI
-                        #so apply them now:
-                        configure_network(app.config)
-                        app.update_gui_from_config()
                         glib.idle_add(app.do_connect)
-                    def open_URL(url):
-                        log("open_URL(%s)", url)
-                        glib.idle_add(do_open_URL, url)
-                    from xpra.platform.darwin.gui import get_OSXApplication, register_URL_handler
-                    register_URL_handler(open_URL)
-                    try:
-                        get_OSXApplication().connect("NSApplicationOpenFile", open_file)
-                    except Exception as e:
-                        log.error("Error: cannot handle file associations:")
-                        log.error(" %s", e)
-                    def may_show():
-                        log("may_show() osx open signal=%s", app.__osx_open_signal)
-                        if not app.__osx_open_signal:
-                            app.show()
-                    glib.timeout_add(500, may_show)
-                else:
-                    app.show()
-            app.run()
-        except KeyboardInterrupt:
-            pass
-        return 0
+                def open_file(_, filename):
+                    log("open_file(%s)", filename)
+                    glib.idle_add(do_open_file, filename)
+                def do_open_URL(url):
+                    app.__osx_open_signal = True
+                    app.update_options_from_URL(url)
+                    #the compressors and packet encoders cannot be changed from the UI
+                    #so apply them now:
+                    configure_network(app.config)
+                    app.update_gui_from_config()
+                    glib.idle_add(app.do_connect)
+                def open_URL(url):
+                    log("open_URL(%s)", url)
+                    glib.idle_add(do_open_URL, url)
+                from xpra.platform.darwin.gui import get_OSXApplication, register_URL_handler
+                register_URL_handler(open_URL)
+                try:
+                    get_OSXApplication().connect("NSApplicationOpenFile", open_file)
+                except Exception as e:
+                    log.error("Error: cannot handle file associations:")
+                    log.error(" %s", e)
+                def may_show():
+                    log("may_show() osx open signal=%s", app.__osx_open_signal)
+                    if not app.__osx_open_signal:
+                        app.show()
+                glib.timeout_add(500, may_show)
+            else:
+                app.show()
+        app.run()
+    except KeyboardInterrupt:
+        pass
+    return 0
 
 
 if __name__ == "__main__":

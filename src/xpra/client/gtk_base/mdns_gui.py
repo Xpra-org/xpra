@@ -76,6 +76,10 @@ class mdns_sessions(gtk.Window):
 
     def quit(self, *args):
         log("quit%s", args)
+        self.do_quit()
+
+    def do_quit(self):
+        log("do_quit()")
         gtk.main_quit()
 
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
@@ -98,6 +102,11 @@ class mdns_sessions(gtk.Window):
         if self.table:
             self.vbox.remove(self.table)
             self.table = None
+        if not self.records:
+            self.table = gtk.Label("No sessions found")
+            self.vbox.add(self.table)
+            self.table.show()
+            return
         tb = TableBuilder(1, 6, False)
         tb.add_row(gtk.Label("Host"), gtk.Label("Session"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"))
         self.table = tb.get_table()
@@ -208,6 +217,13 @@ class mdns_sessions(gtk.Window):
 
 
 def main():
+    from xpra.platform import program_context
+    from xpra.log import enable_color
+    with program_context("Xpra-Browser", "Xpra Session Browser"):
+        enable_color()
+        return do_main()
+
+def do_main():
     mdns_sessions()
     gtk_main()
 
