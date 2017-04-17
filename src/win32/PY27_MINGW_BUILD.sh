@@ -209,11 +209,12 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	mv "dist\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
 
 	if [ "${DO_SIGN}" == "1" ]; then
+		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing EXE"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ./signtool.log
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
-			echo "signtool command failed, see signtool.log:"
-			cat signtool.log
+			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
+			cat ${SIGNTOOL_LOG}
 		fi
 	fi
 	ls -la "${INSTALLER_FILENAME}"
@@ -240,11 +241,12 @@ if [ "${DO_MSI}" == "1" ]; then
 	cat "win32\msi.xml" | sed "s/INPUT/${INSTALLER_FILENAME}/g" | sed "s/OUTPUT/${MSI_FILENAME}/g" | sed "s/ZERO_PADDED_VERSION/${ZERO_PADDED_VERSION}/g" | sed "s/FULL_VERSION/${FULL_VERSION}/g" > msi.xml
 	"${MSIWRAPPER}" "msi.xml"
 	if [ "${DO_SIGN}" == "1" ]; then
+		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing MSI"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > signtool.log
+		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
-			echo "signtool command failed, see signtool.log:"
-			cat signtool.log
+			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
+			cat ${SIGNTOOL_LOG}
 		fi
 	fi
 fi
