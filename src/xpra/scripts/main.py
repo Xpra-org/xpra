@@ -1306,6 +1306,7 @@ def parse_display_name(error_cb, opts, display_name):
                 #otherwise, we have to assume they are all part of IPv6
                 #we could count them at split at 8, but that would be just too fugly
                 pass
+            desc["ipv6"] = True
         elif host.find(":")>0:
             host, port_str = host.split(":", 1)
         if port_str:
@@ -1775,7 +1776,12 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
     elif dtype in ("tcp", "ssl", "ws", "wss"):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if display_desc.get("ipv6"):
+            assert socket.has_ipv6, "no IPv6 support"
+            family = socket.AF_INET6
+        else:
+            family = socket.AF_INET
+        sock = socket.socket(family, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         strict_host_check = display_desc.get("strict-host-check")
