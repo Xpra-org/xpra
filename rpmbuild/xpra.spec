@@ -600,10 +600,14 @@ fi
 
 
 %changelog
-* Sun Apr 02 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
+* Tue Apr 18 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
 - fix SSL connection failures
 - fix SSL servers on MS Windows
+- fix inconsistent desktop state after using the screenshot feature on MS Windows
+- fix raising of windows when connecting from Mac OS
+- fix exit code of helper commands on Mac OS
 - fix X11 ICC profile version format
+- fix server errors with locked batch delays
 - fix window opacity forwarding
 - fix missing system tray with Ubuntu Zesty
 - fix nvenc codec name shown in config file example
@@ -611,10 +615,15 @@ fi
 - fix HTML5 password field wrongly greyed out
 - fix HTML5 window title bar wrapping
 - fix HTML5 handling of Unicode window titles
+- fix SSL-upgradable sockets not exposed via mDNS
+- fix connection to IPv6 addresses
 - fix backwards compatibility for hmac authentication
+- fix error handling of screenshot feature from the bug report tool
 - more helpful warning message when dbus bindings are missing
+- improve error handling when native Mac OS bindings are missing
 - workaround broken MSYS2 dependencies
 - support relative file paths in authentication modules
+- Mac OS library updates: Pillow 4.1, ffmpeg 3.3
 
 * Wed Mar 29 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix X11 server crashes with very short-lived OR windows
