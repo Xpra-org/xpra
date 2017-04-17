@@ -20,8 +20,12 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
 from xpra.os_util import WIN32
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("mdns", "util")
+
+
+HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", True)
 
 
 class mdns_sessions(gtk.Window):
@@ -93,7 +97,9 @@ class mdns_sessions(gtk.Window):
             glib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
-        log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
+        log.info("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
+        if HIDE_IPV6 and address.find(":")>=0:
+            return
         text = text or {}
         self.records.append((interface, protocol, name, stype, domain, host, address, port, text))
         glib.idle_add(self.populate_table)
