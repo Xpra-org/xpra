@@ -184,18 +184,19 @@ class mdns_sessions(gtk.Window):
         uri_menu = gtk.combo_box_new_text()
         d = {}
         #sort by protocol so TCP comes first
-        order = {"ssl" : 10, "tcp" : 5, "ssh" : 0}
+        order = {"ssl" : 2, "tcp" : 4, "ssh" : 6}
         if WIN32:
             #on MS Windows, prefer ssh which has a GUI for accepting keys
             #and entering the password:
-            order["ssh"] = 8
+            order["ssh"] = 0
         def cmp_rec(a, b):
-            log.info("cmp_rec(%s, %s)", a, b)
             def k(v):
-                text = v[-1]
-                return (text or {}).get("mode", v)
+                text = v[-1]    #the text record
+                mode = (text or {}).get("mode", v)
+                return order.get(mode, mode)
             return cmp(k(a), k(b))
-        for rec in sorted(recs, cmp=cmp_rec):
+        srecs = sorted(recs, cmp=cmp_rec)
+        for rec in srecs:
             uri = self.get_uri(None, *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
