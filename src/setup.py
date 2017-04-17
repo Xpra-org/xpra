@@ -1324,7 +1324,7 @@ if WIN32:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
         if mdns_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
-            add_gui_exe("xpra/client/gtk_base/mdns_gui",        "mdns.ico",         "Xpra_browser")
+            add_gui_exe("xpra/client/gtk_base/mdns_gui",        "mdns.ico",         "Xpra_Browser")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
