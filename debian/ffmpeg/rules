@@ -62,4 +62,5 @@ override_dh_auto_configure:
 				--enable-shared \
 				--enable-debug \
 				--disable-stripping \
-				--disable-symver
+				--disable-symver \
+				--enable-rpath
