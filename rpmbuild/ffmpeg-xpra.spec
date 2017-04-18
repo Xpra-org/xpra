@@ -141,10 +141,10 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Tue Mar 18 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-2
+* Tue Apr 18 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-2
 - enable rpath
 
-* Fri Mar 14 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-1
+* Fri Apr 14 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-1
 - new upstream release
 
 * Mon Feb 13 2017 Antoine Martin <antoine@devloop.org.uk> 3.2.4-1
