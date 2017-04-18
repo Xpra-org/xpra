@@ -77,8 +77,9 @@ This package contains the development files for %{name}.
 	--enable-shared \
 	--enable-debug \
 	--disable-stripping \
-	--disable-symver
-	#--enable-static \
+	--disable-symver \
+	--enable-rpath
+	#--enable-static
 
 make %{?_smp_mflags}
 
@@ -140,6 +141,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Mar 18 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-2
+- enable rpath
+
 * Fri Mar 14 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-1
 - new upstream release
 
