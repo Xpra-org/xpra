@@ -501,7 +501,8 @@ rm -rf $RPM_BUILD_ROOT
 %files common-client
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 %config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
-%{_datadir}/applications/xpra_launcher.desktop
+%{_datadir}/applications/xpra-launcher.desktop
+%{_datadir}/applications/xpra-browser.desktop
 %{_datadir}/applications/xpra.desktop
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 
@@ -579,7 +580,8 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %check
-/usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra_launcher.desktop
+/usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
+/usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-browser.desktop
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra.desktop
 
 %if 0%{?debug_tests}

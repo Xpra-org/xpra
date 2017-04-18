@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+import sys
+from xpra.platform import program_context
+
+with program_context("Xpra-Browser", "Xpra Session Browser"):
+    from xpra.client.gtk_base.mdns_gui import main
+    sys.exit(main())
