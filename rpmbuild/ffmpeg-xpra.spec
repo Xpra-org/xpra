@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     3.3
-Release:     2%{?dist}
+Release:     3%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -34,7 +34,7 @@ This package contains the development files for %{name}.
 
 %build
 # set pkg_config_path for xpra video libs
-./configure \
+PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--prefix="%{_prefix}" \
 	--libdir="%{_libdir}/xpra" \
 	--shlibdir="%{_libdir}/xpra" \
@@ -141,6 +141,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Apr 18 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-3
+- use xpra's PKG_CONFIG_PATH
+
 * Tue Apr 18 2017 Antoine Martin <antoine@devloop.org.uk> 3.3-2
 - enable rpath
 
