@@ -18,6 +18,10 @@
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
 
+#CentOS doesn't have those and will overrides the macro with "Requires" for both:
+%define Suggests Suggests
+%define Recommends Recommends
+
 #some of these dependencies may get turned off (empty) on some platforms:
 %define build_args --with-Xdummy --without-enc_x265
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
@@ -29,7 +33,6 @@
 %define requires_jpeg , turbojpeg
 %define requires_shadow shadow-utils
 %define requires_cython python2-Cython
-%define requires_cython3 python3-Cython
 %define requires_pygobject2 pygobject2
 %define requires_pygtk2 pygtk2
 %define requires_dbus dbus-python dbus-x11
@@ -47,8 +50,9 @@
 %define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly
 #this requires rpmfusion:
 #gstreamer1-plugins-bad-free
-%define requires_sound %{gstreamer1}, python-gstreamer1, pulseaudio, pulseaudio-utils
-%define py3requires_sound %{gstreamer1}, python3-gstreamer1, pulseaudio, pulseaudio-utils
+%define requires_pulseaudio pulseaudio, pulseaudio-utils
+%define requires_sound %{gstreamer1}, python-gstreamer1
+%define py3requires_sound %{gstreamer1}, python3-gstreamer1
 #This would add support for mp3, but is not in the default repositories:
 %define with_python3 1
 %define with_selinux 1
@@ -59,6 +63,8 @@
 
 # any centos / rhel supported:
 %if 0%{?el7}
+%define Suggests Requires
+%define Recommends Requires
 %define requires_setuptools python-setuptools
 #not available:
 %define requires_websockify %{nil}
@@ -66,7 +72,6 @@
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define requires_sound %{nil}
-%define py3requires_sound %{nil}
 %define requires_opengl , python-pyopengl, pygtkglext
 #don't have python3 by default:
 %define with_python3 0
@@ -111,8 +116,8 @@
 %define gstreamer1 , gstreamer, gstreamer-plugins-base, gstreamer-plugins-good, gstreamer-plugins-ugly
 #no python-gstreamer in the standard repos:
 #(see recommends below)
-%define requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
-%define py3requires_sound %{gstreamer1}, pulseaudio, pulseaudio-utils
+%define requires_sound %{gstreamer1}
+%define py3requires_sound %{gstreamer1}
 %define requires_opengl , python-opengl, python-opengl-accelerate, python-gtkglext
 %define py3requires_opengl , python3-opengl, python3-opengl-accelerate
 %define requires_crypto python-cryptography
@@ -173,17 +178,12 @@ Summary: Common files for xpra server packages
 Group: Networking
 BuildArch: noarch
 Requires: xpra-common
-#used for locating the Xorg binary:
-Requires: which
-Requires: libfakeXinerama
-Requires: gtk2-immodule-xim
-Requires: %{requires_xorg}
+%{Recommends}: which, libfakeXinerama, gtk2-immodule-xim
 Requires(post): openssl
-%if 0%{?fedora}
 Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
-%endif
+Requires: %{requires_xorg}
 %if 0%{?with_selinux}
 BuildRequires: checkpolicy, selinux-policy-devel
 Requires: selinux-policy
@@ -209,22 +209,24 @@ This package contains Xpra's HTML5 client.
 Summary: python2 build of xpra
 Group: Networking
 Conflicts: xpra < 2.1
+Requires: python2
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: python %{requires_lzo} %{requires_webcam} %{requires_jpeg}
 Requires: python2-lz4
-Requires: %{requires_dbus}
-Requires: %{requires_crypto}
-Requires: python2-netifaces
 Requires: python2-rencode
 Requires: python2-pillow
 Requires: %{libvpx}
-%if 0%{?fedora}
-Requires: python-avahi
-Requires: libyuv
-%endif
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 Requires: %{numpy}
+%{Recommends}: python %{requires_lzo} %{requires_webcam} %{requires_jpeg}
+%{Recommends}: %{requires_dbus}
+%{Recommends}: python2-netifaces
+%{Suggests}: %{requires_crypto}
+%if 0%{?fedora}
+Recommends: python-avahi
+Requires: libyuv
+BuildRequires: libyuv-devel
+%endif
 %if 0%{?suse_version}
 #only use recommends because these are not in the standard repos:
 Recommends: python-gstreamer
@@ -248,9 +250,6 @@ BuildRequires: %{requires_pygobject2}-devel
 %if 0%{?el7}%{?fedora}
 BuildRequires: turbojpeg-devel
 %endif
-%if 0%{?fedora}
-BuildRequires: libyuv-devel
-%endif
 BuildRequires: x264-xpra-devel
 BuildRequires: ffmpeg-xpra-devel
 %if 0%{?run_tests}
@@ -265,8 +264,11 @@ Summary: python2 build of xpra audio support
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
-Requires: python %{requires_sound}
-Requires: python2-rencode
+%if ! 0%{?el7}
+#EL7 requires 3rd party repos like "media.librelamp.com"
+Requires: %{requires_sound}
+%endif
+Recommends: %{requires_pulseaudio}
 BuildRequires: python, %{requires_setuptools}
 %description -n python2-xpra-audio
 This package contains audio support for python2 builds of xpra.
@@ -277,10 +279,10 @@ Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
-Requires: %{requires_printing} %{requires_opengl}
 Requires: %{requires_pygtk2}
+%{Recommends}: %{requires_opengl}
+%{Recommends}: %{requires_printing}
 %if ! 0%{?el7}
-#sshpass is not available on CentOS 7.x
 Requires: sshpass
 %endif
 %description -n python2-xpra-client
@@ -292,12 +294,12 @@ Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
-Requires: %{requires_websockify} %{requires_printing} %{requires_server_printing}
+%{Recommends}: %{requires_websockify} %{requires_printing} %{requires_server_printing}
 BuildRequires: pam-devel
 BuildRequires: gcc
 BuildRequires: %{requires_cython}
 %ifarch x86_64
-Requires: python2-pynvml
+%{Recommends}: python2-pynvml
 %endif
 %description -n python2-xpra-server
 This package contains the python2 xpra server.
@@ -308,26 +310,32 @@ This package contains the python2 xpra server.
 Summary: Xpra gives you "persistent remote applications" for X.
 Group: Networking
 Requires: xpra-common = %{version}-%{build_no}%{dist}
-Requires: python3 %{py3requires_lzo}
+Requires: python3
 Requires: python3-lz4
 Requires: python3-pillow
-Requires: %{py3requires_crypto}
-#TODO:
-#Requires: dbus-python
-Requires: python3-netifaces
 Requires: python3-rencode
-Requires: python3-pillow
 Requires: python3-numpy
-Requires: python3-gobject
 Requires: %{libvpx}
+Requires: x264-xpra
+Requires: ffmpeg-xpra
+
 %if 0%{?fedora}
+#python3 ports are missing:
+#Requires: %{py3requires_lzo}
+#Requires: dbus-python
+Requires: %{py3requires_crypto}
+Requires: python3-netifaces
+Requires: python3-gobject
+BuildRequires: libyuv-devel
+Requires: libyuv
+%else
+Requires: %{py3requires_crypto}
+Requires: python3-netifaces
+Requires: python3-gobject
 BuildRequires: libyuv-devel
 Requires: libyuv
 %endif
-Requires: x264-xpra
-Requires: ffmpeg-xpra
 BuildRequires: gcc, gcc-c++
-BuildRequires: %{requires_cython3}
 BuildRequires: %{py3requires_crypto}
 BuildRequires: python3-devel
 BuildRequires: python3-Cython
@@ -336,6 +344,8 @@ BuildRequires: gtk3-devel
 BuildRequires: python3-gobject
 BuildRequires: gobject-introspection-devel
 BuildRequires: python3-rencode
+BuildRequires: x264-xpra-devel
+BuildRequires: ffmpeg-xpra-devel
 %description -n python3-xpra
 This package contains the python3 build of xpra.
 
@@ -344,8 +354,7 @@ Summary: python3 build of xpra audio support
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: python3-xpra = %{version}-%{build_no}%{dist}
-Requires: python3 %{py3requires_sound}
-Requires: python3-rencode
+Requires: %{py3requires_sound}
 BuildRequires: python3
 %description -n python3-xpra-audio
 This package contains audio support for python2 builds of xpra.
@@ -356,7 +365,7 @@ Group: Networking
 Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
 Requires: python3-xpra = %{version}-%{build_no}%{dist}
-Requires: %{py3requires_printing} %{py3requires_opengl}
+%{Recommends}: %{py3requires_printing} %{py3requires_opengl}
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
@@ -367,10 +376,10 @@ Conflicts: xpra < 2.1
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
 Requires: python3-xpra = %{version}-%{build_no}%{dist}
 #Requires: %{requires_websockify}
-Requires: %{py3requires_printing} %{requires_server_printing}
-Requires: gtk3-immodule-xim
+Recommends: %{py3requires_printing} %{requires_server_printing}
+Recommends: gtk3-immodule-xim
 BuildRequires: gcc, gcc-c++
-BuildRequires: %{requires_cython3}
+BuildRequires: python3-Cython
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
 %endif
