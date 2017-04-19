@@ -4,7 +4,8 @@ usr/lib/sysusers.d/xpra.conf
 usr/bin/xpra
 usr/bin/xpra_launcher
 usr/lib/cups/backend/xpraforwarder
-usr/share/applications/xpra_launcher.desktop
+usr/share/applications/xpra-launcher.desktop
+usr/share/applications/xpra-browser.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml
 usr/share/xpra/icons/*.png
 usr/share/xpra/www/*
