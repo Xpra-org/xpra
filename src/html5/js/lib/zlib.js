@@ -3737,4 +3737,4 @@ goog.exportSymbol("Zlib.Zip.prototype.compress", Zlib.Zip.prototype.compress);
 goog.exportSymbol("Zlib.Zip.prototype.setPassword", Zlib.Zip.prototype.setPassword);
 Zlib.exportObject("Zlib.Zip.CompressionMethod", {"STORE":Zlib.Zip.CompressionMethod.STORE, "DEFLATE":Zlib.Zip.CompressionMethod.DEFLATE});
 Zlib.exportObject("Zlib.Zip.OperatingSystem", {"MSDOS":Zlib.Zip.OperatingSystem.MSDOS, "UNIX":Zlib.Zip.OperatingSystem.UNIX, "MACINTOSH":Zlib.Zip.OperatingSystem.MACINTOSH});
-}).call(this); //@ sourceMappingURL=zlib.pretty.js.map
+}).call(this); //# sourceMappingURL=zlib.pretty.js.map
