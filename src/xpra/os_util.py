@@ -200,7 +200,7 @@ def get_user_uuid():
 
 monotonic_time = time.time
 try:
-    from xpra.monotonic_time import _monotonic_time
+    from xpra.monotonic_time import _monotonic_time     #@UnresolvedImport
     assert _monotonic_time()>0
     monotonic_time = _monotonic_time
 except Exception as e:
