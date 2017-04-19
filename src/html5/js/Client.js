@@ -1033,7 +1033,7 @@ XpraClient.prototype._close_audio_mediasource = function() {
 					this.media_source.endOfStream();
 				}
 			} catch(e) {
-				me.warn("audio media source EOS error:", e);
+				this.warn("audio media source EOS error:", e);
 			}
 			this.media_source = null;
 		}
