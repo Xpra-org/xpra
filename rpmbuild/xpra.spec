@@ -268,7 +268,7 @@ Requires: python2-xpra = %{version}-%{build_no}%{dist}
 #EL7 requires 3rd party repos like "media.librelamp.com"
 Requires: %{requires_sound}
 %endif
-Recommends: %{requires_pulseaudio}
+%{Recommends}: %{requires_pulseaudio}
 BuildRequires: python, %{requires_setuptools}
 %description -n python2-xpra-audio
 This package contains audio support for python2 builds of xpra.
