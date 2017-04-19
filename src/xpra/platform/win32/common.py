@@ -6,7 +6,7 @@
 
 import ctypes
 
-from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_uint, c_double, c_long
+from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP
 LRESULT = c_long
