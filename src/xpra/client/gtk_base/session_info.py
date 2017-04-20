@@ -140,7 +140,7 @@ class SessionInfo(gtk.Window):
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
         tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
-        tb.new_row("Xpra", label(xpra.__version__), label(self.client._remote_version or "unknown"))
+        tb.new_row("Xpra", label(xpra.version), label(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time

@@ -15,6 +15,7 @@ log = Logger("proxy")
 enclog = Logger("encoding")
 
 
+import xpra
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.main import setuidgid
@@ -345,8 +346,7 @@ class ProxyInstanceProcess(Process):
                 self.stop("socket request", None)
                 return
             elif caps.get("version_request", False):
-                from xpra import __version__
-                proto.send_now(("hello", {"version" : __version__}))
+                proto.send_now(("hello", {"version" : xpra.version}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")

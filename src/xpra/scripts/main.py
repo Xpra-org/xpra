@@ -18,7 +18,7 @@ import signal
 import shlex
 import traceback
 
-from xpra import __version__ as XPRA_VERSION        #@UnresolvedImport
+import xpra
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
@@ -225,7 +225,7 @@ def parse_cmdline(cmdline):
     return do_parse_cmdline(cmdline, defaults)
 
 def full_version_str():
-    s = XPRA_VERSION
+    s = xpra.version
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
         s += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])

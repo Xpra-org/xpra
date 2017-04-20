@@ -26,7 +26,7 @@ def add_audio_tagging_env(env_dict=os.environ, icon_path=None):
     env_dict.update({
                      "PULSE_PROP_application.name"      : "xpra",
                      "PULSE_PROP_application.id"        : "xpra",
-                     "PULSE_PROP_application.version"   : xpra.__version__,
+                     "PULSE_PROP_application.version"   : xpra.version,
                      "PULSE_PROP_media.role"            : "music",
                      })
     if not icon_path:

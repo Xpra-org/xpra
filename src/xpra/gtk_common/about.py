@@ -10,8 +10,8 @@ from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
 gtk = import_gtk()
 import webbrowser
 
+import xpra
 from xpra.scripts.config import get_build_info
-from xpra import __version__ as XPRA_VERSION    #@UnresolvedImport
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.log import Logger
 log = Logger("info")
@@ -56,7 +56,7 @@ def about(on_close=None):
         if xpra_icon:
             dialog.set_icon(xpra_icon)
     dialog.set_name("Xpra")
-    dialog.set_version(XPRA_VERSION)
+    dialog.set_version(xpra.version)
     dialog.set_authors(('Antoine Martin <antoine@devloop.org.uk>',
                         'Nathaniel Smith <njs@pobox.com>',
                         'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
