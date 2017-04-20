@@ -26,7 +26,6 @@ authlog = Logger("auth")
 timeoutlog = Logger("timeout")
 
 import xpra
-from xpra.server import ClientException
 from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
@@ -49,6 +48,13 @@ main_thread = threading.current_thread()
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = float(os.environ.get("XPRA_SERVER_SOCKET_TIMEOUT", "0.1"))
+
+
+#class used to distinguish internal errors
+#which should not be shown to the client,
+#from useful messages we do want to pass on
+class ClientException(Exception):
+    pass
 
 
 def get_server_info():
@@ -1157,7 +1163,7 @@ class ServerCore(object):
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
         capabilities.update({
-                        "version"               : XPRA_VERSION,
+                        "version"               : xpra.version,
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),
