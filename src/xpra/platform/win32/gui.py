@@ -862,10 +862,10 @@ def get_virtualscreenmetrics():
 
 def take_screenshot():
     #would be better to refactor the code..
-    from xpra.platform.win32.shadow_server import Win32RootWindowModel
-    rwm = Win32RootWindowModel(object())
-    v = rwm.take_screenshot()
-    rwm.cleanup()
+    from xpra.platform.win32.gdi_screen_capture import GDICapture
+    gdic = GDICapture()
+    v = gdic.take_screenshot()
+    gdic.cleanup()
     return v
 
 
