@@ -1317,7 +1317,7 @@ class NVENCException(Exception):
         msg = "%s - returned %s" % (fn, nvencStatusInfo(code))
         Exception.__init__(self, msg)
 
-cdef raiseNVENC(NVENCSTATUS ret, msg):
+cdef inline raiseNVENC(NVENCSTATUS ret, msg):
     if ret!=0:
         raise NVENCException(ret, msg)
 

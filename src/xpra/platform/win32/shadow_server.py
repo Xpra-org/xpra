@@ -52,6 +52,8 @@ BUTTON_EVENTS = {
                  }
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
+SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
+SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 
 
 class Win32RootWindowModel(RootWindowModel):
@@ -60,21 +62,50 @@ class Win32RootWindowModel(RootWindowModel):
         RootWindowModel.__init__(self, root)
         self.metrics = None
         self.dc, self.memdc, self.bitmap = None, None, None
-        self.bit_depth = 32
         self.bitblt_err_time = 0
-        self.capture = GDICapture()
+        self.capture = self.init_capture()
+        log("Win32RootWindowModel(%s) capture=%s", root, self.capture)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
 
+    def init_capture(self):
+        if SHADOW_NVFBC:
+            try:
+                from xpra.codecs.nvfbc.fbc_capture import NvFBC_Capture, init_nvfbc_library
+            except ImportError as e:
+                log("NvFBC capture is not available", exc_info=True)
+            else:
+                try:
+                    init_nvfbc_library()
+                    capture = NvFBC_Capture()
+                    capture.init_context()
+                    return capture
+                except Exception as e:
+                    log("NvFBC_Capture", exc_info=True)
+                    log.warn("Warning: NvFBC screen capture initialization failed:")
+                    log.warn(" %s", e)
+                    log.warn(" using the slower GDI capture code")
+        if SHADOW_GDI:
+            return GDICapture()
+        raise Exception("no screen capture methods enabled (GDI capture is disabled)")
+
     def cleanup(self):
         RootWindowModel.cleanup(self)
         c = self.capture
         if c:
             self.capture = None
-            c.cleanup()
+            c.clean()
+
+    def get_info(self):
+        c = self.capture
+        info = {}
+        if c:
+            info["capture"] = c.get_info()
+        return info
+
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()
@@ -307,6 +338,7 @@ class ShadowServer(GTKShadowServerBase):
 
     def get_info(self, proto):
         info = GTKServerBase.get_info(self, proto)
+        info.update(GTKShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
                                    "type"       : "Python/gtk2/win32-shadow",

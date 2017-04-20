@@ -75,11 +75,17 @@ class GDICapture(object):
         self.bitblt_err_time = 0
         self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
 
-    def cleanup(self):
+    def get_info(self):
+        return {
+            "type"  : "gdi",
+            "depth" : self.bit_depth,
+            }
+
+    def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x=0, y=0, width=0, height=0):
         start = time.time()
         desktop_wnd = GetDesktopWindow()
         metrics = get_virtualscreenmetrics()
@@ -88,6 +94,10 @@ class GDICapture(object):
             self.metrics = metrics
             self.dc, self.memdc, self.bitmap = None, None, None
         dx, dy, dw, dh = metrics
+        if width==0:
+            width = dw
+        if height==0:
+            height = dh
         #clamp rectangle requested to the virtual desktop size:
         if x<dx:
             width -= x-dx
@@ -102,7 +112,7 @@ class GDICapture(object):
         if not self.dc:
             self.dc = GetWindowDC(desktop_wnd)
             assert self.dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
-            self.bit_depth =  GetDeviceCaps(self.dc, win32con.BITSPIXEL)
+            self.bit_depth = GetDeviceCaps(self.dc, win32con.BITSPIXEL)
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
             self.bitmap = CreateCompatibleBitmap(self.dc, width, height)
@@ -186,6 +196,7 @@ class GDICapture(object):
 
 def main():
     import sys
+    import os.path
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
 
@@ -193,7 +204,8 @@ def main():
     with program_context("Screen-Capture", "Screen Capture"):
         capture = GDICapture()
         image = capture.take_screenshot()
-        filename = "./screenshot-%i.png" % time.time()
+        from xpra.platform.paths import get_download_dir
+        filename = os.path.join(get_download_dir(), "gdi-screenshot-%i.png" % time.time())
         with open(filename, 'wb') as f:
             f.write(image[4])
 

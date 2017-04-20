@@ -195,6 +195,7 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
+nvfbc_ENABLED = DEFAULT and BITS==64 and WIN32
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
 
@@ -211,7 +212,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7", "cuda_rebuild",
+            "nvenc7", "cuda_rebuild", "nvfbc",
             "vpx", "pillow", "jpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -252,10 +253,11 @@ install = "dist"
 rpath = None
 ssl_cert = None
 ssl_key = None
+nvfbc_path = "E:\\NVIDIA Capture SDK\\"
 filtered_args = []
 for arg in sys.argv:
     matched = False
-    for x in ("rpath", "ssl-cert", "ssl-key", "install"):
+    for x in ("rpath", "ssl-cert", "ssl-key", "install", "nvfbc_path"):
         varg = "--%s=" % x
         if arg.startswith(varg):
             value = arg[len(varg):]
@@ -327,6 +329,12 @@ if "clean" not in sys.argv:
     if not enc_x264_ENABLED and not vpx_ENABLED:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
+    if nvfbc_ENABLED and not os.path.exists(nvfbc_path):
+        print("Warning: cannot find NvFBC SDK in")
+        print(" %s" % nvfbc_path)
+        print(" nvfbc codec disabled")
+        nvfbc_ENABLED = False
+
 
 #*******************************************************************************
 # default sets:
@@ -1320,6 +1328,7 @@ if WIN32:
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
+            add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if gtk2_ENABLED:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
@@ -1377,6 +1386,8 @@ if WIN32:
         if nvenc7_ENABLED:
             add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
             add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
+        if nvfbc_ENABLED:
+            add_console_exe("xpra/codecs/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
 
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
@@ -1858,8 +1869,19 @@ if server_ENABLED:
 
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
+toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
+if nvfbc_ENABLED:
+    nvfbc_pkgconfig = pkgconfig()
+    nvfbc_inc = os.path.join(nvfbc_path, "inc") 
+    add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-I%s" % nvfbc_inc)
+    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture",
+                         ["xpra/codecs/nvfbc/fbc_capture.pyx"],
+                         language="c++",
+                         **nvfbc_pkgconfig))
+
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
-toggle_packages(nvenc7_ENABLED, "xpra.codecs.cuda_common", "xpra.codecs.nv_util")
+toggle_packages(nvenc7_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
 if nvenc7_ENABLED:
     #find nvcc:

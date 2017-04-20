@@ -55,6 +55,11 @@ class ShadowServerBase(object):
     def make_hello(self, source):
         return {"shadow" : True}
 
+    def get_info(self, proto=None):
+        if self.root_window_model:
+            return {"root-window" : self.root_window_model.get_info()}
+        return {}
+
 
     def get_window_position(self, window):
         #we export the whole desktop as a window:
