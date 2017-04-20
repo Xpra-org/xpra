@@ -21,7 +21,7 @@ cryptolog = Logger("network", "crypto")
 from xpra.os_util import Queue, memoryview_to_bytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
-from xpra.net import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
+from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net import packet_encoding

@@ -13,7 +13,7 @@ import types
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
-from xpra.net import ConnectionClosedException
+from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool
 from xpra.os_util import WIN32
 

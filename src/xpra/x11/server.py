@@ -14,7 +14,7 @@ import gobject
 import math
 from collections import deque
 
-import xpra
+from xpra.version_util import XPRA_VERSION
 from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool, envint
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -214,7 +214,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             gdk.atom_intern("STRING", False),
                             8,
                             gdk.PROP_MODE_REPLACE,
-                            xpra.version)
+                            XPRA_VERSION)
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
             try:

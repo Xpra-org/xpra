@@ -18,7 +18,7 @@ import signal
 import shlex
 import traceback
 
-import xpra
+from xpra.version_util import XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
@@ -225,7 +225,7 @@ def parse_cmdline(cmdline):
     return do_parse_cmdline(cmdline, defaults)
 
 def full_version_str():
-    s = xpra.version
+    s = XPRA_VERSION
     try:
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
         s += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
@@ -1654,7 +1654,7 @@ def ssh_connect_failed(message):
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
     from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
-    from xpra.net import ConnectionClosedException  #@UnresolvedImport
+    from xpra.net.common import ConnectionClosedException
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
     conn = None

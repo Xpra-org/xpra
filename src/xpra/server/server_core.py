@@ -25,7 +25,7 @@ commandlog = Logger("command")
 authlog = Logger("auth")
 timeoutlog = Logger("timeout")
 
-import xpra
+from xpra.version_util import XPRA_VERSION
 from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
@@ -907,7 +907,7 @@ class ServerCore(object):
 
 
     def send_version_info(self, proto):
-        response = {"version" : xpra.version}
+        response = {"version" : XPRA_VERSION}
         proto.send_now(("hello", response))
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
@@ -1163,7 +1163,7 @@ class ServerCore(object):
         if source is None or source.wants_versions:
             capabilities.update(flatten_dict(get_server_info()))
         capabilities.update({
-                        "version"               : xpra.version,
+                        "version"               : XPRA_VERSION,
                         "start_time"            : int(self.start_time),
                         "current_time"          : int(now),
                         "elapsed_time"          : int(now - self.start_time),

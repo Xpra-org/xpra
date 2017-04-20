@@ -5,4 +5,3 @@
 # later version. See the file COPYING for details.
 
 __version__ = "2.1"
-version = __version__

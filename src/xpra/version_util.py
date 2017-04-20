@@ -15,6 +15,8 @@ from xpra.os_util import get_linux_distribution
 from xpra.log import Logger
 log = Logger("util")
 
+XPRA_VERSION = xpra.__version__     #@UndefinedVariable
+
 def version_as_numbers(version):
     return [int(x) for x in version.split(".")]
 
@@ -24,7 +26,7 @@ def version_compat_check(remote_version):
         log(msg)
         return msg
     rv = version_as_numbers(remote_version)
-    lv = version_as_numbers(xpra.version)
+    lv = version_as_numbers(XPRA_VERSION)
     if rv==lv:
         log("identical remote version: %s", remote_version)
         return None
@@ -36,7 +38,7 @@ def version_compat_check(remote_version):
     if rv[0]>0:
         log("newer remote version %s may work, we'll see..", remote_version)
         return  None
-    log("local version %s should be compatible with remote version: %s", xpra.version, remote_version)
+    log("local version %s should be compatible with remote version: %s", XPRA_VERSION, remote_version)
     return None
 
 
@@ -69,7 +71,7 @@ def get_host_info():
 
 def get_version_info():
     props = {
-             "version"  : xpra.version
+             "version"  : XPRA_VERSION
              }
     try:
         from xpra.src_info import LOCAL_MODIFICATIONS, REVISION

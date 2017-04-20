@@ -28,7 +28,7 @@ from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
-from xpra.version_util import local_version
+from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.scripts.server import create_unix_domain_socket
@@ -346,7 +346,7 @@ class ProxyInstanceProcess(Process):
                 self.stop("socket request", None)
                 return
             elif caps.get("version_request", False):
-                proto.send_now(("hello", {"version" : xpra.version}))
+                proto.send_now(("hello", {"version" : XPRA_VERSION}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")

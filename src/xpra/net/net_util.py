@@ -18,7 +18,7 @@ netifaces_version = None
 try:
 	import netifaces				#@UnresolvedImport
 	log("netifaces loaded sucessfully")
-	netifaces_version = netifaces.version
+	netifaces_version = netifaces.version		#@UndefinedVariable
 except:
 	has_netifaces = False
 	log.warn("python netifaces package is missing")
@@ -37,17 +37,17 @@ def get_free_tcp_port():
 def get_interfaces():
 	if not has_netifaces:
 		return	[]
-	return	netifaces.interfaces()
+	return	netifaces.interfaces()			#@UndefinedVariable
 
 def get_gateways():
 	if not has_netifaces:
 		return	{}
 	#versions older than 0.10.5 can crash when calling gateways()
 	#https://bitbucket.org/al45tair/netifaces/issues/15/gateways-function-crash-segmentation-fault
-	if netifaces.version<'0.10.5':
+	if netifaces.version<'0.10.5':			#@UndefinedVariable
 		return {}
 	try:
-		d =	netifaces.gateways()
+		d =	netifaces.gateways()			#@UndefinedVariable
 		AF_NAMES = {}
 		for k in dir(netifaces):
 			if k.startswith("AF_"):
@@ -75,7 +75,7 @@ def get_bind_IPs():
 def do_get_bind_IPs():
 	global iface_ipmasks
 	ips = []
-	ifaces = netifaces.interfaces()
+	ifaces = netifaces.interfaces()			#@UndefinedVariable
 	log("ifaces=%s", ifaces)
 	for iface in ifaces:
 		if_ipmasks = []
@@ -97,7 +97,7 @@ def do_get_bind_IPs():
 
 def do_get_bind_ifacemask(iface):
 	ipmasks = []
-	address_types = netifaces.ifaddresses(iface)
+	address_types = netifaces.ifaddresses(iface)	#@UndefinedVariable
 	for addresses in address_types.values():
 		for address in addresses:
 			if 'netmask' in address and 'addr' in address:
