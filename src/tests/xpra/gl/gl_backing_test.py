@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger()
 log.enable_debug()
 
-from tests.xpra.fake_client import FakeClient
+from tests.xpra.clients.fake_client import FakeClient
 
 
 def gl_backing_test(gl_client_window_class=None, w=200, h=100):
@@ -40,7 +40,7 @@ def gl_backing_test(gl_client_window_class=None, w=200, h=100):
 
 
 def main():
-    from xpra.client.gl.gl_client_window import GLClientWindow
+    from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
     gl_backing_test(gl_client_window_class=GLClientWindow)
     gtk.main()
 

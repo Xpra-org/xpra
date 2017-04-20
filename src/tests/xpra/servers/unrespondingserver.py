@@ -60,7 +60,7 @@ def main():
     print("main()")
     import gtk
     import signal
-    from xpra.scripts.server import setup_local_socket, start_Xvfb, check_xvfb_process
+    from xpra.scripts.server import create_unix_domain_socket, start_Xvfb, check_xvfb_process
     from xpra.scripts.main import parse_cmdline, configure_logging
     from xpra.platform.dotxpra import DotXpra
     script_file = sys.argv[0]
@@ -76,7 +76,8 @@ def main():
     assert mode=="start", "only start mode is supported by this test server"
     configure_logging(opts, mode)
     dotxpra = DotXpra(opts.socket_dir)
-    socket, cleanup_socket = setup_local_socket(dotxpra, display_name, False, opts.mmap_group)
+    sockpath = dotxpra.socket_path(display_name)
+    socket, cleanup_socket = create_unix_domain_socket(sockpath)
     sockets = [socket]
     xvfb = start_Xvfb(opts.xvfb, display_name)
     assert check_xvfb_process(xvfb), "xvfb error"

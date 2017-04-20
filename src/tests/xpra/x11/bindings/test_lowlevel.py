@@ -5,10 +5,14 @@
 
 #@PydevCodeAnalysisIgnore
 
-from wimpiggy.test import *
-import wimpiggy.lowlevel as l
 import gtk
-from xpra.x11.gtk_x11.error import trap, XError
+
+from tests.xpra.session.test import TestWithSession, MockEventReceiver, assert_raises
+from xpra.gtk_common.error import trap, XError
+from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+X11Window = X11WindowBindings()
+l = X11Window
+
 
 class TestLowlevel(TestWithSession):
     def root(self, disp=None):

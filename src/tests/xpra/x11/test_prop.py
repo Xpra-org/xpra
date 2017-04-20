@@ -10,6 +10,8 @@ import struct
 import sys
 import gtk
 import cairo
+
+from tests.xpra.session.test import TestWithSession, assert_raises
 import wimpiggy.prop as p
 import wimpiggy.lowlevel
 import wimpiggy.error

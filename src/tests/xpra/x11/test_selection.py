@@ -3,7 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from tests.wimpiggy.test import TestWithSession, MockEventReceiver, assert_raises
+# pylint: skip-file
+
+from tests.xpra.session.test import TestWithSession, MockEventReceiver, assert_raises
 from wimpiggy.selection import ManagerSelection, AlreadyOwned
 import wimpiggy.lowlevel
 

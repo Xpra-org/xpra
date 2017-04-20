@@ -350,7 +350,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     _cleanups.append(ap.stop)
 
 
-def create_unix_domain_socket(sockpath, mmap_group, socket_permissions):
+def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="600"):
     from xpra.log import Logger
     if mmap_group:
         #when using the mmap group option, use '660'
@@ -506,7 +506,7 @@ def normalize_local_display_name(local_display_name):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group, socket_permissions):
+def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group=False, socket_permissions="600"):
     if not bind:
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from tests.xpra.session.test import TestWithSession, assert_raises
-from xpra.x11.gtk_x11.error import trap, XError
+from xpra.gtk_common.error import trap, XError
 # Need a way to generate X errors...
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants  #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import get_xwindow                       #@UnresolvedImport
