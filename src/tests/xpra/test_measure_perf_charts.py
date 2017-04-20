@@ -221,7 +221,6 @@ def write_html():
     for encoding in displayed_encodings.keys():
         if (encodings[encoding] == 1):
             chart_count += 1
-    box_height = 0
     row_count = math.ceil(chart_count / 2.0)
     box_height = row_count * 400
 

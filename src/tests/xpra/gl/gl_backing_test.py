@@ -21,14 +21,13 @@ def gl_backing_test(gl_client_window_class=None, w=200, h=100):
     window.show()
     def update_backing(*args):
         log("update_backing(%s)", args)
-        from xpra.codecs.codec_constants import YUV444P
         import random
         y = chr(int(random.random()*256.0))
         u = chr(int(random.random()*256.0))
         v = chr(int(random.random()*256.0))
         img_data = [y*w*h*2, u*w*h*2, v*w*h*2]
         rowstrides = [w, w, w]
-        pixel_format = YUV444P
+        pixel_format = "YUV444P"
         def update_done(*args):
             log("update_done(%s)", args)
         window._backing.do_gl_paint(0, 0, w, h, img_data, rowstrides, pixel_format, [update_done])

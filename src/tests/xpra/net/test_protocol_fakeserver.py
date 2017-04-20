@@ -15,10 +15,9 @@ GTK = True
 PLATFORM_INIT = True
 if PLATFORM_INIT:
     from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-    from xpra.platform.options import add_client_options
     from xpra.platform import init as platform_init
     platform_init()
-    nones = [x for x in (LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, add_client_options) if x is None]
+    nones = [x for x in (LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED) if x is None]
     assert len([])==0
 
 PLATFORM_GUI_INIT = PLATFORM_INIT and True

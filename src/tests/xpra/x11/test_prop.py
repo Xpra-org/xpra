@@ -7,6 +7,7 @@
 
 from tests.wimpiggy import *
 import struct
+import sys
 import gtk
 import cairo
 import wimpiggy.prop as p

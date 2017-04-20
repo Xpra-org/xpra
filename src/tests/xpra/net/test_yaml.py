@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.net.protocol import yaml_encode,yaml_decode
+from xpra.net.packet_encoding import yaml_encode,yaml_decode
 
 def test():
     d = [12, {'pycrypto.version': '2.6.1', 'window.resize-counter': True, 'build.version': '0.14.0'}]

@@ -28,7 +28,7 @@ import gobject
 import gtk
 import pango
 import webkit
-from inspector import Inspector
+#from inspector import Inspector
 
 ABOUT_PAGE = """
 <html><head><title>PyWebKitGtk - About</title></head><body>
@@ -128,7 +128,7 @@ def tab_label_style_set_cb (tab_label, style):
     context = tab_label.get_pango_context()
     metrics = context.get_metrics(tab_label.style.font_desc, context.get_language())
     char_width = metrics.get_approximate_digit_width()
-    (width, height) = gtk.icon_size_lookup(gtk.ICON_SIZE_MENU)
+    width, _ = gtk.icon_size_lookup(gtk.ICON_SIZE_MENU)
     tab_label.set_size_request(20 * pango.PIXELS(char_width) + 2 * width,
                                pango.PIXELS(metrics.get_ascent() +
     metrics.get_descent()) + 8)
@@ -177,7 +177,7 @@ class ContentPane (gtk.Notebook):
         web_view.connect("load-finished", self._view_load_finished_cb)
         web_view.connect("create-web-view", self._new_web_view_request_cb)
         web_view.connect("title-changed", self._title_changed_cb)
-        inspector = Inspector(web_view.get_web_inspector())
+        #inspector = Inspector(web_view.get_web_inspector())
 
         scrolled_window = gtk.ScrolledWindow()
         scrolled_window.props.hscrollbar_policy = gtk.POLICY_AUTOMATIC
@@ -394,12 +394,12 @@ def load_committed_cb (tabbed_pane, frame, toolbar):
 
 def destroy_cb(window, content_pane):
     """destroy window resources"""
-    num_pages = content_pane.get_n_pages()
-    while num_pages != -1:
-        child = content_pane.get_nth_page(num_pages)
-        if child:
-            view = child.get_child()
-        num_pages = num_pages - 1
+    #num_pages = content_pane.get_n_pages()
+    #while num_pages != -1:
+        #child = content_pane.get_nth_page(num_pages)
+        #if child:
+            #view = child.get_child()
+        #num_pages = num_pages - 1
     window.destroy()
     gtk.main_quit()
 

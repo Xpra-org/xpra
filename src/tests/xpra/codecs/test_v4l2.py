@@ -10,8 +10,6 @@ def test_push():
     from PIL import Image, ImageDraw
     from xpra.codecs.v4l2.pusher import Pusher  #@UnresolvedImport
     p = Pusher()
-    W = 640
-    H = 480
     W = 480
     H = 640
     p.init_context(W, H, W, "YUV420P", "/dev/video1")

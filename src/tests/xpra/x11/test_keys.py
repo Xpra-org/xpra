@@ -5,6 +5,7 @@
 
 #@PydevCodeAnalysisIgnore
 
+import gtk.gdk
 from wimpiggy.test import *
 import subprocess
 import wimpiggy.keys
