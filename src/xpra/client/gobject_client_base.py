@@ -233,6 +233,11 @@ class ConnectTestXpraClient(CommandConnectClient):
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: no server response")
 
+    def _process_connection_lost(self, packet):
+        #we should always receive a hello back and call do_command,
+        #which sets the correct exit code, landing here is an error:
+        self.quit(EXIT_FAILURE)
+
     def do_command(self):
         if self.server_capabilities:
             ctr = self.server_capabilities.get("connect_test_response")

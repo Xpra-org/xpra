@@ -2269,7 +2269,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.init_ui(opts)
         app.hello_extra = hello_extra
         app.setup_connection(connect())
-    do_run_client(app)
+    return do_run_client(app)
 
 def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     displays = []
