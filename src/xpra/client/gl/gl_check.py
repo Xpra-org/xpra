@@ -23,7 +23,7 @@ VERSION_REQ = {
                "nouveau" : [3, 0],      #older versions have issues
                }
 BLACKLIST = {
-             "renderer" : ["Software Rasterizer"]
+             "renderer" : ["Software Rasterizer", "Mesa DRI Intel(R) Ivybridge Desktop"]
              }
 
 from xpra.os_util import getUbuntuVersion
