@@ -1377,17 +1377,22 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 _cleanups.append(pam_close)
 
     if opts.daemon:
+        def noerr(fn, *args):
+            try:
+                fn(*args)
+            except:
+                pass
         log_filename1 = select_log_file(log_dir, opts.log_file, display_name)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
             if odisplay_name!=display_name:
                 #this may be used by scripts, let's try not to change it:
-                stderr.write("Actual display used: %s\n" % display_name)
-            stderr.write("Actual log file name is now: %s\n" % log_filename1)
-            stderr.flush()
-        stdout.close()
-        stderr.close()
+                noerr(stderr.write, "Actual display used: %s\n" % display_name)
+            noerr(stderr.write, "Actual log file name is now: %s\n" % log_filename1)
+            noerr(stderr.flush)
+        noerr(stdout.close)
+        noerr(stderr.close)
 
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
