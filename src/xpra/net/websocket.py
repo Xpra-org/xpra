@@ -167,7 +167,6 @@ class WSRequestHandler(WebSocketRequestHandler):
             content_length = fs[6]
             headers = {
                 "Content-type"      : ctype,
-                "Content-Length"    : content_length,
                 }
             accept = self.headers.get('accept-encoding', []).split(",")
             accept = [x.split(";")[0].strip() for x in accept]
@@ -202,6 +201,7 @@ class WSRequestHandler(WebSocketRequestHandler):
                         content = compressed_content
             f.close()
             f = None
+            headers["Content-Length"] = len(content)
             headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
             #send back response headers:
             self.send_response(200)
