@@ -855,7 +855,6 @@ XpraWindow.prototype.paint = function paint() {
  * if we're not already in the process of painting something.
  */
 XpraWindow.prototype.may_paint_now = function paint() {
-	console.log("may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
 	while (!this.paint_pending && this.paint_queue.length>0) {
 		this.paint_pending = true;
 		var item = this.paint_queue.shift();
