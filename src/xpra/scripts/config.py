@@ -840,8 +840,11 @@ def parse_bool(k, v):
         #keep default - which may be None!
         return None
     else:
-        warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
-        return None
+        try:
+            return bool(int(v))
+        except:
+            warn("Warning: cannot parse value '%s' for '%s' as a boolean" % (v, k))
+            return None
 
 def print_bool(k, v, true_str='yes', false_str='no'):
     if type(v)==type(None):
