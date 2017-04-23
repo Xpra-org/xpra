@@ -582,6 +582,24 @@ OPTION_TYPES = {
                     "env"               : list,
                }
 
+#in the options list, available in session files,
+#but not on the command line:
+NON_COMMAND_LINE_OPTIONS = [
+    "mode",
+    "proxy-video-encoders",
+    ]
+
+START_COMMAND_OPTIONS = [
+    "start", "start-child",
+    "start-after-connect", "start-child-after-connect",
+    "start-on-connect", "start-child-on-connect",
+    ]
+BIND_OPTIONS = ["bind", "bind-tcp", "bind-ssl", "bind-vsock"]
+
+#keep track of the options added since v1,
+#so we can generate command lines that work with older supported versions:
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", ""]
+
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
                   "clipboard", "clipboard-direction", "clipboard-filter-file",
@@ -613,6 +631,32 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "compressors", "packet-encoders",
                   "key-shortcut",
                   "env"]
+
+#options that clients can pass to the proxy
+#and which will be forwarded to the new proxy instance process:
+PROXY_START_OVERRIDABLE_OPTIONS = [
+    "encoding", "encodings",
+    "quality", "min-quality", "speed", "min-speed", "auto-refresh-delay",
+    "compression_level", "video-scaling",
+    "title", "wm-name", "session-name",
+    "clipboard", "clipboard-direction", "clipboard-filter-file",
+    "input-method",
+    "microphone", "speaker", "sound-source", "pulseaudio",
+    "idle-timeout", "server-idle-timeout",
+    "use-display", "fake-xinerama", "resize_display", "dpi", "pixel-depth",
+    "readonly", "keyboard-sync", "cursors", "bell", "notifications", "xsettings",
+    "system-tray", "sharing", "windows", "webcam", "html",
+    "exit-with-children", "exit-with-client",
+    "av-sync", "global-menus",
+    "printing", "file-transfer", "download-path", "open-command", "open-files", "start-new-commands",
+    #"mmap", "mmap-group", "mdns",
+    #"auth", "vsock-auth", "tcp-auth", "ssl-auth",
+    #"bind", "bind-vsock", "bind-tcp", "bind-ssl",
+    "start", "start-child",
+    "start-after-connect", "start-child-after-connect",
+    "start-on-connect", "start-child-on-connect",
+    ]
+PROXY_START_OVERRIDABLE_OPTIONS = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "").split(",") or PROXY_START_OVERRIDABLE_OPTIONS
 
 
 def get_default_key_shortcuts():

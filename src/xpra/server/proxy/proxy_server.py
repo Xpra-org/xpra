@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -26,7 +26,7 @@ from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
-from xpra.scripts.config import make_defaults_struct
+from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
 from xpra.make_thread import start_thread
 
@@ -237,21 +237,19 @@ class ProxyServer(ServerCore):
                 assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
                 sns = typedict(sns)
                 display = sns.get("display")
+                log("starting new server subprocess: mode=%s, start options=%s", mode, sns)
                 args = []
                 if display:
                     args = [display]
-                start = sns.strlistget("start")
-                start_child = sns.strlistget("start-child")
-                exit_with_children = sns.boolget("exit-with-children")
-                exit_with_client = sns.boolget("exit-with-client")
-                log("starting new server subprocess: mode=%s, socket-dir=%s, socket-dirs=%s, start=%s, start-child=%s, exit-with-children=%s, exit-with-client=%s, uid=%s, gid=%s",
-                    mode, opts.socket_dir, opts.socket_dirs, start, start_child, exit_with_children, exit_with_client, uid, gid)
+                #allow the client to override some options:
+                for x in PROXY_START_OVERRIDABLE_OPTIONS:
+                    v = sns.get(x)
+                    if v is not None:
+                        fn = x.replace("-", "_")
+                        setattr(opts, fn, v)
+                log("starting new server subprocess: options=%s", opts)
                 try:
-                    proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts,
-                                                                opts.socket_dir, opts.socket_dirs,
-                                                                start, start_child,
-                                                                exit_with_children, exit_with_client,
-                                                                uid=uid, gid=gid)
+                    proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
                     display = "socket:%s" % socket_path
                 except Exception as e:
                     log("start_server_subprocess failed", exc_info=True)

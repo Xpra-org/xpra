@@ -24,7 +24,7 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CA
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE
 from xpra.os_util import getuid, getgid, monotonic_time, setsid, WIN32, OSX
-from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, \
+from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
@@ -2204,35 +2204,18 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     params = parse_display_name(error_cb, opts, args[0])
     hello_extra = {}
-    start_child = []
-    if opts.start_child:
-        start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
-    start = []
-    if opts.start:
-        start = strip_defaults_start_child(opts.start, defaults.start)
+    #strip defaults, only keep extra ones:
+    for x in START_COMMAND_OPTIONS:     # ["start", "start-child", etc]
+        fn = x.replace("-", "_")
+        v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
+        setattr(opts, fn, v)
     if isdisplaytype(args, "ssh"):
         #add special flags to "display_as_args"
         proxy_args = []
         if params.get("display") is not None:
             proxy_args.append(params["display"])
-        for c in start_child:
-            proxy_args.append(shellquote("--start-child=%s" % c))
-        for c in start:
-            proxy_args.append(shellquote("--start=%s" % c))
-        #key=value options we forward:
-        for x in ("session-name", "encoding", "socket-dir", "dpi"):
-            v = getattr(opts, x.replace("-", "_"))
-            if v:
-                proxy_args.append("--%s=%s" % (x, v))
-        #these options must be enabled explicitly (no disable option for most of them):
-        for e in ("exit-with-children", "mmap-group", "readonly"):
-            if getattr(opts, e.replace("-", "_")) is True:
-                proxy_args.append("--%s" % e)
-        #older versions only support disabling:
-        for e in ("pulseaudio", "mmap",
-                  "system-tray", "clipboard", "bell"):
-            if getattr(opts, e.replace("-", "_")) is False:
-                proxy_args.append("--no-%s" % e)
+        for x in get_start_server_args(opts, True):
+            proxy_args.append(shellquote(x))
         params["display_as_args"] = proxy_args
         #and use a proxy subcommand to start the server:
         params["proxy_command"] = [{
@@ -2243,16 +2226,12 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     else:
         #tcp, ssl or vsock:
         sns = {
-               "start"          : start,
-               "start-child"    : start_child,
                "mode"           : mode,
                "display"        : params.get("display", ""),
                }
-        for x in ("exit-with-children", "exit-with-client",
-                  "session-name", "encoding", "socket-dir", "dpi",
-                  "pulseaudio", "mmap",
-                  "system-tray", "clipboard", "bell"):
-            v = getattr(opts, x.replace("-", "_"))
+        for x in START_COMMAND_OPTIONS:
+            fn = x.replace("-", "_")
+            v = getattr(opts, fn)
             if v:
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
@@ -2405,11 +2384,7 @@ def setuidgid(uid, gid):
     log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
 
-def start_server_subprocess(script_file, args, mode, defaults,
-                            socket_dir, socket_dirs,
-                            start=[], start_child=[],
-                            exit_with_children=False, exit_with_client=False,
-                            uid=0, gid=0):
+def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid()):
     username = ""
     home = ""
     if os.name=="posix":
@@ -2417,7 +2392,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
         e = pwd.getpwuid(uid)
         username = e.pw_name
         home = e.pw_dir
-    dotxpra = DotXpra(socket_dir, socket_dirs, username, uid=uid, gid=gid)
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
     if mode in ("start", "start-desktop"):
@@ -2443,6 +2418,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
                 display_name = guess_X11_display(dotxpra, uid, gid)
             #we now know the display name, so add it:
             args = [display_name]
+        opts.exit_with_client = True
 
     #get the list of existing sockets so we can spot the new ones:
     if display_name.startswith("S"):
@@ -2452,19 +2428,7 @@ def start_server_subprocess(script_file, args, mode, defaults,
     existing_sockets = set(dotxpra.socket_paths(check_uid=uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
-    if start_child:
-        for x in start_child:
-            cmd.append("--start-child=%s" % x)
-    if start:
-        for x in start:
-            cmd.append("--start=%s" % x)
-    if exit_with_children:
-        cmd.append("--exit-with-children")
-    if exit_with_client or mode=="shadow":
-        cmd.append("--exit-with-client")
-    cmd.append("--socket-dir=%s" % (socket_dir or ""))
-    for x in socket_dirs:
-        cmd.append("--socket-dirs=%s" % (x or ""))
+    cmd += get_start_server_args(opts)      #ie: ["--exit-with-children", "--start-child=xterm"]
     #add a unique uuid to the server env:
     from xpra.os_util import get_hex_uuid
     new_server_uuid = get_hex_uuid()
@@ -2511,6 +2475,44 @@ def start_server_subprocess(script_file, args, mode, defaults,
         proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
+
+def get_start_server_args(opts, compat=False):
+    defaults = make_defaults_struct()
+    fixup_options(defaults)
+    args = []
+    for x, ftype in OPTION_TYPES.items():
+        if x in NON_COMMAND_LINE_OPTIONS:
+            continue
+        if compat and x in OPTIONS_ADDED_SINCE_V1:
+            continue
+        fn = x.replace("-", "_")
+        ov = getattr(opts, fn)
+        dv = getattr(defaults, fn)
+        if ov==dv:
+            continue    #same as the default
+        #lists are special cased depending on how OptionParse will be parsing them:
+        if ftype==list:
+            #sys.stderr.write("%s: %s vs %s\n" % (x, ov, dv))
+            if x in START_COMMAND_OPTIONS+BIND_OPTIONS+[
+                     "pulseaudio-configure-commands",
+                     "speaker-codec", "microphone-codec",
+                     "key-shortcut", "env",
+                     "socket-dirs",
+                     ]:
+                #individual arguments (ie: "--start=xterm" "--start=gedit" ..)
+                for e in ov:
+                    args.append("--%s=%s" % (x, e))
+            else:
+                #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
+                args.append("--%s=%s" % (x, ",".join(str(x) for x in ov)))
+        elif ftype==bool:
+            args.append("--%s=%s" % (x, ["no", "yes"][int(ov)]))
+        elif ftype in (int, float, str):
+            args.append("--%s=%s" % (x, ov))
+        else:
+            raise InitException("unknown option type '%s' for '%s'" % (ftype, x))
+    return args
+
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
     #wait until the new socket appears:
@@ -2561,12 +2563,14 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                        "_proxy_start_desktop"   : "start-desktop",
                        "_shadow_start"          : "shadow",
                        }.get(mode)
-        start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
-        start = strip_defaults_start_child(opts.start, defaults.start)
-        proc, socket_path = start_server_subprocess(script_file, args, server_mode, defaults,
-                                                     opts.socket_dir, opts.socket_dirs,
-                                                     start, start_child, opts.exit_with_children, opts.exit_with_client,
-                                                     getuid(), getgid())
+        #strip defaults, only keep extra ones:
+        for x in ("start", "start-child",
+                  "start-after-connect", "start-child-after-connect",
+                  "start-on-connect", "start-child-on-connect"):
+            fn = x.replace("-", "_")
+            v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
+            setattr(opts, fn, v)
+        proc, socket_path = start_server_subprocess(script_file, args, server_mode, opts)
         if not socket_path:
             #if we return non-zero, we will try the next run-xpra script in the list..
             return 0
