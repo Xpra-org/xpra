@@ -25,7 +25,7 @@
     };
 
     XpraSource.prototype._on_data = function(data) {
-      var buf = new AV.Buffer(new Uint8Array(data));
+      var buf = new AV.Buffer(data);
       return this.emit('data', buf);
     };
 

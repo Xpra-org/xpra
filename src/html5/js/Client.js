@@ -1940,10 +1940,26 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 		//not needed for all codecs / browsers!
 		if(ab.length >= MIN_START_BUFFERS || this.audio_buffers_count>0){
 			if(asb && !asb.updating) {
-				var buffers = ab.splice(0, 200);
-				var buffer = [].concat.apply([], buffers);
+				if (ab.length==1) {
+					//shortcut
+					buf = ab[0];
+				}
+				else {
+					//concatenate all pending buffers into one:
+					var size = 0;
+					for (var i=0,j=ab.length;i<j;++i) {
+						size += ab[i].length;
+					}
+					buf = new Uint8Array(size);
+					size = 0;
+					for (var i=0,j=ab.length;i<j;++i) {
+						buf.set(ab[i], size);
+						size += ab[i].length;
+					}
+				}
 				this.audio_buffers_count += 1;
-				asb.appendBuffer(new Uint8Array(buffer).buffer);
+				asb.appendBuffer(buf);
+				this.audio_buffers = [];
 			}
 		}
 	}
