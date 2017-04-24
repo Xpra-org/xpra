@@ -995,7 +995,7 @@ XpraWindow.prototype._push_video_buffers = function() {
 
 XpraWindow.prototype._init_video = function(width, height, coding, profile, level) {
 	var me = this;
-	this.media_source = MediaSourceUtil.MediaSource();
+	this.media_source = MediaSourceUtil.getMediaSource();
 	if(this.debug) {
 		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "video");
 	}
@@ -1204,7 +1204,10 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		this.broadway_paint_location = [x, y];
 		// we can pass a buffer full of NALs to decode() directly
 		// as long as they are framed properly with the NAL header
-		this.broadway_decoder.decode(new Uint8Array(img_data));
+		if (!Array.isArray(img_data)) {
+			img_data = Array.from(img_data);
+		}
+		this.broadway_decoder.decode(img_data);
 		// broadway decoding is synchronous:
 		// (and already painted via the onPictureDecoded callback)
 		painted();
