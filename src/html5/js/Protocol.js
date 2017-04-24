@@ -318,6 +318,12 @@ XpraProtocol.prototype.process_receive_queue = function() {
 					packet[7] = uint;
 				}
 			}
+			else if(packet[0]=="sound-data") {
+				var sound_data = packet[2];
+				if (!Array.isArray(sound_data)) {
+					packet[2] = Array.from(sound_data);
+				}
+			}
 			if (this.is_worker){
 				this.mQ[this.mQ.length] = packet;
 				var me = this;
