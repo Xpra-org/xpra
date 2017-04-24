@@ -86,6 +86,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.audio_aurora_ctx = null;
 	this.audio_codec = null;
 	this.audio_context = Utilities.getAudioContext();
+	this.aurora_codecs = {};
+	this.mediasource_codecs = {};
 	// encryption
 	this.encryption = false;
 	this.encryption_key = null;
@@ -179,22 +181,20 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 	if(!this.audio_enabled) {
 		return;
 	}
-	var mediasource_codecs = {};
 	if(this.audio_mediasource_enabled) {
-		mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
-		for (var codec_option in mediasource_codecs) {
-			this.audio_codecs[codec_option] = mediasource_codecs[codec_option];
+		this.mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
+		for (var codec_option in this.mediasource_codecs) {
+			this.audio_codecs[codec_option] = this.mediasource_codecs[codec_option];
 		}
 	}
-	var aurora_codecs = {};
 	if(this.audio_aurora_enabled) {
-		aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-		for (var codec_option in aurora_codecs) {
+		this.aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+		for (var codec_option in this.aurora_codecs) {
 			if(codec_option in this.audio_codecs) {
 				//we already have native MediaSource support!
 				continue;
 			}
-			this.audio_codecs[codec_option] = aurora_codecs[codec_option];
+			this.audio_codecs[codec_option] = this.aurora_codecs[codec_option];
 		}
 	}
 	if(!this.audio_codecs) {
@@ -209,7 +209,7 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 		}
 		this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
 		if(this.audio_codec) {
-			if(this.audio_codec in mediasource_codecs) {
+			if(this.audio_codec in this.mediasource_codecs) {
 				this.audio_framework = "mediasource";
 			}
 			else {
@@ -1475,11 +1475,11 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					for(var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
 						var codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
 						if ((codec in ctx.audio_codecs) && (ctx.server_audio_codecs.indexOf(codec)>=0)){
-							if (MediaSourceUtil.getAuroraAudioCodecs()[codec]) {
-								ctx.audio_framework = "aurora";
+							if (ctx.mediasource_codecs[codec]) {
+								ctx.audio_framework = "mediasource";
 							}
 							else {
-								ctx.audio_framework = "mediasource";
+								ctx.audio_framework = "aurora";
 							}
 							ctx.audio_codec = codec;
 							ctx.log("using", ctx.audio_framework, "audio codec", codec);
