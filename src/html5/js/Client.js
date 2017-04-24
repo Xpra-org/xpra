@@ -38,7 +38,7 @@ function XpraClient(container) {
 	this.disconnect_reason = null;
 	// audio
 	this.audio_enabled = false;
-	this.audio_mediasource_enabled = MediaSourceUtil.MediaSourceClass!=null;
+	this.audio_mediasource_enabled = MediaSourceUtil.getMediaSourceClass()!=null;
 	this.audio_aurora_enabled = AV!=null && AV.Decoder!=null && AV.Player.fromXpraSource!=null;
 	this.audio_codecs = {};
 	this.audio_framework = null;
@@ -943,7 +943,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 	}
 
 	//Create a MediaSource:
-	this.media_source = MediaSourceUtil.MediaSource();
+	this.media_source = MediaSourceUtil.getMediaSource();
 	if(this.debug) {
 		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "audio");
 	}

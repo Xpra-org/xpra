@@ -763,7 +763,7 @@ XpraWindow.prototype._push_video_buffers = function() {
 
 XpraWindow.prototype._init_video = function(width, height, coding, profile, level) {
 	var me = this;
-	this.media_source = MediaSourceUtil.MediaSource();
+	this.media_source = MediaSourceUtil.getMediaSource();
 	if(this.debug) {
 		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "video");
 	}
