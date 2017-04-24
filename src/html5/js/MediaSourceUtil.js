@@ -100,12 +100,12 @@ var MediaSourceConstants = {
 
 var MediaSourceUtil = {
 
-		MediaSourceClass : function() {
+		getMediaSourceClass : function() {
 			return window.MediaSource || window.WebKitMediaSource;
 		},
 
-		MediaSource : function() {
-			var ms = MediaSourceUtil.MediaSourceClass();
+		getMediaSource : function() {
+			var ms = MediaSourceUtil.getMediaSourceClass();
 			if(!ms) {
 				throw Exception("no MediaSource support!");
 			}
@@ -135,7 +135,7 @@ var MediaSourceUtil = {
 		},
 
 		getMediaSourceAudioCodecs : function(ignore_blacklist) {
-			var media_source_class = MediaSourceUtil.MediaSourceClass();
+			var media_source_class = MediaSourceUtil.getMediaSourceClass();
 			if(!media_source_class) {
 				Utilities.log("audio forwarding: no media source API support");
 				return [];
