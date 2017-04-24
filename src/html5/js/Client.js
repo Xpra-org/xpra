@@ -1189,7 +1189,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			ctx.audio_enabled = false;
 		}
 		else {
-			ctx.server_audio_codecs = hello["sound.decoders"];
+			ctx.server_audio_codecs = hello["sound.encoders"];
 			if(!ctx.server_audio_codecs) {
 				ctx.error("audio codecs missing on the server");
 				ctx.audio_enabled = false;
