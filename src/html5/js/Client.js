@@ -1203,7 +1203,14 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					for(var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
 						var codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
 						if ((codec in ctx.audio_codecs) && (ctx.server_audio_codecs.indexOf(codec)>=0)){
+							if (MediaSourceUtil.getAuroraAudioCodecs()[codec]) {
+								ctx.audio_framework = "aurora";
+							}
+							else {
+								ctx.audio_framework = "mediasource";
+							}
 							ctx.audio_codec = codec;
+							ctx.log("using", ctx.audio_framework, "audio codec", codec);
 							break;
 						}
 					}
