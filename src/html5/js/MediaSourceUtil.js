@@ -156,7 +156,7 @@ var MediaSourceUtil = {
 						continue;
 					}
 					var blacklist = [];
-					if (false && (Utilities.isFirefox() || Utilities.isSafari())) {
+					if (Utilities.isFirefox() || Utilities.isSafari()) {
 						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
 						if (Utilities.isSafari()) {
 							//this crashes Safari!
