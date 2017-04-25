@@ -1897,7 +1897,7 @@ XpraClient.prototype._process_sound_data_aurora = function(packet) {
 	if(metadata) {
 		//push metadata first:
 		for(var i = 0; i < metadata.length; i++) {
-			this.audio_aurora_ctx.asset.source._on_data(metadata[i]);
+			this.audio_aurora_ctx.asset.source._on_data(Utilities.StringToUint8(metadata[i]));
 		}
 	}
 	this.audio_aurora_ctx.asset.source._on_data(buf);
@@ -1929,7 +1929,7 @@ XpraClient.prototype._process_sound_data_mediasource = function(packet) {
 		if(metadata) {
 			//push metadata first:
 			for(var i = 0; i < metadata.length; i++) {
-				this.audio_buffers.push(metadata[i]);
+				this.audio_buffers.push(Utilities.StringToUint8(metadata[i]));
 			}
 			//since we have the metadata, we should be good to go:
 			MIN_START_BUFFERS = 1;

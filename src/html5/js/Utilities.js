@@ -285,6 +285,14 @@ var Utilities = {
         window.URL.revokeObjectURL(url);
 	},
 
+	StringToUint8 : function(str) {
+		var u8a = new Uint8Array(str.length);
+		for(var i=0,j=str.length;i<j;++i){
+			u8a[i] = str.charCodeAt(i);
+		}
+		return u8a;
+	},
+
 	Uint8ToString : function(u8a){
 		var CHUNK_SZ = 0x8000;
 		var c = [];
