@@ -1161,6 +1161,7 @@ XpraClient.prototype._send_sound_start = function() {
 }
 
 XpraClient.prototype._sound_start_aurora = function() {
+	this.audio_buffers = [];
 	this.audio_aurora_ctx = AV.Player.fromXpraSource();
 	this.audio_aurora_ctx.play();
 	this._send_sound_start();
@@ -1893,14 +1894,44 @@ XpraClient.prototype._process_sound_data_aurora = function(packet) {
 		this.warn("audio aurora context is closed already, dropping sound buffer");
 		return;
 	}
+	var MIN_START_BUFFERS = 4;
+	var buf = packet[2];
 	var metadata = packet[4];
 	if(metadata) {
 		//push metadata first:
 		for(var i = 0; i < metadata.length; i++) {
-			this.audio_aurora_ctx.asset.source._on_data(Utilities.StringToUint8(metadata[i]));
+			//console.log("metadata", i, "length=", metadata[i].length, jQuery.type(metadata[i]), Object.prototype.toString.call(metadata[i]));
+			this.audio_buffers.push(Utilities.StringToUint8(metadata[i]));
 		}
+		//since we have the metadata, we should be good to go:
+		MIN_START_BUFFERS = 1;
 	}
-	this.audio_aurora_ctx.asset.source._on_data(buf);
+	//console.log("buffer length=", buf.length, jQuery.type(buf), Object.prototype.toString.call(buf));
+	this.audio_buffers.push(buf);
+	var ab = this.audio_buffers;
+	//not needed for all codecs / browsers!
+	if(ab.length >= MIN_START_BUFFERS || this.audio_buffers_count>0){
+		if (ab.length==1) {
+			//shortcut
+			buf = ab[0];
+		}
+		else {
+			//concatenate all pending buffers into one:
+			var size = 0;
+			for (var i=0,j=ab.length;i<j;++i) {
+				size += ab[i].length;
+			}
+			buf = new Uint8Array(size);
+			size = 0;
+			for (var i=0,j=ab.length;i<j;++i) {
+				buf.set(ab[i], size);
+				size += ab[i].length;
+			}
+		}
+		this.audio_buffers_count += 1;
+		this.audio_aurora_ctx.asset.source._on_data(buf);
+		this.audio_buffers = [];
+	}
 }
 
 XpraClient.prototype._process_sound_data_mediasource = function(packet) {
