@@ -1671,7 +1671,6 @@ class WindowVideoSource(WindowSource):
             except Exception:
                 scrolllog.error("Error during scrolling detection!", exc_info=True)
                 #make sure we start again from scratch next time:
-                scroll_data.free()
                 self.scroll_data = None
 
         def video_fallback():

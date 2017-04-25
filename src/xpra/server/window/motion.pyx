@@ -56,7 +56,7 @@ def CRC_Image(pixels, unsigned int width, unsigned int height, unsigned int rows
     cdef uint8_t *buf = NULL
     cdef Py_ssize_t buf_len = 0
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-    assert buf_len>=0 and (<unsigned int> buf_len)>=rowstride*height, "buffer is too small for %ix%i" % (rowstride, height)
+    assert buf_len>=0 and (<unsigned int> buf_len)>=rowstride*height, "buffer length %i is too small for %ix%i" % (buf_len, rowstride, height)
     cdef unsigned int i
     cdef size_t row_len = width*bpp
     f = hashfn
