@@ -8,6 +8,7 @@
 var MediaSourceConstants = {
 
 		CODEC_DESCRIPTION : {
+				"mp4a"			: 'mpeg4: aac',
 				"aac+mpeg4"		: 'mpeg4: aac',
 				"mp3"			: 'mp3',
 				"mp3+mpeg4"		: 'mpeg4: mp3',
@@ -94,6 +95,7 @@ var MediaSourceConstants = {
 			"wav"	: "lpcm",
 			"mp3"	: "mp3",
 			"flac"	: "flac",
+			"aac+mpeg4"	: "mp4a",
 		}
 };
 
@@ -154,7 +156,7 @@ var MediaSourceUtil = {
 						continue;
 					}
 					var blacklist = [];
-					if (Utilities.isFirefox() || Utilities.isSafari()) {
+					if (false && (Utilities.isFirefox() || Utilities.isSafari())) {
 						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
 						if (Utilities.isSafari()) {
 							//this crashes Safari!
