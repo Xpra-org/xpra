@@ -1512,7 +1512,9 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 	var win = ctx.id_to_window[wid];
 	var decode_time = -1;
 	if (!win) {
-		ctx.error('cannot paint, window not found:', wid);
+		if(ctx.debug) {
+			console.debug('cannot paint, window not found:', wid);
+		}
 		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, "window not found");
 		return;
 	}
