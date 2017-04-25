@@ -1638,8 +1638,8 @@ class WindowVideoSource(WindowSource):
             try:
                 start = time.time()
                 if not image.is_thread_safe():
-                    newstride = image.get_width()*4
-                    image.restride(newstride)
+                    stride = image.get_width()*4
+                    image.restride(stride)
                 img_data = img_data or image.get_pixels()
                 csums = CRC_Image(img_data, w, h, stride)
                 if csums:
