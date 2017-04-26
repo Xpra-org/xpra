@@ -1555,6 +1555,11 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		ctx._close_audio();
 		return;
 	}
+	if(packet[3]["end-of-stream"] == 1) {
+		ctx.log("server sent end-of-stream");
+		ctx._close_audio();
+		return;
+	}
 	try {
 		if(ctx.audio_framework=="mediasource") {
 			ctx._process_sound_data_mediasource(packet);
