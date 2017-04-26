@@ -1880,6 +1880,10 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 			ctx._audio_start_stream();
 			return;
 		}
+		if (options["end-of-stream"] == 1) {
+			ctx.log("received end-of-stream from server");
+			ctx.close_audio();
+		}
 
 		ctx.add_sound_data(codec, buf, metadata);
 	}
@@ -1915,7 +1919,9 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 		//since we have the metadata, we should be good to go:
 		MIN_START_BUFFERS = 1;
 	}
-	this.audio_buffers.push(buf);
+	if (buf != null) {
+		this.audio_buffers.push(buf);
+	}
 	var ab = this.audio_buffers;
 	if (this._audio_ready() && (this.audio_buffers_count>0 || ab.length >= MIN_START_BUFFERS)) {
 		if (ab.length==1) {
@@ -1931,8 +1937,11 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 			buf = new Uint8Array(size);
 			size = 0;
 			for (var i=0,j=ab.length;i<j;++i) {
-				buf.set(ab[i], size);
-				size += ab[i].length;
+				var v = ab[i];
+				if (v.length>0) {
+					buf.set(v, size);
+					size += v.length;
+				}
 			}
 		}
 		this.audio_buffers_count += 1;
