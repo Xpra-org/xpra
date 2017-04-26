@@ -247,7 +247,7 @@ def get_icc_info():
         if data:
             screenlog("_ICC_PROFILE=%s (%s)", type(data), len(data))
             version = _get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
-            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version), hexstr(data))
+            screenlog("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s", hexstr(version or ""), hexstr(data))
             icc = {
                     "source"    : "_ICC_PROFILE",
                     "data"      : data,
