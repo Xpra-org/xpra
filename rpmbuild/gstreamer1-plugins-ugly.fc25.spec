@@ -1,12 +1,12 @@
 %define majorminor 1.0
 %define gstreamer gstreamer1
 
-%define gst_minver 1.9
-%define gstpb_minver 1.9
+%define gst_minver 1.10
+%define gstpb_minver 1.10
 
 Summary: GStreamer streaming media framework "ugly" plug-ins
 Name: gstreamer1-plugins-ugly
-Version: 1.9.2
+Version: 1.10.4
 Release: 1%{?dist}
 License: LGPL
 Group: Applications/Multimedia
