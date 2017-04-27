@@ -292,10 +292,9 @@ MB_SYSTEMMODAL      = 0x00001000
 def _show_message(message, uType):
     global prg_name
     #TODO: detect cx_freeze equivallent
-    GUI_MODE = hasattr(sys, "frozen") and sys.frozen=="windows_exe"
     from xpra.util import envbool
     SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
-    if SHOW_MESSAGEBOX and GUI_MODE:
+    if SHOW_MESSAGEBOX and REDIRECT_OUTPUT:
         #try to use an alert box since no console output will be shown:
         try:
             MessageBoxA(0, message, prg_name, uType)
