@@ -434,7 +434,7 @@ cdef class NvFBC_Capture:
         self.framebuffer = NULL
         memset(&params, 0, sizeof(NVFBC_TOSYS_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOSYS_SETUP_PARAMS_VER
-        params.eMode = NVFBC_TOSYS_ARGB
+        params.eMode = NVFBC_TOSYS_RGB
         params.bWithHWCursor = True
         params.bDiffMap = False
         params.ppBuffer = <void**> &self.framebuffer
@@ -502,10 +502,12 @@ cdef class NvFBC_Capture:
         start = monotonic_time()
         #TODO: only copy when the next frame is going to overwrite the buffer,
         #or when closing the context
-        buf = self.framebuffer[:grab_info.dwHeight*grab_info.dwBufferWidth*4]
-        image = ImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), buf, "BGRX", 32, int(grab_info.dwBufferWidth*4))
+        rgb_format = "RGB"
+        Bpp = len(rgb_format)       # ie: "BGR" -> 3
+        buf = self.framebuffer[:grab_info.dwHeight*grab_info.dwBufferWidth*Bpp]
+        image = ImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), buf, rgb_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
         end = monotonic_time()
-        log("image=%s (copy took %ims)", image, int((end-start)*1000))
+        log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
 
     def clean(self):                        #@DuplicatedSignature
