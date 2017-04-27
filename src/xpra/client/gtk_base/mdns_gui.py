@@ -19,6 +19,7 @@ from xpra.platform.paths import get_icon_dir, get_xpra_command
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
+from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
 from xpra.os_util import WIN32
 from xpra.util import envbool
 from xpra.log import Logger
@@ -72,7 +73,6 @@ class mdns_sessions(gtk.Window):
         self.records = []
         self.populate_table()
         #self.set_size_request(0, 200)
-        from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
         listener = get_listener_class()
         self.listener = listener(XPRA_MDNS_TYPE, mdns_found=None, mdns_add=self.mdns_add, mdns_remove=self.mdns_remove)
         log("%s%s=%s", listener, (XPRA_MDNS_TYPE, None, self.mdns_add, self.mdns_remove), self.listener)
@@ -240,10 +240,13 @@ class mdns_sessions(gtk.Window):
 
 
 def main():
-    from xpra.platform import program_context
+    from xpra.platform import program_context, command_error
     from xpra.log import enable_color
     with program_context("Xpra-Browser", "Xpra Session Browser"):
         enable_color()
+        if not get_listener_class() or True:
+            command_error("no mDNS support in this build")
+            return 1
         return do_main()
 
 def do_main():
