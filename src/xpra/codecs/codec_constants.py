@@ -42,6 +42,9 @@ RGB_FORMATS = (
 class TransientCodecException(Exception):
     pass
 
+class CodecStateException(Exception):
+    pass
+
 
 class _codec_spec(object):
 

@@ -18,6 +18,7 @@ netlog = Logger("network")
 
 from xpra.util import XPRA_APP_ID
 from xpra.scripts.config import InitException
+from xpra.codecs.codec_constants import CodecStateException, TransientCodecException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -94,6 +95,9 @@ class Win32RootWindowModel(RootWindowModel):
 
     def cleanup(self):
         RootWindowModel.cleanup(self)
+        self.cleanup_capture()
+
+    def cleanup_capture(self):
         c = self.capture
         if c:
             self.capture = None
@@ -225,7 +229,19 @@ class Win32RootWindowModel(RootWindowModel):
         return w, h
 
     def get_image(self, x, y, width, height, logger=None):
-        return self.capture.get_image(x, y, width, height)
+        try:
+            return self.capture.get_image(x, y, width, height)
+        except CodecStateException as e:
+            #maybe we should exit here?
+            log.warn("Warning: %s", e)
+            self.cleanup_capture()
+            self.init_capture()
+            return None
+        except TransientCodecException as e:
+            log.warn("Warning: %s", e)
+            self.cleanup_capture()
+            self.init_capture()
+            return None
 
     def take_screenshot(self):
         return self.capture.take_screenshot()

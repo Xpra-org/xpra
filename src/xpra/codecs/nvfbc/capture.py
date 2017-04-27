@@ -34,23 +34,25 @@ def main():
             log("Capture()", exc_info=True)
             log.error("Error: failed to create test capture instance:")
             log.error(" %s", e)
-        else:
-            image = c.get_image()
-            assert image
-            from PIL import Image
-            w = image.get_width()
-            h = image.get_height()
-            pixels = image.get_pixels()
-            stride = image.get_rowstride()
-            rgb_format = image.get_pixel_format()
-            try:
-                img = Image.frombuffer("RGB", (w, h), pixels, "raw", rgb_format, stride, 1)
-                filename = os.path.join(get_download_dir(), "screenshot-%s-%i.png" % (rgb_format, time.time()))
-                img.save(filename, "png")
-                log.info("screenshot saved to %s", filename)
-            except Exception as e:
-                log.warn("not saved %s: %s", rgb_format, e)
+            return 1
+        image = c.get_image()
+        assert image
+        from PIL import Image
+        w = image.get_width()
+        h = image.get_height()
+        pixels = image.get_pixels()
+        stride = image.get_rowstride()
+        rgb_format = image.get_pixel_format()
+        try:
+            img = Image.frombuffer("RGB", (w, h), pixels, "raw", rgb_format, stride, 1)
+            filename = os.path.join(get_download_dir(), "screenshot-%s-%i.png" % (rgb_format, time.time()))
+            img.save(filename, "png")
+            log.info("screenshot saved to %s", filename)
+            return 0
+        except Exception as e:
+            log.warn("not saved %s: %s", rgb_format, e)
+            return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

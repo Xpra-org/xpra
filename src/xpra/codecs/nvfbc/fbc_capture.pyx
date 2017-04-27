@@ -9,7 +9,7 @@ import sys
 
 from xpra.os_util import WIN32
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import TransientCodecException
+from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards
 
 from xpra.log import Logger
@@ -474,12 +474,12 @@ cdef class NvFBC_Capture:
         cdef NVFBCRESULT res
         with nogil:
             res = self.context.NvFBCToSysGrabFrame(&grab)
-        if res!=0 and grab_info.bMustRecreate:
-            pass    #TODO!
         if res!=0 and grab_info.dwDriverInternalError:
-            pass
-        if res==NVFBC_ERROR_INVALIDATED_SESSION:
-            pass    #retry!
+            raise CodecStateException("NvFBC driver internal error")
+        if res==NVFBC_ERROR_DYNAMIC_DISABLE:
+            raise CodecStateException("NvFBC capture has been disabled")
+        if (res!=0 and grab_info.bMustRecreate) or res==NVFBC_ERROR_INVALIDATED_SESSION:
+            raise TransientCodecException("NvFBC context invalidated")
         log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &grab, res)
         raiseNvFBC(res, "NvFBCToSysGrabFrame")
         info = {
