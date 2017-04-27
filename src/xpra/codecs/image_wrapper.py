@@ -162,8 +162,8 @@ class ImageWrapper(object):
         #copy to local variables:
         pixels = self.pixels
         oldstride = self.rowstride
-        pos = y*oldstride + x*4
-        newstride = w*4
+        pos = y*oldstride + x*self.bytesperpixel
+        newstride = w*self.bytesperpixel
         lines = []
         for _ in range(h):
             lines.append(memoryview_to_bytes(pixels[pos:pos+newstride]))
