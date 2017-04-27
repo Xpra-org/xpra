@@ -1,12 +1,12 @@
 %define majorminor 1.0
 %define gstreamer gstreamer1
 
-%define gst_minver 1.9
-%define gstpb_minver 1.9
+%define gst_minver 1.11
+%define gstpb_minver 1.11
 
 Summary: GStreamer streaming media framework "ugly" plug-ins
 Name: gstreamer1-plugins-ugly
-Version: 1.9.2
+Version: 1.11.90
 Release: 1%{?dist}
 License: LGPL
 Group: Applications/Multimedia
@@ -71,13 +71,15 @@ libtool --finish %{buildroot}%{_libdir}/gstreamer-%{majorminor}
 %{_libdir}/gstreamer-%{majorminor}/libgstasf.so
 %{_libdir}/gstreamer-%{majorminor}/libgstdvdlpcmdec.so
 %{_libdir}/gstreamer-%{majorminor}/libgstdvdsub.so
+%{_libdir}/gstreamer-%{majorminor}/libgstrealmedia.so
 %{_libdir}/gstreamer-%{majorminor}/libgstlame.so
-%{_libdir}/gstreamer-%{majorminor}/libgstmad.so
-%{_libdir}/gstreamer-%{majorminor}/libgstrmdemux.so
 %{_libdir}/gstreamer-%{majorminor}/libgstxingmux.so
 %doc %{_datarootdir}/gtk-doc/html/gst-plugins-ugly-plugins-%{majorminor}
 
 %changelog
+* Thu Apr 27 2017 Antoine Martin <antoine@devloop.org.uk> 1.11.90-1
+- Fedora 26 version bump
+
 * Wed Nov 02 2016 Antoine Martin <antoine@devloop.org.uk> 1.9.2-1
 - Fedora 25 version bump: uses unstable 1.9.2?
 
