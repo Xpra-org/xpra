@@ -159,6 +159,9 @@ class ImageWrapper(object):
         if y+h>self.height:
             raise Exception("invalid sub-image height: %i+%i greater than image height %i" % (y, h, self.height))
         assert self.planes==0, "cannot sub-divide planar images!"
+        if x==0 and y==0 and w==self.width and h==self.height:
+            #same dimensions, use the same wrapper
+            return self
         #copy to local variables:
         pixels = self.pixels
         oldstride = self.rowstride
