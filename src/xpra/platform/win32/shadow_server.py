@@ -61,9 +61,6 @@ class Win32RootWindowModel(RootWindowModel):
 
     def __init__(self, root):
         RootWindowModel.__init__(self, root)
-        self.metrics = None
-        self.dc, self.memdc, self.bitmap = None, None, None
-        self.bitblt_err_time = 0
         self.capture = self.init_capture()
         log("Win32RootWindowModel(%s) capture=%s", root, self.capture)
         if SEAMLESS:
