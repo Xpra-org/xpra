@@ -15,13 +15,22 @@ from xpra.codecs.nv_util import get_nvidia_module_version, get_cards
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
 
+try:
+    import numpy
+    from pycuda import driver
+    from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
+except:
+    log.error("Error: NvFBC requires CUDA", exc_info=True)
+    CUDA_ERRORS_INFO = {}
+    select_device = None
+
 import ctypes
 from ctypes import wintypes
 
 from libc.stdint cimport uintptr_t, uint8_t, int64_t
 from xpra.monotonic_time cimport monotonic_time
 
-PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_PIXEL_FORMAT", "r210")
+DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
 
 
 ctypedef unsigned long DWORD
@@ -180,6 +189,7 @@ cdef extern from "NvFBC/nvFBC.h":
 
 cdef extern from "NvFBC/nvFBCToSys.h":
     int NVFBC_TO_SYS
+    int NVFBC_SHARED_CUDA
     int NVFBC_TOSYS_SETUP_PARAMS_VER
     int NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER
 
@@ -236,22 +246,18 @@ cdef extern from "NvFBC/nvFBCToSys.h":
     # Sets up NVFBC System Memory capture according to the provided parameters.
     # [in] pParam Pointer to a struct of type ::NVFBC_TOSYS_SETUP_PARAMS.
     ctypedef NVFBCRESULT (*NVFBCTOSYSSETUP) (NVFBC_TOSYS_SETUP_PARAMS *pParam) nogil
-
     # Captures the desktop and dumps the captured data to a System memory buffer.
     # If the API returns a failure, the client should check the return codes and
     # ::NvFBCFrameGrabInfo output fields to determine if the session needs to be re-created.
     # [inout] pParam Pointer to a struct of type ::NVFBC_TOSYS_GRAB_FRAME_PARAMS.
     ctypedef NVFBCRESULT (*NVFBCTOSYSGRABFRAME) (NVFBC_TOSYS_GRAB_FRAME_PARAMS *pParam) nogil
-
     # Captures HW cursor data whenever shape of mouse is changed
     # [inout] pParam Pointer to a struct of type ::NVFBC_CURSOR_CAPTURE_PARAMS
     ctypedef NVFBCRESULT (*NVFBCTOSYSCURSORCAPTURE) (NVFBC_CURSOR_CAPTURE_PARAMS *pParam) nogil
-
     # A high precision implementation of Sleep(). 
     # Can provide sub quantum (usually 16ms) sleep that does not burn CPU cycles.
     # [in] qwMicroSeconds The number of microseconds that the thread should sleep for.
     ctypedef NVFBCRESULT (*NVFBCTOSYSGPUBASEDCPUSLEEP) (int64_t qwMicroSeconds) nogil
-
     # Destroys the NVFBCToSys capture session.
     ctypedef NVFBCRESULT (*NVFBCTOSYSRELEASE) () nogil
 
@@ -261,6 +267,70 @@ cdef extern from "NvFBC/nvFBCToSys.h":
         NVFBCTOSYSCURSORCAPTURE NvFBCToSysCursorCapture      
         NVFBCTOSYSGPUBASEDCPUSLEEP NvFBCToSysGPUBasedCPUSleep
         NVFBCTOSYSRELEASE NvFBCToSysRelease
+
+cdef extern from "NvFBC/nvFBCCuda.h":
+    int NVFBC_TOCUDA_NOFLAGS            # Default (no flags set). Grabbing will wait for a new frame or HW mouse move
+    int NVFBC_TOCUDA_NOWAIT             # Grabbing will not wait for a new frame nor a HW cursor move.
+    int NVFBC_TOCUDA_CPU_SYNC           # Does a cpu event signal when grab is complete
+    int NVFBC_TOCUDA_WITH_HWCURSOR      # Grabs the HW cursor if any visible
+    int NVFBC_TOCUDA_RESERVED_A         # reserved
+    int NVFBC_TOCUDA_WAIT_WITH_TIMEOUT  # Grabbing will wait for a new frame or HW mouse move with a maximum wait time of NVFBC_CUDA_GRAB_FRAME_PARAMS::dwWaitTime millisecond
+
+    ctypedef int NVFBCToCUDABufferFormat
+    NVFBCToCUDABufferFormat NVFBC_TOCUDA_ARGB       # Output in 32-bit packed ARGB format
+    NVFBCToCUDABufferFormat NVFBC_TOCUDA_ARGB10     # Output in 32-bit packed ARGB10 format (A2B10G10R10)
+
+    ctypedef struct NVFBC_CUDA_SETUP_PARAMS_V1:
+        NvU32 dwVersion                     # [in]: Struct version. Set to NVFBC_CUDA_SETUP_PARMS_VER
+        NvU32 bEnableSeparateCursorCapture  # [in]: The client should set this to 1 if it wants to enable mouse capture separately from Grab()
+        NvU32 bHDRRequest                   # [in]: The client should set this to 1 if it wants to request HDR capture
+        #NvU32 bReserved                     # [in]: Reserved. Seto to 0
+        void *hCursorCaptureEvent           # [out]: Event handle to be signalled when there is an update to the HW cursor state.
+        NVFBCToCUDABufferFormat eFormat     # [in]: Output image format
+        #NvU32 dwReserved[61]                # [in]: Reserved. Set to 0
+        #void *pReserved[31]                 # [in]: Reserved. Set to NULL
+    int NVFBC_CUDA_SETUP_PARAMS_V1_VER
+    ctypedef NVFBC_CUDA_SETUP_PARAMS_V1 NVFBC_CUDA_SETUP_PARAMS
+
+    ctypedef struct NVFBC_CUDA_GRAB_FRAME_PARAMS_V1:
+        NvU32 dwVersion                     # [in]: Struct version. Set to NVFBC_CUDA_GRAB_FRAME_PARAMS_V1_VER
+        NvU32 dwFlags                       # [in]: Flags for grab frame
+        void *pCUDADeviceBuffer             # [in]: Output buffer
+        NvFBCFrameGrabInfo *pNvFBCFrameGrabInfo # [in/out]: Frame grab configuration and feedback from NvFBC driver
+        NvU32 dwWaitTime                    # [in] Time limit in millisecond to wait for a new frame or HW mouse move. Use with NVFBC_TOCUDA_WAIT_WITH_TIMEOUT
+        #NvU32 dwReserved[61]                # [in]: Reserved. Set to 0
+        #void *pReserved[30]                 # [in]: Reserved. Set to NULL
+    int NVFBC_CUDA_GRAB_FRAME_PARAMS_V1_VER
+    ctypedef NVFBC_CUDA_GRAB_FRAME_PARAMS_V1 NVFBC_CUDA_GRAB_FRAME_PARAMS
+   
+    # Returns the maximum buffer size, in bytes for allocating a CUDA buffer to hold output data generated by the NvFBCCuda interface
+    # [out] pdwMaxBufSize Pointer to a 32-bit unsigned integer
+    ctypedef NVFBCRESULT (*NVFBCCUDAGETMAXBUFFERSIZE) (NvU32 *pdwMaxBufSize) nogil
+    #Performs initial setup
+    # [in] pParams Pointer to a struct of type ::NVFBC_CUDA_SETUP_PARAMS
+    ctypedef NVFBCRESULT (*NVFBCCUDASETUP) (NVFBC_CUDA_SETUP_PARAMS *pParams) nogil
+    # Captures the desktop and dumps captured data to a CUDA buffer provided by the client
+    # If the API returns a failure, the client should check the return codes and ::NvFBCFrameGrabInfo output fields to determine if the session needs to be re-created
+    # [inout] pParams Pointer to a struct of type ::NVFBC_CUDA_GRAB_FRAME_PARAMS
+    ctypedef NVFBCRESULT (*NVFBCCUDAGRABFRAME) (NVFBC_CUDA_GRAB_FRAME_PARAMS *pParams) nogil
+    # A high precision implementation of Sleep()
+    # Can provide sub quantum (usually 16ms) sleep that does not burn CPU cycles
+    # [in] qwMicroSeconds The number of microseconds that the thread should sleep for.
+    ctypedef NVFBCRESULT (*NVFBCCUDAGPUBASEDCPUSLEEP) (int64_t qwMicroSeconds) nogil
+    # Captures HW cursor data whenever shape of mouse is changed
+    # [inout] pParam Pointer to a struct of type ::NVFBC_TOSYS_GRAB_MOUSE_PARAMS
+    ctypedef NVFBCRESULT (*NVFBCCUDACURSORCAPTURE) (NVFBC_CURSOR_CAPTURE_PARAMS *pParam) nogil
+    # Destroys the NvFBCCuda capture session.
+    ctypedef NVFBCRESULT (*NVFBCCUDARELEASE) ()
+
+
+    ctypedef struct NvFBCCuda:
+        NVFBCCUDAGETMAXBUFFERSIZE NvFBCCudaGetMaxBufferSize
+        NVFBCCUDASETUP NvFBCCudaSetup
+        NVFBCCUDAGRABFRAME NvFBCCudaGrabFrame
+        NVFBCCUDAGPUBASEDCPUSLEEP NvFBCCudaGPUBasedCPUSleep
+        NVFBCCUDACURSORCAPTURE NvFBCCudaCursorCapture
+        NVFBCCUDARELEASE NvFBCCudaRelease  
 
 
 ERRORS = {
@@ -360,6 +430,15 @@ def get_status(int adapter=0):
     log("get_status()=%s", s)
     return s
 
+def check_status():
+    status = get_status()
+    if not status.get("capture-possible"):
+        raise Exception("NvFBC status error: capture is not possible")
+    if status.get("currently-capturing"):
+        raise TransientCodecException("NvFBC status error: currently capturing")
+    if not status.get("can-create-now"):
+        raise TransientCodecException("NvFBC status error: cannot create now")
+
 def set_global_flags(DWORD flags):
     global NvFBC
     assert NvFBC
@@ -367,12 +446,13 @@ def set_global_flags(DWORD flags):
     log("NvFBC_SetGlobalFlags(%i)=%i", flags, res)
     raiseNvFBC(res, "NvFBC_SetGlobalFlags")
 
-def create_context(int width=-1, int height=-1):
+def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
     log("create_context(%i, %i)", width, height)
+    check_status()
     cdef NvFBCCreateParams create
     memset(&create, 0, sizeof(NvFBCCreateParams))
     create.dwVersion = NVFBC_CREATE_PARAMS_VER
-    create.dwInterfaceType = NVFBC_TO_SYS
+    create.dwInterfaceType = interface_type
     create.dwMaxDisplayWidth = width
     create.dwMaxDisplayHeight = height
     #create.pDevice = 0
@@ -388,6 +468,22 @@ def create_context(int width=-1, int height=-1):
         }
     log("NvFBC_CreateEx: %s", info)
     return info
+
+cdef get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
+    return {
+        "width"             : int(grab_info.dwWidth),
+        "height"            : int(grab_info.dwHeight),
+        "stride"            : int(grab_info.dwBufferWidth),
+        "overlay-active"    : bool(grab_info.bOverlayActive),
+        "first-buffer"      : bool(grab_info.bFirstBuffer),
+        "hw-mouse-visible"  : bool(grab_info.bHWMouseVisible),
+        "protected-content" : bool(grab_info.bProtectedContent),
+        "stereo"            : bool(grab_info.bStereoOn),
+        "IGPU-capture"      : bool(grab_info.bIGPUCapture),
+        "source-pid"        : int(grab_info.dwSourcePID),
+        "HDR"               : bool(grab_info.bIsHDR),
+        "wait-mode"         : int(grab_info.dwWaitModeUsed),
+        }
 
 def get_version():
     global NvFBC
@@ -416,7 +512,7 @@ def get_info():
     return info
 
 
-PIXEL_FORMAT_CONST = {
+SYS_PIXEL_FORMAT_CONST = {
     "BGRA"      : NVFBC_TOSYS_ARGB,
     "RGB"       : NVFBC_TOSYS_RGB,
     #"YUV420P"   : NVFBC_TOSYS_YYYYUV420p,
@@ -427,7 +523,7 @@ PIXEL_FORMAT_CONST = {
     }
 
 
-cdef class NvFBC_Capture:
+cdef class NvFBC_SysCapture:
     cdef NvFBCToSys *context
     cdef uint8_t *framebuffer
     cdef uint8_t setup
@@ -435,27 +531,20 @@ cdef class NvFBC_Capture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format=PIXEL_FORMAT):
-        global PIXEL_FORMAT_CONST
-        if pixel_format not in PIXEL_FORMAT_CONST:
+    def init_context(self, int width=-1, int height=-1, pixel_format=DEFAULT_PIXEL_FORMAT):
+        log("init_context(%i, %i, %s)", width, height, pixel_format)
+        global SYS_PIXEL_FORMAT_CONST
+        if pixel_format not in SYS_PIXEL_FORMAT_CONST:
             raise Exception("unsupported pixel format '%s'" % pixel_format)
         self.pixel_format = pixel_format
-        status = get_status()
-        if not status.get("capture-possible"):
-            raise Exception("NvFBC status error: capture is not possible")
-        if status.get("currently-capturing"):
-            raise TransientCodecException("NvFBC status error: currently capturing")
-        if not status.get("can-create-now"):
-            raise TransientCodecException("NvFBC status error: cannot create now")
-        info = create_context(width, height)
+        self.framebuffer = NULL
+        info = create_context(-1, -1, NVFBC_TO_SYS)
         self.context = <NvFBCToSys*> (<uintptr_t> info["context"])
-        log("init_context(%i, %i, %s) NvFBCToSys context=%#x", width, height, pixel_format, <uintptr_t> self.context)
         assert self.context!=NULL
         cdef NVFBC_TOSYS_SETUP_PARAMS params
-        self.framebuffer = NULL
         memset(&params, 0, sizeof(NVFBC_TOSYS_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOSYS_SETUP_PARAMS_VER
-        params.eMode = PIXEL_FORMAT_CONST[pixel_format]
+        params.eMode = SYS_PIXEL_FORMAT_CONST[pixel_format]
         params.bWithHWCursor = True
         params.bDiffMap = False
         params.ppBuffer = <void**> &self.framebuffer
@@ -470,10 +559,10 @@ cdef class NvFBC_Capture:
         return info
 
     def get_type(self):
-        return  "nvfbc"
+        return  "nvfbc-sys"
 
     def __repr__(self):
-        return "NvFBC_Capture(%#x)" % (<uintptr_t> self.context)
+        return "NvFBC_SysCapture(%#x)" % (<uintptr_t> self.context)
 
     def __dealloc__(self):
         self.clean()
@@ -504,20 +593,7 @@ cdef class NvFBC_Capture:
             raise TransientCodecException("NvFBC context invalidated")
         log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &grab, res)
         raiseNvFBC(res, "NvFBCToSysGrabFrame")
-        info = {
-            "width"             : int(grab_info.dwWidth),
-            "height"            : int(grab_info.dwHeight),
-            "stride"            : int(grab_info.dwBufferWidth),
-            "overlay-active"    : bool(grab_info.bOverlayActive),
-            "first-buffer"      : bool(grab_info.bFirstBuffer),
-            "hw-mouse-visible"  : bool(grab_info.bHWMouseVisible),
-            "protected-content" : bool(grab_info.bProtectedContent),
-            "stereo"            : bool(grab_info.bStereoOn),
-            "IGPU-capture"      : bool(grab_info.bIGPUCapture),
-            "source-pid"        : int(grab_info.dwSourcePID),
-            "HDR"               : bool(grab_info.bIsHDR),
-            "wait-mode"         : int(grab_info.dwWaitModeUsed),
-            }
+        info = get_frame_grab_info(&grab_info)
         cdef double end = monotonic_time()
         log("NvFBCToSysGrabFrame: framebuffer=%#x, size=%#x, elapsed=%ims", <uintptr_t> self.framebuffer, grab_info.dwHeight*grab_info.dwBufferWidth, int((end-start)*1000))
         log("NvFBCToSysGrabFrame: info=%s", info)
@@ -533,12 +609,176 @@ cdef class NvFBC_Capture:
 
     def clean(self):                        #@DuplicatedSignature
         log("clean()")
-        if self.context:
-            if self.setup:
-                self.setup = False
+        if self.setup:
+            self.setup = False
+            if self.context:
                 self.context.NvFBCToSysRelease()
-            self.context = NULL
+                self.context = NULL
 
+
+cdef class NvFBC_CUDACapture:
+    cdef NvFBCCuda *context
+    cdef uint8_t setup
+    cdef object pixel_format
+    cdef NvU32 max_buffer_size
+    cdef int cuda_device_id
+    cdef object cuda_device
+    cdef object cuda_context
+    cdef object cuda_device_buffer
+
+    cdef object __weakref__
+
+    def init_context(self, int width=-1, int height=-1, pixel_format="BGRA"):
+        log("init_context(%i, %i, %s)", width, height, pixel_format)
+        if pixel_format not in ("BGRA", "r210"):
+            raise Exception("unsupported pixel format '%s'" % pixel_format)
+        self.pixel_format = pixel_format
+        #CUDA init:
+        self.cuda_device_id, self.cuda_device = select_device()
+        if not self.cuda_device:
+            raise Exception("no valid CUDA device")
+        d = self.cuda_device
+        cf = driver.ctx_flags
+        self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+        assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
+        self.cuda_context.pop()
+        self.cuda_context.push()
+        #NvFBC init:
+        info = create_context(-1, -1, NVFBC_SHARED_CUDA)
+        self.context = <NvFBCCuda*> (<uintptr_t> info["context"])
+        assert self.context!=NULL
+        self.context.NvFBCCudaGetMaxBufferSize(&self.max_buffer_size)
+        log("NvFBCCudaGetMaxBufferSize: %#x", self.max_buffer_size)
+        cdef NVFBC_CUDA_SETUP_PARAMS params
+        memset(&params, 0, sizeof(NVFBC_CUDA_SETUP_PARAMS))
+        params.dwVersion = NVFBC_CUDA_SETUP_PARAMS_V1_VER
+        params.bEnableSeparateCursorCapture = 1
+        params.bHDRRequest = 0
+        if pixel_format=="BGRA":
+            params.eFormat = NVFBC_TOCUDA_ARGB
+        else:
+            params.eFormat = NVFBC_TOCUDA_ARGB10
+        cdef NVFBCRESULT res = self.context.NvFBCCudaSetup(&params)
+        raiseNvFBC(res, "NvFBCCudaSetup")
+        self.setup = True
+
+    def get_info(self):
+        info = get_info()
+        info["pixel-format"] = self.pixel_format
+        return info
+
+    def get_type(self):
+        return  "nvfbc-cuda"
+
+    def __repr__(self):
+        return "NvFBC_CUDACapture(%#x)" % (<uintptr_t> self.context)
+
+    def __dealloc__(self):
+        self.clean()
+
+    def get_image(self, x=0, y=0, width=0, height=0):
+        log("get_image%s", (x, y, width, height))
+        cdef double start = monotonic_time()
+        #allocate CUDA device memory:
+        if not self.cuda_device_buffer:
+            self.cuda_device_buffer = driver.mem_alloc(self.max_buffer_size)
+            log("max_buffer_size=%#x, cuda device buffer=%s", self.max_buffer_size, self.cuda_device_buffer)
+        #cuda_device_buffer, stride = self.cuda_device.mem_alloc_pitch(4096, 2160, 16)
+        cdef NvFBCFrameGrabInfo grab_info
+        memset(&grab_info, 0, sizeof(NvFBCFrameGrabInfo))
+        cdef NVFBC_CUDA_GRAB_FRAME_PARAMS grab
+        memset(&grab, 0, sizeof(NVFBC_CUDA_GRAB_FRAME_PARAMS))
+        grab.dwVersion = NVFBC_CUDA_GRAB_FRAME_PARAMS_V1_VER
+        ptr = <uintptr_t> int(self.cuda_device_buffer)
+        grab.pCUDADeviceBuffer = <void*> ptr
+        grab.pNvFBCFrameGrabInfo = &grab_info
+        grab.dwFlags = NVFBC_TOCUDA_NOWAIT
+        cdef NVFBCRESULT res
+        with nogil:
+            res = self.context.NvFBCCudaGrabFrame(&grab)
+        log("NvFBCCudaGrabFrame(%#x)=%i", <uintptr_t> &grab, res)
+        if res<0:
+            raiseNvFBC(res, "NvFBCToSysGrabFrame")
+        elif res!=0:
+            raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
+        info = get_frame_grab_info(&grab_info)
+        cdef double end = monotonic_time()
+        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwBufferWidth, int((end-start)*1000))
+        log("NvFBCCudaGrabFrame: info=%s", info)
+        #or when closing the context
+        Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
+        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
+        image.cuda_device_buffer = self.cuda_device_buffer
+        image.cuda_context = self.cuda_context
+        image.buffer_size = self.max_buffer_size
+        image.may_download()
+        return image
+
+    def clean(self):                        #@DuplicatedSignature
+        log("clean()")
+        if self.setup:
+            self.setup = False
+            if self.context:
+                self.context.NvFBCCudaRelease()
+                self.context = NULL
+        context = self.cuda_context
+        if context:
+            self.cuda_context = None
+            context.pop()
+            context.detach()
+        #don't free it - an imagewrapper may still use it:
+        self.cuda_device_buffer = None
+
+
+class CUDAImageWrapper(ImageWrapper):
+
+    def __init__(self, *args):
+        ImageWrapper.__init__(self, *args)
+        self.cuda_device_buffer = None
+        self.cuda_context = None
+        self.buffer_size = 0
+        self.downloaded = False
+
+    def may_download(self):
+        if self.pixels is not None or self.downloaded:
+            return
+        assert self.cuda_device_buffer, "no device buffer"
+        assert self.cuda_context, "no cuda context"
+        cdef double start = monotonic_time()
+        #size = self.rowstride*self.height*len(self.pixel_format)
+        size = self.buffer_size
+        host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
+        driver.memcpy_dtoh(host_buffer, self.cuda_device_buffer)
+        self.pixels = host_buffer.tostring()
+        self.downloaded = True
+        cdef double end = monotonic_time()
+        log("may_download() from %s to %s, size=%s, elapsed=%ims", self.cuda_device_buffer, host_buffer, size, int(1000*(end-start)))
+        #self.cuda_device_buffer.free()
+        self.cuda_device_buffer = None
+
+    def freeze(self):
+        self.may_download()
+        return True
+
+    def get_pixels(self):
+        self.may_download()
+        return ImageWrapper.get_pixels(self)
+
+    def clone_pixel_data(self):
+        self.may_download()
+        return ImageWrapper.clone_pixel_data(self)
+
+    def get_sub_image(self, *args):
+        self.may_download()
+        return ImageWrapper.get_sub_image(self, *args)
+
+    def free(self):
+        cdb = self.cuda_device_buffer
+        if cdb:
+            self.cuda_device_buffer = None
+            cdb.free()
+        return ImageWrapper.free(self)
+    
 
 def init_module():
     log("nvfbc.init_module()")

@@ -55,6 +55,7 @@ BUTTON_EVENTS = {
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
+NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 
 
 class Win32RootWindowModel(RootWindowModel):
@@ -73,19 +74,26 @@ class Win32RootWindowModel(RootWindowModel):
     def init_capture(self):
         if SHADOW_NVFBC:
             try:
-                from xpra.codecs.nvfbc.fbc_capture import NvFBC_Capture, init_nvfbc_library
+                from xpra.codecs.nvfbc.fbc_capture import init_nvfbc_library
             except ImportError as e:
                 log("NvFBC capture is not available", exc_info=True)
             else:
                 try:
                     if init_nvfbc_library():
-                        pixel_format = {
-                            24  : "RGB",
-                            32  : "BGRA",
-                            30  : "r210",
-                            }[self.pixel_depth]
-                        capture = NvFBC_Capture()
-                        capture.init_context(-1, -1, pixel_format)
+                        log.info("NVFBC_CUDA=%s", NVFBC_CUDA)
+                        if NVFBC_CUDA:
+                            from xpra.codecs.nvfbc.fbc_capture import NvFBC_CUDACapture
+                            capture = NvFBC_CUDACapture()
+                            capture.init_context()
+                        else:
+                            from xpra.codecs.nvfbc.fbc_capture import NvFBC_SysCapture
+                            pixel_format = {
+                                24  : "RGB",
+                                32  : "BGRA",
+                                30  : "r210",
+                                }[self.pixel_depth]
+                            capture = NvFBC_SysCapture()
+                            capture.init_context(-1, -1, pixel_format)
                         return capture
                 except Exception as e:
                     log("NvFBC_Capture", exc_info=True)

@@ -19,7 +19,7 @@ def main():
     with program_context("NvFBC-Capture", "NvFBC Capture"):
         from xpra.platform.paths import get_download_dir
         from xpra.util import print_nested_dict
-        from xpra.codecs.nvfbc.fbc_capture import NvFBC_Capture, init_nvfbc_library, get_info, get_status #@UnresolvedImport
+        from xpra.codecs.nvfbc.fbc_capture import NvFBC_SysCapture, init_nvfbc_library, get_info, get_status #@UnresolvedImport
         init_nvfbc_library()
         log.info("Info:")
         print_nested_dict(get_info(), print_fn=log.info)
@@ -27,7 +27,7 @@ def main():
         print_nested_dict(get_status(), print_fn=log.info)
         try:
             log("creating test capture class")
-            c = NvFBC_Capture()
+            c = NvFBC_SysCapture()
             log("Capture=%s", c)
             c.init_context()
         except Exception as e:
