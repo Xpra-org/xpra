@@ -31,7 +31,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_icon = None
         #the pointer position timer:
         self.start_poll_pointer_position()
-        
+
     def init(self, opts):
         GTKServerBase.init(self, opts)
         self.tray = opts.tray

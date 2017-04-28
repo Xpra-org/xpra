@@ -21,6 +21,8 @@ from ctypes import wintypes
 from libc.stdint cimport uintptr_t, uint8_t, int64_t
 from xpra.monotonic_time cimport monotonic_time
 
+PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_PIXEL_FORMAT", "r210")
+
 
 ctypedef unsigned long DWORD
 ctypedef int BOOL
@@ -305,9 +307,10 @@ cdef inline raiseNvFBC(NVFBCRESULT ret, msg):
 NvFBC = None
 def init_nvfbc_library():
     global NvFBC
-    if NvFBC:
-        return
+    if NvFBC is not None:
+        return NvFBC
     if not WIN32:
+        NvFBC = False
         raise Exception("nvfbc is not supported on %s" % sys.platform)
     load = ctypes.WinDLL
     #we only support 64-bit:
@@ -317,6 +320,7 @@ def init_nvfbc_library():
         NvFBC = load(nvfbc_libname)
         log("init_nvfbc_library() %s(%s)=%s", load, nvfbc_libname, NvFBC)
     except Exception as e:
+        NvFBC = False
         log("failed to load '%s'", nvfbc_libname, exc_info=True)
         raise ImportError("nvfbc: the required library %s cannot be loaded: %s" % (nvfbc_libname, e))
     NvFBC.NvFBC_GetSDKVersion.argtypes = [ctypes.c_void_p]
@@ -327,6 +331,7 @@ def init_nvfbc_library():
     NvFBC.NvFBC_SetGlobalFlags.restype = wintypes.INT
     NvFBC.NvFBC_Enable.argtypes = [wintypes.INT]
     NvFBC.NvFBC_Enable.restype = wintypes.INT
+    return NvFBC
 
 def unload_library():
     global NvFBC
@@ -411,14 +416,30 @@ def get_info():
     return info
 
 
+PIXEL_FORMAT_CONST = {
+    "BGRA"      : NVFBC_TOSYS_ARGB,
+    "RGB"       : NVFBC_TOSYS_RGB,
+    #"YUV420P"   : NVFBC_TOSYS_YYYYUV420p,
+    #"RGBP"      : NVFBC_TOSYS_RGB_PLANAR,
+    #NVFBC_TOSYS_XOR,
+    #"YUV444P"   : NVFBC_TOSYS_YUV444p,
+    "r210"      : NVFBC_TOSYS_ARGB10,
+    }
+
+
 cdef class NvFBC_Capture:
     cdef NvFBCToSys *context
     cdef uint8_t *framebuffer
     cdef uint8_t setup
+    cdef object pixel_format
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1):
+    def init_context(self, int width=-1, int height=-1, pixel_format=PIXEL_FORMAT):
+        global PIXEL_FORMAT_CONST
+        if pixel_format not in PIXEL_FORMAT_CONST:
+            raise Exception("unsupported pixel format '%s'" % pixel_format)
+        self.pixel_format = pixel_format
         status = get_status()
         if not status.get("capture-possible"):
             raise Exception("NvFBC status error: capture is not possible")
@@ -428,13 +449,13 @@ cdef class NvFBC_Capture:
             raise TransientCodecException("NvFBC status error: cannot create now")
         info = create_context(width, height)
         self.context = <NvFBCToSys*> (<uintptr_t> info["context"])
-        log("init_context(%i, %i) NvFBCToSys context=%#x", width, height, <uintptr_t> self.context)
+        log("init_context(%i, %i, %s) NvFBCToSys context=%#x", width, height, pixel_format, <uintptr_t> self.context)
         assert self.context!=NULL
         cdef NVFBC_TOSYS_SETUP_PARAMS params
         self.framebuffer = NULL
         memset(&params, 0, sizeof(NVFBC_TOSYS_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOSYS_SETUP_PARAMS_VER
-        params.eMode = NVFBC_TOSYS_RGB
+        params.eMode = PIXEL_FORMAT_CONST[pixel_format]
         params.bWithHWCursor = True
         params.bDiffMap = False
         params.ppBuffer = <void**> &self.framebuffer
@@ -445,6 +466,7 @@ cdef class NvFBC_Capture:
 
     def get_info(self):
         info = get_info()
+        info["pixel-format"] = self.pixel_format
         return info
 
     def get_type(self):
@@ -502,10 +524,9 @@ cdef class NvFBC_Capture:
         start = monotonic_time()
         #TODO: only copy when the next frame is going to overwrite the buffer,
         #or when closing the context
-        rgb_format = "RGB"
-        Bpp = len(rgb_format)       # ie: "BGR" -> 3
+        Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
         buf = self.framebuffer[:grab_info.dwHeight*grab_info.dwBufferWidth*Bpp]
-        image = ImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), buf, rgb_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
+        image = ImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), buf, self.pixel_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
         end = monotonic_time()
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image

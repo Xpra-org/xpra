@@ -59,10 +59,11 @@ SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 
 class Win32RootWindowModel(RootWindowModel):
 
-    def __init__(self, root):
+    def __init__(self, root, pixel_depth=32):
         RootWindowModel.__init__(self, root)
+        self.pixel_depth = pixel_depth
         self.capture = self.init_capture()
-        log("Win32RootWindowModel(%s) capture=%s", root, self.capture)
+        log("Win32RootWindowModel(%s, %i) capture=%s", root, pixel_depth, self.capture)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
@@ -77,10 +78,15 @@ class Win32RootWindowModel(RootWindowModel):
                 log("NvFBC capture is not available", exc_info=True)
             else:
                 try:
-                    init_nvfbc_library()
-                    capture = NvFBC_Capture()
-                    capture.init_context()
-                    return capture
+                    if init_nvfbc_library():
+                        pixel_format = {
+                            24  : "RGB",
+                            32  : "BGRA",
+                            30  : "r210",
+                            }[self.pixel_depth]
+                        capture = NvFBC_Capture()
+                        capture.init_context(-1, -1, pixel_format)
+                        return capture
                 except Exception as e:
                     log("NvFBC_Capture", exc_info=True)
                     log.warn("Warning: NvFBC screen capture initialization failed:")
@@ -105,6 +111,7 @@ class Win32RootWindowModel(RootWindowModel):
         info = {}
         if c:
             info["capture"] = c.get_info()
+        info["pixel-depth"] = self.pixel_depth
         return info
 
 
@@ -268,6 +275,12 @@ class ShadowServer(GTKShadowServerBase):
                                  win32con.WM_WININICHANGE       : "WM_WININICHANGE",
                                  })
 
+    def init(self, opts):
+        self.pixel_depth = int(opts.pixel_depth)
+        assert self.pixel_depth in (24, 30, 32), "unsupported pixel depth: %s" % self.pixel_depth
+        GTKShadowServerBase.init(self, opts)
+        log.info("pixel-depth=%i", self.pixel_depth)
+
 
     def print_screen_info(self):
         w, h = self.root.get_size()
@@ -305,7 +318,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def makeRootWindowModel(self):
-        return Win32RootWindowModel(self.root)
+        return Win32RootWindowModel(self.root, self.pixel_depth)
 
 
     def refresh(self):
@@ -354,6 +367,7 @@ class ShadowServer(GTKShadowServerBase):
         info.update(GTKShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {
+                                   "pixel-depth": self.pixel_depth,
                                    "type"       : "Python/gtk2/win32-shadow",
                                    "tray"       : self.tray,
                                    "tray-icon"  : self.tray_icon or ""

@@ -64,6 +64,15 @@ def set_dwm_composition(value=DWM_EC_DISABLECOMPOSITION):
         log.error(" %s", e)
         return False
 
+def get_desktop_bit_depth():
+    desktop_wnd = GetDesktopWindow()
+    dc = GetWindowDC(desktop_wnd)
+    assert dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
+    bit_depth = GetDeviceCaps(dc, win32con.BITSPIXEL)
+    log("get_desktop_bit_depth()=%i", bit_depth)
+    ReleaseDC(desktop_wnd, dc)
+    return bit_depth
+
 
 class GDICapture(object):
 
