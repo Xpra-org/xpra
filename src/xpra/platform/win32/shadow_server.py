@@ -279,7 +279,6 @@ class ShadowServer(GTKShadowServerBase):
         self.pixel_depth = int(opts.pixel_depth)
         assert self.pixel_depth in (24, 30, 32), "unsupported pixel depth: %s" % self.pixel_depth
         GTKShadowServerBase.init(self, opts)
-        log.info("pixel-depth=%i", self.pixel_depth)
 
 
     def print_screen_info(self):
