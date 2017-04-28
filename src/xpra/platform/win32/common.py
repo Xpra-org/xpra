@@ -71,6 +71,9 @@ GetDesktopWindow = user32.GetDesktopWindow
 GetDesktopWindow.restype = HWND
 GetWindowDC = user32.GetWindowDC
 GetWindowDC.restype = HWND
+ReleaseDC = user32.ReleaseDC
+ReleaseDC.restype = int
+ReleaseDC.argtypes = [HWND, HDC]
 mouse_event = user32.mouse_event
 LoadIconA = user32.LoadIconA
 RegisterWindowMessageA = user32.RegisterWindowMessageA
@@ -111,6 +114,9 @@ SetPixelV = gdi32.SetPixelV
 DeleteDC = gdi32.DeleteDC
 CreateDIBSection = gdi32.CreateDIBSection
 DeleteObject = gdi32.DeleteObject
+DeleteDC = gdi32.DeleteDC
+DeleteDC.restype = BOOL
+DeleteDC.argtypes = [HDC]
 
 
 #wrap EnumDisplayMonitors to hide the callback function:

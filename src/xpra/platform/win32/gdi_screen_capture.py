@@ -18,13 +18,12 @@ from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image_wrapper import ImageWrapper
 
 #user32:
-from xpra.platform.win32.common import GetDesktopWindow, GetWindowDC
-#gdi32:
-from xpra.platform.win32.common import (CreateCompatibleDC,
-                                        CreateCompatibleBitmap,
-                                        GetBitmapBits, SelectObject,
-                                        BitBlt, GetDeviceCaps,
-                                        GetSystemPaletteEntries)
+from xpra.platform.win32.common import (
+    GetDesktopWindow, GetWindowDC, ReleaseDC, DeleteDC,
+    CreateCompatibleDC, CreateCompatibleBitmap,
+    GetBitmapBits, SelectObject,
+    BitBlt, GetDeviceCaps,
+    GetSystemPaletteEntries)
 
 NULLREGION = 1      #The region is empty.
 SIMPLEREGION = 2    #The region is a single rectangle.
@@ -84,6 +83,14 @@ class GDICapture(object):
     def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
+        dc = self.dc
+        if dc:
+            self.dc = None
+            ReleaseDC(dc)
+        memdc = self.memdc
+        if memdc:
+            self.memdc = None
+            DeleteDC(memdc)
 
     def get_image(self, x=0, y=0, width=0, height=0):
         start = time.time()
