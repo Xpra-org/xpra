@@ -233,7 +233,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         x, y, w, h = window.get_geometry()
         windowlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
         for ss in self._server_sources.values():
-            ss.move_resize_window(wid, window, x, y, w, h)
+            ss.resize_window(wid, window, w, h)
             ss.damage(wid, window, 0, 0, w, h)
 
 
