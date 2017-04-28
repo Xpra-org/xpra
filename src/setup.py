@@ -1385,9 +1385,10 @@ if WIN32:
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
         if nvenc7_ENABLED:
             add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
-            add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
+        if nvfbc_ENABLED or nvenc7_ENABLED:
+            add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
@@ -1874,13 +1875,14 @@ if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig()
     nvfbc_inc = os.path.join(nvfbc_path, "inc") 
     add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-I%s" % nvfbc_inc)
+    add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
     cython_add(Extension("xpra.codecs.nvfbc.fbc_capture",
                          ["xpra/codecs/nvfbc/fbc_capture.pyx"],
                          language="c++",
                          **nvfbc_pkgconfig))
 
 toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
-toggle_packages(nvenc7_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
 if nvenc7_ENABLED:
