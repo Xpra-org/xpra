@@ -51,6 +51,7 @@ class Win32Hooks(object):
         self._hwnd = hwnd
         self._message_map = {}
         self.max_size = None
+        self.min_size = None
         if HOOK_MINMAXINFO:
             self.add_window_event_handler(win32con.WM_GETMINMAXINFO, self.on_getminmaxinfo)
         try:
@@ -75,27 +76,43 @@ class Win32Hooks(object):
         self._oldwndproc = SetWindowLongW(self._hwnd, win32con.GWL_WNDPROC, self._newwndproc)
 
     def on_getminmaxinfo(self, hwnd, msg, wparam, lparam):
-        if self.max_size and lparam:
+        if (self.min_size or self.max_size) and lparam:
             info = ctypes.cast(lparam, ctypes.POINTER(MINMAXINFO)).contents
-            width, height = self.max_size
             style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
+            dw, dh = 0, 0
             if style & win32con.WS_BORDER:
                 fw, fh = self.frame_width, self.frame_height
-            else:
-                fw, fh = 0, 0
-            w = width + fw*2
-            h = height + self.caption_height + fh*2
-            for v in (info.ptMaxSize, info.ptMaxTrackSize):
-                if v and v.x>0:
-                    w = min(w, v.x)
-                if v and v.y>0:
-                    h = min(h, v.y)
-            point  = POINT(w, h)
-            info.ptMaxSize       = point
-            info.ptMaxTrackSize  = point
-            log("on_getminmaxinfo window=%#x max_size=%s, frame=%sx%s, minmaxinfo size=%sx%s", hwnd, self.max_size, fw, fh, w, h)
+                dw = fw*2
+                dh = self.caption_height + fh*2
+            log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s", hwnd, self.min_size, self.max_size, fw, fh)
+            if self.min_size:
+                minw, minh = self.min_size
+                minw += dw
+                minh += dh
+                for v in (info.ptMinTrackSize, ):
+                    if v and v.x>0:
+                        minw = max(minw, v.x)
+                    if v and v.y>0:
+                        minh = max(minh, v.y)
+                point  = POINT(minw, minh)
+                info.ptMinSize       = point
+                info.ptMinTrackSize  = point
+                log("on_getminmaxinfo actual min_size=%ix%i", minw, minh)
+            if self.max_size:
+                maxw, maxh = self.max_size
+                maxw += dw
+                maxh += dh
+                for v in (info.ptMaxSize, info.ptMaxTrackSize):
+                    if v and v.x>0:
+                        maxw = min(maxw, v.x)
+                    if v and v.y>0:
+                        maxh = min(maxh, v.y)
+                point  = POINT(maxw, maxh)
+                info.ptMaxSize       = point
+                info.ptMaxTrackSize  = point
+                log("on_getminmaxinfo actual max_size=%ix%i", maxw, maxh)
             return 0
-        log("on_getminmaxinfo window=%#x max_size=%s", hwnd, self.max_size)
+        log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s", hwnd, self.min_size, self.max_size)
 
     def cleanup(self, *args):
         log("cleanup%s", args)

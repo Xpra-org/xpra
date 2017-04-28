@@ -370,11 +370,22 @@ def fixup_window_style(self, *args):
             style |= win32con.WS_SYSMENU
             style |= win32con.WS_MAXIMIZEBOX
             style |= win32con.WS_MINIMIZEBOX
-            if style!=cur_style:
-                log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
-                SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
-            else:
-                log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
+        #we can't enable this because GTK would then get confused
+        #and paint the window contents at the wrong offset
+        if False:
+            hints = metadata.get("size-constraints")
+            if hints:
+                minw, minh = hints.get("minimum-size", (0, 0))
+                maxw, maxh = hints.get("maximum-size", (0, 0))
+                if minw>0 and minw==maxw and minh>0 and minh==maxh:
+                    #not resizable
+                    style &= ~win32con.WS_MAXIMIZEBOX
+                    style &= ~win32con.WS_SIZEBOX
+        if style!=cur_style:
+            log("fixup_window_style() using %s (%#x) instead of %s (%#x) on window %#x with metadata=%s", style_str(style), style, style_str(cur_style), cur_style, hwnd, metadata)
+            SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
+        else:
+            log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
     except:
         log.warn("failed to fixup window style", exc_info=True)
 
@@ -396,11 +407,14 @@ def apply_maxsize_hints(window, hints):
     """
     workw, workh = 0, 0
     handle = get_window_handle(window)
+    log("apply_maxsize_hints(%s, %s) handle=%s", window, hints, handle)
     if not window.get_decorated():
         workarea = get_monitor_workarea_for_window(handle)
         log("using workarea as window size limit for undecorated window: %s", workarea)
         if workarea:
             workw, workh = workarea[2:4]
+    minw = hints.get("min_width", 0)
+    minh = hints.get("min_width", 0)
     maxw = hints.get("max_width", 0)
     maxh = hints.get("max_height", 0)
     if workw>0 and workh>0:
@@ -410,17 +424,26 @@ def apply_maxsize_hints(window, hints):
             maxh = min(workh, maxh)
         else:
             maxw, maxh = workw, workh
-    log("apply_maxsize_hints(%s, %s) found max: %sx%s", window, hints, maxw, maxh)
+    log("apply_maxsize_hints(%s, %s) found min: %sx%s, max: %sx%s", window, hints, minw, minh, maxw, maxh)
     if (maxw>0 and maxw<32767) or (maxh>0 and maxh<32767):
         window.win32hooks.max_size = (maxw or 32000), (maxh or 32000)
     elif window.win32hooks.max_size:
         #was set, clear it
         window.win32hooks.max_size = None
+    if minw>0 or minh>0:
+        window.win32hooks.min_size = minw, minh
+    elif window.win32hooks.min_size:
+        #was set, clear it:
+        window.win32hooks.min_size = None
+    if minw>0 and minw==maxw and minh>0 and minh==maxh:
+        #fixed size, GTK can handle that
+        return
     #remove them so GTK doesn't try to set attributes,
     #which would remove the maximize button:
-    for x in ("max_width", "max_height"):
+    for x in ("min_width", "min_height", "max_width", "max_height"):
         if x in hints:
             del hints[x]
+    window_state_updated(window)
 
 def apply_geometry_hints(self, hints):
     log("apply_geometry_hints(%s)", hints)
