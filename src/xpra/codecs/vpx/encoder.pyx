@@ -284,8 +284,8 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 #educated guess:
 MAX_SIZE = {
-    "vp8"   : (8192, 8192),
-    "vp9"   : (16384, 8192),
+    "vp8"   : (8192, 4096),
+    "vp9"   : (8192, 4096),
     }
 #no idea why, but this is the default on win32:
 if WIN32:
@@ -711,9 +711,9 @@ def selftest(full=False):
         if full:
             global MAX_SIZE
             for encoding in get_encodings():
-                maxw, maxh = get_encoder_max_size(encoder, encoding, limit_w=8192, limit_h=4096)
+                maxw, maxh = get_encoder_max_size(encoder, encoding, limit_w=8192, limit_h=8192)
                 dmaxw, dmaxh = MAX_SIZE[encoding]
-                assert maxw>=dmaxw and maxh>=dmaxh, "%s is limited to %ix%i and not %ix%i" % (encoder, maxw, maxh, dmaxw, dmaxh)
+                assert maxw>=dmaxw and maxh>=dmaxh, "%s is limited to %ix%i for %s and not %ix%i" % (encoder, maxw, maxh, encoding, dmaxw, dmaxh)
                 MAX_SIZE[encoding] = maxw, maxh
             log("%s max dimensions: %s", encoder, MAX_SIZE)
     finally:
