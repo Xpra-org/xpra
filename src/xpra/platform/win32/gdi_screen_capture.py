@@ -83,6 +83,9 @@ class GDICapture(object):
         self.bitblt_err_time = 0
         self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
 
+    def __repr__(self):
+        return "GDICapture(%i-bits)" % self.bit_depth
+
     def get_info(self):
         return {
             "type"  : "gdi",
