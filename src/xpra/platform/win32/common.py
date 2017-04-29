@@ -89,8 +89,10 @@ PostQuitMessage = user32.PostQuitMessage
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC
+CreateCompatibleDC.argtypes = [HDC]
 CreateCompatibleDC.restype = HDC
 CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
+CreateCompatibleBitmap.argtypes = [HDC, c_int, c_int]
 CreateCompatibleBitmap.restype = HBITMAP
 CreateBitmap = gdi32.CreateBitmap
 CreateBitmap.restype = HBITMAP
