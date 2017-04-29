@@ -63,6 +63,8 @@ Recommends:
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
 #zesty:        ,libx264-148
+# for notifications forwarding and dbus server / proxying:
+        ,python-dbus
 # AES encryption:
         ,python-cryptography
 # audio-related:
@@ -98,8 +100,6 @@ Suggests: openssh-server
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
-# for notifications forwarding:
-        ,python-dbus
 # for publishing servers via mdns:
         ,python-avahi
         ,python-netifaces
