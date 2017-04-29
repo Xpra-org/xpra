@@ -114,7 +114,7 @@ class TestAuth(unittest.TestCase):
 			assert a.authenticate("", x)
 
 	def _test_hmac_auth(self, mod_name, password, **kwargs):
-		for x in (password, "somethingelse"):
+		for test_password in (password, "somethingelse"):
 			a = self._init_auth(mod_name, **kwargs)
 			assert a.requires_challenge()
 			assert a.get_password()
@@ -124,10 +124,10 @@ class TestAuth(unittest.TestCase):
 			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
 			auth_salt = strtobytes(xor(salt, client_salt))
 			digestmod = get_digest_module(mac)
-			verify = hmac.HMAC(strtobytes(x), auth_salt, digestmod=digestmod).hexdigest()
+			verify = hmac.HMAC(strtobytes(test_password), auth_salt, digestmod=digestmod).hexdigest()
 			passed = a.authenticate(verify, client_salt)
-			assert passed == (x==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
-			assert not a.authenticate(verify, client_salt)
+			assert passed == (test_password==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
+			assert not a.authenticate(verify, client_salt), "should not be able to athenticate again with the same values"
 
 	def test_env(self):
 		for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
