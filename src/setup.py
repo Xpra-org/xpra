@@ -1238,7 +1238,9 @@ if WIN32:
                    "win32-1.0")
             if opengl_ENABLED:
                 add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
-            add_DLLs('visual', 'curl', 'soup', 'sqlite3', 'openjpeg')
+            add_DLLs('visual', 'curl', 'soup', 'openjpeg')
+        if gtk3_ENABLED or server_ENABLED:
+            add_DLLs('sqlite3')
 
         if gtk2_ENABLED:
             add_dir('lib',      {
@@ -1284,7 +1286,7 @@ if WIN32:
         external_includes += ["encodings"]
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
-        bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL", "libsqlite3-0.dll"]
+        bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
         cx_freeze_options = {
                             "compressed"        : True,
                             "includes"          : external_includes,
@@ -1341,7 +1343,7 @@ if WIN32:
             add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         if server_ENABLED:
-            add_console_exe("xpra/server/auth/sqlite_auth.py",  "sql.ico",          "SQLite_auth_tool")
+            add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
             add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")

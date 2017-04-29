@@ -138,7 +138,7 @@ def main(argv):
         print("usage:")
         print(" %s databasefile create" % sys.argv[0])
         print(" %s databasefile list" % sys.argv[0])
-        print(" %s databasefile add username password [uid, gid, displays, env_options, session_options]" % sys.argv[0])
+        print(" %s databasefile add username password [uid, gid, displays, env_options, session_options" % sys.argv[0])
         print(" %s databasefile remove username" % sys.argv[0])
         return 1
     from xpra.platform import program_context
