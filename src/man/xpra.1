@@ -759,6 +759,19 @@ The file must contain each user credentials on one line of the form:
 It is not possible to have usernames or password that contain
 the pipe character \fI|\fP which is used as delimiter, or newlines
 and carriage returns.
+
+.IP \fBsqlite\fP
+checks the username and password against the sqlite database file
+specified using the filename option.
+The authentication will be processed using the following query
+(which is configurable using the "password_query" option):
+\fISELECT password FROM users WHERE username=(?)\fP
+The sessions available for each user will be querying using:
+(this is configurable using the "sessions_query" option):
+\fISELECT uid, gid, displays, env_options, session_options
+FROM users WHERE username=(?)\fP
+Multiple displays may be specified as a comma separated list.
+
 .IP \fBpam\fP
 validates the username and password using the PAM system
 .IP \fBwin32\fP

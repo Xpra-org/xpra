@@ -317,6 +317,11 @@ class ServerCore(object):
                         "file"      : file_auth,
                         }
         try:
+            from xpra.server.auth import sqlite_auth
+            AUTH_MODULES["sqlite"] = sqlite_auth
+        except Exception as e:
+            authlog("cannot load sql auth: %s", e)
+        try:
             from xpra.server.auth import pam_auth
             AUTH_MODULES["pam"] = pam_auth
         except Exception as e:

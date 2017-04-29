@@ -1340,6 +1340,8 @@ if WIN32:
         if client_ENABLED or server_ENABLED:
             add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile")
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
+        if server_ENABLED:
+            add_console_exe("xpra/server/auth/sqlite_auth.py",  "sql.ico",          "SQLite_auth_tool")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
             add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")

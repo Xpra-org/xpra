@@ -16,6 +16,30 @@ from xpra.net.protocol import get_digests
 from xpra.net.crypto import get_digest_module
 
 
+def temp_filename(prefix=""):
+	return os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-%s-test-%s" % (prefix, monotonic_time()))
+
+
+class TempFileContext(object):
+
+	def __init__(self, prefix="prefix"):
+		self.prefix = prefix
+
+	def __enter__(self):
+		if WIN32:
+			#NamedTemporaryFile doesn't work for reading on win32...
+			self.filename = temp_filename(self.prefix)
+			self.file = open(self.filename, 'wb')
+		else:
+			self.file = tempfile.NamedTemporaryFile(prefix=self.prefix)
+			self.filename = self.file.name
+		return self
+
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		if WIN32:
+			os.unlink(self.filename)
+
+
 class FakeOpts(object):
 	def __init__(self, d={}):
 		self._d = d
@@ -157,14 +181,9 @@ class TestAuth(unittest.TestCase):
 		assert not a.get_challenge(get_digests())
 		assert not a.get_challenge(get_digests())
 		for muck in (0, 1):
-			if WIN32:
-				#NamedTemporaryFile doesn't work for reading on win32...
-				filename = os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-test-%s" % monotonic_time())
-				f = open(filename, 'wb')
-			else:
-				f = tempfile.NamedTemporaryFile(prefix=mod_name)
-				filename = f.name
-			try:
+			with TempFileContext(prefix=mod_name) as context:
+				f = context.file
+				filename = context.filename
 				with f:
 					a = self._init_auth(mod_name, {"password_file" : filename})
 					password, filedata = genauthdata(a)
@@ -188,9 +207,6 @@ class TestAuth(unittest.TestCase):
 					elif muck==1:
 						for verify in ("whatever", None, "bad"):
 							assert not a.authenticate(verify, client_salt)
-			finally:
-				if WIN32:
-					os.unlink(filename)
 
 	def test_file(self):
 		def genfiledata(a):
@@ -203,6 +219,29 @@ class TestAuth(unittest.TestCase):
 			password = uuid.uuid4().hex
 			return password, "%s|%s|||" % (a.username, password)
 		self._test_file_auth("multifile", genfiledata)
+
+	def test_sqlite(self):
+		from xpra.server.auth.sqlite_auth import main
+		filename = temp_filename("sqlite")
+		password = "hello"
+		def t():
+			self._test_hmac_auth("sqlite", password, filename=filename)
+		def vf(reason):
+			try:
+				t()
+			except:
+				pass
+			else:
+				raise Exception("sqlite auth should have failed: %s" % reason)
+		vf("the database has not been created yet")
+		assert main(["main", filename, "create"])==0
+		vf("the user has not been added yet")
+		assert main(["main", filename, "add", "foo", password])==0
+		t()
+		assert main(["main", filename, "remove", "foo"])==0
+		vf("the user has been removed")
+		assert main(["main", filename, "add", "foo", "wrongpassword"])==0
+		vf("the password should not match")
 
 
 def main():
