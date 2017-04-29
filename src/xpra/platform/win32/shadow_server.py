@@ -58,51 +58,54 @@ SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 
 
+def init_capture(pixel_depth=32):
+    if SHADOW_NVFBC:
+        try:
+            from xpra.codecs.nvfbc.fbc_capture import init_nvfbc_library
+        except ImportError as e:
+            log("NvFBC capture is not available", exc_info=True)
+        else:
+            try:
+                if init_nvfbc_library():
+                    log("NVFBC_CUDA=%s", NVFBC_CUDA)
+                    pixel_format = {
+                        24  : "RGB",
+                        32  : "BGRA",
+                        30  : "r210",
+                        }[pixel_depth]
+                    if NVFBC_CUDA:
+                        from xpra.codecs.nvfbc.fbc_capture import NvFBC_CUDACapture
+                        capture = NvFBC_CUDACapture()
+                    else:
+                        from xpra.codecs.nvfbc.fbc_capture import NvFBC_SysCapture
+                        capture = NvFBC_SysCapture()
+                    capture.init_context(-1, -1, pixel_format)
+            except Exception as e:
+                log("NvFBC_Capture", exc_info=True)
+                log.warn("Warning: NvFBC screen capture initialization failed:")
+                log.warn(" %s", e)
+                log.warn(" using the slower GDI capture code")
+    if not capture:
+        if SHADOW_GDI:
+            capture = GDICapture()
+        if not capture:
+            raise Exception("no screen capture methods enabled (GDI capture is disabled)")
+    log("init_capture()=", capture)
+    return capture
+
+
 class Win32RootWindowModel(RootWindowModel):
 
     def __init__(self, root, pixel_depth=32):
         RootWindowModel.__init__(self, root)
         self.pixel_depth = pixel_depth
-        self.capture = self.init_capture()
+        self.capture = init_capture(pixel_depth)
         log("Win32RootWindowModel(%s, %i) capture=%s", root, pixel_depth, self.capture)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
-
-    def init_capture(self):
-        if SHADOW_NVFBC:
-            try:
-                from xpra.codecs.nvfbc.fbc_capture import init_nvfbc_library
-            except ImportError as e:
-                log("NvFBC capture is not available", exc_info=True)
-            else:
-                try:
-                    if init_nvfbc_library():
-                        log.info("NVFBC_CUDA=%s", NVFBC_CUDA)
-                        if NVFBC_CUDA:
-                            from xpra.codecs.nvfbc.fbc_capture import NvFBC_CUDACapture
-                            capture = NvFBC_CUDACapture()
-                            capture.init_context()
-                        else:
-                            from xpra.codecs.nvfbc.fbc_capture import NvFBC_SysCapture
-                            pixel_format = {
-                                24  : "RGB",
-                                32  : "BGRA",
-                                30  : "r210",
-                                }[self.pixel_depth]
-                            capture = NvFBC_SysCapture()
-                            capture.init_context(-1, -1, pixel_format)
-                        return capture
-                except Exception as e:
-                    log("NvFBC_Capture", exc_info=True)
-                    log.warn("Warning: NvFBC screen capture initialization failed:")
-                    log.warn(" %s", e)
-                    log.warn(" using the slower GDI capture code")
-        if SHADOW_GDI:
-            return GDICapture()
-        raise Exception("no screen capture methods enabled (GDI capture is disabled)")
 
     def cleanup(self):
         RootWindowModel.cleanup(self)
@@ -241,18 +244,20 @@ class Win32RootWindowModel(RootWindowModel):
         return w, h
 
     def get_image(self, x, y, width, height, logger=None):
+        if not self.capture:
+            self.capture = init_capture(self.pixel_depth)
         try:
             return self.capture.get_image(x, y, width, height)
         except CodecStateException as e:
+            log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
             #maybe we should exit here?
             log.warn("Warning: %s", e)
             self.cleanup_capture()
-            self.init_capture()
             return None
         except TransientCodecException as e:
+            log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
             log.warn("Warning: %s", e)
             self.cleanup_capture()
-            self.init_capture()
             return None
 
     def take_screenshot(self):
@@ -285,7 +290,8 @@ class ShadowServer(GTKShadowServerBase):
 
     def init(self, opts):
         self.pixel_depth = int(opts.pixel_depth)
-        assert self.pixel_depth in (24, 30, 32), "unsupported pixel depth: %s" % self.pixel_depth
+        if self.pixel_depth not in (24, 30, 32):
+            raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         GTKShadowServerBase.init(self, opts)
 
 
