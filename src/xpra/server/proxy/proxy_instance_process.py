@@ -15,7 +15,6 @@ log = Logger("proxy")
 enclog = Logger("encoding")
 
 
-import xpra
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.main import setuidgid
