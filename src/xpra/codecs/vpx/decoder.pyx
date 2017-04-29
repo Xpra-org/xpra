@@ -35,7 +35,6 @@ cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-include "constants.pxi"
 
 cdef extern from "string.h":
     void *memcpy(void * destination, void * source, size_t num) nogil

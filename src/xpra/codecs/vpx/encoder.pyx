@@ -36,8 +36,6 @@ cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-include "constants.pxi"
-
 cdef int ENABLE_VP9_YUV444 = envbool("XPRA_VP9_YUV444", True)
 cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
 
@@ -112,9 +110,8 @@ cdef extern from "vpx/vpx_encoder.h":
     int VP9E_SET_TILE_COLUMNS
     #function to set encoder internal speed settings:
     int VP8E_SET_CPUUSED
-    IF LIBVPX14:
-        #function to enable/disable periodic Q boost:
-        int VP9E_SET_FRAME_PERIODIC_BOOST
+    #function to enable/disable periodic Q boost:
+    int VP9E_SET_FRAME_PERIODIC_BOOST
     int VP9E_SET_LOSSLESS
     #vpx_enc_pass:
     int VPX_RC_ONE_PASS
@@ -274,8 +271,6 @@ def get_info():
         info["%s.max-size" % e] = maxsize
     for k,v in COLORSPACES.items():
         info["%s.colorspaces" % k] = v
-    IF LIBVPX14:
-        info["libvpx14"] = True
     return info
 
 
@@ -289,17 +284,13 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 #educated guess:
 MAX_SIZE = {
-    "vp8"   : (4096, 4096),
-    "vp9"   : (8192, 4096),
+    "vp8"   : (8192, 8192),
+    "vp9"   : (16384, 8192),
     }
 #no idea why, but this is the default on win32:
 if WIN32:
     MAX_SIZE["vp9"] = (4096, 4096)
-#These are the real limits with libvpx 1.4
-# but we can't probe them without causing OOM on small systems!
-#IF LIBVPX14:
-#            MAX_SIZE["vp8"] = (8192, 8192)
-#            MAX_SIZE["vp9"] = (16384, 8192)
+
 
 def get_spec(encoding, colorspace):
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
@@ -435,10 +426,9 @@ cdef class Encoder:
             elif width>=1024:
                 tile_columns = 3
             self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, tile_columns)
-        IF LIBVPX14:
-            if encoding=="vp9":
-                #disable periodic Q boost which causes latency spikes:
-                self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
+        if encoding=="vp9":
+            #disable periodic Q boost which causes latency spikes:
+            self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
         self.do_set_encoding_speed(speed)
         self.do_set_encoding_quality(quality)
         gen = generation.increase()

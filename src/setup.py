@@ -112,14 +112,10 @@ for arg in list(sys.argv):
         sys.argv.remove(arg)
 
 def pkg_config_ok(*args, **kwargs):
-    if not has_pkg_config:
-        return kwargs.get("fallback", False)
     cmd = [PKG_CONFIG]  + [str(x) for x in args]
     return get_status_output(cmd)[0]==0
 
 def pkg_config_version(req_version, pkgname, **kwargs):
-    if not has_pkg_config:
-        return kwargs.get("fallback", False)
     cmd = [PKG_CONFIG, "--modversion", pkgname]
     r, out, _ = get_status_output(cmd)
     if r!=0 or not out:
@@ -174,16 +170,16 @@ crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
-enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264", fallback=WIN32)
+enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
 jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
-vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
+vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not sys.platform.startswith("freebsd"))
 #ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fallback=WIN32)
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec")
 # some version strings I found:
 # Fedora:
 # * 19: 54.92.100
@@ -193,11 +189,11 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fal
 # * jessie and sid: (last updated 2014-05-26): 55.34.1
 #   (moved to ffmpeg2 style buffer API sometime in early 2014)
 # * wheezy: 53.35
-csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale", fallback=WIN32)
+csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
 nvfbc_ENABLED = DEFAULT and BITS==64 and WIN32
 cuda_rebuild_ENABLED    = DEFAULT
-csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv", fallback=WIN32)
+csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 
 #Cython / gcc / packaging build options:
 annotate_ENABLED        = True
@@ -928,7 +924,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/buffers/membuf.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/vpx/constants.pxi",
                    "xpra/codecs/nvenc7/encoder.c",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
@@ -2081,11 +2076,6 @@ if csc_swscale_ENABLED:
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
-    #try both vpx and libvpx as package names:
-    kwargs = {
-              "LIBVPX14"    : pkg_config_version("1.4", "vpx"),
-              }
-    make_constants("xpra", "codecs", "vpx", "constants", **kwargs)
     vpx_pkgconfig = pkgconfig("vpx")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"],
