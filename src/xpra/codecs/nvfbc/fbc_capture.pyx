@@ -711,22 +711,30 @@ cdef class NvFBC_CUDACapture:
         image.cuda_device_buffer = self.cuda_device_buffer
         image.cuda_context = self.cuda_context
         image.buffer_size = self.max_buffer_size
-        image.may_download()
         return image
 
     def clean(self):                        #@DuplicatedSignature
         log("clean()")
+        cuda_context = self.cuda_context
+        self.cuda_context = None
+        if cuda_context:
+            try:
+                cuda_context.push()
+            except:
+                log("%s.push()", cuda_context, exc_info=True)
         if self.setup:
             self.setup = False
             if self.context:
                 self.context.NvFBCCudaRelease()
                 self.context = NULL
-        context = self.cuda_context
-        if context:
-            self.cuda_context = None
-            context.pop()
-            context.detach()
+        if cuda_context:
+            try:
+                cuda_context.pop()
+                cuda_context.detach()
+            except:
+                log("%s.pop() or detach()", cuda_context, exc_info=True)
         #don't free it - an imagewrapper may still use it:
+        #TODO: we should invalidate it
         self.cuda_device_buffer = None
 
 
@@ -744,17 +752,21 @@ class CUDAImageWrapper(ImageWrapper):
             return
         assert self.cuda_device_buffer, "no device buffer"
         assert self.cuda_context, "no cuda context"
+        cdef double elapsed
         cdef double start = monotonic_time()
         #size = self.rowstride*self.height*len(self.pixel_format)
+        self.cuda_context.push()
         size = self.buffer_size
         host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
         driver.memcpy_dtoh(host_buffer, self.cuda_device_buffer)
+        elapsed = monotonic_time()-start
         self.pixels = host_buffer.tostring()
         self.downloaded = True
-        cdef double end = monotonic_time()
-        log("may_download() from %s to %s, size=%s, elapsed=%ims", self.cuda_device_buffer, host_buffer, size, int(1000*(end-start)))
+        elapsed = monotonic_time()-start
+        log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, size, int(1000*elapsed), size/elapsed/1024/1024)
         #self.cuda_device_buffer.free()
         self.cuda_device_buffer = None
+        self.cuda_context.pop()
 
     def freeze(self):
         self.may_download()
@@ -773,10 +785,7 @@ class CUDAImageWrapper(ImageWrapper):
         return ImageWrapper.get_sub_image(self, *args)
 
     def free(self):
-        cdb = self.cuda_device_buffer
-        if cdb:
-            self.cuda_device_buffer = None
-            cdb.free()
+        self.cuda_device_buffer = None
         return ImageWrapper.free(self)
     
 
