@@ -493,7 +493,7 @@ def parse_bind_vsock(bind_vsock):
 
 
 def normalize_local_display_name(local_display_name):
-    pos = local_display_name.index(":")
+    pos = local_display_name.find(":")
     if pos<0:
         after_sc = local_display_name
         local_display_name = ":" + local_display_name
@@ -502,7 +502,7 @@ def normalize_local_display_name(local_display_name):
     #we used to strip the screen from the display string, ie: ":0.0" -> ":0"
     #but now we allow it.. (untested!)
     for char in after_sc:
-        assert char in "0123456789.", "invalid character in display name: %s" % char
+        assert char in "0123456789.", "invalid character in display name '%s': %s" % (local_display_name, char)
     return local_display_name
 
 
