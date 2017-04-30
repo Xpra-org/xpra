@@ -55,7 +55,7 @@ BUTTON_EVENTS = {
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
 SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
-NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
+NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
 
 
 def init_capture(pixel_depth=32):
@@ -70,7 +70,7 @@ def init_capture(pixel_depth=32):
                     log("NVFBC_CUDA=%s", NVFBC_CUDA)
                     pixel_format = {
                         24  : "RGB",
-                        32  : "BGRA",
+                        32  : "BGRX",
                         30  : "r210",
                         }[pixel_depth]
                     if NVFBC_CUDA:

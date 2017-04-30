@@ -513,7 +513,7 @@ def get_info():
 
 
 SYS_PIXEL_FORMAT_CONST = {
-    "BGRA"      : NVFBC_TOSYS_ARGB,
+    "BGRX"      : NVFBC_TOSYS_ARGB,
     "RGB"       : NVFBC_TOSYS_RGB,
     #"YUV420P"   : NVFBC_TOSYS_YYYYUV420p,
     #"RGBP"      : NVFBC_TOSYS_RGB_PLANAR,
@@ -628,7 +628,7 @@ cdef class NvFBC_CUDACapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format="BGRA"):
+    def init_context(self, int width=-1, int height=-1, pixel_format="BGRX"):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         if pixel_format not in ("BGRA", "r210"):
             raise Exception("unsupported pixel format '%s'" % pixel_format)
@@ -654,7 +654,7 @@ cdef class NvFBC_CUDACapture:
         params.dwVersion = NVFBC_CUDA_SETUP_PARAMS_V1_VER
         params.bEnableSeparateCursorCapture = 1
         params.bHDRRequest = 0
-        if pixel_format=="BGRA":
+        if pixel_format=="BGRX":
             params.eFormat = NVFBC_TOCUDA_ARGB
         else:
             params.eFormat = NVFBC_TOCUDA_ARGB10
