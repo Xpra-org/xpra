@@ -1459,6 +1459,7 @@ cdef class Encoder:
         self.update_bitrate()
         cdef double start = monotonic_time()
 
+        #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
 
@@ -1654,8 +1655,8 @@ cdef class Encoder:
             params.presetGUID = preset
             params.encodeWidth = self.encoder_width
             params.encodeHeight = self.encoder_height
-            params.maxEncodeWidth = self.encoder_width
-            params.maxEncodeHeight = self.encoder_height
+            params.maxEncodeWidth = 0
+            params.maxEncodeHeight = 0
             params.darWidth = self.encoder_width
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
@@ -1677,6 +1678,7 @@ cdef class Encoder:
             qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
             config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
             config.mvPrecision = NV_ENC_MV_PRECISION_QUARTER_PEL
+            #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
             if True:
                 #const QP:
                 config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
@@ -1685,9 +1687,9 @@ cdef class Encoder:
                 config.rcParams.constQP.qpInterB = qp
                 config.rcParams.constQP.qpIntra = qp
             else:
-                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR
-                config.rcParams.averageBitRate = 5000000
-                config.rcParams.maxBitRate = 10000000
+                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
+                config.rcParams.averageBitRate = 500000
+                config.rcParams.maxBitRate = 600000
                 config.rcParams.vbvBufferSize = 0
                 config.rcParams.vbvInitialDelay = 0
                 config.rcParams.enableInitialRCQP = 1
@@ -1696,8 +1698,12 @@ cdef class Encoder:
                 config.rcParams.initialRCQP.qpInterB = qpmin
 
             if self.codec_name=="H264":
-                #3 for YUV444, 1 for NV12:
-                config.encodeCodecConfig.h264Config.chromaFormatIDC = 1+int(self.pixel_format=="YUV444P") * 2
+                if self.pixel_format=="NV12":
+                    config.encodeCodecConfig.h264Config.chromaFormatIDC = 1
+                elif self.pixel_format=="YUV444P":
+                    config.encodeCodecConfig.h264Config.chromaFormatIDC = 3
+                else:
+                    raise Exception("unknown pixel format %s" % self.pixel_format)
                 config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
                 config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
                 config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
@@ -2050,23 +2056,12 @@ cdef class Encoder:
             return self.convert_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options={}):
-        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
-        cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
-        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
-        cdef size_t size
-        cdef unsigned int x, y, stride
-        cdef unsigned int i
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
-        cdef double start = monotonic_time()
         log("compress_image(%s, %s)", image, options)
-        cdef unsigned int w = image.get_width()
-        cdef unsigned int h = image.get_height()
-        pixels = image.get_pixels()
-        cdef unsigned int image_stride = image.get_rowstride()
-        cdef unsigned long input_size = self.inputPitch * self.input_height
-        assert pixels is not None, "failed to get pixels from %s" % image
         assert self.context!=NULL, "context is not initialized"
+        w = image.get_width()
+        h = image.get_height()
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
@@ -2076,35 +2071,47 @@ cdef class Encoder:
             #first frame, record pts:
             self.first_frame_timestamp = image.get_timestamp()
 
+        cdef unsigned long input_size = self.inputPitch * self.input_height
+        stride = self.copy_image(image, self.inputBuffer, self.inputPitch)
+        driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
+        log("compress_image(..) uploaded %i bytes of input buffer to device", input_size)
+        self.exec_kernel(w, h, stride)
+        self.bytes_in += input_size
+        return self.nvenc_compress(input_size, image.get_timestamp())
+
+    cdef copy_image(self, image, target_buffer, unsigned int target_stride):
+        cdef unsigned int image_stride = image.get_rowstride()
+        cdef unsigned int h = image.get_height()
+        cdef unsigned int i, stride
+        pixels = image.get_pixels()
+        assert pixels is not None, "failed to get pixels from %s" % image
         #copy to input buffer:
         cdef object buf
         if isinstance(pixels, memoryview):
             #copy memoryview to inputBuffer directly:
-            buf = self.inputBuffer
+            buf = target_buffer
         else:
             #this is a numpy.ndarray type:
-            buf = self.inputBuffer.data
+            buf = target_buffer.data
         cdef unsigned long pix_len = len(pixels)
-        if image_stride<=self.inputPitch:
+        if image_stride<=target_stride:
             stride = image_stride
-            assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
-            log("copying %s pixels from %s into %s, in one shot", pix_len, type(pixels), type(self.inputBuffer))
+            #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
+            log("copying %s pixels from %s into %s, in one shot", pix_len, type(pixels), type(target_buffer))
             buf[:pix_len] = pixels
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
-            stride = self.inputPitch
-            log("copying %s pixels from %s into %s, %i stride at a time", stride*h, type(pixels), type(self.inputBuffer), stride)
+            stride = target_stride
+            log("copying %s pixels from %s into %s, %i stride at a time", stride*h, type(pixels), type(target_buffer), stride)
             for i in range(h):
                 x = i*stride
                 y = i*image_stride
                 buf[x:x+stride] = pixels[y:y+stride]
+        return stride
+    
 
-        #copy input buffer to CUDA buffer:
-        driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
-        self.bytes_in += input_size
-        log("compress_image(..) %i bytes of input buffer copied to device", input_size)
-
+    cdef exec_kernel(self, unsigned int w, unsigned int h, unsigned int stride):
         cdef uint8_t dx, dy
         if self.pixel_format=="NV12":
             #(these values are derived from the kernel code - which we should know nothing about here..)
@@ -2144,6 +2151,13 @@ cdef class Encoder:
         cdef double csc_end = monotonic_time()
         log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (csc_end - csc_start)*1000.0)
 
+    cdef nvenc_compress(self, int input_size, timestamp=0):
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
+        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
+        cdef double start = monotonic_time()
+        assert input_size>0, "invalid input size %i" % input_size
         #map buffer so nvenc can access it:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
         mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
@@ -2184,7 +2198,7 @@ cdef class Encoder:
             #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
             #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
             picParams.frameIdx = self.frames
-            picParams.inputTimeStamp = image.get_timestamp()-self.first_frame_timestamp
+            picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
             #inputDuration = 0      #FIXME: use frame delay?
             #picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             #picParams.rcParams.enableMinQP = 1
@@ -2207,7 +2221,7 @@ cdef class Encoder:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
             encode_end = monotonic_time()
-            log("compress_image(..) encoded in %.1f ms", (encode_end-csc_end)*1000.0)
+            log("compress_image(..) encoded in %.1f ms", (encode_end-start)*1000.0)
 
             #lock output buffer:
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
@@ -2244,7 +2258,7 @@ cdef class Encoder:
 
         client_options = {
                     "frame"     : int(self.frames),
-                    "pts"       : int(image.get_timestamp()-self.first_frame_timestamp),
+                    "pts"       : int(timestamp-self.first_frame_timestamp),
                     "speed"     : self.speed,
                     }
         if self.lossless:
@@ -2621,7 +2635,7 @@ def init_module():
                 try:
                     try:
                         test_encoder = Encoder()
-                        test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 50, (1,1), options)
+                        test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 100, (1,1), options)
                         success = True
                         if client_key:
                             log("the license key '%s' is valid", client_key)
