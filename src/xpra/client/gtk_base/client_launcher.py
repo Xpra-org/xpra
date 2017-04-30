@@ -197,7 +197,6 @@ class ApplicationWindow:
         # Session browser link:
         icon_pixbuf = self.get_icon("mdns.png")
         self.mdns_gui = None
-        log.info("mdns icon=%s, has_mdns=%s", icon_pixbuf, self.has_mdns())
         if icon_pixbuf and self.has_mdns():
             def mdns(*args):
                 if self.mdns_gui==None:
