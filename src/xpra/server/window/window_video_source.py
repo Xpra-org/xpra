@@ -1642,7 +1642,7 @@ class WindowVideoSource(WindowSource):
                     #make sure we start again from scratch next time:
                     scroll_data.free()
                     self.scroll_data = None
-        if not self.common_video_encodings or self.image_depth!=24:
+        if not self.common_video_encodings or self.image_depth not in (24, 32):
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
 
