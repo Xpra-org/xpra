@@ -341,9 +341,10 @@ class WindowVideoSource(WindowSource):
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
-        def nonvideo(q=quality):
+        def nonvideo(q=quality, info=""):
             s = max(0, min(100, speed))
             q = max(0, min(100, q))
+            log("nonvideo(%i, %s)", q, info)
             return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
         def lossless(reason):
@@ -352,12 +353,14 @@ class WindowVideoSource(WindowSource):
             q = 100
             return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
+        #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s", (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
+
         if not self.non_video_encodings:
             return current_encoding
         if not self.common_video_encodings and not self.supports_scrolling:
-            return nonvideo()
+            return nonvideo(info="no common video encodings")
         if self.is_tray:
-            return nonvideo(100)
+            return nonvideo(100, "system tray")
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
@@ -373,43 +376,37 @@ class WindowVideoSource(WindowSource):
             return lossless("low pixel count")
 
         if current_encoding!="auto" and current_encoding not in self.common_video_encodings:
-            #not doing video, bail out:
-            return nonvideo()
+            return nonvideo(info="%s not a supported video encoding" % current_encoding)
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS:
-            #window is too small!
-            return nonvideo(quality+30)
+            return nonvideo(quality+30, "window is too small")
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
-            #video encoder cannot handle this size!
-            #(maybe this should be an 'assert' statement here?)
-            return nonvideo()
+            return nonvideo(info="size out of range for video encoder")
 
         now = monotonic_time()
         if now-self.statistics.last_resized<0.350:
-            #window has just been resized, may still resize
-            return nonvideo(quality-30)
+            return nonvideo(quality-30, "resized recently")
 
         if self._current_quality!=quality or self._current_speed!=speed:
-            #quality or speed override, best not to force video encoder re-init
-            return nonvideo()
+            return nonvideo(info="quality or speed overriden")
 
         if sr and ((sr.width&self.width_mask)!=cww or (sr.height&self.height_mask)!=cwh):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be graphics
-            return nonvideo(quality+30)
+            return nonvideo(quality+30, "not the video region")
 
         lde = list(self.statistics.last_damage_events)
         lim = now-2
         pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_2secs<5*videomin:
             #less than 5 full frames in last 2 seconds
-            return nonvideo(quality+30)
+            return nonvideo(quality+30, "not enough frames")
         lim = now-0.5
         pixels_last_05secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_05secs<pixels_last_2secs//8:
             #framerate is dropping?
-            return nonvideo(quality+30)
+            return nonvideo(quality+30, "framerate lowered")
 
         #calculate the threshold for using video vs small regions:
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
@@ -420,11 +417,11 @@ class WindowVideoSource(WindowSource):
         max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
         if pixel_count<=max_nvp:
             #below threshold
-            return nonvideo(quality+30)
+            return nonvideo(quality+30, "not enough pixels")
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             #failsafe:
-            return nonvideo()
+            return nonvideo(info="size out of range")
         return current_encoding
 
     def get_best_nonvideo_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding, options=[]):
