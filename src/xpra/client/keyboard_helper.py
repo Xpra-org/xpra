@@ -315,7 +315,9 @@ class KeyboardHelper(object):
         layouts  = inl(layout, self.layouts_option or layouts)
         variant  = self.variant_option or variant
         variants = inl(variant, self.variants_option or variants)
-        return layout, layouts, self.variant_option or variant, self.variants_option or variants
+        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants)
+        log("get_layout_spec()=%s", val)
+        return val
 
     def get_keymap_spec(self):
         _print, query, query_struct = self.keyboard.get_keymap_spec()
@@ -361,7 +363,7 @@ class KeyboardHelper(object):
 
 
     def send_layout(self):
-        log("send_layout()")
+        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s", self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant)
         self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "")
 
     def send_keymap(self):
