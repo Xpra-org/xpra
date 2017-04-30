@@ -192,6 +192,7 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
 nvfbc_ENABLED = DEFAULT and BITS==64 and WIN32
+cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 
@@ -208,7 +209,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7", "cuda_rebuild", "nvfbc",
+            "nvenc7", "cuda_kernels", "cuda_rebuild", "nvfbc",
             "vpx", "pillow", "jpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -1884,7 +1885,7 @@ toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
 toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
-if nvenc7_ENABLED:
+if nvenc7_ENABLED and cuda_kernels_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
@@ -1998,6 +1999,8 @@ if nvenc7_ENABLED:
     if WIN32:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
+
+if nvenc7_ENABLED:
     nvencmodule = "nvenc7"
     nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
