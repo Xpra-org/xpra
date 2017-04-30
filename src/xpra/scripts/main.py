@@ -1807,7 +1807,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
 
     elif dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):
-            return False, "unix domain sockets are not available on this operating system"
+            raise InitException("unix domain sockets are not available on this operating system")
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
         def sockpathfail_cb(msg):
@@ -1937,7 +1937,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     return d
             return WebSocketClientConnection(ws, "websocket", host)
     else:
-        assert False, "unsupported display type in connect: %s" % dtype
+        raise InitException("unsupported display type: %s" % dtype)
     return conn
 
 
