@@ -1698,6 +1698,7 @@ class WindowVideoSource(WindowSource):
         try:
             ret = ve.compress_image(csc_image, quality, speed, options)
         except Exception as e:
+            log("%s.compress_image%s", ve, (csc_image, quality, speed, options))
             log.error("Error: failed to encode %s video frame:", ve.get_type())
             log.error(" %s", e)
             log.error(" source: %s", csc_image)
