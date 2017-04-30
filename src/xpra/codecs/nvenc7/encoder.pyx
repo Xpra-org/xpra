@@ -1158,9 +1158,9 @@ PRESET_QUALITY = {
     "lossless-hp"   : 100,
     "bd"            : 80,
     "hq"            : 70,
+    "low-latency-hq": 60,
     "default"       : 50,
     "hp"            : 40,
-    "low-latency-hq": 30,
     "low-latency"   : 20,
     "low-latency-hp": 0,
     "streaming"     : -1000,    #disabled for now
@@ -1430,7 +1430,7 @@ cdef class Encoder:
         for score in sorted(options.keys()):
             for preset, preset_guid in options.get(score):
                 if preset and (preset in presets.keys()):
-                    log("using preset '%s' for quality=%s, speed=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
+                    log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(preset_guid)
         raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
