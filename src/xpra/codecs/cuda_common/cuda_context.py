@@ -15,8 +15,10 @@ import os
 import pycuda
 from pycuda import driver
 
-from xpra.util import engs, print_nested_dict
+from xpra.util import engs, print_nested_dict, envbool
 from xpra.os_util import monotonic_time
+
+IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
 
 #record when we get failures/success:
 DEVICE_STATE = {}
@@ -140,7 +142,7 @@ def init_all_devices():
         try:
             device = driver.Device(i)
             devinfo = device_info(device)
-            if cuda_device_blacklist:
+            if cuda_device_blacklist and not IGNORE_BLACKLIST:
                 blacklisted = [x for x in cuda_device_blacklist if x and devinfo.find(x)>=0]
                 log("blacklisted(%s / %s)=%s", devinfo, cuda_device_blacklist, blacklisted)
                 if blacklisted:
