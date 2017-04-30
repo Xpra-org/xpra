@@ -106,7 +106,7 @@ class Keyboard(KeyboardBase):
             layout = v
         def s(v):
             try:
-                return v.decode("latin1")
+                return v.encode("latin1")
             except:
                 return str(v)
         return s(layout), [s(x) for x in layouts], "", None
