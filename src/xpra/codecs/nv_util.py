@@ -196,10 +196,11 @@ def validate_driver_yuv444lossless():
         if v:
             l("Warning: NVidia driver version %s is untested with NVENC", pver(v))
             l(" (this encoder has been tested with versions up to %s.x only)", MAX_TESTED)
-        if not envbool("XPRA_NVENC_YUV444P", True):
-            l(" enabling YUV444P and lossless mode")
-            l(" use XPRA_NVENC_YUV444P=0 to force disable")
+        if not envbool("XPRA_NVENC_YUV444P", False):
+            l(" disabling YUV444P and lossless mode")
+            l(" use XPRA_NVENC_YUV444P=0 to force enable")
             return False
+        l(" force enabling YUV444P and lossless mode")
     return True
 
 _init_message = False
