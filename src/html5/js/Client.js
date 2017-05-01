@@ -1126,7 +1126,7 @@ XpraClient.prototype._window_set_focus = function(win) {
 XpraClient.prototype._set_favicon = function(wid) {
 	//set favicon to the icon of this window:
 	var icon = jQuery('#windowicon' + String(wid)).attr('src');
-	if (!icon || icon.endsWith("/noicon.png")) {
+	if (!icon || Utilities.endsWith(icon, "/noicon.png")) {
 		//none available, use the default instead:
 		icon = "/favicon.png";
 	}

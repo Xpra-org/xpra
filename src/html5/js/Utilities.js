@@ -167,6 +167,19 @@ var Utilities = {
 		return Utilities.audio_context;
 	},
 
+	isMacOS : function() {
+		return navigator.platform.indexOf('Mac') >= 0;
+	},
+
+	isWindows : function() {
+		return navigator.platform.indexOf('Win') >= 0;
+	},
+
+	isLinux : function() {
+		return navigator.platform.indexOf('Linux') >= 0;
+	},
+
+
 	isFirefox : function() {
 		var ua = navigator.userAgent.toLowerCase();
 		return ua.indexOf("firefox") >= 0;
@@ -283,6 +296,11 @@ var Utilities = {
         a.download = filename;
         a.click();
         window.URL.revokeObjectURL(url);
+	},
+
+	//IE is retarded:
+	endsWith : function (str, suffix) {
+	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 	},
 
 	StringToUint8 : function(str) {

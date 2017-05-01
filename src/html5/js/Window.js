@@ -511,18 +511,18 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		if (classes) {
 			//remove any existing "wmclass-" classes not in the new wm_class list:
 			for (var i = 0; i < classes.length; i++) {
-				var _class = classes[i];
-				if (_class.startsWith("wmclass-") && wm_class && wm_class.indexOf(_class)<0) {
-					jQuery(this.div).removeClass(_class);
+				var tclass = ""+classes[i];
+				if (tclass.indexOf("wmclass-")===0 && wm_class && wm_class.indexOf(tclass)<0) {
+					jQuery(this.div).removeClass(tclass);
 				}
 			}
 		}
 		if (wm_class) {
 			//add new wm-class:
 			for (var i = 0; i < wm_class.length; i++) {
-				var _class = wm_class[i].replace(/[^0-9a-zA-Z]/g, '');
-				if (_class && !jQuery(this.div).hasClass(_class)) {
-					jQuery(this.div).addClass("wmclass-"+_class);
+				var tclass = wm_class[i].replace(/[^0-9a-zA-Z]/g, '');
+				if (tclass && !jQuery(this.div).hasClass(tclass)) {
+					jQuery(this.div).addClass("wmclass-"+tclass);
 				}
 			}
 		}
