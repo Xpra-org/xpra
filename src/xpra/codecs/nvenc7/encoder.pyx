@@ -1337,6 +1337,7 @@ cdef class Encoder:
     cdef unsigned int encoder_width
     cdef unsigned int encoder_height
     cdef unsigned int b_frames
+    cdef object encoding
     cdef object src_format
     cdef object dst_formats
     cdef object scaling
@@ -1446,6 +1447,7 @@ cdef class Encoder:
         self.encoder_height = roundup(height*v//u, 32)
         self.src_format = src_format
         self.dst_formats = dst_formats
+        self.encoding = encoding
         self.codec_name = encoding.upper()      #ie: "H264"
         self.preset_name = None
         self.frames = 0
@@ -1938,10 +1940,10 @@ cdef class Encoder:
         return self.height
 
     def get_type(self):                     #@DuplicatedSignature
-        return  "nvenc"
+        return "nvenc"
 
     def get_encoding(self):                     #@DuplicatedSignature
-        return  "h264"
+        return self.encoding
 
     def get_src_format(self):
         return self.src_format
