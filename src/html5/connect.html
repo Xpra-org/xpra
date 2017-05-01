@@ -474,6 +474,14 @@ $(document).ready(function() {
 			codecs_supported["aurora:"+codec_option] = "legacy: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
 		}
 	}
+	if(getboolparam("http-stream", true)) {
+		var stream_codecs = ["mp3"];
+		for (var i in stream_codecs) {
+			var codec_option = stream_codecs[i];
+			console.log("stream codecs=", stream_codecs, "codec=", codec_option);
+			codecs_supported["http-stream:"+codec_option] = "http stream: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
+		}
+	}
 	var best_codec = audio_codec;
 	if(!best_codec) {
 		var best_distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.length;
