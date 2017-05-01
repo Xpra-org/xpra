@@ -32,6 +32,7 @@ rpclog = Logger("rpc")
 dbuslog = Logger("dbus")
 webcamlog = Logger("webcam")
 notifylog = Logger("notify")
+httplog = Logger("http")
 
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -2216,6 +2217,81 @@ class ServerBase(ServerCore):
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
         return info
+
+    def get_http_scripts(self):
+        scripts = ServerCore.get_http_scripts(self)
+        scripts["/audio.mp3"] = self.http_audio_mp3_request 
+        return scripts
+
+    def http_audio_mp3_request(self, handler):
+        def err(code=500):
+            handler.send_response(code)
+            return None
+        try:
+            args_str = handler.path.split("?", 1)[1]
+        except:
+            return err()
+        #parse args:
+        args = {}
+        for x in args_str.split("&"):
+            v = x.split("=", 1)
+            if len(v)==1:
+                args[v[0]] = ""
+            else:
+                args[v[0]] = v[1]
+        httplog("http_audio_mp3_request(%s) args(%s)=%s", handler, args_str, args)
+        uuid = args.get("uuid")
+        if not uuid:
+            httplog.warn("Warning: http-stream audio request, missing uuid")
+            return err()
+        source = None
+        for x in self._server_sources.values():
+            if x.uuid==uuid:
+                source = x
+                break
+        if not source:
+            httplog.warn("Warning: no client matching uuid '%s'", uuid)
+            return err()
+        state = {}
+        def new_buffer(sound_source, data, metadata, packet_metadata=[]):
+            if not state.get("started"):
+                httplog.warn("buffer received but stream is not started yet")
+                err()
+                source.stop_sending_sound()
+                return
+            count = state.get("buffers", 0)
+            httplog("new_buffer [%i] for %s sound stream: %i bytes", count, state.get("codec", "?"), len(data))
+            #import binascii
+            #httplog("buffer %i: %s", count, binascii.hexlify(data))
+            state["buffers"] = count+1
+            try:
+                for x in packet_metadata:
+                    handler.wfile.write(x)
+                handler.wfile.write(data)
+            except Exception as e:
+                httplog.warn("Error: failed to send audio packet:")
+                httplog.warn(" %s", e)
+                source.stop_sending_sound()
+                return
+        def new_stream(sound_source, codec):
+            httplog("new_stream: %s", codec)
+            state["started"] = True
+            state["buffers"] = 0
+            state["codec"] = codec
+            handler.send_response(200)
+            headers = {
+                "Content-type"      : "audio/mpeg",
+                }
+            for k,v in headers.items():
+                handler.send_header(k, v)
+            handler.end_headers()
+        def timeout_check():
+            if not state.get("started"):
+                err()
+        if source.sound_source:
+            source.stop_sending_sound()
+        source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream, new_buffer=new_buffer, skip_client_codec_check=True)
+        self.timeout_add(1000*5, timeout_check)
 
 
     def clipboard_progress(self, local_requests, remote_requests):

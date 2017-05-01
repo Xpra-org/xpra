@@ -733,6 +733,12 @@ class ServerCore(object):
         return "character %#x, not an xpra client?" % c
 
 
+    def get_http_scripts(self):
+        return {
+            "/Status"       : self.http_status_request,
+            "/Info"         : self.http_info_request,
+            }
+
     def start_websockify(self, conn, req_info, frominfo):
         wslog("start_websockify(%s, %s, %s) www dir=%s", conn, req_info, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
@@ -754,10 +760,7 @@ class ServerCore(object):
                 sock.recv = recv
                 sock.send = send
                 self.make_protocol("tcp", wsc, frominfo)
-            scripts = {
-                "/Status"   : self.http_status_request,
-                "/Info"     : self.http_info_request,
-                }
+            scripts = self.get_http_scripts()
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts)
             return
         except IOError as e:

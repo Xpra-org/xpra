@@ -985,7 +985,7 @@ class ServerSource(FileTransferHandler):
         log("startup_complete()")
         self.send("startup-complete")
 
-    def start_sending_sound(self, codec=None, volume=1.0):
+    def start_sending_sound(self, codec=None, volume=1.0, new_stream=None, new_buffer=None, skip_client_codec_check=False):
         soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
             soundlog.warn("Warning: not starting sound whilst in suspended state")
@@ -1010,7 +1010,7 @@ class ServerSource(FileTransferHandler):
         elif codec not in self.speaker_codecs:
             soundlog.warn("Warning: invalid codec specified: %s", codec)
             return None
-        elif codec not in self.sound_decoders:
+        elif (codec not in self.sound_decoders) and not skip_client_codec_check:
             soundlog.warn("Error sending sound: invalid codec '%s'", codec)
             soundlog.warn(" is not in the list of decoders supported by the client: %s", csv(self.sound_decoders))
             return None
@@ -1030,8 +1030,8 @@ class ServerSource(FileTransferHandler):
             if not ss:
                 return None
             ss.sequence = self.sound_source_sequence
-            ss.connect("new-buffer", self.new_sound_buffer)
-            ss.connect("new-stream", self.new_stream)
+            ss.connect("new-buffer", new_buffer or self.new_sound_buffer)
+            ss.connect("new-stream", new_stream or self.new_stream)
             ss.connect("info", self.sound_source_info)
             ss.connect("exit", self.sound_source_exit)
             ss.connect("error", self.sound_source_error)
