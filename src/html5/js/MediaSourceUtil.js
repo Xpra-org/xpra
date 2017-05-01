@@ -157,10 +157,10 @@ var MediaSourceUtil = {
 					}
 					var blacklist = [];
 					if (Utilities.isFirefox() || Utilities.isSafari()) {
-						blacklist += ["opus+mka", "vorbis+mka", "aac+mpeg4", "mp3+mpeg4"];
+						blacklist += ["opus+mka", "vorbis+mka"];
 						if (Utilities.isSafari()) {
 							//this crashes Safari!
-							blacklist += ["wav", "mp3"];
+							blacklist += ["wav", ];
 						}
 					}
 					else if (Utilities.isChrome()) {
