@@ -183,9 +183,8 @@ class SoundSource(SoundPipeline):
 
 
     def on_new_preroll(self, appsink):
-        sample = appsink.emit('pull-preroll')
-        gstlog('new preroll: %s', sample)
-        return self.emit_buffer(sample)
+        gstlog('new preroll')
+        return 0
 
     def on_new_sample(self, bus):
         #Gst 1.0
