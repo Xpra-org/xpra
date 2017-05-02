@@ -675,7 +675,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     pass
                 elif token[:2] in flag_map:
                     add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
-                else: # throw others to extra_link_args
+                elif token.startswith("-W"):
+                    add_to_keywords(kw, 'extra_compile_args', token)
+                else:# throw others to extra_link_args
                     add_to_keywords(kw, 'extra_link_args', token)
     if warn_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
