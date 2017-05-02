@@ -8,26 +8,33 @@ import sys
 import time
 import os.path
 
-from xpra.log import Logger
+from xpra.log import Logger, add_debug_category
 log = Logger("encoder", "nvfbc")
 
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
         log.enable_debug()
+        add_debug_category("nvfbc")
 
     from xpra.platform import program_context
     with program_context("NvFBC-Capture", "NvFBC Capture"):
         from xpra.platform.paths import get_download_dir
         from xpra.util import print_nested_dict
-        from xpra.codecs.nvfbc.fbc_capture import NvFBC_SysCapture, init_nvfbc_library, get_info, get_status #@UnresolvedImport
-        init_nvfbc_library()
+        from xpra.os_util import WIN32, LINUX
+        if WIN32:
+            from xpra.codecs.nvfbc import fbc_capture_win32 as fbc_capture      #@UnresolvedImport @UnusedImport
+        elif LINUX:
+            from xpra.codecs.nvfbc import fbc_capture_linux2 as fbc_capture     #@UnresolvedImport @Reimport
+        else:
+            raise Exception("nvfbc is not support on %s" % sys.platform)
+        fbc_capture.init_module()
         log.info("Info:")
-        print_nested_dict(get_info(), print_fn=log.info)
+        print_nested_dict(fbc_capture.get_info(), print_fn=log.info)
         log.info("Status:")
-        print_nested_dict(get_status(), print_fn=log.info)
+        print_nested_dict(fbc_capture.get_status(), print_fn=log.info)
         try:
             log("creating test capture class")
-            c = NvFBC_SysCapture()
+            c = fbc_capture.NvFBC_SysCapture()
             log("Capture=%s", c)
             c.init_context()
         except Exception as e:
@@ -45,12 +52,13 @@ def main():
         rgb_format = image.get_pixel_format()
         try:
             img = Image.frombuffer("RGB", (w, h), pixels, "raw", rgb_format, stride, 1)
-            filename = os.path.join(get_download_dir(), "screenshot-%s-%i.png" % (rgb_format, time.time()))
+            filename = os.path.join(os.path.expanduser(get_download_dir()), "screenshot-%s-%i.png" % (rgb_format, time.time()))
             img.save(filename, "png")
             log.info("screenshot saved to %s", filename)
             return 0
         except Exception as e:
-            log.warn("not saved %s: %s", rgb_format, e)
+            log.warn("Error: not saved %s:", rgb_format)
+            log.warn(" %s", e)
             return 1
 
 

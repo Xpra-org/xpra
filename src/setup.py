@@ -191,7 +191,7 @@ dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec")
 # * wheezy: 53.35
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
-nvfbc_ENABLED = DEFAULT and BITS==64 and WIN32
+nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
@@ -250,11 +250,10 @@ install = "dist"
 rpath = None
 ssl_cert = None
 ssl_key = None
-nvfbc_path = "E:\\NVIDIA Capture SDK\\"
 filtered_args = []
 for arg in sys.argv:
     matched = False
-    for x in ("rpath", "ssl-cert", "ssl-key", "install", "nvfbc_path"):
+    for x in ("rpath", "ssl-cert", "ssl-key", "install"):
         varg = "--%s=" % x
         if arg.startswith(varg):
             value = arg[len(varg):]
@@ -326,11 +325,6 @@ if "clean" not in sys.argv:
     if not enc_x264_ENABLED and not vpx_ENABLED:
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
-    if nvfbc_ENABLED and not os.path.exists(nvfbc_path):
-        print("Warning: cannot find NvFBC SDK in")
-        print(" %s" % nvfbc_path)
-        print(" nvfbc codec disabled")
-        nvfbc_ENABLED = False
 
 
 #*******************************************************************************
@@ -1872,12 +1866,10 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
 if nvfbc_ENABLED:
-    nvfbc_pkgconfig = pkgconfig()
-    nvfbc_inc = os.path.join(nvfbc_path, "inc") 
-    add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-I%s" % nvfbc_inc)
-    add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
-    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture",
-                         ["xpra/codecs/nvfbc/fbc_capture.pyx"],
+    nvfbc_pkgconfig = pkgconfig("nvfbc")
+    #add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
+    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % sys.platform,
+                         ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % sys.platform],
                          language="c++",
                          **nvfbc_pkgconfig))
 
