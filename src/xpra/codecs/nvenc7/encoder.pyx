@@ -39,6 +39,7 @@ cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
 cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", True)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
+cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
 cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
 
@@ -1191,9 +1192,11 @@ BUFFER_FORMAT = {
 
 
 def get_COLORSPACES(encoding):
-    global YUV444_ENABLED, YUV444_CODEC_SUPPORT
-    out_cs = ["YUV420P"]
-    if YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED):
+    global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT
+    out_cs = []
+    if YUV420_ENABLED:
+        out_cs.append("YUV420P")
+    if YUV444_CODEC_SUPPORT.get(encoding.lower(), YUV444_ENABLED) or NATIVE_RGB:
         out_cs.append("YUV444P")
     COLORSPACES = {
         "BGRX" : out_cs,
@@ -1205,8 +1208,9 @@ def get_input_colorspaces(encoding):
     return get_COLORSPACES(encoding).keys()
 
 def get_output_colorspaces(encoding, input_colorspace):
-    out = get_COLORSPACES(encoding).get(input_colorspace)
-    assert out, "invalid input colorspace: %s (must be one of: %s)" % (input_colorspace, get_COLORSPACES(encoding))
+    cs = get_COLORSPACES(encoding)
+    out = cs.get(input_colorspace)
+    assert out, "invalid input colorspace %s for encoding %s (must be one of: %s)" % (input_colorspace, encoding, out)
     #the output will actually be in one of those two formats once decoded
     #because internally that's what we convert to before encoding
     #(well, NV12... which is equivallent to YUV420P here...)
@@ -1503,7 +1507,7 @@ cdef class Encoder:
 
 
     def get_target_pixel_format(self, quality):
-        global NATIVE_RGB, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
+        global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
         v = None
         if NATIVE_RGB and self.src_format in ("BGRX", "BGRA"):
             v = "BGRX"
@@ -1517,12 +1521,12 @@ cdef class Encoder:
                 if (quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats):
                     v = "YUV444P"
             if not v:
-                if "YUV420P" in self.dst_formats:
+                if YUV420_ENABLED and "YUV420P" in self.dst_formats:
                     v = "NV12"
                 else:
-                    raise Exception("no compatible formats found for quality=%i, YUV444 support=%s, codec=%s, dst-formats=%s" % (quality, hasyuv444, self.codec_name, self.dst_formats))
-        log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
-            quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, self.dst_formats)
+                    raise Exception("no compatible formats found for quality=%i, YUV420_ENABLED=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (quality, YUV420_ENABLED, hasyuv444, self.codec_name, self.dst_formats))
+        log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
+            quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, self.dst_formats)
         return v
 
     def get_target_lossless(self, pixel_format, quality):
@@ -1575,6 +1579,7 @@ cdef class Encoder:
             raise TransientCodecException("could not initialize cuda: %s" % e)
 
     cdef init_cuda_kernel(self):
+        global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT, NATIVE_RGB
         assert self.cuda_device_id>=0 and self.cuda_device, "cuda device not set!"
         cdef unsigned int plane_size_div, wmult, hmult, max_input_stride
         d = self.cuda_device
@@ -1589,6 +1594,7 @@ cdef class Encoder:
             hmult = 1
         #if supported (separate plane flag), use YUV444P:
         elif self.pixel_format=="YUV444P":
+            assert YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED), "YUV444 is not enabled for %s" % self.encoding
             kernel_gen = get_BGRA2YUV444
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
             #3 full planes:
@@ -1596,6 +1602,7 @@ cdef class Encoder:
             wmult = 1
             hmult = 3
         elif self.pixel_format=="NV12":
+            assert YUV420_ENABLED
             kernel_gen = get_BGRA2NV12
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
             #1 full Y plane and 2 U+V planes subsampled by 4:
@@ -1707,8 +1714,8 @@ cdef class Encoder:
             params.presetGUID = preset
             params.encodeWidth = self.encoder_width
             params.encodeHeight = self.encoder_height
-            params.maxEncodeWidth = 0
-            params.maxEncodeHeight = 0
+            params.maxEncodeWidth = self.encoder_width
+            params.maxEncodeHeight = self.encoder_height
             params.darWidth = self.encoder_width
             params.darHeight = self.encoder_height
             params.enableEncodeAsync = 0            #not supported on Linux
@@ -1729,8 +1736,8 @@ cdef class Encoder:
             qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
             qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
             config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
-            config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
-            if True:
+            #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
+            if False:
                 #const QP:
                 config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
                 qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
@@ -1760,7 +1767,7 @@ cdef class Encoder:
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
                 #config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
-                config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+                #config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
                 #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
