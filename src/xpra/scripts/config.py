@@ -76,7 +76,7 @@ def get_xorg_bin():
 def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     cmd += [
-          "-noreset",
+          "-noreset", "-novtswitch",
           "-nolisten", "tcp",
           "+extension", "GLX",
           "+extension", "RANDR",
@@ -97,7 +97,7 @@ def get_Xvfb_command():
            #better than leaving to vfb after a resize?
            "-dpi", "96",
            "-nolisten", "tcp",
-           "-noreset",
+           "-noreset", "-novtswitch",
            "-auth", "$XAUTHORITY"
            ]
     return cmd
