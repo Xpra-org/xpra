@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,12 +13,15 @@ from gtk import gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
-
+from xpra.x11.gtk2.common import X11Event
 from xpra.monotonic_time cimport monotonic_time
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
 verbose = Logger("x11", "bindings", "gtk", "verbose")
+
+
+from libc.stdint cimport uintptr_t
 
 
 ###################################
@@ -229,6 +232,15 @@ cdef extern from "X11/Xlib.h":
         unsigned int state      # key or button mask
         unsigned int button
         Bool same_screen
+    ctypedef struct XGenericEventCookie:
+        int            type     # of event. Always GenericEvent
+        unsigned long  serial
+        Bool           send_event
+        Display        *display
+        int            extension    #major opcode of extension that caused the event
+        int            evtype       #actual event type
+        unsigned int   cookie
+        void           *data
     ctypedef union XEvent:
         int type
         XAnyEvent xany
@@ -249,6 +261,7 @@ cdef extern from "X11/Xlib.h":
         XReparentEvent xreparent
         XDestroyWindowEvent xdestroywindow
         XPropertyEvent xproperty
+        XGenericEventCookie xcookie
 
     Bool XQueryExtension(Display * display, char *name,
                          int *major_opcode_return, int *first_event_return, int *first_error_return)
@@ -256,6 +269,7 @@ cdef extern from "X11/Xlib.h":
     Status XQueryTree(Display * display, Window w,
                       Window * root, Window * parent,
                       Window ** children, unsigned int * nchildren)
+
 
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
@@ -631,8 +645,8 @@ def cleanup_all_event_receivers():
 cdef int CursorNotify = -1
 cdef int XKBNotify = -1
 cdef int ShapeNotify = -1
-_x_event_signals = {}
-event_type_names = {}
+x_event_signals = {}
+x_event_type_names = {}
 names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
@@ -676,7 +690,8 @@ cdef int get_XDamage_event_base():
     cdef Display * xdisplay                             #@DuplicatedSignature
     display = gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
-    XDamageQueryExtension(xdisplay, &event_base, &error_base)
+    if not XDamageQueryExtension(xdisplay, &event_base, &error_base):
+        return -1
     verbose("get_XDamage_event_base(%s)=%i", display.get_name(), event_base)
     assert event_base>0, "invalid event base for XDamage"
     return event_base
@@ -692,11 +707,7 @@ cdef int get_XShape_event_base():
 
 
 cdef init_x11_events():
-    global _x_event_signals, event_type_names, debug_route_events, XKBNotify, CursorNotify, DamageNotify
-    XKBNotify = get_XKB_event_base()
-    CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
-    DamageNotify = XDamageNotify+get_XDamage_event_base()
-    _x_event_signals = {
+    add_x_event_signals({
         MapRequest          : (None, "child-map-request-event"),
         ConfigureRequest    : (None, "child-configure-request-event"),
         FocusIn             : ("xpra-focus-in-event", None),
@@ -710,14 +721,11 @@ cdef init_x11_events():
         ReparentNotify      : ("xpra-reparent-event", None),
         PropertyNotify      : ("xpra-property-notify-event", None),
         KeyPress            : ("xpra-key-press-event", None),
-        CursorNotify        : ("xpra-cursor-event", None),
-        XKBNotify           : ("xpra-xkb-event", None),
-        DamageNotify        : ("xpra-damage-event", None),
         EnterNotify         : ("xpra-enter-event", None),
         LeaveNotify         : ("xpra-leave-event", None),
         MotionNotify        : ("xpra-motion-event", None)       #currently unused, just defined for debugging purposes
-        }
-    event_type_names = {
+        })
+    add_x_event_type_names({
         KeyPress            : "KeyPress",
         KeyRelease          : "KeyRelease",
         ButtonPress         : "ButtonPress",
@@ -751,24 +759,60 @@ cdef init_x11_events():
         ColormapNotify      : "ColormapNotify",
         ClientMessage       : "ClientMessage",
         MappingNotify       : "MappingNotify",
-        XKBNotify           : "XKBNotify",
-        CursorNotify        : "CursorNotify",
-        DamageNotify        : "DamageNotify",
         GenericEvent        : "GenericEvent",
-        }
-    cdef int xshape_base = get_XShape_event_base()
-    if xshape_base>=0:
+        })
+    cdef int event_base = get_XShape_event_base()
+    if event_base>=0:
         global ShapeNotify
-        ShapeNotify = xshape_base
-        _x_event_signals[ShapeNotify] = ("xpra-shape-event", None)
-        event_type_names[ShapeNotify] = "ShapeNotify"
+        ShapeNotify = event_base
+        add_x_event_signal(ShapeNotify, ("xpra-shape-event", None))
+        add_x_event_type_name(ShapeNotify, "ShapeNotify")
         log("added ShapeNotify=%s", ShapeNotify)
+    event_base = get_XKB_event_base()
+    if event_base>=0:
+        global XKBNotify
+        XKBNotify = event_base
+        add_x_event_signal(XKBNotify, ("xpra-xkb-event", None))
+        add_x_event_type_name(XKBNotify, "XKBNotify")
+    event_base = get_XFixes_event_base()
+    if event_base>=0:
+        global CursorNotify
+        CursorNotify = XFixesCursorNotify+event_base
+        add_x_event_signal(CursorNotify, ("xpra-cursor-event", None))
+        add_x_event_type_name(CursorNotify, "CursorNotify")
+    event_base = get_XDamage_event_base()
+    if event_base>0:
+        global DamageNotify
+        DamageNotify = XDamageNotify+event_base
+        add_x_event_signal(DamageNotify, ("xpra-damage-event", None))
+        add_x_event_type_name(DamageNotify, "DamageNotify")
+
+
+def add_x_event_signal(event, mapping):
+    global x_event_signals
+    x_event_signals[event] = mapping
+
+def add_x_event_signals(event_signals):
+    global x_event_signals
+    x_event_signals.update(event_signals)
+
+def add_x_event_type_name(event, name):
+    global x_event_type_names
+    x_event_type_names[event] = name
+    names_to_event_type[name] = event
+    set_debug_events()
+
+def add_x_event_type_names(event_type_names):
+    global x_event_type_names, names_to_event_type
+    x_event_type_names.update(event_type_names)
     for k,v in event_type_names.items():
         names_to_event_type[v] = k
-    verbose("x_event_signals=%s", _x_event_signals)
-    verbose("event_type_names=%s", event_type_names)
+    set_debug_events()
+    verbose("x_event_signals=%s", x_event_signals)
+    verbose("event_type_names=%s", x_event_type_names)
     verbose("names_to_event_type=%s", names_to_event_type)
 
+def set_debug_events():
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
     debug_set = set()
     ignore_set = set()
@@ -796,6 +840,13 @@ cdef init_x11_events():
         log.warn("debugging of X11 events enabled for: %s", ", ".join(events))
     debug_route_events = [names_to_event_type.get(x) for x in events]
 
+
+x_event_parsers = {}
+def add_x_event_parser(extension_opcode, parser):
+    global x_event_parsers
+    x_event_parsers[extension_opcode] = parser
+
+
 #and change this debugging on the fly, programmatically:
 def add_debug_route_event(event_type):
     global debug_route_events
@@ -803,6 +854,7 @@ def add_debug_route_event(event_type):
 def remove_debug_route_event(event_type):
     global debug_route_events
     debug_route_events.remove(event_type)
+
 
 catchall_receivers = {}
 def add_catchall_receiver(signal, handler):
@@ -818,6 +870,7 @@ def remove_catchall_receiver(signal, handler):
         pass
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
+
 fallback_receivers = {}
 def add_fallback_receiver(signal, handler):
     global fallback_receivers
@@ -831,6 +884,7 @@ def remove_fallback_receiver(signal, handler):
     except:
         pass
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
+
 
 cdef _maybe_send_event(DEBUG, handlers, signal, event, hinfo="window"):
     if not handlers:
@@ -857,16 +911,16 @@ cdef _route_event(event, signal, parent_signal):
     # doesn't do so just for this event.  As far as I can tell this only
     # matters for override redirect windows when they disappear, and we don't
     # care about those anyway.
-    global debug_route_events
+    global debug_route_events, x_event_type_names
     DEBUG = event.type in debug_route_events
     if DEBUG:
-        log.info("%s event %#x : %s", event_type_names.get(event.type, event.type), event.serial, event)
+        log.info("%s event %#x : %s", x_event_type_names.get(event.type, event.type), event.serial, event)
     handlers = None
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
         assert event.type in (UnmapNotify, DestroyNotify), \
-                "event window is None for event type %s!" % (event_type_names.get(event.type, event.type))
+                "event window is None for event type %s!" % (x_event_type_names.get(event.type, event.type))
     elif event.window is event.delivered_to:
         if signal is not None:
             window = event.window
@@ -916,32 +970,10 @@ cdef object _gw(display, Window xwin):
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
         raise XError(error)
     if win is None:
+        log.warn("window failed: %#x", xwin)
         verbose("cannot get gdk window for %s, %s", display, xwin)
         raise XError(BadWindow)
     return win
-
-
-# Just to make it easier to pass around and have a helpful debug logging.
-# Really, just a python objects where we can stick random bags of attributes.
-class X11Event(object):
-
-    def __init__(self, name):
-        self.name = name
-
-    def __repr__(self):
-        d = {}
-        for k,v in self.__dict__.items():
-            if k=="name":
-                continue
-            elif k=="serial":
-                d[k] = "%#x" % v
-            elif v and type(v)==gdk.Window:
-                d[k] = "%#x" % v.xid
-            elif v and type(v)==gdk.Display:
-                d[k] = "%s" % v.get_name()
-            else:
-                d[k] = v
-        return "<X11:%s %r>" % (self.name, d)
 
 
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
@@ -950,20 +982,26 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef object event_args
     cdef object pyev
     cdef double start = monotonic_time()
-    e = <XEvent*>e_gdk
+    cdef XEvent *e = <XEvent*>e_gdk
     cdef int etype
 
-    pyev = parse_xevent(e_gdk, gdk_event, userdata)
+    try:
+        pyev = parse_xevent(e_gdk)
+    except Exception as e:
+        log.error("Error parsing X11 event", exc_info=True)
+        return GDK_FILTER_CONTINUE
+    log("parse_event(..)=%s", pyev)
     if not pyev:
         return GDK_FILTER_CONTINUE
     etype = pyev.type
     try:
-        my_events = _x_event_signals
+        global x_event_signals, x_event_type_names
+        my_events = x_event_signals
         event_args = my_events.get(etype)
         if event_args is not None:
             signal, parent_signal = event_args
             _route_event(pyev, signal, parent_signal)
-        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
+        log("x_event_filter event=%s/%s took %.1fms", event_args, x_event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
@@ -972,8 +1010,8 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     return GDK_FILTER_CONTINUE
 
 
-cdef parse_xevent(GdkXEvent * e_gdk, GdkEvent * gdk_event, void * userdata) with gil:
-    cdef XEvent * e
+cdef parse_xevent(GdkXEvent * e_gdk) with gil:
+    cdef XEvent * e = <XEvent*>e_gdk
     cdef XDamageNotifyEvent * damage_e
     cdef XFixesCursorNotifyEvent * cursor_e
     cdef XkbAnyEvent * xkb_e
@@ -982,20 +1020,31 @@ cdef parse_xevent(GdkXEvent * e_gdk, GdkEvent * gdk_event, void * userdata) with
     cdef object event_args
     cdef object d
     cdef object pyev
-    e = <XEvent*>e_gdk
     cdef int etype = e.type
-    event_type = event_type_names.get(etype, etype)
+
+    global x_event_type_names, x_event_signals
+    event_type = x_event_type_names.get(etype, etype)
     if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
         log("x_event_filter ignoring %s send_event", event_type)
         return None
-    global _x_event_signals
 
-    event_args = _x_event_signals.get(etype)
+    d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
+
+    if etype == GenericEvent:
+        global x_event_parsers
+        parser = x_event_parsers.get(e.xcookie.extension)
+        if parser:
+            #log("calling %s%s", parser, (d, <uintptr_t> &e.xcookie))
+            pyev = parser(d, <uintptr_t> &e.xcookie)
+            pyev.window = _gw(d, pyev.window)
+            return pyev
+        return None
+
+    event_args = x_event_signals.get(etype)
     log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
     if event_args is None:
         return None
 
-    d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
     pyev = X11Event(event_type)
     pyev.type = etype
     pyev.display = d
@@ -1160,9 +1209,10 @@ cdef parse_xevent(GdkXEvent * e_gdk, GdkEvent * gdk_event, void * userdata) with
             pyev.window_model = None
             pyev.bell_name = get_pyatom(d, bell_e.name)
         else:
-            log.info("not handled: %s", event_type_names.get(etype, etype))
+            log.info("not handled: %s", x_event_type_names.get(etype, etype))
+            return None
     except XError as ex:
-        log.warn("XError: %s", ex, exc_info=True)
+        log.warn("XError: %s processing %s", ex, event_type, exc_info=True)
         if ex.msg==BadWindow:
             if etype == DestroyNotify:
                 #happens too often, don't bother with the debug message

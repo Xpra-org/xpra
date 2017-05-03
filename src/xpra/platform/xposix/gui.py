@@ -525,6 +525,7 @@ class ClientExtras(object):
         self.upower_resuming_match = None
         self.upower_sleeping_match = None
         self.login1_match = None
+        self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
         self.setup_dbus_signals()
@@ -532,8 +533,22 @@ class ClientExtras(object):
     def ready(self):
         pass
 
+    def init_x11_filter(self):
+        if self.x11_filter:
+            return
+        try:
+            from xpra.x11.gtk2.gdk_bindings import init_x11_filter  #@UnresolvedImport
+            self.x11_filter = init_x11_filter()
+            log("x11_filter=%s", self.x11_filter)
+        except:
+            self.x11_filter = None
+
     def cleanup(self):
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
+        if self.x11_filter:
+            from xpra.x11.gtk2.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport
+            self.x11_filter = None
+            cleanup_x11_filter()
         if self._xsettings_watcher:
             self._xsettings_watcher.cleanup()
             self._xsettings_watcher = None
@@ -617,6 +632,7 @@ class ClientExtras(object):
             return
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
+            self.init_x11_filter()
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
             if self._xsettings_watcher is None:
