@@ -47,7 +47,7 @@ SelectionNotify
 ColormapNotify
 ClientMessage
 MappingNotify
-#GenericEvent (not available on all platforms)
+GenericEvent
 LASTEvent
 
 # Configure event mask:

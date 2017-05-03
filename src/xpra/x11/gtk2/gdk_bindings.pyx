@@ -9,7 +9,7 @@ import traceback
 
 import gobject
 import gtk
-import gtk.gdk
+from gtk import gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
@@ -257,7 +257,6 @@ cdef extern from "X11/Xlib.h":
                       Window * root, Window * parent,
                       Window ** children, unsigned int * nchildren)
 
-
 cdef extern from "X11/extensions/xfixeswire.h":
     unsigned int XFixesCursorNotify
     unsigned long XFixesDisplayCursorNotifyMask
@@ -376,7 +375,7 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 # Basic utilities:
 
 cdef int get_xwindow(pywindow):
-    return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gtk.gdk.Window))
+    return GDK_WINDOW_XID(<cGdkWindow*>unwrap(pywindow, gdk.Window))
 
 def get_pywindow(display_source, xwindow):
     return _get_pywindow(display_source, xwindow)
@@ -385,7 +384,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
     if xwindow==0:
         return None
     disp = get_display_for(display_source)
-    win = gtk.gdk.window_foreign_new_for_display(disp, xwindow)
+    win = gdk.window_foreign_new_for_display(disp, xwindow)
     if win is None:
         verbose("cannot get gdk window for %s : %#x", display_source, xwindow)
         raise XError(BadWindow)
@@ -394,9 +393,9 @@ cdef object _get_pywindow(object display_source, Window xwindow):
 cpdef get_display_for(obj):
     if obj is None:
         raise TypeError("Cannot get a display: instance is None!")
-    if isinstance(obj, gtk.gdk.Display):
+    if isinstance(obj, gdk.Display):
         return obj
-    elif isinstance(obj, (gtk.gdk.Drawable,
+    elif isinstance(obj, (gdk.Drawable,
                           gtk.Widget,
                           gtk.Clipboard)):
         return obj.get_display()
@@ -411,11 +410,11 @@ def get_xvisual(pyvisual):
     return xvisual.visualid
 
 cdef Visual *_get_xvisual(pyvisual):
-    return GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, gtk.gdk.Visual))
+    return GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, gdk.Visual))
 
 
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
-    return <cGdkDisplay*> unwrap(get_display_for(obj), gtk.gdk.Display)
+    return <cGdkDisplay*> unwrap(get_display_for(obj), gdk.Display)
 
 cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
@@ -433,7 +432,7 @@ def get_xatom(str_or_xatom):
         assert l>=0, "invalid long atom value %s" % str_or_xatom
         return l
     assert isinstance(str_or_xatom, str), "argument is not a string or number: %s" % type(str_or_xatom)
-    gdkatom = gtk.gdk.atom_intern(str_or_xatom)
+    gdkatom = gdk.atom_intern(str_or_xatom)
     if not gdkatom:
         return  0
     return gdk_x11_get_xatom_by_name(str_or_xatom)
@@ -508,20 +507,20 @@ def calc_constrained_size(int width, int height, object hints):
     cdef int flags = 0
 
     if "maximum-size" in hints:
-        flags = flags | gtk.gdk.HINT_MAX_SIZE
+        flags = flags | gdk.HINT_MAX_SIZE
         geom.max_width, geom.max_height = hints["maximum-size"]
     if "minimum-size" in hints:
-        flags = flags | gtk.gdk.HINT_MIN_SIZE
+        flags = flags | gdk.HINT_MIN_SIZE
         geom.min_width, geom.min_height = hints["minimum-size"]
     if "base-size" in hints:
-        flags = flags | gtk.gdk.HINT_BASE_SIZE
+        flags = flags | gdk.HINT_BASE_SIZE
         geom.base_width, geom.base_height = hints["base-size"]
     if "increment" in hints:
-        flags = flags | gtk.gdk.HINT_RESIZE_INC
+        flags = flags | gdk.HINT_RESIZE_INC
         geom.width_inc, geom.height_inc = hints["increment"]
     if "min_aspect" in hints:
         assert "max_aspect" in hints
-        flags = flags | gtk.gdk.HINT_ASPECT
+        flags = flags | gdk.HINT_ASPECT
         geom.min_aspect = hints["min_aspect"]
         geom.max_aspect = hints["max_aspect"]
     gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
@@ -557,7 +556,7 @@ def calc_constrained_size(int width, int height, object hints):
 #       Unmap
 #       Destroy
 # Our hooks in any case use the "xpra-route-events-to" GObject user data
-# field of the gtk.gdk.Window's involved.  For the SubstructureRedirect
+# field of the gdk.Window's involved.  For the SubstructureRedirect
 # events, we use this field of either the window that is making the request,
 # or, if its field is unset, to the window that actually has
 # SubstructureRedirect selected on it; for other events, we send it to the
@@ -621,7 +620,7 @@ def get_event_receivers(window):
     return window.get_data(_ev_receiver_key)
 
 def cleanup_all_event_receivers():
-    root = gtk.gdk.get_default_root_window()
+    root = gdk.get_default_root_window()
     root.set_data(_ev_receiver_key, None)
     for window in get_children(root):
         receivers = window.get_data(_ev_receiver_key)
@@ -642,7 +641,7 @@ cpdef get_error_text(code):
     if type(code)!=int:
         return code
     cdef Display * display                              #@DuplicatedSignature
-    display = get_xdisplay_for(gtk.gdk.get_default_root_window())
+    display = get_xdisplay_for(gdk.get_default_root_window())
     cdef char[128] buffer
     XGetErrorText(display, code, buffer, 128)
     return str(buffer[:128])
@@ -654,7 +653,7 @@ cdef int get_XKB_event_base():
     cdef int major = 0
     cdef int minor = 0
     cdef Display * xdisplay                             #@DuplicatedSignature
-    display = gtk.gdk.get_default_root_window().get_display()
+    display = gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor)
     verbose("get_XKB_event_base(%s)=%i", display.get_name(), event_base)
@@ -664,7 +663,7 @@ cdef int get_XFixes_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
-    display = gtk.gdk.get_default_root_window().get_display()
+    display = gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XFixesQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XFixes_event_base(%s)=%i", display.get_name(), event_base)
@@ -675,7 +674,7 @@ cdef int get_XDamage_event_base():
     cdef int event_base = 0                             #@DuplicatedSignature
     cdef int error_base = 0                             #@DuplicatedSignature
     cdef Display * xdisplay                             #@DuplicatedSignature
-    display = gtk.gdk.get_default_root_window().get_display()
+    display = gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     XDamageQueryExtension(xdisplay, &event_base, &error_base)
     verbose("get_XDamage_event_base(%s)=%i", display.get_name(), event_base)
@@ -684,7 +683,7 @@ cdef int get_XDamage_event_base():
 
 cdef int get_XShape_event_base():
     cdef Display * xdisplay                             #@DuplicatedSignature
-    display = gtk.gdk.get_default_root_window().get_display()
+    display = gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
     cdef int event_base = 0, ignored = 0
     if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
@@ -697,7 +696,6 @@ cdef init_x11_events():
     XKBNotify = get_XKB_event_base()
     CursorNotify = XFixesCursorNotify+get_XFixes_event_base()
     DamageNotify = XDamageNotify+get_XDamage_event_base()
-    cdef int xshape_base = get_XShape_event_base()
     _x_event_signals = {
         MapRequest          : (None, "child-map-request-event"),
         ConfigureRequest    : (None, "child-configure-request-event"),
@@ -756,8 +754,9 @@ cdef init_x11_events():
         XKBNotify           : "XKBNotify",
         CursorNotify        : "CursorNotify",
         DamageNotify        : "DamageNotify",
-        #GenericEvent        : "GenericEvent",    #Old versions of X11 don't have this defined, ignore it
+        GenericEvent        : "GenericEvent",
         }
+    cdef int xshape_base = get_XShape_event_base()
     if xshape_base>=0:
         global ShapeNotify
         ShapeNotify = xshape_base
@@ -901,15 +900,15 @@ cdef _route_event(event, signal, parent_signal):
 cdef object _gw(display, Window xwin):
     if xwin==0:
         return None
-    gtk.gdk.error_trap_push()
+    gdk.error_trap_push()
     try:
         disp = get_display_for(display)
-        win = gtk.gdk.window_foreign_new_for_display(disp, xwin)
-        gtk.gdk.flush()
-        error = gtk.gdk.error_trap_pop()
+        win = gdk.window_foreign_new_for_display(disp, xwin)
+        gdk.flush()
+        error = gdk.error_trap_pop()
     except Exception as e:
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, e)
-        error = gtk.gdk.error_trap_pop()
+        error = gdk.error_trap_pop()
         if error:
             verbose("ignoring XError %s in unwind", get_error_text(error))
         raise XError(e)
@@ -936,9 +935,9 @@ class X11Event(object):
                 continue
             elif k=="serial":
                 d[k] = "%#x" % v
-            elif v and type(v)==gtk.gdk.Window:
+            elif v and type(v)==gdk.Window:
                 d[k] = "%#x" % v.xid
-            elif v and type(v)==gtk.gdk.Display:
+            elif v and type(v)==gdk.Display:
                 d[k] = "%s" % v.get_name()
             else:
                 d[k] = v
@@ -948,208 +947,23 @@ class X11Event(object):
 cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     GdkEvent * gdk_event,
                                     void * userdata) with gil:
-    cdef XEvent * e
-    cdef XDamageNotifyEvent * damage_e
-    cdef XFixesCursorNotifyEvent * cursor_e
-    cdef XkbAnyEvent * xkb_e
-    cdef XkbBellNotifyEvent * bell_e
-    cdef XShapeEvent * shape_e
-    cdef object my_events
     cdef object event_args
-    cdef object d
     cdef object pyev
     cdef double start = monotonic_time()
     e = <XEvent*>e_gdk
-    event_type = event_type_names.get(e.type, e.type)
-    if e.xany.send_event and e.type not in (ClientMessage, UnmapNotify):
-        log("x_event_filter ignoring %s send_event", event_type)
+    cdef int etype
+
+    pyev = parse_xevent(e_gdk, gdk_event, userdata)
+    if not pyev:
         return GDK_FILTER_CONTINUE
+    etype = pyev.type
     try:
         my_events = _x_event_signals
-        event_args = my_events.get(e.type)
-        log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
+        event_args = my_events.get(etype)
         if event_args is not None:
-            d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
-            pyev = X11Event(event_type)
-            pyev.type = e.type
-            pyev.send_event = e.xany.send_event
-            pyev.display = d
-            pyev.serial = e.xany.serial
-            # Unmarshal:
-            try:
-                if e.type != XKBNotify:
-                    pyev.delivered_to = _gw(d, e.xany.window)
-
-                if e.type == DamageNotify:
-                    damage_e = <XDamageNotifyEvent*>e
-                    pyev.window = _gw(d, e.xany.window)
-                    pyev.damage = damage_e.damage
-                    pyev.x = damage_e.area.x
-                    pyev.y = damage_e.area.y
-                    pyev.width = damage_e.area.width
-                    pyev.height = damage_e.area.height
-                elif e.type == MapRequest:
-                    pyev.window = _gw(d, e.xmaprequest.window)
-                elif e.type == ConfigureRequest:
-                    pyev.window = _gw(d, e.xconfigurerequest.window)
-                    pyev.x = e.xconfigurerequest.x
-                    pyev.y = e.xconfigurerequest.y
-                    pyev.width = e.xconfigurerequest.width
-                    pyev.height = e.xconfigurerequest.height
-                    pyev.border_width = e.xconfigurerequest.border_width
-                    try:
-                        # In principle there are two cases here: .above is
-                        # XNone (i.e. not specified in the original request),
-                        # or .above is an invalid window (i.e. it was
-                        # specified by the client, but it specified something
-                        # weird).  I don't see any reason to handle these
-                        # differently, though.
-                        pyev.above = _gw(d, e.xconfigurerequest.above)
-                    except XError:
-                        pyev.above = None
-                    pyev.above = e.xconfigurerequest.above
-                    pyev.detail = e.xconfigurerequest.detail
-                    pyev.value_mask = e.xconfigurerequest.value_mask
-                elif e.type == ResizeRequest:
-                    pyev.window = _gw(d, e.xresizerequest.window)
-                    pyev.width = e.xresizerequest.width
-                    pyev.height = e.xresizerequest.height
-                elif e.type in (FocusIn, FocusOut):
-                    pyev.window = _gw(d, e.xfocus.window)
-                    pyev.mode = e.xfocus.mode
-                    pyev.detail = e.xfocus.detail
-                elif e.type in (EnterNotify, LeaveNotify):
-                    pyev.window = _gw(d, e.xcrossing.window)
-                    pyev.mode = e.xcrossing.mode
-                    pyev.detail = e.xcrossing.detail
-                    pyev.subwindow = _gw(d, e.xcrossing.subwindow)
-                    pyev.focus = e.xcrossing.focus
-                elif e.type == ClientMessage:
-                    pyev.window = _gw(d, e.xany.window)
-                    if long(e.xclient.message_type) > (long(2) ** 32):
-                        log.warn("Xlib claims that this ClientEvent's 32-bit "
-                                 + "message_type is %s.  "
-                                 + "Note that this is >2^32.  "
-                                 + "This makes no sense, so I'm ignoring it.",
-                                 e.xclient.message_type)
-                        return GDK_FILTER_CONTINUE
-                    pyev.message_type = get_pyatom(d, e.xclient.message_type)
-                    pyev.format = e.xclient.format
-                    # I am lazy.  Add this later if needed for some reason.
-                    if pyev.format != 32:
-                        #things like _KDE_SPLASH_PROGRESS and _NET_STARTUP_INFO will come through here
-                        log("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)", pyev.message_type, pyev.format)
-                        return GDK_FILTER_CONTINUE
-                    pieces = []
-                    for i in range(5):
-                        # Mask with 0xffffffff to prevent sign-extension on
-                        # architectures where Python's int is 64-bits.
-                        pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
-                    pyev.data = tuple(pieces)
-                elif e.type == CreateNotify:
-                    pyev.window = _gw(d, e.xcreatewindow.window)
-                    pyev.width = e.xcreatewindow.width
-                    pyev.height = e.xcreatewindow.height
-                elif e.type == MapNotify:
-                    pyev.window = _gw(d, e.xmap.window)
-                    pyev.override_redirect = e.xmap.override_redirect
-                elif e.type == UnmapNotify:
-                    pyev.window = _gw(d, e.xunmap.window)
-                elif e.type == DestroyNotify:
-                    pyev.window = _gw(d, e.xdestroywindow.window)
-                elif e.type == PropertyNotify:
-                    pyev.window = _gw(d, e.xany.window)
-                    pyev.atom = trap.call_synced(get_pyatom, d, e.xproperty.atom)
-                elif e.type == ConfigureNotify:
-                    pyev.window = _gw(d, e.xconfigure.window)
-                    pyev.x = e.xconfigure.x
-                    pyev.y = e.xconfigure.y
-                    pyev.width = e.xconfigure.width
-                    pyev.height = e.xconfigure.height
-                    pyev.border_width = e.xconfigure.border_width
-                    pyev.above = e.xconfigure.above
-                elif e.type == CirculateNotify:
-                    pyev.window = _gw(d, e.xcirculaterequest.window)
-                    pyev.place = e.xcirculaterequest.place
-                elif e.type == ReparentNotify:
-                    pyev.window = _gw(d, e.xreparent.window)
-                elif e.type == KeyPress:
-                    pyev.window = _gw(d, e.xany.window)
-                    pyev.hardware_keycode = e.xkey.keycode
-                    pyev.state = e.xkey.state
-                elif e.type == CursorNotify:
-                    pyev.window = _gw(d, e.xany.window)
-                    cursor_e = <XFixesCursorNotifyEvent*>e
-                    pyev.cursor_serial = cursor_e.cursor_serial
-                    pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
-                elif e.type == MotionNotify:
-                    pyev.window = _gw(d, e.xmotion.window)
-                    pyev.root = _gw(d, e.xmotion.root)
-                    pyev.subwindow = _gw(d, e.xmotion.subwindow)
-                    pyev.time = e.xmotion.time
-                    pyev.x = e.xmotion.x
-                    pyev.y = e.xmotion.y
-                    pyev.x_root = e.xmotion.x_root
-                    pyev.y_root = e.xmotion.y_root
-                    pyev.state = e.xmotion.state
-                    pyev.is_hint = e.xmotion.is_hint
-                    pyev.same_screen = e.xmotion.same_screen
-                elif e.type == ShapeNotify:
-                    shape_e = <XShapeEvent*> e
-                    pyev.window = _gw(d, shape_e.window)
-                    pyev.kind = shape_e.kind
-                    pyev.x = shape_e.x
-                    pyev.y = shape_e.y
-                    pyev.width = shape_e.width
-                    pyev.height = shape_e.height
-                    pyev.shaped = shape_e.shaped
-                elif e.type == XKBNotify:
-                    # note we could just cast directly to XkbBellNotifyEvent
-                    # but this would be dirty, and we may want to catch
-                    # other types of XKB events in the future
-                    xkb_e = <XkbAnyEvent*>e
-                    verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
-                    if xkb_e.xkb_type!=XkbBellNotify:
-                        return GDK_FILTER_CONTINUE
-                    bell_e = <XkbBellNotifyEvent*>e
-                    pyev.type = "bell"
-                    pyev.device = int(bell_e.device)
-                    pyev.percent = int(bell_e.percent)
-                    pyev.pitch = int(bell_e.pitch)
-                    pyev.duration = int(bell_e.duration)
-                    pyev.bell_class = int(bell_e.bell_class)
-                    pyev.bell_id = int(bell_e.bell_id)
-                    # no idea why window is not set in XkbBellNotifyEvent
-                    # since we can fire it from a specific window
-                    # but we need one for the dispatch logic, so use root if unset
-                    if bell_e.window!=0:
-                        verbose("using bell_e.window=%#x", bell_e.window)
-                        pyev.window = _gw(d, bell_e.window)
-                    else:
-                        rw = d.get_default_screen().get_root_window()
-                        pyev.window = rw
-                        verbose("bell using root window=%#x", pyev.window)
-                    pyev.event_only = bool(bell_e.event_only)
-                    pyev.delivered_to = pyev.window
-                    pyev.window_model = None
-                    pyev.bell_name = get_pyatom(d, bell_e.name)
-                else:
-                    log.info("not handled: %s", event_type_names.get(e.type, e.type))
-            except XError as ex:
-                if ex.msg==BadWindow:
-                    if e.type == DestroyNotify:
-                        #happens too often, don't bother with the debug message
-                        pass
-                    else:
-                        log("Some window in our event disappeared before we could " \
-                            + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", e.type, event_type, event_args, pyev)
-                else:
-                    msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), e.type, event_type, event_args, pyev
-                    log.error(*msg)
-            else:
-                signal, parent_signal = event_args
-                _route_event(pyev, signal, parent_signal)
-        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type, 1000.0*(monotonic_time()-start))
+            signal, parent_signal = event_args
+            _route_event(pyev, signal, parent_signal)
+        log("x_event_filter event=%s/%s took %.1fms", event_args, event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
         gtk_main_quit_really()
@@ -1158,8 +972,214 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     return GDK_FILTER_CONTINUE
 
 
+cdef parse_xevent(GdkXEvent * e_gdk, GdkEvent * gdk_event, void * userdata) with gil:
+    cdef XEvent * e
+    cdef XDamageNotifyEvent * damage_e
+    cdef XFixesCursorNotifyEvent * cursor_e
+    cdef XkbAnyEvent * xkb_e
+    cdef XkbBellNotifyEvent * bell_e
+    cdef XShapeEvent * shape_e
+    cdef object event_args
+    cdef object d
+    cdef object pyev
+    e = <XEvent*>e_gdk
+    cdef int etype = e.type
+    event_type = event_type_names.get(etype, etype)
+    if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
+        log("x_event_filter ignoring %s send_event", event_type)
+        return None
+    global _x_event_signals
+
+    event_args = _x_event_signals.get(etype)
+    log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
+    if event_args is None:
+        return None
+
+    d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
+    pyev = X11Event(event_type)
+    pyev.type = etype
+    pyev.display = d
+    pyev.send_event = e.xany.send_event
+    pyev.serial = e.xany.serial
+    # Unmarshal:
+    try:
+        if etype != XKBNotify:
+            pyev.delivered_to = _gw(d, e.xany.window)
+
+        if etype == DamageNotify:
+            damage_e = <XDamageNotifyEvent*>e
+            pyev.window = _gw(d, e.xany.window)
+            pyev.damage = damage_e.damage
+            pyev.x = damage_e.area.x
+            pyev.y = damage_e.area.y
+            pyev.width = damage_e.area.width
+            pyev.height = damage_e.area.height
+        elif etype == MapRequest:
+            pyev.window = _gw(d, e.xmaprequest.window)
+        elif etype == ConfigureRequest:
+            pyev.window = _gw(d, e.xconfigurerequest.window)
+            pyev.x = e.xconfigurerequest.x
+            pyev.y = e.xconfigurerequest.y
+            pyev.width = e.xconfigurerequest.width
+            pyev.height = e.xconfigurerequest.height
+            pyev.border_width = e.xconfigurerequest.border_width
+            try:
+                # In principle there are two cases here: .above is
+                # XNone (i.e. not specified in the original request),
+                # or .above is an invalid window (i.e. it was
+                # specified by the client, but it specified something
+                # weird).  I don't see any reason to handle these
+                # differently, though.
+                pyev.above = _gw(d, e.xconfigurerequest.above)
+            except XError:
+                pyev.above = None
+            pyev.above = e.xconfigurerequest.above
+            pyev.detail = e.xconfigurerequest.detail
+            pyev.value_mask = e.xconfigurerequest.value_mask
+        elif etype == ResizeRequest:
+            pyev.window = _gw(d, e.xresizerequest.window)
+            pyev.width = e.xresizerequest.width
+            pyev.height = e.xresizerequest.height
+        elif etype in (FocusIn, FocusOut):
+            pyev.window = _gw(d, e.xfocus.window)
+            pyev.mode = e.xfocus.mode
+            pyev.detail = e.xfocus.detail
+        elif etype in (EnterNotify, LeaveNotify):
+            pyev.window = _gw(d, e.xcrossing.window)
+            pyev.mode = e.xcrossing.mode
+            pyev.detail = e.xcrossing.detail
+            pyev.subwindow = _gw(d, e.xcrossing.subwindow)
+            pyev.focus = e.xcrossing.focus
+        elif etype == ClientMessage:
+            pyev.window = _gw(d, e.xany.window)
+            if long(e.xclient.message_type) > (long(2) ** 32):
+                log.warn("Xlib claims that this ClientEvent's 32-bit "
+                         + "message_type is %s.  "
+                         + "Note that this is >2^32.  "
+                         + "This makes no sense, so I'm ignoring it.",
+                         e.xclient.message_type)
+                return GDK_FILTER_CONTINUE
+            pyev.message_type = get_pyatom(d, e.xclient.message_type)
+            pyev.format = e.xclient.format
+            # I am lazy.  Add this later if needed for some reason.
+            if pyev.format != 32:
+                #things like _KDE_SPLASH_PROGRESS and _NET_STARTUP_INFO will come through here
+                log("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)", pyev.message_type, pyev.format)
+                return GDK_FILTER_CONTINUE
+            pieces = []
+            for i in range(5):
+                # Mask with 0xffffffff to prevent sign-extension on
+                # architectures where Python's int is 64-bits.
+                pieces.append(int(e.xclient.data.l[i]) & 0xffffffff)
+            pyev.data = tuple(pieces)
+        elif etype == CreateNotify:
+            pyev.window = _gw(d, e.xcreatewindow.window)
+            pyev.width = e.xcreatewindow.width
+            pyev.height = e.xcreatewindow.height
+        elif etype == MapNotify:
+            pyev.window = _gw(d, e.xmap.window)
+            pyev.override_redirect = e.xmap.override_redirect
+        elif etype == UnmapNotify:
+            pyev.window = _gw(d, e.xunmap.window)
+        elif etype == DestroyNotify:
+            pyev.window = _gw(d, e.xdestroywindow.window)
+        elif etype == PropertyNotify:
+            pyev.window = _gw(d, e.xany.window)
+            pyev.atom = trap.call_synced(get_pyatom, d, e.xproperty.atom)
+        elif etype == ConfigureNotify:
+            pyev.window = _gw(d, e.xconfigure.window)
+            pyev.x = e.xconfigure.x
+            pyev.y = e.xconfigure.y
+            pyev.width = e.xconfigure.width
+            pyev.height = e.xconfigure.height
+            pyev.border_width = e.xconfigure.border_width
+            pyev.above = e.xconfigure.above
+        elif etype == CirculateNotify:
+            pyev.window = _gw(d, e.xcirculaterequest.window)
+            pyev.place = e.xcirculaterequest.place
+        elif etype == ReparentNotify:
+            pyev.window = _gw(d, e.xreparent.window)
+        elif etype == KeyPress:
+            pyev.window = _gw(d, e.xany.window)
+            pyev.hardware_keycode = e.xkey.keycode
+            pyev.state = e.xkey.state
+        elif etype == CursorNotify:
+            pyev.window = _gw(d, e.xany.window)
+            cursor_e = <XFixesCursorNotifyEvent*>e
+            pyev.cursor_serial = cursor_e.cursor_serial
+            pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
+        elif etype == MotionNotify:
+            pyev.window = _gw(d, e.xmotion.window)
+            pyev.root = _gw(d, e.xmotion.root)
+            pyev.subwindow = _gw(d, e.xmotion.subwindow)
+            pyev.time = e.xmotion.time
+            pyev.x = e.xmotion.x
+            pyev.y = e.xmotion.y
+            pyev.x_root = e.xmotion.x_root
+            pyev.y_root = e.xmotion.y_root
+            pyev.state = e.xmotion.state
+            pyev.is_hint = e.xmotion.is_hint
+            pyev.same_screen = e.xmotion.same_screen
+        elif etype == ShapeNotify:
+            shape_e = <XShapeEvent*> e
+            pyev.window = _gw(d, shape_e.window)
+            pyev.kind = shape_e.kind
+            pyev.x = shape_e.x
+            pyev.y = shape_e.y
+            pyev.width = shape_e.width
+            pyev.height = shape_e.height
+            pyev.shaped = shape_e.shaped
+        elif etype == XKBNotify:
+            # note we could just cast directly to XkbBellNotifyEvent
+            # but this would be dirty, and we may want to catch
+            # other types of XKB events in the future
+            xkb_e = <XkbAnyEvent*>e
+            verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
+            if xkb_e.xkb_type!=XkbBellNotify:
+                return GDK_FILTER_CONTINUE
+            bell_e = <XkbBellNotifyEvent*>e
+            pyev.type = "bell"
+            pyev.device = int(bell_e.device)
+            pyev.percent = int(bell_e.percent)
+            pyev.pitch = int(bell_e.pitch)
+            pyev.duration = int(bell_e.duration)
+            pyev.bell_class = int(bell_e.bell_class)
+            pyev.bell_id = int(bell_e.bell_id)
+            # no idea why window is not set in XkbBellNotifyEvent
+            # since we can fire it from a specific window
+            # but we need one for the dispatch logic, so use root if unset
+            if bell_e.window!=0:
+                verbose("using bell_e.window=%#x", bell_e.window)
+                pyev.window = _gw(d, bell_e.window)
+            else:
+                rw = d.get_default_screen().get_root_window()
+                pyev.window = rw
+                verbose("bell using root window=%#x", pyev.window)
+            pyev.event_only = bool(bell_e.event_only)
+            pyev.delivered_to = pyev.window
+            pyev.window_model = None
+            pyev.bell_name = get_pyatom(d, bell_e.name)
+        else:
+            log.info("not handled: %s", event_type_names.get(etype, etype))
+    except XError as ex:
+        log.warn("XError: %s", ex, exc_info=True)
+        if ex.msg==BadWindow:
+            if etype == DestroyNotify:
+                #happens too often, don't bother with the debug message
+                pass
+            else:
+                log("Some window in our event disappeared before we could " \
+                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", etype, event_type, event_args, pyev)
+        else:
+            msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), etype, event_type, event_args, pyev
+            log.error(*msg)
+        return None
+    return pyev
+
+
 _INIT_X11_FILTER_DONE = False
 def init_x11_filter():
+    log("init_x11_filter()")
     """ returns True if we did initialize it, False if it was already initialized """
     global _INIT_X11_FILTER_DONE
     if _INIT_X11_FILTER_DONE:
@@ -1170,6 +1190,7 @@ def init_x11_filter():
     return True
 
 def cleanup_x11_filter():
+    log("cleanup_x11_filter()")
     global _INIT_X11_FILTER_DONE
     if not _INIT_X11_FILTER_DONE:
         return False
