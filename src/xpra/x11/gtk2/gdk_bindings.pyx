@@ -15,6 +15,7 @@ from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.gtk2.common import X11Event
 from xpra.monotonic_time cimport monotonic_time
+from xpra.util import csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
@@ -819,6 +820,7 @@ def add_x_event_type_names(event_type_names):
     verbose("names_to_event_type=%s", names_to_event_type)
 
 def set_debug_events():
+    global debug_route_events
     XPRA_X11_DEBUG_EVENTS = os.environ.get("XPRA_X11_DEBUG_EVENTS", "")
     debug_set = set()
     ignore_set = set()
@@ -836,15 +838,17 @@ def set_debug_events():
         elif name in names_to_event_type:
             events = [name]
         else:
-            log.warn("unknown X11 debug event type: %s", name)
+            log("unknown X11 debug event type: %s", name)
             continue
         #add to correct set:
         for e in events:
             event_set.add(e)
     events = debug_set.difference(ignore_set)
-    if len(events)>0:
-        log.warn("debugging of X11 events enabled for: %s", ", ".join(events))
     debug_route_events = [names_to_event_type.get(x) for x in events]
+    if len(events)>0:
+        log.warn("debugging of X11 events enabled for:")
+        log.warn(" %s", csv(events))
+        log.warn(" event codes: %s", csv(debug_route_events))
 
 
 x_event_parsers = {}
@@ -892,7 +896,7 @@ def remove_fallback_receiver(signal, handler):
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
 
-cdef _maybe_send_event(DEBUG, handlers, signal, event, hinfo="window"):
+cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="window"):
     if not handlers:
         if DEBUG:
             log.info("  no handler registered for %s (%s), ignoring event", hinfo, handlers)
@@ -911,29 +915,29 @@ cdef _maybe_send_event(DEBUG, handlers, signal, event, hinfo="window"):
             log.info("  not forwarding to %s handler, it has no %s signal (it has: %s)",
                 type(handler).__name__, signal, signals)
 
-cdef _route_event(event, signal, parent_signal):
+cdef _route_event(int etype, event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
     # for windows we have never created a GdkWindow object for, and GDK
     # doesn't do so just for this event.  As far as I can tell this only
     # matters for override redirect windows when they disappear, and we don't
     # care about those anyway.
     global debug_route_events, x_event_type_names
-    DEBUG = event.type in debug_route_events
+    cdef unsigned int DEBUG = etype in debug_route_events
     if DEBUG:
-        log.info("%s event %#x : %s", x_event_type_names.get(event.type, event.type), event.serial, event)
+        log.info("%s event %#x : %s", x_event_type_names.get(etype, etype), event.serial, event)
     handlers = None
     if event.window is None:
         if DEBUG:
             log.info("  event.window is None, ignoring")
-        assert event.type in (UnmapNotify, DestroyNotify), \
-                "event window is None for event type %s!" % (x_event_type_names.get(event.type, event.type))
+        assert etype in (UnmapNotify, DestroyNotify), \
+                "event window is None for event type %s!" % (x_event_type_names.get(etype, etype))
     elif event.window is event.delivered_to:
         if signal is not None:
             window = event.window
             if DEBUG:
                 log.info("  delivering event to window itself: %#x  (signal=%s)", window.xid, signal)
             handlers = window.get_data(_ev_receiver_key)
-            _maybe_send_event(DEBUG, handlers, signal, event, "window %s" % window.xid)
+            _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window.xid)
         elif DEBUG:
             log.info("  received event on window itself but have no signal for that")
     else:
@@ -942,7 +946,7 @@ cdef _route_event(event, signal, parent_signal):
             if DEBUG:
                 log.info("  delivering event to parent window: %#x (signal=%s)", window.xid, parent_signal)
             handlers = window.get_data(_ev_receiver_key)
-            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %s" % window.xid)
+            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.xid)
         else:
             if DEBUG:
                 log.info("  received event on a parent window but have no parent signal")
@@ -1002,11 +1006,11 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     etype = pyev.type
     try:
         global x_event_signals, x_event_type_names
-        my_events = x_event_signals
-        event_args = my_events.get(etype)
+        event_args = x_event_signals.get(etype)
+        #log("signals(%s)=%s", pyev, event_args)
         if event_args is not None:
             signal, parent_signal = event_args
-            _route_event(pyev, signal, parent_signal)
+            _route_event(etype, pyev, signal, parent_signal)
         log("x_event_filter event=%s/%s took %.1fms", event_args, x_event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
@@ -1042,7 +1046,9 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
         if parser:
             #log("calling %s%s", parser, (d, <uintptr_t> &e.xcookie))
             pyev = parser(d, <uintptr_t> &e.xcookie)
+            #log("pyev=%s (window=%#x)", pyev, e.xany.window)
             pyev.window = _gw(d, pyev.window)
+            pyev.delivered_to = pyev.window
             return pyev
         return None
 
