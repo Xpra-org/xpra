@@ -24,6 +24,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
     """
         Utility superclass for GObject clients
     """
+    INSTALL_SIGNAL_HANDLERS = True
 
     def __init__(self):
         gobject.GObject.__init__(self)
@@ -31,7 +32,8 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
 
     def init(self, opts):
         XpraClientBase.init(self, opts)
-        self.install_signal_handlers()
+        if self.INSTALL_SIGNAL_HANDLERS:
+            self.install_signal_handlers()
         self.glib_init()
         self.gobject_init()
 
