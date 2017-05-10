@@ -251,9 +251,9 @@ class ClipboardProtocolHelperBase(object):
         rsel = self.local_to_remote(selection)
         def send_token(*args):
             self.send("clipboard-token", *args)
-        if proxy._can_receive and not proxy._can_send:
+        if not proxy._can_send:
             #send the token without data,
-            #and with claim flag set to False, greedy set to True:
+            #and with claim flag set to False, greedy set to True
             send_token(rsel, [], "NOTARGET", "UTF8_STRING", 8, "bytes", "", False, True)
             return
         if self._want_targets:
@@ -538,7 +538,7 @@ class ClipboardProxy(gtk.Invisible):
         #an application on our side owns the clipboard selection
         #(they are ready to provide something via the clipboard)
         log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
-        if not self._enabled or self._block_owner_change or not self._can_send:
+        if not self._enabled or self._block_owner_change:
             return
         if self._have_token or self._greedy_client:
             if self._have_token or DELAY_SEND_TOKEN<0:
@@ -670,7 +670,7 @@ class ClipboardProxy(gtk.Invisible):
         # Someone else on our side has the selection
         log("do_selection_clear_event(%s) have_token=%s, block_owner_change=%s selection=%s", event, self._have_token, self._block_owner_change, self._selection)
         self._selection_clear_events += 1
-        if self._enabled and self._can_send and not self._block_owner_change:
+        if self._enabled and not self._block_owner_change:
             #if greedy_client is set, do_owner_changed will fire the token
             #so don't bother sending it now (same if we don't have it)
             send = ((self._greedy_client and not self._block_owner_change) or self._have_token)
