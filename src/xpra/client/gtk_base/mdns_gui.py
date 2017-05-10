@@ -225,6 +225,7 @@ class mdns_sessions(gtk.Window):
         for p,i in {
                     "win32"     : "win32",
                     "darwin"    : "osx",
+                    "linux"     : "linux",
                     "linux2"    : "linux",
                     "freebsd"   : "freebsd",
                     }.items():

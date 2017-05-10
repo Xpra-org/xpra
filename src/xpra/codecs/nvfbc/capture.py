@@ -24,7 +24,7 @@ def main():
         if WIN32:
             from xpra.codecs.nvfbc import fbc_capture_win32 as fbc_capture      #@UnresolvedImport @UnusedImport
         elif LINUX:
-            from xpra.codecs.nvfbc import fbc_capture_linux2 as fbc_capture     #@UnresolvedImport @Reimport
+            from xpra.codecs.nvfbc import fbc_capture_linux as fbc_capture      #@UnresolvedImport @Reimport
         else:
             raise Exception("nvfbc is not support on %s" % sys.platform)
         fbc_capture.init_module()

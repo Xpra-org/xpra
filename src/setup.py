@@ -66,6 +66,8 @@ setup_options = {
 WIN32 = sys.platform.startswith("win") or sys.platform.startswith("msys")
 OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
+NETBSD = sys.platform.startswith("netbsd")
+FREEBSD = sys.platform.startswith("freebsd")
 PYTHON3 = sys.version_info[0] == 3
 import struct
 BITS = struct.calcsize("P")*8
@@ -156,7 +158,7 @@ html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
-vsock_ENABLED           = sys.platform.startswith("linux") and os.path.exists("/usr/include/linux/vm_sockets.h")
+vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 clipboard_ENABLED       = DEFAULT and not PYTHON3
@@ -177,7 +179,7 @@ jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
-v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not sys.platform.startswith("freebsd"))
+v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec")
 # some version strings I found:
@@ -702,10 +704,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 #needed on Debian and Ubuntu to avoid this error:
                 #/usr/include/gtk-2.0/gtk/gtkitemfactory.h:47:1: error: function declaration isn't a prototype [-Werror=strict-prototypes]
                 eifd.append("-Wno-error=strict-prototypes")
-            if sys.platform.startswith("netbsd"):
+            if NETBSD:
                 #see: http://trac.cython.org/ticket/395
                 eifd += ["-fno-strict-aliasing"]
-            elif sys.platform.startswith("freebsd"):
+            elif FREEBSD:
                 eifd += ["-Wno-error=unused-function"]
         else:
             #older versions of OSX ship an old gcc,
@@ -870,7 +872,7 @@ def build_xpra_conf(install_dir):
             except Exception as e:
                 print("cannot create target dir '%s': %s" % (target_dir, e))
         for f in sorted(os.listdir(dirname)):
-            if f.endswith("osx.conf.in") and not sys.platform.startswith("darwin"):
+            if f.endswith("osx.conf.in") and not OSX:
                 continue
             filename = os.path.join(dirname, f)
             if os.path.isdir(filename):
@@ -1874,8 +1876,9 @@ toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
 if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     #add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
-    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % sys.platform,
-                         ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % sys.platform],
+    platform = sys.platform.rstrip("0123456789")
+    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
+                         ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % platform],
                          language="c++",
                          **nvfbc_pkgconfig))
 
