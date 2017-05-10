@@ -1491,37 +1491,52 @@ else:
                 etc_prefix = etc_prefix[:-3]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
             build_xpra_conf(etc_prefix)
 
+            def copytodir(src, dst_dir, chmod=0o644):
+                #deal with /etc in a buildroot:
+                if dst_dir.startswith("/etc"):
+                    dst_dir = etc_prefix+dst_dir
+                else:
+                    dst_dir = self.install_dir+dst_dir
+                #make sure the target directory exists:
+                self.mkpath(dst_dir)
+                #generate the target filename:
+                filename = os.path.basename(src)
+                dst_file = os.path.join(dst_dir, filename)
+                #copy it
+                shutil.copyfile(src, dst_file)
+                if chmod:
+                    os.chmod(dst_file, chmod)
+
             if printing_ENABLED and os.name=="posix":
                 #install "/usr/lib/cups/backend" with 0700 permissions:
-                xpraforwarder_src = os.path.join("cups", "xpraforwarder")
-                cups_backend_dir = os.path.join(self.install_dir, "lib", "cups", "backend")
-                self.mkpath(cups_backend_dir)
-                xpraforwarder_dst = os.path.join(cups_backend_dir, "xpraforwarder")
-                shutil.copyfile(xpraforwarder_src, xpraforwarder_dst)
-                os.chmod(xpraforwarder_dst, 0o700)
+                copytodir("cups/xpraforwarder", "/lib/cups/backend", chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])):
-                    bin_dir = os.path.join(self.install_dir, "bin")
-                    self.mkpath(bin_dir)
-                    dummy_script = os.path.join(bin_dir, "xpra_Xdummy")
-                    shutil.copyfile("scripts/xpra_Xdummy", dummy_script)
-                    os.chmod(dummy_script, 0o755)
+                    copytodir("xpra_Xdummy", "/bin", chmod=0o755)
                 #install xorg.conf, cuda.conf and nvenc.keys:
-                etc_xpra = os.path.join(etc_prefix, "etc", "xpra")
-                self.mkpath(etc_xpra)
-                etc_files = ["xorg.conf"]
+                etc_xpra_files = ["xorg.conf"]
                 if nvenc7_ENABLED:
-                    etc_files += ["cuda.conf", "nvenc.keys"]
-                for x in etc_files:
-                    shutil.copyfile("etc/xpra/%s" % x, os.path.join(etc_xpra, x))
+                    etc_xpra_files += ["cuda.conf", "nvenc.keys"]
+                for x in etc_xpra_files:
+                    copytodir("etc/xpra/%s" % x, "/etc/xpra")
 
             if pam_ENABLED:
-                etc_pam_d = os.path.join(etc_prefix, "etc", "pam.d")
-                self.mkpath(etc_pam_d)
-                shutil.copyfile("etc/pam.d/xpra", os.path.join(etc_pam_d, "xpra"))
+                copytodir("etc/pam.d/xpra", "/etc/pam.d")
+
+            if service_ENABLED:
+                #Linux init service:
+                if os.path.exists("/bin/systemctl"):
+                    copytodir("service/xpra.service", "/lib/systemd/system")
+                else:
+                    copytodir("service/xpra", "/etc/init.d")
+                if os.path.exists("/etc/sysconfig"):
+                    copytodir("etc/sysconfig/xpra", "/etc/sysconfig")
+                elif os.path.exists("/etc/default"):
+                    copytodir("etc/sysconfig/xpra", "/etc/default")
+
 
     # add build_conf to build step
     cmdclass.update({
@@ -1547,7 +1562,7 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         #not supported by all distros, but doesn't hurt to install them anyway:
         for x in ("tmpfiles.d", "sysusers.d"):
-            add_data_files("/usr/lib/%s" % x, ["%s/xpra.conf" % x])
+            add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
@@ -1615,17 +1630,6 @@ else:
             return kw
 
         pkgconfig = osx_pkgconfig
-    else:
-        if service_ENABLED:
-            #Linux init service:
-            if os.path.exists("/bin/systemctl"):
-                add_data_files("/usr/lib/systemd/system/", ["service/xpra.service"])
-            else:
-                add_data_files("/etc/init.d/", ["service/xpra"])
-            if os.path.exists("/etc/sysconfig"):
-                add_data_files("/etc/sysconfig/", ["etc/sysconfig/xpra"])
-            elif os.path.exists("/etc/default"):
-                add_data_files("/etc/default/", ["etc/sysconfig/xpra"])
 
 
 if html5_ENABLED:
@@ -1867,7 +1871,7 @@ if server_ENABLED:
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
-if nvfbc_ENABLED:
+if nvfbc_ENABLED and False:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     #add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
     cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % sys.platform,
