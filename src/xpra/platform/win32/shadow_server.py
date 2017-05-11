@@ -341,7 +341,7 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def do_process_mouse_common(self, proto, wid, pointer):
+    def do_process_mouse_common(self, proto, wid, pointer, *args):
         #adjust pointer position for offset in client:
         try:
             SetCursorPos(*pointer)

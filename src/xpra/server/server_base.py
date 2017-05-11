@@ -143,6 +143,9 @@ class ServerBase(ServerCore):
         self.webcam_encodings = []
         self.webcam_forwarding_device = None
         self.virtual_video_devices = 0
+        self.input_devices = "auto"
+        self.input_devices_format = None
+        self.input_devices_data = None
         self.mem_bytes = 0
 
         #sound:
@@ -256,6 +259,7 @@ class ServerBase(ServerCore):
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
+        self.input_devices = opts.input_devices or "auto"
 
         #sound:
         self.pulseaudio = opts.pulseaudio
@@ -752,6 +756,7 @@ class ServerBase(ServerCore):
             "info-request":                         self._process_info_request,
             "start-command":                        self._process_start_command,
             "print":                                self._process_print,
+            "input-devices":                        self._process_input_devices,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
@@ -1376,7 +1381,8 @@ class ServerBase(ServerCore):
                 #newer flags:
                 "av-sync",
                 "auto-video-encoding",
-                "window-filters"))
+                "window-filters",
+                ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
                       "eos-sequence"    : True,
@@ -1411,6 +1417,7 @@ class ServerBase(ServerCore):
                  "webcam"                       : self.webcam_forwarding,
                  "webcam.encodings"             : self.webcam_encodings,
                  "virtual-video-devices"        : self.virtual_video_devices,
+                 "input-devices"                : self.input_devices,
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
@@ -2857,7 +2864,7 @@ class ServerBase(ServerCore):
         ss.user_event()
 
 
-    def _move_pointer(self, wid, pos):
+    def _move_pointer(self, wid, pos, *args):
         raise NotImplementedError()
 
     def _adjust_pointer(self, proto, wid, pointer):
@@ -2878,12 +2885,13 @@ class ServerBase(ServerCore):
                         return px+(wx-cx), py+(wy-cy)
         return pointer
 
-    def _process_mouse_common(self, proto, wid, pointer):
+    def _process_mouse_common(self, proto, wid, pointer, *args):
         pointer = self._adjust_pointer(proto, wid, pointer)
-        self.do_process_mouse_common(proto, wid, pointer)
+        #TODO: adjust args too
+        self.do_process_mouse_common(proto, wid, pointer, *args)
         return pointer
 
-    def do_process_mouse_common(self, proto, wid, pointer):
+    def do_process_mouse_common(self, proto, wid, pointer, *args):
         pass
 
 
@@ -2915,7 +2923,7 @@ class ServerBase(ServerCore):
         if self.ui_driver and self.ui_driver!=ss.uuid:
             return
         self._update_modifiers(proto, wid, modifiers)
-        self._process_mouse_common(proto, wid, pointer)
+        self._process_mouse_common(proto, wid, pointer, *packet[5:])
 
 
     def _process_damage_sequence(self, proto, packet):
@@ -3176,6 +3184,16 @@ class ServerBase(ServerCore):
             ss.send_webcam_stop(device, str(e))
             self.stop_virtual_webcam()
 
+    def _process_input_devices(self, ss, packet):
+        self.input_devices_format = packet[1]
+        self.input_devices_data = packet[2]
+        from xpra.util import print_nested_dict
+        mouselog("client %s input devices:", self.input_devices_format)
+        print_nested_dict(self.input_devices_data, print_fn=mouselog)
+        self.setup_input_devices()
+
+    def setup_input_devices(self):
+        pass
 
     def process_clipboard_packet(self, ss, packet):
         if self.readonly:

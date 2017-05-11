@@ -980,7 +980,6 @@ cdef object _gw(display, Window xwin):
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
         raise XError(error)
     if win is None:
-        log.warn("window failed: %#x", xwin)
         verbose("cannot get gdk window for %s, %s", display, xwin)
         raise XError(BadWindow)
     return win
@@ -1045,11 +1044,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
         parser = x_event_parsers.get(e.xcookie.extension)
         if parser:
             #log("calling %s%s", parser, (d, <uintptr_t> &e.xcookie))
-            pyev = parser(d, <uintptr_t> &e.xcookie)
-            #log("pyev=%s (window=%#x)", pyev, e.xany.window)
-            pyev.window = _gw(d, pyev.window)
-            pyev.delivered_to = pyev.window
-            return pyev
+            return parser(d, <uintptr_t> &e.xcookie)
         return None
 
     event_args = x_event_signals.get(etype)
@@ -1224,9 +1219,9 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             log.info("not handled: %s", x_event_type_names.get(etype, etype))
             return None
     except XError as ex:
-        log.warn("XError: %s processing %s", ex, event_type, exc_info=True)
+        log("XError: %s processing %s", ex, event_type, exc_info=True)
         if ex.msg==BadWindow:
-            if etype == DestroyNotify:
+            if etype==DestroyNotify:
                 #happens too often, don't bother with the debug message
                 pass
             else:

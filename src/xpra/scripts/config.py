@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -489,6 +489,7 @@ OPTION_TYPES = {
                     "dbus-launch"       : str,
                     "webcam"            : str,
                     "mousewheel"        : str,
+                    "input-devices"     : str,
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
@@ -619,7 +620,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "quality", "min-quality", "speed", "min-speed",
                   "compression_level",
                   "dpi", "video-scaling", "auto-refresh-delay",
-                  "webcam", "mousewheel", "pings",
+                  "webcam", "mousewheel", "input-devices", "pings",
                   "tray", "keyboard-sync", "cursors", "bell", "notifications",
                   "xsettings", "system-tray", "sharing",
                   "delay-tray", "windows", "readonly",
@@ -811,6 +812,7 @@ def get_defaults():
                     "dbus-launch"       : "dbus-launch --close-stderr",
                     "webcam"            : ["auto", "no"][OSX],
                     "mousewheel"        : "on",
+                    "input-devices"     : "auto",
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",

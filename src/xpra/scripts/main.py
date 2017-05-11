@@ -562,6 +562,13 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--mousewheel", action="store",
                       dest="mousewheel", default=defaults.mousewheel,
                       help="Mouse wheel forwarding, can be used to disable the device or invert some axes. Default: %s." % defaults.webcam)
+    from xpra.platform.features import INPUT_DEVICES
+    if len(INPUT_DEVICES)>1:
+        group.add_option("--input-devices", action="store", metavar="APINAME",
+                          dest="input_devices", default=defaults.input_devices,
+                          help="Which API to use for input devices. Default: %s." % defaults.input_devices)
+    else:
+        ignore({"input-devices" : INPUT_DEVICES[0]})
     legacy_bool_parse("global-menus")
     group.add_option("--global-menus", action="store",
                       dest="global_menus", default=defaults.global_menus, metavar="yes|no",

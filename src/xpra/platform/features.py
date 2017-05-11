@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,8 @@ CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
 SYSTEM_TRAY_SUPPORTED = False
 REINIT_WINDOWS = False
+
+INPUT_DEVICES = ["auto"]
 
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
@@ -62,6 +64,7 @@ _features_list_ = [
                    "CLIPBOARD_NATIVE_CLASS",
                    "UI_THREAD_POLLING",
                    "CLIENT_MODULES",
+                   "INPUT_DEVICES",
                    ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,

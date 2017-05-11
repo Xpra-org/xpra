@@ -147,6 +147,7 @@ proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
+xinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
@@ -218,7 +219,8 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "csc_libyuv",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
-            "server", "client", "dbus", "x11", "gtk_x11", "service",
+            "server", "client", "dbus", "x11", "xinput",
+            "gtk_x11", "service",
             "gtk2", "gtk3",
             "html5", "minify", "html5_gzip", "html5_brotli",
             "pam",
@@ -916,6 +918,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/core_bindings.c",
                    "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/ximage.c",
+                   "xpra/x11/bindings/xi2_bindings.c",
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/platform/darwin/gdk_bindings.c",
                    "xpra/net/bencode/cython_bencode.c",
@@ -1739,6 +1742,11 @@ if x11_ENABLED:
     cython_add(Extension("xpra.x11.bindings.ximage",
                 ["xpra/x11/bindings/ximage.pyx"],
                 **pkgconfig("x11", "xcomposite", "xdamage", "xext")
+                ))
+if xinput_ENABLED:
+    cython_add(Extension("xpra.x11.bindings.xi2_bindings",
+                ["xpra/x11/bindings/xi2_bindings.pyx"],
+                **pkgconfig("x11", "xi")
                 ))
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")

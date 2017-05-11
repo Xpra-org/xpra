@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -352,7 +352,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             self._damage(window, 0, 0, w, h)
 
 
-    def _move_pointer(self, wid, pos):
+    def _move_pointer(self, wid, pos, *args):
         if wid>=0:
             window = self._id_to_window.get(wid)
             if not window:
@@ -360,7 +360,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             else:
                 #TODO: just like shadow server, adjust for window position
                 pass
-        X11ServerBase._move_pointer(self, wid, pos)
+        X11ServerBase._move_pointer(self, wid, pos, *args)
 
 
     def _process_close_window(self, proto, packet):

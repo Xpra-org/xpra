@@ -139,7 +139,7 @@ class ShadowServer(GTKShadowServerBase):
         GTKShadowServerBase.stop_refresh(self)
 
 
-    def do_process_mouse_common(self, proto, wid, pointer):
+    def do_process_mouse_common(self, proto, wid, pointer, *args):
         CG.CGWarpMouseCursorPosition(pointer)
 
     def fake_key(self, keycode, press):

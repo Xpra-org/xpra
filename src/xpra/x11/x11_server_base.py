@@ -43,6 +43,7 @@ mouselog = Logger("x11", "server", "mouse")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
+xinputlog = Logger("xinput")
 gllog = Logger("screen", "opengl")
 
 from xpra.util import iround, envbool, envint
@@ -74,6 +75,23 @@ def dump_windows():
         log("found window: %s", window_info(window))
 
 
+class XTestPointerDevice(object):
+
+    def __repr__(self):
+        return "XTestPointerDevice"
+
+    def move_pointer(self, screen_no, x, y, *args):
+        mouselog("xtest_fake_motion(%i, %s, %s)", screen_no, x, y)
+        X11Keyboard.xtest_fake_motion(screen_no, x, y)
+
+    def click(self, button, pressed, *args):
+        mouselog("xtest_fake_button(%i, %s)", button, pressed)
+        X11Keyboard.xtest_fake_button(button, pressed)
+
+    def close(self):
+        pass
+
+
 class X11ServerBase(GTKServerBase):
     """
         Base class for X11 servers,
@@ -93,6 +111,7 @@ class X11ServerBase(GTKServerBase):
         self.current_xinerama_config = None
         self.x11_init()
         GTKServerBase.init(self, opts)
+        self.pointer_device = XTestPointerDevice()
 
     def x11_init(self):
         if self.fake_xinerama:
@@ -618,6 +637,7 @@ class X11ServerBase(GTKServerBase):
     def do_cleanup(self, *args):
         GTKServerBase.do_cleanup(self)
         cleanup_fakeXinerama()
+        self.cleanup_input_devices()
 
 
     def _process_server_settings(self, proto, packet):
@@ -710,23 +730,42 @@ class X11ServerBase(GTKServerBase):
         #-1 uses the current screen
         return -1
 
-    def _move_pointer(self, wid, pos):
+
+    def cleanup_input_devices(self):
+        pass
+
+
+    def setup_input_devices(self):
+        xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
+
+    def _move_pointer(self, wid, pos, deviceid, *args):
+        #args = 
         #(this is called within an xswallow context)
         screen_no = self.get_screen_number(wid)
-        mouselog("move_pointer(%s, %s) screen_no=%i", wid, pos, screen_no)
+        device = self.pointer_device
+        mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s", wid, pos, deviceid, screen_no, device)
         x, y = pos
-        X11Keyboard.xtest_fake_motion(screen_no, x, y)
+        try:
+            device.move_pointer(screen_no, x, y, *args)
+        except Exception as e:
+            mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
+            mouselog.error(" %s", e)
 
-    def do_process_mouse_common(self, proto, wid, pointer):
+    def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
+        log("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
         if self.readonly:
             return
+        if self.input_devices_data:
+            device_data = self.input_devices_data.get(deviceid)
+            if device_data:
+                mouselog("process_mouse_common from device=%s", device_data.get("name"))
         pos = self.root_window.get_pointer()[:2]
-        if pos!=pointer:
+        if pos!=pointer or self.input_devices=="xi":
             ss = self._server_sources.get(proto)
             assert ss, "source not found for %s" % proto
             self.last_mouse_user = ss.uuid
             with xswallow:
-                self._move_pointer(wid, pointer)
+                self._move_pointer(wid, pointer, deviceid, *args)
 
     def _update_modifiers(self, proto, wid, modifiers):
         if self.readonly:
@@ -739,13 +778,15 @@ class X11ServerBase(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, buttons=[], deviceid=-1, *args):
         self._update_modifiers(proto, wid, modifiers)
-        self._process_mouse_common(proto, wid, pointer)
-        mouselog("xtest_fake_button(%s, %s) at %s", button, pressed, pointer)
+        #TODO: pass extra args
+        self._process_mouse_common(proto, wid, pointer, deviceid)
+        device = self.pointer_device
+        assert device, "pointer device %s not found" % deviceid
         try:
             with xsync:
-                X11Keyboard.xtest_fake_button(button, pressed)
+                device.click(button, pressed, *args)
         except XError:
             err = "Failed to pass on (un)press of mouse button %s" % button
             if button>=4:

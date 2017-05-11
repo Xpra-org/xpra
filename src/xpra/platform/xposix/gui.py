@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,10 +16,19 @@ screenlog = Logger("posix", "screen")
 dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "menu")
 menulog = Logger("posix", "menu")
+mouselog = Logger("posix", "mouse")
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import iround, envbool
+from xpra.util import iround, envbool, csv
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
+
+try:
+    from xpra.x11.bindings.window_bindings import X11WindowBindings
+    from xpra.x11.bindings.xi2_bindings import X11XI2Bindings   #@UnresolvedImport
+except Exception as e:
+    log.error("no X11 bindings", exc_info=True)
+    X11WindowBindings = None
+    X11XI2Bindings = None
 
 device_bell = None
 GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
@@ -93,11 +102,11 @@ def get_session_type():
 def _get_X11_window_property(xid, name, req_type):
     try:
         from xpra.gtk_common.error import xsync
-        from xpra.x11.bindings.window_bindings import X11WindowBindings, PropertyError #@UnresolvedImport
-        window_bindings = X11WindowBindings()
+        from xpra.x11.bindings.window_bindings import PropertyError #@UnresolvedImport
         try:
+            X11Window = X11WindowBindings()
             with xsync:
-                prop = window_bindings.XGetWindowProperty(xid, name, req_type)
+                prop = X11Window.XGetWindowProperty(xid, name, req_type)
             log("_get_X11_window_property(%#x, %s, %s)=%s, len=%s", xid, name, req_type, type(prop), len(prop or []))
             return prop
         except PropertyError as e:
@@ -108,9 +117,8 @@ def _get_X11_window_property(xid, name, req_type):
     return None
 def _get_X11_root_property(name, req_type):
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-        window_bindings = X11WindowBindings()
-        root_xid = window_bindings.getDefaultRootWindow()
+        X11Window = X11WindowBindings()
+        root_xid = X11Window.getDefaultRootWindow()
         return _get_X11_window_property(root_xid, name, req_type)
     except Exception as e:
         log.warn("Warning: failed to get X11 root property '%s'", name)
@@ -170,18 +178,17 @@ def get_menu_support_function():
 
 def _get_xsettings():
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-        window_bindings = X11WindowBindings()
+        X11Window = X11WindowBindings()
         selection = "_XSETTINGS_S0"
-        owner = window_bindings.XGetSelectionOwner(selection)
+        owner = X11Window.XGetSelectionOwner(selection)
         if not owner:
             return None
         XSETTINGS = "_XSETTINGS_SETTINGS"
-        data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+        data = X11Window.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
         if not data:
             return None
         from xpra.x11.xsettings_prop import get_settings
-        return get_settings(window_bindings.get_display_name(), data)
+        return get_settings(X11Window.get_display_name(), data)
     except Exception as e:
         log("_get_xsettings error: %s", e)
     return None
@@ -461,7 +468,7 @@ def _send_client_message(window, message_type, *values):
     try:
         from xpra.x11.gtk2 import gdk_display_source
         assert gdk_display_source
-        from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
+        from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()
         if window:
@@ -499,6 +506,22 @@ def set_shaded(window, shaded):
     _toggle_wm_state(window, "_NET_WM_STATE_SHADED", shaded)
 
 
+
+WINDOW_ADD_HOOKS = []
+def add_window_hooks(window):
+    global WINDOW_ADD_HOOKS
+    for x in WINDOW_ADD_HOOKS:
+        x(window)
+    log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
+
+WINDOW_REMOVE_HOOKS = []
+def remove_window_hooks(window):
+    global WINDOW_REMOVE_HOOKS
+    for x in WINDOW_REMOVE_HOOKS:
+        x(window)
+    log("remove_window_hooks(%s) added %s", window, WINDOW_REMOVE_HOOKS)
+
+
 def get_info():
     from xpra.platform.gui import get_info_base
     i = get_info_base()
@@ -516,6 +539,105 @@ def get_info():
     return i
 
 
+class XI2_Window(object):
+    def __init__(self, window):
+        log("XI2_Window(%s)", window)
+        self.XI2 = X11XI2Bindings()
+        self.X11Window = X11WindowBindings()
+        self.window = window
+        self.xid = window.get_window().xid
+        self.windows = ()
+        window.connect("configure-event", self.configured)
+        self.configured()
+        #replace event handlers with XI2 version:
+        self.do_motion_notify_event = window.do_motion_notify_event
+        window.do_motion_notify_event = self.noop
+        window.do_button_press_event = self.noop
+        window.do_button_release_event = self.noop
+        window.do_scroll_event = self.noop
+        window.connect("destroy", self.cleanup)
+
+    def noop(self, *args):
+        pass
+
+    def cleanup(self, *args):
+        for window in self.windows:
+            self.XI2.disconnect(window)
+        self.windows = []
+        self.window = None
+
+    def configured(self, *args):
+        self.windows = self.get_parent_windows(self.xid)
+        for window in self.windows:
+            self.XI2.connect(window, "XI_Motion", self.do_xi_motion)
+            self.XI2.connect(window, "XI_ButtonPress", self.do_xi_button)
+            self.XI2.connect(window, "XI_ButtonRelease", self.do_xi_button)
+
+    def get_parent_windows(self, oxid):
+        windows = [oxid]
+        root = self.X11Window.getDefaultRootWindow()
+        xid = oxid
+        while True:
+            xid = self.X11Window.getParent(xid)
+            if xid==0 or xid==root:
+                break
+            windows.append(xid)
+        log("get_parent_windows(%#x)=%s", oxid, csv(hex(x) for x in windows))
+        return windows
+
+
+    def do_xi_button(self, event):
+        window = self.window
+        client = window._client
+        if client.readonly:
+            return
+        if client.server_input_devices=="xi":
+            #skip synthetic scroll events for two-finger scroll,
+            #as the server should synthesize them from the motion events 
+            #those have the same serial:
+            matching_motion = self.XI2.find_event("XI_Motion", event.serial)
+            #maybe we need more to distinguish?
+            if matching_motion:
+                return
+        button = event.detail
+        depressed = (event.name == "XI_ButtonPress")
+        args = self.get_pointer_extra_args(event)
+        window._button_action(button, event, depressed, *args)
+
+    def do_xi_motion(self, event):
+        window = self.window
+        if window.moveresize_event:
+            window.motion_moveresize(event)
+            self.do_motion_notify_event(event)
+            return
+        if window._client.readonly:
+            return
+        #find the motion events in the xi2 event list:
+        pointer, modifiers, buttons = window._pointer_modifiers(event)
+        wid = self.window.get_mouse_event_wid(*pointer)
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, wid, window._client._focused, self.window._id, event.device, pointer, modifiers, buttons)
+        packet = ["pointer-position", wid, pointer, modifiers, buttons] + self.get_pointer_extra_args(event)
+        window._client.send_mouse_position(packet)
+
+    def get_pointer_extra_args(self, event):
+        def intscaled(f):
+            return int(f*1000000), 1000000
+        def dictscaled(v):
+            return dict((k,intscaled(v)) for k,v in v.items())
+        raw_valuators = {}
+        raw_event_name = event.name.replace("XI_", "XI_Raw")    #ie: XI_Motion -> XI_RawMotion
+        raw = self.XI2.find_event(raw_event_name, event.serial)
+        #mouselog("raw(%s)=%s", raw_event_name, raw)
+        if raw:
+            raw_valuators = raw.raw_valuators
+        args = [event.device]
+        for x in ("x", "y", "x_root", "y_root"):
+            args.append(intscaled(getattr(event, x)))
+        for v in [event.valuators, raw_valuators]:
+            args.append(dictscaled(v))
+        return args
+
+
 class ClientExtras(object):
     def __init__(self, client, opts):
         self.client = client
@@ -528,6 +650,10 @@ class ClientExtras(object):
         self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
+        if client.input_devices=="xi":
+            #this would trigger warnings with our temporary opengl windows:
+            #only enable it after we have connected:
+            self.client.after_handshake(self.setup_xi)
         self.setup_dbus_signals()
 
     def ready(self):
@@ -565,6 +691,8 @@ class ClientExtras(object):
                 bus._clean_up_signal_match(self.upower_sleeping_match)
             if self.login1_match:
                 bus._clean_up_signal_match(self.login1_match)
+        global WINDOW_METHOD_OVERRIDES
+        WINDOW_METHOD_OVERRIDES = {}
 
     def resuming_callback(self, *args):
         eventlog("resuming_callback%s", args)
@@ -646,6 +774,44 @@ class ClientExtras(object):
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
         except ImportError as e:
             log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
+
+
+    def do_xi_devices_changed(self, event):
+        log("do_xi_devices_changed(%s)", event)
+        XI2 = X11XI2Bindings()
+        devices = XI2.get_devices()
+        if devices:
+            self.client.send_input_devices("xi", devices)
+
+    def setup_xi(self):
+        if self.client.server_input_devices!="xi":
+            log.info("server does not support xi input devices")
+        try:
+            from xpra.gtk_common.error import xsync
+            with xsync:
+                assert X11WindowBindings, "no X11 window bindings"
+                assert X11XI2Bindings, "no XI2 window bindings"
+                X11XI2Bindings().gdk_inject()
+                self.init_x11_filter()
+                XI2 = X11XI2Bindings()
+                XI2.select_xi2_events()
+                if self.client.server_input_devices:
+                    XI2.connect(0, "XI_HierarchyChanged", self.do_xi_devices_changed)
+                    devices = XI2.get_devices()
+                    if devices:
+                        self.client.send_input_devices("xi", devices)
+        except Exception as e:
+            log("enable_xi2()", exc_info=True)
+            log.error("Error: cannot enable XI2 events")
+            log.error(" %s", e)
+        else:
+            #register our enhanced event handlers:
+            self.add_xi2_method_overrides()
+
+    def add_xi2_method_overrides(self):
+        global WINDOW_ADD_HOOKS
+        WINDOW_ADD_HOOKS = [XI2_Window]
+
 
     def _get_xsettings(self):
         try:

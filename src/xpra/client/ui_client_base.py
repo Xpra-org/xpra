@@ -266,6 +266,7 @@ class UIXpraClient(XpraClientBase):
         self.server_is_desktop = False
         self.server_supports_sharing = False
         self.server_supports_window_filters = False
+        self.server_input_devices = None
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -424,6 +425,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_sharing = opts.sharing
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
+        self.input_devices = opts.input_devices
         #mouse wheel:
         mw = (opts.mousewheel or "").lower().replace("-", "")
         if mw not in FALSE_OPTIONS:
@@ -1201,17 +1203,17 @@ class UIXpraClient(XpraClientBase):
     def scale_pointer(self, pointer):
         return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
 
-    def send_button(self, wid, button, pressed, pointer, modifiers, buttons):
-        def send_button(state):
-            self.send_positional(["button-action", wid,
-                                              button, state,
-                                              pointer, modifiers, buttons])
+    def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
         if PYTHON3 and WIN32 and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
             return
         self._button_state[button] = pressed
-        send_button(pressed)
+        packet =  ["button-action", wid,
+                   button, pressed,
+                   pointer, modifiers, buttons] + list(args)
+        mouselog("button packet: %s", packet)
+        self.send_positional(packet)
 
 
     def window_keyboard_layout_changed(self, window):
@@ -1941,6 +1943,9 @@ class UIXpraClient(XpraClientBase):
             if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
                 self.start_sending_webcam()
 
+        #input devices:
+        self.server_input_devices = c.strget("input-devices")
+
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
@@ -2142,6 +2147,11 @@ class UIXpraClient(XpraClientBase):
             return
         else:
             log.warn("received invalid control command from server: %s", command)
+
+
+    def send_input_devices(self, fmt, input_devices):
+        assert self.server_input_devices
+        self.send("input-devices", fmt, input_devices)
 
 
     def start_sending_webcam(self):

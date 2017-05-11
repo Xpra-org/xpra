@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -234,6 +234,7 @@ class XpraClientBase(FileTransferHandler):
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.large_packets.append("logging")
+        self._protocol.large_packets.append("input-devices")
         self._protocol.set_compression_level(self.compression_level)
         self._protocol.receive_aliases.update(self._aliases)
         self._protocol.enable_default_encoder()
