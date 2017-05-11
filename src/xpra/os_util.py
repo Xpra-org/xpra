@@ -316,6 +316,35 @@ def livefds():
             continue
     return live
 
+def close_fds(excluding=[0, 1, 2]):
+    try:
+        MAXFD = os.sysconf("SC_OPEN_MAX")
+    except:
+        MAXFD = 256
+    for i in range(0, MAXFD):
+        if i not in excluding:
+            try:
+                os.close(i)
+            except:
+                pass
+
+def close_all_fds(exceptions=[]):
+    fd_dirs = ["/dev/fd", "/proc/self/fd"]
+    for fd_dir in fd_dirs:
+        if os.path.exists(fd_dir):
+            for fd_str in os.listdir(fd_dir):
+                try:
+                    fd = int(fd_str)
+                    if fd not in exceptions:
+                        os.close(fd)
+                except OSError:
+                    # This exception happens inevitably, because the fd used
+                    # by listdir() is already closed.
+                    pass
+            return
+    print("Uh-oh, can't close fds, please port me to your system...")
+
+
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
 #http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
 #used by the sound code to get rid of the stupid gst warning below:

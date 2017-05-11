@@ -19,7 +19,7 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, setsid, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
+from xpra.os_util import SIGNAMES, setsid, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, close_all_fds, close_fds, WIN32, OSX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
 
@@ -710,22 +710,6 @@ def handle_socket_error(sockpath, e):
         raise InitException("failed to create socket %s" % sockpath)
 
 
-def close_all_fds(exceptions=[]):
-    fd_dirs = ["/dev/fd", "/proc/self/fd"]
-    for fd_dir in fd_dirs:
-        if os.path.exists(fd_dir):
-            for fd_str in os.listdir(fd_dir):
-                try:
-                    fd = int(fd_str)
-                    if fd not in exceptions:
-                        os.close(fd)
-                except OSError:
-                    # This exception happens inevitably, because the fd used
-                    # by listdir() is already closed.
-                    pass
-            return
-    print("Uh-oh, can't close fds, please port me to your system...")
-
 def shellsub(s, subs={}):
     """ shell style string substitution using the dictionary given """
     for var,value in subs.items():
@@ -859,18 +843,6 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
         }
     os.environ.update(v)
     return v
-
-def close_fds(excluding=[0, 1, 2]):
-    try:
-        MAXFD = os.sysconf("SC_OPEN_MAX")
-    except:
-        MAXFD = 256
-    for i in range(0, MAXFD):
-        if i not in excluding:
-            try:
-                os.close(i)
-            except:
-                pass
 
 def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
     if os.name!="posix":
