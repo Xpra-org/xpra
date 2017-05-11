@@ -96,7 +96,7 @@ var Utilities = {
 			return 'darwin';
 		}
 		if (navigator.appVersion.indexOf('Linux') !== -1){
-			return 'linux2';
+			return 'linux';
 		}
 		if (navigator.appVersion.indexOf('X11') !== -1){
 			return 'posix';
