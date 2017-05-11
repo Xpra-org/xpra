@@ -18,15 +18,13 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, close_fds, WIN32, OSX
+from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, WIN32, OSX
 from xpra.util import envint, envbool
-from xpra.platform.dotxpra import DotXpra, osexpand
+from xpra.platform.dotxpra import DotXpra
 
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
-
-DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
 
 _cleanups = []
@@ -162,12 +160,6 @@ def display_name_check(display_name):
     except:
         pass
 
-
-def get_ssh_port():
-    #FIXME: how do we find out which port ssh is on?
-    if WIN32:
-        return 0
-    return 22
 
 #warn just once:
 MDNS_WARNING = False
@@ -314,6 +306,7 @@ def start_dbus(dbus_launch):
         sys.stderr.write(" %s\n" % e)
         return 0, {}
 
+
 def show_encoding_help(opts):
     #avoid errors and warnings:
     opts.encoding = ""
@@ -341,23 +334,6 @@ def show_encoding_help(opts):
     for e in (x for x in HELP_ORDER if x in sb.encodings):
         print(" * %s" % encoding_help(e))
     return 0
-
-def find_log_dir():
-    from xpra.platform.paths import get_default_log_dirs
-    errs  = []
-    for x in get_default_log_dirs():
-        v = osexpand(x)
-        if not os.path.exists(v):
-            try:
-                os.mkdir(v, 0o700)
-            except Exception as e:
-                errs.append((v, e))
-                continue
-        return v
-    for d, e in errs:
-        sys.stderr.write("Error: cannot create log directory '%s':" % d)
-        sys.stderr.write(" %s\n" % e)
-    return None
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
@@ -436,7 +412,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, pam_open, write_pidfile 
+    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, pam_open, write_pidfile, find_log_dir 
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     if start_vfb or opts.daemon:

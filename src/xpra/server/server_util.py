@@ -133,6 +133,24 @@ def write_runner_shell_scripts(contents, overwrite=True):
             log.error(" %s\n", e)
 
 
+def find_log_dir():
+    from xpra.platform.paths import get_default_log_dirs
+    errs  = []
+    for x in get_default_log_dirs():
+        v = osexpand(x)
+        if not os.path.exists(v):
+            try:
+                os.mkdir(v, 0o700)
+            except Exception as e:
+                errs.append((v, e))
+                continue
+        return v
+    for d, e in errs:
+        sys.stderr.write("Error: cannot create log directory '%s':" % d)
+        sys.stderr.write(" %s\n" % e)
+    return None
+
+
 def open_log_file(logpath):
     """ renames the existing log file if it exists,
         then opens it for writing.

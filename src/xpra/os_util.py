@@ -498,6 +498,14 @@ def is_systemd_pid1():
     d = load_binary_file("/proc/1/cmdline")
     return d and d.find(b"/systemd")>=0
 
+
+def get_ssh_port():
+    #FIXME: how do we find out which port ssh is on?
+    if WIN32:
+        return 0
+    return 22
+
+
 def main():
     from xpra.log import Logger
     log = Logger("util")
