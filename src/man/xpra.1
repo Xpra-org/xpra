@@ -163,6 +163,8 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
+[\fB\-\-uid\fP=\fIUID\fP]
+[\fB\-\-gid\fP=\fIGID\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
@@ -670,6 +672,11 @@ what the clients can execute on the server.
 By default, the xpra server puts itself into the background,
 i.e. 'daemonizes', and redirects its output to a log file.  This
 prevents that behavior (useful mostly for debugging).
+.TP
+
+\fB\-\-uid\fP=\fIUID\fP and \fB\-\-gid\fP=\fIGID\fP
+When launching the server as root, these options can be used
+to drop privileges to the given UID / GID.
 .TP
 
 \fB\-\-pidfile\fP=\fIFILENAME\fP

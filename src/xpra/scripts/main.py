@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE
-from xpra.os_util import getuid, getgid, monotonic_time, setsid, WIN32, OSX
+from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -358,6 +358,18 @@ def do_parse_cmdline(cmdline, defaults):
                 "html"      : ""})
     legacy_bool_parse("daemon")
     legacy_bool_parse("attach")
+    if os.name=="posix" and os.getuid()==0:
+        group.add_option("--uid", action="store",
+                          dest="uid", default=defaults.uid,
+                          help="The user id to change to when the server is started by root. Default: %s." % defaults.uid)
+        group.add_option("--gid", action="store",
+                          dest="gid", default=defaults.gid,
+                          help="The group id to change to when the server is started by root. Default: %s." % defaults.gid)
+    else:
+        ignore({
+                "uid"   : defaults.uid,
+                "gid"   : defaults.gid,
+                })
     if (supports_server or supports_shadow) and CAN_DAEMONIZE:
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
@@ -2348,57 +2360,8 @@ def run_glcheck(opts):
     return 0
 
 
-def setuidgid(uid, gid):
-    if os.name!="posix":
-        return
-    from xpra.log import Logger
-    log = Logger("server")
-    if os.getuid()!=uid or os.getgid()!=gid:
-        #find the username for the given uid:
-        from pwd import getpwuid
-        try:
-            username = getpwuid(uid).pw_name
-        except KeyError:
-            raise Exception("uid %i not found" % uid)
-        #set the groups:
-        if hasattr(os, "initgroups"):   # python >= 2.7
-            os.initgroups(username, gid)
-        else:
-            import grp      #@UnresolvedImport
-            groups = [gr.gr_gid for gr in grp.getgrall() if (username in gr.gr_mem)]
-            os.setgroups(groups)
-    #change uid and gid:
-    try:
-        if os.getgid()!=gid:
-            os.setgid(gid)
-    except OSError as e:
-        log.error("Error: cannot change gid to %i:", gid)
-        if os.getgid()==0:
-            #don't run as root!
-            raise
-        log.error(" %s", e)
-        log.error(" continuing with gid=%i", os.getgid())
-    try:
-        if os.getuid()!=uid:
-            os.setuid(uid)
-    except OSError as e:
-        log.error("Error: cannot change uid to %i:", uid)
-        if os.getuid()==0:
-            #don't run as root!
-            raise
-        log.error(" %s", e)
-        log.error(" continuing with gid=%i", os.getuid())
-    log("new uid=%s, gid=%s", os.getuid(), os.getgid())
-
-
 def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid()):
-    username = ""
-    home = ""
-    if os.name=="posix":
-        import pwd
-        e = pwd.getpwuid(uid)
-        username = e.pw_name
-        home = e.pw_dir
+    username = get_username_for_uid(uid)
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
@@ -2469,17 +2432,11 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     else:
         def preexec():
             setsid()
-            if uid!=0 or gid!=0:
-                setuidgid(uid, gid)
         cmd.append("--systemd-run=no")
-        server_env = os.environ.copy()
-        if username:
-            server_env.update({
-                               "USER"       : username,
-                               "USERNAME"   : username,
-                               "HOME"       : home or os.path.join("/home", username),
-                               })
-        proc = Popen(cmd, shell=False, close_fds=True, env=server_env, preexec_fn=preexec)
+        if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
+            cmd.append("--uid=%i" % uid)
+            cmd.append("--gid=%i" % gid)
+        proc = Popen(cmd, shell=False, close_fds=True, preexec_fn=setsid)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
 

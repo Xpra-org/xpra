@@ -93,7 +93,7 @@ fi
 """)
     return "".join(script)
 
-def write_runner_shell_scripts(contents, overwrite=True):
+def write_runner_shell_scripts(contents, overwrite=True, withfd=None):
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
@@ -128,16 +128,18 @@ def write_runner_shell_scripts(contents, overwrite=True):
                 os.umask(umask)
                 os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
                 scriptfile.write(contents)
+                if withfd:
+                    withfd(scriptfile.fileno())
         except Exception as e:
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
 
 
-def find_log_dir():
+def find_log_dir(username="", uid=0, gid=0):
     from xpra.platform.paths import get_default_log_dirs
     errs  = []
     for x in get_default_log_dirs():
-        v = osexpand(x)
+        v = osexpand(x, username, uid, gid)
         if not os.path.exists(v):
             try:
                 os.mkdir(v, 0o700)
@@ -215,7 +217,7 @@ def daemonize(logfd):
     return (old_stdout, old_stderr)
 
 
-def write_pidfile(pidfile):
+def write_pidfile(pidfile, withfd=None):
     from xpra.log import Logger
     log = Logger("server")
     pidstr = str(os.getpid())
@@ -227,6 +229,8 @@ def write_pidfile(pidfile):
                 inode = os.fstat(f.fileno()).st_ino
             except:
                 inode = -1
+            if withfd:
+                withfd(f.fileno())
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
         def cleanuppidfile():
             #verify this is the right file!

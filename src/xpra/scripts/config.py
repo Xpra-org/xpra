@@ -518,6 +518,8 @@ OPTION_TYPES = {
                     "server-idle-timeout" : int,
                     "sync-xvfb"         : int,
                     "pixel-depth"       : int,
+                    "uid"               : int,
+                    "gid"               : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -599,7 +601,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-ssl", "bind-vsock"]
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", ""]
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid"]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
@@ -750,6 +752,8 @@ def get_defaults():
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
+    from xpra.os_util import getuid, getgid
+
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
@@ -839,6 +843,8 @@ def get_defaults():
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : 0,
                     "pixel-depth"       : 24,
+                    "uid"               : getuid(),
+                    "gid"               : getgid(),
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "attach"            : None,

@@ -17,20 +17,19 @@ enclog = Logger("encoding")
 
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.main import setuidgid
 from xpra.net import compression
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol, get_network_caps
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid
+from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
-from xpra.scripts.server import create_unix_domain_socket
+from xpra.server.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from multiprocessing import Process
@@ -365,12 +364,13 @@ class ProxyInstanceProcess(Process):
         sinfo = {}
         sinfo.update(get_server_info())
         sinfo.update(get_thread_info(proto))
-        return {"proxy" : {
-                           "version"    : local_version,
-                           ""           : sinfo,
-                           },
-                "window" : self.get_window_info(),
-                }
+        return {
+            "proxy" : {
+                "version"    : XPRA_VERSION,
+                ""           : sinfo,
+                },
+            "window" : self.get_window_info(),
+            }
 
     def send_hello(self, challenge_response=None, client_salt=None):
         hello = self.filter_client_caps(self.caps)

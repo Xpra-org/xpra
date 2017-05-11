@@ -110,6 +110,15 @@ def get_username_for_uid(uid):
             pass
     return ""
 
+def get_home_for_uid(uid):
+    if os.name=="posix":
+        from pwd import getpwuid
+        try:
+            return getpwuid(uid).pw_dir
+        except KeyError:
+            pass
+    return ""
+
 def get_groups(username):
     if os.name=="posix":
         import grp      #@UnresolvedImport
@@ -504,6 +513,49 @@ def get_ssh_port():
     if WIN32:
         return 0
     return 22
+
+
+def setuidgid(uid, gid):
+    if os.name!="posix":
+        return
+    from xpra.log import Logger
+    log = Logger("server")
+    if os.getuid()!=uid or os.getgid()!=gid:
+        #find the username for the given uid:
+        from pwd import getpwuid
+        try:
+            username = getpwuid(uid).pw_name
+        except KeyError:
+            raise Exception("uid %i not found" % uid)
+        #set the groups:
+        if hasattr(os, "initgroups"):   # python >= 2.7
+            os.initgroups(username, gid)
+        else:
+            import grp      #@UnresolvedImport
+            groups = [gr.gr_gid for gr in grp.getgrall() if (username in gr.gr_mem)]
+            os.setgroups(groups)
+    #change uid and gid:
+    try:
+        if os.getgid()!=gid:
+            os.setgid(gid)
+    except OSError as e:
+        log.error("Error: cannot change gid to %i:", gid)
+        if os.getgid()==0:
+            #don't run as root!
+            raise
+        log.error(" %s", e)
+        log.error(" continuing with gid=%i", os.getgid())
+    try:
+        if os.getuid()!=uid:
+            os.setuid(uid)
+    except OSError as e:
+        log.error("Error: cannot change uid to %i:", uid)
+        if os.getuid()==0:
+            #don't run as root!
+            raise
+        log.error(" %s", e)
+        log.error(" continuing with gid=%i", os.getuid())
+    log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
 
 def main():

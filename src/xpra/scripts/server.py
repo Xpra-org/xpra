@@ -18,13 +18,9 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, WIN32, OSX
-from xpra.util import envint, envbool
+from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, WIN32, OSX
+from xpra.util import envbool
 from xpra.platform.dotxpra import DotXpra
-
-
-#what timeout value to use on the socket probe attempt:
-WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 
 
 _cleanups = []
@@ -159,48 +155,6 @@ def display_name_check(display_name):
             sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
     except:
         pass
-
-
-#warn just once:
-MDNS_WARNING = False
-def mdns_publish(display_name, mode, listen_on, text_dict={}):
-    global MDNS_WARNING
-    if MDNS_WARNING is True:
-        return
-    PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
-    try:
-        from xpra.net import mdns
-        assert mdns
-        if PREFER_PYBONJOUR:
-            from xpra.net.mdns.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
-        else:
-            from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
-    except ImportError as e:
-        MDNS_WARNING = True
-        from xpra.log import Logger
-        log = Logger("mdns")
-        log("mdns import failure", exc_info=True)
-        log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
-        log.warn(" %s", e)
-        log.warn(" either fix your installation or use the 'mdns=no' option")
-        return
-    d = text_dict.copy()
-    d["mode"] = mode
-    #ensure we don't have duplicate interfaces:
-    f_listen_on = {}
-    for host, port in listen_on:
-        f_listen_on[get_interface_index(host)] = (host, port)
-    try:
-        name = socket.gethostname()
-    except:
-        name = "Xpra"
-    if display_name and not (OSX or WIN32):
-        name += " %s" % display_name
-    if mode!="tcp":
-        name += " (%s)" % mode
-    ap = MDNSPublishers(f_listen_on.values(), name, text_dict=d)
-    _when_ready.append(ap.start)
-    _cleanups.append(ap.stop)
 
 
 def sanitize_env():
@@ -415,12 +369,23 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, pam_open, write_pidfile, find_log_dir 
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
+    uid = int(opts.uid)
+    gid = int(opts.gid)
+    username = get_username_for_uid(uid)
+    home = get_home_for_uid(uid)
+    def fchown(fd):
+        if os.name=="posix" and uid!=getuid() or gid!=getgid():
+            try:
+                os.fchown(fd, uid, gid)
+            except:
+                pass
+
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
         log_dir = opts.log_dir or ""
         if not log_dir or log_dir.lower()=="auto":
-            log_dir = find_log_dir()
+            log_dir = find_log_dir(username, uid=uid, gid=gid)
             if not log_dir:
                 raise InitException("cannot find or create a logging directory")
         #expose the log-dir as "XPRA_LOG_DIR",
@@ -439,6 +404,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         # so log_filename0 may point to a temporary file which we will rename later
         log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
         logfd = open_log_file(log_filename0)
+        fchown(logfd)
         assert logfd > 2
         stdout, stderr = daemonize(logfd)
         try:
@@ -450,12 +416,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             pass
 
     if opts.pidfile:
-        write_pidfile(opts.pidfile)
+        write_pidfile(opts.pidfile, withfd=fchown)
 
     if os.name=="posix":
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
-        write_runner_shell_scripts(script)
+        write_runner_shell_scripts(script, withfd=fchown)
 
     from xpra.log import Logger
     log = Logger("server")
@@ -559,7 +525,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         assert not proxying
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
         try:
-            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd)
+            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid)
         except OSError as e:
             log.error("Error starting Xvfb:")
             log.error(" %s", e)
@@ -614,6 +580,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #xvfb problem: exit now
         return  1
 
+    if os.name=="posix" and getuid()==0 and uid!=0:
+        setuidgid(uid, gid)
+        os.environ.update({
+            "HOME"      : home,
+            "USER"      : username,
+            "LOGNAME"   : username,
+            })
+
     display = None
     if not proxying:
         no_gtk()
@@ -635,7 +609,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #we always need at least one valid socket dir
         from xpra.platform.paths import get_socket_dirs
         opts.socket_dirs = get_socket_dirs()
-    local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions)
+    local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions, username, uid, gid)
     for socket, cleanup_socket in local_sockets:
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
         sockets.append(socket)
@@ -727,6 +701,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.mdns:
         from xpra.os_util import strtobytes
         from xpra.platform.info import get_username
+        from xpra.server.socket_util import mdns_publish
         mdns_info = {
                      "display"  : display_name,
                      "username" : get_username(),
@@ -736,7 +711,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      }
         if opts.session_name:
             mdns_info["session"] = opts.session_name
-        #reduce
         for mode, listen_on in mdns_recs:
             mdns_publish(display_name, mode, listen_on, mdns_info)
 

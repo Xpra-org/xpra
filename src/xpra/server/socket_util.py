@@ -7,9 +7,13 @@ import os.path
 import socket
 
 from xpra.scripts.config import InitException
-from xpra.os_util import getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32
-from xpra.util import csv, DEFAULT_PORT
+from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
+from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
+
+
+#what timeout value to use on the socket probe attempt:
+WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
 
 
 def add_cleanup(f):
@@ -173,12 +177,12 @@ def normalize_local_display_name(local_display_name):
     return local_display_name
 
 
-def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group=False, socket_permissions="600"):
+def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mmap_group=False, socket_permissions="600", username="", uid=0, gid=0):
     if not bind:
         return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         raise InitException("at least one socket directory must be set to use unix domain sockets")
-    dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs)
+    dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     display_name = normalize_local_display_name(display_name)
     from xpra.log import Logger
     defs = []
@@ -192,7 +196,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 continue
             elif b=="auto":
                 sockpaths += dotxpra.norm_socket_paths(display_name)
-                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, getuid(), getgid())
+                log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(b)
                 if b.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
@@ -341,3 +345,46 @@ def handle_socket_error(sockpath, e):
         log.error("Error: failed to create socket '%s':", sockpath)
         log.error(" %s", e)
         raise InitException("failed to create socket %s" % sockpath)
+
+
+#warn just once:
+MDNS_WARNING = False
+def mdns_publish(display_name, mode, listen_on, text_dict={}):
+    global MDNS_WARNING
+    if MDNS_WARNING is True:
+        return
+    PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
+    try:
+        from xpra.net import mdns
+        assert mdns
+        if PREFER_PYBONJOUR:
+            from xpra.net.mdns.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
+        else:
+            from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
+    except ImportError as e:
+        MDNS_WARNING = True
+        from xpra.log import Logger
+        log = Logger("mdns")
+        log("mdns import failure", exc_info=True)
+        log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
+        log.warn(" %s", e)
+        log.warn(" either fix your installation or use the 'mdns=no' option")
+        return
+    d = text_dict.copy()
+    d["mode"] = mode
+    #ensure we don't have duplicate interfaces:
+    f_listen_on = {}
+    for host, port in listen_on:
+        f_listen_on[get_interface_index(host)] = (host, port)
+    try:
+        name = socket.gethostname()
+    except:
+        name = "Xpra"
+    if display_name and not (OSX or WIN32):
+        name += " %s" % display_name
+    if mode!="tcp":
+        name += " (%s)" % mode
+    ap = MDNSPublishers(f_listen_on.values(), name, text_dict=d)
+    from xpra.scripts.server import add_when_ready, add_cleanup
+    add_when_ready(ap.start)
+    add_cleanup(ap.stop)

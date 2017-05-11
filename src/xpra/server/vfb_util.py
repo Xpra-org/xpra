@@ -15,14 +15,14 @@ import select
 
 from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
-from xpra.os_util import setsid, shellsub, monotonic_time, close_fds
+from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid
 from xpra.platform.dotxpra import osexpand
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
 
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
+def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
     if os.name!="posix":
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
@@ -85,6 +85,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         def preexec():
             setsid()
+            if os.name=="posix" and getuid()==0 and uid:
+                setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
         #print("xvfb_cmd=%s" % (xvfb_cmd, ))
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
