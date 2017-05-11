@@ -157,6 +157,16 @@ def pam_open(xdisplay, xauth_data=None):
             if pam_open(env=env, items=items):
                 _cleanups.append(pam_close)
 
+def validate_pixel_depth(pixel_depth, starting_desktop=False):
+    try:
+        pixel_depth = int(pixel_depth)
+    except ValueError:
+        raise InitException("invalid value '%s' for pixel depth, must be a number" % pixel_depth)
+    if pixel_depth not in (8, 16, 24, 30):
+        raise InitException("invalid pixel depth: %s" % pixel_depth)
+    if not starting_desktop and pixel_depth==8:
+        raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
+    return pixel_depth
 
 def sh_quotemeta(s):
     return "'" + s.replace("'", "'\\''") + "'"
@@ -1340,14 +1350,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     xauth_data = None
     if start_vfb:
         assert not proxying
-        try:
-            pixel_depth = int(opts.pixel_depth)
-        except ValueError as e:
-            raise InitException("invalid value '%s' for pixel depth, must be a number" % opts.pixel_depth)
-        if pixel_depth not in (8, 16, 24, 30):
-            raise InitException("invalid pixel depth: %s" % pixel_depth)
-        if not starting_desktop and pixel_depth==8:
-            raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
+        pixel_depth = validate_pixel_depth(opts.pixel_depth)
         try:
             xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd)
         except OSError as e:
