@@ -345,6 +345,14 @@ def close_all_fds(exceptions=[]):
     print("Uh-oh, can't close fds, please port me to your system...")
 
 
+def shellsub(s, subs={}):
+    """ shell style string substitution using the dictionary given """
+    for var,value in subs.items():
+        s = s.replace("$%s" % var, str(value))
+        s = s.replace("${%s}" % var, str(value))
+    return s
+
+
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
 #http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python
 #used by the sound code to get rid of the stupid gst warning below:

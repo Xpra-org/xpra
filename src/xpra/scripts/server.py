@@ -14,14 +14,13 @@ import os.path
 import atexit
 import signal
 import socket
-import select
 import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, setsid, getuid, getgid, get_username_for_uid, get_groups, get_group_id, monotonic_time, close_all_fds, close_fds, WIN32, OSX
-from xpra.util import envint, envbool, csv, DEFAULT_PORT
-from xpra.platform.dotxpra import DotXpra, norm_makepath, osexpand
+from xpra.os_util import SIGNAMES, close_fds, WIN32, OSX
+from xpra.util import envint, envbool
+from xpra.platform.dotxpra import DotXpra, osexpand
 
 
 #what timeout value to use on the socket probe attempt:
@@ -134,28 +133,6 @@ def save_dbus_env(env):
             sys.stderr.write("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
             sys.stderr.write(" %s\n" % e)
 
-def pam_open(xdisplay, xauth_data=None):
-    PAM_OPEN = envbool("XPRA_PAM_OPEN")
-    if os.name=="posix" and PAM_OPEN:
-        try:
-            from xpra.server.pam import pam_open, pam_close
-        except ImportError as e:
-            sys.stderr.write("No pam support: %s\n" % e)
-        else:
-            items = {
-                   "XDISPLAY" : xdisplay
-                   }
-            if xauth_data:
-                items["XAUTHDATA"] = xauth_data
-            env = {
-                   #"XDG_SEAT"               : "seat1",
-                   #"XDG_VTNR"               : "0",
-                   "XDG_SESSION_TYPE"       : "x11",
-                   #"XDG_SESSION_CLASS"      : "user",
-                   "XDG_SESSION_DESKTOP"    : "xpra",
-                   }
-            if pam_open(env=env, items=items):
-                _cleanups.append(pam_close)
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):
     try:
@@ -167,156 +144,6 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False):
     if not starting_desktop and pixel_depth==8:
         raise InitException("pixel depth 8 is only supported in 'start-desktop' mode")
     return pixel_depth
-
-def sh_quotemeta(s):
-    return "'" + s.replace("'", "'\\''") + "'"
-
-def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
-    script = []
-    script.append("#!/bin/sh\n")
-    for var, value in os.environ.items():
-        # these aren't used by xpra, and some should not be exposed
-        # as they are either irrelevant or simply do not match
-        # the new environment used by xpra
-        # TODO: use a whitelist
-        if var in ["XDG_SESSION_COOKIE", "LS_COLORS", "DISPLAY"]:
-            continue
-        #XPRA_SOCKET_DIR is a special case, it is handled below
-        if var=="XPRA_SOCKET_DIR":
-            continue
-        if var.startswith("BASH_FUNC"):
-            #some versions of bash will apparently generate functions
-            #that cannot be reloaded using this script
-            continue
-        # :-separated envvars that people might change while their server is
-        # going:
-        if var in ("PATH", "LD_LIBRARY_PATH", "PYTHONPATH"):
-            #prevent those paths from accumulating the same values multiple times,
-            #only keep the first one:
-            pval = value.split(os.pathsep)      #ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
-            seen = set()
-            value = os.pathsep.join(x for x in pval if not (x in seen or seen.add(x)))
-            script.append("%s=%s:\"$%s\"; export %s\n"
-                          % (var, sh_quotemeta(value), var, var))
-        else:
-            script.append("%s=%s; export %s\n"
-                          % (var, sh_quotemeta(value), var))
-    #XPRA_SOCKET_DIR is a special case, we want to honour it
-    #when it is specified, but the client may override it:
-    if socket_dir:
-        script.append('if [ -z "${XPRA_SOCKET_DIR}" ]; then\n');
-        script.append('    XPRA_SOCKET_DIR=%s; export XPRA_SOCKET_DIR\n' % sh_quotemeta(os.path.expanduser(socket_dir)))
-        script.append('fi\n');
-    # We ignore failures in cd'ing, b/c it's entirely possible that we were
-    # started from some temporary directory and all paths are absolute.
-    script.append("cd %s\n" % sh_quotemeta(starting_dir))
-    if OSX:
-        #OSX contortions:
-        #The executable is the python interpreter,
-        #which is execed by a shell script, which we have to find..
-        sexec = sys.executable
-        bini = sexec.rfind("Resources/bin/")
-        if bini>0:
-            sexec = os.path.join(sexec[:bini], "Resources", "MacOS", "Xpra")
-        script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(sexec),))
-        script.append("""
-if which "$_XPRA_SCRIPT" > /dev/null; then
-    # Happypath:
-    exec "$_XPRA_SCRIPT" "$@"
-else
-    # Hope for the best:
-    exec Xpra "$@"
-fi
-""")
-    else:
-        script.append("_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable),))
-        script.append("_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file),))
-        script.append("""
-if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
-    # Happypath:
-    exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
-else
-    cat >&2 <<END
-    Could not find one or both of '$_XPRA_PYTHON' and '$_XPRA_SCRIPT'
-    Perhaps your environment has changed since the xpra server was started?
-    I'll just try executing 'xpra' with current PATH, and hope...
-END
-    exec xpra "$@"
-fi
-""")
-    return "".join(script)
-
-def write_runner_shell_scripts(contents, overwrite=True):
-    # This used to be given a display-specific name, but now we give it a
-    # single fixed name and if multiple servers are started then the last one
-    # will clobber the rest.  This isn't great, but the tradeoff is that it
-    # makes it possible to use bare 'ssh:hostname' display names and
-    # autodiscover the proper numeric display name when only one xpra server
-    # is running on the remote host.  Might need to revisit this later if
-    # people run into problems or autodiscovery turns out to be less useful
-    # than expected.
-    from xpra.log import Logger
-    log = Logger("server")
-    from xpra.platform.paths import get_script_bin_dirs
-    for d in get_script_bin_dirs():
-        scriptdir = osexpand(d)
-        if not os.path.exists(scriptdir):
-            try:
-                os.mkdir(scriptdir, 0o700)
-            except Exception as e:
-                log.warn("Warning: failed to write script file in '%s':", scriptdir)
-                log.warn(" %s", e)
-                if scriptdir.startswith("/var/run/user") or scriptdir.startswith("/run/user"):
-                    log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
-                continue
-        scriptpath = os.path.join(scriptdir, "run-xpra")
-        if os.path.exists(scriptpath) and not overwrite:
-            continue
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        try:
-            with open(scriptpath, "w") as scriptfile:
-                # Unix is a little silly sometimes:
-                umask = os.umask(0)
-                os.umask(umask)
-                os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
-                scriptfile.write(contents)
-        except Exception as e:
-            log.error("Error: failed to write script file '%s':", scriptpath)
-            log.error(" %s\n", e)
-
-def write_pidfile(pidfile):
-    from xpra.log import Logger
-    log = Logger("server")
-    pidstr = str(os.getpid())
-    try:
-        with open(pidfile, "w") as f:
-            os.fchmod(f.fileno(), 0o600)
-            f.write("%s\n" % pidstr)
-            try:
-                inode = os.fstat(f.fileno()).st_ino
-            except:
-                inode = -1
-        log.info("wrote pid %s to '%s'", pidstr, pidfile)
-        def cleanuppidfile():
-            #verify this is the right file!
-            log("cleanuppidfile: inode=%i", inode)
-            if inode>0:
-                try:
-                    i = os.stat(pidfile).st_ino
-                    log("cleanuppidfile: current inode=%i", i)
-                    if i!=inode:
-                        return
-                except:
-                    pass
-            try:
-                os.unlink(pidfile)
-            except:
-                pass
-        _cleanups.append(cleanuppidfile)
-    except Exception as e:
-        log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
-        log.error(" %s", e)
 
 
 def display_name_check(display_name):
@@ -384,77 +211,6 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     _cleanups.append(ap.stop)
 
 
-def shellsub(s, subs={}):
-    """ shell style string substitution using the dictionary given """
-    for var,value in subs.items():
-        s = s.replace("$%s" % var, str(value))
-        s = s.replace("${%s}" % var, str(value))
-    return s
-
-def open_log_file(logpath):
-    """ renames the existing log file if it exists,
-        then opens it for writing.
-    """
-    if os.path.exists(logpath):
-        try:
-            os.rename(logpath, logpath + ".old")
-        except:
-            pass
-    try:
-        return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
-    except OSError as e:
-        raise InitException("cannot open log file '%s': %s" % (logpath, e))
-
-def select_log_file(log_dir, log_file, display_name):
-    """ returns the log file path we should be using given the parameters,
-        this may return a temporary logpath if display_name is not available.
-    """
-    if log_file:
-        if os.path.isabs(log_file):
-            logpath = log_file
-        else:
-            logpath = os.path.join(log_dir, log_file)
-        v = shellsub(logpath, {"DISPLAY" : display_name})
-        if display_name or v==logpath:
-            #we have 'display_name', or we just don't need it:
-            return v
-    if display_name:
-        logpath = norm_makepath(log_dir, display_name) + ".log"
-    else:
-        logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
-    return logpath
-
-
-def daemonize(logfd):
-    os.chdir("/")
-    if os.fork():
-        os._exit(0)
-    os.setsid()
-    if os.fork():
-        os._exit(0)
-    # save current stdout/stderr to be able to print info
-    # before exiting the non-deamon process
-    # and closing those file descriptors definitively
-    old_fd_stdout = os.dup(1)
-    old_fd_stderr = os.dup(2)
-    close_all_fds(exceptions=[logfd,old_fd_stdout,old_fd_stderr])
-    fd0 = os.open("/dev/null", os.O_RDONLY)
-    if fd0 != 0:
-        os.dup2(fd0, 0)
-        os.close(fd0)
-    # reopen STDIO files
-    old_stdout = os.fdopen(old_fd_stdout, "w", 1)
-    old_stderr = os.fdopen(old_fd_stderr, "w", 1)
-    # replace standard stdout/stderr by the log file
-    os.dup2(logfd, 1)
-    os.dup2(logfd, 2)
-    os.close(logfd)
-    # Make these line-buffered:
-    sys.stdout = os.fdopen(1, "w", 1)
-    sys.stderr = os.fdopen(2, "w", 1)
-    return (old_stdout, old_stderr)
-
-
 def sanitize_env():
     def unsetenv(*varnames):
         for x in varnames:
@@ -518,183 +274,6 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd):
-    if os.name!="posix":
-        raise InitException("starting an Xvfb is not supported on %s" % os.name)
-    if not xvfb_str:
-        raise InitException("the 'xvfb' command is not defined")
-    # We need to set up a new server environment
-    xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
-    if not os.path.exists(xauthority):
-        try:
-            open(xauthority, 'wa').close()
-        except Exception as e:
-            #trying to continue anyway!
-            sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
-    use_display_fd = display_name[0]=='S'
-
-    #identify logfile argument if it exists,
-    #as we may have to rename it, or create the directory for it:
-    import shlex
-    xvfb_cmd = shlex.split(xvfb_str)
-    try:
-        logfile_argindex = xvfb_cmd.index('-logfile')
-    except ValueError:
-        logfile_argindex = -1
-    assert logfile_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -logfile should not be last (found at index %i)" % logfile_argindex
-    tmp_xorg_log_file = None
-    if logfile_argindex>0:
-        if use_display_fd:
-            #keep track of it so we can rename it later:
-            tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
-        #make sure the Xorg log directory exists:
-        xorg_log_dir = osexpand(os.path.dirname(xvfb_cmd[logfile_argindex+1]))
-        if not os.path.exists(xorg_log_dir):
-            try:
-                os.mkdir(xorg_log_dir, 0o700)
-            except OSError as e:
-                raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
-
-    #apply string substitutions:
-    subs = {
-            "XAUTHORITY"    : xauthority,
-            "USER"          : os.environ.get("USER", "unknown-user"),
-            "UID"           : os.getuid(),
-            "GID"           : os.getgid(),
-            "HOME"          : os.environ.get("HOME", cwd),
-            "DISPLAY"       : display_name,
-            "XPRA_LOG_DIR"  : os.environ.get("XPRA_LOG_DIR"),
-            }
-    xvfb_str = shellsub(xvfb_str, subs)
-
-    xvfb_cmd = xvfb_str.split()
-    if not xvfb_cmd:
-        raise InitException("cannot start Xvfb, the command definition is missing!")
-    xvfb_executable = xvfb_cmd[0]
-    if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
-        xvfb_cmd.append("-depth")
-        xvfb_cmd.append(str(pixel_depth))
-    if use_display_fd:
-        # 'S' means that we allocate the display automatically
-        r_pipe, w_pipe = os.pipe()
-        xvfb_cmd += ["-displayfd", str(w_pipe)]
-        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
-        def preexec():
-            setsid()
-            close_fds([0, 1, 2, r_pipe, w_pipe])
-        #print("xvfb_cmd=%s" % (xvfb_cmd, ))
-        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
-        # Read the display number from the pipe we gave to Xvfb
-        # waiting up to 10 seconds for it to show up
-        limit = monotonic_time()+10
-        buf = ""
-        while monotonic_time()<limit and len(buf)<8:
-            r, _, _ = select.select([r_pipe], [], [], max(0, limit-monotonic_time()))
-            if r_pipe in r:
-                buf += os.read(r_pipe, 8)
-                if buf[-1] == '\n':
-                    break
-        os.close(r_pipe)
-        os.close(w_pipe)
-        if len(buf) == 0:
-            raise OSError("%s did not provide a display number using -displayfd" % xvfb_executable)
-        if buf[-1] != '\n':
-            raise OSError("%s output not terminated by newline: %s" % (xvfb_executable, buf))
-        try:
-            n = int(buf[:-1])
-        except:
-            raise OSError("%s display number is not a valid number: %s" % (xvfb_executable, buf[:-1]))
-        if n<0 or n>=2**16:
-            raise OSError("%s provided an invalid display number: %s" % (xvfb_executable, n))
-        new_display_name = ":%s" % n
-        sys.stdout.write("Using display number provided by %s: %s\n" % (xvfb_executable, new_display_name))
-        if tmp_xorg_log_file != None:
-            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
-            f0 = shellsub(tmp_xorg_log_file, subs)
-            subs["DISPLAY"] = new_display_name
-            #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.:1.log
-            f1 = shellsub(tmp_xorg_log_file, subs)
-            if f0 != f1:
-                try:
-                    os.rename(f0, f1)
-                except Exception as e:
-                    sys.stderr.write("failed to rename Xorg log file from '%s' to '%s'\n" % (f0, f1))
-                    sys.stderr.write(" %s\n" % e)
-        display_name = new_display_name
-    else:
-        # use display specified
-        xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
-        xvfb_cmd.append(display_name)
-        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
-                                stdin=subprocess.PIPE, preexec_fn=setsid)
-    xauth_data = xauth_add(display_name)
-    return xvfb, display_name, xauth_data
-
-def xauth_add(display_name):
-    from xpra.os_util import get_hex_uuid
-    xauth_data = get_hex_uuid()
-    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
-    try:
-        code = subprocess.call(xauth_cmd)
-        if code != 0:
-            raise OSError("non-zero exit code: %s" % code)
-    except OSError as e:
-        #trying to continue anyway!
-        sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
-    return xauth_data
-
-def check_xvfb_process(xvfb=None, cmd="Xvfb"):
-    if xvfb is None:
-        #we don't have a process to check
-        return True
-    if xvfb.poll() is None:
-        #process is running
-        return True
-    from xpra.log import Logger
-    log = Logger("server")
-    log.error("")
-    log.error("%s command has terminated! xpra cannot continue", cmd)
-    log.error(" if the display is already running, try a different one,")
-    log.error(" or use the --use-display flag")
-    log.error("")
-    return False
-
-def verify_display_ready(xvfb, display_name, shadowing_check=True):
-    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
-    # Whether we spawned our server or not, it is now running -- or at least
-    # starting.  First wait for it to start up:
-    try:
-        wait_for_x_server(display_name, 3) # 3s timeout
-    except Exception as e:
-        sys.stderr.write("display %s failed:\n" % display_name)
-        sys.stderr.write("%s\n" % e)
-        return False
-    if shadowing_check and not check_xvfb_process(xvfb):
-        #if we're here, there is an X11 server, but it isn't the one we started!
-        from xpra.log import Logger
-        log = Logger("server")
-        log.error("There is an X11 server already running on display %s:" % display_name)
-        log.error("You may want to use:")
-        log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)
-        log.error("  'xpra --use-display start %s' to connect xpra to an existing X11 server only" % display_name)
-        log.error("")
-        return False
-    return True
-
-def verify_gdk_display(display_name):
-    # Now we can safely load gtk and connect:
-    no_gtk()
-    import gtk.gdk          #@Reimport
-    import glib
-    glib.threads_init()
-    display = gtk.gdk.Display(display_name)
-    manager = gtk.gdk.display_manager_get()
-    default_display = manager.get_default_display()
-    if default_display is not None and default_display!=display:
-        default_display.close()
-    manager.set_default_display(display)
-    return display
 
 def guess_xpra_display(socket_dir, socket_dirs):
     dotxpra = DotXpra(socket_dir, socket_dirs)
@@ -857,6 +436,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
+    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, pam_open, write_pidfile 
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     if start_vfb or opts.daemon:
@@ -875,6 +455,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     stderr = sys.stderr
     # Daemonize:
     if opts.daemon:
+        from xpra.server.server_util import select_log_file, open_log_file, daemonize
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = os.path.abspath(opts.password_file)
@@ -993,6 +574,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     configure_imsettings_env(opts.input_method)
 
     # Start the Xvfb server first to get the display_name if needed
+    from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
     odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
@@ -1141,22 +723,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
             if (starting or starting_desktop) and not clobber and opts.resize_display:
-                try:
-                    from xpra.x11.bindings.randr_bindings import RandRBindings
-                    #try to set a reasonable display size:
-                    randr = RandRBindings()
-                    if not randr.has_randr():
-                        log("no RandR, default virtual display size unchanged")
-                    else:
-                        sizes = randr.get_screen_sizes()
-                        size = randr.get_screen_size()
-                        log("RandR available, current size=%s, sizes available=%s", size, sizes)
-                        if DEFAULT_VFB_RESOLUTION in sizes:
-                            log("RandR setting new screen size to %s", DEFAULT_VFB_RESOLUTION)
-                            randr.set_screen_size(*DEFAULT_VFB_RESOLUTION)
-                except Exception as e:
-                    log.warn("Warning: failed to set the default screen size:")
-                    log.warn(" %s", e)
+                set_initial_resolution()
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1
