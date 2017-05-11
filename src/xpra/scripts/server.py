@@ -114,6 +114,7 @@ def get_dbus_env():
             sys.stderr.write("failed to load dbus environment variable '%s':\n" % k)
             sys.stderr.write(" %s\n" % e)
     return env
+
 def save_dbus_env(env):
     #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
     #DBUS_SESSION_BUS_PID=11406
@@ -132,6 +133,29 @@ def save_dbus_env(env):
         except Exception as e:
             sys.stderr.write("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
             sys.stderr.write(" %s\n" % e)
+
+def pam_open(xdisplay, xauth_data=None):
+    PAM_OPEN = envbool("XPRA_PAM_OPEN")
+    if os.name=="posix" and PAM_OPEN:
+        try:
+            from xpra.server.pam import pam_open, pam_close
+        except ImportError as e:
+            sys.stderr.write("No pam support: %s\n" % e)
+        else:
+            items = {
+                   "XDISPLAY" : xdisplay
+                   }
+            if xauth_data:
+                items["XAUTHDATA"] = xauth_data
+            env = {
+                   #"XDG_SEAT"               : "seat1",
+                   #"XDG_VTNR"               : "0",
+                   "XDG_SESSION_TYPE"       : "x11",
+                   #"XDG_SESSION_CLASS"      : "user",
+                   "XDG_SESSION_DESKTOP"    : "xpra",
+                   }
+            if pam_open(env=env, items=items):
+                _cleanups.append(pam_close)
 
 
 def sh_quotemeta(s):
@@ -1354,27 +1378,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(close_display)
 
     # if pam is present, try to create a new session:
-    PAM_OPEN = envbool("XPRA_PAM_OPEN")
-    if os.name=="posix" and PAM_OPEN:
-        try:
-            from xpra.server.pam import pam_open, pam_close
-        except ImportError as e:
-            sys.stderr.write("No pam support: %s\n" % e)
-        else:
-            items = {
-                   "XDISPLAY" : display_name
-                   }
-            if xauth_data:
-                items["XAUTHDATA"] = xauth_data
-            env = {
-                   #"XDG_SEAT"               : "seat1",
-                   #"XDG_VTNR"               : "0",
-                   "XDG_SESSION_TYPE"       : "x11",
-                   #"XDG_SESSION_CLASS"      : "user",
-                   "XDG_SESSION_DESKTOP"    : "xpra",
-                   }
-            if pam_open(env=env, items=items):
-                _cleanups.append(pam_close)
+    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN")
+    if PAM_OPEN:
+        pam_open(display_name, xauth_data)
 
     if opts.daemon:
         def noerr(fn, *args):
