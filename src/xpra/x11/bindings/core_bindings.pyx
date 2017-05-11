@@ -33,6 +33,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef int Bool
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
+    char *XGetAtomName(Display *display, Atom atom)
 
     int XFree(void * data)
 
@@ -82,6 +83,10 @@ cdef class _X11CoreBindings:
 
     def get_xatom(self, str_or_int):
         return self.xatom(str_or_int)
+
+    def XGetAtomName(self, Atom atom):
+        v = XGetAtomName(self.display, atom)
+        return v[:]
 
     def get_error_text(self, code):
         assert self.display!=NULL, "display is closed"
