@@ -11,8 +11,8 @@ def make_win(width=WIDTH, height=HEIGHT):
 	#window.set_size_request(width, height)
 	window.connect("delete_event", gtk.mainquit)
 	window.set_geometry_hints(window,
-							min_width=WIDTH, min_height=HEIGHT,
-							max_width=WIDTH, max_height=HEIGHT,
+							min_width=width, min_height=height,
+							max_width=width, max_height=height,
 							)
 	window.set_resizable(False)
 	window.show_all()
