@@ -17,13 +17,14 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 WHITELIST = {}
 GREYLIST = {
-            "vendor"    : ["Intel", "VMware, Inc.", "Humper"]
+            "vendor"    : ["Intel", "Humper"]
             }
 VERSION_REQ = {
                "nouveau" : [3, 0],      #older versions have issues
                }
 BLACKLIST = {
-             "renderer" : ["Software Rasterizer", "Mesa DRI Intel(R) Ivybridge Desktop"]
+             "renderer" : ["Software Rasterizer", "Mesa DRI Intel(R) Ivybridge Desktop"],
+             "vendor"    : ["VMware, Inc."]
              }
 
 from xpra.os_util import getUbuntuVersion
