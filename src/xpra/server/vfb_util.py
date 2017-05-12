@@ -104,15 +104,15 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
         os.close(r_pipe)
         os.close(w_pipe)
         if len(buf) == 0:
-            raise OSError("%s did not provide a display number using -displayfd" % xvfb_executable)
+            raise InitException("%s did not provide a display number using -displayfd" % xvfb_executable)
         if buf[-1] != '\n':
-            raise OSError("%s output not terminated by newline: %s" % (xvfb_executable, buf))
+            raise InitException("%s output not terminated by newline: %s" % (xvfb_executable, buf))
         try:
             n = int(buf[:-1])
         except:
-            raise OSError("%s display number is not a valid number: %s" % (xvfb_executable, buf[:-1]))
+            raise InitException("%s display number is not a valid number: %s" % (xvfb_executable, buf[:-1]))
         if n<0 or n>=2**16:
-            raise OSError("%s provided an invalid display number: %s" % (xvfb_executable, n))
+            raise InitException("%s provided an invalid display number: %s" % (xvfb_executable, n))
         new_display_name = ":%s" % n
         sys.stdout.write("Using display number provided by %s: %s\n" % (xvfb_executable, new_display_name))
         if tmp_xorg_log_file != None:

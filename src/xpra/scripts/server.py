@@ -45,8 +45,8 @@ def add_cleanup(f):
 
 
 def deadly_signal(signum, frame):
-    sys.stdout.write("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-    sys.stdout.flush()
+    from xpra.scripts.main import info
+    info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
@@ -429,7 +429,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if (starting or starting_desktop) and desktop_display:
         de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
         if de:
-            warn = []
+            warnings = []
             if opts.pulseaudio is not False:
                 try:
                     xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
@@ -437,17 +437,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                     for x in out.splitlines():
                         if x.startswith("PULSE_SERVER"):
                             #found an existing pulseaudio server
-                            warn.append("pulseaudio")
+                            warnings.append("pulseaudio")
                             break
                 except:
                     pass    #don't care, this is just to decide if we show an informative warning or not
             if opts.notifications and not opts.dbus_launch:
-                warn.append("notifications")
-            if warn:
+                warnings.append("notifications")
+            if warnings:
                 log.warn("Warning: xpra start from an existing '%s' desktop session", de)
-                log.warn(" %s forwarding may not work", " ".join(warn))
+                log.warn(" %s forwarding may not work", " ".join(warnings))
                 log.warn(" try using a clean environment, a dedicated user,")
-                log.warn(" or turn off %s", " and ".join(warn))
+                log.warn(" or turn off %s", " and ".join(warnings))
 
     mdns_recs = []
     sockets = []
@@ -524,13 +524,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if start_vfb:
         assert not proxying
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
-        try:
-            xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid)
-        except OSError as e:
-            log.error("Error starting Xvfb:")
-            log.error(" %s", e)
-            log("start_Xvfb error", exc_info=True)
-            return  1
+        xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid)
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
@@ -580,7 +574,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #xvfb problem: exit now
         return  1
 
-    if os.name=="posix" and getuid()==0 and uid!=0:
+    if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
         setuidgid(uid, gid)
         os.environ.update({
             "HOME"      : home,

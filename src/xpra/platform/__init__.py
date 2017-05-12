@@ -52,10 +52,12 @@ def set_default_name(prgname=None, appname=None):
 
 #platforms can override this
 def command_error(message):
-    print(message)
+    from xpra.scripts.main import error
+    error(message)
 
 def command_info(message):
-    print(message)
+    from xpra.scripts.main import info
+    info(message)
 
 
 _clean_done = False

@@ -58,12 +58,43 @@ def sound_option(v):
         v = "disabled"
     return bool_or(v, "disabled", "on", "off", "disabled")
 
+
+def info(msg):
+    #use this function to print warnings
+    #we must write to stderr to prevent
+    #the output from interfering when running as proxy over ssh
+    #(which uses stdin / stdout as communication channel)
+    try:
+        sys.stderr.write(msg+"\n")
+        sys.stderr.flush()
+    except:
+        import syslog
+        syslog.syslog(syslog.LOG_INFO, msg)
+
 def warn(msg):
     #use this function to print warnings
     #we must write to stderr to prevent
     #the output from interfering when running as proxy over ssh
     #(which uses stdin / stdout as communication channel)
-    sys.stderr.write(msg+"\n")
+    try:
+        sys.stderr.write(msg+"\n")
+        sys.stderr.flush()
+    except:
+        import syslog
+        syslog.syslog(syslog.LOG_WARNING, msg)
+
+def error(msg):
+    #use this function to print warnings
+    #we must write to stderr to prevent
+    #the output from interfering when running as proxy over ssh
+    #(which uses stdin / stdout as communication channel)
+    try:
+        sys.stderr.write(msg+"\n")
+        sys.stderr.flush()
+    except:
+        import syslog
+        syslog.syslog(syslog.LOG_ERR, msg)
+
 
 def nox():
     DISPLAY = os.environ.get("DISPLAY")
@@ -107,7 +138,7 @@ def fixup_defaults(defaults):
         if "help" in v:
             if not envbool("XPRA_SKIP_UI", False):
                 #skip-ui: we're running in subprocess, don't bother spamming stderr
-                sys.stderr.write(("Warning: invalid 'help' option found in '%s' configuration\n" % k) +
+                warn(("Warning: invalid 'help' option found in '%s' configuration\n" % k) +
                              " this should only be used as a command line argument\n")
             if k in ("encoding", "debug", "sound-source"):
                 setattr(defaults, fn, "")
@@ -152,6 +183,7 @@ def main(script_file, cmdline):
             return 0
         except InitException as e:
             debug_exc()
+            warn("InitException: %s" % e)
             command_error("xpra initialization error:\n %s" % e)
             return 1
         except AssertionError as e:
@@ -1326,7 +1358,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             error_cb("invalid mode '%s'" % mode)
             return 1
     except KeyboardInterrupt as e:
-        sys.stderr.write("\ncaught %s, exiting\n" % repr(e))
+        info("\ncaught %s, exiting" % repr(e))
         return 128+signal.SIGINT
 
 
@@ -1478,8 +1510,8 @@ def parse_display_name(error_cb, opts, display_name):
                 with open(opts.password_file, "rb") as f:
                     desc["password"] = f.read()
             except Exception as e:
-                sys.stderr.write("Error: failed to read the password file '%s':\n", opts.password_file)
-                sys.stderr.write(" %s\n", e)
+                warn("Error: failed to read the password file '%s':\n", opts.password_file)
+                warn(" %s\n", e)
         return desc
     elif display_name.startswith("socket:"):
         #use the socketfile specified:
@@ -2413,7 +2445,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             #ignore access denied error, launchctl runs as root
             import errno
             if e[0]!=errno.EACCES:
-                sys.stderr.write("Error: shadow may not start,\n the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
+                warn("Error: shadow may not start,\n the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
         argfile = os.path.expanduser("~/.xpra/shadow-args")
         with open(argfile, "w") as f:
             f.write('["Xpra", "--no-daemon"')
@@ -2456,7 +2488,7 @@ def get_start_server_args(opts, compat=False):
             continue    #same as the default
         #lists are special cased depending on how OptionParse will be parsing them:
         if ftype==list:
-            #sys.stderr.write("%s: %s vs %s\n" % (x, ov, dv))
+            #warn("%s: %s vs %s\n" % (x, ov, dv))
             if x in START_COMMAND_OPTIONS+BIND_OPTIONS+[
                      "pulseaudio-configure-commands",
                      "speaker-codec", "microphone-codec",
