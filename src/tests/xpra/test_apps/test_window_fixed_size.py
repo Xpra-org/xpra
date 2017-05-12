@@ -17,8 +17,15 @@ def make_win(width=WIDTH, height=HEIGHT):
 	window.set_resizable(False)
 	window.show_all()
 
+
 def main():
-	make_win()
+	import sys
+	width = 1200
+	height = 1024
+	if len(sys.argv)==3:
+		width = int(sys.argv[1])
+		height = int(sys.argv[2])
+	make_win(width, height)
 	gtk.main()
 
 
