@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,7 @@ import os
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
 from xpra.x11.gtk2 import Unmanageable
@@ -354,6 +355,9 @@ class Wm(gobject.GObject):
             l("Warning: failed to manage client window %#x:", gdkwindow.xid)
             l(" %s", e)
             l("", exc_info=True)
+            with xswallow:
+                l(" window name: %s", window_name(gdkwindow))
+                l(" window info: %s", window_info(gdkwindow))
         else:
             win.managed_connect("unmanaged", self._handle_client_unmanaged)
             self._windows[gdkwindow] = win

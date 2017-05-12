@@ -55,26 +55,6 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 20)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
 
-def window_name(window):
-    from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(window, "_NET_WM_NAME", "utf8", True) or "unknown"
-
-def window_info(window):
-    from xpra.x11.gtk_x11.prop import prop_get
-    net_wm_name = prop_get(window, "_NET_WM_NAME", "utf8", True)
-    return "%s %s (%s / %s)" % (net_wm_name, window, window.get_geometry(), window.is_visible())
-
-
-from xpra.x11.gtk2.gdk_bindings import get_children #@UnresolvedImport
-def dump_windows():
-    root = gdk.get_default_root_window()
-    log("root window: %s" % root)
-    children = get_children(root)
-    log("%s windows" % len(children))
-    for window in get_children(root):
-        log("found window: %s", window_info(window))
-
-
 class XTestPointerDevice(object):
 
     def __repr__(self):
