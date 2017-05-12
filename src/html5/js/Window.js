@@ -672,7 +672,9 @@ XpraWindow.prototype._set_decorated = function(decorated) {
 		jQuery('#head' + this.wid).show();
 		jQuery(this.div).removeClass("undecorated");
 		jQuery(this.div).addClass("window");
-		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+		if (this.d_header) {
+			this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
+		}
 	}
 	else {
 		jQuery('#head' + this.wid).hide();
