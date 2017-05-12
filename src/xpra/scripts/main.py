@@ -1316,7 +1316,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="opengl":
             return run_glcheck(options)
         elif mode == "initenv":
-            from xpra.scripts.server import xpra_runner_shell_script, write_runner_shell_scripts
+            from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
             script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
             write_runner_shell_scripts(script, False)
             return 0
