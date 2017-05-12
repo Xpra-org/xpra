@@ -613,7 +613,7 @@ class CoreX11WindowModel(WindowModelStub):
     def do_xpra_xkb_event(self, event):
         #X11: XKBNotify
         log("WindowModel.do_xpra_xkb_event(%r)" % event)
-        if event.type!="bell":
+        if event.subtype!="bell":
             log.error("WindowModel.do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
         event.window_model = self

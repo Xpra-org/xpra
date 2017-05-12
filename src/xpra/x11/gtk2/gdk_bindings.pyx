@@ -1002,9 +1002,9 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     log("parse_event(..)=%s", pyev)
     if not pyev:
         return GDK_FILTER_CONTINUE
-    etype = pyev.type
     try:
         global x_event_signals, x_event_type_names
+        etype = pyev.type
         event_args = x_event_signals.get(etype)
         #log("signals(%s)=%s", pyev, event_args)
         if event_args is not None:
@@ -1194,7 +1194,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             if xkb_e.xkb_type!=XkbBellNotify:
                 return GDK_FILTER_CONTINUE
             bell_e = <XkbBellNotifyEvent*>e
-            pyev.type = "bell"
+            pyev.subtype = "bell"
             pyev.device = int(bell_e.device)
             pyev.percent = int(bell_e.percent)
             pyev.pitch = int(bell_e.pitch)
