@@ -660,6 +660,8 @@ class BaseWindowModel(CoreX11WindowModel):
                 pass
             elif atom1=="_NET_WM_STATE_MODAL":
                 update_wm_state("modal")
+            elif atom1=="_NET_WM_STATE_DEMANDS_ATTENTION":
+                update_wm_state("attention-requested")
             else:
                 log.info("process_client_message_event(%s) unhandled atom=%s", event, atom1)
             return True
