@@ -17,6 +17,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.os_util import monotonic_time
 from xpra.util import typedict, csv, nonl, envint, envbool
 from xpra.simple_stats import std_unit
+from xpra.make_thread import start_thread
 
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 FILE_CHUNKS_SIZE = max(0, envint("XPRA_FILE_CHUNKS_SIZE", 65536))
@@ -222,7 +223,8 @@ class FileTransferHandler(FileTransferAttributes):
         start_time = chunk_state[0]
         elapsed = monotonic_time()-start_time
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
-        self.do_process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
+        t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False, args=(filename, mimetype, printit, openit, filesize, options))
+        filelog("started process-download thread: %s", t)
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
