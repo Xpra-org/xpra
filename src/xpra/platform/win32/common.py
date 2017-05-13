@@ -6,10 +6,11 @@
 
 import ctypes
 
-from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long
+from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP
+from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR
 LRESULT = c_long
+DEVMODE = c_void_p
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
@@ -119,7 +120,9 @@ DeleteObject = gdi32.DeleteObject
 DeleteDC = gdi32.DeleteDC
 DeleteDC.restype = BOOL
 DeleteDC.argtypes = [HDC]
-
+CreateDCA = gdi32.CreateDCA
+CreateDCA.restype = HDC
+CreateDCA.argtypes = [LPCSTR, LPCSTR, LPCSTR, DEVMODE]
 
 #wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)

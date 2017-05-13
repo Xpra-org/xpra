@@ -1366,6 +1366,8 @@ if WIN32:
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
+            add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
+            add_DLLs("pdfium")  #libpdfium.dll
             if os.path.exists("C:\\Program Files\\Ghostgum\\gsview"):
                 GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
             else:

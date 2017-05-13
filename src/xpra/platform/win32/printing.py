@@ -9,11 +9,12 @@ log = Logger("printing")
 import os.path
 import subprocess
 from xpra.platform.win32 import constants as win32con
-from xpra.util import csv, envint
+from xpra.util import csv, envint, envbool
 
 
 #allows us to skip some printers we don't want to export
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
+PDFIUM_PRINT = envbool("XPRA_PDFIUM_PRINT", True)
 
 
 PRINTER_ENUM_VALUES = {
@@ -163,11 +164,6 @@ def get_info():
 def get_printers():
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL, GSVIEW_DIR
     printers = {}
-    if not GSVIEW_DIR:
-        #without gsprint, we can't handle printing!
-        log("get_printers() gsview is missing, not querying any printers")
-        return printers
-    #default_printer = GetDefaultPrinter()
     for penum in PRINTER_ENUMS:
         try:
             eprinters = []
@@ -179,12 +175,12 @@ def get_printers():
             for p in EnumPrinters(enum_val, None, PRINTER_LEVEL):
                 flags, desc, name, comment = p
                 if name in SKIPPED_PRINTERS:
-                    log("skipped printer: %s, %s, %s, %s", flags, desc, name, comment)
+                    log("skipped printer: %#x, %s, %s, %s", flags, desc, name, comment)
                     continue
                 if name in printers:
-                    log("skipped duplicate printer: %s, %s, %s, %s", flags, desc, name, comment)
+                    log("skipped duplicate printer: %#x, %s, %s, %s", flags, desc, name, comment)
                     continue
-                log("found printer: %s, %s, %s, %s", flags, desc, name, comment)
+                log("found printer: %#x, %s, %s, %s", flags, desc, name, comment)
                 #strip duplicated and empty strings from the description:
                 desc_els = []
                 [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
@@ -208,15 +204,18 @@ def print_files(printer, filenames, title, options):
     processes = []
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]
-        if printer:
-            command += ["-printer", printer]
-        command += [filename]
+        if PDFIUM_PRINT:
+            command = ["PDFIUM_Print.exe", filename, printer]
+        else:
+            command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]
+            if printer:
+                command += ["-printer", printer]
+            command += [filename]
+            #add gsview directory
+            PATH = os.environ.get("PATH")
+            os.environ["PATH"] = str(PATH+";"+GSVIEW_DIR)
+            log("environment: %s", os.environ)
         log("print command: %s", command)
-        #add gsview directory
-        PATH = os.environ.get("PATH")
-        os.environ["PATH"] = str(PATH+";"+GSVIEW_DIR)
-        log("environment: %s", os.environ)
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GSVIEW_DIR, startupinfo=startupinfo)
