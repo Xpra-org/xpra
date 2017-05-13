@@ -34,7 +34,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		from xpra.scripts.server import find_log_dir
+		from xpra.server.server_util import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		cls.default_config = get_defaults()
 		cls.display_start = 100
