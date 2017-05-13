@@ -1,29 +1,51 @@
 xpra (1.0.6-1) UNRELEASED; urgency=low
   * fix SSL connection failures
   * fix SSL servers on MS Windows
+  * fix SSL-upgradable sockets not exposed via mDNS
+  * fix server startup failures when running without stdout or stderr
+  * fix loss of clipboard synchronization with direction restrictions
+  * fix library versions used when multiple versions are installed
   * fix inconsistent desktop state after using the screenshot feature on MS Windows
   * fix raising of windows when connecting from Mac OS
   * fix exit code of helper commands on Mac OS
-  * fix X11 ICC profile version format
+  * fix X11 ICC profile version format, continue if missing
+  * fix X11 extensions checks, prevent event code mismatch
+  * fix window model leak when we fail to manage a window
   * fix server errors with locked batch delays
   * fix window opacity forwarding
   * fix missing system tray with Ubuntu Zesty
+  * fix audio stream duplicated header
+  * fix errors in scrolling detection error handler
   * fix nvenc codec name shown in config file example
+  * fix nvenc encoding reported (wrongly hardcoded to H264)
+  * fix vp8 codec maximum picture size (8kx4k on posix platforms)
+  * fix picture stride errors with some shadow servers
   * fix missed characters in HTML5 client disconnection message
   * fix HTML5 password field wrongly greyed out
   * fix HTML5 window title bar wrapping
   * fix HTML5 handling of Unicode window titles
-  * fix SSL-upgradable sockets not exposed via mDNS
+  * fix HTML5 exception in audio error handler
+  * fix HTML5 using the wrong audio codec
+  * fix HTML5 audio codec fallback
+  * fix HTML5 audio not closed on end-of-stream
+  * fix HTML5 MediaSource API availability detection
+  * fix HTML5 spurious paint error messages
   * fix connection to IPv6 addresses
+  * fix handling of unsupported connection types
   * fix backwards compatibility for hmac authentication
+  * fix handling of desktop window resizing, prevent it from moving off-screen
   * fix error handling of screenshot feature from the bug report tool
+  * fix missing error exit code from test-connect and remote-start subcommands
+  * disable "legacy mp3" audio decoding in the HTML5 client
+  * avoid warnings when running with newer versions of the config files
+  * blacklist Mesa Intel Ivybridge GPU
   * more helpful warning message when dbus bindings are missing
   * improve error handling when native Mac OS bindings are missing
   * workaround broken MSYS2 dependencies
   * support relative file paths in authentication modules
   * Mac OS library updates: Pillow 4.1, ffmpeg 3.3
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 18 Apr 2017 00:31:38 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 13 May 2017 10:43:39 +0700
 
 xpra (1.0.5-2) UNRELEASED; urgency=low
   * remove unavailable gstreamer dependencies for Wheezy / Precise
