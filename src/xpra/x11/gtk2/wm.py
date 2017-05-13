@@ -343,27 +343,24 @@ class Wm(gobject.GObject):
             return
         try:
             with xsync:
-                self.do_manage_client(gdkwindow)
+                log("_manage_client(%s)", gdkwindow)
+                desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
+                win = WindowModel(self._root, gdkwindow, desktop_geometry)
         except Exception as e:
             if LOG_MANAGE_FAILURES or type(e) not in (Unmanageable, ):
                 l = log.warn
             else:
                 l = log
-            l("failed to manage client %s: %s", gdkwindow, e, exc_info=True)
-
-    def do_manage_client(self, gdkwindow):
-        try:
-            desktop_geometry = self.root_get("_NET_DESKTOP_GEOMETRY", ["u32"], True, False)
-            win = WindowModel(self._root, gdkwindow, desktop_geometry)
-        except Unmanageable:
-            log("Window disappeared on us, never mind")
-            return
-        win.managed_connect("unmanaged", self._handle_client_unmanaged)
-        self._windows[gdkwindow] = win
-        self._windows_in_order.append(gdkwindow)
-        self.notify("windows")
-        self._update_window_list()
-        self.emit("new-window", win)
+            l("Warning: failed to manage client window %#x:", gdkwindow.xid)
+            l(" %s", e)
+            l("", exc_info=True)
+        else:
+            win.managed_connect("unmanaged", self._handle_client_unmanaged)
+            self._windows[gdkwindow] = win
+            self._windows_in_order.append(gdkwindow)
+            self.notify("windows")
+            self._update_window_list()
+            self.emit("new-window", win)
 
     def _handle_client_unmanaged(self, window, wm_exiting):
         gdkwindow = window.get_property("client-window")
