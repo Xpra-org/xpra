@@ -677,7 +677,9 @@ cdef int get_XKB_event_base():
     cdef Display * xdisplay                             #@DuplicatedSignature
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
-    XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor)
+    if not XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor):
+        log.warn("Warning: Xkb extension is not available")
+        return 10000    #should never match any event codes
     verbose("get_XKB_event_base(%s)=%i", display.get_name(), event_base)
     return event_base
 
@@ -687,7 +689,9 @@ cdef int get_XFixes_event_base():
     cdef Display * xdisplay                             #@DuplicatedSignature
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
-    XFixesQueryExtension(xdisplay, &event_base, &error_base)
+    if not XFixesQueryExtension(xdisplay, &event_base, &error_base):
+        log.warn("Warning: XFixes extension is not available")
+        return 10000    #should never match any event codes
     verbose("get_XFixes_event_base(%s)=%i", display.get_name(), event_base)
     assert event_base>0, "invalid event base for XFixes"
     return event_base
@@ -698,7 +702,9 @@ cdef int get_XDamage_event_base():
     cdef Display * xdisplay                             #@DuplicatedSignature
     display = gtk.gdk.get_default_root_window().get_display()
     xdisplay = get_xdisplay_for(display)
-    XDamageQueryExtension(xdisplay, &event_base, &error_base)
+    if not XDamageQueryExtension(xdisplay, &event_base, &error_base):
+        log.warn("Warning: XDamage extension is not available")
+        return 10000    #should never match any event codes
     verbose("get_XDamage_event_base(%s)=%i", display.get_name(), event_base)
     assert event_base>0, "invalid event base for XDamage"
     return event_base
@@ -709,6 +715,7 @@ cdef int get_XShape_event_base():
     xdisplay = get_xdisplay_for(display)
     cdef int event_base = 0, ignored = 0
     if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
+        log.warn("Warning: XShape extension is not available")
         return -1
     return event_base
 
