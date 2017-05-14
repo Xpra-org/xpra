@@ -101,9 +101,6 @@ def validate_backend(try_backend):
     log("validate_backend(%s) decryptor=%s", try_backend, dec)
     assert dec is not None, "backend %s failed to generate a decryptor" % enc
     ev = enc.encrypt(message)
-    #legacy name for "hmac+md5":
-    if "hmac" in options:
-        return "hmac"
     evs = binascii.hexlify(strtobytes(ev))
     log("validate_backend(%s) encrypted(%s)=%s", try_backend, message, evs)
     dv = dec.decrypt(ev)
@@ -124,6 +121,9 @@ def choose_padding(options):
     for x in options:
         if x in PADDING_OPTIONS:
             return x
+    #legacy name for "hmac+md5":
+    if "hmac" in options:
+        return "hmac"
     raise Exception("cannot find a valid padding in %s" % str(options))
 
 
