@@ -21,7 +21,8 @@ lz4_version = None
 try:
     import lz4
     try:
-        from lz4 import VERSION as lz4_VERSION                          #@UnresolvedImport
+        from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
+        from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
     except:
         #older versions (0.7 and older):
         import pkg_resources
