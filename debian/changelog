@@ -36,6 +36,9 @@ xpra (1.0.6-1) UNRELEASED; urgency=low
   * fix handling of desktop window resizing, prevent it from moving off-screen
   * fix error handling of screenshot feature from the bug report tool
   * fix missing error exit code from test-connect and remote-start subcommands
+  * fix lost window icons with some window managers
+  * fix python-lz4 library version detection
+  * fix audio forwarding with MS Windows clients in GUI mode
   * disable "legacy mp3" audio decoding in the HTML5 client
   * avoid warnings when running with newer versions of the config files
   * blacklist Mesa Intel Ivybridge GPU
@@ -43,9 +46,9 @@ xpra (1.0.6-1) UNRELEASED; urgency=low
   * improve error handling when native Mac OS bindings are missing
   * workaround broken MSYS2 dependencies
   * support relative file paths in authentication modules
-  * Mac OS library updates: Pillow 4.1, ffmpeg 3.3
+  * Mac OS library updates: Pillow 4.1, ffmpeg 3.3, python-lz4 0.9.1
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 13 May 2017 10:43:39 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 14 May 2017 13:35:18 +0700
 
 xpra (1.0.5-2) UNRELEASED; urgency=low
   * remove unavailable gstreamer dependencies for Wheezy / Precise

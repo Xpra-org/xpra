@@ -600,7 +600,7 @@ fi
 
 
 %changelog
-* Sat May 13 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
+* Sun May 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
 - fix SSL connection failures
 - fix SSL servers on MS Windows
 - fix SSL-upgradable sockets not exposed via mDNS
@@ -638,6 +638,9 @@ fi
 - fix handling of desktop window resizing, prevent it from moving off-screen
 - fix error handling of screenshot feature from the bug report tool
 - fix missing error exit code from test-connect and remote-start subcommands
+- fix lost window icons with some window managers
+- fix python-lz4 library version detection
+- fix audio forwarding with MS Windows clients in GUI mode
 - disable "legacy mp3" audio decoding in the HTML5 client
 - avoid warnings when running with newer versions of the config files
 - blacklist Mesa Intel Ivybridge GPU
@@ -645,7 +648,7 @@ fi
 - improve error handling when native Mac OS bindings are missing
 - workaround broken MSYS2 dependencies
 - support relative file paths in authentication modules
-- Mac OS library updates: Pillow 4.1, ffmpeg 3.3
+- Mac OS library updates: Pillow 4.1, ffmpeg 3.3, , python-lz4 0.9.1
 
 * Wed Mar 29 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.5-1
 - fix X11 server crashes with very short-lived OR windows

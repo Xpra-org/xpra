@@ -1,4 +1,4 @@
-v1.0.6 (2017-05-13)
+v1.0.6 (2017-05-14)
 ======================
 	-- fix SSL connection failures
 	-- fix SSL servers on MS Windows
@@ -37,6 +37,9 @@ v1.0.6 (2017-05-13)
 	-- fix handling of desktop window resizing, prevent it from moving off-screen
 	-- fix error handling of screenshot feature from the bug report tool
 	-- fix missing error exit code from test-connect and remote-start subcommands
+	-- fix lost window icons with some window managers
+	-- fix python-lz4 library version detection
+	-- fix audio forwarding with MS Windows clients in GUI mode
 	-- disable "legacy mp3" audio decoding in the HTML5 client
 	-- avoid warnings when running with newer versions of the config files
 	-- blacklist Mesa Intel Ivybridge GPU
@@ -44,7 +47,7 @@ v1.0.6 (2017-05-13)
 	-- improve error handling when native Mac OS bindings are missing
 	-- workaround broken MSYS2 dependencies
 	-- support relative file paths in authentication modules
-	-- Mac OS library updates: Pillow 4.1, ffmpeg 3.3
+	-- Mac OS library updates: Pillow 4.1, ffmpeg 3.3, python-lz4 0.9.1
 
 
 v1.0.5 (2017-03-29)
