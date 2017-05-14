@@ -1,3 +1,8 @@
+xpra (1.0.6-2) UNRELEASED; urgency=low
+  * force rebuild against updated ffmpeg library built with rpath
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 14 May 2017 20:52:20 +0700
+
 xpra (1.0.6-1) UNRELEASED; urgency=low
   * fix SSL connection failures
   * fix SSL servers on MS Windows
