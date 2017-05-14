@@ -206,7 +206,7 @@ def print_files(printer, filenames, title, options):
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
         if PDFIUM_PRINT:
             cwd = get_app_dir()
-            command = ["PDFIUM_Print.exe", filename, printer]
+            command = ["PDFIUM_Print.exe", filename, printer, title]
         else:
             cwd = GSVIEW_DIR
             command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]

@@ -148,8 +148,8 @@ def print_pdf(printer_name, title, pdf_data):
 
 
 def main():
-	if len(sys.argv) not in (2, 3):
-		print("usage: %s /path/to/document.pdf [printer-name]" % sys.argv[0])
+	if len(sys.argv) not in (2, 3, 4):
+		print("usage: %s /path/to/document.pdf [printer-name] [document-title]" % sys.argv[0])
 		return 1
 	filename = sys.argv[1]
 	with open(filename, 'rb') as f:
@@ -160,10 +160,13 @@ def main():
 		printers = get_printers()
 		log("printers: %s", printers)
 		printer_name = printers.keys()[0]
-	elif len(sys.argv)==3:
+	if len(sys.argv) in (3, 4):
 		printer_name = sys.argv[2]
+	if len(sys.argv)==4:
+		title = sys.argv[3]
+	else:
+		title = os.path.basename(filename)
 
-	title = "PDF: %s" % os.path.basename(filename)
 	return print_pdf(printer_name, title, pdf_data)
 
 
