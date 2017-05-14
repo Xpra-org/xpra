@@ -30,6 +30,8 @@ log = Logger("util")
 #using the protocol for encoding the data
 
 
+WIN32 = sys.platform.startswith("win")
+
 DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
 #to make it possible to inspect files (more human readable):
 HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
