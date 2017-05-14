@@ -20,13 +20,8 @@ python_lz4_version = None
 lz4_version = None
 try:
     import lz4
-    try:
-        from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
-        from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
-    except:
-        #older versions (0.7 and older):
-        import pkg_resources
-        lz4_VERSION = pkg_resources.get_distribution("lz4").version
+    from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
+    from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
     has_lz4 = True
     if hasattr(lz4, "block"):
         from lz4.block import compress, decompress
@@ -39,6 +34,7 @@ try:
                 return flag, compress(packet, mode="fast", acceleration=8-level*2)
             return flag, compress(packet)
     else:
+        #LZ4_compress_fast is 0.8 or later
         from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
         if hasattr(lz4, "LZ4_compress_fast"):
             from lz4 import LZ4_compress_fast     #@UnresolvedImport
@@ -51,27 +47,6 @@ try:
                     accel = max(1, 17-level*5)
                     return level | LZ4_FLAG, LZ4_compress_fast(packet, accel)
                 return level | LZ4_FLAG, LZ4_compress(packet)
-        else:
-            #v0.7.0 and earlier
-            def lz4_compress(packet, level):
-                if level>=9:
-                    return level | LZ4_FLAG, compressHC(packet)
-                return level | LZ4_FLAG, LZ4_compress(packet)
-            #try to figure out the version number:
-            python_lz4_version = lz4_VERSION
-            assert python_lz4_version>="0.7", "python-lz4 version %s is older than 0.7.0 are vulnerable and should not be used, see CVE-2014-4715" % lz4_version
-            #now try to check the underlying "liblz4" version
-            #which is only available with python-lz4 0.8.0 onwards:
-            if hasattr(lz4, "LZ4_VERSION"):
-                try:
-                    from distutils.version import LooseVersion
-                except ImportError:
-                    pass
-                else:
-                    if lz4.LZ4_VERSION.startswith("r"):
-                        #last known security issue:
-                        assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
-                lz4_version = lz4.LZ4_VERSION
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
