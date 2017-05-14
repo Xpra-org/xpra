@@ -374,7 +374,7 @@ def query_sound():
     env = exec_env()
     env.update(get_sound_wrapper_env())
     log("query_sound() command=%s, env=%s, kwargs=%s", command, env, kwargs)
-    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=env, **kwargs)
+    proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, **kwargs)
     out, err = proc.communicate(None)
     log("query_sound() process returned %s", proc.returncode)
     log("query_sound() out=%s, err=%s", out, err)

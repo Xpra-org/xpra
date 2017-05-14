@@ -275,15 +275,23 @@ class subprocess_callee(object):
 
 
 def exec_kwargs():
+    kwargs = {}
+    stderr = sys.stderr.fileno()
     if os.name=="posix":
-        return {"close_fds" : True}
+        kwargs["close_fds"] = True
     elif WIN32:
+        from xpra.platform.win32 import REDIRECT_OUTPUT
+        if REDIRECT_OUTPUT:
+            #stderr is not valid and would give us this error:
+            # WindowsError: [Errno 6] The handle is invalid
+            stderr = open(os.devnull, 'w')
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
-            return {"startupinfo" : startupinfo}
-    return {}
+            kwargs["startupinfo"] = startupinfo
+    kwargs["stderr"] = stderr
+    return kwargs
 
 def exec_env(blacklist=["LS_COLORS", ]):
     env = os.environ.copy()
@@ -366,7 +374,7 @@ class subprocess_caller(object):
         kwargs = exec_kwargs()
         env = self.get_env()
         log("exec_subprocess() command=%s, env=%s, kwargs=%s", self.command, env, kwargs)
-        proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr.fileno(), env=env, **kwargs)
+        proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, **kwargs)
         getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
