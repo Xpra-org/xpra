@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+from xpra.platform.paths import get_app_dir
 log = Logger("printing")
 
 import os.path
@@ -71,7 +72,6 @@ def init_printing(callback=None):
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
     #ensure we can find gsprint.exe in a subdirectory:
-    from xpra.platform.paths import get_app_dir
     GSVIEW_DIR = os.path.join(get_app_dir(), "gsview")
     assert os.path.exists(GSVIEW_DIR) and os.path.isdir(GSVIEW_DIR), "cannot find gsview directory in '%s'" % GSVIEW_DIR
     GSPRINT_EXE = os.path.join(GSVIEW_DIR, "gsprint.exe")
@@ -205,8 +205,10 @@ def print_files(printer, filenames, title, options):
     for filename in filenames:
         #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
         if PDFIUM_PRINT:
+            cwd = get_app_dir()
             command = ["PDFIUM_Print.exe", filename, printer]
         else:
+            cwd = GSVIEW_DIR
             command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]
             if printer:
                 command += ["-printer", printer]
@@ -218,7 +220,8 @@ def print_files(printer, filenames, title, options):
         log("print command: %s", command)
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GSVIEW_DIR, startupinfo=startupinfo)
+        startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
+        process = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, startupinfo=startupinfo)
         process.print_filename = filename
         #we just let it run, no need for reaping the process on win32
         processes.append(process)

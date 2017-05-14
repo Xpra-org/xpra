@@ -281,6 +281,7 @@ def exec_kwargs():
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
             return {"startupinfo" : startupinfo}
     return {}
 
