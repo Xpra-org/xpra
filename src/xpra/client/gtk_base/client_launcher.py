@@ -806,8 +806,10 @@ class ApplicationWindow:
         self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
     def destroy(self, *args):
-        self.window.destroy()
-        self.window = None
+        w = self.window
+        if w:
+            self.window = None
+            w.destroy()
         gtk.main_quit()
 
     def update_options_from_URL(self, url):
