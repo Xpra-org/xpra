@@ -107,9 +107,9 @@
   </autotools>
 
   <autotools id="libepoxy" autogen-sh="configure">
-    <branch repo="github-tarball" module="anholt/libepoxy/releases/download/1.4.1/libepoxy-1.4.1.tar.xz"
-    	version="1.4.1"
-    	hash="sha256:88c6abf5522fc29bab7d6c555fd51a855cbd9253c4315f8ea44e832baef21aa6"/>
+    <branch repo="github-tarball" module="anholt/libepoxy/releases/download/1.4.2/libepoxy-1.4.2.tar.xz"
+    	version="1.4.2"
+    	hash="sha256:bea6fdec3d10939954495da898d872ee836b75c35699074cbf02a64fcb80d5b3"/>
     <dependencies>
       <dep package="xorg-util-macros"/>
     </dependencies>
