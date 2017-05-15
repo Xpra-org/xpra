@@ -128,6 +128,9 @@ class RootWindowModel(object):
             return default_value
 
 
+    def managed_connect(self, *args):
+        log.warn("ignoring managed signal connect request: %s", args)
+
     def connect(self, *args):
         log.warn("ignoring signal connect request: %s", args)
 
