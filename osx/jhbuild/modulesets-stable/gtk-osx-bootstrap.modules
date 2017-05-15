@@ -22,8 +22,6 @@
               href="git://git.gnome.org/"/>
   <repository type="tarball" name="harfbuzz"
               href="http://www.freedesktop.org/software/harfbuzz/release/"/>
-  <repository type="tarball" name="cups"
-	      href="https://www.cups.org/software/"/>
   <repository type="tarball" name="itstool" href="http://files.itstool.org/"/>
   <repository type="tarball" name="icu"
               href="http://download.icu-project.org/files/"/>
@@ -73,16 +71,6 @@
 	    repo="xmlsoft.org"/>
     <dependencies>
       <dep package="libxml2"/>
-    </dependencies>
-  </autotools>
-
-  <!-- Cups is needed *only* for Tiger, and skipped otherwise -->
-  <autotools id='cups' autogen-sh='configure' skip-autogen='never'
-	     autogenargs='DSOFLAGS="$LDFLAGS"'>
-    <branch module="1.2.12/cups-1.2.12-source.tar.bz2"
-	    version="1.2.12" repo="cups"  checkoutdir='cups-1.2.12'/>
-    <dependencies>
-      <dep package="libtiff"/>
     </dependencies>
   </autotools>
 
@@ -203,7 +191,6 @@
   
   <metamodule id="meta-gtk-osx-bootstrap">
     <dependencies>
-      <dep package="cups"/>
       <dep package="libpng"/>
       <dep package="libjpeg"/>
       <dep package="libtiff"/>
