@@ -403,13 +403,6 @@ diff --git a/gtk/gdkgl/gdkglext.defs b/gtk/gdkgl/gdkglext.defs
 index f3f8e69..37fb930 100644
 --- a/gtk/gdkgl/gdkglext.defs
 +++ b/gtk/gdkgl/gdkglext.defs
-@@ -79,12 +79,6 @@
-   (return-type "GdkVisual*")
- )
- 
- (define-method get_layer_plane
-   (of-object "GdkGLConfig")
-   (c-name "gdk_gl_config_get_layer_plane")
 @@ -168,50 +162,16 @@
  
  (define-method destroy
