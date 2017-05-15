@@ -305,7 +305,12 @@ class Protocol(object):
         with self._write_lock:
             if self._closed:
                 return
-            self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb)
+            try:
+                self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb)
+            except:
+                log.error("Error: failed to queue '%s' packet", packet[0])
+                log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb), exc_info=True)
+                raise
 
     def _add_chunks_to_queue(self, chunks, start_send_cb=None, end_send_cb=None):
         """ the write_lock must be held when calling this function """
