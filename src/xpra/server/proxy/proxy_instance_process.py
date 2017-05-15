@@ -695,7 +695,7 @@ class ProxyInstanceProcess(Process):
     def process_draw(self, packet):
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
         #never modify mmap packets
-        if encoding=="mmap":
+        if encoding in ("mmap", "scroll"):
             return True
 
         #we have a proxy video packet:
