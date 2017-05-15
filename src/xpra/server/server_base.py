@@ -2354,7 +2354,7 @@ class ServerBase(ServerCore):
         props = window.get_dynamic_property_names()
         metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
         for prop in props:
-            window.connect("notify::%s" % prop, self._update_metadata)
+            window.managed_connect("notify::%s" % prop, self._update_metadata)
         wid = self._max_window_id
         self._max_window_id += 1
         self._window_to_id[window] = wid
