@@ -1427,14 +1427,21 @@ def parse_display_name(error_cb, opts, display_name):
                     port_str = port_str[1:]     #ie: "22"
                 host = host[1:epos]                 #ie: "HOST"
             else:
-                parts = host.split(":")
-                if len(parts[-1])>4:
-                    port_str = parts[-1]
-                    host = ":".join(parts[:-1])
+                devsep = host.split("%")        #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
+                if len(devsep)==2:
+                    parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
+                    if len(parts)==2:
+                        host = "%s%%%s" % (devsep[0], parts[0])
+                        port_str = parts[1]     #ie: "14500"
                 else:
-                    #otherwise, we have to assume they are all part of IPv6
-                    #we could count them at split at 8, but that would be just too fugly
-                    pass
+                    parts = host.split(":")
+                    if len(parts[-1])>4:
+                        port_str = parts[-1]
+                        host = ":".join(parts[:-1])
+                    else:
+                        #otherwise, we have to assume they are all part of IPv6
+                        #we could count them at split at 8, but that would be just too fugly
+                        pass
             desc["ipv6"] = True
         elif host.find(":")>0:
             host, port_str = host.split(":", 1)
@@ -1917,7 +1924,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             family = socket.AF_INET
         host = display_desc["host"]
         port = display_desc["port"]
-        addrinfo = socket.getaddrinfo(host, port, family)
+        try:
+            addrinfo = socket.getaddrinfo(host, port, family)
+        except Exception as e:
+            raise InitException("cannot get %s address of %s: %s" % ({
+                socket.AF_INET6 : "IPv6",
+                socket.AF_INET  : "IPv4",
+                }.get(family, family), (host, port), e))
         sockaddr = addrinfo[0][-1]
         sock = socket.socket(family, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
