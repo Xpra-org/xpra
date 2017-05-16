@@ -2223,7 +2223,7 @@ def run_client(error_cb, opts, extra_args, mode):
         def handshake_complete(*args):
             from xpra.log import Logger
             log = Logger()
-            log.info("Attached to %s (press Control-C to detach)\n" % conn.target)
+            log.info("Attached to %s (press Control-C to detach)\n", conn.target)
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
         app.init_ui(opts, extra_args)
