@@ -31,6 +31,11 @@ class SysAuthenticator(object):
             self.pw = pwd.getpwnam(username)
         except:
             self.pw = None
+        #warn about unused options:
+        try:
+            del kwargs["exec_cwd"]
+        except:
+            pass
         if kwargs:
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
             log.warn(" %s", kwargs)
