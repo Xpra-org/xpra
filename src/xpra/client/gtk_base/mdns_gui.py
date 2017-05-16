@@ -97,7 +97,7 @@ class mdns_sessions(gtk.Window):
             glib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
-        log.info("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
+        log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
         if HIDE_IPV6 and address.find(":")>=0:
             return
         text = text or {}
