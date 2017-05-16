@@ -40,6 +40,13 @@
   <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
 
 
+  <autotools id="brotli" autogen-sh="configure">
+	<branch module="/google/brotli/archive/v0.6.0.tar.gz"
+		version="0.6.0" checkoutdir="brotli-0.6.0"
+		hash="sha256:69cdbdf5709051dd086a2f020f5abf9e32519eafe0ad6be820c667c3a9c9ee0f"
+		repo="github.com"/>
+  </autotools>
+
   <autotools id="yasm" autogen-sh="configure">
 	<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
 		version="1.3.0"
