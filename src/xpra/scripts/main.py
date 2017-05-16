@@ -1427,9 +1427,14 @@ def parse_display_name(error_cb, opts, display_name):
                     port_str = port_str[1:]     #ie: "22"
                 host = host[1:epos]                 #ie: "HOST"
             else:
-                #otherwise, we have to assume they are all part of IPv6
-                #we could count them at split at 8, but that would be just too fugly
-                pass
+                parts = host.split(":")
+                if len(parts[-1])>4:
+                    port_str = parts[-1]
+                    host = ":".join(parts[:-1])
+                else:
+                    #otherwise, we have to assume they are all part of IPv6
+                    #we could count them at split at 8, but that would be just too fugly
+                    pass
             desc["ipv6"] = True
         elif host.find(":")>0:
             host, port_str = host.split(":", 1)
@@ -1675,7 +1680,7 @@ def _socket_connect(sock, endpoint, description, dtype):
     except Exception as e:
         from xpra.log import Logger
         log = Logger("network")
-        log("failed to connect", exc_info=True)
+        log("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
         raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
@@ -1910,14 +1915,17 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             family = socket.AF_INET6
         else:
             family = socket.AF_INET
+        host = display_desc["host"]
+        port = display_desc["port"]
+        addrinfo = socket.getaddrinfo(host, port, family)
+        sockaddr = addrinfo[0][-1]
         sock = socket.socket(family, socket.SOCK_STREAM)
         sock.settimeout(SOCKET_TIMEOUT)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
-        tcp_endpoint = (display_desc["host"], display_desc["port"])
-        conn = _socket_connect(sock, tcp_endpoint, display_name, dtype)
+        conn = _socket_connect(sock, sockaddr, display_name, dtype)
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
