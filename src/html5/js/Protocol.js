@@ -343,7 +343,14 @@ XpraProtocol.prototype.process_send_queue = function() {
 		}
 
 		//debug("send worker:"+packet);
-		var bdata = bencode(packet);
+		var bdata = null;
+		try {
+			bdata = bencode(packet);
+		}
+		catch (e) {
+			console.error("Error: failed to bencode packet:", packet);
+			continue;
+		}
 		var proto_flags = 0;
 		var payload_size = bdata.length;
 		// encryption
