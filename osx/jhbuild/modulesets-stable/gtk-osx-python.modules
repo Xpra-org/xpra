@@ -97,9 +97,9 @@
   </autotools>
 
   <distutils id="pybsddb">
-    <branch module="b/bsddb3/bsddb3-5.3.0.tar.gz"
-	    hash="md5:d5aa4f293c4ea755e84383537f74be82" repo="pymodules"
-	    version="5.3.0"/>
+	<branch module="8d/9b/c3b01ff14e19254b2e031d8ae5ebe472e5523a47acc6f7d49300960d406d/bsddb3-6.2.4.tar.gz"
+  	    hash="md5:eec77d104c5981366701c6b0de585504" repo="pymodules"
+  	    version="6.2.4"/>
     <dependencies>
       <dep package="python3"/>
     </dependencies>
@@ -160,7 +160,7 @@
   </autotools>
 
    <autotools id="pygobject3" autogen-sh="configure" >
-    <branch version="3.16.2" module="pygobject/3.16/pygobject-3.16.2.tar.xz"
+    <branch version="3.24.1" module="pygobject/3.16/pygobject-3.24.1.tar.xz"
 	    hash="sha256:de620e00fe7ecb788aa2dc0d664e41f71b8e718e728168e8d982cf193a9e7e64">
         <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pygi-cache-double-typedef.patch" strip="1" -->
     </branch>

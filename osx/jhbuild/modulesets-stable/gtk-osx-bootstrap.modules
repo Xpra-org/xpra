@@ -173,8 +173,8 @@
 
   <autotools id="hicolor-icon-theme" autogen-sh="configure"
 	     supports-non-srcdir-builds="no">
-    <branch module="hicolor-icon-theme-0.13.tar.gz" repo="icon-theme"
-            version="0.13"/>
+    <branch module="hicolor-icon-theme-0.15.tar.xz" repo="icon-theme"
+            version="0.15"/>
   </autotools>
 
   <autotools id="gettext-runtime" autogen-sh="configure"
@@ -184,8 +184,8 @@
   </autotools>
 
   <autotools id='readline' autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="readline/readline-6.3.tar.gz"
-      version="6.3">
+    <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
+      version="7.0">
     </branch>
   </autotools>
   
