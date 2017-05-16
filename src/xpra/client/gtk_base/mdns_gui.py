@@ -245,7 +245,7 @@ def main():
     from xpra.log import enable_color
     with program_context("Xpra-Browser", "Xpra Session Browser"):
         enable_color()
-        if not get_listener_class() or True:
+        if not get_listener_class():
             command_error("no mDNS support in this build")
             return 1
         return do_main()
