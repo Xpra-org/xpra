@@ -20,13 +20,14 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
+from xpra.net.net_util import if_indextoname
 from xpra.os_util import WIN32
 from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("mdns", "util")
 
 
-HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", True)
+HIDE_IPV6 = envbool("XPRA_HIDE_IPV6", False)
 
 
 class mdns_sessions(gtk.Window):
@@ -154,6 +155,10 @@ class mdns_sessions(gtk.Window):
         mode = text.get("mode", "")
         if display.startswith(":"):
             dstr = display[1:]
+        #append interface to IPv6 host URI for link local addresses ("fe80:"):
+        if interface and if_indextoname and address.lower().startswith("fe80:"):
+            #ie: "fe80::c1:ac45:7351:ea69%eth1"
+            address += "%%%s" % if_indextoname(interface)
         if username:
             if password:
                 uri = "%s/%s:%s@%s:%s/%s" % (mode, username, password, address, port, dstr)

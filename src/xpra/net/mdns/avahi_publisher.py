@@ -26,7 +26,7 @@ SHOW_INTERFACE = True            #publishes the name of the interface we broadca
 
 def get_interface_index(host):
     log("get_interface_index(%s)", host)
-    if host == "0.0.0.0" or host =="" or host=="*":
+    if host == "0.0.0.0" or host =="" or host=="*" or host=="::":
         return avahi.IF_UNSPEC
 
     if not if_nametoindex:
@@ -116,6 +116,8 @@ class AvahiPublisher:
         self.name = name
         self.stype = stype
         self.domain = domain
+        if (host=="::"):
+            host = ""
         self.host = host
         self.port = port
         self.text = avahi.string_array_to_txt_array(text)
