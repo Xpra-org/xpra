@@ -161,7 +161,7 @@
 
    <autotools id="pygobject3" autogen-sh="configure" >
     <branch version="3.24.1" module="pygobject/3.24/pygobject-3.24.1.tar.xz"
-	    hash="sha256:de620e00fe7ecb788aa2dc0d664e41f71b8e718e728168e8d982cf193a9e7e64">
+	    hash="sha256:5330b2bd034907fe61c7911f489cca86f7483f9dbdaaac8ee4f43673dd51bb6a">
         <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pygi-cache-double-typedef.patch" strip="1" -->
     </branch>
     <dependencies>
