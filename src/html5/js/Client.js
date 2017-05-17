@@ -63,6 +63,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.reconnect_count = 5;
 	this.reconnect_delay = 1000;	//wait 1 second before retrying
 	this.reconnect_attempt = 0;
+	this.swap_keys = Utilities.isMacOS();
 	this.HELLO_TIMEOUT = 2000;
 	this.PING_TIMEOUT = 15000;
 	this.PING_GRACE = 2000;
@@ -507,23 +508,47 @@ XpraClient.prototype._keyb_get_modifiers = function(event) {
 	/**
 	 * Returns the modifiers set for the current event.
 	 * We get the list of modifiers using "get_event_modifiers"
-	 * then translate "alt" and "meta" into their keymap name.
-	 * (usually "mod1")
+	 * then we translate them.
 	 */
 	//convert generic modifiers "meta" and "alt" into their x11 name:
 	var modifiers = get_event_modifiers(event);
+	if (this.caps_lock)
+		modifiers.push("lock");
+	if (this.num_lock && this.num_lock_mod)
+		modifiers.push(this.num_lock_mod);
+	return this.translate_modifiers(modifiers);
+}
+
+XpraClient.prototype.translate_modifiers = function(modifiers) {
+	/**
+	 * We translate "alt" and "meta" into their keymap name.
+	 * (usually "mod1")
+	 * And also swap keys for macos clients.
+	 */
+	//convert generic modifiers "meta" and "alt" into their x11 name:
 	//FIXME: look them up!
 	var alt = "mod1";
 	var meta = "mod1";
+	var control = "control";
+	//swap
+	if (this.swap_keys) {
+		meta = "control";
+		control = "mod1";
+	}
+	var new_modifiers = modifiers.slice();
 	var index = modifiers.indexOf("alt");
 	if (index>=0)
-		modifiers[index] = alt;
+		new_modifiers[index] = alt;
 	index = modifiers.indexOf("meta");
 	if (index>=0)
-		modifiers[index] = meta;
+		new_modifiers[index] = meta;
+	index = modifiers.indexOf("control");
+	if (index>=0)
+		new_modifiers[index] = control;
 	//show("get_modifiers() modifiers="+modifiers.toSource());
-	return modifiers;
+	return new_modifiers;
 }
+
 
 XpraClient.prototype._check_browser_language = function(key_layout) {
 	/**
@@ -620,11 +645,8 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
 		keyname = keyname.replace("_L", "_R")
 
-	var modifiers = this._keyb_get_modifiers(event);
-	if (this.caps_lock)
-		modifiers.push("lock");
-	if (this.num_lock && this.num_lock_mod)
-		modifiers.push(this.num_lock_mod);
+	var raw_modifiers = get_event_modifiers(event);
+	var modifiers = this.translate_modifiers(raw_modifiers);
 	var keyval = keycode;
 	var group = 0;
 
@@ -632,40 +654,74 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if ((this.caps_lock && shift) || (!this.caps_lock && !shift))
 		str = str.toLowerCase();
 
+	var ostr = str;
+	if (this.swap_keys) {
+		if (keyname=="Control_L") {
+			keyname = "Meta_L";
+			str = "meta";
+		}
+		else if (keyname=="Meta_L") {
+			keyname = "Control_L";
+			str = "control";
+		}
+		else if (keyname=="Control_R") {
+			keyname = "Meta_R";
+			str = "meta";
+		}
+		else if (keyname=="Meta_R") {
+			keyname = "Control_R";
+			str = "control";
+		}
+	}
+
 	if (this.topwindow != null) {
 		//send via a timer so we get a chance to capture the clipboard value,
 		//before we send control-V to the server:
 		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
 		var me = this;
 		setTimeout(function () {
-			//show("win="+win.toSource()+", keycode="+keycode+", modifiers=["+modifiers+"], str="+str);
 			me.send(packet);
 			if (me.debug) {
 				console.debug(packet);
+			}
+			if (pressed && me.swap_keys && raw_modifiers.indexOf("meta")>=0 && ostr!="meta") {
+				//macos will swallow the key release event if the meta modifier is pressed,
+				//so simulate one immediately:
+				packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
+				if (me.debug) {
+					console.debug(packet);
+				}
+				me.send(packet);
 			}
 		}, 0);
 	}
 	if (this.clipboard_enabled) {
 		//allow some key events that need to be seen by the browser
 		//for handling the clipboard:
-		if (keyname=="Control_L" || keyname=="Control_R") {
+		var clipboard_modifier_keys = ["Control_L", "Control_R", "Shift_L", "Shift_R"];
+		var clipboard_modifier = "control";
+		if (Utilities.isMacOS()) {
+			//Apple does things differently, as usual:
+			clipboard_modifier_keys = ["Meta_L", "Meta_R", "Shift_L", "Shift_R"];
+			clipboard_modifier = "meta";
+		}
+		//let the OS see Control (or Meta on macos) and Shift:
+		if (clipboard_modifier_keys.indexOf(keyname)>=0) {
 			return true;
 		}
-		if (keyname=="Shift_L" || keyname=="Shift_R") {
-			return true;
-		}
+		//let the OS see Shift + Insert:
 		if (shift && keyname=="Insert") {
 			return true;
 		}
-		var control = modifiers.indexOf("control")>=0;
-		if (control) {
+		var clipboard_mod_set = raw_modifiers.indexOf(clipboard_modifier)>=0;
+		if (clipboard_mod_set) {
 			var l = keyname.toLowerCase();
-			if (control && (l=="c" || l=="x" || l=="v")) {
+			if (l=="c" || l=="x" || l=="v") {
 				return true;
 			}
 		}
 	}
-	//this.log("keyname=", keyname, "modifiers=", modifiers);
+	//console.debug("keyname=", keyname, "modifiers=", modifiers);
 	return false;
 }
 

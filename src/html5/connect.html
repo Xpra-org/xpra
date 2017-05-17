@@ -224,6 +224,9 @@
 				  	<input type="checkbox" id="reconnect"> <span>Re-connect automatically to the session</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<input type="checkbox" id="swap_keys"> <span>Swap command and control key</span>
+				  </li>
+				  <li class="list-group-item">
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
@@ -339,7 +342,7 @@ function doConnect() {
 	var bool_props = ["clipboard", "printing", "file_transfer",
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
-		"sharing", "steal", "reconnect",
+		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video",
 		"debug", "insecure"];
 	for (var i = 0; i < bool_props.length; i++) {
@@ -523,10 +526,13 @@ $(document).ready(function() {
 
 	var bool_props = ["clipboard", "printing", "file_transfer",
 			"exit_with_children", "exit_with_client",
-			"sharing", "steal", "reconnect",
+			"sharing", "steal", "reconnect", "swap_keys",
 			"video", "mediasource_video",
 			"debug", "insecure"];
 	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "exit_with_children", "exit_with_client"];
+	if (Utilities.isMacOS()) {
+		default_on.push("swap_keys");
+	}
 	for (var i = 0; i < bool_props.length; i++) {
 		var prop = bool_props[i];
 		var def = default_on.indexOf(prop)>=0;

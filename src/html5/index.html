@@ -143,6 +143,7 @@
 				var file_transfer = getboolparam("file_transfer", true);
 				var steal = getboolparam("steal", true);
 				var reconnect = getboolparam("reconnect", true);
+				var swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
 				//delete session params:
 				try {
 					sessionStorage.clear();
@@ -176,6 +177,7 @@
 		    	client.file_transfer = file_transfer;
 		    	client.steal = steal;
 		    	client.reconnect = reconnect;
+		    	client.swap_keys = swap_keys;
 		    	client.on_connection_progress = connection_progress;
 		    	//example overrides:
 		    	//client.HELLO_TIMEOUT = 3600000;
