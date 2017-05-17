@@ -169,6 +169,11 @@ XpraClient.prototype.log = function() {
 	this.send_log(20, arguments);
 	console.log.apply(console, arguments);
 }
+XpraClient.prototype._debug = function() {
+	if (this.debug) {
+		console.debug.apply(console, arguments);
+	}
+}
 
 
 XpraClient.prototype.init = function(ignore_blacklist) {
@@ -179,9 +184,7 @@ XpraClient.prototype.init = function(ignore_blacklist) {
 }
 
 XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
-	if(this.debug) {
-		console.debug("init_audio() enabled="+this.audio_enabled+", mediasource enabled="+this.audio_mediasource_enabled+", aurora enabled="+this.audio_aurora_enabled+", http-stream enabled="+this.audio_httpstream_enabled);
-	}
+	this._debug("init_audio() enabled=", this.audio_enabled, ", mediasource enabled=", this.audio_mediasource_enabled, ", aurora enabled=", this.audio_aurora_enabled, ", http-stream enabled=", this.audio_httpstream_enabled);
 	if(!this.audio_enabled) {
 		return;
 	}
@@ -211,9 +214,7 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 			this.audio_codecs[codec_option] = codec_option;
 		}
 	}
-	if (this.debug) {
-		console.debug("audio codecs:", this.audio_codecs);
-	}
+	this._debug("audio codecs:", this.audio_codecs);
 	if(!this.audio_codecs) {
 		this.audio_codec = null;
 		this.audio_enabled = false;
@@ -475,8 +476,7 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 	var packet_type = "";
 	var fn = "";
 	packet_type = packet[0];
-	if (ctx.debug)
-		console.log("received a " + packet_type + " packet");
+	ctx._debug("received a", packet_type, "packet");
 	fn = ctx.packet_handlers[packet_type];
 	if (fn==undefined) {
 		console.error("no packet handler for "+packet_type+"!");
@@ -602,9 +602,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	var keycode = event.which || event.keyCode;
 	var str = event.key || String.fromCharCode(keycode);
 
-	if (this.debug) {
-		console.debug("processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);
-	}
+	this._debug("processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);
 
 	//sync numlock
 	if (keycode==144 && pressed) {
@@ -681,16 +679,12 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		var me = this;
 		setTimeout(function () {
 			me.send(packet);
-			if (me.debug) {
-				console.debug(packet);
-			}
+			me._debug(packet);
 			if (pressed && me.swap_keys && raw_modifiers.indexOf("meta")>=0 && ostr!="meta") {
 				//macos will swallow the key release event if the meta modifier is pressed,
 				//so simulate one immediately:
 				packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
-				if (me.debug) {
-					console.debug(packet);
-				}
+				me._debug(packet);
 				me.send(packet);
 			}
 		}, 0);
@@ -721,7 +715,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			}
 		}
 	}
-	//console.debug("keyname=", keyname, "modifiers=", modifiers);
 	return false;
 }
 
@@ -764,7 +757,7 @@ XpraClient.prototype._keyb_onkeypress = function(event, ctx) {
 };
 
 XpraClient.prototype._get_keyboard_layout = function() {
-	console.debug("_get_keyboard_layout() keyboard_layout=", this.keyboard_layout);
+	this._debug("_get_keyboard_layout() keyboard_layout=", this.keyboard_layout);
 	if (this.keyboard_layout)
 		return this.keyboard_layout;
 	return Utilities.getKeyboardLayout();
@@ -920,11 +913,11 @@ XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
 	var digests = ["hmac", "hmac+md5", "xor"]
 	try {
-		console.debug("forge.md.algorithms=", forge.md.algorithms);
+		this._debug("forge.md.algorithms=", forge.md.algorithms);
 		for (var hash in forge.md.algorithms) {
 			digests.push("hmac+"+hash);
 		}
-		console.debug("digests:", digests);
+		this._debug("digests:", digests);
 	}
 	catch (e) {
 		console.error("Error probing forge crypto digests:", e);
@@ -1166,7 +1159,7 @@ XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons
 XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
 	var wid = win.wid;
 	var client = win.client;
-	//console.debug("click focus=", client.focus, ", wid=", wid);
+	//client._debug("click focus=", client.focus, ", wid=", wid);
 	// dont call set focus unless the focus has actually changed
 	if(client.focus != wid) {
 		client._window_set_focus(win);
@@ -1407,7 +1400,7 @@ XpraClient.prototype._remove_audio_element = function() {
 			document.body.removeChild(this.audio);
 		}
 		catch (e) {
-			console.debug("failed to remove audio from page:", e);
+			this._debug("failed to remove audio from page:", e);
 		}
 		this.audio = null;
 	}	
@@ -1486,7 +1479,7 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
 	// save the disconnect reason
 	var reason = packet[1];
-	console.debug("disconnect reason:", reason);
+	ctx._debug("disconnect reason:", reason);
 	ctx.disconnect_reason = reason;
 	ctx.close();
 	// call the client's close callback
@@ -1902,9 +1895,7 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	var h = packet[3];
 	var encoding = packet[4];
 	var img_data = packet[5];
-	if(ctx.debug) {
-		console.debug("window-icon: "+encoding+" size "+w+"x"+h);
-	}
+	ctx._debug("window-icon: ", encoding, " size ", w, "x", h);
 	var win = ctx.id_to_window[wid];
 	if (win) {
 		win.update_icon(w, h, encoding, img_data);
@@ -1953,9 +1944,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 	var win = ctx.id_to_window[wid];
 	var decode_time = -1;
 	if (!win) {
-		if(ctx.debug) {
-			console.debug('cannot paint, window not found:', wid);
-		}
+		ctx._debug('cannot paint, window not found:', wid);
 		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, "window not found");
 		return;
 	}
@@ -1977,9 +1966,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 					}
 				}
 				decode_time = new Date().getTime() - start;
-				if(ctx.debug) {
-					console.debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
-				}
+				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
 				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, "");
 			}
 		);
@@ -2024,23 +2011,17 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	var MIN_START_BUFFERS = 4;
 	var MAX_BUFFERS = 250;
-	if (this.debug) {
-		console.debug("sound-data: "+codec+", "+buf.length+" bytes");
-	}
+	this._debug("sound-data: ", codec, ", ", buf.length, "bytes");
 	if (this.audio_buffers.length>=MAX_BUFFERS) {
 		this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
 		this.close_audio();
 		return;
 	}
 	if (metadata) {
-		if (this.debug) {
-			console.debug("metadata=", metadata);
-		}
+		this._debug("audio metadata=", metadata);
 		//push metadata first:
 		for (var i = 0; i < metadata.length; i++) {
-			if (this.debug) {
-				console.debug("metadata[", i, "]=", metadata[i], ", length=", metadata[i].length, ", type=", Object.prototype.toString.call(metadata[i]));
-			}
+			this._debug("metadata[", i, "]=", metadata[i], ", length=", metadata[i].length, ", type=", Object.prototype.toString.call(metadata[i]));
 			this.audio_buffers.push(Utilities.StringToUint8(metadata[i]));
 		}
 		//since we have the metadata, we should be good to go:
@@ -2090,10 +2071,8 @@ XpraClient.prototype._audio_start_stream = function() {
 XpraClient.prototype._audio_ready = function() {
 	if (this.audio_framework=="mediasource") {
 		//check media source buffer state:
-		if (this.debug) {
-			console.debug("mediasource state="+MediaSourceConstants.READY_STATE[this.audio.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
-			console.debug("audio paused="+this.audio.paused+", queue size="+this.audio_buffers.length+", source ready="+this.audio_source_ready+", source buffer updating="+this.audio_source_buffer.updating);
-		}
+		this._debug("mediasource state=", MediaSourceConstants.READY_STATE[this.audio.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
+		this._debug("audio paused=", this.audio.paused, ", queue size=", this.audio_buffers.length, ", source ready=", this.audio_source_ready, ", source buffer updating=", this.audio_source_buffer.updating);
 		var asb = this.audio_source_buffer;
 		return (asb!=null) && (!asb.updating);
 	}
@@ -2120,9 +2099,7 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 	if (!this.clipboard_enabled) {
 		return;
 	}
-	if (this.debug) {
-		console.debug("sending clipboard token with data:", data);
-	}
+	this._debug("sending clipboard token with data:", data);
 	var packet = ["clipboard-token", "CLIPBOARD", [], "STRING", "STRING", data.length, "bytes", data, false, true, true];
 	this.send(packet);
 }
@@ -2131,9 +2108,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	if (!ctx.clipboard_enabled) {
 		return;
 	}
-	if (ctx.debug) {
-		console.debug("clipboard token:", packet);
-	}
+	ctx._debug("clipboard token:", packet);
 	// we don't actually set the clipboard here,
 	// because we can't (the browser security won't let us)
 	// we just record the contents and actually set the clipboard

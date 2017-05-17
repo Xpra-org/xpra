@@ -187,6 +187,12 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.update_metadata(metadata);
 };
 
+XpraWindow.prototype._debug = function() {
+	if (this.debug) {
+		console.debug.apply(console, arguments);
+	}
+}
+
 XpraWindow.prototype._init_2d_canvas = function() {
 	this.offscreen_canvas_mode = '2d';
 	this.offscreen_canvas = document.createElement("canvas");
@@ -361,9 +367,7 @@ XpraWindow.prototype.on_mousescroll = function(e) {
 	var modifiers = [];
 	var buttons = [];
 	var wheel = Utilities.normalizeWheel(e);
-	if (this.debug) {
-		console.debug("normalized wheel event:", wheel);
-	}
+	this._debug("normalized wheel event:", wheel);
 	//clamp to prevent event floods:
 	var px = Math.min(1200, wheel.pixelX);
 	var py = Math.min(1200, wheel.pixelY);
@@ -446,9 +450,7 @@ XpraWindow.prototype.update_zindex = function() {
  */
 XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	//update our metadata cache with new key-values:
-	if (this.debug) {
-		console.debug("update_metadata(", metadata, ")");
-	}
+	this._debug("update_metadata(", metadata, ")");
 	for (var attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
 	}
@@ -839,9 +841,7 @@ XpraWindow.prototype.get_internal_geometry = function() {
  * then we fire "mouse_click_cb" (if it is set).
  */
 XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modifiers, buttons) {
-	if (this.debug) {
-		console.debug("got mouse click at ", mx, my)
-	}
+	this._debug("got mouse click at ", mx, my);
 	// mouse click event is from canvas just for this window so no need to check
 	// internal geometry anymore
 	this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
@@ -920,9 +920,7 @@ XpraWindow.prototype._init_broadway = function(enc_width, enc_height, width, hei
 	this.log("broadway decoder initialized");
 	this.broadway_paint_location = [0, 0];
 	this.broadway_decoder.onPictureDecoded = function(buffer, p_width, p_height, infos) {
-		if(this.debug) {
-			console.debug("broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
-		}
+		this._debug("broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
 		if(!me.broadway_decoder) {
 			return;
 		}
@@ -944,9 +942,7 @@ XpraWindow.prototype._close_broadway = function() {
 
 
 XpraWindow.prototype._close_video = function() {
-	if(this.debug) {
-		console.debug("close_video: video_source_buffer="+this.video_source_buffer+", media_source="+this.media_source+", video="+this.video);
-	}
+	this._debug("close_video: video_source_buffer=", this.video_source_buffer, ", media_source=", this.media_source, ", video=", this.video);
 	this.video_source_ready = false;
 	if(this.video) {
 		if(this.media_source) {
@@ -967,9 +963,7 @@ XpraWindow.prototype._close_video = function() {
 }
 
 XpraWindow.prototype._push_video_buffers = function() {
-	if(this.debug) {
-		console.debug("_push_video_buffers()");
-	}
+	this._debug("_push_video_buffers()");
 	var vsb = this.video_source_buffer;
 	var vb = this.video_buffers;
 	if(!vb || !vsb || !this.video_source_ready) {
@@ -1059,9 +1053,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 
 XpraWindow.prototype._non_video_paint = function(coding) {
 	if(this.video && this.video.style.zIndex!="-1") {
-		if(this.debug) {
-			console.debug("bringing canvas above video for "+coding+" paint event");
-		}
+		this._debug("bringing canvas above video for ", coding, " paint event");
 		//push video under the canvas:
 		this.video.style.zIndex = "-1";
 		//copy video to canvas:
@@ -1089,9 +1081,7 @@ XpraWindow.prototype.paint = function paint() {
  * if we're not already in the process of painting something.
  */
 XpraWindow.prototype.may_paint_now = function paint() {
- 	if (this.debug) {
-		console.debug("may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
-	}
+	this._debug("may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
 	while (!this.paint_pending && this.paint_queue.length>0) {
 		this.paint_pending = true;
 		var item = this.paint_queue.shift();
@@ -1115,9 +1105,7 @@ var DEFAULT_BOX_COLORS = {
         }
 
 XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
- 	if (this.debug) {
- 		console.debug("do_paint("+img_data.length+" bytes of "+("zlib" in options?"zlib ":"")+coding+" data "+width+"x"+height+" at "+x+","+y+") focused="+this.focused);
- 	}
+	this._debug("do_paint(", img_data.length, " bytes of ", ("zlib" in options?"zlib ":""), coding, " data ", width, "x", height, " at ", x, ",", y, ") focused=", this.focused);
 	var me = this;
 
 	if(this.offscreen_canvas_mode!='2d') {
@@ -1177,9 +1165,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		if(img_data.length > img.data.length) {
 			this.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
 		} else {
-			if (this.debug) {
-				console.debug("got ",img_data.length,"to paint with stride",rowstride);
-			}
+			this._debug("got ", img_data.length, "to paint with stride", rowstride);
 		}
 		img.data.set(img_data);
 		this.offscreen_canvas_ctx.putImageData(img, x, y);
@@ -1229,10 +1215,8 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			this.video.style.zIndex = this.div.css("z-index")+1;
 		}
 		if(img_data.length>0) {
-			if(this.debug) {
-				console.debug("video state="+MediaSourceConstants.READY_STATE[this.video.readyState]+", network state="+MediaSourceConstants.NETWORK_STATE[this.video.networkState]);
-				console.debug("video paused="+this.video.paused+", video buffers="+this.video_buffers.length);
-			}
+			this._debug("video state=", MediaSourceConstants.READY_STATE[this.video.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.video.networkState]);
+			this._debug("video paused=", this.video.paused, ", video buffers=", this.video_buffers.length);
 			this.video_buffers.push(img_data);
 			if(this.video.paused) {
 				this.video.play();
@@ -1244,7 +1228,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			setTimeout(function() {
 				painted();
 			}, delay);
-			//console.debug("video queue: ", this.video_buffers.length);
+			//this._debug("video queue: ", this.video_buffers.length);
 		}
 	}
 	else if (coding=="scroll") {

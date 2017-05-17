@@ -338,6 +338,7 @@
 				    var pasteboard = $('#pasteboard');
 					pasteboard.on('paste', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+						client._debug("paste event, data=", paste_data);
 				        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
 				        return false;
 					});
@@ -345,6 +346,7 @@
 				        var clipboard_buffer = client.get_clipboard_buffer();
 						$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 				        $('#pasteboard').select();
+						client._debug("copy event, clipboard buffer=", clipboard_buffer);
 				        client.clipboard_pending = false;
 				        return true;
 					});
@@ -352,6 +354,7 @@
 				        var clipboard_buffer = client.get_clipboard_buffer();
 				        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 				        $('#pasteboard').select();
+						client._debug("cut event, clipboard buffer=", clipboard_buffer);
 				        client.clipboard_pending = false;
 				        return true;
 					});
@@ -361,6 +364,7 @@
 					        var clipboard_buffer = client.get_clipboard_buffer();
 					        $('#pasteboard').text(client.clipboard_buffer);
 					        $('#pasteboard').select();
+							client._debug("click event, with pending clipboard buffer=", clipboard_buffer);
 							//for IE:
 							var success = true;
 							if (window.clipboardData && window.clipboardData.setData) {
