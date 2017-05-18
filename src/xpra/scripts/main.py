@@ -35,6 +35,7 @@ INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
 CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
 WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 15)
+SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -1261,8 +1262,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             systemd_run = is_systemd_pid1()
         if systemd_run:
             #check if we have wrapped it already (or if disabled via env var)
-            wrapit = envbool("XPRA_SYSTEMD_RUN", True)
-            if wrapit:
+            if SYSTEMD_RUN:
                 return systemd_run_wrap(mode, sys.argv, options.systemd_run_args)
 
     configure_env(options)
