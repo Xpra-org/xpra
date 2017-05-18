@@ -36,6 +36,7 @@ CLIPBOARD_CLASS = os.environ.get("XPRA_CLIPBOARD_CLASS")
 SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
 WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 15)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
+LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -1228,12 +1229,19 @@ def configure_env(options):
 
 def systemd_run_wrap(mode, args, systemd_run_args):
     cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope", "--user"]
+    if not LOG_SYSTEMD_WRAP:
+        cmd.append("--quiet")
     if systemd_run_args:
         cmd += shlex.split(systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
-    print("using systemd-run to wrap '%s' server command" % mode)
-    print("%s" % " ".join(["'%s'" % x for x in cmd]))
+    if LOG_SYSTEMD_WRAP:
+        stderr = sys.stderr
+        try:
+            stderr.write("using systemd-run to wrap '%s' server command\n" % mode)
+            stderr.write("%s\n" % " ".join(["'%s'" % x for x in cmd]))
+        except:
+            pass
     try:
         p = Popen(cmd)
         p.wait()
