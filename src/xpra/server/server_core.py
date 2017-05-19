@@ -31,7 +31,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, SIGNAMES, WIN32
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, SIGNAMES, WIN32, FREEBSD, LINUX
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -566,6 +566,19 @@ class ServerCore(object):
             netlog.error("Error: cannot accept new connection:")
             netlog.error(" %s", e)
             return True
+        if LINUX:
+            SO_PEERCRED = 17
+            try:
+                import struct
+                creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
+                pid, uid, gid = struct.unpack('3i',creds)
+                netlog("peer: %s", (pid, uid, gid))
+            except Exception as  e:
+                netlog("getsockopt", exc_info=True)
+                netlog.error("Error getting peer credentials: %s", e)
+        elif FREEBSD:
+            #TODO: use getpeereid
+            pass
         try:
             peername = sock.getpeername()
         except:

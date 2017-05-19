@@ -56,6 +56,7 @@ except:
 WIN32 = sys.platform.startswith("win")
 OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
+FREEBSD  = sys.platform.startswith("freebsd")
 
 
 if sys.version_info[0] < 3:
