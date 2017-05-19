@@ -20,7 +20,7 @@ from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p
 LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "libpdfium.dll")
 try:
 	pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
-except WindowsError as e:
+except WindowsError as e:		#@UndefinedVariable
 	raise ImportError("cannot load %s: %s" % (LIBPDFIUMDLL, e))
 log("pdfium=%s", pdfium)
 
