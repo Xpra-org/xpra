@@ -548,7 +548,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(close_display)
 
     # if pam is present, try to create a new session:
-    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN")
+    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and os.getuid()!=uid)
     if PAM_OPEN:
         pam_open(display_name, xauth_data)
 
