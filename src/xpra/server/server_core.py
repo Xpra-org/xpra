@@ -986,7 +986,7 @@ class ServerCore(object):
                 opts["connection"] = proto._conn
                 ainstance = aclass(username, **opts)
                 proto.authenticator = ainstance
-                authlog("authenticator(%s)=%s", auth, ainstance)
+                authlog("authenticator: %s(%s, %s)=%s", auth, username, opts, ainstance)
             except Exception as e:
                 authlog("instantiating authenticator for %s", proto, exc_info=True)
                 authlog.error("Error instantiating %s:", proto.auth_class)
