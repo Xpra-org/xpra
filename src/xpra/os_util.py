@@ -558,6 +558,28 @@ def setuidgid(uid, gid):
         log.error(" continuing with gid=%i", os.getuid())
     log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
+def get_peercred(sock):
+    from xpra.log import Logger
+    log = Logger("network")
+    if LINUX:
+        SO_PEERCRED = 17
+        try:
+            import socket
+            import struct
+            creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
+            pid, uid, gid = struct.unpack('3i',creds)
+            log("peer: %s", (pid, uid, gid))
+            return pid, uid, gid
+        except Exception as  e:
+            log("getsockopt", exc_info=True)
+            log.error("Error getting peer credentials: %s", e)
+            return None
+    elif FREEBSD:
+        #TODO: use getpeereid
+        #then pwd to get the gid?
+        pass
+    return None
+
 
 def main():
     from xpra.log import Logger
