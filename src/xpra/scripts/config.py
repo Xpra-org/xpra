@@ -659,7 +659,10 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     ]
-PROXY_START_OVERRIDABLE_OPTIONS = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "").split(",") or PROXY_START_OVERRIDABLE_OPTIONS
+tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
+if tmp:
+    PROXY_START_OVERRIDABLE_OPTIONS = tmp.split(",")
+del tmp
 
 
 def get_default_key_shortcuts():
