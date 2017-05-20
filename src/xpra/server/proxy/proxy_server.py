@@ -229,7 +229,7 @@ class ProxyServer(ServerCore):
         display = None
         proc = None
         sns = c.dictget("start-new-session")
-        authlog("start_proxy: displays=%s, start-new-session=%s", displays, bool(sns))
+        authlog("start_proxy: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
         if len(displays)==0 or sns:
             if self._start_sessions:
                 #start a new session
@@ -242,10 +242,14 @@ class ProxyServer(ServerCore):
                 if display:
                     args = [display]
                 #allow the client to override some options:
-                for x in PROXY_START_OVERRIDABLE_OPTIONS:
-                    v = sns.get(x)
+                for k,v in sns.items():
+                    if k not in PROXY_START_OVERRIDABLE_OPTIONS:
+                        log.warn("Warning: ignoring invalid start override")
+                        log.warn(" %s=%s", k, v)
+                        continue
+                    log.info("start override: %s=%s", k, v)
                     if v is not None:
-                        fn = x.replace("-", "_")
+                        fn = k.replace("-", "_")
                         setattr(opts, fn, v)
                 log("starting new server subprocess: options=%s", opts)
                 try:
