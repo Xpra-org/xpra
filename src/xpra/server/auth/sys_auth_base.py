@@ -32,11 +32,8 @@ class SysAuthenticator(object):
         except:
             self.pw = None
         #warn about unused options:
-        try:
-            del kwargs["exec_cwd"]
-        except:
-            pass
-        if kwargs:
+        unused = [(k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd")]
+        if unused:
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
             log.warn(" %s", kwargs)
 
