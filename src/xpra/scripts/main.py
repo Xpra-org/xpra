@@ -1253,7 +1253,7 @@ def isdisplaytype(args, dtype):
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if os.name=="posix" and getuid()==0 and mode!="proxy" and not NO_ROOT_WARNING:
+    if os.name=="posix" and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
     ssh_display = isdisplaytype(args, "ssh")
