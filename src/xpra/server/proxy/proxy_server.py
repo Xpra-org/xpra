@@ -207,7 +207,7 @@ class ProxyServer(ServerCore):
         uid, gid, displays, env_options, session_options = sessions
         if os.name=="posix":
             if uid==0 or gid==0:
-                log.error("Error: proxy instances should not run as root")
+                log.error("Error: proxy instances cannot run as root")
                 log.error(" use a different uid and gid (ie: nobody)")
                 disconnect(AUTHENTICATION_ERROR, "cannot run proxy instances as root")
                 return
@@ -243,6 +243,8 @@ class ProxyServer(ServerCore):
                     args = [display]
                 #allow the client to override some options:
                 for k,v in sns.items():
+                    if k=="mode":
+                        continue
                     if k not in PROXY_START_OVERRIDABLE_OPTIONS:
                         log.warn("Warning: ignoring invalid start override")
                         log.warn(" %s=%s", k, v)
