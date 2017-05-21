@@ -31,7 +31,9 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
     if not os.path.exists(xauthority):
         try:
-            open(xauthority, 'wa').close()
+            with open(xauthority, 'wa') as f:
+                if getuid()==0 and (uid!=0 or gid!=0):
+                    os.fchown(f.fileno(), uid, gid)
         except Exception as e:
             #trying to continue anyway!
             sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
@@ -132,8 +134,12 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
         # use display specified
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         xvfb_cmd.append(display_name)
+        def preexec():
+            setsid()
+            if getuid()==0 and (uid!=0 or gid!=0):
+                setuidgid(uid, gid)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
-                                stdin=subprocess.PIPE, preexec_fn=setsid)
+                                stdin=subprocess.PIPE, preexec_fn=preexec)
     xauth_data = xauth_add(display_name)
     return xvfb, display_name, xauth_data
 
