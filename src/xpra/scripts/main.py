@@ -1642,14 +1642,22 @@ def pick_display(error_cb, opts, extra_args):
         # Pick a default server
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
-        sockdir, display, path = single_display_match(dir_servers, error_cb)
+        try:
+            sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
+        except:
+            if getuid()==0 and opts.system_proxy_socket:
+                display = ":PROXY"
+                sockdir = os.path.dirname(opts.system_proxy_socket)
+                sockpath = opts.system_proxy_socket
+            else:
+                raise
         if WIN32:
             return {
                     "type"              : "named-pipe",
                     "local"             : True,
                     "display"           : display,
                     "display_name"      : display,
-                    "named-pipe"        : path,
+                    "named-pipe"        : sockpath,
                     }
         return {
                 "type"          : "unix-domain",
@@ -1657,12 +1665,12 @@ def pick_display(error_cb, opts, extra_args):
                 "display"       : display,
                 "display_name"  : display,
                 "socket_dir"    : sockdir,
-                "socket_path"   : path
+                "socket_path"   : sockpath,
                 }
     elif len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0])
     else:
-        error_cb("too many arguments")
+        error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
 
 def single_display_match(dir_servers, error_cb):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
