@@ -4,6 +4,8 @@ usr/lib/sysusers.d/xpra.conf
 usr/bin/xpra
 usr/bin/xpra_launcher
 usr/lib/cups/backend/xpraforwarder
+usr/lib/systemd/system/xpra.service
+usr/lib/systemd/system/xpra.socket
 usr/share/applications/xpra-launcher.desktop
 usr/share/applications/xpra-browser.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml

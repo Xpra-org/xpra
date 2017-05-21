@@ -184,6 +184,7 @@ Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires: %{requires_xorg}
+BuildRequires: systemd-devel
 %if 0%{?with_selinux}
 BuildRequires: checkpolicy, selinux-policy-devel
 Requires: selinux-policy
@@ -517,6 +518,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common-server
 %{_prefix}/lib/systemd/system/xpra.service
+%{_prefix}/lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_prefix}/lib/tmpfiles.d/xpra.conf
