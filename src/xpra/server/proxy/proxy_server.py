@@ -353,7 +353,7 @@ class ProxyServer(ServerCore):
                 log.warn("Warning: ignoring invalid start override")
                 log.warn(" %s=%s", k, v)
                 continue
-            log.info("start override: %s=%s", k, v)
+            log("start override: %s=%s", k, v)
             if v is not None:
                 fn = k.replace("-", "_")
                 setattr(opts, fn, v)

@@ -912,6 +912,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--socket-dir", action="store",
                       dest="socket_dir", default=defaults.socket_dir,
                       help="Directory to place/look for the socket files in. Default: '%s'." % default_socket_dir_str)
+    group.add_option("--system-proxy-socket", action="store",
+                      dest="system_proxy_socket", default=defaults.system_proxy_socket,
+                      help="The socket path to use to contact the system-wide proxy serevr. Default: '%default'.")
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (you can also use \"all\" or \"help\", default: '%default')")
@@ -1341,7 +1344,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
             return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test", "request-start"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -2250,6 +2253,20 @@ def run_client(error_cb, opts, extra_args, mode):
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
         app.init_ui(opts, extra_args)
+        if mode=="request-start":
+            sns = {
+                   "mode"           : "start",
+                   }
+            if len(extra_args)==1:
+                sns["display"] = extra_args[0]
+            #override extra args:
+            extra_args = ["socket:%s" % opts.system_proxy_socket]
+            for x in START_COMMAND_OPTIONS:
+                fn = x.replace("-", "_")
+                v = getattr(opts, fn)
+                if v:
+                    sns[x] = v
+            app.hello_extra = {"start-new-session" : sns}
         try:
             conn, display_desc = connect()
             #UGLY warning: connect will parse the display string,
@@ -2506,13 +2523,17 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             proc.wait()
         proc = None
     else:
-        def preexec():
-            setsid()
+        preexec_fn = None
         cmd.append("--systemd-run=no")
         if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
+            #we need to change uid / gid:
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
-        proc = Popen(cmd, shell=False, close_fds=True, preexec_fn=setsid)
+            preexec_fn = setsid
+            #alternative using systemd-run to change uid:
+            #sdcmd = systemd_run_command(mode, opts.systemd_run_args, False) + ["--uid=%i" % uid, "--gid=%i" % gid]
+            #cmd = sdcmd + cmd
+        proc = Popen(cmd, shell=False, close_fds=True, preexec_fn=preexec_fn)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
 

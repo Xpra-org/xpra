@@ -459,6 +459,7 @@ OPTION_TYPES = {
                     "ssh"               : str,
                     "systemd-run"       : str,
                     "systemd-run-args"  : str,
+                    "system-proxy-socket" : str,
                     "xvfb"              : str,
                     "socket-dir"        : str,
                     "mmap"              : str,
@@ -652,9 +653,9 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "exit-with-children", "exit-with-client",
     "av-sync", "global-menus",
     "printing", "file-transfer", "download-path", "open-command", "open-files", "start-new-commands",
-    #"mmap", "mmap-group", "mdns",
-    #"auth", "vsock-auth", "tcp-auth", "ssl-auth",
-    #"bind", "bind-vsock", "bind-tcp", "bind-ssl",
+    "mmap", "mmap-group", "mdns",
+    "auth", "vsock-auth", "tcp-auth", "ssl-auth",
+    "bind", "bind-vsock", "bind-tcp", "bind-ssl",
     "start", "start-child",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
@@ -711,7 +712,7 @@ def get_defaults():
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
     from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, \
-                                        DEFAULT_ENV, CAN_DAEMONIZE
+                                        DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET
     from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts
     try:
         from xpra.platform.info import get_username
@@ -790,6 +791,7 @@ def get_defaults():
                     "ssh"               : DEFAULT_SSH_COMMAND,
                     "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
+                    "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
                     "xvfb"              : " ".join(xvfb),
                     "socket-dir"        : "",
                     "log-dir"           : "auto",
