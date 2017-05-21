@@ -418,7 +418,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.pidfile:
         write_pidfile(opts.pidfile, withfd=fchown)
 
-    if os.name=="posix":
+    if os.name=="posix" and getuid()!=0:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         write_runner_shell_scripts(script, withfd=fchown)
@@ -561,7 +561,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _cleanups.append(close_display)
 
     # if pam is present, try to create a new session:
-    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and os.getuid()!=uid)
+    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
     if PAM_OPEN:
         pam_open(display_name, xauth_data)
 
