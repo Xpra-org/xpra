@@ -2,3 +2,5 @@ TCP_AUTH=sys
 AUTH=peercred
 #DEBUG=auth,proxy
 DEBUG=
+#skip datetime prefix since the log goes to a system logger:
+XPRA_LOG_FORMAT=%(message)s
