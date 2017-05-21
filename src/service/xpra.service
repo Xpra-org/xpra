@@ -1,6 +1,7 @@
 [Unit]
 Description=Xpra Proxy Server
 Wants=avahi-daemon.socket
+Documentation=https://xpra.org/trac/wiki/ProxyServer man:xpra
 
 [Service]
 Type=simple
