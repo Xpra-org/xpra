@@ -1,0 +1,16 @@
+[Unit]
+Description=Xpra Socket
+PartOf=xpra.service
+
+[Socket]
+#this doesn't work because of SELinux AVC denials:
+#ListenStream=14500
+ListenStream=/var/run/xpra/system
+#this is not handled yet:
+#ListenStream=vsock:x:y
+SocketUser=root
+SocketGroup=xpra
+PassCredentials=true
+
+[Install]
+WantedBy=sockets.target

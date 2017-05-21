@@ -477,31 +477,44 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
         socket = ("SSL", wrap_socket_fn(tcp_socket), host_port)
         sockets.append(socket)
-        if opts.mdns:
-            rec = "ssl", [(host, iport)]
-            mdns_recs.append(rec)
+        rec = "ssl", [(host, iport)]
+        mdns_recs.append(rec)
 
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
+    tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
+    def add_tcp_mdns_rec(host, iport):
+        rec = "tcp", [(host, iport)]
+        mdns_recs.append(rec)
+        if tcp_ssl:
+            #SSL is also available on this TCP socket:
+            rec = "ssl", [(host, iport)]
+            mdns_recs.append(rec)
     for host, iport in bind_tcp:
         socket = setup_tcp_socket(host, iport)
         sockets.append(socket)
-        if opts.mdns:
-            rec = "tcp", [(host, iport)]
-            mdns_recs.append(rec)
-            if ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert):
-                #SSL is also available on this TCP socket:
-                rec = "ssl", [(host, iport)]
-                mdns_recs.append(rec)
+        add_tcp_mdns_rec(host, iport)
 
     # VSOCK:
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
-        if opts.mdns:
-            rec = "vsock", [("", iport)]
-            mdns_recs.append(rec)
+        rec = "vsock", [("", iport)]
+        mdns_recs.append(rec)
+
+    # systemd socket activation:
+    try:
+        from xpra.server.sd_listen import get_sd_listen_sockets
+    except ImportError:
+        pass
+    else:
+        sd_sockets = get_sd_listen_sockets()
+        for stype, sock, addr in sd_sockets:
+            sockets.append((stype, sock, addr))
+            if stype=="tcp":
+                host, iport = addr
+                add_tcp_mdns_rec(host, iport)
 
     # Do this after writing out the shell script:
     if display_name[0] != 'S':

@@ -143,6 +143,7 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
 service_ENABLED = LINUX and server_ENABLED
+sd_listen_ENABLED = pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
@@ -1534,6 +1535,8 @@ else:
                     copytodir("etc/sysconfig/xpra", "/etc/sysconfig")
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
+            if sd_listen_ENABLED:
+                copytodir("service/xpra.socket", "/lib/systemd/system")
 
 
     # add build_conf to build step
@@ -1869,6 +1872,12 @@ if server_ENABLED:
     cython_add(Extension("xpra.server.window.motion",
                 ["xpra/server/window/motion.pyx"],
                 **O3_pkgconfig))
+
+if sd_listen_ENABLED:
+    sdp = pkgconfig("libsystemd")
+    cython_add(Extension("xpra.server.sd_listen",
+                ["xpra/server/sd_listen.pyx"],
+                **sdp))
 
 
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")

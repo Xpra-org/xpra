@@ -1,4 +1,4 @@
 TCP_AUTH=sys
-AUTH=sys
+AUTH=peercred
 #DEBUG=auth,proxy
 DEBUG=
