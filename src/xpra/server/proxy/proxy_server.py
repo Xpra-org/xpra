@@ -225,48 +225,21 @@ class ProxyServer(ServerCore):
         #remove proxy instance virtual displays:
         displays = [x for x in displays if not x.startswith(":proxy-")]
         #log("unused options: %s, %s", env_options, session_options)
-        opts = make_defaults_struct()
         display = None
         proc = None
         sns = c.dictget("start-new-session")
         authlog("start_proxy: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
         if len(displays)==0 or sns:
-            if self._start_sessions:
-                #start a new session
-                mode = sns.get("mode", "start")
-                assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
-                sns = typedict(sns)
-                display = sns.get("display")
-                log("starting new server subprocess: mode=%s, start options=%s", mode, sns)
-                args = []
-                if display:
-                    args = [display]
-                #allow the client to override some options:
-                for k,v in sns.items():
-                    if k=="mode":
-                        continue
-                    if k not in PROXY_START_OVERRIDABLE_OPTIONS:
-                        log.warn("Warning: ignoring invalid start override")
-                        log.warn(" %s=%s", k, v)
-                        continue
-                    log.info("start override: %s=%s", k, v)
-                    if v is not None:
-                        fn = k.replace("-", "_")
-                        setattr(opts, fn, v)
-                log("starting new server subprocess: options=%s", opts)
-                try:
-                    proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
-                    display = "socket:%s" % socket_path
-                except Exception as e:
-                    log("start_server_subprocess failed", exc_info=True)
-                    log.error("Error: failed to start server subprocess:")
-                    log.error(" %s", e)
-                    disconnect(SERVER_ERROR, "failed to start a new session")
-                    return
-                if proc:
-                    self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
-            else:
+            if not self._start_sessions:
                 disconnect(SESSION_NOT_FOUND, "no displays found")
+                return
+            try:
+                display = self.start_new_session(uid, gid, sns)
+            except Exception as e:
+                log("start_server_subprocess failed", exc_info=True)
+                log.error("Error: failed to start server subprocess:")
+                log.error(" %s", e)
+                disconnect(SERVER_ERROR, "failed to start a new session")
                 return
         if display is None:
             display = c.strget("display")
@@ -296,6 +269,7 @@ class ProxyServer(ServerCore):
             for arg in args:
                 log.warn(" %s", arg)
             raise Exception("parse error on %s: %s" % (display, args))
+        opts = make_defaults_struct()
         opts.username = client_proto.authenticator.username
         disp_desc = parse_display_name(parse_error, opts, display)
         if uid or gid:
@@ -359,6 +333,37 @@ class ProxyServer(ServerCore):
                 server_conn.close()
                 message_queue.put("socket-handover-complete")
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
+
+    def start_new_session(self, uid, gid, new_session_dict={}):
+        log("start_new_session%s", (uid, gid, new_session_dict))
+        sns = typedict(new_session_dict)
+        mode = sns.get("mode", "start")
+        assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
+        display = sns.get("display")
+        log("starting new server subprocess: mode=%s, display=%s", mode, display)
+        args = []
+        if display:
+            args = [display]
+        #allow the client to override some options:
+        opts = make_defaults_struct()
+        for k,v in sns.items():
+            if k in ("mode", "display"):
+                continue    #those special attributes have been consumed already
+            if k not in PROXY_START_OVERRIDABLE_OPTIONS:
+                log.warn("Warning: ignoring invalid start override")
+                log.warn(" %s=%s", k, v)
+                continue
+            log.info("start override: %s=%s", k, v)
+            if v is not None:
+                fn = k.replace("-", "_")
+                setattr(opts, fn, v)
+        log("starting new server subprocess: options=%s", opts)
+        proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
+        if proc:
+            self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
+        display = "socket:%s" % socket_path
+        log("start_new_session(..)=%s", display)
+        return display
 
 
     def reap(self, *args):
