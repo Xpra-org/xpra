@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -698,9 +698,7 @@ def get_default_systemd_run():
         return "no"
     #don't use systemd-run on CentOS / RedHat
     #(it causes failures with "Failed to create bus connection: No such file or directory")
-    from xpra.os_util import load_binary_file, strtobytes
-    data = strtobytes(load_binary_file("/etc/redhat-release") or "")
-    if data and (data.find(b"RedHat")>=0 or data.find(b"CentOS")>=0):
+    if is_CentOS() or is_RedHat():
         return "no"
     return "auto"
 
