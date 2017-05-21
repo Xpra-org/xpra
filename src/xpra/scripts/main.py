@@ -1227,12 +1227,18 @@ def configure_env(options):
         os.environ.update(parse_env(options.env))
 
 
-def systemd_run_wrap(mode, args, systemd_run_args):
-    cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope", "--user"]
+def systemd_run_command(mode, systemd_run_args, user=True):
+    cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope"]
+    if user:
+        cmd.append("--user")
     if not LOG_SYSTEMD_WRAP:
         cmd.append("--quiet")
     if systemd_run_args:
         cmd += shlex.split(systemd_run_args)
+    return cmd
+
+def systemd_run_wrap(mode, args, systemd_run_args):
+    cmd = systemd_run_command(mode, systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
     if LOG_SYSTEMD_WRAP:
@@ -1247,6 +1253,7 @@ def systemd_run_wrap(mode, args, systemd_run_args):
         p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
+
 
 def isdisplaytype(args, dtype):
     return len(args)>0 and (args[0].startswith("%s/" % dtype) or args[0].startswith("%s:" % dtype))
