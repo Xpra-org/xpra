@@ -470,7 +470,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         try:
             wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
         except Exception as e:
-            raise InitException("cannot create SSL socket (check your certificate paths): %s" % e)
+            log("SSL error", exc_info=True)
+            raise InitException("cannot create SSL socket, check your certificate paths ('%s' and/or '%s'): %s" % (opts.ssl_cert, opts.ssl_key, e))
 
     from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
     for host, iport in bind_ssl:
