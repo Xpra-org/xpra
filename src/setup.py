@@ -181,17 +181,8 @@ vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
 webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
-#ffmpeg 2 onwards:
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec")
-# some version strings I found:
-# Fedora:
-# * 19: 54.92.100
-# * 20: 55.39.101
-# * 21: 55.52.102
-# Debian:
-# * jessie and sid: (last updated 2014-05-26): 55.34.1
-#   (moved to ffmpeg2 style buffer API sometime in early 2014)
-# * wheezy: 53.35
+#ffmpeg 3.1 or later is required
+dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
 nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
@@ -219,7 +210,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "csc_libyuv",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
-            "server", "client", "dbus", "x11", "xinput",
+            "server", "client", "dbus", "x11", "xinput", "sd_listen",
             "gtk_x11", "service",
             "gtk2", "gtk3",
             "html5", "minify", "html5_gzip", "html5_brotli",
