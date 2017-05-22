@@ -1,3 +1,12 @@
+xpra (1.0.7-1) UNRELEASED; urgency=low
+  * fix proxy server errors with scroll encoded packets
+  * fix errors during launcher cleanup
+  * fix Mac OS corrupted build patch
+  * fix crashes accessing some xsettings
+  * fix systray logging on posix OS
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 22 May 2017 22:54:52 +0700
+
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath
 

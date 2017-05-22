@@ -600,6 +600,13 @@ fi
 
 
 %changelog
+* Mon May 22 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+- fix proxy server errors with scroll encoded packets
+- fix errors during launcher cleanup
+- fix Mac OS corrupted build patch
+- fix crashes accessing some xsettings
+- fix systray logging on posix OS
+
 * Sun May 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
 - fix SSL connection failures
 - fix SSL servers on MS Windows

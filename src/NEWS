@@ -1,3 +1,12 @@
+v1.0.7 (2017-05-22)
+======================
+	-- fix proxy server errors with scroll encoded packets
+	-- fix errors during launcher cleanup
+	-- fix Mac OS corrupted build patch
+	-- fix crashes accessing some xsettings
+	-- fix systray logging on posix OS
+
+
 v1.0.6 (2017-05-14)
 ======================
 	-- fix SSL connection failures
