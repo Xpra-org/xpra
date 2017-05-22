@@ -65,6 +65,8 @@ Recommends:
 #zesty:        ,libx264-148
 # for notifications forwarding and dbus server / proxying:
         ,python-dbus
+# for the proxy server:
+        ,python-setproctitle
 # AES encryption:
         ,python-cryptography
 # audio-related:
