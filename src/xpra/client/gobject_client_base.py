@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -117,14 +117,10 @@ class CommandConnectClient(GObjectXpraClient):
         #so don't try probing for printers, etc
         self.file_transfer = False
         self.printing = False
-
-    def make_hello(self):
-        capabilities = GObjectXpraClient.make_hello(self)
         #don't bother with many of these things for one-off commands:
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows"):
-            capabilities[x] = False
-        return capabilities
+            self.hello_extra[x] = False
 
     def _process_connection_lost(self, packet):
         #override so we don't log a warning
@@ -156,6 +152,27 @@ class SendCommandConnectClient(CommandConnectClient):
         CommandConnectClient.server_connection_established(self)
 
 
+class HelloRequestClient(SendCommandConnectClient):
+    """
+        Utility superclass for clients that send a server request
+        as part of the hello packet.
+    """
+
+    def make_hello_base(self):
+        caps = CommandConnectClient.make_hello_base(self)
+        caps.update(self.hello_request())
+        return caps
+
+    def timeout(self, *args):
+        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
+
+    def hello_request(self):
+        raise NotImplementedError()
+
+    def do_command(self):
+        self.quit(EXIT_OK)
+
+
 class ScreenshotXpraClient(CommandConnectClient):
     """ This client does one thing only:
         it sends the hello packet with a screenshot request
@@ -165,6 +182,7 @@ class ScreenshotXpraClient(CommandConnectClient):
     def __init__(self, conn, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
         CommandConnectClient.__init__(self, conn, opts)
+        self.hello_extra["screenshot_request"] = True
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
@@ -183,16 +201,17 @@ class ScreenshotXpraClient(CommandConnectClient):
         GObjectXpraClient.init_packet_handlers(self)
         self._ui_packet_handlers["screenshot"] = self._process_screenshot
 
-    def make_hello(self):
-        capabilities = GObjectXpraClient.make_hello(self)
-        capabilities["screenshot_request"] = True
-        return capabilities
-
 
 class InfoXpraClient(CommandConnectClient):
     """ This client does one thing only:
         it queries the server with an 'info' request
     """
+
+    def __init__(self, *args):
+        CommandConnectClient.__init__(self, *args)
+        self.hello_extra["info_request"] = True
+        if FLATTEN_INFO!=1:
+            self.hello_extra["info-namespace"] = True
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
@@ -219,18 +238,22 @@ class InfoXpraClient(CommandConnectClient):
                 print_nested_dict(self.server_capabilities)
         self.quit(EXIT_OK)
 
-    def make_hello(self):
-        capabilities = GObjectXpraClient.make_hello(self)
-        log("make_hello() adding info_request to %s", capabilities)
-        capabilities["info_request"] = True
-        if FLATTEN_INFO!=1:
-            capabilities["info-namespace"] = True
-        return capabilities
 
 class ConnectTestXpraClient(CommandConnectClient):
     """ This client does one thing only:
         it queries the server with an 'info' request
     """
+
+    def __init__(self, *args):
+        CommandConnectClient.__init__(self, *args)
+        self.value = get_hex_uuid()
+        self.hello_extra.update({
+            "connect_test_request"     : self.value,
+            #older servers don't know about connect-test,
+            #pretend that we're interested in info:
+            "info_request"             : True,
+            "info-namespace"           : True,
+            })
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: no server response")
@@ -251,24 +274,17 @@ class ConnectTestXpraClient(CommandConnectClient):
         else:
             self.quit(EXIT_FAILURE)
 
-    def make_hello(self):
-        self.value = get_hex_uuid()
-        capabilities = GObjectXpraClient.make_hello(self)
-        capabilities.update({
-                             "connect_test_request"     : self.value,
-                             #older servers don't know about connect-test,
-                             #pretend that we're interested in info:
-                             "info_request"             : True,
-                             "info-namespace"           : True,
-                             })
-        return capabilities
-
 
 class MonitorXpraClient(SendCommandConnectClient):
     """ This client does one thing only:
         it prints out events received from the server.
         If the server does not support this feature it exits with an error.
     """
+
+    def __init__(self, *args):
+        SendCommandConnectClient.__init__(self, *args)
+        for x in ("wants_features", "wants_events", "event_request"):
+            self.hello_extra[x] = True
 
     def timeout(self, *args):
         pass
@@ -285,35 +301,25 @@ class MonitorXpraClient(SendCommandConnectClient):
         self._packet_handlers["server-event"] = self._process_server_event
         self._packet_handlers["ping"] = self._process_ping
 
-    def make_hello(self):
-        capabilities = SendCommandConnectClient.make_hello(self)
-        log("make_hello() adding info_request to %s", capabilities)
-        capabilities["wants_features"]  = True      #so we can verify that the server supports monitor mode
-        capabilities["wants_events"]    = True      #tell the server we do support server events
-        capabilities["event_request"]   = True      #ask the server to enter this request mode (we're not a proper client)
-        return capabilities
-
     def _process_ping(self, packet):
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
 
-class VersionXpraClient(CommandConnectClient):
+class VersionXpraClient(HelloRequestClient):
     """ This client does one thing only:
         it queries the server for version information and prints it out
     """
 
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the version")
+    def hello_request(self):
+        return {"version_request" : True}
 
     def do_command(self):
-        self.warn_and_quit(EXIT_OK, str(self.server_capabilities.get("version")))
-
-    def make_hello(self):
-        capabilities = GObjectXpraClient.make_hello(self)
-        log("make_hello() adding version_request to %s", capabilities)
-        capabilities["version_request"] = True
-        return capabilities
+        v = self.server_capabilities.get("version")
+        if not v:
+            self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
+        else:
+            self.warn_and_quit(EXIT_OK, str(v))
 
 
 class ControlXpraClient(CommandConnectClient):
@@ -404,36 +410,24 @@ class PrintClient(SendCommandConnectClient):
         return capabilities
 
 
-class ExitXpraClient(SendCommandConnectClient):
+class ExitXpraClient(HelloRequestClient):
     """ This client does one thing only:
         it asks the server to terminate (like stop),
         but without killing the Xvfb or clients.
     """
 
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
-
-    def make_hello(self):
-        capabilities = SendCommandConnectClient.make_hello(self)
-        capabilities["exit_request"] = True
-        return capabilities
+    def hello_request(self):
+        return {"exit_request" : True}
 
     def do_command(self):
         self.idle_add(self.send, "exit-server")
 
 
-class StopXpraClient(SendCommandConnectClient):
+class StopXpraClient(HelloRequestClient):
     """ stop a server """
 
-    def make_hello(self):
-        #used for telling the proxy server we want "stop"
-        #(as waiting for the hello back would be too late)
-        capabilities = SendCommandConnectClient.make_hello(self)
-        capabilities["stop_request"] = True
-        return capabilities
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
+    def hello_request(self):
+        return {"stop_request"  : True}
 
     def do_command(self):
         self.idle_add(self.send, "shutdown-server")
@@ -441,19 +435,12 @@ class StopXpraClient(SendCommandConnectClient):
         #the server should send us the shutdown disconnection message anyway
         #and if not, we will then hit the timeout to tell us something went wrong
 
-class DetachXpraClient(SendCommandConnectClient):
+
+class DetachXpraClient(HelloRequestClient):
     """ run the detach subcommand """
 
-    def make_hello(self):
-        #used for telling the proxy server we want "detach"
-        #(older versions ignore this flag and detach because this is a new valid connection
-        # but this breaks if sharing is enabled!)
-        capabilities = SendCommandConnectClient.make_hello(self)
-        capabilities["detach_request"] = True
-        return capabilities
-
-    def timeout(self, *args):
-        self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
+    def hello_request(self):
+        return {"detach_request" : True}
 
     def do_command(self):
         self.idle_add(self.send, "disconnect", DONE, "detaching")
