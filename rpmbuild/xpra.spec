@@ -296,6 +296,7 @@ Conflicts: xpra < 2.1
 Requires: xpra-common-server = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
 %{Recommends}: %{requires_websockify} %{requires_printing} %{requires_server_printing}
+%{Recommends}: python-setproctitle
 BuildRequires: pam-devel
 BuildRequires: gcc
 BuildRequires: %{requires_cython}
@@ -379,6 +380,7 @@ Requires: python3-xpra = %{version}-%{build_no}%{dist}
 #Requires: %{requires_websockify}
 Recommends: %{py3requires_printing} %{requires_server_printing}
 Recommends: gtk3-immodule-xim
+Recommends: python3-setproctitle
 BuildRequires: gcc, gcc-c++
 BuildRequires: python3-Cython
 %description -n python3-xpra-server
