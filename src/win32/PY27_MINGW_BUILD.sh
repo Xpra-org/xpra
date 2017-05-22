@@ -11,6 +11,7 @@ DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
+DO_VERPATCH=${DO_VERPATCH:-1}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
@@ -52,6 +53,8 @@ fi
 #figure out the full xpra version:
 VERSION=`python2.7.exe -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
+NUMREVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION).rstrip('M'))"`
+ZERO_PADDED_VERSION=`python2.7.exe -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:3]))'`".${NUMREVISION}"
 LOCAL_MODIFICATIONS=`python2.7.exe -c "from xpra.src_info import LOCAL_MODIFICATIONS;import sys;sys.stdout.write(str(LOCAL_MODIFICATIONS))"`
 FULL_VERSION=${VERSION}-r${REVISION}
 if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
@@ -165,6 +168,14 @@ if [ "${BUNDLE_OPENSSL}" == "1" ]; then
 	cp "${MINGW_PREFIX}/ssl/openssl.cnf" "${DIST}/openssl.cfg"
 fi
 
+if [ "${DO_VERPATCH}" == "1" ]; then
+	for exe in `ls dist/*exe`; do
+		tool_name=`echo $exe | sed 's+dist/++g;s+Xpra_++g;s+Xpra-++g;s+_+ +g;s+-+ +g;s+\.exe++g'`
+		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	done
+	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+fi
 
 ################################################################################
 # packaging: ZIP / EXE / MSI
@@ -237,7 +248,6 @@ if [ "${DO_MSI}" == "1" ]; then
 			exit 1
 		fi
 	fi
-	ZERO_PADDED_VERSION=`python2.7.exe -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:4]))'`
 	cat "win32\msi.xml" | sed "s/INPUT/${INSTALLER_FILENAME}/g" | sed "s/OUTPUT/${MSI_FILENAME}/g" | sed "s/ZERO_PADDED_VERSION/${ZERO_PADDED_VERSION}/g" | sed "s/FULL_VERSION/${FULL_VERSION}/g" > msi.xml
 	"${MSIWRAPPER}" "msi.xml"
 	if [ "${DO_SIGN}" == "1" ]; then
