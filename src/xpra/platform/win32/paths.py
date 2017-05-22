@@ -132,9 +132,11 @@ def do_get_sound_command():
     from xpra.platform.paths import get_app_dir
     app_dir = get_app_dir()
     #is there a python3 bundled sound subdirectory
-    #sound_exe = os.path.join(app_dir, "Sound", "Xpra_Audio.exe")
     sound_exe = os.path.join(app_dir, "Audio", "Xpra_Audio.exe")
+    #same directory, but with a nicer name:
     if not os.path.exists(sound_exe):
-        #fallback for older build method:
+        sound_exe = os.path.join(app_dir, "Xpra_Audio.exe")
+    #fallback for older build method:
+    if not os.path.exists(sound_exe):
         sound_exe = os.path.join(app_dir, "xpra_cmd.exe")
     return [sound_exe]
