@@ -243,6 +243,42 @@ class TestAuth(unittest.TestCase):
 		assert main(["main", filename, "add", "foo", "wrongpassword"])==0
 		vf("the password should not match")
 
+	def test_peercred(self):
+		#no connection supplied: 
+		pc = self._init_auth("peercred", {})
+		assert pc.requires_challenge()
+		assert not pc.authenticate("", "")
+		assert pc.get_uid()==-1 and pc.get_gid()==-1
+		#now with a connection object:
+		from xpra.make_thread import start_thread
+		sockpath = "./socket-test"
+		try:
+			os.unlink(sockpath)
+		except:
+			pass
+		from xpra.net.bytestreams import SocketConnection
+		import socket
+		sock = socket.socket(socket.AF_UNIX)
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		sock.bind(sockpath)
+		sock.listen(5)
+		verified = []
+		def wait_for_connection():
+			conn, addr = sock.accept()
+			s = SocketConnection(conn, sockpath, addr, sockpath, "unix")
+			pc = self._init_auth("peercred", options={}, username="foo", connection=s)
+			assert not pc.requires_challenge()
+			assert pc.get_uid()==os.getuid()
+			verified.append(True)
+		t = start_thread(wait_for_connection, "socket listener", daemon=True)
+		#connect a client:
+		client = socket.socket(socket.AF_UNIX)
+		client.settimeout(5)
+		client.connect(sockpath)
+		#wait for it to trigger auth:
+		t.join(5)
+		assert verified
+
 
 def main():
 	import logging

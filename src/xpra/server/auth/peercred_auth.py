@@ -16,6 +16,7 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         SysAuthenticator.__init__(self, username)
+        log("peercred.Authenticator(%s, %s)", username, kwargs)
         self.uid = -1
         self.gid = -1
         if os.name!="posix":
