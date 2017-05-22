@@ -244,6 +244,9 @@ class TestAuth(unittest.TestCase):
 		vf("the password should not match")
 
 	def test_peercred(self):
+		if os.name!="posix":
+			#can't be used!
+			return
 		#no connection supplied: 
 		pc = self._init_auth("peercred", {})
 		assert pc.requires_challenge()
