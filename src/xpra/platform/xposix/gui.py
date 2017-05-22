@@ -160,20 +160,22 @@ def get_menu_support_function():
 
 def _get_xsettings():
     try:
-        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-        window_bindings = X11WindowBindings()
-        selection = "_XSETTINGS_S0"
-        owner = window_bindings.XGetSelectionOwner(selection)
-        if not owner:
-            return None
-        XSETTINGS = "_XSETTINGS_SETTINGS"
-        data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-        if not data:
-            return None
-        from xpra.x11.xsettings_prop import get_settings
-        return get_settings(window_bindings.get_display_name(), data)
-    except Exception as e:
-        log("_get_xsettings error: %s", e)
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+            window_bindings = X11WindowBindings()
+            selection = "_XSETTINGS_S0"
+            owner = window_bindings.XGetSelectionOwner(selection)
+            if not owner:
+                return None
+            XSETTINGS = "_XSETTINGS_SETTINGS"
+            data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+            if not data:
+                return None
+            from xpra.x11.xsettings_prop import get_settings
+            return get_settings(window_bindings.get_display_name(), data)
+        except Exception as e:
+            log("_get_xsettings error: %s", e)
     return None
 
 def _get_xsettings_dict():
