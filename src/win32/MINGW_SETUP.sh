@@ -45,7 +45,7 @@ $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython 
 # Note: a specific version of netifaces is installed as a dependency of 'zeroconf' because of this bug:
 # https://bitbucket.org/al45tair/netifaces/issues/39
 easy_install-2.7 -U -Z enum34 enum-compat
-for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs; do
+for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle; do
     easy_install-2.7 -U -Z $x
     easy_install-3.5 -U -Z $x
 done

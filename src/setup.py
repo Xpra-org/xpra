@@ -1276,7 +1276,7 @@ if WIN32:
 
         if server_ENABLED:
             #used by proxy server:
-            external_includes += ["multiprocessing"]
+            external_includes += ["multiprocessing", "setproctitle"]
 
         external_includes += ["encodings"]
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
