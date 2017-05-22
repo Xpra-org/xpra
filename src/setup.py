@@ -943,6 +943,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/server/window/region.c",
                    "xpra/server/window/motion.c",
                    "xpra/server/pam.c",
+                   "xpra/server/sd_listen.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra conf files in build (see #891):
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
