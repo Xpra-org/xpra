@@ -19,7 +19,7 @@ import traceback
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
 
@@ -471,7 +471,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
         except Exception as e:
             log("SSL error", exc_info=True)
-            raise InitException("cannot create SSL socket, check your certificate paths ('%s' and/or '%s'): %s" % (opts.ssl_cert, opts.ssl_key, e))
+            cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
+            raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
     from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
     for host, iport in bind_ssl:
