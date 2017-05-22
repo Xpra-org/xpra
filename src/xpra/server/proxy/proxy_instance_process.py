@@ -146,6 +146,11 @@ class ProxyInstanceProcess(Process):
 
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
+        try:
+            import setproctitle
+            setproctitle.setproctitle("Xpra Proxy Instance for %s" % self.server_conn)
+        except ImportError as e:
+            log("setproctitle not installed: %s", e)
         setuidgid(self.uid, self.gid)
         if self.env_options:
             #TODO: whitelist env update?

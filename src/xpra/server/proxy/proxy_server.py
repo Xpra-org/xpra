@@ -20,7 +20,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, PERMISSION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
 from xpra.os_util import get_username_for_uid, get_groups
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
