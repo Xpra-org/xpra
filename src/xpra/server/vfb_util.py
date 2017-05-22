@@ -15,7 +15,7 @@ import select
 
 from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
-from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid
+from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid
 from xpra.platform.dotxpra import osexpand
 
 
@@ -58,6 +58,11 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         if not os.path.exists(xorg_log_dir):
             try:
                 os.mkdir(xorg_log_dir, 0o700)
+                if os.name=="posix" and uid!=getuid() or gid!=getgid():
+                    try:
+                        os.chown(xorg_log_dir, uid, gid)
+                    except:
+                        pass
             except OSError as e:
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 

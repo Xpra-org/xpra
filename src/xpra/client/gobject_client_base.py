@@ -446,3 +446,9 @@ class DetachXpraClient(HelloRequestClient):
         self.idle_add(self.send, "disconnect", DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response
+
+class RequestStartClient(HelloRequestClient):
+    """ request the system proxy server to start a new session for us """
+
+    def hello_request(self):
+        return {"start-new-session" : self.start_new_session}

@@ -1160,7 +1160,7 @@ def configure_logging(options, mode):
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
-    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start"):
+    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -1344,7 +1344,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
             return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test", "request-start"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test", "request-start", "request-start-desktop", "request-shadow"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit") and (supports_server or supports_shadow):
             nox()
@@ -2173,6 +2173,10 @@ def run_client(error_cb, opts, extra_args, mode):
         screenshot_filename = extra_args[0]
         extra_args = extra_args[1:]
 
+    request_mode = None
+    if mode in ("request-start", "request-start-desktop", "request-shadow"):
+        request_mode = mode.replace("request-", "")
+
     try:
         from xpra import client
         assert client
@@ -2222,6 +2226,12 @@ def run_client(error_cb, opts, extra_args, mode):
     elif mode=="detach":
         from xpra.client.gobject_client_base import DetachXpraClient
         app = DetachXpraClient(connect(), opts)
+    elif request_mode and opts.attach is False:
+        from xpra.client.gobject_client_base import RequestStartClient
+        sns = get_start_new_session_dict(opts, request_mode, extra_args)
+        extra_args = ["socket:%s" % opts.system_proxy_socket]
+        app = RequestStartClient(connect(), opts)
+        app.start_new_session = sns
     else:
         try:
             from xpra.platform.gui import init as gui_init
@@ -2253,19 +2263,9 @@ def run_client(error_cb, opts, extra_args, mode):
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
         app.init_ui(opts, extra_args)
-        if mode=="request-start":
-            sns = {
-                   "mode"           : "start",
-                   }
-            if len(extra_args)==1:
-                sns["display"] = extra_args[0]
-            #override extra args:
+        if request_mode:
+            sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = ["socket:%s" % opts.system_proxy_socket]
-            for x in START_COMMAND_OPTIONS:
-                fn = x.replace("-", "_")
-                v = getattr(opts, fn)
-                if v:
-                    sns[x] = v
             app.hello_extra = {"start-new-session" : sns}
         try:
             conn, display_desc = connect()
@@ -2297,6 +2297,20 @@ def do_run_client(app):
         return -signal.SIGINT
     finally:
         app.cleanup()
+
+
+def get_start_new_session_dict(opts, mode, extra_args):
+    sns = {
+           "mode"           : mode,     #ie: "start-desktop"
+           }
+    if len(extra_args)==1:
+        sns["display"] = extra_args[0]
+    for x in START_COMMAND_OPTIONS:
+        fn = x.replace("-", "_")
+        v = getattr(opts, fn)
+        if v:
+            sns[x] = v
+    return sns
 
 def shellquote(s):
     return '"' + s.replace('"', '\\"') + '"'

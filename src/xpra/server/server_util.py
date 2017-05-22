@@ -6,7 +6,7 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, close_all_fds, shellsub
+from xpra.os_util import OSX, close_all_fds, shellsub, getuid, getgid
 from xpra.platform.dotxpra import osexpand, norm_makepath
 from xpra.scripts.config import InitException
 
@@ -110,6 +110,9 @@ def write_runner_shell_scripts(contents, overwrite=True, withfd=None):
         if not os.path.exists(scriptdir):
             try:
                 os.mkdir(scriptdir, 0o700)
+                with open(scriptdir, os.O_DIRECTORY) as fd:
+                    if withfd:
+                        withfd(fd)
             except Exception as e:
                 log.warn("Warning: failed to write script file in '%s':", scriptdir)
                 log.warn(" %s", e)
@@ -143,6 +146,11 @@ def find_log_dir(username="", uid=0, gid=0):
         if not os.path.exists(v):
             try:
                 os.mkdir(v, 0o700)
+                if os.name=="posix" and uid!=getuid() or gid!=getgid():
+                    try:
+                        os.chown(v, uid, gid)
+                    except:
+                        pass
             except Exception as e:
                 errs.append((v, e))
                 continue
