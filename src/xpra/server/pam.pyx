@@ -1,6 +1,6 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,8 @@ from xpra.log import Logger
 log = Logger("util", "auth")
 
 from xpra.os_util import strtobytes
+from ctypes import addressof, create_string_buffer
+from libc.stdint cimport uintptr_t
 from posix.types cimport gid_t, pid_t, off_t, uid_t
 
 cdef extern from "errno.h" nogil:
@@ -94,51 +96,65 @@ PAM_ITEMS = {
     }
 
 
-cdef pam_handle_t*   pam_handle = NULL
+cdef class pam_session(object):
 
-def pam_open(service_name="xpra", env=None, items=None):
-    global pam_handle
-    cdef passwd *passwd_struct
-    cdef pam_conv conv
-    cdef int r
-    cdef const void* item
-    cdef pam_xauth_data xauth_data
+    cdef pam_handle_t *pam_handle
+    cdef object service_name
+    cdef int uid
 
-    if pam_handle!=NULL:
-        log.error("Error: cannot open the pam session more than once!")
-        return False
+    def __init__(self, service_name="xpra", uid=os.geteuid()):
+        self.service_name = service_name
+        self.uid = uid
+        self.pam_handle = NULL
 
-    passwd_struct = getpwuid(os.geteuid())
-    if passwd_struct==NULL:
-        try:
-            estr = os.strerror(errno)
-        except ValueError:
-            estr = str(errno)
-        log.error("Error: cannot find pwd entry for euid %i", os.geteuid())
-        log.error(" %s", estr)
-        return False
+    def __repr__(self):
+        return "pam_session(%#x)" % (<uintptr_t> self.pam_handle)
 
-    conv.conv = <void*> misc_conv
-    conv.appdata_ptr = NULL;
-    r = pam_start(strtobytes(service_name), strtobytes(passwd_struct.pw_name), &conv, &pam_handle)
-    log("pam_start: %s", PAM_ERR_STR.get(r, r))
-    if r!=PAM_SUCCESS:
-        pam_handle = NULL
-        log.error("Error: pam_start failed:")
-        log.error(" %s", pam_strerror(pam_handle, r))
-        return False
+    def start(self):
+        cdef passwd *passwd_struct
+        cdef pam_conv conv
+        cdef int r
 
-    if env:
+        if self.pam_handle!=NULL:
+            log.error("Error: cannot open the pam session more than once!")
+            return False
+
+        passwd_struct = getpwuid(self.uid)
+        if passwd_struct==NULL:
+            try:
+                estr = os.strerror(errno)
+            except ValueError:
+                estr = str(errno)
+            log.error("Error: cannot find pwd entry for uid %i", self.uid)
+            log.error(" %s", estr)
+            return False
+
+        conv.conv = <void*> misc_conv
+        conv.appdata_ptr = NULL;
+        r = pam_start(strtobytes(self.service_name), strtobytes(passwd_struct.pw_name), &conv, &self.pam_handle)
+        log("pam_start: %s", PAM_ERR_STR.get(r, r))
+        if r!=PAM_SUCCESS:
+            self.pam_handle = NULL
+            log.error("Error: pam_start failed:")
+            log.error(" %s", pam_strerror(self.pam_handle, r))
+            return False
+
+    def set_env(self, env={}):
+        assert self.pam_handle!=NULL
+        cdef int r
         for k,v in env.items():
             name_value = "%s=%s\0" % (k, v)
-            r = pam_putenv(pam_handle, strtobytes(name_value))
+            r = pam_putenv(self.pam_handle, strtobytes(name_value))
             if r!=PAM_SUCCESS:
                 log.error("Error %i: failed to add '%s' to pam environment", r, name_value)
             else:
                 log("pam_putenv: %s", name_value)
 
-    if items:
-        from ctypes import addressof, create_string_buffer
+    def set_items(self, items={}):
+        cdef const void* item
+        cdef pam_xauth_data xauth_data
+        cdef int r
+        assert self.pam_handle!=NULL
         for k,v in items.items():
             v = strtobytes(v)
             item_type = PAM_ITEMS.get(k.upper())
@@ -157,38 +173,40 @@ def pam_open(service_name="xpra", env=None, items=None):
                 s = create_string_buffer(v)
                 l = addressof(s)
                 item = <const void*> l
-            r = pam_set_item(pam_handle, item_type, item)
+            r = pam_set_item(self.pam_handle, item_type, item)
             if r!=PAM_SUCCESS:
                 log.error("Error %i: failed to set pam item '%s' to '%s'", r, k, v)
             else:
                 log("pam_set_item: %s=%s", k, v)
 
-    r = pam_open_session(pam_handle, 0)
-    log("pam_open_session: %s", PAM_ERR_STR.get(r, r))
-    if r!=PAM_SUCCESS:
-        pam_handle = NULL
-        log.error("Error: pam_open_session failed:")
-        log.error(" %s", pam_strerror(pam_handle, r))
-        return False
-    return True
+    def open(self):
+        assert self.pam_handle!=NULL
+        cdef int r = pam_open_session(self.pam_handle, 0)
+        log("pam_open_session: %s", PAM_ERR_STR.get(r, r))
+        if r!=PAM_SUCCESS:
+            self.pam_handle = NULL
+            log.error("Error: pam_open_session failed:")
+            log.error(" %s", pam_strerror(self.pam_handle, r))
+            return False
+        return True
 
-def pam_close():
-    global pam_handle
-    if pam_handle==NULL:
-        log.error("Error: no pam session to close!")
-        return False
+    def close(self):
+        if self.pam_handle==NULL:
+            log.error("Error: no pam session to close!")
+            return False
 
-    cdef int r = pam_close_session(pam_handle, 0)
-    log("pam_close_session: %s", PAM_ERR_STR.get(r, r))
-    if r!=PAM_SUCCESS:
-        pam_handle = NULL
-        log.error("Error: failed to close the pam session:")
-        log.error(" %s", pam_strerror(pam_handle, r))
-        return False
+        cdef int r = pam_close_session(self.pam_handle, 0)
+        log("pam_close_session: %s", PAM_ERR_STR.get(r, r))
+        if r!=PAM_SUCCESS:
+            self.pam_handle = NULL
+            log.error("Error: failed to close the pam session:")
+            log.error(" %s", pam_strerror(self.pam_handle, r))
+            return False
 
-    r = pam_end(pam_handle, r)
-    log("pam_end: %s", PAM_ERR_STR.get(r, r))
-    if r!=PAM_SUCCESS:
-        log.error("Error: pam_end '%s'", pam_strerror(pam_handle, r))
-        return False
-    return True
+        r = pam_end(self.pam_handle, r)
+        log("pam_end: %s", PAM_ERR_STR.get(r, r))
+        self.pam_handle = NULL
+        if r!=PAM_SUCCESS:
+            log.error("Error: pam_end '%s'", pam_strerror(self.pam_handle, r))
+            return False
+        return True

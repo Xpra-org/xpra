@@ -234,7 +234,7 @@ class ProxyServer(ServerCore):
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
             try:
-                display = self.start_new_session(uid, gid, sns)
+                display = self.start_new_session(uid, gid, sns, displays)
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
@@ -334,12 +334,14 @@ class ProxyServer(ServerCore):
                 message_queue.put("socket-handover-complete")
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
 
-    def start_new_session(self, uid, gid, new_session_dict={}):
+    def start_new_session(self, uid, gid, new_session_dict={}, displays=()):
         log("start_new_session%s", (uid, gid, new_session_dict))
         sns = typedict(new_session_dict)
         mode = sns.get("mode", "start")
         assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
         display = sns.get("display")
+        if display in displays:
+            raise Exception("display %s is already active!" % display)
         log("starting new server subprocess: mode=%s, display=%s", mode, display)
         args = []
         if display:

@@ -22,7 +22,7 @@ from xpra.platform.dotxpra import osexpand
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 
 
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
+def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
     if os.name!="posix":
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
@@ -141,8 +141,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid):
                 setsid()
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=preexec)
-    xauth_data = xauth_add(display_name)
-    return xvfb, display_name, xauth_data
+    xauth_add(display_name, xauth_data)
+    return xvfb, display_name
 
 
 def set_initial_resolution():
@@ -166,9 +166,7 @@ def set_initial_resolution():
         log.warn(" %s", e)
 
 
-def xauth_add(display_name):
-    from xpra.os_util import get_hex_uuid
-    xauth_data = get_hex_uuid()
+def xauth_add(display_name, xauth_data):
     xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         code = subprocess.call(xauth_cmd)
@@ -177,7 +175,6 @@ def xauth_add(display_name):
     except OSError as e:
         #trying to continue anyway!
         sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
-    return xauth_data
 
 def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb is None:

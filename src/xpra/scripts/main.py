@@ -1160,7 +1160,7 @@ def configure_logging(options, mode):
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
     setloghandler(logging.StreamHandler(to))
-    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig"):
+    if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(info))
@@ -2523,17 +2523,12 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             proc.wait()
         proc = None
     else:
-        preexec_fn = None
         cmd.append("--systemd-run=no")
+        cmd.append("--daemon=yes")
         if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
-            #we need to change uid / gid:
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
-            preexec_fn = setsid
-            #alternative using systemd-run to change uid:
-            #sdcmd = systemd_run_command(mode, opts.systemd_run_args, False) + ["--uid=%i" % uid, "--gid=%i" % gid]
-            #cmd = sdcmd + cmd
-        proc = Popen(cmd, shell=False, close_fds=True, preexec_fn=preexec_fn)
+        proc = Popen(cmd, shell=False, close_fds=True)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
 

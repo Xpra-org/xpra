@@ -251,25 +251,3 @@ def write_pidfile(pidfile, withfd=None):
     except Exception as e:
         log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
         log.error(" %s", e)
-
-
-def pam_open(xdisplay, xauth_data=None):
-    try:
-        from xpra.server.pam import pam_open, pam_close
-    except ImportError as e:
-        sys.stderr.write("No pam support: %s\n" % e)
-    else:
-        items = {
-               "XDISPLAY" : xdisplay
-               }
-        if xauth_data:
-            items["XAUTHDATA"] = xauth_data
-        env = {
-               #"XDG_SEAT"               : "seat1",
-               #"XDG_VTNR"               : "0",
-               "XDG_SESSION_TYPE"       : "x11",
-               #"XDG_SESSION_CLASS"      : "user",
-               "XDG_SESSION_DESKTOP"    : "xpra",
-               }
-        if pam_open(env=env, items=items):
-            add_cleanup(pam_close)

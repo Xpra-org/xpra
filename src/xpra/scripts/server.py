@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import warn, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, WIN32, OSX
+from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool
 from xpra.platform.dotxpra import DotXpra
 
@@ -366,7 +366,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, pam_open, write_pidfile, find_log_dir 
+    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir 
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     uid = int(opts.uid)
@@ -529,19 +529,54 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
     configure_imsettings_env(opts.input_method)
 
+    xauth_data = None
+    if start_vfb:
+        xauth_data = get_hex_uuid()
+
+    # if pam is present, try to create a new session:
+    pam = None
+    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
+    if PAM_OPEN:
+        from xpra.server.pam import pam_session #@UnresolvedImport
+        pam = pam_session(uid=uid)
+        env = {
+               #"XDG_SEAT"               : "seat1",
+               #"XDG_VTNR"               : "0",
+               "XDG_SESSION_TYPE"       : "x11",
+               #"XDG_SESSION_CLASS"      : "user",
+               "XDG_SESSION_DESKTOP"    : "xpra",
+               }
+        pam.start()
+        pam.set_env(env)
+        items = {}
+        if display_name.startswith(":"):
+            items["XDISPLAY"] = display_name
+        if xauth_data:
+            items["XAUTHDATA"] = xauth_data
+        pam.set_items(items)
+        if pam.open():
+            #we can't close it, because we're not going to be root any more,
+            #but since we're the process leader for the session,
+            #terminating will also close the session
+            #add_cleanup(pam.close)
+            pass
+
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
     odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
-    xauth_data = None
     if start_vfb:
-        assert not proxying
+        assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
-        xvfb, display_name, xauth_data = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid)
+        xvfb, display_name = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, xauth_data)
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
+        if display_name!=odisplay_name:
+            items = {"XDISPLAY" : display_name}
+        if pam:
+            pam.set_items(items)
 
     close_display = None
     if not proxying:
@@ -559,12 +594,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 except OSError as e:
                     log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
                     log.info(" %s", e)
-        _cleanups.append(close_display)
-
-    # if pam is present, try to create a new session:
-    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
-    if PAM_OPEN:
-        pam_open(display_name, xauth_data)
+        add_cleanup(close_display)
 
     if opts.daemon:
         def noerr(fn, *args):
@@ -621,7 +651,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     for socket, cleanup_socket in local_sockets:
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
         sockets.append(socket)
-        _cleanups.append(cleanup_socket)
+        add_cleanup(cleanup_socket)
         if opts.mdns:
             ssh_port = get_ssh_port()
             rec = "ssh", [("", ssh_port)]
@@ -665,7 +695,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                     except Exception as e:
                         log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
                         log.warn(" %s", e)
-                _cleanups.append(kill_dbus)
+                add_cleanup(kill_dbus)
                 #this also updates os.environ with the dbus attributes:
                 dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
                 if dbus_pid>0:
