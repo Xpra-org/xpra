@@ -128,16 +128,15 @@ def run_sound(mode, error_cb, options, args):
     from xpra.sound.gstreamer_util import import_gst
     gst = import_gst()
     from xpra.platform import program_context
-    with program_context("Xpra"):
+    if not gst:
+        return 1
+    info = mode.replace("_sound_", "")  #ie: "_sound_record" -> "record"
+    with program_context("Xpra-Audio-%s" % info, "Xpra Audio %s" % info):
         log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
-        if not gst:
-            return 1
         if mode=="_sound_record":
             subproc = sound_record
-            info = "record"
         elif mode=="_sound_play":
             subproc = sound_play
-            info = "play"
         elif mode=="_sound_query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
@@ -156,12 +155,12 @@ def run_sound(mode, error_cb, options, args):
                  "python.version"   : sys.version_info[:3],
                  "python.bits"      : bits,
                 }
+            if BUNDLE_METADATA:
+                d["bundle-metadata"] = True
             for k,v in d.items():
                 if type(v) in (list, tuple):
                     v = ",".join(str(x) for x in v)
                 print("%s=%s" % (k, v))
-            if BUNDLE_METADATA:
-                print("bundle-metadata=True")
             return 0
         else:
             log.error("unknown mode: %s" % mode)
