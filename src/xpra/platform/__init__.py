@@ -8,6 +8,12 @@ import os as os
 import sys as sys
 
 
+try:
+    import encodings
+except ImportError:
+    pass
+
+
 _init_done = False
 def init(prgname=None, appname=None):
     """ do whatever is needed to prepare an application for running,

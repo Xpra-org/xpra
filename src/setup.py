@@ -1089,7 +1089,13 @@ if WIN32:
     if "build_ext" not in sys.argv:
         #with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
+        import cx_Freeze
         from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
+        CX5 = cx_Freeze.version>="5"
+        if CX5 and not hasattr(sys, "base_prefix"):
+            #workaround for broken sqlite hook with python 2.7, see:
+            #https://github.com/anthony-tuininga/cx_Freeze/pull/272
+            sys.base_prefix = sys.prefix
 
         #cx_freeze doesn't use "data_files"...
         del setup_options["data_files"]
@@ -1283,36 +1289,46 @@ if WIN32:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
         cx_freeze_options = {
-                            "compressed"        : True,
                             "includes"          : external_includes,
                             "packages"          : packages,
                             "include_files"     : data_files,
                             "excludes"          : excludes,
                             "include_msvcr"     : True,
                             "bin_excludes"      : bin_excludes,
-                            "create_shared_zip" : zip_ENABLED,
                             }
+        if not CX5:
+            cx_freeze_options.update({
+                            "compressed"        : True,
+                            "create_shared_zip" : zip_ENABLED,
+                            })
         setup_options["options"] = {"build_exe" : cx_freeze_options}
         executables = []
         setup_options["executables"] = executables
 
         def add_exe(script, icon, base_name, base="Console"):
+            kwargs = {}
+            if not CX5:
+                kwargs = {
+                    "compress"              : True,
+                    "copyDependentFiles"    : True,
+                    "appendScriptToExe"     : False,
+                    "appendScriptToLibrary" : True,
+                    }
             executables.append(Executable(
                         script                  = script,
                         initScript              = None,
                         #targetDir               = "dist",
                         icon                    = "win32/%s" % icon,
                         targetName              = "%s.exe" % base_name,
-                        compress                = True,
-                        copyDependentFiles      = True,
-                        appendScriptToExe       = False,
-                        appendScriptToLibrary   = True,
-                        base                    = base))
+                        base                    = base,
+                        **kwargs))
 
         def add_console_exe(script, icon, base_name):
             add_exe(script, icon, base_name)
         def add_gui_exe(script, icon, base_name):
             add_exe(script, icon, base_name, base="Win32GUI")
+        def add_service_exe(script, icon, base_name):
+            add_exe(script, icon, base_name, base="Win32Service")
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
@@ -1339,6 +1355,8 @@ if WIN32:
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         if server_ENABLED:
             add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
+            if CX5:
+                add_service_exe("xpra/platform/win32/service_config.py", "xpra_txt.ico", "Xpra-Service")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
             add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
