@@ -1357,6 +1357,7 @@ if WIN32:
             add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
             if CX5:
                 add_service_exe("xpra/platform/win32/service_config.py", "xpra_txt.ico", "Xpra-Service")
+                external_includes += ["cx_Logging"]
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
             add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")
