@@ -9,7 +9,7 @@ import threading
 from xpra.log import Logger
 from xpra.platform import init, clean
 
-class Handler(object):
+class Service(object):
 
     def __init__(self):
         init("Xpra Service", "Xpra Service")
