@@ -59,6 +59,7 @@ NAME_TO_SRC_PLUGIN = {
     "test"          : "audiotestsrc",
     "pulse"         : "pulsesrc",
     "direct"        : "directsoundsrc",
+    "wasapi"        : "wasapisrc",
     }
 SRC_HAS_DEVICE_NAME = ["alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc"]
 SRC_TO_NAME_PLUGIN = {}
@@ -79,6 +80,7 @@ NAME_TO_INFO_PLUGIN = {
     "test"          : "Test signal",
     "pulse"         : "PulseAudio",
     "direct"        : "Microsoft Windows Direct Sound",
+    "wasapi"        : "Windows Audio Session API",
     }
 
 
@@ -537,6 +539,7 @@ def get_source_plugins():
         sources.append("osxaudiosrc")
     elif WIN32:
         sources.append("directsoundsrc")
+        #sources.append("wasapisrc")
     sources.append("autoaudiosrc")
     if os.name=="posix":
         sources += ["alsasrc",
@@ -551,6 +554,7 @@ def get_sink_plugins():
         SINKS.append("osxaudiosink")
     elif WIN32:
         SINKS.append("directsoundsink")
+        #SINKS.append("wasapisink")
     SINKS.append("autoaudiosink")
     try:
         from xpra.sound.pulseaudio.pulseaudio_util import has_pa
