@@ -271,7 +271,9 @@ def set_wait_for_input():
 
 def do_init():
     if not REDIRECT_OUTPUT:
-        if sys.version_info[0]<3:
+        from xpra.util import envbool
+        FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", True)
+        if sys.version_info[0]<3 and FIX_UNICODE_OUT:
             #don't know why this breaks with Python 3 yet...
             fix_unicode_out()
         #figure out if we want to wait for input at the end:
