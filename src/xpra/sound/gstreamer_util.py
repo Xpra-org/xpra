@@ -548,6 +548,29 @@ def get_source_plugins():
     sources.append("audiotestsrc")
     return sources
 
+def get_default_source():
+    source = os.environ.get("XPRA_SOUND_SRC")
+    sources = get_source_plugins()
+    if source:
+        if source not in sources:
+            log.error("invalid default sound source: '%s' is not in %s", source, csv(sources))
+        else:
+            return source
+    try:
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+        if has_pa():
+            s = get_pactl_server()
+            if not s:
+                log("cannot connect to pulseaudio server?")
+            else:
+                return "pulsesink"
+    except ImportError as e:
+        log("get_default_sink() no pulsesink: %s", e)
+    for source in sources:
+        if has_plugins(source):
+            return source
+    return None
+
 def get_sink_plugins():
     SINKS = []
     if OSX:
@@ -584,7 +607,10 @@ def get_default_sink():
                 return "pulsesink"
     except ImportError as e:
         log("get_default_sink() no pulsesink: %s", e)
-    return sinks[0]
+    for sink in sinks:
+        if has_plugins(sink):
+            return sink
+    return None
 
 
 def get_test_defaults(*args):

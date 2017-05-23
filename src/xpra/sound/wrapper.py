@@ -6,7 +6,8 @@
 import os
 import sys
 
-from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, format_element_options, \
+from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink, get_default_source, \
+                            import_gst, format_element_options, \
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
@@ -125,12 +126,11 @@ def run_sound(mode, error_cb, options, args):
     """
     from xpra.gtk_common.gobject_compat import want_gtk3
     want_gtk3(True)
-    from xpra.sound.gstreamer_util import import_gst
     gst = import_gst()
-    from xpra.platform import program_context
     if not gst:
         return 1
     info = mode.replace("_sound_", "")  #ie: "_sound_record" -> "record"
+    from xpra.platform import program_context
     with program_context("Xpra-Audio-%s" % info, "Xpra Audio %s" % info):
         log("run_sound(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
         if mode=="_sound_record":
@@ -140,6 +140,7 @@ def run_sound(mode, error_cb, options, args):
         elif mode=="_sound_query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
+            sinks = [x for x in get_sink_plugins() if x in plugins]
             from xpra.sound.gstreamer_util import gst_version, pygst_version
             import struct
             bits = struct.calcsize("P")*8
@@ -147,6 +148,9 @@ def run_sound(mode, error_cb, options, args):
                  "encoders"         : can_encode(),
                  "decoders"         : can_decode(),
                  "sources"          : sources,
+                 "source.default"   : get_default_source() or "",
+                 "sinks"            : sinks,
+                 "sink.default"     : get_default_sink() or "",
                  "muxers"           : get_muxers(),
                  "demuxers"         : get_demuxers(),
                  "gst.version"      : [int(x) for x in gst_version],

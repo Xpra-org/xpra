@@ -1034,11 +1034,12 @@ def do_parse_cmdline(cmdline, defaults):
         try:
             from xpra.sound.wrapper import query_sound
             source_plugins = query_sound().strlistget("sources", [])
+            source_default = query_sound().strget("source.default", "")
         except Exception as e:
             raise InitInfo(e)
             source_plugins = []
         if source_plugins:
-            raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_plugins[0]+
+            raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_default+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No sound source plugins found!")
 
