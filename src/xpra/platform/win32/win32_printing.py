@@ -23,10 +23,10 @@ msvcrt = cdll.msvcrt
 winspool = WinDLL('winspool.drv', use_last_error=True)
 OpenPrinterA = winspool.OpenPrinterA
 OpenPrinterA.restype = BOOL
+OpenPrinterA.argtypes = [LPCSTR, LPHANDLE, LPPRINTER_DEFAULTS]
 ClosePrinter = winspool.ClosePrinter
 ClosePrinter.restype = BOOL
 ClosePrinter.argtypes = [HANDLE]
-OpenPrinterA.argtypes = [LPCSTR, LPHANDLE, LPPRINTER_DEFAULTS]
 GetPrinterA = winspool.GetPrinterA
 GetPrinterA.restype = BOOL
 GetPrinterA.argtypes = [HANDLE, DWORD, c_void_p, DWORD, LPDWORD]
