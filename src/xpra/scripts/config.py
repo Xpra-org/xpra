@@ -97,7 +97,7 @@ def get_Xvfb_command():
            #better than leaving to vfb after a resize?
            "-dpi", "96",
            "-nolisten", "tcp",
-           "-noreset", "-novtswitch",
+           "-noreset",
            "-auth", "$XAUTHORITY"
            ]
     return cmd
