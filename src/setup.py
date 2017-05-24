@@ -1546,10 +1546,13 @@ else:
             if pam_ENABLED:
                 copytodir("etc/pam.d/xpra", "/etc/pam.d")
 
+            #fedora and centos can use just "/lib/systemd/system" here
+            #but debian gets totally confused if we do...
+            systemd_dir = "/usr/lib/systemd/system"
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
-                    copytodir("service/xpra.service", "/lib/systemd/system")
+                    copytodir("service/xpra.service", systemd_dir)
                 else:
                     copytodir("service/xpra", "/etc/init.d")
                 if os.path.exists("/etc/sysconfig"):
@@ -1557,7 +1560,7 @@ else:
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
             if sd_listen_ENABLED:
-                copytodir("service/xpra.socket", "/lib/systemd/system")
+                copytodir("service/xpra.socket", systemd_dir)
 
 
     # add build_conf to build step

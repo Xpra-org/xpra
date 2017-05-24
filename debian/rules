@@ -8,7 +8,7 @@ DPKG_EXPORT_BUILDFLAGS = 1
 export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
 export CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
 %:
-	dh $@ --with python2 --with quilt
+	dh $@ --with python2 --with quilt --with systemd
 
 BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
