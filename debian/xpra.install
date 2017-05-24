@@ -8,6 +8,7 @@ usr/lib/cups/backend/xpraforwarder
 usr/share/applications/xpra-launcher.desktop
 usr/share/applications/xpra-browser.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml
+usr/share/man/man1/xpra*
 usr/share/xpra/icons/*.png
 usr/share/xpra/www/*
 usr/share/xpra/cuda/*
