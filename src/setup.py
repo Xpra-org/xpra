@@ -1013,6 +1013,8 @@ def install_html5(install_dir="www"):
         for f in files:
             src = os.path.join(os.getcwd(), f)
             parts = f.split(os.path.sep)
+            if parts[-1] in ("AUTHORS", "LICENSE"):
+                continue
             if parts[0]=="html5":
                 f = os.path.join(*parts[1:])
             if install_dir==".":
