@@ -1505,30 +1505,31 @@ else:
                 install_html5(os.path.join(self.install_dir, "share/xpra/www"))
             install_data.run(self)
 
-            etc_prefix = self.install_dir
-            if etc_prefix.endswith("/usr"):
-                etc_prefix = etc_prefix[:-3]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
-            build_xpra_conf(etc_prefix)
+            root_prefix = self.install_dir.rstrip("/")
+            if root_prefix.endswith("/usr"):
+                root_prefix = root_prefix[:-4]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
+            build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, chmod=0o644):
-                #deal with /etc in a buildroot:
-                if dst_dir.startswith("/etc"):
-                    dst_dir = etc_prefix+dst_dir
+                #convert absolute paths:
+                if dst_dir.startswith("/"):
+                    dst_dir = root_prefix+dst_dir
                 else:
-                    dst_dir = self.install_dir+dst_dir
+                    dst_dir = self.install_dir.rstrip("/")+"/"+dst_dir
                 #make sure the target directory exists:
                 self.mkpath(dst_dir)
                 #generate the target filename:
                 filename = os.path.basename(src)
                 dst_file = os.path.join(dst_dir, filename)
                 #copy it
+                print("copying %s -> %s (%s)" % (src, dst_dir, oct(chmod)))
                 shutil.copyfile(src, dst_file)
                 if chmod:
                     os.chmod(dst_file, chmod)
 
             if printing_ENABLED and os.name=="posix":
                 #install "/usr/lib/cups/backend" with 0700 permissions:
-                copytodir("cups/xpraforwarder", "/lib/cups/backend", chmod=0o700)
+                copytodir("cups/xpraforwarder", "lib/cups/backend", chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
@@ -1548,7 +1549,7 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
-                    copytodir("service/xpra.service", "/lib/systemd/system")
+                    copytodir("service/xpra.service", "lib/systemd/system")
                 else:
                     copytodir("service/xpra", "/etc/init.d")
                 if os.path.exists("/etc/sysconfig"):
@@ -1556,7 +1557,7 @@ else:
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
             if sd_listen_ENABLED:
-                copytodir("service/xpra.socket", "/lib/systemd/system")
+                copytodir("service/xpra.socket", "lib/systemd/system")
 
 
     # add build_conf to build step
