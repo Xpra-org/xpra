@@ -1549,7 +1549,7 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
-                    copytodir("service/xpra.service", "lib/systemd/system")
+                    copytodir("service/xpra.service", "/lib/systemd/system")
                 else:
                     copytodir("service/xpra", "/etc/init.d")
                 if os.path.exists("/etc/sysconfig"):
@@ -1557,7 +1557,7 @@ else:
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
             if sd_listen_ENABLED:
-                copytodir("service/xpra.socket", "lib/systemd/system")
+                copytodir("service/xpra.socket", "/lib/systemd/system")
 
 
     # add build_conf to build step

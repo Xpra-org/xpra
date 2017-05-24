@@ -527,8 +527,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 
 %files common-server
-%{_prefix}/lib/systemd/system/xpra.service
-%{_prefix}/lib/systemd/system/xpra.socket
+/lib/systemd/system/xpra.service
+/lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_prefix}/lib/tmpfiles.d/xpra.conf
