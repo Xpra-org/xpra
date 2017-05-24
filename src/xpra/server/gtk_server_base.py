@@ -19,6 +19,7 @@ log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 clipboardlog = Logger("server", "clipboard")
 cursorlog = Logger("server", "cursor")
+netlog = Logger("network")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time
@@ -64,10 +65,6 @@ class GTKServerBase(ServerBase):
         gtk_main()
         log("do_run() end of gtk.main()")
 
-    def add_listen_socket(self, socktype, sock):
-        sock.listen(5)
-        glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
-        self.socket_types[sock] = socktype
 
     def make_hello(self, source):
         capabilities = ServerBase.make_hello(self, source)

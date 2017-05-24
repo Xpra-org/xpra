@@ -935,10 +935,6 @@ class ServerBase(ServerCore):
             self.dbus_server = None
 
 
-    def add_listen_socket(self, socktype, socket):
-        raise NotImplementedError()
-
-
     def _process_exit_server(self, proto, packet):
         log.info("Exiting in response to client request")
         self.cleanup_all_protocols(SERVER_EXIT)

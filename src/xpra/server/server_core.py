@@ -547,8 +547,21 @@ class ServerCore(object):
                 self.disconnect_protocol(protocol, reason)
 
 
-    def add_listen_socket(self, socktype, socket):
-        raise NotImplementedError()
+    def add_listen_socket(self, socktype, sock):
+        netlog("add_listen_socket(%s, %s)", socktype, sock)
+        #ugly that we have different ways of starting sockets,
+        #TODO: abstract this into the socket class
+        self.socket_types[sock] = socktype
+        if socktype=="named-pipe":
+            #named pipe listener uses a thread:
+            sock.new_connection_cb = self._new_connection
+            sock.start()
+        else:
+            from xpra.gtk_common.gobject_compat import import_glib
+            glib = import_glib()
+            sock.listen(5)
+            glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
+
 
     def _new_connection(self, listener, *args):
         """

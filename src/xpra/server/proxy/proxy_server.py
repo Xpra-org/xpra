@@ -142,10 +142,6 @@ class ProxyServer(ServerCore):
         self.main_loop.quit()
         log.info("Proxy Server process ended")
 
-    def add_listen_socket(self, socktype, sock):
-        sock.listen(5)
-        glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
-        self.socket_types[sock] = socktype
 
     def verify_connection_accepted(self, protocol):
         #if we start a proxy, the protocol will be closed
