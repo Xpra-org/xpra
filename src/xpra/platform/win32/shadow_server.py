@@ -59,6 +59,7 @@ NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
 
 
 def init_capture(pixel_depth=32):
+    capture = None
     if SHADOW_NVFBC:
         try:
             from xpra.codecs.nvfbc.fbc_capture_win32 import init_nvfbc_library
