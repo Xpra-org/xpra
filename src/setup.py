@@ -1059,7 +1059,7 @@ def install_html5(install_dir="www"):
                         gzip_dst = "%s.gz" % dst
                         if os.path.exists(gzip_dst):
                             os.unlink(gzip_dst)
-                        cmd = ["gzip", "-9", "-k", dst]
+                        cmd = ["gzip", "-n", "-9", "-k", dst]
                         get_status_output(cmd)
                         if os.path.exists(gzip_dst):
                             os.chmod(gzip_dst, 0o644)
