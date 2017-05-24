@@ -18,6 +18,8 @@ MAX_SIZE = 256*1024*1024
 
 python_lz4_version = None
 lz4_version = None
+def lz4_compress(packet, level):
+    raise Exception("lz4 is not supported!")
 try:
     import lz4
     from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
@@ -51,8 +53,6 @@ except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
     has_lz4 = False
-    def lz4_compress(packet, level):
-        raise Exception("lz4 is not supported!")
 
 python_lzo_version = None
 lzo_version = None
