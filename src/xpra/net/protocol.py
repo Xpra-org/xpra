@@ -334,7 +334,7 @@ class Protocol(object):
                     padded = data
                 else:
                     # pad byte value is number of padding bytes added
-                    padded = data + pad(self.cipher_out_padding, padding_size)
+                    padded = memoryview_to_bytes(data) + pad(self.cipher_out_padding, padding_size)
                     actual_size += padding_size
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
