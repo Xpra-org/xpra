@@ -22,6 +22,9 @@
 %define Suggests Suggests
 %define Recommends Recommends
 
+#we never want to depend on proprietary nvidia bits:
+%global __requires_exclude ^libnvidia-.*\\.so.*$
+
 #some of these dependencies may get turned off (empty) on some platforms:
 %define build_args --with-Xdummy --without-enc_x265
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
