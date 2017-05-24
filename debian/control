@@ -16,6 +16,7 @@ Build-Depends: debhelper (>= 8)
               ,python-gobject-dev
               ,python-gtk2-dev
               ,dh-systemd
+              ,libsystemd-dev
 X-Python-Version: >= 2.5
 Standards-Version: 3.9.3
 Homepage: http://xpra.org/
