@@ -133,7 +133,8 @@ class SysAuthenticator(object):
                     displays.append(display)
             log("sockdir=%s, results=%s, displays=%s", sockdir, results, displays)
         except Exception as e:
-            log.error("Error: cannot get socket directory for '%s':", self.username)
+            log("get_sessions()", exc_info=True)
+            log.error("Error: cannot get the list of sessions for '%s':", self.username)
             log.error(" %s", e)
             displays = []
         v = uid, gid, displays, {}, {}
