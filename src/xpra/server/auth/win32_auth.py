@@ -49,7 +49,36 @@ class Authenticator(SysAuthenticator):
             return True
         log.error("Error: win32 authentication failed:")
         log.error(" %s", FormatError(error))
-        return True
+        return False
 
     def __repr__(self):
         return "win32"
+
+
+def main():
+    import sys
+    from xpra.platform import program_context
+    from xpra.log import enable_color
+    with program_context("Auth-Test", "Auth-Test"):
+        enable_color()
+        for x in ("-v", "--verbose"):
+            if x in list(sys.argv):
+                log.enable_debug()
+                sys.argv.remove(x)
+        if len(sys.argv)!=3:
+            log.warn("invalid number of arguments")
+            log.warn("usage: %s [--verbose] username password", sys.argv[0])
+            return 1
+        username = sys.argv[1]
+        password = sys.argv[2]
+        a = Authenticator(username)
+        if a.check(password):
+            log.info("authentication succeeded")
+            return 0
+        else:
+            log.error("authentication failed")
+            return 1
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
