@@ -305,27 +305,6 @@ class ShadowServer(GTKShadowServerBase):
         self.do_print_screen_info(display, w, h)
 
 
-    def add_listen_socket(self, socktype, sock):
-        netlog("add_listen_socket(%s, %s)", socktype, sock)
-        if socktype=="named-pipe":
-            #named pipe listener uses a thread:
-            sock.new_connection_cb = self._new_connection
-            self.socket_types[sock] = socktype
-            sock.start()
-        else:
-            GTKServerBase.add_listen_socket(self, socktype, sock)
-
-    def _new_connection(self, listener, *args):
-        socktype = self.socket_types.get(listener)
-        netlog("_new_connection(%s) socktype=%s", listener, socktype)
-        if socktype!="named-pipe":
-            return GTKServerBase._new_connection(self, listener)
-        pipe_handle = args[0]
-        conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
-        netlog.info("New %s connection received on %s", socktype, conn.target)
-        return self.make_protocol(socktype, conn, frominfo=conn.target)
-
-
     def make_tray_widget(self):
         from xpra.platform.win32.win32_tray import Win32Tray
         return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)

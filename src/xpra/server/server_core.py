@@ -575,6 +575,14 @@ class ServerCore(object):
             return False
         socktype = self.socket_types.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
+        #TODO: just like add_listen_socket above, this needs refactoring
+        if socktype=="named-pipe":
+            pipe_handle = args[0]
+            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+            conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
+            netlog.info("New %s connection received on %s", socktype, conn.target)
+            return self.make_protocol(socktype, conn, frominfo=conn.target)
+
         try:
             sock, address = listener.accept()
         except socket.error as e:
