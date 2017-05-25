@@ -13,7 +13,7 @@ PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
 class DotXpra(object):
-    def __init__(self, sockdir=None, sockdirs=[], actual_username="", *args):
+    def __init__(self, sockdir=None, sockdirs=[], actual_username="", *args, **kwargs):
         self.username = actual_username
 
     def osexpand(self, v):
