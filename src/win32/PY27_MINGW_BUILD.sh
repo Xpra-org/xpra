@@ -12,31 +12,45 @@ DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
+DO_SERVICE=${DO_SERVICE:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
-PROGRAMFILES_X86="C:\\Program Files (x86)"
 KEY_FILE="E:\\xpra.pfx"
-SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
-if [ ! -e "${SIGNTOOL}" ]; then
-	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool"
-fi
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
+
 CLIENT_ONLY="0"
 if [ "$1" == "CLIENT" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5"
 	CLIENT_ONLY="1"
+	DO_SERVICE="0"
 	shift
+fi
+
+################################################################################
+# get paths and compilation options:
+PROGRAMFILES_X86="C:\\Program Files (x86)"
+
+if [ "${CLIENT_ONLY}" == "1" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5"
 else
 	# Find a java interpreter we can use for the html5 minifier
 	$JAVA -version >& /dev/null
 	if [ "$?" != "0" ]; then
-		export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
+		#try my hard-coded default first to save time:
+		export JAVA="C:\Program Files/Java/jdk1.8.0_121/bin/java.exe"
+		if [ ! -e "${JAVA}" ]; then	
+			export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
+		fi
 	fi
+fi
+
+SIGNTOOL="${PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool"
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool"
 fi
 
 ################################################################################
@@ -92,6 +106,47 @@ mkdir ${DIST} >& /dev/null
 
 if [ "${DO_CLEAN}" == "1" ]; then
 	rm -fr "build"
+fi
+
+if [ "${DO_SERVICE}" == "1" ]; then
+	echo "* Compiling system service shim"
+	pushd "win32/service" > /dev/null
+	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
+	MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x86\\mc.exe"
+	RC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x86\\rc.exe"
+	LINK="C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
+	#MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
+	#RC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
+	EVENT_LOG_BUILD_LOG="event_log_build.log"
+
+	#first build the event log definitions:
+	"$MC" -U event_log.mc >& "${EVENT_LOG_BUILD_LOG}"
+	if [ "$?" != "0" ]; then
+		echo "ERROR: service event_log build failed, see ${EVENT_LOG_BUILD_LOG}:"
+		tail -n 20 "${EVENT_LOG_BUILD_LOG}"
+		exit 1
+	fi
+	"$RC" event_log.rc > "${EVENT_LOG_BUILD_LOG}"
+	if [ "$?" != "0" ]; then
+		echo "ERROR: service event_log build failed, see ${EVENT_LOG_BUILD_LOG}:"
+		tail -n 20 "${EVENT_LOG_BUILD_LOG}"
+		exit 1
+	fi
+	"$LINK" -dll -noentry -out:event_log.dll event_log.res > "${EVENT_LOG_BUILD_LOG}"
+	if [ "$?" != "0" ]; then
+		echo "ERROR: service event_log build failed, see ${EVENT_LOG_BUILD_LOG}:"
+		tail -n 20 "${EVENT_LOG_BUILD_LOG}"
+		exit 1
+	fi
+
+	#now build the system service executable:
+	g++ -o Xpra-Service.exe Xpra-Service.cpp -Wno-write-strings
+	if [ "$?" != "0" ]; then
+		echo "ERROR: service build failed"
+		exit 1
+	fi
+	cp Xpra-Service.exe ../../dist/
+	popd > /dev/null
 fi
 
 if [ "${DO_CUDA}" == "1" ]; then
