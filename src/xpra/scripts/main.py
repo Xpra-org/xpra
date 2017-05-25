@@ -70,8 +70,9 @@ def info(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        import syslog
-        syslog.syslog(syslog.LOG_INFO, msg)
+        if os.name=="posix":
+            import syslog
+            syslog.syslog(syslog.LOG_INFO, msg)
 
 def warn(msg):
     #use this function to print warnings
@@ -82,8 +83,9 @@ def warn(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        import syslog
-        syslog.syslog(syslog.LOG_WARNING, msg)
+        if os.name=="posix":
+            import syslog
+            syslog.syslog(syslog.LOG_WARNING, msg)
 
 def error(msg):
     #use this function to print warnings
@@ -94,8 +96,9 @@ def error(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        import syslog
-        syslog.syslog(syslog.LOG_ERR, msg)
+        if os.name=="posix":
+            import syslog
+            syslog.syslog(syslog.LOG_ERR, msg)
 
 
 def nox():
