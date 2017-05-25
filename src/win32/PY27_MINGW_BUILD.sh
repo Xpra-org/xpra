@@ -233,6 +233,7 @@ if [ "${DO_VERPATCH}" == "1" ]; then
 		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
 	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 fi
 

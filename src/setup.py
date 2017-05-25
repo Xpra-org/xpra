@@ -1357,6 +1357,7 @@ if WIN32:
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
         if server_ENABLED:
             add_console_exe("xpra/server/auth/sqlite_auth.py",  "sqlite.ico",        "SQLite_auth_tool")
+            add_console_exe("win32/service/proxy.py",           "xpra_txt.ico",      "Xpra-Proxy")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
             add_console_exe("xpra/platform/paths.py",           "directory.ico",    "Path_info")

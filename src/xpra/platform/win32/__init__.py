@@ -11,6 +11,7 @@ import os.path
 import sys
 import ctypes
 
+from xpra.util import envbool
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
@@ -34,7 +35,7 @@ GetConsoleCP = kernel32.GetConsoleCP
 
 #redirect output if we're not running from a console:
 frozen = getattr(sys, 'frozen', False)
-REDIRECT_OUTPUT = frozen is True and GetConsoleCP()==0
+REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", frozen is True and GetConsoleCP()==0)
 if frozen:
     #cx_freeze paths:
     def jedir(relpathname):

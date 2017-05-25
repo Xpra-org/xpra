@@ -174,7 +174,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra_cmd.exe\" proxy --bind-tcp=0.0.0.0:14500";
     //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
     //TODO add SSL: --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"";
-    LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra_cmd.exe\" proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys";
+    LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\" proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys";
     LPCTSTR cwd = "C:\\Program Files\\Xpra\\";
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
