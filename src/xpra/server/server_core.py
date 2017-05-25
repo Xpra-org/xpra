@@ -323,11 +323,6 @@ class ServerCore(object):
             AUTH_MODULES["sqlite"] = sqlite_auth
         except Exception as e:
             authlog("cannot load sql auth: %s", e)
-        try:
-            from xpra.server.auth import pam_auth
-            AUTH_MODULES["pam"] = pam_auth
-        except Exception as e:
-            authlog("cannot load pam auth: %s", e)
         if WIN32:
             try:
                 from xpra.server.auth import win32_auth
@@ -335,6 +330,12 @@ class ServerCore(object):
             except Exception as e:
                 authlog.error("Error: cannot load the MS Windows authentication module:")
                 authlog.error(" %s", e)
+        else:
+            try:
+                from xpra.server.auth import pam_auth
+                AUTH_MODULES["pam"] = pam_auth
+            except Exception as e:
+                authlog("cannot load pam auth: %s", e)
         auth_module = AUTH_MODULES.get(auth)
         if not auth_module:
             raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, csv(AUTH_MODULES.keys())))
