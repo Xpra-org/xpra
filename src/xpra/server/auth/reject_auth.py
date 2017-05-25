@@ -12,7 +12,7 @@ def init(opts):
 
 class Authenticator(object):
     def __init__(self, username, **kwargs):
-        pass
+        self.username = username
 
     def requires_challenge(self):
         return True

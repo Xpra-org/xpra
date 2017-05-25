@@ -24,7 +24,6 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
-from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.gdi_screen_capture import GDICapture
 
