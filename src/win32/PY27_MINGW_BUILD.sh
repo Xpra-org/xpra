@@ -16,6 +16,7 @@ DO_SERVICE=${DO_SERVICE:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
+BUNDLE_OPENGL=${BUNDLE_OPENGL:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
@@ -192,12 +193,14 @@ if [ -e "${DIST}/lib/cx_Logging.pyd" ]; then
 	mv "${DIST}/lib/cx_Logging.pyd" "${DIST}/"
 fi
 
-if [ -e "${DIST}/OpenGL" ]; then
-	echo "* Adding PyOpenGL to library.zip"
-	pushd "${DIST}" >& /dev/null
-	zip -qmor "library.zip" OpenGL
-	popd >& /dev/null
-	#python2.7.exe win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
+if [ "${BUNDLE_OPENGL}" == "1" ]; then
+	if [ -e "${DIST}/OpenGL" ]; then
+		echo "* Adding PyOpenGL to library.zip"
+		pushd "${DIST}" >& /dev/null
+		zip -qmor "library.zip" OpenGL
+		popd >& /dev/null
+		#python2.7.exe win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
+	fi
 fi
 
 echo "* Generating gdk pixbuf loaders.cache"
