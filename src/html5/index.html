@@ -291,8 +291,7 @@
 				    		add_prop("disconnect", message);
 				    		var props = {
 				    				"username"			: username,
-				    				//"password"			: password,
-				    				"password"			: "",
+				    				"insecure"			: insecure,
 				    				"server"			: server,
 				    				"port"				: port,
 				    				"encoding"			: encoding,
@@ -312,6 +311,12 @@
 				    				"insecure"			: insecure,
 				    				"ignore_audio_blacklist" : ignore_audio_blacklist,
 				    				}
+				    		if (insecure || sessionStorage) {
+			    				props["password"] = password;
+				    		}
+				    		else {
+				    			props["password"] = "";
+				    		}
 				    		for (var name in props) {
 				    			var value = props[name];
 					    		add_prop(name, value);

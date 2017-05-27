@@ -368,8 +368,10 @@ $(document).ready(function() {
 	link.setAttribute('href', url);
 	document.getElementById("server").value = getparam("server") || link.hostname;
 	document.getElementById("port").value = getparam("port") || link.port;
-	var username = getparam("username") || "";
-	document.getElementById("username").value = username;
+	document.getElementById("username").value = getparam("username") || "";
+	if (getboolparam("insecure", false)) {
+		document.getElementById("password").value = getparam("password") || "";
+	}
 	if(ssl) {
 	   	$('div.password-warning-box').hide();
 	}
