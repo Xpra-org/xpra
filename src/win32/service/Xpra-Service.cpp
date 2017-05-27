@@ -16,8 +16,6 @@
 
 #define SVCNAME TEXT("Xpra")
 
-const char* LOG_NAME = "Xpra";
-
 SERVICE_STATUS          gSvcStatus;
 SERVICE_STATUS_HANDLE   gSvcStatusHandle;
 HANDLE                  ghSvcStopEvent = NULL;
@@ -150,7 +148,10 @@ VOID WINAPI SvcMain(DWORD dwArgc, LPTSTR *lpszArgv)
 //
 VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	HANDLE event_log = RegisterEventSource(NULL, LOG_NAME);
+	HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
+	const char* message = "Going to start Xpra proxy server";
+	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+	char buf[64];
 
 	// Create an event. The control handler function, SvcCtrlHandler,
     // signals this event when it receives the stop control code.
@@ -167,14 +168,10 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));   
 
-	char buf[64];
-	const char* message = "Going to start Xpra shadow";
-	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-
     //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra_cmd.exe\" proxy --bind-tcp=0.0.0.0:14500";
     //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
     //TODO add SSL: --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"";
-    LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\" proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys";
+    LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\" proxy --bind=xpra-proxy --bind-tcp=0.0.0.0:14500 --tcp-auth=sys -d win32,proxy";
     LPCTSTR cwd = "C:\\Program Files\\Xpra\\";
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
