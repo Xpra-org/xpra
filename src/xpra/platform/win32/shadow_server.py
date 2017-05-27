@@ -90,7 +90,7 @@ def init_capture(pixel_depth=32):
             capture = GDICapture()
         if not capture:
             raise Exception("no screen capture methods enabled (GDI capture is disabled)")
-    log("init_capture()=", capture)
+    log("init_capture()=%s", capture)
     return capture
 
 
