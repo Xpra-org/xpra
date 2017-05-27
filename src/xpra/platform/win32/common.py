@@ -8,9 +8,11 @@ import ctypes
 
 from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR
+from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR
+
 LRESULT = c_long
 DEVMODE = c_void_p
+LPDWORD = POINTER(DWORD)
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
@@ -18,6 +20,11 @@ GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
 GetModuleHandleA = kernel32.GetModuleHandleA
 GetModuleHandleA.restype = HMODULE
 SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
+GetComputerNameW = kernel32.GetComputerNameW
+GetComputerNameW.restype = BOOL
+GetComputerNameW.argtypes = [LPWSTR, LPDWORD]
+GetCurrentProcess = kernel32.GetCurrentProcess
+GetCurrentProcess.restype = HANDLE
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExW = user32.RegisterClassExW

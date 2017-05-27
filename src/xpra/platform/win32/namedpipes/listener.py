@@ -76,8 +76,11 @@ class NamedPipeListener(Thread):
             pipe_handle = None
             try:
                 pipe_handle = self.CreatePipeHandle()
-            except Exception:
-                log.error("Error: failed to create named pipe '%s'", self.pipe_name)
+            except Exception as e:
+                log("CreatePipeHandle()", exc_info=True)
+                log.error("Error: failed to create named pipe")
+                log.error(" at path '%s'", self.pipe_name)
+                log.error(" %s", e)
                 return
             log("CreatePipeHandle()=%s", pipe_handle)
             if pipe_handle==INVALID_HANDLE_VALUE:
@@ -136,7 +139,7 @@ class NamedPipeListener(Thread):
     def CreatePipeSecurityObject(self):
         TOKEN_QUERY = 0x8
         cur_proc = GetCurrentProcess()
-        log("CreatePipeSecurityObject() GetCurrentProcess()=%s", cur_proc)
+        log("CreatePipeSecurityObject() GetCurrentProcess()=%#x", cur_proc)
         process = HANDLE()
         if OpenProcessToken(HANDLE(cur_proc), TOKEN_QUERY, ctypes.byref(process))==0:
             raise WindowsError()
