@@ -180,7 +180,6 @@ def sanitize_env():
              #"XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
              )
-    os.environ["XDG_SESSION_TYPE"] = "x11"
 
 def configure_imsettings_env(input_method):
     im = (input_method or "").lower()
@@ -527,8 +526,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except:
             pass
     sanitize_env()
-    os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
-    configure_imsettings_env(opts.input_method)
+    if os.name=="posix":
+        os.environ["XDG_SESSION_TYPE"] = "x11"
+        os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
+        configure_imsettings_env(opts.input_method)
 
     xauth_data = None
     if start_vfb:
