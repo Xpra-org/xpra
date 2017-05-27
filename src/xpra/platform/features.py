@@ -67,6 +67,7 @@ _features_list_ = [
                    "UI_THREAD_POLLING",
                    "CLIENT_MODULES",
                    "INPUT_DEVICES",
+                   "SYSTEM_PROXY_SOCKET",
                    ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,

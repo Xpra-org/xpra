@@ -21,4 +21,4 @@ PRINT_COMMAND = ""
 DEFAULT_SSH_COMMAND="plink -ssh -agent"
 
 #not implemented:
-SYSTEM_PROXY_SOCKET = ""
+SYSTEM_PROXY_SOCKET = "xpra-proxy"
