@@ -102,7 +102,7 @@ def do_get_socket_dirs():
 
 
 APP_DIR = None
-if hasattr(sys, 'frozen') and sys.frozen in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
+if getattr(sys, 'frozen', False) in (True, "windows_exe", "console_exe"):    #@UndefinedVariable
     #cx_freeze = sys.frozen == True
     #py2exe =  sys.frozen in ("windows_exe", "console_exe")
     if sys.version_info >= (3,0):
