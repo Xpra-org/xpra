@@ -113,9 +113,16 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	echo "* Compiling system service shim"
 	pushd "win32/service" > /dev/null
 	rm -f event_log.rc event_log.res MSG00409.bin Xpra-Service.exe
-	MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x86\\mc.exe"
-	RC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x86\\rc.exe"
+	WINDOWS_KITS="C:\Program Files (x86)\\Windows Kits"
+	if [ -d "C:\\Program Files\\Windows Kits" ]; then
+		WINDOWS_KITS="C:\Program Files\\Windows Kits"
+	fi
+	MC="${WINDOWS_KITS}\\8.1\\bin\\x86\\mc.exe"
+	RC="${WINDOWS_KITS}\\8.1\\bin\\x86\\rc.exe"
 	LINK="C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
+	if  [ ! -e "${LINK}" ]; then
+		LINK="C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\link.exe"
+	fi
 	#MC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
 	#RC="C:\\Program Files\\Windows Kits\\8.1\\bin\\x64\\mc.exe"
 	EVENT_LOG_BUILD_LOG="event_log_build.log"
