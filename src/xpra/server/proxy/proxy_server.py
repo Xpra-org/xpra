@@ -12,7 +12,7 @@ glib = import_glib()
 glib.threads_init()
 gobject = import_gobject()
 gobject.threads_init()
-from multiprocessing import Queue as MQueue, freeze_support
+from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 freeze_support()
 
 from xpra.log import Logger
@@ -21,7 +21,7 @@ authlog = Logger("proxy", "auth")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
-from xpra.os_util import get_username_for_uid, get_groups
+from xpra.os_util import get_username_for_uid, get_groups, WIN32
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -210,6 +210,9 @@ class ProxyServer(ServerCore):
             username = get_username_for_uid(uid)
             groups = get_groups(username)
             log("username(%i)=%s, groups=%s", username, groups)
+        else:
+            #the auth module recorded the username we authenticate against
+            username = getattr(client_proto.authenticator, "username", "")
         #ensure we don't loop back to the proxy:
         proxy_virtual_display = os.environ.get("DISPLAY")
         if proxy_virtual_display in displays:
@@ -226,7 +229,8 @@ class ProxyServer(ServerCore):
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
             try:
-                display = self.start_new_session(uid, gid, sns, displays)
+                display = self.start_new_session(username, uid, gid, sns, displays)
+                log("start_new_session%s=%s", (username, uid, gid, sns, displays), display)
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
@@ -326,9 +330,11 @@ class ProxyServer(ServerCore):
                 message_queue.put("socket-handover-complete")
         start_thread(do_start_proxy, "start_proxy(%s)" % client_conn)
 
-    def start_new_session(self, uid, gid, new_session_dict={}, displays=()):
-        log("start_new_session%s", (uid, gid, new_session_dict))
+    def start_new_session(self, username, uid, gid, new_session_dict={}, displays=()):
+        log("start_new_session%s", (username, uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict)
+        if WIN32:
+            return self.start_win32_shadow(username, new_session_dict)
         mode = sns.get("mode", "start")
         assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
         display = sns.get("display")
@@ -359,6 +365,50 @@ class ProxyServer(ServerCore):
         log("start_new_session(..)=%s", display)
         return display
 
+    def start_win32_shadow(self, username, new_session_dict):
+        log("start_win32_shadow%s", (username, new_session_dict))
+        from xpra.platform.paths import get_app_dir
+        from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u
+        logon_info = logon_msv1_s4u(username)
+        log("logon_msv1_s4u(%s)=%s", username, logon_info)
+        #hwinstaold = set_window_station("winsta0")
+        def exec_command(command):
+            log("exec_command(%s)", command)
+            from xpra.platform.win32.create_process_lib import Popen, CREATIONINFO, CREATION_TYPE_TOKEN, LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO
+            creation_info = CREATIONINFO()
+            creation_info.dwCreationType = CREATION_TYPE_TOKEN
+            creation_info.dwLogonFlags = LOGON_WITH_PROFILE
+            creation_info.dwCreationFlags = CREATE_NEW_PROCESS_GROUP
+            creation_info.hToken = logon_info.Token
+            log("creation_info=%s", creation_info)
+            startupinfo = STARTUPINFO()
+            startupinfo.lpDesktop = "WinSta0\\Default"
+            startupinfo.lpTitle = "Xpra-Shadow"
+            cwd = get_app_dir()
+            from subprocess import PIPE
+            env = os.environ.copy()
+            log("env=%s", env)
+            proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env, startupinfo=startupinfo, creationinfo=creation_info)
+            log("Popen(%s)=%s", command, proc)
+            log("poll()=%s", proc.poll())
+            try:
+                log("stdout=%s", proc.stdout.read())
+                log("stderr=%s", proc.stderr.read())
+            except:
+                pass
+            if proc.poll() is not None:
+                return None
+            self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
+            return proc
+        #whoami = os.path.join(get_app_dir(), "whoami.exe")
+        #exec_command([whoami])
+        port = 10000
+        xpra_command = os.path.join(get_app_dir(), "xpra.exe")
+        command = [xpra_command, "shadow", "--bind-tcp=0.0.0.0:%i" % port, "-d", "win32"]
+        if not exec_command(command):
+            return None
+        exec_command(["C:\\Windows\notepad.exe"])
+        return "tcp/localhost:%i" % port
 
     def reap(self, *args):
         log("reap%s", args)

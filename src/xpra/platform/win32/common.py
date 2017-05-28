@@ -6,9 +6,9 @@
 
 import ctypes
 
-from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p
+from ctypes import WinDLL, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, POINTER, RECT
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR
+from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, WINFUNCTYPE, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA
 
 LRESULT = c_long
 DEVMODE = c_void_p
@@ -25,6 +25,13 @@ GetComputerNameW.restype = BOOL
 GetComputerNameW.argtypes = [LPWSTR, LPDWORD]
 GetCurrentProcess = kernel32.GetCurrentProcess
 GetCurrentProcess.restype = HANDLE
+HeapAlloc = kernel32.HeapAlloc
+HeapAlloc.restype = LPVOID
+HeapAlloc.argtypes = [HANDLE, DWORD, c_size_t]
+GetProcessHeap = kernel32.GetProcessHeap
+GetProcessHeap.restype = HANDLE
+GetProcessHeap.argtypes = []
+
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExW = user32.RegisterClassExW
@@ -94,6 +101,27 @@ GetDC.argtypes = [HWND]
 GetDC.restype = HDC
 ReleaseDC = user32.ReleaseDC
 PostQuitMessage = user32.PostQuitMessage
+OpenWindowStationW = user32.OpenWindowStationW
+OpenWindowStationW.restype = HWINSTA
+ACCESS_MASK = DWORD
+OpenWindowStationW.argtypes = [LPWSTR, BOOL, ACCESS_MASK]
+GetProcessWindowStation = user32.GetProcessWindowStation
+GetProcessWindowStation.restype = HWINSTA
+GetProcessWindowStation.argtypes = []
+SetProcessWindowStation = user32.SetProcessWindowStation
+SetProcessWindowStation.restype = BOOL
+SetProcessWindowStation.argtypes = [HWINSTA]
+CloseWindowStation = user32.CloseWindowStation
+CloseWindowStation.restype = BOOL
+CloseWindowStation.argtypes = [HWINSTA]
+HDESK = HANDLE
+OpenDesktopW = user32.OpenDesktopW
+OpenDesktopW.restype = HDESK
+OpenDesktopW.argtypes = [LPWSTR, DWORD, BOOL, ACCESS_MASK]
+CloseDesktop = user32.CloseDesktop
+CloseDesktop.restype = BOOL
+CloseDesktop.argtypes = [HDESK]
+
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC
