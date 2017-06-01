@@ -48,6 +48,7 @@ MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024       
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
+SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
 LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -139,6 +140,7 @@ class WindowSource(object):
         self.supports_flush = PAINT_FLUSH and encoding_options.get("flush")
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
+        self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.supports_delta = []
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -394,13 +396,14 @@ class WindowSource(object):
                                            "expired"        : self.soft_expired,
                                            "max"            : self.max_soft_expired,
                                            },
-                 "rgb_formats"          : self.rgb_formats,
-                 "bit-depth"            : {
+                "send-timetamps"        : self.send_timetamps,
+                "rgb_formats"           : self.rgb_formats,
+                "bit-depth"             : {
                     "source"                : self.image_depth,
                     "client"                : self.client_bit_depth,
                     },
                  #"icons"                : self.icons_encoding_options,
-                 })
+                })
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
@@ -1900,6 +1903,8 @@ class WindowSource(object):
         #actual network packet:
         if self.supports_flush and flush not in (None, 0):
             client_options["flush"] = flush
+        if self.send_timetamps:
+            client_options["ts"] = image.get_timestamp()
         end = monotonic_time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)

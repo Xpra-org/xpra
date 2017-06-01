@@ -725,6 +725,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     def freeze(self):                               #@DuplicatedSignature
         #we just force a restride, which will allocate a new pixel buffer:
         cdef newstride = roundup(self.width*len(self.pixel_format), 4)
+        self.timestamp = int(monotonic_time()*1000)
         return self.restride(newstride)
 
     def free(self):                                 #@DuplicatedSignature

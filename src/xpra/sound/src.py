@@ -11,7 +11,7 @@ from xpra.os_util import SIGNAMES, Queue, monotonic_time
 from xpra.util import csv, envint, envbool, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
-from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, \
+from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, has_plugins, \
                                 MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
@@ -75,6 +75,7 @@ class SoundSource(SoundPipeline):
         self.sink = None
         self.src = None
         self.src_type = src_type
+        self.timestamp = None
         self.pending_metadata = []
         self.buffer_latency = True
         self.jitter_queue = None
@@ -84,6 +85,9 @@ class SoundSource(SoundPipeline):
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
         pipeline_els = [source_str]
+        log.info("has plugin(timestamp)=%s", has_plugins("timestamp"))
+        if has_plugins("timestamp"):
+            pipeline_els.append("timestamp name=timestamp")
         if SOURCE_QUEUE_TIME>0:
             queue_el = ["queue",
                         "name=queue",
@@ -105,6 +109,7 @@ class SoundSource(SoundPipeline):
         pipeline_els.append(APPSINK)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
+        self.timestamp = self.pipeline.get_by_name("timestamp")
         self.volume = self.pipeline.get_by_name("volume")
         self.sink = self.pipeline.get_by_name("sink")
         if SOURCE_QUEUE_TIME>0:
@@ -198,13 +203,26 @@ class SoundSource(SoundPipeline):
         data = buf.extract_dup(0, size)
         pts = normv(buf.pts)
         duration = normv(buf.duration)
+        metadata = {
+            "timestamp"  : pts,
+            "duration"   : duration,
+            }
+        if self.timestamp:
+            delta = self.timestamp.get_property("delta")
+            ts = (pts+delta)//1000000           #ns to ms
+            now = monotonic_time()
+            latency = int(1000*now)-ts
+            #log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims", delta, pts, ts, now, (latency//1000000))
+            ts_info = {
+                "ts"        : ts,
+                "latency"   : latency,
+                }
+            metadata.update(ts_info)
+            self.info.update(ts_info)
         if pts==-1 and duration==-1 and BUNDLE_METADATA and len(self.pending_metadata)<10:
             self.pending_metadata.append(data)
             return 0
-        return self._emit_buffer(data, {
-                                       "timestamp"  : pts,
-                                       "duration"   : duration,
-                                       })
+        return self._emit_buffer(data, metadata)
 
     def _emit_buffer(self, data, metadata={}):
         if self.stream_compressor and data:
