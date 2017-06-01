@@ -113,7 +113,7 @@ class ApplicationWindow:
         self.current_error = None
 
     def get_connection_modes(self):
-        modes = ["tcp"]
+        modes = ["ssh"]
         try:
             import ssl
             assert ssl
@@ -122,7 +122,7 @@ class ApplicationWindow:
             pass
         if "AES" in ENCRYPTION_CIPHERS:
             modes.append("tcp + aes")
-        modes.append("ssh")
+        modes.append("tcp")
         return modes
 
     def get_launcher_validation(self):
