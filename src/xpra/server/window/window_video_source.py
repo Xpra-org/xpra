@@ -756,6 +756,9 @@ class WindowVideoSource(WindowSource):
         h = image.get_height()
 
         av_delay = self.get_frame_encode_delay(options)
+        #TODO: encode delay can be derived rather than hard-coded
+        encode_delay = 50
+        av_delay = max(0, av_delay - encode_delay)
         must_freeze = av_delay>=0 or coding in self.video_encodings
         if must_freeze:
             newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
