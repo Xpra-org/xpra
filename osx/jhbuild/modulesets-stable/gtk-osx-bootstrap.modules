@@ -43,7 +43,7 @@
   </autotools>
 
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
-    <branch version="4.0.3" module="libtiff/tiff-4.0.3.tar.gz"
+    <branch version="4.0.8" module="libtiff/tiff-4.0.8.tar.gz"
 	    repo="libtiff"/>
     <dependencies>
       <dep package="libjpeg"/>
