@@ -252,7 +252,6 @@ BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
 BuildRequires: %{requires_pygtk2}-devel
 BuildRequires: %{requires_pygobject2}-devel
-BuildRequires: python2-rencode
 %if 0%{?el7}%{?fedora}
 BuildRequires: turbojpeg-devel
 %endif
@@ -261,6 +260,7 @@ BuildRequires: ffmpeg-xpra-devel
 %if 0%{?run_tests}
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
+BuildRequires: python2-rencode
 %endif
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
