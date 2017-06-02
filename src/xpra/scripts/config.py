@@ -615,6 +615,15 @@ def get_default_systemd_run():
     data = strtobytes(load_binary_file("/etc/redhat-release") or "")
     if data and (data.find(b"RedHat")>=0 or data.find(b"CentOS")>=0):
         return "no"
+    if data and data.find(b"Fedora")>=0:
+        #systemd-run is broken in Fedora 26:
+        #https://github.com/systemd/systemd/issues/3388
+        try:
+            ld = get_linux_distribution()
+            if int(ld[1])>=26:
+                return "no"
+        except:
+            pass
     return "auto"
 
 
