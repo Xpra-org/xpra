@@ -1,0 +1,1 @@
+#/var/run/xpra/system -s gen_context(system_u:object_r:xpra_unit_file_t,s0)

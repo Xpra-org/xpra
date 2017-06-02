@@ -1,0 +1,16 @@
+policy_module(xpra_socketactivation, 2.1)
+
+require {
+	type init_t;
+	type unconfined_service_t;
+#	class sock_file { connect write };
+}
+
+#type xpra_unit_file_t;
+#type xpra_port_t;
+#corenet_port(xpra_port_t)
+#allow init_t xpra_unit_file_t:sock_file { connect write unlink };
+
+allow init_t unconfined_service_t:unix_stream_socket { create setopt bind listen };
+allow init_t unconfined_service_t:tcp_socket { create setopt bind listen };
+

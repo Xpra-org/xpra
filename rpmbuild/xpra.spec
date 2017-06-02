@@ -26,6 +26,7 @@
 %global __requires_exclude ^libnvidia-.*\\.so.*$
 
 #some of these dependencies may get turned off (empty) on some platforms:
+%define selinux_modules cups_xpra xpra_socketactivation
 %define build_args --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
@@ -436,14 +437,17 @@ rm -rf build install
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
 	%{build_args}
 %if 0%{?with_selinux}
-pushd selinux/cups_xpra
-for selinuxvariant in %{selinux_variants}
+for mod in %{selinux_modules}
 do
-  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile
-  mv cups_xpra.pp cups_xpra.pp.${selinuxvariant}
-  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile clean
+	pushd selinux/${mod}
+	for selinuxvariant in %{selinux_variants}
+	do
+	  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile
+	  mv ${mod}.pp ${mod}.pp.${selinuxvariant}
+	  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile clean
+	done
+	popd
 done
-popd
 %endif
 popd
 
@@ -463,11 +467,14 @@ pushd xpra-%{version}-python2
 	%{build_args} \
 	--prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
-for selinuxvariant in %{selinux_variants}
+for mod in %{selinux_modules}
 do
-  install -d %{buildroot}%{_datadir}/selinux/${selinuxvariant}
-  install -p -m 644 selinux/cups_xpra/cups_xpra.pp.${selinuxvariant} \
-    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/cups_xpra.pp
+	for selinuxvariant in %{selinux_variants}
+	do
+	  install -d %{buildroot}%{_datadir}/selinux/${selinuxvariant}
+	  install -p -m 644 selinux/${mod}/${mod}.pp.${selinuxvariant} \
+	    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/${mod}.pp
+	done
 done
 %endif
 popd
@@ -543,7 +550,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
 %config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
 %if 0%{?with_selinux}
-%{_datadir}/selinux/*/cups_xpra.pp
+%{_datadir}/selinux/*/*.pp
 %endif
 
 %files -n python2-xpra
@@ -631,9 +638,6 @@ popd
 %else
 getent group xpra > /dev/null || groupadd -r xpra
 %endif
-if [ $1 -eq 1 ]; then
-	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
-fi
 if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 	umask=`umask`
 	umask 077
@@ -655,12 +659,19 @@ if [ ! -z "${ZONE}" ]; then
 fi
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 %if 0%{?with_selinux}
-for selinuxvariant in %{selinux_variants}
+for mod in %{selinux_modules}
 do
-  /usr/sbin/semodule -s ${selinuxvariant} -i \
-    %{_datadir}/selinux/${selinuxvariant}/cups_xpra.pp &> /dev/null || :
+	for selinuxvariant in %{selinux_variants}
+	do
+	  /usr/sbin/semodule -s ${selinuxvariant} -i \
+	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
+	done
 done
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
+if [ $1 -eq 1 ]; then
+	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
+fi
 %endif
 
 %post common-client
@@ -670,8 +681,10 @@ restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 
 %preun common-server
 if [ $1 -eq 0 ] ; then
-        /bin/systemctl disable xpra.service > /dev/null 2>&1 || :
-        /bin/systemctl stop xpra.service > /dev/null 2>&1 || :
+	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
+	/bin/systemctl disable xpra.socket > /dev/null 2>&1 || :
+	/bin/systemctl stop xpra.service > /dev/null 2>&1 || :
+	/bin/systemctl stop xpra.socket > /dev/null 2>&1 || :
 fi
 
 %postun common-server
@@ -692,9 +705,12 @@ if [ ! -z "${ZONE}" ]; then
 fi
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
-	for selinuxvariant in %{selinux_variants}
+	for mod in %{selinux_modules}
 	do
-		/usr/sbin/semodule -s ${selinuxvariant} -r cups_xpra &> /dev/null || :
+		for selinuxvariant in %{selinux_variants}
+		do
+			/usr/sbin/semodule -s ${selinuxvariant} -r ${mod} &> /dev/null || :
+		done
 	done
 fi
 %endif
