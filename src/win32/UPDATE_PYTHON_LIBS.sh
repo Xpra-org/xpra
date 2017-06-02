@@ -6,10 +6,8 @@
 # later version. See the file COPYING for details.
 
 #using easy-install for python libraries which are not packaged by mingw:
-# Note: netifaces not updated for now because of this bug:
-# https://bitbucket.org/al45tair/netifaces/issues/39
 # currently disabled, build from patched source only: websockify
-for x in rencode xxhash enum34 enum-compat zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate cffi pycparser cryptography nvidia-ml-py appdirs setproctitle; do
+for x in rencode xxhash enum34 enum-compat zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate cffi pycparser cryptography nvidia-ml-py appdirs setproctitle netifaces; do
     easy_install-2.7 -U -Z $x
     easy_install-3.5 -U -Z $x
 done

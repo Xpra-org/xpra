@@ -409,9 +409,9 @@
 
   <distutils id="python-netifaces">
 	<branch repo="pypi.python.org"
-		module="/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz"
-		hash="sha1:d05ac5cad10b3a2acd8d312af1e75ece5d2a737f"
-		version="0.10.5"/>
+		module="/packages/72/01/ba076082628901bca750bf53b322a8ff10c1d757dc29196a8e6082711c9d/netifaces-0.10.6.tar.gz"
+		hash="sha256:0c4da523f36d36f1ef92ee183f2512f3ceb9a9d2a45f7d19cda5a42c6689ebe0"
+		version="0.10.6"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -661,10 +661,10 @@
 
 
   <distutils id="python-lz4">
-	<branch repo="pypi.python.org"
-	        module="/packages/63/30/e05274f250106a7a3c0a84ff261c18b78d4d9ece655af05660959d3e5b14/lz4-0.9.1.tar.gz"
-	        hash="sha256:80f174c2307d43c8548a23e878d3e02c8e5abbbdf25cd2aec55708ec827a998e"
-	        version="0.9.1"/>
+	<branch repo="github.com"
+	        module="/python-lz4/python-lz4/archive/v0.9.4.tar.gz"
+	        hash="sha256:f1d0284edcd39f15136d65f4c6eaaaaef6945fe6b98ddbf5d7505e61a6de226e"
+	        version="0.9.4"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>
