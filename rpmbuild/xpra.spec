@@ -252,6 +252,7 @@ BuildRequires: libXext-devel
 BuildRequires: %{libvpx}-devel
 BuildRequires: %{requires_pygtk2}-devel
 BuildRequires: %{requires_pygobject2}-devel
+BuildRequires: python2-rencode
 %if 0%{?el7}%{?fedora}
 BuildRequires: turbojpeg-devel
 %endif
