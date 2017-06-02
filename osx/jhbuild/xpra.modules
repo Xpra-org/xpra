@@ -157,7 +157,9 @@
     <branch module="/src/lame-3.99.5.tar.gz"
 		version="3.99.5"
 		hash="md5:84835b313d4a8b68f5349816d33e07ce"
-		repo="winswitch.org"/>
+		repo="winswitch.org">
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lame-channels.patch" strip="0" />
+	</branch>
     <dependencies>
                 <dep package="nasm"/>
     </dependencies>
