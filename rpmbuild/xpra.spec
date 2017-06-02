@@ -401,11 +401,11 @@ popd
 rm -rf $RPM_BUILD_ROOT
 %if %{with_python3}
 pushd xpra-%{version}-python3
-%{__python3} setup.py install -O1 %{build_args} --prefix /usr --skip-build --root %{buildroot}
+%{__python3} setup.py install -O1 %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig --prefix /usr --skip-build --root %{buildroot}
 popd
 %endif
 pushd xpra-%{version}-python2
-%{__python2} setup.py install -O1 %{build_args} --prefix /usr --skip-build --root %{buildroot}
+%{__python2} setup.py install -O1 %{build_args} --pkg-config-path=%{_libdir}/xpra/pkgconfig --prefix /usr --skip-build --root %{buildroot}
 %if 0%{?with_selinux}
 for selinuxvariant in %{selinux_variants}
 do
