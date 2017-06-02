@@ -250,6 +250,7 @@ BuildRequires: desktop-file-utils
 %if 0%{?run_tests}
 BuildRequires: %{numpy}
 BuildRequires: %{xvfb}
+BuildRequires: %{py2prefix}-rencode
 %endif
 Requires(post): openssl
 Requires(post): desktop-file-utils
