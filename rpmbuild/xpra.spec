@@ -26,7 +26,7 @@
 %global __requires_exclude ^libnvidia-.*\\.so.*$
 
 #some of these dependencies may get turned off (empty) on some platforms:
-%define build_args --with-Xdummy --without-enc_x265
+%define build_args --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , python2-lzo
@@ -425,8 +425,6 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
 	%{build_args} \
-	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
-	--rpath=%{_libdir}/xpra \
 	--without-html5 --without-printing
 %{__python3} setup.py build %{build_args}
 popd
@@ -436,9 +434,7 @@ pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
-	%{build_args} \
-	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
-	--rpath=%{_libdir}/xpra
+	%{build_args}
 %if 0%{?with_selinux}
 pushd selinux/cups_xpra
 for selinuxvariant in %{selinux_variants}
