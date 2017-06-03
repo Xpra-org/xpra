@@ -84,7 +84,8 @@ class WSRequestHandler(WebSocketRequestHandler):
 
     def end_headers(self):
         #magic for querying request header values:
-        if self.path.endswith("?echo-headers"):
+        path = getattr(self, "path", "")
+        if path.endswith("?echo-headers"):
             #ie: "en-GB,en-US;q=0.8,en;q=0.6"
             accept = self.headers.getheader("Accept-Language")
             if accept:
