@@ -1972,6 +1972,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
+            assert sock, "failed to wrap socket %s" % sock
             conn._socket = sock
         conn.timeout = SOCKET_TIMEOUT
 
@@ -2076,7 +2077,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
 
     kwargs = {
               "server_side"             : server_side,
-              "do_handshake_on_connect" : True,
+              "do_handshake_on_connect" : False,
               "suppress_ragged_eofs"    : True,
               }
     #parse ssl-verify-flags as CSV:
@@ -2144,13 +2145,23 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     wrap_socket = context.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
+        from xpra.log import Logger
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
         except Exception as e:
+            Logger("network").debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
-            raise InitExit(EXIT_SSL_FAILURE, str(e))
+            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" (tcp_socket, e))
+        try:
+            ssl_sock.do_handshake(True)
+        except Exception as e:
+            Logger("network").debug("do_handshake", exc_info=True)
+            SSLEOFError = getattr(ssl, "SSLEOFError", None)
+            if SSLEOFError and isinstance(e, SSLEOFError):
+                return None
+            raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % e)
         #ensure we handle ssl exceptions as we should from now on:
         from xpra.net.bytestreams import init_ssl
         init_ssl()
