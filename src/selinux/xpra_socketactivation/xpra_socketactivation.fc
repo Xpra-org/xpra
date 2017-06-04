@@ -1,1 +1,21 @@
-#/var/run/xpra/system -s gen_context(system_u:object_r:xpra_unit_file_t,s0)
+#conf files:
+/etc/xpra(/.*)?							   gen_context(system_u:object_r:xpra_conf_t,s0)
+/etc/xpra/xorg.conf						   gen_context(system_u:object_r:xserver_etc_t,s0)
+#systemd files:
+/usr/lib/systemd/system/xpra.service	-- gen_context(system_u:object_r:xpra_unit_file_t,s0)
+/usr/lib/systemd/system/xpra.socket		-- gen_context(system_u:object_r:xpra_unit_file_t,s0)
+#entry point:
+/usr/bin/xpra.*							-- gen_context(system_u:object_r:xpra_exec_t,s0)
+#system proxy server socket and pid file, shared group socket:
+/run/xpra								-d gen_context(system_u:object_r:xpra_runtime_t,s0)
+/run/xpra/system						-s gen_context(system_u:object_r:xpra_socket_t,s0)
+/run/xpra/[^/]*							-s gen_context(system_u:object_r:xpra_socket_t,s0)
+/run/xpra\.pid							-- gen_context(system_u:object_r:xpra_pid_t,s0)
+#user runtime sockets, pid and log files:
+/run/user/[^/]*/xpra					-d gen_context(system_u:object_r:xpra_runtime_t,s0)
+/run/user/[^/]*/xpra/.*					-s gen_context(system_u:object_r:xpra_socket_t,s0)
+/run/user/[^/]*/xpra/.*\.log			-- gen_context(system_u:object_r:xpra_log_t,s0)
+/run/user/[^/]*/xpra/.*\.log\.old		-- gen_context(system_u:object_r:xpra_log_t,s0)
+/run/user/[^/]*/xpra/.*\.pid			-- gen_context(system_u:object_r:xpra_pid_t,s0)
+/run/user/[^/]*/xpra/Xorg.*log.*		-- gen_context(system_u:object_r:xserver_log_t,s0)
+HOME_DIR/\.xpra(/.*)?					   gen_context(system_u:object_r:xpra_conf_t,s0)

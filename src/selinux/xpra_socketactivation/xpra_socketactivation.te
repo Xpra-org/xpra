@@ -1,16 +1,117 @@
 policy_module(xpra_socketactivation, 2.1)
 
 require {
-	type init_t;
-	type unconfined_service_t;
-#	class sock_file { connect write };
+	class dbus { send_msg };
+
+	type sysfs_t;
+	type user_home_dir_t;
+	type user_home_t;
+	type user_tmp_t;
+	type gconf_home_t;
+	type system_dbusd_t;
+	type sysctl_net_unix_t;
+	type sysctl_net_t;
+	type var_run_t;
+	type system_dbusd_var_run_t;
+	type shell_exec_t;
+	type proc_net_t;
+	type unconfined_t;
+	type bin_t;
+	type avahi_t;
 }
 
-#type xpra_unit_file_t;
-#type xpra_port_t;
-#corenet_port(xpra_port_t)
-#allow init_t xpra_unit_file_t:sock_file { connect write unlink };
+systemd_domain_template(xpra)
+type xpra_unit_file_t;
+systemd_unit_file(xpra_unit_file_t);
 
-allow init_t unconfined_service_t:unix_stream_socket { create setopt bind listen };
-allow init_t unconfined_service_t:tcp_socket { create setopt bind listen };
+type xpra_log_t;
+logging_log_file(xpra_log_t)
+#allow xpra_t xpra_log_t:file rw_file_perms;
 
+type xpra_runtime_t;
+files_type(xpra_runtime_t)
+#filetrans_pattern(unconfined_t, user_tmp_t, xpra_runtime_t, dir, "xpra")
+#type_transition unconfined_t xpra_runtime_t:file xpra_log_t;
+
+type xpra_pid_t;
+files_pid_file(xpra_pid_t)
+files_pid_filetrans(xpra_t, xpra_pid_t, file)
+allow xpra_t xpra_pid_t:file manage_file_perms;
+
+type xpra_conf_t;
+files_config_file(xpra_conf_t)
+allow xpra_t xpra_conf_t:file read_file_perms;
+allow xpra_t xpra_conf_t:dir { getattr open read search };
+files_search_etc(xpra_t)
+
+type xpra_socket_t;
+files_type(xpra_socket_t)
+
+type xpra_port_t;
+corenet_port(xpra_port_t);
+#corenet_tcp_sendrecv_generic_if(xpra_t)
+corenet_tcp_sendrecv_all_if(xpra_t)
+#corenet_tcp_bind_generic_port(xpra_t)
+
+allow init_t xpra_port_t:tcp_socket name_bind;
+allow init_t xpra_socket_t:unix_stream_socket name_bind;
+
+allow xpra_t self:tcp_socket accept;
+allow xpra_t xpra_port_t:tcp_socket name_bind;
+allow daemon xpra_t:unix_stream_socket connectto;
+
+allow unconfined_t xpra_exec_t:file { entrypoint getattr ioctl open read };
+
+domain_auto_trans(unconfined_t, xpra_exec_t, unconfined_t)
+domain_auto_trans(xpra_t, bin_t, unconfined_t)
+domain_auto_trans(xpra_t, xpra_exec_t, unconfined_t)
+
+#remove pid (should use a different type..)
+#allow xpra_t var_run_t:dir remove_name;
+
+#allow xpra_t admin_home_t:file { getattr open read };
+allow xpra_t bin_t:file { execute };
+allow xpra_t proc_net_t:file read;
+
+allow xpra_t self:tcp_socket listen;
+allow xpra_t shell_exec_t:file { execute execute_no_trans };
+
+#dbus / mdns:
+allow xpra_t avahi_t:dbus send_msg;
+allow avahi_t xpra_t:dbus send_msg;
+allow xpra_t system_dbusd_t:dbus send_msg;
+
+allow xpra_t system_dbusd_var_run_t:sock_file write;
+allow xpra_t var_run_t:dir { add_name write };
+allow xpra_t var_run_t:file { create getattr open setattr write };
+#for looking at /proc values during "xpra info" queries:
+allow xpra_t sysctl_net_t:dir search;
+allow xpra_t sysctl_net_t:file { read open getattr };
+allow xpra_t sysctl_net_unix_t:dir { search read };
+allow xpra_t sysctl_net_unix_t:file { read open getattr };
+#socket label is wrong... so we need this:
+allow xpra_t var_run_t:sock_file unlink;
+
+#not sure what tries to read "~/.local", don't care:
+dontaudit xpra_t gconf_home_t:dir search;
+
+#identify new sockets:
+#allow xpra_t var_run_t:sock_file getattr;
+allow xpra_t var_run_t:sock_file { getattr write };
+allow xpra_t unconfined_t:unix_stream_socket { connectto };
+allow xpra_t self:capability dac_override;
+#could use dontaudit here since we should be able to find the socket in XDG_RUNTIME_DIR
+allow xpra_t user_home_dir_t:dir { search getattr read open };
+allow xpra_t user_home_t:dir { search getattr read open };
+allow xpra_t user_home_t:sock_file { getattr write };
+
+#multiprocessing uses SemLock in /tmp:
+allow xpra_t tmpfs_t:dir { add_name write remove_name };
+allow xpra_t tmpfs_t:file { create open read write link getattr unlink };
+
+#change uid / gid:
+allow xpra_t self:capability { setgid setuid };
+#proxy control socket:
+allow xpra_t var_run_t:sock_file { create setattr };
+allow xpra_t sysfs_t:dir read;
+allow xpra_t user_tmp_t:sock_file write;

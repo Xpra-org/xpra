@@ -13,5 +13,5 @@ semanage port -a -t xpra_port_t -p tcp 14500
 
 To remove the policy:
 semanage port -d -p tcp 14500
-semodue -r xpra_socketactivation
+semodule -r xpra_socketactivation
 
