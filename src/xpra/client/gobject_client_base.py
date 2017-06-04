@@ -319,7 +319,8 @@ class VersionXpraClient(HelloRequestClient):
         if not v:
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:
-            self.warn_and_quit(EXIT_OK, str(v))
+            sys.stdout.write("%s\n" % (v,))
+            self.quit(EXIT_OK)
 
 
 class ControlXpraClient(CommandConnectClient):

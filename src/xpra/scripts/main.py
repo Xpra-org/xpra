@@ -1158,7 +1158,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "list-mdns", "mdns-gui", "attach", "stop", "version", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "control", "list", "list-mdns", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
