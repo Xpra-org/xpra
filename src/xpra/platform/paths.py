@@ -51,7 +51,9 @@ def get_user_conf_dirs():
     return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs)
 def do_get_user_conf_dirs():
     #per-user configuration location:
-    return ["~/.xpra"]
+    if os.name!="posix" or os.getuid()>0:
+        return ["~/.xpra"]
+    return []
 
 def get_default_conf_dirs():
     return envaslist_or_delegate("XPRA_DEFAULT_CONF_DIRS", do_get_default_conf_dirs)
