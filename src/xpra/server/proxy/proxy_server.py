@@ -209,7 +209,7 @@ class ProxyServer(ServerCore):
                 return
             username = get_username_for_uid(uid)
             groups = get_groups(username)
-            log("username(%i)=%s, groups=%s", username, groups)
+            log("username(%i)=%s, groups=%s", uid, username, groups)
         else:
             #the auth module recorded the username we authenticate against
             username = getattr(client_proto.authenticator, "username", "")
