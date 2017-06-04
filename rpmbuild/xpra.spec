@@ -192,8 +192,8 @@ BuildRequires: systemd-devel
 %if 0%{?with_selinux}
 BuildRequires: checkpolicy, selinux-policy-devel
 Requires: selinux-policy
-Requires(post):   /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
-Requires(postun): /usr/sbin/semodule, /sbin/restorecon, /sbin/fixfiles
+Requires(post):   /usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
+Requires(postun): /usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 %endif
 %description common-server
 This package contains the files which are shared between all the xpra server packages.
@@ -668,9 +668,13 @@ do
 	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
 	done
 done
+semanage port -a -t xpra_port_t -p tcp 14500
+restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
+restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
 	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
 fi
 %endif
@@ -681,6 +685,9 @@ fi
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
 %preun common-server
+%if 0%{?with_selinux}
+semanage port -d -p tcp 14500
+%endif
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
 	/bin/systemctl disable xpra.socket > /dev/null 2>&1 || :
