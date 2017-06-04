@@ -2483,6 +2483,9 @@ def run_glcheck(opts):
 
 
 def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid()):
+    from xpra.log import Logger
+    log = Logger("proxy")
+    log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid))
     username = get_username_for_uid(uid)
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
@@ -2518,6 +2521,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     else:
         matching_display = display_name
     existing_sockets = set(dotxpra.socket_paths(check_uid=uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
+    log("start_server_subprocess: existing_sockets=%s", existing_sockets)
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts)      #ie: ["--exit-with-children", "--start-child=xterm"]
@@ -2547,6 +2551,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
                            ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
                            ["launchctl", "start", LAUNCH_AGENT],
                            ]
+        log("start_server_subprocess: launch_commands=%s", launch_commands)
         for x in launch_commands:
             proc = Popen(x, shell=False, close_fds=True)
             proc.wait()
@@ -2557,7 +2562,9 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
+        log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, shell=False, close_fds=True)
+        log("proc=%s", proc)
     socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path
 
@@ -2600,6 +2607,9 @@ def get_start_server_args(opts, compat=False):
 
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
+    from xpra.log import Logger
+    log = Logger("proxy")
+    log("identify_new_socket%s", (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
     start = monotonic_time()
     match_display_name = None
@@ -2609,6 +2619,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         new_sockets = list(sockets-existing_sockets)
+        log("identify_new_sockets=%s", new_sockets)
         for socket_path in new_sockets:
             #verify that this is the right server:
             try:
