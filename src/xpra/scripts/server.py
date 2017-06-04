@@ -16,7 +16,7 @@ import signal
 import socket
 import traceback
 
-from xpra.scripts.main import warn, no_gtk, validate_encryption
+from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
@@ -45,7 +45,6 @@ def add_cleanup(f):
 
 
 def deadly_signal(signum, frame):
-    from xpra.scripts.main import info
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
@@ -104,8 +103,8 @@ def get_dbus_env():
             if v:
                 env[k] = str(v)
         except Exception as e:
-            sys.stderr.write("failed to load dbus environment variable '%s':\n" % k)
-            sys.stderr.write(" %s\n" % e)
+            error("failed to load dbus environment variable '%s':\n" % k)
+            error(" %s\n" % e)
     return env
 
 def save_dbus_env(env):
@@ -124,8 +123,8 @@ def save_dbus_env(env):
             tv = conv(v)
             save(k, tv)
         except Exception as e:
-            sys.stderr.write("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
-            sys.stderr.write(" %s\n" % e)
+            error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
+            error(" %s\n" % e)
 
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):
@@ -149,10 +148,10 @@ def display_name_check(display_name):
     try:
         dno = int(n)
         if dno>=0 and dno<10:
-            sys.stderr.write("WARNING: low display number: %s\n" % dno)
-            sys.stderr.write("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
-            sys.stderr.write("This is generally not what you want.\n")
-            sys.stderr.write("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
+            warn("WARNING: low display number: %s\n" % dno)
+            warn("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
+            warn("This is generally not what you want.\n")
+            warn("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
     except:
         pass
 
@@ -255,8 +254,8 @@ def start_dbus(dbus_launch):
         dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
         return dbus_pid, dbus_env
     except Exception as e:
-        sys.stderr.write("dbus-launch failed to start using command '%s':\n" % dbus_launch)
-        sys.stderr.write(" %s\n" % e)
+        error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
+        error(" %s\n" % e)
         return 0, {}
 
 
@@ -294,7 +293,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         cwd = os.getcwd()
     except:
         cwd = os.path.expanduser("~")
-        sys.stderr.write("current working directory does not exist, using '%s'\n" % cwd)
+        warn("current working directory does not exist, using '%s'\n" % cwd)
     validate_encryption(opts)
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
@@ -406,13 +405,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         fchown(logfd)
         assert logfd > 2
         stdout, stderr = daemonize(logfd)
-        try:
-            stderr.write("Entering daemon mode; "
+        info("Entering daemon mode; "
                  + "any further errors will be reported to:\n"
                  + ("  %s\n" % log_filename0))
-        except:
-            #this can happen if stderr is closed by the caller already
-            pass
 
     if opts.pidfile:
         write_pidfile(opts.pidfile, withfd=fchown)
