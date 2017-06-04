@@ -659,11 +659,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
-        info = "shadow"
+        server_type_info = "shadow"
     elif proxying:
         from xpra.server.proxy.proxy_server import ProxyServer
         app = ProxyServer()
-        info = "proxy"
+        server_type_info = "proxy"
     else:
         assert starting or starting_desktop or upgrading
         from xpra.x11.gtk2 import gdk_display_source
@@ -725,12 +725,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log("XShape=%s", X11Window.displayHasXShape())
             from xpra.x11.server import XpraServer
             app = XpraServer(clobber)
-            info = "xpra"
+            server_type_info = "xpra"
         else:
             assert starting_desktop
             from xpra.x11.desktop_server import XpraDesktopServer
             app = XpraDesktopServer()
-            info = "xpra desktop"
+            server_type_info = "xpra desktop"
 
     #publish mdns records:
     if opts.mdns:
@@ -742,7 +742,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      "username" : get_username(),
                      "uuid"     : strtobytes(app.uuid),
                      "platform" : sys.platform,
-                     "type"     : {"xpra" : "seamless", "xpra desktop" : "desktop"}.get(info, info),
+                     "type"     : {"xpra" : "seamless", "xpra desktop" : "desktop"}.get(server_type_info, server_type_info),
                      }
         if opts.session_name:
             mdns_info["session"] = opts.session_name
@@ -760,7 +760,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         log.error(" %s", e)
         return 1
     except Exception as e:
-        log.error("Error: cannot start the %s server", info, exc_info=True)
+        log.error("Error: cannot start the %s server", server_type_info, exc_info=True)
         log.error(str(e))
         log.info("")
         return 1
