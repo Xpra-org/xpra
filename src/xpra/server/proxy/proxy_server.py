@@ -170,10 +170,10 @@ class ProxyServer(ServerCore):
                 if not proto._closed:
                     self.send_disconnect(proto, "timeout")
             self.timeout_add(10*1000, force_exit_request_client)
-        else:
-            self.start_proxy(proto, c, auth_caps)
+            return
+        self.proxy_auth(proto, c, auth_caps)
 
-    def start_proxy(self, client_proto, c, auth_caps):
+    def proxy_auth(self, client_proto, c, auth_caps):
         def disconnect(reason, *extras):
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
@@ -196,10 +196,16 @@ class ProxyServer(ServerCore):
             authlog.error(" %s", e)
             disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
             return
-        authlog("start_proxy(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
+        authlog("proxy_auth(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         if sessions is None:
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
+        self.proxy_session(client_proto, c, auth_caps, sessions)
+
+    def proxy_session(self, client_proto, c, auth_caps, sessions):
+        def disconnect(reason, *extras):
+            log("disconnect(%s, %s)", reason, extras)
+            self.send_disconnect(client_proto, reason, *extras)
         uid, gid, displays, env_options, session_options = sessions
         if os.name=="posix":
             if uid==0 or gid==0:
@@ -223,14 +229,14 @@ class ProxyServer(ServerCore):
         display = None
         proc = None
         sns = c.dictget("start-new-session")
-        authlog("start_proxy: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
+        authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
         if len(displays)==0 or sns:
             if not self._start_sessions:
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
             try:
-                display = self.start_new_session(username, uid, gid, sns, displays)
-                log("start_new_session%s=%s", (username, uid, gid, sns, displays), display)
+                display, proc = self.start_new_session(username, uid, gid, sns, displays)
+                log("start_new_session%s=%s, %s", (username, uid, gid, sns, displays), display, proc)
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
@@ -239,7 +245,7 @@ class ProxyServer(ServerCore):
                 return
         if display is None:
             display = c.strget("display")
-            authlog("start_proxy: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
+            authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s", proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
                 disconnect(SESSION_NOT_FOUND, "invalid display")
                 return
@@ -253,8 +259,15 @@ class ProxyServer(ServerCore):
                     return
                 display = displays[0]
 
+        connect = c.boolget("connect", True)
+        if not connect:
+            log("proxy_session: not connecting to the session")
+            client_proto.send_now(("hello", {"display" : display}))
+            return
+
         def stop_server_subprocess():
-            if proc:
+            log("stop_server_subprocess() proc=%s", proc)
+            if proc and proc.poll() is None:
                 proc.terminate()
 
         log("start_proxy(%s, {..}, %s) using server display at: %s", client_proto, auth_caps, display)
@@ -357,13 +370,15 @@ class ProxyServer(ServerCore):
             if v is not None:
                 fn = k.replace("-", "_")
                 setattr(opts, fn, v)
+        opts.attach = False
+        opts.start_via_proxy = False
         log("starting new server subprocess: options=%s", opts)
         proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
         display = "socket:%s" % socket_path
-        log("start_new_session(..)=%s", display)
-        return display
+        log("start_new_session(..)=%s, %s", display, proc)
+        return display, proc
 
     def start_win32_shadow(self, username, new_session_dict):
         log("start_win32_shadow%s", (username, new_session_dict))
@@ -405,10 +420,11 @@ class ProxyServer(ServerCore):
         port = 10000
         xpra_command = os.path.join(get_app_dir(), "xpra.exe")
         command = [xpra_command, "shadow", "--bind-tcp=0.0.0.0:%i" % port, "-d", "win32"]
-        if not exec_command(command):
-            return None
-        exec_command(["C:\\Windows\notepad.exe"])
-        return "tcp/localhost:%i" % port
+        proc = exec_command(command)
+        if not proc:
+            return None, None
+        #exec_command(["C:\\Windows\notepad.exe"])
+        return "tcp/localhost:%i" % port, proc
 
     def reap(self, *args):
         log("reap%s", args)

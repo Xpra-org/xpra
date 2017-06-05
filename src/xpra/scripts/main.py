@@ -22,7 +22,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
-from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE
+from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
 from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
@@ -358,6 +358,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                       dest="start_new_commands", default=defaults.start_new_commands,
                       help="Allows clients to execute new commands on the server. Default: %s." % enabled_str(defaults.start_new_commands))
+    legacy_bool_parse("start-via-proxy")
+    group.add_option("--start-via-proxy", action="store", metavar="yes|no|auto",
+                      dest="start_via_proxy", default=defaults.start_via_proxy,
+                      help="Start servers via the system proxy server. Default: %default.")
     legacy_bool_parse("proxy-start-sessions")
     group.add_option("--proxy-start-sessions", action="store", metavar="yes|no",
                       dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
@@ -1313,6 +1317,19 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
             cwd = os.getcwd()
             env = os.environ.copy()
+            start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
+            if start_via_proxy is not False and (os.name!="posix" or getuid()!=0):
+                try:
+                    from xpra import client
+                    assert client
+                except ImportError as e:
+                    if start_via_proxy is True:
+                        error_cb("cannot start-via-proxy: xpra client is not installed")
+                else:
+                    r = run_client(error_cb, options, args, "request-%s" % mode)
+                    if r:
+                        raise InitException("failed to start-via-proxy: %s" % EXIT_STR.get(r, r))
+                    return r
             current_display = nox()
             try:
                 from xpra import server
@@ -2246,6 +2263,7 @@ def run_client(error_cb, opts, extra_args, mode):
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = ["socket:%s" % opts.system_proxy_socket]
         app = RequestStartClient(connect(), opts)
+        app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
         try:
@@ -2281,7 +2299,10 @@ def run_client(error_cb, opts, extra_args, mode):
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = ["socket:%s" % opts.system_proxy_socket]
-            app.hello_extra = {"start-new-session" : sns}
+            app.hello_extra = {
+                "start-new-session" : sns,
+                "connect"           : True,
+                }
         try:
             conn, display_desc = connect()
             #UGLY warning: connect will parse the display string,

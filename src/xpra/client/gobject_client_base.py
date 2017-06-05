@@ -453,3 +453,16 @@ class RequestStartClient(HelloRequestClient):
 
     def hello_request(self):
         return {"start-new-session" : self.start_new_session}
+
+    def server_connection_established(self):
+        #the server should respond with the display chosen
+        log("server_connection_established() exit_code=%s", self.exit_code)
+        display = self.server_capabilities.get("display")
+        if display:
+            try:
+                sys.stderr.write("session now available on display %s\n" % display)
+                sys.stderr.flush()
+            except:
+                pass
+        if not self.exit_code:
+            self.quit(0)

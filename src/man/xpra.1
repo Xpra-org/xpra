@@ -22,6 +22,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-start\-new\-commands\fP]
+[\fB\-\-start\-via\-proxy\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
@@ -165,6 +166,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-start\-new\-commands\fP]
+[\fB\-\-start\-via\-proxy\fP]
 [\fB\-\-uid\fP=\fIUID\fP]
 [\fB\-\-gid\fP=\fIGID\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
@@ -860,6 +862,11 @@ fB\-\-start\fP or fB\-\-start\-child\fP.
 Allow clients to ask the server to execute new commands.
 (this can also be used via the control channel)
 .TP
+\fB\-\-start\-via\-proxy\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
+If enabled, the \fBstart\fP and \fBstart\-desktop\fP subcommands
+will be delegated to the system wide proxy server instance.
+With \fIauto\fP mode, this delegation will only occur if the
+system wide proxy server is found.
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
 .TP
