@@ -1326,10 +1326,18 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     if start_via_proxy is True:
                         error_cb("cannot start-via-proxy: xpra client is not installed")
                 else:
-                    r = run_client(error_cb, options, args, "request-%s" % mode)
-                    if r:
-                        raise InitException("failed to start-via-proxy: %s" % EXIT_STR.get(r, r))
-                    return r
+                    err = None
+                    try:
+                        r = run_client(error_cb, options, args, "request-%s" % mode)
+                        if r==0:
+                            return
+                        err = EXIT_STR.get(r, r)
+                    except Exception as e:
+                        err = str(e)
+                    if start_via_proxy is True:
+                        raise InitException("failed to start-via-proxy: %s" % err)
+                    else:
+                        warn("Warning: cannot use the system proxy for '%s' subcommand,\n %s" % (mode, err))
             current_display = nox()
             try:
                 from xpra import server
@@ -1929,6 +1937,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             #now that we know it:
             if "socket_dir" not in display_desc:
                 display_desc["socket_dir"] = os.path.dirname(sockpath)
+        except (InitException, InitExit, InitInfo) as e:
+            raise
         except Exception as e:
             raise InitException("cannot connect to %s: %s" % (sockpath, e))
         conn.timeout = SOCKET_TIMEOUT
