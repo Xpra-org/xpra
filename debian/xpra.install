@@ -1,4 +1,3 @@
-usr/lib/*/*/xpra
 usr/lib/tmpfiles.d/xpra.conf
 usr/lib/sysusers.d/xpra.conf
 usr/bin/xpra
