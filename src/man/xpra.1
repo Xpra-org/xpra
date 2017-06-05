@@ -21,6 +21,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
+[\fB\-\-start\-new\-commands\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
@@ -163,6 +164,7 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
 [\fB\-\-exit\-with\-children\fP]
+[\fB\-\-start\-new\-commands\fP]
 [\fB\-\-uid\fP=\fIUID\fP]
 [\fB\-\-gid\fP=\fIGID\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
@@ -853,6 +855,10 @@ automatically terminate itself when the last of them has exited.
 \fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
 fB\-\-start\fP or fB\-\-start\-child\fP.
+.TP
+\fB\-\-start\-new\-commands\fP=\fIyes\fP|\fIno\fP
+Allow clients to ask the server to execute new commands.
+(this can also be used via the control channel)
 .TP
 \fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP
 Wrap server start commands with systemd-run.
