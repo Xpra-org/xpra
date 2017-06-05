@@ -375,7 +375,7 @@ class ProxyServer(ServerCore):
         log("starting new server subprocess: options=%s", opts)
         proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
         if proc:
-            self.child_reaper.add_process(proc, "server-%s" % display, "xpra start", True, True)
+            self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
         display = "socket:%s" % socket_path
         log("start_new_session(..)=%s, %s", display, proc)
         return display, proc
