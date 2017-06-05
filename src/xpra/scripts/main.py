@@ -1318,7 +1318,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             cwd = os.getcwd()
             env = os.environ.copy()
             start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
-            if start_via_proxy is not False and (os.name!="posix" or getuid()!=0):
+            if start_via_proxy is not False and (os.name!="posix" or getuid()!=0) and options.daemon:
                 try:
                     from xpra import client
                     assert client
