@@ -4,6 +4,7 @@ require {
 	class dbus { send_msg };
 
 	type sysfs_t;
+	type admin_home_t;
 	type user_home_dir_t;
 	type user_home_t;
 	type user_tmp_t;
@@ -69,7 +70,9 @@ domain_auto_trans(xpra_t, xpra_exec_t, unconfined_t)
 #remove pid (should use a different type..)
 #allow xpra_t var_run_t:dir remove_name;
 
-#allow xpra_t admin_home_t:file { getattr open read };
+#read conf files in /root/.xpra?
+allow xpra_t admin_home_t:file { getattr open read };
+dontaudit xpra_t admin_home_t:file { write };
 allow xpra_t bin_t:file { execute };
 allow xpra_t proc_net_t:file read;
 
