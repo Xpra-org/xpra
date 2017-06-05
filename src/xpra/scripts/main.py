@@ -2596,8 +2596,8 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, shell=False, close_fds=True)
         log("proc=%s", proc)
-    socket_path = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
-    return proc, socket_path
+    socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
+    return proc, socket_path, display
 
 def get_start_server_args(opts, compat=False):
     defaults = make_defaults_struct()
@@ -2646,6 +2646,8 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     match_display_name = None
     if display_name:
         match_display_name = "server.display=%s" % display_name
+    PREFIX = "env.XPRA_PROXY_START_UUID="
+    DISPLAY_PREFIX = "server.display="
     from xpra.platform.paths import get_nodock_command
     while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
@@ -2667,16 +2669,19 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                         except:
                             from xpra.os_util import bytestostr
                             out = bytestostr(stdout)
-                    PREFIX = "env.XPRA_PROXY_START_UUID="
+                    found = False
+                    display = display_name
                     for line in out.splitlines():
                         if line.startswith(PREFIX):
                             info_uuid = line[len(PREFIX):]
                             if info_uuid==new_server_uuid:
-                                #found it!
-                                return socket_path
-                        if match_display_name and match_display_name==line:
-                            #found it
-                            return socket_path
+                                found = True
+                        elif line.startswith(DISPLAY_PREFIX):
+                            display = line[len(DISPLAY_PREFIX):]
+                        elif match_display_name and match_display_name==line:
+                            found = True
+                    if found:
+                        return socket_path, display
             except Exception as e:
                 warn("error during server process detection: %s" % e)
         sleep(0.10)
@@ -2697,7 +2702,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             fn = x.replace("-", "_")
             v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
             setattr(opts, fn, v)
-        proc, socket_path = start_server_subprocess(script_file, args, server_mode, opts)
+        proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
         if not socket_path:
             #if we return non-zero, we will try the next run-xpra script in the list..
             return 0

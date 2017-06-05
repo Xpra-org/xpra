@@ -226,8 +226,9 @@ class ProxyServer(ServerCore):
         #remove proxy instance virtual displays:
         displays = [x for x in displays if not x.startswith(":proxy-")]
         #log("unused options: %s, %s", env_options, session_options)
-        display = None
         proc = None
+        socket_path = None
+        display = None
         sns = c.dictget("start-new-session")
         authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s", displays, self._start_sessions, sns)
         if len(displays)==0 or sns:
@@ -235,8 +236,8 @@ class ProxyServer(ServerCore):
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
             try:
-                display, proc = self.start_new_session(username, uid, gid, sns, displays)
-                log("start_new_session%s=%s, %s", (username, uid, gid, sns, displays), display, proc)
+                proc, socket_path, display = self.start_new_session(username, uid, gid, sns, displays)
+                log("start_new_session%s=%s", (username, uid, gid, sns, displays), (proc, socket_path, display))
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
@@ -262,7 +263,10 @@ class ProxyServer(ServerCore):
         connect = c.boolget("connect", True)
         if not connect:
             log("proxy_session: not connecting to the session")
-            client_proto.send_now(("hello", {"display" : display}))
+            hello = {"display" : display}
+            if socket_path:
+                hello["socket-path"] = socket_path
+            client_proto.send_now(("hello", hello))
             return
 
         def stop_server_subprocess():
@@ -373,12 +377,11 @@ class ProxyServer(ServerCore):
         opts.attach = False
         opts.start_via_proxy = False
         log("starting new server subprocess: options=%s", opts)
-        proc, socket_path = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
+        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
-        display = "socket:%s" % socket_path
         log("start_new_session(..)=%s, %s", display, proc)
-        return display, proc
+        return proc, socket_path, display
 
     def start_win32_shadow(self, username, new_session_dict):
         log("start_win32_shadow%s", (username, new_session_dict))
