@@ -106,7 +106,7 @@ def main(args):
     if len(args)!=3:
         print("invalid number of arguments")
         print("usage:")
-        print("%s username password")
+        print("%s username password", args[0])
         return 1
     a = Authenticator(args[1])
     if a.check(args[2]):
