@@ -37,6 +37,7 @@
   <repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
   <repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
   <repository type="tarball" name="ftp.pcre.org" href="https://ftp.pcre.org"/>
+  <repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
   <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
 
 
@@ -205,10 +206,10 @@
   </autotools>
 
   <autotools id="opus" autogenargs="" autogen-sh="configure">
-	<branch module="/releases/opus/opus-1.1.5.tar.gz"
+	<branch module="/pub/opus/opus-1.1.5.tar.gz"
 		version="1.1.5"
 		hash="sha256:eb84981ca0f40a3e5d5e58d2e8582cb2fee05a022825a6dfe14d14b04eb563e4"
-		repo="downloads.xiph.org"/>
+		repo="archive.mozilla.org"/>
   </autotools>
 
   <autotools id="libvpx"
