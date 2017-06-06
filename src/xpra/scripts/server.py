@@ -616,6 +616,31 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return  1
 
     if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
+        if not OSX:
+            #workarounds: some distros don't set a correct value,
+            #or they don't create the directory for us
+            xrd = os.environ.get("XDG_RUNTIME_DIR")
+            if xrd.endswith("/user/0"):
+                #don't keep root's directory, as this would not work:
+                xrd = None
+            if not xrd:
+                #find the "/run/user" directory:
+                run_user = "/run/user"
+                if not os.path.exists(run_user):
+                    run_user = "/var/run/user"
+                if os.path.exists(run_user):
+                    xrd = os.path.join(run_user, str(uid))
+            if xrd:
+                if not os.path.exists(xrd):
+                    os.mkdir(xrd, 0o700)
+                    os.chown(xrd, uid, gid)
+                os.environ["XDG_RUNTIME_DIR"]
+            else:
+                try:
+                    del os.environ["XDG_RUNTIME_DIR"]
+                except:
+                    pass
+                
         setuidgid(uid, gid)
         os.environ.update({
             "HOME"      : home,
