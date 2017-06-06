@@ -666,6 +666,7 @@
   <distutils id="python-lz4">
 	<branch repo="github.com"
 	        module="/python-lz4/python-lz4/archive/v0.9.4.tar.gz"
+	        checkoutdir="python-lz4-0.9.4"
 	        hash="sha256:f1d0284edcd39f15136d65f4c6eaaaaef6945fe6b98ddbf5d7505e61a6de226e"
 	        version="0.9.4"/>
         <dependencies>
