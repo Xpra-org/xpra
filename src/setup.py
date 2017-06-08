@@ -144,6 +144,7 @@ shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = pkg_config_ok("--exists", "libsystemd")
+install_systemd_units_ENABLED = LINUX
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
@@ -211,7 +212,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "csc_libyuv",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
-            "server", "client", "dbus", "x11", "xinput", "sd_listen",
+            "server", "client", "dbus", "x11", "xinput", "sd_listen", "install_systemd_units",
             "gtk_x11", "service",
             "gtk2", "gtk3",
             "html5", "minify", "html5_gzip", "html5_brotli",
@@ -1554,16 +1555,16 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
-                    copytodir("service/xpra.service", systemd_dir)
+                    if install_systemd_units_ENABLED:
+                        copytodir("service/xpra.service", systemd_dir)
                 else:
                     copytodir("service/xpra", "/etc/init.d")
                 if os.path.exists("/etc/sysconfig"):
                     copytodir("etc/sysconfig/xpra", "/etc/sysconfig")
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
-            if sd_listen_ENABLED:
+            if sd_listen_ENABLED and install_systemd_units_ENABLED:
                 copytodir("service/xpra.socket", systemd_dir)
-
 
     # add build_conf to build step
     cmdclass.update({
