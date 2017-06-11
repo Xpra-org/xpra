@@ -88,6 +88,11 @@ def newdictlook(d, parts, fallback=None):
             return fallback
     return v
 
+def slabel(text="", tooltip=None, font=None):
+    l = label(text, tooltip, font)
+    l.set_selectable(True)
+    return l
+
 
 class SessionInfo(gtk.Window):
 
@@ -138,9 +143,9 @@ class SessionInfo(gtk.Window):
         distro = get_linux_distribution()
         LOCAL_PLATFORM_NAME = make_os_str(sys.platform, python_platform.release(), python_platform.platform(), distro)
         SERVER_PLATFORM_NAME = make_os_str(self.client._remote_platform, self.client._remote_platform_release, self.client._remote_platform_platform, self.client._remote_platform_linux_distribution)
-        tb.new_row("Operating System", label(LOCAL_PLATFORM_NAME), label(SERVER_PLATFORM_NAME))
+        tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
         scaps = self.client.server_capabilities
-        tb.new_row("Xpra", label(XPRA_VERSION), label(self.client._remote_version or "unknown"))
+        tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(self.client._remote_version or "unknown"))
         cl_rev, cl_ch, cl_date = "unknown", "", ""
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
@@ -170,18 +175,18 @@ class SessionInfo(gtk.Window):
             if not time:
                 return date
             return "%s %s" % (date, time)
-        tb.new_row("Revision", label(make_revision_str(cl_rev, cl_ch)),
-                               label(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications", "local_modifications"))))
-        tb.new_row("Build date", label(make_datetime(cl_date, cl_time)),
-                                 label(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
+        tb.new_row("Revision", slabel(make_revision_str(cl_rev, cl_ch)),
+                               slabel(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications", "local_modifications"))))
+        tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
+                                 slabel(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
             k = "%s.version" % prop
-            return label(make_version_str(dictlook(gtk_version_info, k, fallback)))
+            return slabel(make_version_str(dictlook(gtk_version_info, k, fallback)))
         def server_vinfo(prop):
             k = "%s.version" % prop
             fk = "%s_version" % prop
-            return label(server_version_info(k, fk))
+            return slabel(server_version_info(k, fk))
         tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
         tb.new_row("PyGlib",    client_vinfo("pyglib"),     server_vinfo("pyglib"))
         tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
@@ -190,7 +195,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
         tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
         tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
-        tb.new_row("Python", label(python_platform.python_version()), label(server_version_info("server.python.version", "python_version", "python.version")))
+        tb.new_row("Python", slabel(python_platform.python_version()), slabel(server_version_info("server.python.version", "python_version", "python.version")))
 
         try:
             from xpra.sound.wrapper import query_sound
@@ -200,11 +205,11 @@ class SessionInfo(gtk.Window):
             props = {}
         gst_version = props.get("gst.version", "")
         pygst_version = props.get("pygst.version", "")
-        tb.new_row("GStreamer", label(make_version_str(gst_version)), label(server_version_info("sound.gst.version", "gst_version")))
-        tb.new_row("pygst", label(make_version_str(pygst_version)), label(server_version_info("sound.pygst.version", "pygst_version")))
-        tb.new_row("OpenGL", label(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), label(server_version_info("opengl.opengl")))
-        tb.new_row("OpenGL Vendor", label(make_version_str(self.client.opengl_props.get("vendor", ""))), label(server_version_info("opengl.vendor")))
-        tb.new_row("PyOpenGL", label(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), label(server_version_info("opengl.pyopengl")))
+        tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version", "gst_version")))
+        tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version", "pygst_version")))
+        tb.new_row("OpenGL", slabel(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), slabel(server_version_info("opengl.opengl")))
+        tb.new_row("OpenGL Vendor", slabel(make_version_str(self.client.opengl_props.get("vendor", ""))), slabel(server_version_info("opengl.vendor")))
+        tb.new_row("PyOpenGL", slabel(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), slabel(server_version_info("opengl.pyopengl")))
 
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)
@@ -216,21 +221,21 @@ class SessionInfo(gtk.Window):
         vbox.pack_start(al, expand=True, fill=False, padding=10)
         #top table contents:
         randr_box = gtk.HBox(False, 20)
-        self.server_randr_label = label()
+        self.server_randr_label = slabel()
         self.server_randr_icon = gtk.Image()
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
-        self.client_display = label()
+        self.client_display = slabel()
         tb.new_row("Client Display", self.client_display)
         opengl_box = gtk.HBox(False, 20)
-        self.client_opengl_label = label()
+        self.client_opengl_label = slabel()
         self.client_opengl_label.set_line_wrap(True)
         self.client_opengl_icon = gtk.Image()
         opengl_box.add(self.client_opengl_icon)
         opengl_box.add(self.client_opengl_label)
         tb.new_row("Client OpenGL", opengl_box)
-        self.opengl_buffering = label()
+        self.opengl_buffering = slabel()
         tb.new_row("OpenGL Mode", self.opengl_buffering)
         self.server_mmap_icon = gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
@@ -256,68 +261,68 @@ class SessionInfo(gtk.Window):
         tb.attach(title_box("Server"), 2, xoptions=EXPAND|FILL, xpadding=0)
         tb.inc()
         #table contents:
-        self.client_encodings_label = label()
+        self.client_encodings_label = slabel()
         self.client_encodings_label.set_line_wrap(True)
-        self.server_encodings_label = label()
+        self.server_encodings_label = slabel()
         self.server_encodings_label.set_line_wrap(True)
         tb.new_row("Picture Encodings", self.client_encodings_label, self.server_encodings_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
-        self.client_speaker_codecs_label = label()
+        self.client_speaker_codecs_label = slabel()
         self.client_speaker_codecs_label.set_line_wrap(True)
-        self.server_speaker_codecs_label = label()
+        self.server_speaker_codecs_label = slabel()
         self.server_speaker_codecs_label.set_line_wrap(True)
         tb.new_row("Speaker Codecs", self.client_speaker_codecs_label, self.server_speaker_codecs_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
-        self.client_microphone_codecs_label = label()
+        self.client_microphone_codecs_label = slabel()
         self.client_microphone_codecs_label.set_line_wrap(True)
-        self.server_microphone_codecs_label = label()
+        self.server_microphone_codecs_label = slabel()
         self.server_microphone_codecs_label.set_line_wrap(True)
         tb.new_row("Microphone Codecs", self.client_microphone_codecs_label, self.server_microphone_codecs_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
-        self.client_packet_encoders_label = label()
+        self.client_packet_encoders_label = slabel()
         self.client_packet_encoders_label.set_line_wrap(True)
-        self.server_packet_encoders_label = label()
+        self.server_packet_encoders_label = slabel()
         self.server_packet_encoders_label.set_line_wrap(True)
         tb.new_row("Packet Encoders", self.client_packet_encoders_label, self.server_packet_encoders_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
-        self.client_packet_compressors_label = label()
-        self.server_packet_compressors_label = label()
+        self.client_packet_compressors_label = slabel()
+        self.server_packet_compressors_label = slabel()
         tb.new_row("Packet Compressors", self.client_packet_compressors_label, self.server_packet_compressors_label, xoptions=FILL|EXPAND, yoptions=FILL|EXPAND)
 
         # Connection Table:
         tb, _ = self.table_tab("connect.png", "Connection", self.populate_connection)
         if self.connection:
-            tb.new_row("Server Endpoint", label(self.connection.target))
+            tb.new_row("Server Endpoint", slabel(self.connection.target))
         if self.client.server_display:
-            tb.new_row("Server Display", label(prettify_plug_name(self.client.server_display)))
+            tb.new_row("Server Display", slabel(prettify_plug_name(self.client.server_display)))
         hostname = scaps.strget("hostname")
         if hostname:
-            tb.new_row("Server Hostname", label(hostname))
+            tb.new_row("Server Hostname", slabel(hostname))
         if self.client.server_platform:
-            tb.new_row("Server Platform", label(self.client.server_platform))
-        self.server_load_label = label()
+            tb.new_row("Server Platform", slabel(self.client.server_platform))
+        self.server_load_label = slabel()
         tb.new_row("Server Load", self.server_load_label, label_tooltip="Average over 1, 5 and 15 minutes")
-        self.session_started_label = label()
+        self.session_started_label = slabel()
         tb.new_row("Session Started", self.session_started_label)
-        self.session_connected_label = label()
+        self.session_connected_label = slabel()
         tb.new_row("Session Connected", self.session_connected_label)
-        self.input_packets_label = label()
+        self.input_packets_label = slabel()
         tb.new_row("Packets Received", self.input_packets_label)
-        self.input_bytes_label = label()
+        self.input_bytes_label = slabel()
         tb.new_row("Bytes Received", self.input_bytes_label)
-        self.output_packets_label = label()
+        self.output_packets_label = slabel()
         tb.new_row("Packets Sent", self.output_packets_label)
-        self.output_bytes_label = label()
+        self.output_bytes_label = slabel()
         tb.new_row("Bytes Sent", self.output_bytes_label)
-        self.compression_label = label()
+        self.compression_label = slabel()
         tb.new_row("Encoding + Compression", self.compression_label)
-        self.connection_type_label = label()
+        self.connection_type_label = slabel()
         tb.new_row("Connection Type", self.connection_type_label)
-        self.input_encryption_label = label()
+        self.input_encryption_label = slabel()
         tb.new_row("Input Encryption", self.input_encryption_label)
-        self.output_encryption_label = label()
+        self.output_encryption_label = slabel()
         tb.new_row("Output Encryption", self.output_encryption_label)
 
-        self.speaker_label = label()
-        self.speaker_details = label(font="monospace 10")
+        self.speaker_label = slabel()
+        self.speaker_details = slabel(font="monospace 10")
         tb.new_row("Speaker", self.speaker_label, self.speaker_details)
-        self.microphone_label = label()
+        self.microphone_label = slabel()
         tb.new_row("Microphone", self.microphone_label)
 
         # Details:
@@ -332,33 +337,33 @@ class SessionInfo(gtk.Window):
         tb.inc()
 
         def maths_labels():
-            return label(), label(), label(), label(), label()
+            return slabel(), slabel(), slabel(), slabel(), slabel()
         self.server_latency_labels = maths_labels()
-        tb.add_row(label("Server Latency (ms)", "The time it takes for the server to respond to pings"),
+        tb.add_row(slabel("Server Latency (ms)", "The time it takes for the server to respond to pings"),
                    *self.server_latency_labels)
         self.client_latency_labels = maths_labels()
-        tb.add_row(label("Client Latency (ms)", "The time it takes for the client to respond to pings, as measured by the server"),
+        tb.add_row(slabel("Client Latency (ms)", "The time it takes for the client to respond to pings, as measured by the server"),
                    *self.client_latency_labels)
         if self.client.windows_enabled:
             self.batch_labels = maths_labels()
-            tb.add_row(label("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
+            tb.add_row(slabel("Batch Delay (ms)", "How long the server waits for new screen updates to accumulate before processing them"),
                        *self.batch_labels)
             self.damage_labels = maths_labels()
-            tb.add_row(label("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
+            tb.add_row(slabel("Damage Latency (ms)", "The time it takes to compress a frame and pass it to the OS network layer"),
                        *self.damage_labels)
             self.quality_labels = maths_labels()
-            tb.add_row(label("Encoding Quality (pct)"), *self.quality_labels)
+            tb.add_row(slabel("Encoding Quality (pct)"), *self.quality_labels)
             self.speed_labels = maths_labels()
-            tb.add_row(label("Encoding Speed (pct)"), *self.speed_labels)
+            tb.add_row(slabel("Encoding Speed (pct)"), *self.speed_labels)
 
             self.decoding_labels = maths_labels()
-            tb.add_row(label("Decoding Latency (ms)", "How long it takes the client to decode a screen update"), *self.decoding_labels)
+            tb.add_row(slabel("Decoding Latency (ms)", "How long it takes the client to decode a screen update"), *self.decoding_labels)
             self.regions_per_second_labels = maths_labels()
-            tb.add_row(label("Regions/s", "The number of screen updates per second (includes both partial and full screen updates)"), *self.regions_per_second_labels)
+            tb.add_row(slabel("Regions/s", "The number of screen updates per second (includes both partial and full screen updates)"), *self.regions_per_second_labels)
             self.regions_sizes_labels = maths_labels()
-            tb.add_row(label("Pixels/region", "The number of pixels per screen update"), *self.regions_sizes_labels)
+            tb.add_row(slabel("Pixels/region", "The number of pixels per screen update"), *self.regions_sizes_labels)
             self.pixels_per_second_labels = maths_labels()
-            tb.add_row(label("Pixels/s", "The number of pixels processed per second"), *self.pixels_per_second_labels)
+            tb.add_row(slabel("Pixels/s", "The number of pixels processed per second"), *self.pixels_per_second_labels)
 
             #Window count stats:
             wtb = TableBuilder()
@@ -372,15 +377,15 @@ class SessionInfo(gtk.Window):
                 wtb.attach(title_box("OpenGL"), 4, xoptions=EXPAND|FILL, xpadding=0)
             wtb.inc()
 
-            wtb.attach(label("Windows:"), 0, xoptions=EXPAND|FILL, xpadding=0)
-            self.windows_managed_label = label()
+            wtb.attach(slabel("Windows:"), 0, xoptions=EXPAND|FILL, xpadding=0)
+            self.windows_managed_label = slabel()
             wtb.attach(self.windows_managed_label, 1)
-            self.transient_managed_label = label()
+            self.transient_managed_label = slabel()
             wtb.attach(self.transient_managed_label, 2)
-            self.trays_managed_label = label()
+            self.trays_managed_label = slabel()
             wtb.attach(self.trays_managed_label, 3)
             if self.client.client_supports_opengl:
-                self.opengl_label = label()
+                self.opengl_label = slabel()
                 wtb.attach(self.opengl_label, 4)
 
             #add encoder info:
@@ -943,7 +948,7 @@ class SessionInfo(gtk.Window):
                 window_encoder_stats = self.get_window_encoder_stats()
                 #log("window_encoder_stats=%s", window_encoder_stats)
                 for wid, props in window_encoder_stats.items():
-                    l = label("%s (%s)" % (wid, bytestostr(props.get(""))))
+                    l = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
                     l.show()
                     info = ["%s=%s" % (k,v) for k,v in props.items() if k!=""]
                     l.set_tooltip_text(" ".join(info))
