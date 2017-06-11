@@ -19,3 +19,26 @@
      "libtiff-4.pc") CONFIG_FILES="$CONFIG_FILES libtiff-4.pc" ;;
      "libtiff/Makefile") CONFIG_FILES="$CONFIG_FILES libtiff/Makefile" ;;
      "man/Makefile") CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
+--- a/Makefile.in	2017-05-22 01:49:35.000000000 +0700
++++ b/Makefile.in	2017-06-12 02:47:22.000000000 +0700
+@@ -436,7 +436,7 @@
+ 	nmake.opt
+ 
+ dist_doc_DATA = $(docfiles)
+-SUBDIRS = port libtiff tools build contrib test man html
++SUBDIRS = port libtiff tools build contrib test man
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libtiff-4.pc
+ 
+--- a/Makefile.am	2015-09-07 02:30:46.000000000 +0700
++++ b/Makefile.am	2017-06-12 02:46:47.000000000 +0700
+@@ -61,7 +61,7 @@
+ 	rm -rf $(distdir)/_build/cmake
+ 	rm -rf $(distdir)/_inst/cmake
+ 
+-SUBDIRS = port libtiff tools build contrib test man html
++SUBDIRS = port libtiff tools build contrib test man
+ 
+ release:
+ 	(rm -f $(top_srcdir)/RELEASE-DATE && echo $(LIBTIFF_RELEASE_DATE) > $(top_srcdir)/RELEASE-DATE)
+
