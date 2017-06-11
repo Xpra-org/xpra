@@ -253,7 +253,7 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.3.2.tar.bz2"
+	<branch module="/releases/ffmpeg-3.3.2.tar.xz"
 		version="3.3.2"
 		hash="sha256:1998de1ab32616cbf2ff86efc3f1f26e76805ec5dc51e24c041c79edd8262785"
 		repo="ffmpeg.org"/>
