@@ -730,7 +730,13 @@ class XpraClientBase(FileTransferHandler):
         try:
             self.send_printers_timer = None
             from xpra.platform.printing import get_printers, get_mimetypes
-            printers = get_printers()
+            try:
+                printers = get_printers()
+            except Exception as  e:
+                printlog("%s", get_printers, exc_info=True)
+                printlog.error("Error: cannot access the list of printers")
+                printlog.error(" %s", e)
+                return
             printlog("do_send_printers() found printers=%s", printers)
             #remove xpra-forwarded printers to avoid loops and multi-forwards,
             #also ignore stopped printers
