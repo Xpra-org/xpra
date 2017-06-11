@@ -745,6 +745,12 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #ie: "???/tmp/???/tags/v0.15.x/src/debian/tmp/" -> ""
             while "tmp" in dirs:
                 dirs = dirs[dirs.index("tmp")+1:]
+        elif "debian" in dirs:
+            #same for recent debian versions:
+            #ie: "xpra-2.0.2/debian/xpra/usr" -> "usr"
+            i = dirs.index("debian")
+            if dirs[i+1] == "xpra":
+                dirs = dirs[i+2:]
         elif "BUILDROOT" in dirs:
             #strip rpm style build root:
             #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
