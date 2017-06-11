@@ -665,10 +665,10 @@
 
   <distutils id="python-lz4">
 	<branch repo="github.com"
-	        module="/python-lz4/python-lz4/archive/v0.9.4.tar.gz"
-	        checkoutdir="python-lz4-0.9.4"
-	        hash="sha256:f1d0284edcd39f15136d65f4c6eaaaaef6945fe6b98ddbf5d7505e61a6de226e"
-	        version="0.9.4"/>
+	        module="/packages/1b/69/6c106a77a804f08938487a9bf45a9771209f487c9dadea8ea819c1555e35/lz4-0.10.0.tar.gz"
+	        checkoutdir="python-lz4-0.10.0"
+	        hash="sha256:c3daab3974893b4a8641793af441cf30e9950fe048476d8649cac49cab4e2837"
+	        version="0.10.0"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>

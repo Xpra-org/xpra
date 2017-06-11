@@ -1,7 +1,7 @@
 #
 # spec file for package python-lz4
 #
-# Copyright (c) 2013-2014
+# Copyright (c) 2013-2017
 #
 
 #this spec file is for both Fedora and CentOS
@@ -17,13 +17,13 @@
 
 
 Name:           python2-lz4
-Version:        0.9.1
+Version:        0.10.0
 Release:        1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://pypi.python.org/packages/63/30/e05274f250106a7a3c0a84ff261c18b78d4d9ece655af05660959d3e5b14/lz4-0.9.1.tar.gz
+Source:         https://pypi.python.org/packages/1b/69/6c106a77a804f08938487a9bf45a9771209f487c9dadea8ea819c1555e35/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -96,6 +96,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Jun 11 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.0-1
+- New upstream release
+
 * Sun May 14 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.9.1-1
 - New upstream release
 
