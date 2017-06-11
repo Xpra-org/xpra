@@ -59,6 +59,7 @@ DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
+CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 
 
 class ServerBase(ServerCore):
@@ -941,6 +942,9 @@ class ServerBase(ServerCore):
         self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, proto, packet):
+        if not CLIENT_CAN_SHUTDOWN:
+            log.warn("Warning: ignoring shutdown request")
+            return
         log.info("Shutting down in response to client request")
         self.cleanup_all_protocols(SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
@@ -1414,6 +1418,7 @@ class ServerBase(ServerCore):
                  "webcam.encodings"             : self.webcam_encodings,
                  "virtual-video-devices"        : self.virtual_video_devices,
                  "input-devices"                : self.input_devices,
+                 "client-shutdown"              : CLIENT_CAN_SHUTDOWN,
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))

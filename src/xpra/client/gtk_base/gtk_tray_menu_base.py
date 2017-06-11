@@ -38,6 +38,7 @@ STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
+SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
@@ -300,6 +301,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_runcommandmenu())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
+        if SHOW_SHUTDOWN:
+            menu.append(self.make_shutdownmenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -1138,6 +1141,27 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(enable_upload)
         return self.upload
 
+
+    def make_shutdownmenuitem(self):
+        def ask_shutdown_confirm(*args):
+            dialog = gtk.MessageDialog (None, 0, gtk.MESSAGE_QUESTION,
+                                    gtk.BUTTONS_NONE,
+                                    "Shutting down this session may cause data loss,\nare you sure you want to proceed?")
+            dialog.add_button(gtk.STOCK_CANCEL, 0)
+            SHUTDOWN = 1
+            dialog.add_button("Shutdown", SHUTDOWN)
+            response = dialog.run()
+            dialog.destroy()
+            if response == SHUTDOWN:
+                self.client.send_shutdown_server()
+        self.shutdown = self.menuitem("Shutdown Server", "shutdown.png", "Shutdown this server session", ask_shutdown_confirm)
+        def enable_shutdown(*args):
+            log("enable_shutdown%s can_shutdown_server=%s", args, self.client.can_shutdown_server)
+            set_sensitive(self.shutdown, self.client.can_shutdown_server)
+            if not self.client.can_shutdown_server:
+                self.shutdown.set_tooltip_text("Disabled by the server")
+        self.client.after_handshake(enable_shutdown)
+        return self.shutdown
 
     def make_disconnectmenuitem(self):
         def menu_quit(*args):

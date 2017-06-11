@@ -431,7 +431,12 @@ class StopXpraClient(HelloRequestClient):
         return {"stop_request"  : True}
 
     def do_command(self):
-        self.idle_add(self.send, "shutdown-server")
+        if not self.can_shutdown_server:
+            log.error("Error: cannot shutdown this server")
+            log.error(" the feature is disable on the server")
+            self.quit(EXIT_FAILURE)
+            return
+        self.idle_add(self.send_shutdown_server)
         #not exiting the client here,
         #the server should send us the shutdown disconnection message anyway
         #and if not, we will then hit the timeout to tell us something went wrong

@@ -100,6 +100,7 @@ class XpraClientBase(FileTransferHandler):
         self.printer_attributes = []
         self.send_printers_timer = None
         self.exported_printers = None
+        self.can_shutdown_server = True
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -482,6 +483,10 @@ class XpraClientBase(FileTransferHandler):
         self.quit(exit_code)
 
 
+    def send_shutdown_server(self):
+        assert self.can_shutdown_server
+        self.send("shutdown-server")
+
     def _process_disconnect(self, packet):
         #ie: ("disconnect", "version error", "incompatible version")
         reason = bytestostr(packet[1])
@@ -803,6 +808,8 @@ class XpraClientBase(FileTransferHandler):
         return True
 
     def parse_server_capabilities(self):
+        c = self.server_capabilities
+        self.can_shutdown_server = c.boolget("client-shutdown", True)
         return True
 
     def parse_network_capabilities(self):
