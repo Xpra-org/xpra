@@ -44,7 +44,9 @@
 
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
     <branch version="4.0.8" module="libtiff/tiff-4.0.8.tar.gz"
-	    repo="libtiff"/>
+	    repo="libtiff">
+		<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/tiff-nohtml.patch" strip="1" />
+    </branch>
     <dependencies>
       <dep package="libjpeg"/>
     </dependencies>
