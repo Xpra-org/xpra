@@ -43,12 +43,13 @@
   <!-- of the many arguments such as prefix and libdir that jhbuild might pass
   to configure, openssl only understands prefix, and only with =. -->
   <!-- no DESTDIR support we pass install and do it after configure line instead so we can get passed this before making a patch -->
-  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared" skip-install="True"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s &amp;&amp; make install"
+  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
              makeinstallargs="install_sw" supports-non-srcdir-builds="no">
-    <branch module="openssl-1.0.2j.tar.gz" version="1.0.2j"
-    		hash="sha1:bdfbdb416942f666865fa48fe13c2d0e588df54f" repo="openssl"/>
+    <branch module="openssl-1.1.0f.tar.gz" version="1.1.0e"
+                hash="sha256:12f746f3f2493b2f39da7ecf63d7ee19c6ac9ec6a4fcd8c229da8a522cb12765" repo="openssl"/>
   </autotools>
+
 
   <!-- Rudely demands TeX to build documentation -->
   <!-- Assembler files are missing md5-compress.asm for x86_64 -->

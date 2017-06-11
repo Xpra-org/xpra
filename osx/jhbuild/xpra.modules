@@ -169,11 +169,11 @@
     </dependencies>
   </autotools>
 
-  <autotools id="opus" autogenargs="" autogen-sh="configure --disable-intrinsics">
-	<branch module="/releases/opus/opus-1.1.4.tar.gz"
-		version="1.1.4"
-		hash="sha256:9122b6b380081dd2665189f97bfd777f04f92dc3ab6698eea1dbb27ad59d8692"
-		repo="downloads.xiph.org"/>
+  <autotools id="opus" autogenargs="" autogen-sh="configure">
+        <branch module="/pub/opus/opus-1.1.5.tar.gz"
+                version="1.1.5"
+                hash="sha256:eb84981ca0f40a3e5d5e58d2e8582cb2fee05a022825a6dfe14d14b04eb563e4"
+                repo="archive.mozilla.org"/>
   </autotools>
 
   <cmake id="libyuv">
@@ -251,10 +251,10 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.3.tar.bz2"
-		version="3.3"
-		hash="sha256:21e08647c9e740a4d3b85bf455b31d079fe0faba9555fa9329230e8541cf6bdc"
-		repo="ffmpeg.org"/>
+       <branch module="/releases/ffmpeg-3.3.2.tar.xz"
+                version="3.3.2"
+                hash="sha256:1998de1ab32616cbf2ff86efc3f1f26e76805ec5dc51e24c041c79edd8262785"
+                repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
 		<dep package="libvpx-16"/>
@@ -384,10 +384,10 @@
   </distutils>
 
   <distutils id="python-netifaces">
-	<branch repo="pypi.python.org"
-		module="/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz"
-		hash="sha1:d05ac5cad10b3a2acd8d312af1e75ece5d2a737f"
-		version="0.10.5"/>
+        <branch repo="pypi.python.org"
+                module="/packages/72/01/ba076082628901bca750bf53b322a8ff10c1d757dc29196a8e6082711c9d/netifaces-0.10.6.tar.gz"
+                hash="sha256:0c4da523f36d36f1ef92ee183f2512f3ceb9a9d2a45f7d19cda5a42c6689ebe0"
+                version="0.10.6"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -660,11 +660,12 @@
   </distutils>
 
 
-  <distutils id="python-lz4">
-	<branch repo="pypi.python.org"
-	        module="/packages/63/30/e05274f250106a7a3c0a84ff261c18b78d4d9ece655af05660959d3e5b14/lz4-0.9.1.tar.gz"
-	        hash="sha256:80f174c2307d43c8548a23e878d3e02c8e5abbbdf25cd2aec55708ec827a998e"
-	        version="0.9.1"/>
+ <distutils id="python-lz4">
+        <branch repo="pypi.python.org"
+                module="/packages/1b/69/6c106a77a804f08938487a9bf45a9771209f487c9dadea8ea819c1555e35/lz4-0.10.0.tar.gz"
+                checkoutdir="python-lz4-0.10.0"
+                hash="sha256:c3daab3974893b4a8641793af441cf30e9950fe048476d8649cac49cab4e2837"
+                version="0.10.0"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>

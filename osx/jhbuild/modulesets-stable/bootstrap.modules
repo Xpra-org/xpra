@@ -171,7 +171,8 @@
 
   <!-- Expat could be skipped for >= 10.5 since it's is part of the SDK there. -->
   <autotools id="expat" autogen-sh="configure">
-    <branch module="expat/expat-2.1.0.tar.gz" version="2.1.0"
+    <branch module="expat/expat-2.2.0.tar.gz" version="2.2.0"
+            hash="sha256:d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff"/>
             repo="sourceforge"/>
   </autotools>
 
