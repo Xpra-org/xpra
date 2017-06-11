@@ -1098,7 +1098,7 @@ if WIN32:
     if "build_ext" not in sys.argv:
         #with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
-        import cx_Freeze
+        import cx_Freeze                            #@UnresolvedImport
         from cx_Freeze import setup, Executable     #@UnresolvedImport @Reimport
         CX5 = cx_Freeze.version>="5"
         if CX5 and not hasattr(sys, "base_prefix"):
