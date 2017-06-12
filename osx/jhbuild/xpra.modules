@@ -505,24 +505,11 @@
     </after>
   </distutils>
 
-  <distutils id="python-asn1crypto">
-	<branch repo="pypi.python.org"
-		module="/packages/67/14/5d66588868c4304f804ebaff9397255f6ec5559e46724c2496e0f26e68d6/asn1crypto-0.22.0.tar.gz"
-		hash="sha256:cbbadd640d3165ab24b06ef25d1dca09a3441611ac15f6a6b452474fdf0aed1a"
-		version="0.22.0"/>
-        <dependencies>
-                <dep package="python"/>
-        </dependencies>
-        <after>
-                <dep package="python"/>
-        </after>
-  </distutils>
-
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/2a/0c/31bd69469e90035381f0197b48bf71032991d9f07a7e444c311b4a23a3df/cryptography-1.9.tar.gz"
-		hash="sha256:5518337022718029e367d982642f3e3523541e098ad671672a90b82474c84882"
-		version="1.9"/>
+		module="/packages/ec/5f/d5bc241d06665eed93cd8d3aa7198024ce7833af7a67f6dc92df94e00588/cryptography-1.8.1.tar.gz"
+		hash="sha256:323524312bb467565ebca7e50c8ae5e9674e544951d28a2904a50012a8828190"
+		version="1.8.1"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
@@ -531,7 +518,6 @@
 		<dep package="python-enum34"/>
 		<dep package="pyparsing"/>
 		<dep package="packaging"/>
-		<dep package="python-asn1crypto"/>
 	</dependencies>
     <after>
         <dep package="python"/>
