@@ -2,6 +2,8 @@
 
 set -e
 
+#DEBHELPER#
+
 SERVER_GROUP="xpra"
 if ! getent group $SERVER_GROUP >/dev/null; then
 	echo -n "Adding group $SERVER_GROUP.."
