@@ -10,7 +10,7 @@ export CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
 %:
 	dh $@ --with python2 --with systemd
 
-BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --without-install_systemd_units --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
+BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 override_dh_auto_build:
 	dh_auto_build -- $(BUILDOPTS)
