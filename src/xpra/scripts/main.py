@@ -1690,22 +1690,23 @@ def pick_display(error_cb, opts, extra_args):
                 sockpath = opts.system_proxy_socket
             else:
                 raise
+        desc = {
+            "local"             : True,
+            "display"           : display,
+            "display_name"      : display,
+            }
         if WIN32:
-            return {
-                    "type"              : "named-pipe",
-                    "local"             : True,
-                    "display"           : display,
-                    "display_name"      : display,
-                    "named-pipe"        : sockpath,
-                    }
-        return {
+            desc.update({
+                "type"              : "named-pipe",
+                "named-pipe"        : sockpath,
+                })
+        else:
+            desc.update({
                 "type"          : "unix-domain",
-                "local"         : True,
-                "display"       : display,
-                "display_name"  : display,
                 "socket_dir"    : sockdir,
                 "socket_path"   : sockpath,
-                }
+                })
+        return desc
     elif len(extra_args) == 1:
         return parse_display_name(error_cb, opts, extra_args[0])
     else:
@@ -1715,21 +1716,30 @@ def single_display_match(dir_servers, error_cb):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
     #aggregate all the different locations:
     allservers = []
+    noproxy = []
     for sockdir, servers in dir_servers.items():
         for state, display, path in servers:
             if state==DotXpra.LIVE:
                 allservers.append((sockdir, display, path))
-    if len(allservers) == 0:
+                if not display.startswith(":proxy-"):
+                    noproxy.append((sockdir, display, path))
+    if len(allservers)==0:
         error_cb("cannot find any live servers to connect to")
-    if len(allservers) > 1:
+    if len(allservers)>1:
         #maybe the same server is available under multiple paths
         displays = set([v[1] for v in allservers])
         if len(displays)==1:
             #they all point to the same display, use the first one:
             allservers = allservers[:1]
-        else:
-            error_cb("there are multiple servers running, please specify")
-    assert len(allservers)==1, "len(dir_servers)=%s" % len(dir_servers)
+    if len(allservers)>1 and len(noproxy)>0:
+        #try to ignore proxy instances:
+        displays = set([v[1] for v in noproxy])
+        if len(displays)==1:
+            #they all point to the same display, use the first one:
+            allservers = noproxy[:1]
+    if len(allservers) > 1:
+        error_cb("there are multiple servers running, please specify")
+    assert len(allservers)==1
     sockdir, name, path = allservers[0]
     #ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
     return sockdir, name, path
