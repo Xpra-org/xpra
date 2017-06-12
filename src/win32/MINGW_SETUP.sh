@@ -42,12 +42,13 @@ $PACMAN --noconfirm -S ${XPKG}python2-numpy ${XPKG}python2-pillow ${XPKG}cython2
 #python3 versions (not all are really needed if just using python3 for sound):
 $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython ${XPKG}python3-cx_Freeze
 #using easy-install for python libraries which are not packaged by mingw:
-# Note: a specific version of netifaces is installed as a dependency of 'zeroconf' because of this bug:
-# https://bitbucket.org/al45tair/netifaces/issues/39
 easy_install-2.7 -U -Z enum34 enum-compat
-for x in rencode xxhash zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle; do
+for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle; do
     easy_install-2.7 -U -Z $x
     easy_install-3.5 -U -Z $x
 done
+#problems with versions newer than 1.8.x:
+easy_install-2.7 -U -Z cryptography==1.8.1
+easy_install-3.5 -U -Z cryptography==1.8.1
 #for webcam support:
 $PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
