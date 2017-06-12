@@ -1013,6 +1013,12 @@ def install_html5(install_dir="www"):
         print("minifying html5 client to %s using %s" % (install_dir, minifier))
     else:
         print("copying html5 client to %s" % (install_dir, ))
+    symlinks = {
+        "jquery.js"     : [
+            "/usr/share/javascript/jquery/jquery.js",
+            "/usr/share/javascript/jquery/3/jquery.js",
+            ],
+        }
     for k,files in glob_recurse("html5").items():
         if (k!=""):
             k = os.sep+k
@@ -1026,6 +1032,12 @@ def install_html5(install_dir="www"):
             if install_dir==".":
                 install_dir = os.getcwd()
             dst = os.path.join(install_dir, f)
+            #try to find an existing installed library and symlink it:
+            symlink_options = symlinks.get(os.path.basename(f), [])
+            for symlink_option in symlink_options:
+                if os.path.exists(symlink_option):
+                    os.symlink(symlink_option, dst)
+                    continue
             ddir = os.path.split(dst)[0]
             if ddir and not os.path.exists(ddir):
                 os.makedirs(ddir, 0o755)

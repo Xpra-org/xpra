@@ -206,6 +206,8 @@ BuildArch: noarch
 Conflicts: xpra < 2.1
 %if 0%{?fedora}
 BuildRequires: uglify-js
+BuildRequires: js-jquery
+Requires: js-jquery
 %endif
 %description html5
 This package contains Xpra's HTML5 client.

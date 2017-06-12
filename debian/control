@@ -16,6 +16,7 @@ Build-Depends: debhelper (>= 8)
               ,python-gtk2-dev
               ,dh-python
               ,dh-systemd
+              ,libjs-jquery
               ,libsystemd-dev
 X-Python-Version: >= 2.5
 Standards-Version: 3.9.3
@@ -95,6 +96,7 @@ Recommends:
         ,python-lzo
 #for html5 support:
         ,websockify
+        ,libjs-jquery
 # we cannot do versionned recommends but we need keyboard-configuration (>= 1.82)
         ,keyboard-configuration
 #for using SSH passwords from the GUI launcher:
