@@ -24,6 +24,9 @@ override_dh_shlibdeps:
 override_dh_auto_install:
 	dh_auto_install --destdir=$(CURDIR)/debian/tmp -- $(BUILDOPTS)
 
+override_dh_systemd_start:
+	dh_systemd_start xpra.socket
+
 ## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
 override_dh_strip:
 	[ -d "$(CURDIR)/debian/xpra-dbg" ] \
