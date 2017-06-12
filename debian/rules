@@ -1,12 +1,7 @@
 #!/usr/bin/make -f
 
-#: see http://lists.debian.org/debian-devel-announce/2011/09/msg00001.html
-#: Also it does hardening by default, see http://wiki.debian.org/Hardening
-DPKG_EXPORT_BUILDFLAGS = 1
--include /usr/share/dpkg/default.mk
+export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 
-export LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
-export CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
 %:
 	dh $@ --with python2 --with systemd
 
