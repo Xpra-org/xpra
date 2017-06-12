@@ -1032,6 +1032,8 @@ def install_html5(install_dir="www"):
             if install_dir==".":
                 install_dir = os.getcwd()
             dst = os.path.join(install_dir, f)
+            if os.path.exists(dst):
+                os.unlink(dst)
             #try to find an existing installed library and symlink it:
             symlink_options = symlinks.get(os.path.basename(f), [])
             for symlink_option in symlink_options:
@@ -1074,24 +1076,23 @@ def install_html5(install_dir="www"):
             if r!=0:
                 shutil.copyfile(src, dst)
                 os.chmod(dst, 0o644)
-                if ftype not in ("png", ):
-                    if html5_gzip_ENABLED:
-                        gzip_dst = "%s.gz" % dst
-                        if os.path.exists(gzip_dst):
-                            os.unlink(gzip_dst)
-                        cmd = ["gzip", "-n", "-9", "-k", dst]
-                        get_status_output(cmd)
-                        if os.path.exists(gzip_dst):
-                            os.chmod(gzip_dst, 0o644)
-                    if html5_brotli_ENABLED:
-                        br_dst = "%s.br" % dst
-                        if os.path.exists(br_dst):
-                            os.unlink(br_dst)
-                        cmd = ["bro", "--input", dst, "--output", br_dst]
-                        get_status_output(cmd)
-                        if os.path.exists(br_dst):
-                            os.chmod(br_dst, 0o644)
-                        
+            if ftype not in ("png", ):
+                if html5_gzip_ENABLED:
+                    gzip_dst = "%s.gz" % dst
+                    if os.path.exists(gzip_dst):
+                        os.unlink(gzip_dst)
+                    cmd = ["gzip", "-f", "-n", "-9", "-k", dst]
+                    get_status_output(cmd)
+                    if os.path.exists(gzip_dst):
+                        os.chmod(gzip_dst, 0o644)
+                if html5_brotli_ENABLED:
+                    br_dst = "%s.br" % dst
+                    if os.path.exists(br_dst):
+                        os.unlink(br_dst)
+                    cmd = ["bro", "--input", dst, "--output", br_dst]
+                    get_status_output(cmd)
+                    if os.path.exists(br_dst):
+                        os.chmod(br_dst, 0o644)
 
 
 #*******************************************************************************
