@@ -1039,7 +1039,10 @@ def install_html5(install_dir="www"):
             for symlink_option in symlink_options:
                 if os.path.exists(symlink_option):
                     os.symlink(symlink_option, dst)
-                    continue
+                    break
+            if os.path.exists(dst):
+                #we've created a symlink, skip minification and compression
+                continue
             ddir = os.path.split(dst)[0]
             if ddir and not os.path.exists(ddir):
                 os.makedirs(ddir, 0o755)
