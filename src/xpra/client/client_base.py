@@ -575,7 +575,7 @@ class XpraClientBase(FileTransferHandler):
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
             salt = salt[:len(password)]
-            challenge_response = strtobytes(xor(password, salt))
+            challenge_response = memoryview_to_bytes(xor(password, salt))
         else:
             warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
             return
