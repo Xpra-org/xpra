@@ -143,6 +143,7 @@ Source: xpra-%{version}.tar.bz2
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
+Patch0:   centos7-oldsystemd.patch
 
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: xpra-html5
@@ -408,6 +409,10 @@ exit 1
 %if "%{?dist}"==".el7_1"
 echo CentOS 7.1 is no longer supported
 exit 1
+%endif
+%if 0%{?el7}
+#remove some systemd configuration options:
+%patch0 -p1
 %endif
 
 popd
