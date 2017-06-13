@@ -3,6 +3,7 @@ policy_module(xpra_socketactivation, 2.1)
 require {
 	class dbus { send_msg };
 
+	type xserver_exec_t;
 	type sysfs_t;
 	type admin_home_t;
 	type user_home_dir_t;
@@ -78,6 +79,9 @@ allow xpra_t proc_net_t:file read;
 
 allow xpra_t self:tcp_socket listen;
 allow xpra_t shell_exec_t:file { execute execute_no_trans };
+
+#probe Xorg binary suid status (centos only?):
+allow xpra_t xserver_exec_t:file { getattr execute };
 
 #dbus / mdns:
 allow xpra_t avahi_t:dbus send_msg;
