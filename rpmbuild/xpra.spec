@@ -144,6 +144,7 @@ Source: xpra-%{version}.tar.bz2
 #BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 Patch0:   centos7-oldsystemd.patch
+Patch1:   centos7-selinux-ctypes.patch
 
 Requires: xpra-common = %{version}-%{build_no}%{dist}
 Requires: xpra-html5
@@ -413,6 +414,7 @@ exit 1
 %if 0%{?el7}
 #remove some systemd configuration options:
 %patch0 -p1
+%patch1 -p1
 %endif
 
 popd

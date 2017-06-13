@@ -1,0 +1,15 @@
+Index: selinux/xpra_socketactivation/xpra_socketactivation.te
+===================================================================
+--- a/selinux/xpra_socketactivation/xpra_socketactivation.te	(revision 16064)
++++ b/selinux/xpra_socketactivation/xpra_socketactivation.te	(working copy)
+@@ -116,6 +116,10 @@
+ allow xpra_t tmpfs_t:dir { add_name write remove_name };
+ allow xpra_t tmpfs_t:file { create open read write link getattr unlink };
+ 
++#older versions of ctypes need to be able to write to /tmp:
++allow xpra_t tmp_t:dir { add_name write remove_name };
++allow xpra_t tmp_t:file { create unlink write open read };
++
+ #change uid / gid:
+ allow xpra_t self:capability { setgid setuid };
+ #proxy control socket:
