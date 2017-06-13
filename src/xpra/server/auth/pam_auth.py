@@ -70,7 +70,7 @@ try:
             log.error("PAM.authenticate() internal error: %s", e)
             return    False
 except Exception as e:
-    log("PAM module not available: %s", exc_info=True)
+    log("PAM module not available:", exc_info=True)
 
 try:
     from xpra.server.auth.pam import authenticate
@@ -79,7 +79,7 @@ try:
         log("pam check(%s, [..])", username)
         return authenticate(username, password)
 except:
-    log("pam module not available: %s", exc_info=True)
+    log("pam module not available:", exc_info=True)
 
 
 if check is None:
