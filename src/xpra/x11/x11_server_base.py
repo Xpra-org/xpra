@@ -765,6 +765,9 @@ class X11ServerBase(GTKServerBase):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
         self._process_mouse_common(proto, wid, pointer, deviceid)
+        self.button_action(button, pressed, deviceid)
+
+    def button_action(self, button, pressed, deviceid=-1, *args):
         device = self.pointer_device
         assert device, "pointer device %s not found" % deviceid
         try:

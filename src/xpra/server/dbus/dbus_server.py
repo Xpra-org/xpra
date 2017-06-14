@@ -165,13 +165,11 @@ class DBUS_Server(dbus.service.Object):
         self.log(".MovePointer(%i, %i, %i)", wid, x, y)
         self.server._move_pointer(ni(wid), (ni(x), ni(y)))
 
-    @dbus.service.method(INTERFACE, in_signature='iibiias')
-    def MouseClick(self, wid, button, pressed, x, y, modifiers):
-        self.log(".MouseClick%s", (wid, button, pressed, x, y, modifiers))
-        buttons = ()
+    @dbus.service.method(INTERFACE, in_signature='ib')
+    def MouseClick(self, button, pressed):
+        self.log(".MouseClick%s", (button, pressed))
         device_id = -1
-        args = [ni(wid), ni(button), nb(pressed), tuple((ni(x), ni(y))), tuple(ns(v) for v in modifiers), buttons, device_id]
-        self.server.do_process_button_action(None, *args)
+        self.server.button_action(ni(button), nb(pressed), device_id)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')
