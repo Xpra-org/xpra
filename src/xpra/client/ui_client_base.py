@@ -8,6 +8,7 @@
 import os
 import re
 import sys
+import time
 import datetime
 import traceback
 import logging
@@ -692,14 +693,14 @@ class UIXpraClient(XpraClientBase):
 
     def suspend(self):
         log.info("system is suspending")
-        self._suspended_at = monotonic_time()
+        self._suspended_at = time.time()
         #tell the server to slow down refresh for all the windows:
         self.control_refresh(-1, True, False)
 
     def resume(self):
         elapsed = 0
         if self._suspended_at>0:
-            elapsed = monotonic_time()-self._suspended_at
+            elapsed = max(0, time.time()-self._suspended_at)
             self._suspended_at = 0
         delta = datetime.timedelta(seconds=int(elapsed))
         log.info("system resumed, was suspended for %s", delta)
