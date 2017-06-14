@@ -7,6 +7,9 @@
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.util import repr_ellipsized
+from xpra.net.bencode.bencode import bencode, bdecode
+from xpra.net.bencode import cython_bencode   #@UnresolvedImport
+
 import unittest
 import binascii
 
@@ -220,21 +223,16 @@ class TestBencoderFunctions(object):
 class TestBencoder(unittest.TestCase, TestBencoderFunctions):
 
     def setUp(self):
-        from xpra.net.bencode.bencode import bencode, bdecode
         self.encode = bencode
         self.decode = bdecode
         unittest.TestCase.setUp(self)
 
-#currently broken with py3k..
-import sys
-if sys.version_info[0]==2:
-    class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
-    
-        def setUp(self):
-            from xpra.net.bencode.cython_bencode import bencode, bdecode    #@UnresolvedImport
-            self.encode = bencode
-            self.decode = bdecode
-            unittest.TestCase.setUp(self)
+class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
+
+    def setUp(self):
+        self.encode = cython_bencode.bencode
+        self.decode = cython_bencode.bdecode
+        unittest.TestCase.setUp(self)
 
 
 def main():
