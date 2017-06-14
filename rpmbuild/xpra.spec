@@ -678,7 +678,7 @@ do
 	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
 	done
 done
-semanage port -a -t xpra_port_t -p tcp 14500
+semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
