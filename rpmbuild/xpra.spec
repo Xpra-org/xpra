@@ -705,16 +705,18 @@ fi
 
 %postun common-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
-ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
-if [ ! -z "${ZONE}" ]; then
-	set +e
-	firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent >> /dev/null 2>&1
-	if [ $? == "0" ]; then
-		firewall-cmd --reload | grep -v "^success"
-	else
-		firewall-offline-cmd --add-port=14500/tcp | grep -v "^success"
+if [ $1 -eq 0 ]; then
+	ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
+	if [ ! -z "${ZONE}" ]; then
+		set +e
+		firewall-cmd --zone=${ZONE} --remove-port=14500/tcp --permanent >> /dev/null 2>&1
+		if [ $? == "0" ]; then
+			firewall-cmd --reload | grep -v "^success"
+		else
+			firewall-offline-cmd --add-port=14500/tcp | grep -v "^success"
+		fi
+		set -e
 	fi
-	set -e
 fi
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
