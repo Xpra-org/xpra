@@ -695,9 +695,6 @@ fi
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
 %preun common-server
-%if 0%{?with_selinux}
-semanage port -d -p tcp 14500
-%endif
 if [ $1 -eq 0 ] ; then
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
@@ -721,6 +718,7 @@ if [ ! -z "${ZONE}" ]; then
 fi
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
+	semanage port -d -p tcp 14500
 	for mod in %{selinux_modules}
 	do
 		for selinuxvariant in %{selinux_variants}
