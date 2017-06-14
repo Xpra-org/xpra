@@ -680,11 +680,11 @@ restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
 if [ $1 -eq 1 ]; then
-	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
-	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
-else
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
 	/bin/systemctl start xpra.socket >/dev/null 2>&1 || :
+else
+	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
 fi
 %endif
 
