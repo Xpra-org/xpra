@@ -5,18 +5,18 @@
 # later version. See the file COPYING for details.
 
 import time
+import logging
 import unittest
 import subprocess
 
 from xpra.child_reaper import getChildReaper, reaper_cleanup, log
+cr = getChildReaper()
 
 
 class TestChildReaper(unittest.TestCase):
 
     def test_sigchld(self):
-        import logging
         log.logger.setLevel(logging.ERROR)
-        cr = getChildReaper()
         #one that exits before we add the process, one that takes longer:
         TEST_CHILDREN = (["echo"], ["sleep", "0.5"])
         count = 0
