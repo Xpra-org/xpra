@@ -168,8 +168,10 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='iibiias')
     def MouseClick(self, wid, button, pressed, x, y, modifiers):
         self.log(".MouseClick%s", (wid, button, pressed, x, y, modifiers))
-        packet = [ni(wid), ni(button), nb(pressed), (ni(x), ni(y)), [ns(v) for v in modifiers]]
-        self.server._process_button_action(None, packet)
+        buttons = ()
+        device_id = -1
+        args = [ni(wid), ni(button), nb(pressed), tuple((ni(x), ni(y))), tuple(ns(v) for v in modifiers), buttons, device_id]
+        self.server.do_process_button_action(None, *args)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')

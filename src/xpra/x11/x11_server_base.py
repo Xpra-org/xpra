@@ -740,10 +740,13 @@ class X11ServerBase(GTKServerBase):
             if device_data:
                 mouselog("process_mouse_common from device=%s", device_data.get("name"))
         pos = self.root_window.get_pointer()[:2]
-        if pos!=pointer or self.input_devices=="xi":
+        uuid = None
+        if proto:
             ss = self._server_sources.get(proto)
-            assert ss, "source not found for %s" % proto
-            self.last_mouse_user = ss.uuid
+            if ss:
+                uuid = ss.uuid
+        if pos!=pointer or self.input_devices=="xi":
+            self.last_mouse_user = uuid
             with xswallow:
                 self._move_pointer(wid, pointer, deviceid, *args)
 
@@ -768,10 +771,9 @@ class X11ServerBase(GTKServerBase):
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
-            err = "Failed to pass on (un)press of mouse button %s" % button
+            log.error("Error: failed (un)press mouse button %s", button)
             if button>=4:
-                err += " (perhaps your Xvfb does not support mousewheels?)"
-            log.warn(err)
+                log.error(" (perhaps your Xvfb does not support mousewheels?)")
 
 
     def make_screenshot_packet_from_regions(self, regions):
