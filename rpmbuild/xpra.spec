@@ -679,6 +679,7 @@ semanage port -a -t xpra_port_t -p tcp 14500
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
 	/bin/systemctl start xpra.socket >/dev/null 2>&1 || :
@@ -698,6 +699,7 @@ fi
 semanage port -d -p tcp 14500
 %endif
 if [ $1 -eq 0 ] ; then
+	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
 	/bin/systemctl disable xpra.service > /dev/null 2>&1 || :
 	/bin/systemctl disable xpra.socket > /dev/null 2>&1 || :
 	/bin/systemctl stop xpra.service > /dev/null 2>&1 || :
@@ -706,9 +708,6 @@ fi
 
 %postun common-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
-if [ $1 -ge 1 ] ; then
-        /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
-fi
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
