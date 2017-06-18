@@ -117,6 +117,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	}
 	else if((this.windowtype == "") || (this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
 		this.resizable = true;
+		if (this.client.server_is_desktop) {
+			this.resizable = false;
+		}
 		// add a title bar to this window if we need to
 		// create header
 		jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
@@ -145,17 +148,23 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		this.d_header = '#head' + String(wid);
 		this.d_closebtn = '#close' + String(wid);
 		this.d_maximizebtn = '#maximize' + String(wid);
+		if (this.resizable) {
+			jQuery(this.d_closebtn).click(function() {
+				window_closed_cb(me);
+			});
+			jQuery(this.d_maximizebtn).click(function() {
+				me.toggle_maximized();
+			});
+		}
+		else {
+			jQuery(this.d_closebtn).hide();
+			jQuery(this.d_maximizebtn).hide();
+		}
 		// adjust top offset
 		this.topoffset = this.topoffset + parseInt(jQuery(this.d_header).css('height'), 10);
 		// assign some interesting callbacks
 		jQuery(this.d_header).click(function() {
 			set_focus_cb(me);
-		});
-		jQuery(this.d_closebtn).click(function() {
-			window_closed_cb(me);
-		});
-		jQuery(this.d_maximizebtn).click(function() {
-			me.toggle_maximized();
 		});
 	}
 

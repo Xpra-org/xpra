@@ -123,6 +123,8 @@ XpraClient.prototype.init_state = function(container) {
     this.dQ_interval_id = null;
     this.process_interval = 4;
 
+    this.server_is_desktop = false;
+
 	// a list of our windows
 	this.id_to_window = {};
 	this.ui_events = 0;
@@ -990,6 +992,7 @@ XpraClient.prototype._make_hello = function() {
         								//"set-initial-position", "group-leader",
         								"title", "size-hints", "class-instance", "transient-for", "window-type",
         								"decorations", "override-redirect", "tray", "modal", "opacity",
+        								//"shadow", "desktop",
         								],
 		"encodings"					: this._get_encodings(),
 		"raw_window_icons"			: true,
@@ -1618,6 +1621,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 			}
 		}
 	}
+    ctx.server_is_desktop = Boolean(hello["desktop"]) || Boolean(hello["shadow"]);
+
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);
 	ctx.remote_printing = Boolean(hello["printing"]);
