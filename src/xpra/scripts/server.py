@@ -733,7 +733,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
             if (starting or starting_desktop) and not clobber and opts.resize_display:
-                set_initial_resolution()
+                set_initial_resolution(starting_desktop)
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
             return 1

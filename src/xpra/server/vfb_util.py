@@ -11,15 +11,18 @@
 import subprocess
 import sys
 import os.path
-import select
 
 from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
 from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid
 from xpra.platform.dotxpra import osexpand
+from tests.xpra.clients.fake_client import log
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
+assert len(DEFAULT_VFB_RESOLUTION)==2
+DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024").replace(",", "x").split("x", 1))
+assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
 def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
@@ -102,6 +105,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         # waiting up to 10 seconds for it to show up
         limit = monotonic_time()+10
         buf = ""
+        import select   #@UnresolvedImport
         while monotonic_time()<limit and len(buf)<8:
             r, _, _ = select.select([r_pipe], [], [], max(0, limit-monotonic_time()))
             if r_pipe in r:
@@ -150,25 +154,35 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
     return xvfb, display_name
 
 
-def set_initial_resolution():
+def set_initial_resolution(desktop=False):
+    from xpra.log import Logger
     try:
-        from xpra.log import Logger
         log = Logger("server")
-        from xpra.x11.bindings.randr_bindings import RandRBindings
+        log("set_initial_resolution")
+        if desktop:
+            res = DEFAULT_DESKTOP_VFB_RESOLUTION
+        else:
+            res = DEFAULT_VFB_RESOLUTION
+        from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         #try to set a reasonable display size:
         randr = RandRBindings()
         if not randr.has_randr():
-            log("no RandR, default virtual display size unchanged")
-        else:
-            sizes = randr.get_screen_sizes()
-            size = randr.get_screen_size()
-            log("RandR available, current size=%s, sizes available=%s", size, sizes)
-            if DEFAULT_VFB_RESOLUTION in sizes:
-                log("RandR setting new screen size to %s", DEFAULT_VFB_RESOLUTION)
-                randr.set_screen_size(*DEFAULT_VFB_RESOLUTION)
+            l = log
+            if desktop:
+                l = log.warn
+            l("Warning: no RandR support,")
+            l(" default virtual display size unchanged")
+            return
+        sizes = randr.get_screen_sizes()
+        size = randr.get_screen_size()
+        log("RandR available, current size=%s, sizes available=%s", size, sizes)
+        if res in sizes:
+            log("RandR setting new screen size to %s", res)
+            randr.set_screen_size(*res)
     except Exception as e:
-        log.warn("Warning: failed to set the default screen size:")
-        log.warn(" %s", e)
+        log("set_initial_resolution(%s)", desktop, exc_info=True)
+        log.error("Error: failed to set the default screen size:")
+        log.error(" %s", e)
 
 
 def xauth_add(display_name, xauth_data):
