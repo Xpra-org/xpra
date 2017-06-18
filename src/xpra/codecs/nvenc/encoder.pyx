@@ -121,15 +121,21 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_SUPPORT_LOOKAHEAD
         NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ
         NV_ENC_CAPS_SUPPORT_10BIT_ENCODE
+        #SDK 8:
+        #NV_ENC_CAPS_NUM_MAX_LTR_FRAMES
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
         NV_ENC_DEVICE_TYPE_CUDA
+        #SDK 8:
+        #NV_ENC_DEVICE_TYPE_OPENGL
 
     ctypedef enum NV_ENC_INPUT_RESOURCE_TYPE:
         NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX
         NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
         NV_ENC_INPUT_RESOURCE_TYPE_CUDAARRAY
+        #SDK 8:
+        #NV_ENC_INPUT_RESOURCE_TYPE_OPENGL_TEX
 
     ctypedef enum NV_ENC_MEMORY_HEAP:
         NV_ENC_MEMORY_HEAP_AUTOSELECT
@@ -254,6 +260,10 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_PARAMS_RC_CONSTQP            #Constant QP mode
         NV_ENC_PARAMS_RC_VBR                #Variable bitrate mode
         NV_ENC_PARAMS_RC_CBR                #Constant bitrate mode
+        NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ    #low-delay CBR, high quality
+        NV_ENC_PARAMS_RC_CBR_HQ             #CBR, high quality (slower)
+        NV_ENC_PARAMS_RC_VBR_HQ
+        #SDK 7 names (deprecated):
         NV_ENC_PARAMS_RC_VBR_MINQP          #Variable bitrate mode with MinQP
         NV_ENC_PARAMS_RC_2_PASS_QUALITY     #Multi pass encoding optimized for image quality and works only with low latency mode
         NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP   #Multi pass encoding optimized for maintaining frame size and works only with low latency mode
@@ -571,7 +581,11 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_QP   initialRCQP         #[in]: Specifies the initial QP used for rate control. Client must set NV_ENC_CONFIG::enableInitialRCQP to 1.
         uint32_t    temporallayerIdxMask#[in]: Specifies the temporal layers (as a bitmask) whose QPs have changed. Valid max bitmask is [2^NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS - 1]
         uint8_t     temporalLayerQP[8]  #[in]: Specifies the temporal layer QPs used for rate control. Temporal layer index is used as as the array index
-        uint32_t    reserved[10]
+        #SDK 8:
+        #uint8_t     targetQuality       #[in]: Target CQ (Constant Quality) level for VBR mode (range 0-51 with 0-automatic)
+        #uint8_t     targetQualityLSB    #[in]: Fractional part of target quality (as 8.8 fixed point format)
+        #uint16_t    lookaheadDepth      #[in]: Maximum depth of lookahead with range 0-32 (only used if enableLookahead=1)
+        uint32_t    reserved[9]
 
     ctypedef struct NV_ENC_CONFIG:
         uint32_t    version             #[in]: Struct version. Must be set to ::NV_ENC_CONFIG_VER.
@@ -964,6 +978,8 @@ CAPS_NAMES = {
         NV_ENC_CAPS_SUPPORT_LOOKAHEAD           : "SUPPORT_LOOKAHEAD",
         NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ         : "SUPPORT_TEMPORAL_AQ",
         NV_ENC_CAPS_SUPPORT_10BIT_ENCODE        : "SUPPORT_10BIT_ENCODE",
+        #SDK 8:
+        #NV_ENC_CAPS_NUM_MAX_LTR_FRAMES          : "NUM_MAX_LTR_FRAMES",
         }
 
 PIC_TYPES = {
