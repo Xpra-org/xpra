@@ -16,7 +16,6 @@ from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
 from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid
 from xpra.platform.dotxpra import osexpand
-from tests.xpra.clients.fake_client import log
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
