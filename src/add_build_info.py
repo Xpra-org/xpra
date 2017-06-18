@@ -249,7 +249,7 @@ def record_build_info(is_build=True):
         for pkg in ("libc",
                     "vpx", "libvpx", "x264", "x265",
                     "avcodec", "avutil", "swscale",
-                    "nvenc7",
+                    "nvenc",
                     "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
                     "gtk+-3.0", "pycairo", "pygobject-2.0", "pygtk-2.0", ):
             #fugly magic for turning the package atom into a legal variable name:

@@ -13,7 +13,7 @@ log = Logger()
 
 from xpra.util import roundup
 print("loading encoder class")
-from xpra.codecs.nvenc7.encoder import get_BGRA2NV12
+from xpra.codecs.nvenc.encoder import get_BGRA2NV12
 from xpra.codecs.cuda_common.cuda_context import check_devices
 
 print("cuda check")

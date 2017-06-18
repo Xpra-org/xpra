@@ -20,7 +20,7 @@ CODEC_TO_MODULE = {
                    "vpx"        : ["vpx"],
                    "x264"       : ["enc_x264"],
                    "x265"       : ["enc_x265"],
-                   "nvenc"      : ["nvenc7"],
+                   "nvenc"      : ["nvenc"],
                    "swscale"    : ["csc_swscale"],
                    "libyuv"     : ["csc_libyuv"],
                    "avcodec2"   : ["dec_avcodec2"],
@@ -67,7 +67,7 @@ log("video_helper: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
 
 def get_encoder_module_names(x):
     if x=="nvenc":
-        return ["nvenc7"]
+        return ["nvenc"]
     elif x.find("enc")>=0:
         return [x]              #ie: "nvenc" or "enc_vpx"
     return ["enc_"+x]           #ie: "enc_x264"

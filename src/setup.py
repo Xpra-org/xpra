@@ -185,7 +185,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
-nvenc7_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvenc7")
+nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("7", "nvenc")
 nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
@@ -204,7 +204,7 @@ rebuild_ENABLED         = True
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
-            "nvenc7", "cuda_kernels", "cuda_rebuild", "nvfbc",
+            "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
             "vpx", "pillow", "jpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
@@ -924,7 +924,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/buffers/membuf.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
-                   "xpra/codecs/nvenc7/encoder.c",
+                   "xpra/codecs/nvenc/encoder.c",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
@@ -1422,11 +1422,11 @@ if WIN32:
             assert GHOSTSCRIPT is not None, "cannot find ghostscript installation directory in %s" % GHOSTSCRIPT_PARENT_DIR
             add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
             add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
-        if nvenc7_ENABLED:
+        if nvenc_ENABLED:
             add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:
             add_console_exe("xpra/codecs/nvfbc/capture.py",             "nvidia.ico",   "NvFBC_capture")
-        if nvfbc_ENABLED or nvenc7_ENABLED:
+        if nvfbc_ENABLED or nvenc_ENABLED:
             add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
         #FIXME: how do we figure out what target directory to use?
@@ -1562,7 +1562,7 @@ else:
                     copytodir("scripts/xpra_Xdummy", "bin", chmod=0o755)
                 #install xorg.conf, cuda.conf and nvenc.keys:
                 etc_xpra_files = ["xorg.conf"]
-                if nvenc7_ENABLED:
+                if nvenc_ENABLED:
                     etc_xpra_files += ["cuda.conf", "nvenc.keys"]
                 for x in etc_xpra_files:
                     copytodir("etc/xpra/%s" % x, "/etc/xpra")
@@ -1940,11 +1940,11 @@ if nvfbc_ENABLED:
                          language="c++",
                          **nvfbc_pkgconfig))
 
-toggle_packages(nvenc7_ENABLED, "xpra.codecs.nvenc7")
-toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
-toggle_packages(nvenc7_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
+toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
+toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
+toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
-if nvenc7_ENABLED and cuda_kernels_ENABLED:
+if nvenc_ENABLED and cuda_kernels_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
@@ -2059,8 +2059,8 @@ if nvenc7_ENABLED and cuda_kernels_ENABLED:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
 
-if nvenc7_ENABLED:
-    nvencmodule = "nvenc7"
+if nvenc_ENABLED:
+    nvencmodule = "nvenc"
     nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
@@ -2068,8 +2068,8 @@ if nvenc7_ENABLED:
         libraries.remove("nvidia-encode")
     if PYTHON3 and get_gcc_version()>=[6, 2]:
         #with gcc 6.2 on Fedora:
-        #xpra/codecs/nvenc7/encoder.c: In function '__Pyx_PyInt_LshiftObjC':
-        #xpra/codecs/nvenc7/encoder.c:45878:34: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+        #xpra/codecs/nvenc/encoder.c: In function '__Pyx_PyInt_LshiftObjC':
+        #xpra/codecs/nvenc/encoder.c:45878:34: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
         #    if (unlikely(!(b < sizeof(long)*8 && a == x >> b)) && a) {
         add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-sign-compare")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
