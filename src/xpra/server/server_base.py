@@ -2750,14 +2750,20 @@ class ServerBase(ServerCore):
         self.ui_driver = ss.uuid
         self.set_keyboard_layout_group(group)
         keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
-        log("process_key_action(%s) server keycode=%s", packet, keycode)
+        keylog("process_key_action(%s) server keycode=%s", packet, keycode)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
         ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
         #negative keycodes are used for key events without a real keypress/unpress
         #for example, used by win32 to send Caps_Lock/Num_Lock changes
         if keycode>=0:
-            self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
+            try:
+                self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
+            except Exception as e:
+                keylog("process_key_action%s", (proto, packet), exc_info=True)
+                keylog.error("Error: failed to %s key", ["unpress", "press"][pressed])
+                keylog.error(" %s", e)
+                keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
     def get_keycode(self, ss, client_keycode, keyname, modifiers):
