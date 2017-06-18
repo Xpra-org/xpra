@@ -676,7 +676,7 @@ class X11ServerBase(GTKServerBase):
     def do_xpra_xkb_event(self, event):
         #X11: XKBNotify
         log("WindowModel.do_xpra_xkb_event(%r)" % event)
-        if event.type!="bell":
+        if event.subtype!="bell":
             log.error("do_xpra_xkb_event(%r) unknown event type: %s" % (event, event.type))
             return
         #bell events on our windows will come through the bell signal,
