@@ -619,7 +619,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if not OSX:
             #workarounds: some distros don't set a correct value,
             #or they don't create the directory for us
-            xrd = os.environ.get("XDG_RUNTIME_DIR")
+            xrd = os.environ.get("XDG_RUNTIME_DIR", "")
             if xrd.endswith("/user/0"):
                 #don't keep root's directory, as this would not work:
                 xrd = None
@@ -634,7 +634,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 if not os.path.exists(xrd):
                     os.mkdir(xrd, 0o700)
                     os.chown(xrd, uid, gid)
-                os.environ["XDG_RUNTIME_DIR"]
+                os.environ["XDG_RUNTIME_DIR"] = xrd
             else:
                 try:
                     del os.environ["XDG_RUNTIME_DIR"]
