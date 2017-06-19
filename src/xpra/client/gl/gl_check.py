@@ -15,7 +15,9 @@ log = Logger("opengl")
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
-WHITELIST = {}
+WHITELIST = {
+    "renderer"  : ["Skylake", "Kabylake"],
+    }
 GREYLIST = {
             "vendor"    : ["Intel", "Humper"]
             }
@@ -317,7 +319,7 @@ def do_check_GL_support(force_enable):
         if safe and sys.version_info[0]>2:
             log.warn("Warning: OpenGL python3 support is not enabled by default")
             safe = False
-        if safe and greylisted:
+        if greylisted and not whitelisted:
             log.warn("Warning: %s '%s' is greylisted,", *greylisted)
             log.warn(" you may want to turn off OpenGL if you encounter bugs")
         props["safe"] = safe
