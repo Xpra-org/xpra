@@ -2191,14 +2191,15 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
             raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" (tcp_socket, e))
-        try:
-            ssl_sock.do_handshake(True)
-        except Exception as e:
-            Logger("network").debug("do_handshake", exc_info=True)
-            SSLEOFError = getattr(ssl, "SSLEOFError", None)
-            if SSLEOFError and isinstance(e, SSLEOFError):
-                return None
-            raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % e)
+        if not server_side:
+            try:
+                ssl_sock.do_handshake(True)
+            except Exception as e:
+                Logger("network").debug("do_handshake", exc_info=True)
+                SSLEOFError = getattr(ssl, "SSLEOFError", None)
+                if SSLEOFError and isinstance(e, SSLEOFError):
+                    return None
+                raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % e)
         #ensure we handle ssl exceptions as we should from now on:
         from xpra.net.bytestreams import init_ssl
         init_ssl()
