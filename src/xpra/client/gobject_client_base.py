@@ -74,12 +74,6 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
     def gobject_init(self):
         gobject.threads_init()
 
-    def connect_with_timeout(self, conn):
-        self.setup_connection(conn)
-        if conn.timeout>0:
-            glib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.timeout)
-        glib.idle_add(self.send_hello)
-
     def run(self):
         XpraClientBase.run(self)
         self.glib_mainloop = glib.MainLoop()
@@ -105,6 +99,7 @@ class CommandConnectClient(GObjectXpraClient):
         Utility superclass for clients that only send one command
         via the hello packet.
     """
+    COMMAND_TIMEOUT = EXTRA_TIMEOUT
 
     def __init__(self, conn, opts):
         GObjectXpraClient.__init__(self)
@@ -121,6 +116,12 @@ class CommandConnectClient(GObjectXpraClient):
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows"):
             self.hello_extra[x] = False
+
+    def connect_with_timeout(self, conn):
+        self.setup_connection(conn)
+        if conn.timeout>0:
+            glib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+        glib.idle_add(self.send_hello)
 
     def _process_connection_lost(self, packet):
         #override so we don't log a warning
@@ -455,6 +456,9 @@ class DetachXpraClient(HelloRequestClient):
 
 class RequestStartClient(HelloRequestClient):
     """ request the system proxy server to start a new session for us """
+    #wait longer for this command to return:
+    from xpra.scripts.main import WAIT_SERVER_TIMEOUT
+    COMMAND_TIMEOUT = EXTRA_TIMEOUT+WAIT_SERVER_TIMEOUT
 
     def hello_request(self):
         return {"start-new-session" : self.start_new_session}
