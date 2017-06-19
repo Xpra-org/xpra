@@ -2524,7 +2524,7 @@ def run_glcheck(opts):
     return 0
 
 
-def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid()):
+def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     from xpra.log import Logger
     log = Logger("proxy")
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid))
@@ -2595,7 +2595,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
                            ]
         log("start_server_subprocess: launch_commands=%s", launch_commands)
         for x in launch_commands:
-            proc = Popen(x, shell=False, close_fds=True)
+            proc = Popen(x, shell=False, close_fds=True, env=env, cwd=cwd)
             proc.wait()
         proc = None
     else:
@@ -2605,7 +2605,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, shell=False, close_fds=True)
+        proc = Popen(cmd, shell=False, close_fds=True, env=env, cwd=cwd)
         log("proc=%s", proc)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display

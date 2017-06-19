@@ -21,7 +21,7 @@ authlog = Logger("proxy", "auth")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, typedict
-from xpra.os_util import get_username_for_uid, get_groups, WIN32
+from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, WIN32
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -376,12 +376,24 @@ class ProxyServer(ServerCore):
                 setattr(opts, fn, v)
         opts.attach = False
         opts.start_via_proxy = False
+        env = self.get_proxy_env()
         log("starting new server subprocess: options=%s", opts)
-        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid)
+        log("env=%s", env)
+        cwd = None
+        if uid>0:
+            cwd = get_home_for_uid(uid) or None
+        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid, env, cwd)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
         log("start_new_session(..)=%s, %s", display, proc)
         return proc, socket_path, display
+
+    def get_proxy_env(self):
+        ENV_WHITELIST = ["LANG", "HOSTNAME", "PWD", "TERM", "SHELL", "SHLVL", "PATH"]
+        env = dict((k,v) for k,v in os.environ.items() if k in ENV_WHITELIST)
+        return env
+        #return os.environ.copy()
+
 
     def start_win32_shadow(self, username, new_session_dict):
         log("start_win32_shadow%s", (username, new_session_dict))
@@ -404,7 +416,7 @@ class ProxyServer(ServerCore):
             startupinfo.lpTitle = "Xpra-Shadow"
             cwd = get_app_dir()
             from subprocess import PIPE
-            env = os.environ.copy()
+            env = self.get_proxy_env()
             log("env=%s", env)
             proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env, startupinfo=startupinfo, creationinfo=creation_info)
             log("Popen(%s)=%s", command, proc)
