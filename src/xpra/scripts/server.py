@@ -176,7 +176,7 @@ def sanitize_env():
              "XDG_SESSION_ID",
              "XDG_SEAT",
              "XDG_VTNR",
-             #"XDG_RUNTIME_DIR",
+             "XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
              )
 
@@ -218,7 +218,7 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
-def set_runtime_dir(uid, gid):
+def create_runtime_dir(uid, gid):
     if os.name!="posix" or OSX or getuid()!=0 or (uid==0 and gid==0):
         return
     #workarounds: some distros don't set a correct value,
@@ -234,20 +234,25 @@ def set_runtime_dir(uid, gid):
             run_user = "/var/run/user"
         if os.path.exists(run_user):
             xrd = os.path.join(run_user, str(uid))
-    if xrd:
-        if not os.path.exists(xrd):
-            os.mkdir(xrd, 0o700)
-            os.chown(xrd, uid, gid)
-        xpra_dir = os.path.join(xrd, "xpra")
-        if not os.path.exists(xpra_dir):
-            os.mkdir(xpra_dir, 0o700)
-            os.chown(xpra_dir, uid, gid)
-        os.environ["XDG_RUNTIME_DIR"] = xrd
-    else:
+    if not xrd:
+        return None
+    if not os.path.exists(xrd):
+        os.mkdir(xrd, 0o700)
+        os.chown(xrd, uid, gid)
+    xpra_dir = os.path.join(xrd, "xpra")
+    if not os.path.exists(xpra_dir):
+        os.mkdir(xpra_dir, 0o700)
+        os.chown(xpra_dir, uid, gid)
+    #keep this open to try to make sure
+    #that this directory won't be deleted until we no longer need it
+    import tempfile
+    dirlock = tempfile.NamedTemporaryFile(suffix='lock', prefix='%s' % os.getpid(), dir=xpra_dir, delete=False)
+    def unlock():
         try:
-            del os.environ["XDG_RUNTIME_DIR"]
-        except:
+            os.unlink(dirlock.name)
+        except OSError:
             pass
+    add_cleanup(unlock)
     return xrd
 
 
@@ -396,7 +401,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir 
+    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     uid = int(opts.uid)
@@ -410,6 +415,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             except:
                 pass
 
+    xrd = create_runtime_dir(uid, gid)
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
@@ -554,6 +560,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             pass
     sanitize_env()
     if os.name=="posix":
+        if xrd:
+            os.environ["XDG_RUNTIME_DIR"] = xrd
         os.environ["XDG_SESSION_TYPE"] = "x11"
         os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
@@ -589,9 +597,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #terminating will also close the session
             #add_cleanup(pam.close)
             pass
-
-    #set and create XDG_RUNTIME_DIR if needed:
-    set_runtime_dir(uid, gid)
 
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
