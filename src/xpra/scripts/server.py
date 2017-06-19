@@ -218,6 +218,38 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
+def set_runtime_dir(uid, gid):
+    if os.name!="posix" or OSX or getuid()!=0 or (uid==0 and gid==0):
+        return
+    #workarounds: some distros don't set a correct value,
+    #or they don't create the directory for us
+    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
+    if xrd.endswith("/user/0"):
+        #don't keep root's directory, as this would not work:
+        xrd = None
+    if not xrd:
+        #find the "/run/user" directory:
+        run_user = "/run/user"
+        if not os.path.exists(run_user):
+            run_user = "/var/run/user"
+        if os.path.exists(run_user):
+            xrd = os.path.join(run_user, str(uid))
+    if xrd:
+        if not os.path.exists(xrd):
+            os.mkdir(xrd, 0o700)
+            os.chown(xrd, uid, gid)
+        xpra_dir = os.path.join(xrd, "xpra")
+        if not os.path.exists(xpra_dir):
+            os.mkdir(xpra_dir, 0o700)
+            os.chown(xpra_dir, uid, gid)
+        os.environ["XDG_RUNTIME_DIR"] = xrd
+    else:
+        try:
+            del os.environ["XDG_RUNTIME_DIR"]
+        except:
+            pass
+    return xrd
+
 
 def guess_xpra_display(socket_dir, socket_dirs):
     dotxpra = DotXpra(socket_dir, socket_dirs)
@@ -558,6 +590,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #add_cleanup(pam.close)
             pass
 
+    #set and create XDG_RUNTIME_DIR if needed:
+    set_runtime_dir(uid, gid)
+
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
     odisplay_name = display_name
@@ -616,31 +651,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return  1
 
     if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
-        if not OSX:
-            #workarounds: some distros don't set a correct value,
-            #or they don't create the directory for us
-            xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-            if xrd.endswith("/user/0"):
-                #don't keep root's directory, as this would not work:
-                xrd = None
-            if not xrd:
-                #find the "/run/user" directory:
-                run_user = "/run/user"
-                if not os.path.exists(run_user):
-                    run_user = "/var/run/user"
-                if os.path.exists(run_user):
-                    xrd = os.path.join(run_user, str(uid))
-            if xrd:
-                if not os.path.exists(xrd):
-                    os.mkdir(xrd, 0o700)
-                    os.chown(xrd, uid, gid)
-                os.environ["XDG_RUNTIME_DIR"] = xrd
-            else:
-                try:
-                    del os.environ["XDG_RUNTIME_DIR"]
-                except:
-                    pass
-                
         setuidgid(uid, gid)
         os.environ.update({
             "HOME"      : home,
