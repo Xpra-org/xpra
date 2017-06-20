@@ -446,7 +446,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if opts.password_file:
             opts.password_file = os.path.abspath(opts.password_file)
         from xpra.server.server_util import daemonize
-        stdout, stderr = daemonize()
+        daemonize()
 
     # if pam is present, try to create a new session:
     pam = None
@@ -500,19 +500,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             os.environ["XPRA_LOG_DIR"] = log_dir
 
         if opts.daemon:
-            from xpra.server.server_util import select_log_file, open_log_file
-            # At this point we may not know the display name,
-            # so log_filename0 may point to a temporary file which we will rename later
+            from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
             log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
             logfd = open_log_file(log_filename0)
-            # replace standard stdout/stderr by the log file
-            os.dup2(logfd, 1)
-            os.dup2(logfd, 2)
-            os.close(logfd)
-            # Make these line-buffered:
-            sys.stdout = os.fdopen(1, "w", 1)
-            sys.stderr = os.fdopen(2, "w", 1)
-            info("Entering daemon mode; "
+            stdout, stderr = redirect_std_to_log(logfd)
+            stdout.write("Entering daemon mode; "
                      + "any further errors will be reported to:\n"
                      + ("  %s\n" % log_filename0))
 

@@ -6,7 +6,7 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, close_all_fds, shellsub, getuid, getgid
+from xpra.os_util import OSX, shellsub, getuid, getgid
 from xpra.platform.dotxpra import osexpand, norm_makepath
 from xpra.scripts.config import InitException
 
@@ -194,6 +194,30 @@ def select_log_file(log_dir, log_file, display_name):
         logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
     return logpath
 
+def redirect_std_to_log(logfd):
+    from xpra.os_util import close_all_fds
+    # save current stdout/stderr to be able to print info
+    # before exiting the non-deamon process
+    # and closing those file descriptors definitively
+    old_fd_stdout = os.dup(1)
+    old_fd_stderr = os.dup(2)
+    close_all_fds(exceptions=[logfd, old_fd_stdout, old_fd_stderr])
+    fd0 = os.open("/dev/null", os.O_RDONLY)
+    if fd0 != 0:
+        os.dup2(fd0, 0)
+        os.close(fd0)
+    # reopen STDIO files
+    stdout = os.fdopen(old_fd_stdout, "w", 1)
+    stderr = os.fdopen(old_fd_stderr, "w", 1)
+    # replace standard stdout/stderr by the log file
+    os.dup2(logfd, 1)
+    os.dup2(logfd, 2)
+    os.close(logfd)
+    # Make these line-buffered:
+    sys.stdout = os.fdopen(1, "w", 1)
+    sys.stderr = os.fdopen(2, "w", 1)
+    return stdout, stderr
+
 
 def daemonize():
     os.chdir("/")
@@ -202,20 +226,6 @@ def daemonize():
     os.setsid()
     if os.fork():
         os._exit(0)
-    # save current stdout/stderr to be able to print info
-    # before exiting the non-deamon process
-    # and closing those file descriptors definitively
-    old_fd_stdout = os.dup(1)
-    old_fd_stderr = os.dup(2)
-    close_all_fds(exceptions=[old_fd_stdout,old_fd_stderr])
-    fd0 = os.open("/dev/null", os.O_RDONLY)
-    if fd0 != 0:
-        os.dup2(fd0, 0)
-        os.close(fd0)
-    # reopen STDIO files
-    old_stdout = os.fdopen(old_fd_stdout, "w", 1)
-    old_stderr = os.fdopen(old_fd_stderr, "w", 1)
-    return (old_stdout, old_stderr)
 
 
 def write_pidfile(pidfile, withfd=None):
