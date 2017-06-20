@@ -1331,8 +1331,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         #this will use the client "start-new-session" feature,
                         #to start a new session and connect to it at the same time:
                         r = run_client(error_cb, options, args, "request-%s" % mode)
-                        if r==0:
-                            return
+                        if r==0 or (r>=128 and r<=(128+16)):
+                            #exit OK or exit from signal:
+                            return r
+                        #other cases mean we must have failed to start the session
                         err = EXIT_STR.get(r, r)
                     except Exception as e:
                         err = str(e)
