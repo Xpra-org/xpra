@@ -1328,6 +1328,8 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 else:
                     err = None
                     try:
+                        #this will use the client "start-new-session" feature,
+                        #to start a new session and connect to it at the same time:
                         r = run_client(error_cb, options, args, "request-%s" % mode)
                         if r==0:
                             return
@@ -1336,8 +1338,14 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         err = str(e)
                     if start_via_proxy is True:
                         raise InitException("failed to start-via-proxy: %s" % err)
-                    else:
-                        warn("Warning: cannot use the system proxy for '%s' subcommand,\n %s" % (mode, err))
+                    #warn and fall through to regular server start:
+                    warn("Warning: cannot use the system proxy for '%s' subcommand,\n %s" % (mode, err))
+                    #re-exec itself and disable start-via-proxy:
+                    args = sys.argv[:]+["--start-via-proxy=no", "--debug=all"]
+                    #warn("re-running with: %s" % (args,))
+                    os.execv(args[0], args)
+                    #this code should be unreachable!
+                    return 1
             current_display = nox()
             try:
                 from xpra import server
@@ -2279,7 +2287,7 @@ def run_client(error_cb, opts, extra_args, mode):
     elif mode=="detach":
         from xpra.client.gobject_client_base import DetachXpraClient
         app = DetachXpraClient(connect(), opts)
-    elif request_mode and opts.attach is False:
+    elif request_mode and opts.attach is not True:
         from xpra.client.gobject_client_base import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = ["socket:%s" % opts.system_proxy_socket]
@@ -2600,7 +2608,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         proc = None
     else:
         cmd.append("--systemd-run=no")
-        cmd.append("--daemon=yes")
+        cmd.append("--daemon=no")
         if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
