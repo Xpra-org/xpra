@@ -9,7 +9,6 @@
 Everyone else should just use prop_set/prop_get with nice clean Python calling
 conventions, and if you need more (un)marshalling smarts, add them here."""
 
-import sys
 import binascii
 import struct
 import cairo
@@ -42,12 +41,12 @@ from xpra.x11.bindings.window_bindings import (
                 PropertyError)              #@UnresolvedImport
 X11Window = X11WindowBindings()
 
-from xpra.os_util import StringIOClass
+from xpra.os_util import StringIOClass, PYTHON3
 from xpra.gtk_common.error import xsync, XError
 from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
 
 
-if sys.version > '3':
+if PYTHON3:
     long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
 

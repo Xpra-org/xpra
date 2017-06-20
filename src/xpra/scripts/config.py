@@ -39,8 +39,6 @@ DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32:
     DEFAULT_PULSEAUDIO = False
 
-PYTHON3 = sys.version_info[0]>=3
-
 
 _has_sound_support = None
 def has_sound_support():

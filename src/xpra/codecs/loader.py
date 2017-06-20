@@ -8,6 +8,7 @@ import sys
 import os.path
 
 from xpra.util import envbool
+from xpra.os_util import PYTHON3
 from xpra.log import Logger
 log = Logger("codec", "loader")
 try:
@@ -17,7 +18,7 @@ try:
 except:
     pass
 
-if sys.version > '3':
+if PYTHON3:
     unicode = str           #@ReservedAssignment
 
 #these codecs may well not load because we

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import unittest
 from xpra.util import envint
-from xpra.os_util import load_binary_file, pollwait, OSX
+from xpra.os_util import load_binary_file, pollwait, OSX, POSIX, PYTHON2
 from unit.client.x11_client_test_util import X11ClientTestUtil, log
 
 CLIENT_TIMEOUT = envint("XPRA_TEST_CLIENT_TIMEOUT", 5)
@@ -85,7 +84,7 @@ class X11ClientTest(X11ClientTestUtil):
 
 
 def main():
-	if os.name=="posix" and sys.version_info[0]==2 and not OSX:
+	if POSIX and PYTHON2 and not OSX:
 		unittest.main()
 
 

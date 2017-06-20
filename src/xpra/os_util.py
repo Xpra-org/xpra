@@ -63,7 +63,7 @@ PYTHON2 = sys.version_info[0]==2
 PYTHON3 = sys.version_info[0]==3
 
 
-if sys.version_info[0] < 3:
+if PYTHON2:
     def strtobytes(x):
         return str(x)
     def bytestostr(x):

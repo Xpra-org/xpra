@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, PYTHON3
 from xpra.util import repr_ellipsized
 from xpra.net.bencode.bencode import bencode, bdecode
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
@@ -106,8 +106,7 @@ def _cmp(o, r):
             assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
-    import sys
-    if sys.version_info[0]<3 and type(o)==unicode and type(r)==str:
+    if PYTHON3 and type(o)==unicode and type(r)==str:
         o = o.encode("utf-8")
     elif type(o)==bytes and type(r)==str:
         o = o.decode("utf-8")

@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr, memoryview_to_bytes
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, PYTHON2, strtobytes, bytestostr, memoryview_to_bytes
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -175,7 +175,7 @@ class XpraClientBase(FileTransferHandler):
             signal.signal(signal.SIGTERM, deadly_signal)
             self.signal_cleanup()
             self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
-        if sys.version_info[0]<3:
+        if PYTHON2:
             #breaks GTK3..
             signal.signal(signal.SIGINT, app_signal)
         signal.signal(signal.SIGTERM, app_signal)
@@ -642,7 +642,7 @@ class XpraClientBase(FileTransferHandler):
 
     def capsget(self, capabilities, key, default):
         v = capabilities.get(strtobytes(key), default)
-        if sys.version >= '3' and type(v)==bytes:
+        if PYTHON3 and type(v)==bytes:
             v = bytestostr(v)
         return v
 

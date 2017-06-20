@@ -14,7 +14,7 @@ import shlex
 import urllib
 from threading import Lock
 
-from xpra.os_util import OSX
+from xpra.os_util import OSX, PYTHON3
 from xpra.util import engs, envint, envbool
 from xpra.log import Logger
 log = Logger("printing")
@@ -149,7 +149,7 @@ def get_lpinfo_drv(make_and_model):
         log.warn("Warning: lpinfo command failed and returned %s", proc.returncode)
         log.warn(" command used: '%s'", " ".join(command))
         return None
-    if sys.version_info[0]>=3:
+    if PYTHON3:
         try:
             out = out.decode()
         except:

@@ -187,7 +187,8 @@ def get_license_text(self):
     filename = os.path.join(get_resources_dir(), 'COPYING')
     if os.path.exists(filename):
         try:
-            if sys.version < '3':
+            from xpra.os_util import PYTHON2
+            if PYTHON2:
                 license_file = open(filename, mode='rb')
             else:
                 license_file = open(filename, mode='r', encoding='ascii')

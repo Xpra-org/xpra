@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import Queue, memoryview_to_bytes
+from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -34,7 +34,7 @@ from xpra.net.crypto import get_crypto_caps, get_encryptor, get_decryptor, pad, 
 
 #stupid python version breakage:
 JOIN_TYPES = (str, bytes)
-if sys.version > '3':
+if PYTHON3:
     long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
     JOIN_TYPES = (bytes, )
@@ -444,7 +444,7 @@ class Protocol(object):
 
     def noencode(self, data):
         #just send data as a string for clients that don't understand xpra packet format:
-        if sys.version_info[0] >= 3:
+        if PYTHON3:
             import codecs
             def b(x):
                 if type(x)==bytes:

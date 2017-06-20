@@ -482,7 +482,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.pidfile:
         write_pidfile(opts.pidfile, withfd=fchown)
 
-    if POSIX and getuid()!=0:
+    if POSIX and not ROOT:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         write_runner_shell_scripts(script, withfd=fchown)

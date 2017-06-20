@@ -9,7 +9,7 @@ with python2, we try to import pygtk (gobject/gtk/gdk) before trying gobject int
 Once we have imported something, stick to that version from then on for all other imports.
 """
 
-import sys, os
+import sys
 
 __all__ = ["is_gtk3", "get_xid", "import_gobject", "import_gtk", "import_gdk", "import_pango", "import_glib", "import_pixbufloader"]
 

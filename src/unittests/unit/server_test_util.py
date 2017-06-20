@@ -11,7 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
-from xpra.os_util import OSEnvContext, pollwait
+from xpra.os_util import OSEnvContext, pollwait, POSIX
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra, osexpand
 from xpra.platform.paths import get_xpra_command
@@ -28,7 +28,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def displays(cls):
-		if os.name!="posix":
+		if not POSIX:
 			return []
 		return cls.dotxpra.displays()
 
@@ -119,7 +119,7 @@ class ServerTestUtil(unittest.TestCase):
 	def find_X11_display_numbers(cls):
 		#use X11 sockets:
 		X11_displays = set()
-		if os.name=="posix" and os.path.exists("/tmp/.X11-unix"):
+		if POSIX and os.path.exists("/tmp/.X11-unix"):
 			for x in os.listdir("/tmp/.X11-unix"):
 				if x.startswith("X"):
 					try:
@@ -130,7 +130,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def find_X11_displays(cls):
-		if os.name!="posix":
+		if not POSIX:
 			return []
 		return [":%i" % x for x in cls.find_X11_display_numbers()]
 
@@ -155,7 +155,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def start_Xvfb(cls, display=None, screens=[(1024,768)]):
-		assert os.name=="posix"
+		assert POSIX
 		if display is None:
 			display = cls.find_free_display()
 		with OSEnvContext():

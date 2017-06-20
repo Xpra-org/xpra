@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import unittest
 
+from xpra.os_util import POSIX
 from xpra.version_util import version_compat_check, get_host_info, get_version_info, get_platform_info
 
 
@@ -19,7 +19,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
     def test_get_host_info(self):
         attrs = ["pid"]
-        if os.name=="posix":
+        if POSIX:
             attrs += ["uid", "pid"]
         for x in attrs:
             self.assertTrue(x in get_host_info(), "%s not found in host info" % x)

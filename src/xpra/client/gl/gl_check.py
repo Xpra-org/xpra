@@ -8,7 +8,7 @@
 import sys
 import logging
 from xpra.util import envbool
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, PYTHON3
 from xpra.log import Logger, CaptureHandler
 log = Logger("opengl")
 
@@ -45,10 +45,10 @@ if False:
 
 
 #alpha requires gtk3 or *nix only for gtk2:
-DEFAULT_ALPHA = sys.version>'3' or (not WIN32 and not OSX)
+DEFAULT_ALPHA = PYTHON3 or (not WIN32 and not OSX)
 GL_ALPHA_SUPPORTED = envbool("XPRA_ALPHA", DEFAULT_ALPHA)
 #not working with gtk3 yet?
-CAN_DOUBLE_BUFFER = sys.version<'3'
+CAN_DOUBLE_BUFFER = not PYTHON3
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
@@ -316,7 +316,7 @@ def do_check_GL_support(force_enable):
             else:
                 gl_check_error("%s '%s' is blacklisted!" % (blacklisted))
         safe = bool(whitelisted) or not bool(blacklisted)
-        if safe and sys.version_info[0]>2:
+        if safe and PYTHON3:
             log.warn("Warning: OpenGL python3 support is not enabled by default")
             safe = False
         if greylisted and not whitelisted:

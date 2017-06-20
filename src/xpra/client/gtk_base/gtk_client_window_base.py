@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import time
 import math
 
@@ -26,7 +25,7 @@ menulog = Logger("menu")
 grablog = Logger("grab")
 
 
-from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import (AdHocStruct, typedict, envint, envbool,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
@@ -128,7 +127,6 @@ GDK_SCROLL_MAP = {
     }
 
 
-PYTHON3 = sys.version_info[0] == 3
 if PYTHON3:
     unicode = str           #@ReservedAssignment
 

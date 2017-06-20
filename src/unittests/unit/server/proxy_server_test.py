@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, POSIX
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -24,8 +24,7 @@ class ProxyServerTest(ServerTestUtil):
 
 def main():
 	#TODO: re-instate this test on win32 once named pipes are fixed
-	import os
-	if os.name=="posix":
+	if POSIX:
 		unittest.main()
 
 

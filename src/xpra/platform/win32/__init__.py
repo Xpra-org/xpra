@@ -12,6 +12,7 @@ import sys
 import ctypes
 
 from xpra.util import envbool
+from xpra.os_util import PYTHON2
 from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
@@ -272,9 +273,8 @@ def set_wait_for_input():
 
 def do_init():
     if not REDIRECT_OUTPUT:
-        from xpra.util import envbool
         FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", True)
-        if sys.version_info[0]<3 and FIX_UNICODE_OUT:
+        if PYTHON2 and FIX_UNICODE_OUT:
             #don't know why this breaks with Python 3 yet...
             fix_unicode_out()
         #figure out if we want to wait for input at the end:

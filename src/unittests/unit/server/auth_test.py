@@ -11,7 +11,7 @@ import tempfile
 import uuid
 import hmac
 from xpra.util import xor
-from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32, OSX
+from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32, OSX, POSIX
 from xpra.net.protocol import get_digests
 from xpra.net.crypto import get_digest_module
 
@@ -244,7 +244,7 @@ class TestAuth(unittest.TestCase):
 		vf("the password should not match")
 
 	def test_peercred(self):
-		if os.name!="posix" or OSX:
+		if not POSIX or OSX:
 			#can't be used!
 			return
 		#no connection supplied: 

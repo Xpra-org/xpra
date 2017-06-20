@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import sys
 import time
 import unittest
-from xpra.os_util import pollwait, OSX
+from xpra.os_util import pollwait, OSX, POSIX, PYTHON2
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -57,7 +55,7 @@ class ProxyServerTest(ServerTestUtil):
 
 
 def main():
-	if os.name=="posix" and sys.version_info[0]==2 and not OSX:
+	if POSIX and PYTHON2 and not OSX:
 		unittest.main()
 
 

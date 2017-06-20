@@ -36,7 +36,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.util import DEFAULT_PORT
-from xpra.os_util import thread, WIN32, OSX
+from xpra.os_util import thread, WIN32, OSX, PYTHON3
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
@@ -71,8 +71,6 @@ LAUNCHER_DEFAULTS = {
                         "autoconnect"       : False,
                         "ssh_port"          : 22,
                     }
-
-PYTHON3 = sys.version_info[0]==3
 
 
 black   = color_parse("black")

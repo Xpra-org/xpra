@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, PYTHON2
 
 
 TCP_NODELAY = envbool("XPRA_TCP_NODELAY", True)
@@ -74,7 +74,7 @@ if WIN32:
     ERROR_PIPE_NOT_CONNECTED = 233
     ABORT[ERROR_BROKEN_PIPE] = "BROKENPIPE"
     ABORT[ERROR_PIPE_NOT_CONNECTED] = "PIPE_NOT_CONNECTED"
-    if sys.version[0]<"3":
+    if PYTHON2:
         #win32 has problems writing more than 32767 characters to stdout!
         #see: http://bugs.python.org/issue11395
         #(this is fixed in python 3.2 and we don't care about 3.0 or 3.1)

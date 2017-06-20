@@ -5,11 +5,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys, os
+import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, PYTHON2
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
@@ -205,11 +205,11 @@ class ClientWindowBase(ClientWidgetBase):
                         var = atvar[1:len(atvar)-1]     #ie: 'title'
                         default_value = default_values.get(var, "<unknown %s>" % var)
                         value = self._metadata.strget(var, default_value)
-                        if sys.version<'3':
+                        if PYTHON2:
                             value = value.decode("utf-8")
                         return value
                     title = re.sub("@[\w\-]*@", metadata_replace, title)
-                if sys.version<'3':
+                if PYTHON2:
                     utf8_title = title.encode("utf-8")
                 else:
                     utf8_title = title

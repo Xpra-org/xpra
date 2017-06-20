@@ -14,16 +14,20 @@ and
 It is used by xpra.x11.gtk_x11.prop
 """
 
-import sys, os
+import sys
 import struct
+
 from xpra.log import Logger
 log = Logger("x11", "xsettings")
 
+from xpra.util import envbool
+from xpra.os_util import PYTHON3
 
-DEBUG_XSETTINGS = os.environ.get("XPRA_XSETTINGS_DEBUG", "0")=="1"
+DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
 
 
-if sys.version > '3':
+if PYTHON3:
+    long = int              #@ReservedAssignment
     unicode = str           #@ReservedAssignment
 
 
@@ -46,9 +50,6 @@ XSettingsNames = {
                 XSettingsTypeString     : "String",
                 XSettingsTypeColor      : "Color",
                 }
-
-if sys.version>='3':
-    long = int              #@ReservedAssignment
 
 
 XSETTINGS_CACHE = {}

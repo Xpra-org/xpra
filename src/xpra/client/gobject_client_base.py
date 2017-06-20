@@ -13,7 +13,7 @@ log = Logger("gobject", "client")
 
 import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
-from xpra.os_util import bytestostr, get_hex_uuid
+from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
@@ -223,7 +223,7 @@ class InfoXpraClient(CommandConnectClient):
                 #compatibility mode:
                 for k in sorted_nicely(self.server_capabilities.keys()):
                     v = self.server_capabilities.get(k)
-                    if sys.version_info[0]>=3:
+                    if PYTHON3:
                         #FIXME: this is a nasty and horrible python3 workaround (yet again)
                         #we want to print bytes as strings without the ugly 'b' prefix..
                         #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
