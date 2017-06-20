@@ -6,7 +6,7 @@
 import os
 import ctypes
 from xpra.util import roundup
-from xpra.os_util import memoryview_to_bytes, WIN32
+from xpra.os_util import memoryview_to_bytes, WIN32, POSIX
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
@@ -44,7 +44,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
             delete = False
             mmap_temp_file = None
         else:
-            assert os.name=="posix"
+            assert POSIX
             if filename:
                 if os.path.exists(filename):
                     fd = os.open(filename, os.O_EXCL | os.O_RDWR)

@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -246,7 +246,7 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     return v
 
 def create_runtime_dir(uid, gid):
-    if os.name!="posix" or OSX or getuid()!=0 or (uid==0 and gid==0):
+    if not POSIX or OSX or getuid()!=0 or (uid==0 and gid==0):
         return
     #workarounds:
     #* some distros don't set a correct value,
@@ -291,7 +291,7 @@ def start_dbus(dbus_launch):
         return 0, {}
     try:
         def preexec():
-            assert os.name=="posix"
+            assert POSIX
             os.setsid()
             close_fds()
         proc = subprocess.Popen(dbus_launch, stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, preexec_fn=preexec)
@@ -430,9 +430,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     xauth_data = None
     if start_vfb:
         xauth_data = get_hex_uuid()
+    ROOT = POSIX and getuid()==0
 
     def fchown(fd):
-        if os.name=="posix" and uid!=getuid() or gid!=getgid():
+        if POSIX and uid!=getuid() or gid!=getgid():
             try:
                 os.fchown(fd, uid, gid)
             except:
@@ -450,7 +451,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # if pam is present, try to create a new session:
     pam = None
-    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
+    PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
         from xpra.server.pam import pam_session #@UnresolvedImport
         pam = pam_session(uid=uid)
@@ -481,7 +482,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.pidfile:
         write_pidfile(opts.pidfile, withfd=fchown)
 
-    if os.name=="posix" and getuid()!=0:
+    if POSIX and getuid()!=0:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         write_runner_shell_scripts(script, withfd=fchown)
@@ -593,7 +594,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except:
             pass
     sanitize_env()
-    if os.name=="posix":
+    if POSIX:
         if xrd:
             os.environ["XDG_RUNTIME_DIR"] = xrd
         os.environ["XDG_SESSION_TYPE"] = "x11"
@@ -657,7 +658,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #xvfb problem: exit now
         return  1
 
-    if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
+    if ROOT and (uid!=0 or gid!=0):
         setuidgid(uid, gid)
         os.environ.update({
             "HOME"      : home,
@@ -668,7 +669,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     display = None
     if not proxying:
         no_gtk()
-        if os.name=="posix" and starting or starting_desktop:
+        if POSIX and starting or starting_desktop:
             #check that we can access the X11 display:
             if not verify_display_ready(xvfb, display_name, shadowing):
                 return 1
@@ -721,7 +722,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             if xvfb_pid is not None:
                 #save the new pid (we should have one):
                 save_xvfb_pid(xvfb_pid)
-            if os.name=="posix" and opts.dbus_launch:
+            if POSIX and opts.dbus_launch:
                 #start a dbus server:
                 dbus_pid = 0
                 dbus_env = {}

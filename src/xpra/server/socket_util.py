@@ -7,7 +7,7 @@ import os.path
 import socket
 
 from xpra.scripts.config import InitException
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX
+from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 
@@ -317,7 +317,7 @@ def handle_socket_error(sockpath, e):
         dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
         if not os.path.exists(dirname):
             log.warn(" %s does not exist", dirname)
-        if os.name=="posix":
+        if POSIX:
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)

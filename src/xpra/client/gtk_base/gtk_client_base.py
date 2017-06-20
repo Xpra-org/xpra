@@ -26,7 +26,7 @@ filelog = Logger("gtk", "client", "file")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEFAULT_METADATA_SUPPORTED
-from xpra.os_util import bytestostr, WIN32, OSX
+from xpra.os_util import bytestostr, WIN32, OSX, POSIX
 from xpra.simple_stats import std_unit
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
@@ -446,7 +446,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             #added in 0.15:
             ms += ["command", "workspace", "above", "below", "sticky",
                    "set-initial-position"]  #0.17
-        if os.name=="posix":
+        if POSIX:
             #this is only really supported on X11, but posix is easier to check for..
             #"strut" and maybe even "fullscreen-monitors" could also be supported on other platforms I guess
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
@@ -455,7 +455,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self._set_window_menu:
             ms += ["menu"]
         #figure out if we can handle the "global menu" stuff:
-        if os.name=="posix" and not OSX:
+        if POSIX and not OSX:
             try:
                 from xpra.dbus.helper import DBusHelper
                 assert DBusHelper

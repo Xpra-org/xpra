@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import binascii
 import hmac
 
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, POSIX
 from xpra.util import xor, parse_simple_dict
 from xpra.net.crypto import get_digest_module
 
@@ -31,7 +31,7 @@ def getuid(v):
             return int(v)
         except:
             log("uid '%s' is not an int", v)
-    if os.name=="posix":
+    if POSIX:
         try:
             import pwd
             return pwd.getpwnam(v or "nobody").pw_uid
@@ -46,7 +46,7 @@ def getgid(v):
             return int(v)
         except:
             log("gid '%s' is not an int", v)
-    if os.name=="posix":
+    if POSIX:
         try:
             import grp          #@UnresolvedImport
             return grp.getgrnam(v or "nobody").gr_gid

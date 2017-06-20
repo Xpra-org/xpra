@@ -26,7 +26,7 @@ menulog = Logger("menu")
 grablog = Logger("grab")
 
 
-from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX
+from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX, POSIX
 from xpra.util import (AdHocStruct, typedict, envint, envbool,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
@@ -54,7 +54,7 @@ CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
 USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", True)
 SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
-if os.name=="posix" and USE_X11_BINDINGS:
+if POSIX and USE_X11_BINDINGS:
     try:
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
@@ -80,7 +80,7 @@ if os.name=="posix" and USE_X11_BINDINGS:
 
 
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
-MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", os.name=="posix")
+MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)

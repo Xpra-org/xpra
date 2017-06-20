@@ -39,7 +39,6 @@ DEFAULT_PULSEAUDIO = None   #auto
 if OSX or WIN32:
     DEFAULT_PULSEAUDIO = False
 
-POSIX = os.name=="posix"
 PYTHON3 = sys.version_info[0]>=3
 
 

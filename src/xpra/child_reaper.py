@@ -13,11 +13,12 @@ import os
 import signal
 
 from xpra.util import envint, envbool
+from xpra.os_util import POSIX
 from xpra.log import Logger
 log = Logger("server", "util")
 
 
-USE_PROCESS_POLLING = os.name!="posix" or envbool("XPRA_USE_PROCESS_POLLING")
+USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
 POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
 
 
@@ -173,7 +174,7 @@ class ChildReaper(object):
 
     def reap(self):
         self.poll()
-        while os.name=="posix":
+        while POSIX:
             log("reap() calling os.waitpid%s", (-1, "WNOHANG"))
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)

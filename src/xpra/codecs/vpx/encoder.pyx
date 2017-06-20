@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
-from xpra.os_util import bytestostr, WIN32, OSX
+from xpra.os_util import bytestostr, WIN32, OSX, POSIX
 from xpra.util import AtomicInteger, envint, envbool
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
@@ -691,7 +691,7 @@ def selftest(full=False):
         SAVE_TO_FILE = None
         CODECS = testencoder(encoder, full)
         #this is expensive, so don't run it unless "full" is set:
-        if full and os.name=="posix" and not OSX:
+        if full and POSIX and not OSX:
             #but first, try to figure out if we have enough memory to do this
             try:
                 import subprocess

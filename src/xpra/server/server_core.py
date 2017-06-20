@@ -31,7 +31,7 @@ from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
@@ -316,7 +316,7 @@ class ServerCore(object):
                         "multifile" : multifile_auth,
                         "file"      : file_auth,
                         }
-        if os.name=="posix" and not OSX:
+        if POSIX and not OSX:
             AUTH_MODULES["peercred"] = peercred_auth
         try:
             from xpra.server.auth import sqlite_auth
@@ -480,7 +480,7 @@ class ServerCore(object):
         except:
             log("platform name error:", exc_info=True)
             osinfo = ""
-        if os.name=="posix":
+        if POSIX:
             uid = os.getuid()
             gid = os.getgid()
             try:

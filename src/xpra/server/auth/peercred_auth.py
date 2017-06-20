@@ -7,7 +7,7 @@ import os
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.dotxpra_common import osexpand
-from xpra.os_util import get_peercred, get_group_id
+from xpra.os_util import get_peercred, get_group_id, POSIX
 from xpra.util import csv
 assert init and log #tests will disable logging from here
 
@@ -19,7 +19,7 @@ class Authenticator(SysAuthenticator):
         log("peercred.Authenticator(%s, %s)", username, kwargs)
         self.uid = -1
         self.gid = -1
-        if os.name!="posix":
+        if not POSIX:
             log.warn("Warning: peercred authentication is not supported on %s", os.name)
             return
         connection = kwargs.get("connection", None)

@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
-from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX
+from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX, POSIX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -70,7 +70,7 @@ def info(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        if os.name=="posix":
+        if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_INFO, msg)
 
@@ -83,7 +83,7 @@ def warn(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        if os.name=="posix":
+        if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_WARNING, msg)
 
@@ -96,7 +96,7 @@ def error(msg):
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
     except:
-        if os.name=="posix":
+        if POSIX:
             import syslog
             syslog.syslog(syslog.LOG_ERR, msg)
 
@@ -372,7 +372,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start-env", action="append",
                       dest="start_env", default=list(defaults.start_env or []),
                       help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")]))
-    if os.name=="posix":
+    if POSIX:
         legacy_bool_parse("systemd-run")
         group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
                           dest="systemd_run", default=defaults.systemd_run,
@@ -399,7 +399,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "html"      : ""})
     legacy_bool_parse("daemon")
     legacy_bool_parse("attach")
-    if os.name=="posix" and os.getuid()==0:
+    if POSIX and os.getuid()==0:
         group.add_option("--uid", action="store",
                           dest="uid", default=defaults.uid,
                           help="The user id to change to when the server is started by root. Default: %s." % defaults.uid)
@@ -627,7 +627,7 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="global_menus", default=defaults.global_menus, metavar="yes|no",
                       help="Forward application global menus. Default: %s." % enabled_str(defaults.global_menus))
     legacy_bool_parse("xsettings")
-    if os.name=="posix":
+    if POSIX:
         group.add_option("--xsettings", action="store", metavar="yes|no",
                           dest="xsettings", default=defaults.xsettings,
                           help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
@@ -951,7 +951,7 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({"vsock-auth" : ""})
     ignore({"password"           : defaults.password})
-    if os.name=="posix":
+    if POSIX:
         group.add_option("--mmap-group", action="store_true",
                           dest="mmap_group", default=defaults.mmap_group,
                           help="When creating the mmap file with the client, set the group permission on the mmap file to the same value as the owner of the server socket file we connect to (default: '%default')")
@@ -1197,7 +1197,7 @@ def configure_logging(options, mode):
     logging.root.setLevel(logging.DEBUG)
 
     #register posix signals for debugging:
-    if os.name=="posix":
+    if POSIX:
         def sigusr1(*args):
             dump_frames()
         signal.signal(signal.SIGUSR1, sigusr1)
@@ -1271,7 +1271,7 @@ def isdisplaytype(args, dtype):
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if os.name=="posix" and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
+    if POSIX and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
     ssh_display = isdisplaytype(args, "ssh")
@@ -1318,7 +1318,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             cwd = os.getcwd()
             env = os.environ.copy()
             start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
-            if start_via_proxy is not False and (os.name!="posix" or getuid()!=0) and options.daemon:
+            if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
                 try:
                     from xpra import client
                     assert client
@@ -1904,7 +1904,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     log.error(" %s", cmd_info)
                 raise ConnectionClosedException(error_message)
         def stop_tunnel():
-            if os.name=="posix":
+            if POSIX:
                 #on posix, the tunnel may be shared with other processes
                 #so don't kill it... which may leave it behind after use.
                 #but at least make sure we close all the pipes:
@@ -2609,7 +2609,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     else:
         cmd.append("--systemd-run=no")
         cmd.append("--daemon=no")
-        if os.name=="posix" and getuid()==0 and (uid!=0 or gid!=0):
+        if POSIX and getuid()==0 and (uid!=0 or gid!=0):
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
@@ -2957,7 +2957,7 @@ def run_showconfig(options, args):
     fixup_options(d)
     #this one is normally only probed at build time:
     #(so probe it here again)
-    if os.name=="posix":
+    if POSIX:
         try:
             from xpra.platform.pycups_printing import get_printer_definition
             for mimetype in ("pdf", "postscript"):

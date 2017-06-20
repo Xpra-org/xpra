@@ -22,7 +22,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.os_util import WIN32, monotonic_time
+from xpra.os_util import WIN32, POSIX, monotonic_time
 from xpra.util import csv, envint, envbool, repr_ellipsized
 from xpra.platform.features import CLIPBOARD_GREEDY
 
@@ -313,7 +313,7 @@ class ClipboardProtocolHelperBase(object):
         log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s)", target, dtype, dformat, type(data), len(data or ""))
         if dformat == 32:
             #you should be using gdk_clipboard for atom support!
-            if dtype in ("ATOM", "ATOM_PAIR") and os.name=="posix":
+            if dtype in ("ATOM", "ATOM_PAIR") and POSIX:
                 #we cannot handle gdk atoms here (but gdk_clipboard does)
                 return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4

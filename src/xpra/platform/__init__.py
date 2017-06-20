@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -139,12 +139,12 @@ def do_get_username():
 
 
 def platform_import(where, pm, required, *imports):
-    from xpra.os_util import OSX
+    from xpra.os_util import OSX, POSIX
     if os.name == "nt":
         p = "win32"
     elif OSX:
         p = "darwin"
-    elif os.name == "posix":
+    elif POSIX:
         p = "xposix"
     else:
         raise OSError("Unknown OS %s" % (os.name))

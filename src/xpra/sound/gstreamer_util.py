@@ -12,7 +12,7 @@ from xpra.sound.common import FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OG
                                 VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import csv, engs, parse_simple_dict, envint, envbool
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
@@ -542,7 +542,7 @@ def get_source_plugins():
         sources.append("directsoundsrc")
         #sources.append("wasapisrc")
     sources.append("autoaudiosrc")
-    if os.name=="posix":
+    if POSIX:
         sources += ["alsasrc",
                     "osssrc", "oss4src",
                     "jackaudiosrc"]
@@ -586,7 +586,7 @@ def get_sink_plugins():
             SINKS.append("pulsesink")
     except ImportError as e:
         log("get_sink_plugins() no pulsesink: %s", e)
-    if os.name=="posix":
+    if POSIX:
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
 

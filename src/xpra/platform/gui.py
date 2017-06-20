@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -281,7 +281,7 @@ platform_import(globals(), "gui", False,
 def main():
     from xpra.platform import program_context
     from xpra.util import print_nested_dict
-    from xpra.os_util import OSX
+    from xpra.os_util import OSX, POSIX
     from xpra.log import enable_color
     with program_context("GUI-Properties"):
         enable_color()
@@ -293,7 +293,7 @@ def main():
                 x.enable_debug()
 
         #naughty, but how else can I hook this up?
-        if os.name=="posix" and not OSX:
+        if POSIX and not OSX:
             try:
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
                 init_posix_display_source()

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015, 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
 from xpra.net.protocol import Protocol
-from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, WIN32
+from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, WIN32, POSIX
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
 log = Logger("util")
@@ -277,7 +277,7 @@ class subprocess_callee(object):
 def exec_kwargs():
     kwargs = {}
     stderr = sys.stderr.fileno()
-    if os.name=="posix":
+    if POSIX:
         kwargs["close_fds"] = True
     elif WIN32:
         from xpra.platform.win32 import REDIRECT_OUTPUT

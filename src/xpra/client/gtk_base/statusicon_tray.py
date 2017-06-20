@@ -7,7 +7,7 @@
 # A tray implemented using gtk.StatusIcon
 
 import os
-from xpra.os_util import WIN32, OSX
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
@@ -98,7 +98,7 @@ class GTKStatusIconTray(TrayBase):
         assert self.tray_widget
         #on X11, if we don't have an xid, don't bother querying its geometry,
         #as this would trigger some ugly GTK warnings we can do nothing about
-        if os.name=="posix" and os.environ.get("DISPLAY") and self.tray_widget.get_x11_window_id()==0:
+        if POSIX and os.environ.get("DISPLAY") and self.tray_widget.get_x11_window_id()==0:
             ag = None
         else:
             ag = self.tray_widget.get_geometry()

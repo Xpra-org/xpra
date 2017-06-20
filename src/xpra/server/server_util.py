@@ -6,7 +6,7 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, shellsub, getuid, getgid
+from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid
 from xpra.platform.dotxpra import osexpand, norm_makepath
 from xpra.scripts.config import InitException
 
@@ -146,7 +146,7 @@ def find_log_dir(username="", uid=0, gid=0):
         if not os.path.exists(v):
             try:
                 os.mkdir(v, 0o700)
-                if os.name=="posix" and uid!=getuid() or gid!=getgid():
+                if POSIX and uid!=getuid() or gid!=getgid():
                     try:
                         os.chown(v, uid, gid)
                     except:

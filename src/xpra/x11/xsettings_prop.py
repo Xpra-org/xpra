@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -158,6 +158,7 @@ def set_settings(disp, d):
 
 def main():
     from xpra.platform.gui import init as gui_init
+    from xpra.os_util import POSIX
     from xpra.platform import program_context
     with program_context("XSettings"):
         gui_init()
@@ -168,7 +169,7 @@ def main():
                 x.enable_debug()
 
         #naughty, but how else can I hook this up?
-        if os.name!="posix":
+        if not POSIX:
             print("xsettings require a posix OS")
             return 1
 

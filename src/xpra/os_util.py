@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -58,6 +58,10 @@ OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
 FREEBSD  = sys.platform.startswith("freebsd")
 
+POSIX = os.name=="posix"
+PYTHON2 = sys.version_info[0]==2
+PYTHON3 = sys.version_info[0]==3
+
 
 if sys.version_info[0] < 3:
     def strtobytes(x):
@@ -88,22 +92,22 @@ def memoryview_to_bytes(v):
 
 def setsid():
     #run in a new session
-    if os.name=="posix":
+    if POSIX:
         os.setsid()
 
 
 def getuid():
-    if os.name=="posix":
+    if POSIX:
         return os.getuid()
     return 0
 
 def getgid():
-    if os.name=="posix":
+    if POSIX:
         return os.getgid()
     return 0
 
 def get_username_for_uid(uid):
-    if os.name=="posix":
+    if POSIX:
         from pwd import getpwuid
         try:
             return getpwuid(uid).pw_name
@@ -112,7 +116,7 @@ def get_username_for_uid(uid):
     return ""
 
 def get_home_for_uid(uid):
-    if os.name=="posix":
+    if POSIX:
         from pwd import getpwuid
         try:
             return getpwuid(uid).pw_dir
@@ -121,7 +125,7 @@ def get_home_for_uid(uid):
     return ""
 
 def get_groups(username):
-    if os.name=="posix":
+    if POSIX:
         import grp      #@UnresolvedImport
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
@@ -182,7 +186,7 @@ def get_machine_id():
         (which is ok since we only used it on posix at present)
     """
     v = u""
-    if os.name=="posix":
+    if POSIX:
         for filename in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
             v = load_binary_file(filename)
             if v is not None:
@@ -199,7 +203,7 @@ def get_user_uuid():
     def uupdate(ustr):
         u.update(ustr.encode("utf-8"))
     uupdate(get_machine_id())
-    if os.name=="posix":
+    if POSIX:
         uupdate(u"/")
         uupdate(str(os.getuid()))
         uupdate(u"/")
@@ -217,7 +221,7 @@ except Exception as e:
     pass
 
 def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
-    if os.name!="posix":
+    if not POSIX:
         return False
     try:
         if get_linux_distribution()[0]==variant:
@@ -374,7 +378,7 @@ class HideStdErr(object):
         self.savedstderr = None
 
     def __enter__(self):
-        if os.name=="posix" and os.getppid()==1:
+        if POSIX and os.getppid()==1:
             #this interferes with server daemonizing?
             return
         sys.stderr.flush() # <--- important when redirecting to files
@@ -463,7 +467,7 @@ def find_lib(libname):
     #it would be better to rely on dlopen to find the paths
     #but I cannot find a way of getting ctypes to tell us the path
     #it found the library in
-    assert os.name=="posix"
+    assert POSIX
     libpaths = os.environ.get("LD_LIBRARY_PATH", "").split(":")
     libpaths.append("/usr/lib64")
     libpaths.append("/usr/lib")
@@ -503,7 +507,7 @@ def get_status_output(*args, **kwargs):
 
 
 def is_systemd_pid1():
-    if not os.name=="posix":
+    if not POSIX:
         return False
     d = load_binary_file("/proc/1/cmdline")
     return d and d.find(b"/systemd")>=0
@@ -517,7 +521,7 @@ def get_ssh_port():
 
 
 def setuidgid(uid, gid):
-    if os.name!="posix":
+    if not POSIX:
         return
     from xpra.log import Logger
     log = Logger("server")

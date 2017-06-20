@@ -13,7 +13,7 @@ platform_import(globals(), "keyboard", True,
 
 def main():
     import sys
-    from xpra.os_util import WIN32, OSX, bytestostr
+    from xpra.os_util import WIN32, OSX, POSIX, bytestostr
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color
@@ -32,7 +32,7 @@ def main():
 
         #naughty, but how else can I hook this up?
         import os
-        if os.name=="posix" and not OSX:
+        if POSIX and not OSX:
             try:
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
                 init_posix_display_source()
@@ -56,7 +56,7 @@ def main():
         print("Variants:   %s" % csv("'%s'" % x for x in (variants or [])))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))
-        if verbose and os.name=="posix":
+        if verbose and POSIX:
             keysyms = keyboard.get_x11_keymap()
             if keysyms:
                 print("Keysyms:")

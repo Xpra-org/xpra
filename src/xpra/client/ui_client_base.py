@@ -60,7 +60,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, WIN32, OSX
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -483,7 +483,7 @@ class UIXpraClient(XpraClientBase):
             self.client_supports_notifications = self.notifier is not None
 
         #audio tagging:
-        if os.name=="posix":
+        if POSIX:
             try:
                 from xpra import sound
                 assert sound
@@ -1704,7 +1704,7 @@ class UIXpraClient(XpraClientBase):
     def _process_ping(self, packet):
         echotime = packet[1]
         l1,l2,l3 = 0,0,0
-        if os.name=="posix":
+        if POSIX:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()
                 l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
@@ -2815,7 +2815,7 @@ class UIXpraClient(XpraClientBase):
                 pass
             metadata["fullscreen"] = True
             #FIXME: try to figure out the monitors we go fullscreen on for X11:
-            #if os.name=="posix":
+            #if POSIX:
             #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
         return metadata
 

@@ -14,7 +14,7 @@ import os.path
 
 from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
-from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid
+from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, POSIX
 from xpra.platform.dotxpra import osexpand
 
 
@@ -25,7 +25,7 @@ assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
 def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
-    if os.name!="posix":
+    if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
@@ -60,7 +60,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         if not os.path.exists(xorg_log_dir):
             try:
                 os.mkdir(xorg_log_dir, 0o700)
-                if os.name=="posix" and uid!=getuid() or gid!=getgid():
+                if POSIX and uid!=getuid() or gid!=getgid():
                     try:
                         os.chown(xorg_log_dir, uid, gid)
                     except:
@@ -94,7 +94,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         def preexec():
             setsid()
-            if os.name=="posix" and getuid()==0 and uid:
+            if POSIX and getuid()==0 and uid:
                 setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
         #print("xvfb_cmd=%s" % (xvfb_cmd, ))
