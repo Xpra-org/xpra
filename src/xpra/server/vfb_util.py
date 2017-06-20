@@ -62,7 +62,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
                 os.mkdir(xorg_log_dir, 0o700)
                 if POSIX and uid!=getuid() or gid!=getgid():
                     try:
-                        os.chown(xorg_log_dir, uid, gid)
+                        os.lchown(xorg_log_dir, uid, gid)
                     except:
                         pass
             except OSError as e:

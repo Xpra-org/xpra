@@ -267,11 +267,11 @@ def create_runtime_dir(uid, gid):
         return None
     if not os.path.exists(xrd):
         os.mkdir(xrd, 0o700)
-        os.chown(xrd, uid, gid)
+        os.lchown(xrd, uid, gid)
     xpra_dir = os.path.join(xrd, "xpra")
     if not os.path.exists(xpra_dir):
         os.mkdir(xpra_dir, 0o700)
-        os.chown(xpra_dir, uid, gid)
+        os.lchown(xpra_dir, uid, gid)
     return xrd
 
 

@@ -143,7 +143,7 @@ def find_log_dir(username="", uid=0, gid=0):
                 os.mkdir(v, 0o700)
                 if POSIX and uid!=getuid() or gid!=getgid():
                     try:
-                        os.chown(v, uid, gid)
+                        os.lchown(v, uid, gid)
                     except:
                         pass
             except Exception as e:

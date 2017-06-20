@@ -59,7 +59,7 @@ def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="60
         group_id = get_group_id("xpra")
         if group_id>=0:
             try:
-                os.chown(sockpath, -1, group_id)
+                os.lchown(sockpath, -1, group_id)
             except Exception as e:
                 log = Logger("network")
                 log.warn("Warning: failed to set 'xpra' group ownership")
