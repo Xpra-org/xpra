@@ -195,7 +195,7 @@ def select_log_file(log_dir, log_file, display_name):
     return logpath
 
 
-def daemonize(logfd):
+def daemonize():
     os.chdir("/")
     if os.fork():
         os._exit(0)
@@ -207,7 +207,7 @@ def daemonize(logfd):
     # and closing those file descriptors definitively
     old_fd_stdout = os.dup(1)
     old_fd_stderr = os.dup(2)
-    close_all_fds(exceptions=[logfd,old_fd_stdout,old_fd_stderr])
+    close_all_fds(exceptions=[old_fd_stdout,old_fd_stderr])
     fd0 = os.open("/dev/null", os.O_RDONLY)
     if fd0 != 0:
         os.dup2(fd0, 0)
@@ -215,13 +215,6 @@ def daemonize(logfd):
     # reopen STDIO files
     old_stdout = os.fdopen(old_fd_stdout, "w", 1)
     old_stderr = os.fdopen(old_fd_stderr, "w", 1)
-    # replace standard stdout/stderr by the log file
-    os.dup2(logfd, 1)
-    os.dup2(logfd, 2)
-    os.close(logfd)
-    # Make these line-buffered:
-    sys.stdout = os.fdopen(1, "w", 1)
-    sys.stderr = os.fdopen(2, "w", 1)
     return (old_stdout, old_stderr)
 
 

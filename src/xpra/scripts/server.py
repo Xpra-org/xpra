@@ -156,6 +156,33 @@ def display_name_check(display_name):
         pass
 
 
+def print_DE_warnings(desktop_display, pulseaudio, notifications, dbus_launch):
+    de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
+    if not de:
+        return
+    warnings = []
+    from xpra.log import Logger
+    log = Logger("server")
+    if pulseaudio is not False:
+        try:
+            xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
+            out,_ = xprop.communicate()
+            for x in out.splitlines():
+                if x.startswith("PULSE_SERVER"):
+                    #found an existing pulseaudio server
+                    warnings.append("pulseaudio")
+                    break
+        except:
+            pass    #don't care, this is just to decide if we show an informative warning or not
+    if notifications and not dbus_launch:
+        warnings.append("notifications")
+    if warnings:
+        log.warn("Warning: xpra start from an existing '%s' desktop session", de)
+        log.warn(" %s forwarding may not work", " ".join(warnings))
+        log.warn(" try using a clean environment, a dedicated user,")
+        log.warn(" or turn off %s", " and ".join(warnings))
+
+
 def sanitize_env():
     def unsetenv(*varnames):
         for x in varnames:
@@ -221,8 +248,10 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
 def create_runtime_dir(uid, gid):
     if os.name!="posix" or OSX or getuid()!=0 or (uid==0 and gid==0):
         return
-    #workarounds: some distros don't set a correct value,
-    #or they don't create the directory for us
+    #workarounds:
+    #* some distros don't set a correct value,
+    #* or they don't create the directory for us,
+    #* or pam_open is going to create the directory but needs time to do so..
     xrd = os.environ.get("XDG_RUNTIME_DIR", "")
     if xrd.endswith("/user/0"):
         #don't keep root's directory, as this would not work:
@@ -243,16 +272,6 @@ def create_runtime_dir(uid, gid):
     if not os.path.exists(xpra_dir):
         os.mkdir(xpra_dir, 0o700)
         os.chown(xpra_dir, uid, gid)
-    #keep this open to try to make sure
-    #that this directory won't be deleted until we no longer need it
-    import tempfile
-    dirlock = tempfile.NamedTemporaryFile(suffix='lock', prefix='%s' % os.getpid(), dir=xpra_dir, delete=False)
-    def unlock():
-        try:
-            os.unlink(dirlock.name)
-        except OSError:
-            pass
-    add_cleanup(unlock)
     return xrd
 
 
@@ -408,6 +427,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     gid = int(opts.gid)
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
+    xauth_data = None
+    if start_vfb:
+        xauth_data = get_hex_uuid()
+
     def fchown(fd):
         if os.name=="posix" and uid!=getuid() or gid!=getgid():
             try:
@@ -415,7 +438,54 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             except:
                 pass
 
+    stdout = sys.stdout
+    stderr = sys.stderr
+    # Daemonize:
+    if opts.daemon:
+        #daemonize will chdir to "/", so try to use an absolute path:
+        if opts.password_file:
+            opts.password_file = os.path.abspath(opts.password_file)
+        from xpra.server.server_util import daemonize
+        stdout, stderr = daemonize()
+
+    # if pam is present, try to create a new session:
+    pam = None
+    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
+    if PAM_OPEN:
+        from xpra.server.pam import pam_session #@UnresolvedImport
+        pam = pam_session(uid=uid)
+        env = {
+               #"XDG_SEAT"               : "seat1",
+               #"XDG_VTNR"               : "0",
+               "XDG_SESSION_TYPE"       : "x11",
+               #"XDG_SESSION_CLASS"      : "user",
+               "XDG_SESSION_DESKTOP"    : "xpra",
+               }
+        pam.start()
+        pam.set_env(env)
+        items = {}
+        if display_name.startswith(":"):
+            items["XDISPLAY"] = display_name
+        if xauth_data:
+            items["XAUTHDATA"] = xauth_data
+        pam.set_items(items)
+        if pam.open():
+            #we can't close it, because we're not going to be root any more,
+            #but since we're the process leader for the session,
+            #terminating will also close the session
+            #add_cleanup(pam.close)
+            pass
+
     xrd = create_runtime_dir(uid, gid)
+
+    if opts.pidfile:
+        write_pidfile(opts.pidfile, withfd=fchown)
+
+    if os.name=="posix" and getuid()!=0:
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        write_runner_shell_scripts(script, withfd=fchown)
+
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
@@ -428,58 +498,30 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #this is used by Xdummy for the Xorg log file
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
-    stdout = sys.stdout
-    stderr = sys.stderr
-    # Daemonize:
-    if opts.daemon:
-        from xpra.server.server_util import select_log_file, open_log_file, daemonize
-        #daemonize will chdir to "/", so try to use an absolute path:
-        if opts.password_file:
-            opts.password_file = os.path.abspath(opts.password_file)
-        # At this point we may not know the display name,
-        # so log_filename0 may point to a temporary file which we will rename later
-        log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
-        logfd = open_log_file(log_filename0)
-        fchown(logfd)
-        assert logfd > 2
-        stdout, stderr = daemonize(logfd)
-        info("Entering daemon mode; "
-                 + "any further errors will be reported to:\n"
-                 + ("  %s\n" % log_filename0))
 
-    if opts.pidfile:
-        write_pidfile(opts.pidfile, withfd=fchown)
+        if opts.daemon:
+            from xpra.server.server_util import select_log_file, open_log_file
+            # At this point we may not know the display name,
+            # so log_filename0 may point to a temporary file which we will rename later
+            log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
+            logfd = open_log_file(log_filename0)
+            # replace standard stdout/stderr by the log file
+            os.dup2(logfd, 1)
+            os.dup2(logfd, 2)
+            os.close(logfd)
+            # Make these line-buffered:
+            sys.stdout = os.fdopen(1, "w", 1)
+            sys.stderr = os.fdopen(2, "w", 1)
+            info("Entering daemon mode; "
+                     + "any further errors will be reported to:\n"
+                     + ("  %s\n" % log_filename0))
 
-    if os.name=="posix" and getuid()!=0:
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        write_runner_shell_scripts(script, withfd=fchown)
+    #warn early about this:
+    if (starting or starting_desktop) and desktop_display:
+        print_DE_warnings(desktop_display, opts.pulseaudio, opts.notifications, opts.dbus_launch)
 
     from xpra.log import Logger
     log = Logger("server")
-    #warn early about this:
-    if (starting or starting_desktop) and desktop_display:
-        de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
-        if de:
-            warnings = []
-            if opts.pulseaudio is not False:
-                try:
-                    xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
-                    out,_ = xprop.communicate()
-                    for x in out.splitlines():
-                        if x.startswith("PULSE_SERVER"):
-                            #found an existing pulseaudio server
-                            warnings.append("pulseaudio")
-                            break
-                except:
-                    pass    #don't care, this is just to decide if we show an informative warning or not
-            if opts.notifications and not opts.dbus_launch:
-                warnings.append("notifications")
-            if warnings:
-                log.warn("Warning: xpra start from an existing '%s' desktop session", de)
-                log.warn(" %s forwarding may not work", " ".join(warnings))
-                log.warn(" try using a clean environment, a dedicated user,")
-                log.warn(" or turn off %s", " and ".join(warnings))
 
     mdns_recs = []
     sockets = []
@@ -565,38 +607,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ["XDG_SESSION_TYPE"] = "x11"
         os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
-
-    xauth_data = None
-    if start_vfb:
-        xauth_data = get_hex_uuid()
-
-    # if pam is present, try to create a new session:
-    pam = None
-    PAM_OPEN = os.name=="posix" and envbool("XPRA_PAM_OPEN", os.getuid()==0 and uid!=0)
-    if PAM_OPEN:
-        from xpra.server.pam import pam_session #@UnresolvedImport
-        pam = pam_session(uid=uid)
-        env = {
-               #"XDG_SEAT"               : "seat1",
-               #"XDG_VTNR"               : "0",
-               "XDG_SESSION_TYPE"       : "x11",
-               #"XDG_SESSION_CLASS"      : "user",
-               "XDG_SESSION_DESKTOP"    : "xpra",
-               }
-        pam.start()
-        pam.set_env(env)
-        items = {}
-        if display_name.startswith(":"):
-            items["XDISPLAY"] = display_name
-        if xauth_data:
-            items["XAUTHDATA"] = xauth_data
-        pam.set_items(items)
-        if pam.open():
-            #we can't close it, because we're not going to be root any more,
-            #but since we're the process leader for the session,
-            #terminating will also close the session
-            #add_cleanup(pam.close)
-            pass
 
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
