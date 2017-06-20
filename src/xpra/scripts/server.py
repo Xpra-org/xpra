@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, getgid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -432,13 +432,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         xauth_data = get_hex_uuid()
     ROOT = POSIX and getuid()==0
 
-    def fchown(fd):
-        if POSIX and uid!=getuid() or gid!=getgid():
-            try:
-                os.fchown(fd, uid, gid)
-            except:
-                pass
-
     stdout = sys.stdout
     stderr = sys.stderr
     # Daemonize:
@@ -480,12 +473,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     xrd = create_runtime_dir(uid, gid)
 
     if opts.pidfile:
-        write_pidfile(opts.pidfile, withfd=fchown)
+        write_pidfile(opts.pidfile, uid, gid)
 
     if POSIX and not ROOT:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
-        write_runner_shell_scripts(script, withfd=fchown)
+        write_runner_shell_scripts(script)
 
     if start_vfb or opts.daemon:
         #we will probably need a log dir
@@ -504,6 +497,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
             log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
             logfd = open_log_file(log_filename0)
+            if ROOT and (uid>0 or gid>0):
+                try:
+                    os.fchown(logfd, uid, gid)
+                except:
+                    pass
             stdout, stderr = redirect_std_to_log(logfd)
             stdout.write("Entering daemon mode; "
                      + "any further errors will be reported to:\n"

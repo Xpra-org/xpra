@@ -93,7 +93,7 @@ fi
 """)
     return "".join(script)
 
-def write_runner_shell_scripts(contents, overwrite=True, withfd=None):
+def write_runner_shell_scripts(contents, overwrite=True):
     # This used to be given a display-specific name, but now we give it a
     # single fixed name and if multiple servers are started then the last one
     # will clobber the rest.  This isn't great, but the tradeoff is that it
@@ -110,9 +110,6 @@ def write_runner_shell_scripts(contents, overwrite=True, withfd=None):
         if not os.path.exists(scriptdir):
             try:
                 os.mkdir(scriptdir, 0o700)
-                with open(scriptdir, os.O_DIRECTORY) as fd:
-                    if withfd:
-                        withfd(fd)
             except Exception as e:
                 log.warn("Warning: failed to write script file in '%s':", scriptdir)
                 log.warn(" %s", e)
@@ -131,8 +128,6 @@ def write_runner_shell_scripts(contents, overwrite=True, withfd=None):
                 os.umask(umask)
                 os.fchmod(scriptfile.fileno(), 0o700 & ~umask)
                 scriptfile.write(contents)
-                if withfd:
-                    withfd(scriptfile.fileno())
         except Exception as e:
             log.error("Error: failed to write script file '%s':", scriptpath)
             log.error(" %s\n", e)
@@ -171,7 +166,7 @@ def open_log_file(logpath):
         except:
             pass
     try:
-        return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)
+        return os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
     except OSError as e:
         raise InitException("cannot open log file '%s': %s" % (logpath, e))
 
@@ -228,7 +223,7 @@ def daemonize():
         os._exit(0)
 
 
-def write_pidfile(pidfile, withfd=None):
+def write_pidfile(pidfile, uid, gid):
     from xpra.log import Logger
     log = Logger("server")
     pidstr = str(os.getpid())
@@ -240,8 +235,11 @@ def write_pidfile(pidfile, withfd=None):
                 inode = os.fstat(f.fileno()).st_ino
             except:
                 inode = -1
-            if withfd:
-                withfd(f.fileno())
+            if POSIX and uid!=getuid() or gid!=getgid():
+                try:
+                    os.fchown(f.fileno(), uid, gid)
+                except:
+                    pass
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
         def cleanuppidfile():
             #verify this is the right file!

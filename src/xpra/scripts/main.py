@@ -2627,7 +2627,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         proc = None
     else:
         cmd.append("--systemd-run=no")
-        cmd.append("--daemon=no")
+        cmd.append("--daemon=yes")
         if POSIX and getuid()==0 and (uid!=0 or gid!=0):
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)
