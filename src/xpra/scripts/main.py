@@ -1330,9 +1330,22 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     try:
                         #this will use the client "start-new-session" feature,
                         #to start a new session and connect to it at the same time:
-                        r = run_client(error_cb, options, args, "request-%s" % mode)
-                        if r==0 or (r>=128 and r<=(128+16)):
-                            #exit OK or exit from signal:
+                        app = get_client_app(error_cb, options, args, "request-%s" % mode)
+                        r = do_run_client(app)
+                        from xpra.exit_codes import EXIT_OK
+                        #OK or got a signal:
+                        NO_RETRY = [EXIT_OK] + range(128, 128+16)
+                        if app.completed_startup:
+                            #if we had connected to the session,
+                            #we can ignore more error codes:
+                            from xpra.exit_codes import EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR, EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG
+                            NO_RETRY += [
+                                    EXIT_CONNECTION_LOST,
+                                    EXIT_REMOTE_ERROR,
+                                    EXIT_INTERNAL_ERROR,
+                                    EXIT_FILE_TOO_BIG,
+                                    ]
+                        if r in NO_RETRY:
                             return r
                         #other cases mean we must have failed to start the session
                         err = EXIT_STR.get(r, r)
@@ -2229,6 +2242,10 @@ def get_sockpath(display_desc, error_cb):
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
+    app = get_client_app(error_cb, opts, extra_args, mode)
+    return do_run_client(app)
+
+def get_client_app(error_cb, opts, extra_args, mode):
     validate_encryption(opts)
     if mode=="screenshot":
         if len(extra_args)==0:
@@ -2346,7 +2363,7 @@ def run_client(error_cb, opts, extra_args, mode):
         except Exception as e:
             app.cleanup()
             raise
-    return do_run_client(app)
+    return app
 
 def make_client(error_cb, opts):
     from xpra.platform.features import CLIENT_MODULES

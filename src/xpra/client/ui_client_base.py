@@ -2002,8 +2002,9 @@ class UIXpraClient(XpraClientBase):
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
 
 
-    def _startup_complete(self, *args):
+    def _process_startup_complete(self, packet):
         log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
+        XpraClientBase._process_startup_complete(self, packet)
         gui_ready()
         if self.tray:
             self.tray.ready()
@@ -3306,7 +3307,7 @@ class UIXpraClient(XpraClientBase):
         log("init_authenticated_packet_handlers()")
         XpraClientBase.init_authenticated_packet_handlers(self)
         self.set_packet_handlers(self._ui_packet_handlers, {
-            "startup-complete":     self._startup_complete,
+            "startup-complete":     self._process_startup_complete,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,

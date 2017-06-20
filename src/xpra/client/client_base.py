@@ -110,6 +110,7 @@ class XpraClientBase(FileTransferHandler):
         self._reverse_aliases = {}
         #server state and caps:
         self.server_capabilities = None
+        self.completed_startup = False
         self._remote_machine_id = None
         self._remote_uuid = None
         self._remote_version = None
@@ -847,7 +848,7 @@ class XpraClientBase(FileTransferHandler):
     def _process_startup_complete(self, packet):
         #can be received if we connect with "xpra stop" or other command line client
         #as the server is starting up
-        pass
+        self.completed_startup = packet
 
 
     def _process_gibberish(self, packet):
