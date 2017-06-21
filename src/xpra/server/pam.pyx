@@ -13,7 +13,7 @@ import time
 from xpra.log import Logger
 log = Logger("util", "auth")
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer
 from libc.stdint cimport uintptr_t
 from posix.types cimport gid_t, pid_t, off_t, uid_t
@@ -61,6 +61,7 @@ cdef extern from "pam_appl.h":
     int pam_end(pam_handle_t *pamh, int pam_status)
     int pam_putenv(pam_handle_t *pamh, const char *name_value)
     int pam_set_item(pam_handle_t *pamh, int item_type, const void *item)
+    char **pam_getenvlist(pam_handle_t *pamh)
 
     int PAM_SERVICE             # The service name
     int PAM_USER                # The user name
@@ -150,6 +151,23 @@ cdef class pam_session(object):
             else:
                 log("pam_putenv: %s", name_value)
 
+    def get_envlist(self):
+        assert self.pam_handle!=NULL
+        cdef char **envlist = pam_getenvlist(self.pam_handle)
+        log("pam_getenvlist: %#x", <uintptr_t> envlist)
+        cdef unsigned int i
+        env = {}
+        if envlist!=NULL:
+            i = 0
+            while envlist[i]!=NULL:
+                s = bytestostr(envlist[i])
+                parts = s.split("=", 1)
+                if len(parts)==2:
+                    env[parts[0]] = parts[1]
+                i += 1
+        log("get_envlist()=%s", env)
+        return env
+
     def set_items(self, items={}):
         cdef const void* item
         cdef pam_xauth_data xauth_data
@@ -179,7 +197,7 @@ cdef class pam_session(object):
             else:
                 log("pam_set_item: %s=%s", k, v)
 
-    def open(self):
+    def open(self):         #@ReservedAssignment
         assert self.pam_handle!=NULL
         cdef int r = pam_open_session(self.pam_handle, 0)
         log("pam_open_session: %s", PAM_ERR_STR.get(r, r))

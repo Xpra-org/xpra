@@ -444,6 +444,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # if pam is present, try to create a new session:
     pam = None
+    protected_env = {}
     PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
         from xpra.server.pam import pam_session #@UnresolvedImport
@@ -468,7 +469,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #but since we're the process leader for the session,
             #terminating will also close the session
             #add_cleanup(pam.close)
-            pass
+            protected_env = pam.get_envlist()
+            os.environ.update(protected_env)
 
     xrd = create_runtime_dir(uid, gid)
 
@@ -598,6 +600,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ["XDG_SESSION_TYPE"] = "x11"
         os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
+    os.environ.update(protected_env)
 
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
@@ -720,7 +723,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             if xvfb_pid is not None:
                 #save the new pid (we should have one):
                 save_xvfb_pid(xvfb_pid)
-            if POSIX and opts.dbus_launch:
+            if POSIX and opts.dbus_launch and "DBUS_SESSION_BUS_ADDRESS" not in protected_env:
                 #start a dbus server:
                 dbus_pid = 0
                 dbus_env = {}
