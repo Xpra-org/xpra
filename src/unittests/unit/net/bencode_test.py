@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import strtobytes, bytestostr, PYTHON3
+from xpra.os_util import strtobytes, bytestostr, PYTHON2
 from xpra.util import repr_ellipsized
 from xpra.net.bencode.bencode import bencode, bdecode
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
@@ -106,7 +106,7 @@ def _cmp(o, r):
             assert rv is not None, "restored dict is missing %s: %s" % (k, r)
             _cmp(ov, rv)
         return
-    if PYTHON3 and type(o)==unicode and type(r)==str:
+    if PYTHON2 and type(o)==unicode and type(r)==str:
         o = o.encode("utf-8")
     elif type(o)==bytes and type(r)==str:
         o = o.decode("utf-8")
@@ -229,8 +229,8 @@ class TestBencoder(unittest.TestCase, TestBencoderFunctions):
 class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
 
     def setUp(self):
-        self.encode = cython_bencode.bencode
-        self.decode = cython_bencode.bdecode
+        self.encode = cython_bencode.bencode    #@UndefinedVariable
+        self.decode = cython_bencode.bdecode    #@UndefinedVariable
         unittest.TestCase.setUp(self)
 
 
