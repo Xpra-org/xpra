@@ -139,13 +139,10 @@ def find_log_dir(username="", uid=0, gid=0):
     for x in get_default_log_dirs():
         v = osexpand(x, username, uid, gid)
         if not os.path.exists(v):
+            if getuid()==0 and uid!=0:
+                continue
             try:
                 os.mkdir(v, 0o700)
-                if POSIX and uid!=getuid() or gid!=getgid():
-                    try:
-                        os.lchown(v, uid, gid)
-                    except:
-                        pass
             except Exception as e:
                 errs.append((v, e))
                 continue
