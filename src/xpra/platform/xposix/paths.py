@@ -76,6 +76,8 @@ def _get_runtime_dir():
             runtime_dir = os.path.join(head, "$UID")
         except (ValueError, AssertionError):
             pass
+    elif os.path.exists("/run/user") and os.path.isdir("/run/user"):
+        runtime_dir = "/run/user/$UID"
     elif os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
         runtime_dir = "/var/run/user/$UID"
     return runtime_dir
@@ -95,7 +97,9 @@ def do_get_socket_dirs():
     if os.getuid()>0:
         SOCKET_DIRS.append("~/.xpra")   #the old default path
     #for shared sockets (the 'xpra' group should own this directory):
-    if os.path.exists("/var/run"):
+    if os.path.exists("/run"):
+        SOCKET_DIRS.append("/run/xpra")
+    elif os.path.exists("/var/run"):
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 

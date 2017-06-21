@@ -337,8 +337,9 @@ def handle_socket_error(sockpath, e):
     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
         log.warn("Warning: cannot create socket '%s':", sockpath)
         log.warn(" %s", e)
-        if not os.path.exists("/var/run/user"):
-            log.warn(" %s does not exist", "/var/run/user")
+        run_user = sockpath.split("/user")[0]+"/user"
+        if not os.path.exists(run_user):
+            log.warn(" %s does not exist", run_user)
         else:
             log.warn(" ($XDG_RUNTIME_DIR has not been created?)")
     else:
