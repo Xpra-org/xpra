@@ -2630,7 +2630,7 @@ cdef class Encoder:
 def init_module():
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
-    if NVENCAPI_MAJOR_VERSION!=0x7:
+    if NVENCAPI_MAJOR_VERSION<0x7:
         raise Exception("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
