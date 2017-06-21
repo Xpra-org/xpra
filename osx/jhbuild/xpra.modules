@@ -206,9 +206,9 @@
   </autotools>
 
   <autotools id="opus" autogenargs="" autogen-sh="configure">
-	<branch module="/pub/opus/opus-1.1.5.tar.gz"
-		version="1.1.5"
-		hash="sha256:eb84981ca0f40a3e5d5e58d2e8582cb2fee05a022825a6dfe14d14b04eb563e4"
+	<branch module="/pub/opus/opus-1.2.tar.gz"
+		version="1.2"
+		hash="sha256:77db45a87b51578fbc49555ef1b10926179861d854eb2613207dc79d9ec0a9a9"
 		repo="archive.mozilla.org"/>
   </autotools>
 
