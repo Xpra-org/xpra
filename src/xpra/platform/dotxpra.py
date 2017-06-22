@@ -49,7 +49,7 @@ class DotXpra(object):
         if d and not os.path.exists(d):
             os.mkdir(d, 0o700)
             if self.uid!=os.getuid() or self.gid!=os.getgid():
-                os.chown(d, self.uid, self.gid)
+                os.lchown(d, self.uid, self.gid)
 
     def socket_expand(self, path):
         return self.osexpand(path, uid=self.uid, gid=self.gid)
