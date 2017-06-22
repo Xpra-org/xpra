@@ -5,7 +5,7 @@ Index: service/xpra.service
 @@ -13,11 +13,11 @@
  SuccessExitStatus=0 143
  Restart=on-abnormal
- PIDFile=/var/run/xpra.pid
+ PIDFile=/run/xpra.pid
 -ProtectSystem=strict
 -ReadWritePaths=/run /tmp
 +#ProtectSystem=strict

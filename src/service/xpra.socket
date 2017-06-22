@@ -5,7 +5,7 @@ PartOf=xpra.service
 [Socket]
 #this doesn't work because of SELinux AVC denials:
 ListenStream=14500
-ListenStream=/var/run/xpra/system
+ListenStream=/run/xpra/system
 #this is not handled yet:
 #ListenStream=vsock:x:y
 SocketUser=root

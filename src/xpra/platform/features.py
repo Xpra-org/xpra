@@ -19,7 +19,7 @@ REINIT_WINDOWS = False
 
 INPUT_DEVICES = ["auto"]
 
-SYSTEM_PROXY_SOCKET = "/var/run/xpra/system"
+SYSTEM_PROXY_SOCKET = "/var/xpra/system"
 
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")

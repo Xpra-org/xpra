@@ -2,7 +2,7 @@
 # Server Options:
 
 # Directory for server log files:
-#log-dir = /var/run/user/$UID
+#log-dir = /run/user/$UID
 #log-dir = ~/.xpra
 #log-dir = /tmp
 log-dir = %(log_dir)s
