@@ -10,7 +10,7 @@ import socket
 import errno
 import stat
 
-from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, osexpand
+from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
 
 
 def norm_makepath(dirpath, name):
@@ -63,6 +63,7 @@ class DotXpra(object):
     LIVE = LIVE
     DEAD = DEAD
     UNKNOWN = UNKNOWN
+    INACCESSIBLE = INACCESSIBLE
 
     def get_server_state(self, sockpath, timeout=5):
         if not os.path.exists(sockpath):
@@ -74,6 +75,8 @@ class DotXpra(object):
         except socket.error as e:
             debug("get_server_state: connect(%s)=%s", sockpath, e)
             err = e.args[0]
+            if err==errno.EACCES:
+                return self.INACCESSIBLE
             if err==errno.ECONNREFUSED:
                 #could be the server is starting up
                 return self.UNKNOWN

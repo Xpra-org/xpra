@@ -229,6 +229,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         else:
             def checkstate(sockpath, state):
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
+                    if state==DotXpra.INACCESSIBLE:
+                        raise InitException("An xpra server is already running at %s\n" % (sockpath,))
                     raise InitException("You already have an xpra server running at %s\n"
                          "  (did you want 'xpra upgrade'?)"
                          % (sockpath,))

@@ -263,7 +263,7 @@ class ProxyInstanceProcess(Process):
         log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
         state = dotxpra.get_server_state(sockpath)
         log("create_control_socket: socket path='%s', uid=%i, gid=%i, state=%s", sockpath, getuid(), getgid(), state)
-        if state in (DotXpra.LIVE, DotXpra.UNKNOWN):
+        if state in (DotXpra.LIVE, DotXpra.UNKNOWN, DotXpra.INACCESSIBLE):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
             log.error(" the control socket will not be created")
             return False

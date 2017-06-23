@@ -13,6 +13,7 @@ PREFIX = "%s-" % (SOCKET_HOSTNAME,)
 LIVE = "LIVE"
 DEAD = "DEAD"
 UNKNOWN = "UNKNOWN"
+INACCESSIBLE = "INACCESSIBLE"
 
 def osexpand(s, actual_username="", uid=0, gid=0):
     if len(actual_username)>0 and s.startswith("~/"):

@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, osexpand
+from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
 
 PIPE_PREFIX = "Xpra\\"
 PIPE_ROOT = "\\\\"
@@ -29,6 +29,7 @@ class DotXpra(object):
     LIVE = LIVE
     DEAD = DEAD
     UNKNOWN = UNKNOWN
+    INACCESSIBLE = INACCESSIBLE
 
     def get_server_state(self, sockpath, timeout=5):
         return self.UNKNOWN
