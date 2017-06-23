@@ -2689,7 +2689,8 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     from xpra.platform.paths import get_nodock_command
     while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
-        new_sockets = list(sockets-existing_sockets)
+        #sort because we prefer a socket in /run/* to one in /home/*:
+        new_sockets = tuple(reversed(tuple(sockets-existing_sockets)))
         log("identify_new_sockets=%s", new_sockets)
         for socket_path in new_sockets:
             #verify that this is the right server:
