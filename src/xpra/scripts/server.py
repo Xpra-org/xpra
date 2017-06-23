@@ -435,7 +435,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     stdout = sys.stdout
     stderr = sys.stderr
     # Daemonize:
-    if opts.daemon:
+    if POSIX and opts.daemon:
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = os.path.abspath(opts.password_file)
