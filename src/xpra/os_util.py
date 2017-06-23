@@ -366,6 +366,26 @@ def shellsub(s, subs={}):
         s = s.replace("${%s}" % var, str(value))
     return s
 
+def path_permission_info(filename, ftype=None):
+    if not POSIX:
+        return []
+    info = []
+    try:
+        import stat
+        stat_info = os.stat(filename)
+        if not ftype:
+            ftype = "file"
+            if os.path.isdir(filename):
+                ftype = "directory"
+        info.append("permissions on %s %s: %s" % (ftype, filename, oct(stat.S_IMODE(stat_info.st_mode))))
+        import pwd,grp      #@UnresolvedImport
+        user = pwd.getpwuid(stat_info.st_uid)[0]
+        group = grp.getgrgid(stat_info.st_gid)[0]
+        info.append("ownership %s:%s" % (user, group))
+    except Exception as e:
+        info.append("failed to query path information for '%s': %s" % (filename, e))
+    return info
+
 
 #code to temporarily redirect stderr and restore it afterwards, adapted from:
 #http://stackoverflow.com/questions/5081657/how-do-i-prevent-a-c-shared-library-to-print-on-stdout-in-python

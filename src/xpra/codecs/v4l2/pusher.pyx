@@ -11,6 +11,7 @@ from xpra.log import Logger
 from _dbus_bindings import UInt32
 log = Logger("webcam")
 
+from xpra.os_util import path_permission_info
 from xpra.util import nonl, print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -230,8 +231,11 @@ def query_video_device(device="/dev/video0"):
                 info["device_caps"] = [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k]
             return dict((k,v) for k,v in info.items() if v)
     except Exception as e:
+        log("query_video_device(%s)", device, exc_info=True)
         log.error("Error: failed to query device '%s':", device)
         log.error(" %s", e)
+        for x in path_permission_info(device, "device"):
+            log.error(" %s", x)
     return {}
 
 

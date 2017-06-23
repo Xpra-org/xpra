@@ -7,7 +7,7 @@ import os.path
 import socket
 
 from xpra.scripts.config import InitException
-from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, monotonic_time, WIN32, OSX, POSIX
+from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, path_permission_info, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import envint, envbool, csv, DEFAULT_PORT
 from xpra.platform.dotxpra import DotXpra, norm_makepath
 
@@ -321,19 +321,11 @@ def handle_socket_error(sockpath, e):
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
-            log.warn(" user '%s' is a member of groups: %s", username, csv(groups))
+            log.warn(" user '%s' is a member of groups: %s", username, csv(groups) or "no groups!")
             if "xpra" not in groups:
-                log.warn("  (missing 'xpra' group membership?)")
-            try:
-                import stat
-                stat_info = os.stat(dirname)
-                log.warn(" permissions on directory %s: %s", dirname, oct(stat.S_IMODE(stat_info.st_mode)))
-                import pwd,grp      #@UnresolvedImport
-                user = pwd.getpwuid(stat_info.st_uid)[0]
-                group = grp.getgrgid(stat_info.st_gid)[0]
-                log.warn("  ownership %s:%s", user, group)
-            except:
-                pass
+                log.warn("  missing 'xpra' group membership?")
+            for x in path_permission_info(dirname):
+                log.warn("  %s", x)
     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
         log.warn("Warning: cannot create socket '%s':", sockpath)
         log.warn(" %s", e)
