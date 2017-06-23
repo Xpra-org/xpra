@@ -7,7 +7,6 @@
 # later version. See the file COPYING for details.
 
 import os.path
-import sys
 from time import sleep
 import hashlib
 
@@ -549,6 +548,7 @@ class ServerBase(ServerCore):
                     #fallback to using SIGINT:
                     proc.terminate()
             except:
+                soundlog("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
                 #only log the full stacktrace if the process failed to terminate:
                 full_trace = self.is_child_alive(proc)
                 soundlog.warn("error trying to stop pulseaudio", exc_info=full_trace)
