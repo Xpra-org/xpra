@@ -61,7 +61,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 Recommends:
 # x264:
 #jessie:        ,libx264-142
-#stretch:        ,libx264-146
+#stretch:        ,libx264-148
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
 #zesty:        ,libx264-148
