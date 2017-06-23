@@ -75,7 +75,7 @@ Recommends:
 #precise:        ,libx264-120
 #wheezy:        ,libx264-123
 #jessie:        ,libx264-142
-#stretch:        ,libx264-146
+#stretch:        ,libx264-148
 #trusty:        ,libx264-142
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
