@@ -23,6 +23,11 @@ def lz4_compress(packet, level):
 try:
     import lz4
     from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
+    try:
+        #using unicode for version numbers is dumb:
+        python_lz4_version = python_lz4_version.encode("latin1")
+    except:
+        pass
     from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
     has_lz4 = True
     if hasattr(lz4, "block"):
