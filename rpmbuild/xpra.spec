@@ -276,9 +276,10 @@ Requires: python2-xpra = %{version}-%{build_no}%{dist}
 %if ! 0%{?el7}
 #EL7 requires 3rd party repos like "media.librelamp.com"
 Requires: %{requires_sound}
+%{Recommends}: gstreamer1-plugins-ugly
+%{Recommends}: gstreamer1-plugin-timestamp
 %endif
 %{Recommends}: %{requires_pulseaudio}
-%{Recommends}: gstreamer1-plugin-timestamp
 BuildRequires: python, %{requires_setuptools}
 %description -n python2-xpra-audio
 This package contains audio support for python2 builds of xpra.
@@ -365,8 +366,12 @@ Summary: python3 build of xpra audio support
 Group: Networking
 Conflicts: xpra < 2.1
 Requires: python3-xpra = %{version}-%{build_no}%{dist}
+%if ! 0%{?el7}
+#EL7 requires 3rd party repos like "media.librelamp.com"
 Requires: %{py3requires_sound}
+%{Recommends}: gstreamer1-plugins-ugly
 %{Recommends}: gstreamer1-plugin-timestamp
+%endif
 BuildRequires: python3
 %description -n python3-xpra-audio
 This package contains audio support for python2 builds of xpra.
