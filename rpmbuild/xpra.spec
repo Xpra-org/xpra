@@ -51,7 +51,7 @@
 %define requires_printing , python2-cups
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
-%define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly
+%define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly-free
 #this requires rpmfusion:
 #gstreamer1-plugins-bad-free
 %define requires_pulseaudio pulseaudio, pulseaudio-utils
