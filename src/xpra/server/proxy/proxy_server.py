@@ -261,7 +261,10 @@ class ProxyServer(ServerCore):
                 display = displays[0]
 
         connect = c.boolget("connect", True)
-        if not connect:
+        #ConnectTestXpraClient doesn't want to connect to the real session either:
+        ctr = c.strget("connect_test_request")
+        log("connect=%s, connect_test_request=%s", connect, ctr)
+        if not connect or ctr:
             log("proxy_session: not connecting to the session")
             hello = {"display" : display}
             if socket_path:
@@ -379,6 +382,7 @@ class ProxyServer(ServerCore):
         env = self.get_proxy_env()
         log("starting new server subprocess: options=%s", opts)
         log("env=%s", env)
+        log("args=%s", args)
         cwd = None
         if uid>0:
             cwd = get_home_for_uid(uid) or None

@@ -2450,8 +2450,10 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         return connect_or_fail(params, opts)
 
     if opts.attach is False:
-        from xpra.client.gobject_client_base import ConnectTestXpraClient
-        app = ConnectTestXpraClient((connect(), params), opts)
+        from xpra.client.gobject_client_base import RequestStartClient
+        app = RequestStartClient((connect(), params), opts)
+        app.hello_extra = {"connect" : False}
+        app.start_new_session = sns
     else:
         app = make_client(error_cb, opts)
         app.init(opts)
@@ -2628,6 +2630,9 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     else:
         cmd.append("--systemd-run=no")
         cmd.append("--daemon=yes")
+        #useful for testing failures that cause the whole XDG_RUNTIME_DIR to get nuked
+        #(and the log file with it):
+        #cmd.append("--log-file=/tmp/proxy.log")
         if POSIX and getuid()==0 and (uid!=0 or gid!=0):
             cmd.append("--uid=%i" % uid)
             cmd.append("--gid=%i" % gid)

@@ -245,16 +245,19 @@ class ConnectTestXpraClient(CommandConnectClient):
         it queries the server with an 'info' request
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         CommandConnectClient.__init__(self, *args)
         self.value = get_hex_uuid()
         self.hello_extra.update({
-            "connect_test_request"     : self.value,
+            "connect_test_request"      : self.value,
+            #tells proxy servers we don't want to connect to the real / new instance:
+            "connect"                   : False,
             #older servers don't know about connect-test,
             #pretend that we're interested in info:
-            "info_request"             : True,
-            "info-namespace"           : True,
+            "info_request"              : True,
+            "info-namespace"            : True,
             })
+        self.hello_extra.update(kwargs)
 
     def timeout(self, *args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: no server response")
@@ -461,7 +464,11 @@ class RequestStartClient(HelloRequestClient):
     COMMAND_TIMEOUT = EXTRA_TIMEOUT+WAIT_SERVER_TIMEOUT
 
     def hello_request(self):
-        return {"start-new-session" : self.start_new_session}
+        return {
+            "start-new-session" : self.start_new_session,
+            #tells proxy servers we don't want to connect to the real / new instance:
+            "connect"                   : False,
+            }
 
     def server_connection_established(self):
         #the server should respond with the display chosen

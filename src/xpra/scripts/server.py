@@ -654,6 +654,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             noerr(stderr.flush)
         noerr(stdout.close)
         noerr(stderr.close)
+    #we should not be using stdout or stderr from this point:
+    del stdout
+    del stderr
 
     if not check_xvfb_process(xvfb):
         #xvfb problem: exit now
