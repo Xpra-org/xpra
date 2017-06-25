@@ -205,6 +205,9 @@ def sanitize_env():
              "XDG_VTNR",
              "XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
+             "CKCON_TTY",
+             "CKCON_X11_DISPLAY",
+             "CKCON_X11_DISPLAY_DEVICE",
              )
 
 def configure_imsettings_env(input_method):
@@ -585,14 +588,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 host, iport = addr
                 add_tcp_mdns_rec(host, iport)
 
-    # Do this after writing out the shell script:
-    if display_name[0] != 'S':
-        os.environ["DISPLAY"] = display_name
-    else:
-        try:
-            del os.environ["DISPLAY"]
-        except:
-            pass
     sanitize_env()
     if POSIX:
         if xrd:
@@ -600,6 +595,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ["XDG_SESSION_TYPE"] = "x11"
         os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
+    if display_name[0] != 'S':
+        os.environ["DISPLAY"] = display_name
+        os.environ["CKCON_X11_DISPLAY"] = display_name
+    else:
+        try:
+            del os.environ["DISPLAY"]
+        except:
+            pass
     os.environ.update(protected_env)
 
     # Start the Xvfb server first to get the display_name if needed
@@ -614,6 +617,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
+        os.environ["CKCON_X11_DISPLAY"] = display_name
+        os.environ.update(protected_env)
         if display_name!=odisplay_name:
             items = {"XDISPLAY" : display_name}
             if pam:
@@ -669,6 +674,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             "USER"      : username,
             "LOGNAME"   : username,
             })
+        os.environ.update(protected_env)
 
     display = None
     if not proxying:
@@ -749,6 +755,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             else:
                 dbus_env = {}
         os.environ.update(dbus_env)
+        os.environ.update(protected_env)
 
         try:
             # This import is delayed because the module depends on gtk:
