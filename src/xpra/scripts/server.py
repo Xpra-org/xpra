@@ -616,8 +616,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ["DISPLAY"] = display_name
         if display_name!=odisplay_name:
             items = {"XDISPLAY" : display_name}
-        if pam:
-            pam.set_items(items)
+            if pam:
+                pam.set_items(items)
 
     close_display = None
     if not proxying:
