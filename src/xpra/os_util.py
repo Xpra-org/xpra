@@ -342,21 +342,32 @@ def close_fds(excluding=[0, 1, 2]):
             except:
                 pass
 
-def close_all_fds(exceptions=[]):
+def get_all_fds():
     fd_dirs = ["/dev/fd", "/proc/self/fd"]
+    fds = []
     for fd_dir in fd_dirs:
         if os.path.exists(fd_dir):
             for fd_str in os.listdir(fd_dir):
                 try:
                     fd = int(fd_str)
-                    if fd not in exceptions:
-                        os.close(fd)
+                    fds.append(fd)
                 except OSError:
                     # This exception happens inevitably, because the fd used
                     # by listdir() is already closed.
                     pass
-            return
-    print("Uh-oh, can't close fds, please port me to your system...")
+            return fds
+    sys.stderr.write("Uh-oh, can't close fds, please port me to your system...\n")
+    return fds
+
+def close_all_fds(exceptions=[]):
+    for fd in get_all_fds():
+        try:
+            if fd not in exceptions:
+                os.close(fd)
+        except OSError:
+            # This exception happens inevitably, because the fd used
+            # by listdir() is already closed.
+            pass
 
 
 def shellsub(s, subs={}):
@@ -437,6 +448,20 @@ class OSEnvContext(object):
         os.environ.update(self.env)
     def __repr__(self):
         return "OSEnvContext"
+
+
+class FDChangeCaptureContext(object):
+
+    def __enter__(self):
+        self.enter_fds = get_all_fds()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.exit_fds = get_all_fds()
+    def __repr__(self):
+        return "FDChangeCaptureContext"
+    def get_new_fds(self):
+        return sorted(list(set(self.exit_fds)-set(self.enter_fds)))
+    def get_lost_fds(self):
+        return sorted(list(set(self.enter_fds)-set(self.exit_fds)))
 
 
 def disable_stdout_buffering():

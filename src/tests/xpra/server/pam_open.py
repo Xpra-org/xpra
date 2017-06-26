@@ -18,10 +18,19 @@ def daemonize():
     if os.fork():
         os._exit(0)
 
+stdout = sys.stdout
+stderr = sys.stderr
+def log(message, *args):
+    global stdout
+    stdout.write("%s\n" % (message % (args)))
+
 def main():
     if len(sys.argv) not in (2,3):
         print("invalid number of arguments")
         print("usage: %s uid [gid]" % sys.argv[0])
+        return 1
+    if os.getuid()!=0:
+        print("must be execute as root!")
         return 1
     uid = int(sys.argv[1])
     from pwd import getpwuid
@@ -34,37 +43,56 @@ def main():
         gid = pw.pw_gid
     xrd = os.path.join("/run/user", str(uid))
 
-    print("username=%s" % username)
-    print("home=%s" % home)
-    print("XDG_RUNTIME_DIR=%s (exists=%s)" % (xrd, os.path.exists(xrd)))
+    log("username=%s", username)
+    log("home=%s", home)
+    log("XDG_RUNTIME_DIR=%s (exists=%s)", xrd, os.path.exists(xrd))
     daemonize()
-    
-    pam = pam_session(service_name="xpra", uid=uid)
-    pam.start()
-    pam.set_env({
-           #"XDG_SEAT"               : "seat1",
-           #"XDG_VTNR"               : "0",
-           "XDG_SESSION_TYPE"       : "x11",
-           #"XDG_SESSION_CLASS"      : "user",
-           "XDG_SESSION_DESKTOP"    : "xpra",
-           })
-    #import uuid
-    #xauth_data = uuid.uuid4()
-    #items = {
-    #    "XAUTHDATA" : xauth_data,
-    #    }
-    #pam.set_items(items)
-    if not pam.open():
-        print("failed to open pam session!")
-        return 1
-    #env = pam.get_envlist()
-    #print("pam env: %s" % env)
-    for _ in range(10):
-        print("XDG_RUNTIME_DIR=%s (exists=%s)" % (xrd, os.path.exists(xrd)))
-        time.sleep(0.1)
-    #start vfb?
-    #log to file
+
+    from xpra.os_util import FDChangeCaptureContext
+    fdc = FDChangeCaptureContext()
+    with fdc:
+        pam = pam_session(service_name="xpra", uid=uid)
+        pam.start()
+        pam.set_env({
+               #"XDG_SEAT"               : "seat1",
+               #"XDG_VTNR"               : "0",
+               "XDG_SESSION_TYPE"       : "x11",
+               #"XDG_SESSION_CLASS"      : "user",
+               "XDG_SESSION_DESKTOP"    : "xpra",
+               })
+        #import uuid
+        #xauth_data = uuid.uuid4()
+        #items = {
+        #    "XAUTHDATA" : xauth_data,
+        #    }
+        #pam.set_items(items)
+        if not pam.open():
+            print("failed to open pam session!")
+            return 1
+        env = pam.get_envlist()
+    log("new fds: %s", fdc.get_new_fds())
+    log("pam env: %s", env)
+    log("XDG_RUNTIME_DIR=%s (exists=%s)", xrd, os.path.exists(xrd))
+
+    logpath = "/tmp/test0.log"
+    if os.path.exists(logpath):
+        os.rename(logpath, logpath + ".old")
+    logfd = os.open(logpath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+    os.fchown(logfd, uid, gid)
+
+    from xpra.server.server_util import redirect_std_to_log
+    stdout, stderr = redirect_std_to_log(logfd, *fdc.get_new_fds())
+    stdout.write("Entering daemon mode; "
+                 + "any further errors will be reported to:\n"
+                 + ("  %s\n" % logpath))
+    sys.stdout.write("log file start 1")
+    log("log file start 2")
     #close stdout / stderr
+    stdout.close()
+    stderr.close()
+    #we should not be using stdout or stderr from this point:
+    del stdout
+    del stderr
 
     #setuid / setgid:
     os.initgroups(username, gid)
@@ -74,9 +102,12 @@ def main():
     os.setgid(gid)
     os.setuid(uid)
     print("done setuid / setgid")
+
     for _ in range(10):
-        print("XDG_RUNTIME_DIR=%s (exists=%s)" % (xrd, os.path.exists(xrd)))
+        log("XDG_RUNTIME_DIR=%s (exists=%s)", xrd, os.path.exists(xrd))
         time.sleep(0.1)
+    time.sleep(10)
+    log("exit")
 
 
 if __name__ == "__main__":

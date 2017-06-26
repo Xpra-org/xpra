@@ -186,14 +186,14 @@ def select_log_file(log_dir, log_file, display_name):
         logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
     return logpath
 
-def redirect_std_to_log(logfd):
+def redirect_std_to_log(logfd, *noclose_fds):
     from xpra.os_util import close_all_fds
     # save current stdout/stderr to be able to print info
     # before exiting the non-deamon process
     # and closing those file descriptors definitively
     old_fd_stdout = os.dup(1)
     old_fd_stderr = os.dup(2)
-    close_all_fds(exceptions=[logfd, old_fd_stdout, old_fd_stderr])
+    close_all_fds(exceptions=[logfd, old_fd_stdout, old_fd_stderr]+list(noclose_fds))
     fd0 = os.open("/dev/null", os.O_RDONLY)
     if fd0 != 0:
         os.dup2(fd0, 0)

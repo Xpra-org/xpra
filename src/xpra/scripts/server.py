@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -447,33 +447,39 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # if pam is present, try to create a new session:
     pam = None
+    protected_fds = []
     protected_env = {}
     PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
-        from xpra.server.pam import pam_session #@UnresolvedImport
-        pam = pam_session(uid=uid)
-        env = {
-               #"XDG_SEAT"               : "seat1",
-               #"XDG_VTNR"               : "0",
-               "XDG_SESSION_TYPE"       : "x11",
-               #"XDG_SESSION_CLASS"      : "user",
-               "XDG_SESSION_DESKTOP"    : "xpra",
-               }
-        pam.start()
-        pam.set_env(env)
-        items = {}
-        if display_name.startswith(":"):
-            items["XDISPLAY"] = display_name
-        if xauth_data:
-            items["XAUTHDATA"] = xauth_data
-        pam.set_items(items)
-        if pam.open():
-            #we can't close it, because we're not going to be root any more,
-            #but since we're the process leader for the session,
-            #terminating will also close the session
-            #add_cleanup(pam.close)
-            protected_env = pam.get_envlist()
-            os.environ.update(protected_env)
+        fdc = FDChangeCaptureContext()
+        with fdc:
+            from xpra.server.pam import pam_session #@UnresolvedImport
+            pam = pam_session(uid=uid)
+            env = {
+                   #"XDG_SEAT"               : "seat1",
+                   #"XDG_VTNR"               : "0",
+                   "XDG_SESSION_TYPE"       : "x11",
+                   #"XDG_SESSION_CLASS"      : "user",
+                   "XDG_SESSION_DESKTOP"    : "xpra",
+                   }
+            pam.start()
+            pam.set_env(env)
+            items = {}
+            if display_name.startswith(":"):
+                items["XDISPLAY"] = display_name
+            if xauth_data:
+                items["XAUTHDATA"] = xauth_data
+            pam.set_items(items)
+            if pam.open():
+                #we can't close it, because we're not going to be root any more,
+                #but since we're the process leader for the session,
+                #terminating will also close the session
+                #add_cleanup(pam.close)
+                protected_env = pam.get_envlist()
+                os.environ.update(protected_env)
+        #closing the pam fd causes the session to be closed,
+        #and we don't want that!
+        protected_fds = fdc.get_new_fds()
 
     xrd = create_runtime_dir(uid, gid)
 
@@ -507,7 +513,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                     os.fchown(logfd, uid, gid)
                 except:
                     pass
-            stdout, stderr = redirect_std_to_log(logfd)
+            stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
             stdout.write("Entering daemon mode; "
                      + "any further errors will be reported to:\n"
                      + ("  %s\n" % log_filename0))
