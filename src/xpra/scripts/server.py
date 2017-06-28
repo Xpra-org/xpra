@@ -744,41 +744,49 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         assert gdk_display_source
         #(now we can access the X11 server)
 
-        if clobber:
-            #get the saved pids and env
-            dbus_pid = get_dbus_pid()
-            dbus_env = get_dbus_env()
-        else:
-            assert starting or starting_desktop
-            if xvfb_pid is not None:
-                #save the new pid (we should have one):
-                save_xvfb_pid(xvfb_pid)
-            if POSIX and opts.dbus_launch and "DBUS_SESSION_BUS_ADDRESS" not in protected_env:
-                #start a dbus server:
-                dbus_pid = 0
-                dbus_env = {}
-                def kill_dbus():
-                    log("kill_dbus: dbus_pid=%s" % dbus_pid)
-                    if dbus_pid<=0:
-                        return
-                    try:
-                        os.kill(dbus_pid, signal.SIGINT)
-                    except Exception as e:
-                        log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
-                        log.warn(" %s", e)
-                add_cleanup(kill_dbus)
-                #this also updates os.environ with the dbus attributes:
-                dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-                if dbus_pid>0:
-                    save_dbus_pid(dbus_pid)
-                if dbus_env:
-                    save_dbus_env(dbus_env)
-            else:
-                dbus_env = {}
-        os.environ.update(dbus_env)
-        os.environ.update(protected_env)
-        log("env=%s", os.environ)
+        if xvfb_pid is not None:
+            #save the new pid (we should have one):
+            save_xvfb_pid(xvfb_pid)
 
+        if POSIX:
+            dbus_pid = -1
+            dbus_env = {}
+            if clobber:
+                #get the saved pids and env
+                dbus_pid = get_dbus_pid()
+                dbus_env = get_dbus_env()
+                log("retrieved existing dbus attributes")
+            else:
+                assert starting or starting_desktop
+                if xvfb_pid is not None:
+                    #save the new pid (we should have one):
+                    save_xvfb_pid(xvfb_pid)
+                bus_address = protected_env.get("DBUS_SESSION_BUS_ADDRESS")
+                log("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", opts.dbus_launch, bus_address)
+                if opts.dbus_launch and not bus_address:
+                    #start a dbus server:
+                    def kill_dbus():
+                        log("kill_dbus: dbus_pid=%s" % dbus_pid)
+                        if dbus_pid<=0:
+                            return
+                        try:
+                            os.kill(dbus_pid, signal.SIGINT)
+                        except Exception as e:
+                            log.warn("Warning: error trying to stop dbus with pid %i:", dbus_pid)
+                            log.warn(" %s", e)
+                    add_cleanup(kill_dbus)
+                    #this also updates os.environ with the dbus attributes:
+                    dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+                    if dbus_pid>0:
+                        save_dbus_pid(dbus_pid)
+                    if dbus_env:
+                        save_dbus_env(dbus_env)
+            log("dbus attributes: pid=%s, env=%s", dbus_pid, dbus_env)
+            if dbus_env:
+                os.environ.update(dbus_env)
+                os.environ.update(protected_env)
+
+        log("env=%s", os.environ)
         try:
             # This import is delayed because the module depends on gtk:
             from xpra.x11.bindings.window_bindings import X11WindowBindings
