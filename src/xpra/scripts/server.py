@@ -524,6 +524,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     from xpra.log import Logger
     log = Logger("server")
+    netlog = Logger("network")
 
     mdns_recs = []
     sockets = []
@@ -545,17 +546,20 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.scripts.main import ssl_wrap_socket_fn
         try:
             wrap_socket_fn = ssl_wrap_socket_fn(opts, server_side=True)
+            netlog("wrap_socket_fn=%s", wrap_socket_fn)
         except Exception as e:
-            log("SSL error", exc_info=True)
+            netlog("SSL error", exc_info=True)
             cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
     from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
+    netlog("setting up SSL sockets: %s", bind_ssl)
     for host, iport in bind_ssl:
         _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
         socket = ("SSL", wrap_socket_fn(tcp_socket), host_port)
         sockets.append(socket)
         rec = "ssl", [(host, iport)]
+        netlog("%s : %s", rec, socket)
         mdns_recs.append(rec)
 
     # Initialize the TCP sockets before the display,
@@ -564,21 +568,26 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
     def add_tcp_mdns_rec(host, iport):
         rec = "tcp", [(host, iport)]
+        netlog("%s : %s", rec, socket)
         mdns_recs.append(rec)
         if tcp_ssl:
             #SSL is also available on this TCP socket:
             rec = "ssl", [(host, iport)]
+            netlog("%s : %s", rec, socket)
             mdns_recs.append(rec)
+    netlog("setting up TCP sockets: %s", bind_tcp)
     for host, iport in bind_tcp:
         socket = setup_tcp_socket(host, iport)
         sockets.append(socket)
         add_tcp_mdns_rec(host, iport)
 
     # VSOCK:
+    netlog("setting up vsock sockets: %s", bind_vsock)
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
         rec = "vsock", [("", iport)]
+        netlog("%s : %s", rec, socket)
         mdns_recs.append(rec)
 
     # systemd socket activation:
@@ -588,8 +597,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         pass
     else:
         sd_sockets = get_sd_listen_sockets()
-        for stype, sock, addr in sd_sockets:
-            sockets.append((stype, sock, addr))
+        netlog("systemd sockets: %s", sd_sockets)
+        for stype, socket, addr in sd_sockets:
+            sockets.append((stype, socket, addr))
+            netlog("%s : %s", (stype, [addr]), socket)
             if stype=="tcp":
                 host, iport = addr
                 add_tcp_mdns_rec(host, iport)
@@ -610,6 +621,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except:
             pass
     os.environ.update(protected_env)
+    log("env=%s", os.environ)
 
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
@@ -625,10 +637,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ["DISPLAY"] = display_name
         os.environ["CKCON_X11_DISPLAY"] = display_name
         os.environ.update(protected_env)
-        if display_name!=odisplay_name:
-            items = {"XDISPLAY" : display_name}
-            if pam:
-                pam.set_items(items)
+        if display_name!=odisplay_name and pam:
+            pam.set_items({"XDISPLAY" : display_name})
 
     close_display = None
     if not proxying:
@@ -674,6 +684,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return  1
 
     if ROOT and (uid!=0 or gid!=0):
+        log("root: switching to uid=%i, gid=%i", uid, gid)
         setuidgid(uid, gid)
         os.environ.update({
             "HOME"      : home,
@@ -704,13 +715,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.platform.paths import get_socket_dirs
         opts.socket_dirs = get_socket_dirs()
     local_sockets = setup_local_sockets(opts.bind, opts.socket_dir, opts.socket_dirs, display_name, clobber, opts.mmap_group, opts.socket_permissions, username, uid, gid)
-    for socket, cleanup_socket in local_sockets:
+    netlog("setting up local sockets: %s", local_sockets)
+    for rec, cleanup_socket in local_sockets:
+        socktype, socket, sockpath = rec
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
-        sockets.append(socket)
+        sockets.append(rec)
+        netlog("%s : %s", (socktype, [sockpath]), socket)
         add_cleanup(cleanup_socket)
         if opts.mdns:
             ssh_port = get_ssh_port()
             rec = "ssh", [("", ssh_port)]
+            netlog("%s : %s", rec, socket)
             if ssh_port and rec not in mdns_recs:
                 mdns_recs.append(rec)
 
@@ -762,6 +777,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 dbus_env = {}
         os.environ.update(dbus_env)
         os.environ.update(protected_env)
+        log("env=%s", os.environ)
 
         try:
             # This import is delayed because the module depends on gtk:

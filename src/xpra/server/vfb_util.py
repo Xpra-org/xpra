@@ -29,16 +29,22 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
+
+    from xpra.log import Logger
+    log = Logger("server", "x11")
+
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
     if not os.path.exists(xauthority):
+        log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
         try:
             with open(xauthority, 'wa') as f:
                 if getuid()==0 and (uid!=0 or gid!=0):
                     os.fchown(f.fileno(), uid, gid)
         except Exception as e:
             #trying to continue anyway!
-            sys.stderr.write("Error trying to create XAUTHORITY file %s: %s\n" % (xauthority, e))
+            log.error("Error trying to create XAUTHORITY file %s:", xauthority)
+            log.error(" %s", e)
     use_display_fd = display_name[0]=='S'
 
     #identify logfile argument if it exists,
@@ -59,6 +65,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         xorg_log_dir = osexpand(os.path.dirname(xvfb_cmd[logfile_argindex+1]))
         if not os.path.exists(xorg_log_dir):
             try:
+                log("creating Xorg log dir '%s'", xorg_log_dir)
                 os.mkdir(xorg_log_dir, 0o700)
                 if POSIX and uid!=getuid() or gid!=getgid():
                     try:
@@ -78,9 +85,9 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
             "DISPLAY"       : display_name,
             "XPRA_LOG_DIR"  : os.environ.get("XPRA_LOG_DIR"),
             }
-    xvfb_str = shellsub(xvfb_str, subs)
+    xvfb_cmd = shellsub(xvfb_str, subs).split()
+    log("shellsub(%s, %s)=%s", xvfb_str, subs, xvfb_cmd)
 
-    xvfb_cmd = xvfb_str.split()
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
     xvfb_executable = xvfb_cmd[0]
@@ -97,7 +104,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
             if POSIX and getuid()==0 and uid:
                 setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
-        #print("xvfb_cmd=%s" % (xvfb_cmd, ))
+        log("xvfb_cmd=%s", xvfb_cmd)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb
@@ -124,7 +131,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
         if n<0 or n>=2**16:
             raise InitException("%s provided an invalid display number: %s" % (xvfb_executable, n))
         new_display_name = ":%s" % n
-        sys.stdout.write("Using display number provided by %s: %s\n" % (xvfb_executable, new_display_name))
+        log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
         if tmp_xorg_log_file != None:
             #ie: ${HOME}/.xpra/Xorg.${DISPLAY}.log -> /home/antoine/.xpra/Xorg.S14700.log
             f0 = shellsub(tmp_xorg_log_file, subs)
@@ -147,9 +154,12 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
                 setuidgid(uid, gid)
             else:
                 setsid()
+        log("xvfb_cmd=%s", xvfb_cmd)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=preexec)
     xauth_add(display_name, xauth_data)
+    log("xvfb process=%s", xvfb)
+    log("display_name=%s", display_name)
     return xvfb, display_name
 
 
