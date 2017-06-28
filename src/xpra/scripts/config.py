@@ -589,6 +589,7 @@ OPTION_TYPES = {
 NON_COMMAND_LINE_OPTIONS = [
     "mode",
     "proxy-video-encoders",
+    "display",
     ]
 
 START_COMMAND_OPTIONS = [
