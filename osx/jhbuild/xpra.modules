@@ -36,6 +36,7 @@
   <repository type="tarball" name="cpan.org" href="http://www.cpan.org/"/>
   <repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
   <repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
+  <repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
 
 
 
