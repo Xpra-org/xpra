@@ -148,10 +148,10 @@ def display_name_check(display_name):
     try:
         dno = int(n)
         if dno>=0 and dno<10:
-            warn("WARNING: low display number: %s\n" % dno)
-            warn("You are attempting to run the xpra server against what seems to be a default X11 display '%s'.\n" % display_name)
-            warn("This is generally not what you want.\n")
-            warn("You should probably use a higher display number just to avoid any confusion (and also this warning message).\n")
+            warn("WARNING: low display number: %s" % dno)
+            warn(" You are attempting to run the xpra server against a low X11 display number: '%s'." % display_name)
+            warn(" This is generally not what you want.")
+            warn(" You should probably use a higher display number just to avoid any confusion (and also this warning message).")
     except:
         pass
 
@@ -391,7 +391,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
         if len(extra_args) == 1:
             display_name = extra_args[0]
-            if not shadowing and not proxying:
+            if not shadowing and not proxying and not opts.use_display:
                 display_name_check(display_name)
         else:
             if proxying:
