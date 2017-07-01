@@ -56,7 +56,8 @@ except:
     new_to_legacy = no_legacy_names
 
 NOYIELD = not envbool("XPRA_YIELD", False)
-MAX_CLIPBOARD_PER_SECOND = envint("XPRA_CLIPBOARD_LIMIT", 20)
+MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
+MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
@@ -347,7 +348,7 @@ class ServerSource(FileTransferHandler):
         self.last_user_event = monotonic_time()
         self.last_ping_echoed_time = 0
 
-        self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_PER_SECOND)
+        self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
 
         self.init_vars()
 
@@ -1687,14 +1688,20 @@ class ServerSource(FileTransferHandler):
             return
         now = monotonic_time()
         self.clipboard_stats.append(now)
-        if len(self.clipboard_stats)>=MAX_CLIPBOARD_PER_SECOND:
-            elapsed = now-self.clipboard_stats[0]
+        if len(self.clipboard_stats)>=MAX_CLIPBOARD_LIMIT:
+            event = self.clipboard_stats[-MAX_CLIPBOARD_LIMIT]
+            elapsed = now-event
             clipboardlog("send_clipboard(..) elapsed=%.2f, clipboard_stats=%s", elapsed, self.clipboard_stats)
             if elapsed<1:
-                msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_PER_SECOND
-                clipboardlog.warn("clipboard disabled: %s", msg)
-                self.clipboard_enabled = False
-                self.send_clipboard_enabled(msg)
+                msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_LIMIT
+                clipboardlog.warn("Warning: %s", msg)
+                #disable if this rate is sustained for more than S seconds:
+                events = [x for x in self.clipboard_stats if x>(now-MAX_CLIPBOARD_LIMIT_DURATION)]
+                if len(events)>=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION:
+                    clipboardlog.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
+                    clipboardlog.warn(" the clipboard is now disabled")
+                    self.clipboard_enabled = False
+                    self.send_clipboard_enabled(msg)
                 return
         #call compress_clibboard via the work queue:
         self.encode_work_queue.put((True, self.compress_clipboard, packet))
