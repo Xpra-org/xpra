@@ -1198,7 +1198,7 @@ class ServerBase(ServerCore):
     def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
         if send_ui:
-            root_w, root_h = self.do_parse_screen_info(ss)
+            root_w, root_h = self.parse_screen_info(ss)
             self.parse_hello_ui_clipboard(ss, c)
             key_repeat = self.parse_hello_ui_keyboard(ss, c)
             self.parse_hello_ui_window_settings(ss, c)
@@ -1222,11 +1222,15 @@ class ServerBase(ServerCore):
             self.exec_after_connect_commands()
         self.exec_on_connect_commands()
 
-    def do_parse_screen_info(self, ss):
+    def parse_screen_info(self, ss):
+        return self.do_parse_screen_info(ss, ss.desktop_size)
+
+    def do_parse_screen_info(self, ss, desktop_size):
+        log("do_parse_screen_info%s", (ss, desktop_size))
         dw, dh = None, None
-        if ss.desktop_size:
+        if desktop_size:
             try:
-                dw, dh = ss.desktop_size
+                dw, dh = desktop_size
                 if not ss.screen_sizes:
                     screenlog.info(" client root window size is %sx%s", dw, dh)
                 else:
@@ -1234,8 +1238,8 @@ class ServerBase(ServerCore):
                     log_screen_sizes(dw, dh, ss.screen_sizes)
             except:
                 dw, dh = None, None
-        sw, sh = self.set_best_screen_size()
-        screenlog("set_best_screen_size()=%s", (sw, sh))
+        sw, sh = self.configure_best_screen_size()
+        screenlog("configure_best_screen_size()=%s", (sw, sh))
         #we will tell the client about the size chosen in the hello we send back,
         #so record this size as the current server desktop size to avoid change notifications:
         ss.desktop_size_server = sw, sh
@@ -2421,7 +2425,7 @@ class ServerBase(ServerCore):
         h = min(client_h, root_h)
         return    w, h
 
-    def set_best_screen_size(self):
+    def configure_best_screen_size(self):
         root_w, root_h = self.get_root_window_size()
         return root_w, root_h
 

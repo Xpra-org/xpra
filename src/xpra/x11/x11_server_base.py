@@ -426,7 +426,7 @@ class X11ServerBase(GTKServerBase):
         return max_w, max_h
 
 
-    def set_best_screen_size(self):
+    def configure_best_screen_size(self):
         #return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
         root_w, root_h = self.root_window.get_size()
@@ -448,11 +448,42 @@ class X11ServerBase(GTKServerBase):
             if len(sss)>1:
                 screenlog.info("* %s: %s", ss.uuid, size)
         screenlog("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
-        if max_w>0 and max_h>0:
-            return self.set_screen_size(max_w, max_h)
-        return  root_w, root_h
+        if max_w<=0 or max_h<=0:
+            #invalid - use fallback
+            return  root_w, root_h
+        return self.set_screen_size(max_w, max_h)
+
+    def get_best_screen_size(self, desired_w, desired_h, bigger=True):
+        return self.do_get_best_screen_size(desired_w, desired_h, bigger)
+
+    def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
+        #try to find the best screen size to resize to:
+        new_size = None
+        closest = {}
+        for w,h in RandR.get_screen_sizes():
+            if (w<desired_w)==bigger or (h<desired_h)==bigger:
+                distance = abs(w-desired_w)*abs(h-desired_h)
+                closest[distance] = (w, h)
+                continue            #size is too small/big for client
+            if new_size:
+                ew,eh = new_size
+                if (ew*eh<w*h)==bigger:
+                    continue        #we found a better (smaller/bigger) candidate already
+            new_size = w,h
+        if not new_size:
+            screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
+            if len(closest)>0:
+                new_size = sorted(closest.items())[0]
+                screenlog.warn(" using %sx%s instead", *new_size)
+            else:
+                root_w, root_h = self.root_window.get_size()
+                return  root_w, root_h
+        screenlog("best %s resolution for client(%sx%s) is: %s", ["smaller", "bigger"][bigger], desired_w, desired_h, new_size)
+        w, h = new_size
+        return w, h
 
     def set_screen_size(self, desired_w, desired_h):
+        screenlog("set_screen_size%s", (desired_w, desired_h))
         root_w, root_h = self.root_window.get_size()
         if not self.randr:
             return root_w,root_h
@@ -489,28 +520,8 @@ class X11ServerBase(GTKServerBase):
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
-        new_size = None
-        closest = {}
-        for w,h in RandR.get_screen_sizes():
-            if w<desired_w or h<desired_h:
-                distance = abs(w-desired_w)*abs(h-desired_h)
-                closest[distance] = (w, h)
-                continue            #size is too small for client
-            if new_size:
-                ew,eh = new_size
-                if ew*eh<w*h:
-                    continue        #we found a better (smaller) candidate already
-            new_size = w,h
-        if not new_size:
-            screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
-            if len(closest)>0:
-                new_size = sorted(closest.items())[0]
-                screenlog.warn(" using %sx%s instead", *new_size)
-            else:
-                return  root_w, root_h
-        screenlog("best resolution for client(%sx%s) is: %s", desired_w, desired_h, new_size)
-        #now actually apply the new settings:
-        w, h = new_size
+        w, h = self.get_best_screen_size(desired_w, desired_h)
+
         #fakeXinerama:
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
         source = None

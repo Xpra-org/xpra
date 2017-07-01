@@ -180,12 +180,43 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         with xswallow:
             cleanup_all_event_receivers()
 
+
     def print_screen_info(self):
         X11ServerBase.print_screen_info(self)
         root_w, root_h = get_root_size()
         sss = get_screen_sizes()
         log_screen_sizes(root_w, root_h, sss)
 
+    def parse_screen_info(self, ss):
+        return self.do_parse_screen_info(ss, ss.desktop_mode_size)
+
+    def _screen_size_changed(self, screen):
+        #this is not relevant.. don't send it
+        pass
+
+    def get_best_screen_size(self, desired_w, desired_h, bigger=False):
+        return self.do_get_best_screen_size(desired_w, desired_h, bigger)
+
+    def configure_best_screen_size(self):
+        """ for the first client, honour desktop_mode_size if set """
+        root_w, root_h = self.root_window.get_size()
+        if not self.randr:
+            screenlog("configure_best_screen_size() no randr")
+            return root_w, root_h
+        sss = self._server_sources.values()
+        if len(sss)!=1:
+            screenlog.info("screen used by %i clients:", len(sss))
+            return root_w, root_h
+        requested_size = sss[0].desktop_mode_size
+        if not requested_size:
+            screenlog("configure_best_screen_size() client did not request a specific desktop mode size")
+            return root_w, root_h
+        w, h = requested_size
+        screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)", w, h, root_w, root_h)
+        if w<=0 or h<=0:
+            screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
+            return root_w, root_h
+        return self.set_screen_size(w, h)
 
     def set_desktop_geometry_attributes(self, w, h):
         #geometry is not synced with the client's for desktop servers
@@ -249,11 +280,6 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
             ss.new_window("new-window", wid, window, x, y, w, h, wprops)
             ss.damage(wid, window, 0, 0, w, h)
-
-
-    def _screen_size_changed(self, screen):
-        #this is not relevant.. don't send it
-        pass
 
 
     def _lost_window(self, window, wm_exiting=False):
@@ -368,11 +394,10 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         pass
 
 
-    def set_best_screen_size(self):
-        return self.root_window.get_size()
-
     def _process_desktop_size(self, proto, packet):
-        return
+        ss = self._server_sources.get(proto)
+        if ss and ss.desktop_mode_resize:
+            X11ServerBase._process_desktop_size(self, proto, packet)
 
     def calculate_desktops(self):
         pass

@@ -124,7 +124,7 @@ class GTKServerBase(ServerBase):
         max_w, max_h = gdk.get_default_root_window().get_size()
         return max_w, max_h
 
-    def set_best_screen_size(self):
+    def configure_best_screen_size(self):
         root_w, root_h = gdk.get_default_root_window().get_size()
         return root_w, root_h
 

@@ -126,7 +126,7 @@ class ShadowServerBase(object):
                 log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
-    def do_parse_screen_info(self, ss):
+    def parse_screen_info(self, ss):
         try:
             log.info(" client root window size is %sx%s", *ss.desktop_size)
         except:

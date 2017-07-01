@@ -1043,6 +1043,8 @@ XpraClient.prototype._make_hello = function() {
 		"xkbmap_print"				: "",
 		"xkbmap_query"				: "",
 		"desktop_size"				: [this.desktop_width, this.desktop_height],
+		"desktop_mode_size"			: [this.desktop_width, this.desktop_height],
+		"desktop_mode_resize"		: true,
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:

@@ -112,14 +112,14 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		jQuery(this.div).addClass("window-" + this.windowtype);
 	}
 
-	if(this.override_redirect) {
+	if (this.client.server_is_desktop) {
+		this.resizable = false;
+	}
+	else if(this.override_redirect) {
 		jQuery(this.div).addClass("override-redirect");
 	}
 	else if((this.windowtype == "") || (this.windowtype == "NORMAL") || (this.windowtype == "DIALOG") || (this.windowtype == "UTILITY")) {
 		this.resizable = true;
-		if (this.client.server_is_desktop) {
-			this.resizable = false;
-		}
 		// add a title bar to this window if we need to
 		// create header
 		jQuery(this.div).prepend('<div id="head' + String(wid) + '" class="windowhead"> '+
