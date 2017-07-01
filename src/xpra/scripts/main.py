@@ -1529,6 +1529,18 @@ def parse_display_name(error_cb, opts, display_name):
         desc["local"] = is_local(host)
         return username, password, host, port
 
+    def parse_remote_display(s):
+        if not s:
+            return
+        #strip anything after "?" or "#"
+        #TODO: parse those attributes
+        for x in ("?", "#"):
+            s = s.split(x)[0]
+        display = ":" + s
+        desc["display"] = display
+        opts.display = display
+        desc["display_as_args"] = [display]
+
     if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
         separator = display_name[3] # ":" or "/"
         desc.update({
@@ -1543,10 +1555,7 @@ def parse_display_name(error_cb, opts, display_name):
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
             host = separator.join(parts[1:-1])
             if parts[-1]:
-                display = ":" + parts[-1]
-                desc["display"] = display
-                opts.display = display
-                desc["display_as_args"] = [display]
+                parse_remote_display(parts[-1])
         else:
             #ssh:HOST or ssh/HOST
             host = parts[1]
@@ -1630,15 +1639,7 @@ def parse_display_name(error_cb, opts, display_name):
             error_cb("invalid %s connection string, use %s/[username[:password]@]host[:port][/display] or %s:[username[:password]@]host[:port]" % (ctype * 3))
         #display (optional):
         if separator=="/" and len(parts)==3:
-            display = parts[2]
-            if display:
-                try:
-                    v = int(display)
-                    display = ":%s" % v
-                except:
-                    pass
-                desc["display"] = display
-                opts.display = display
+            parse_remote_display(parts[-1])
             parts = parts[:-1]
         host = ":".join(parts[1:])
         username, password, host, port = parse_host_string(host)
@@ -1675,14 +1676,12 @@ def parse_display_name(error_cb, opts, display_name):
         else:
             extra = ""
         username, password, host, port = parse_host_string(host)
-        #TODO: parse attrs after "/" and ?"
+        parse_remote_display(extra)
         desc.update({
                 "type"          : ws_proto,     #"ws" or "wss"
-                "display"       : extra,
                 "host"          : host,
                 "port"          : port,
                 })
-        print("ws:%s" % desc)
         return desc
     elif WIN32 or display_name.startswith("named-pipe:"):
         pipe_name = display_name
