@@ -6,7 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
 from gtk import gdk
 #most important with win32 servers:
 import glib
@@ -23,7 +22,6 @@ netlog = Logger("network")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.nested_main import MAX_NESTING
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)

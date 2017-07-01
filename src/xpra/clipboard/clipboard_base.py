@@ -20,7 +20,7 @@ log = Logger("clipboard")
 
 from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
-from xpra.gtk_common.nested_main import NestedMainLoop, MAX_NESTING
+from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32, POSIX, monotonic_time
 from xpra.util import csv, envint, envbool, repr_ellipsized
