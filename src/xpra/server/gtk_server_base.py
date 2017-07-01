@@ -23,6 +23,7 @@ netlog = Logger("network")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time
+from xpra.gtk_common.nested_main import MAX_NESTING
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
@@ -209,9 +210,8 @@ class GTKServerBase(ServerBase):
         if not cc.clipboard_enabled:
             clipboardlog("not %s clipboard packet '%s': client %s has clipboard disabled", action, packet_type, cc)
             return False
-        if gtk.main_level()>=10:
-            clipboardlog.warn("Warning: loop nesting too deep: %s", gtk.main_level())
-            clipboardlog.warn(" you may have a clipboard forwarding loop, disabling the clipboard")
+        from xpra.clipboard.clipboard_base import nesting_check
+        if not nesting_check():
             #turn off clipboard at our end:
             self.set_clipboard_enabled_status(ss, False)
             #if we can, tell the client to do the same:

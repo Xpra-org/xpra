@@ -20,7 +20,7 @@ log = Logger("clipboard")
 
 from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, PROPERTY_CHANGE_MASK
-from xpra.gtk_common.nested_main import NestedMainLoop
+from xpra.gtk_common.nested_main import NestedMainLoop, MAX_NESTING
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32, POSIX, monotonic_time
 from xpra.util import csv, envint, envbool, repr_ellipsized
@@ -63,6 +63,18 @@ TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 TRANSLATED_TARGETS = {
     "application/x-moz-nativehtml" : "UTF8_STRING"
     }
+
+
+MAX_NESTING = 20
+
+def nesting_check():
+    l = gtk.main_level()
+    if l>=MAX_NESTING:
+        log.warn("Warning: clipboard loop nesting too deep: %s", l)
+        log.warn(" your setup may have a clipboard forwarding loop,")
+        log.warn(" disabling the clipboard")
+        return False
+    return True
 
 
 def must_discard(target):
