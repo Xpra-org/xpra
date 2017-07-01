@@ -44,7 +44,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 # not *strictly* required, but too important to miss:
         ,python-numpy
 # for PNG and JPEG support:
-        ,python-imaging
+        ,python-pil
 # scrolling detection:
         ,python-xxhash
 # ffmpeg based codecs:
