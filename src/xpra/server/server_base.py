@@ -547,11 +547,11 @@ class ServerBase(ServerCore):
                 if r!=0:
                     #fallback to using SIGINT:
                     proc.terminate()
-            except:
+            except Exception as e:
                 soundlog("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
                 #only log the full stacktrace if the process failed to terminate:
-                full_trace = self.is_child_alive(proc)
-                soundlog.warn("error trying to stop pulseaudio", exc_info=full_trace)
+                if self.is_child_alive(proc):
+                    soundlog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
 
     def init_sound_options(self, opts):
         self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
