@@ -1689,6 +1689,7 @@ class ServerSource(FileTransferHandler):
         self.clipboard_stats.append(now)
         if len(self.clipboard_stats)>=MAX_CLIPBOARD_PER_SECOND:
             elapsed = now-self.clipboard_stats[0]
+            clipboardlog("send_clipboard(..) elapsed=%.2f, clipboard_stats=%s", elapsed, self.clipboard_stats)
             if elapsed<1:
                 msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_PER_SECOND
                 clipboardlog.warn("clipboard disabled: %s", msg)
