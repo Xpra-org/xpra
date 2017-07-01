@@ -8,7 +8,6 @@
 
 # but it works on win32, for whatever that's worth.
 
-import sys
 from socket import error as socket_error
 import binascii
 from threading import Lock, Event
