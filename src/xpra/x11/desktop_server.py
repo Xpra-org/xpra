@@ -28,6 +28,9 @@ from xpra.x11.gtk2.window_damage import WindowDamageHandler
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
+from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
+RandR = RandRBindings()
+
 from xpra.gtk_common.error import xsync
 
 from xpra.log import Logger
@@ -119,6 +122,19 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         else:
             return gobject.GObject.get_property(self, prop)
 
+    def resize(self, w, h):
+        if not RandR.has_randr():
+            log.error("Error: cannot honour resize request,")
+            log.error(" not RandR support on display")
+            return
+        try:
+            with xsync:
+                RandR.set_screen_size(w, h)
+        except Exception as e:
+            log("resize(%i, %i)", w, h, exc_info=True)
+            log.error("Error: failed to resize desktop display to %ix%i:", w, h)
+            log.error(" %s", e)
+
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
         screenlog("screen size changed: new size %ix%i", w, h)
@@ -130,12 +146,23 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def update_size_hints(self, screen):
         w, h = screen.get_width(), screen.get_height()
         screenlog("screen dimensions: %ix%i", w, h)
-        size = w, h
-        size_hints = {
-                      "maximum-size"    : size,
-                      "minimum-size"    : size,
-                      "base-size"       : size,
-                      }
+        if RandR.has_randr():
+            #TODO: get this from randr:
+            size_hints = {
+                "maximum-size"  : (8192, 4096),
+                "minimum-size"  : (640, 640),
+                "base-size"     : (640, 640),
+                "increment"     : (128, 128),
+                "minimum-aspect-ratio"  : (1, 3),
+                "maximum-aspect-ratio"  : (3, 1),
+                }
+        else:
+            size = w, h
+            size_hints = {
+                "maximum-size"  : size,
+                "minimum-size"  : size,
+                "base-size"     : size,
+                }
         self._updateprop("size-hints", size_hints)
 
 
@@ -368,6 +395,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         if not skip_geometry:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
+            window.resize(w, h)
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
