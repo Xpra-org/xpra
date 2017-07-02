@@ -458,7 +458,13 @@ class ClientWindowBase(ClientWidgetBase):
             self.geometry_hints = hints
             self.apply_geometry_hints(hints)
         except:
-            geomlog.error("with hints=%s", hints, exc_info=True)
+            geomlog("set_size_constraints%s", (size_constraints, max_window_size))
+            geomlog.error("Error setting window hints:")
+            for k,v in hints.items():
+                geomlog.error(" %s=%s", k, v)
+            geomlog.error(" from size constraints:")
+            for k,v in size_constraints.items():
+                geomlog.error(" %s=%s", k, v)
         #TODO: handle gravity
         #gravity = size_metadata.get("gravity")
 
