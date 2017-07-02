@@ -601,12 +601,23 @@ fi
 
 
 %changelog
-* Mon May 22 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Sun Jul 02 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+- fix authentication with unencrypted xor mode
+- fix potential symlink attacks when running the proxy server as root
+- fix packet handling errors with AES encryption enabled
+- fix RPM build errors due to incompatible build and install switches
+- fix Debian Stretch x264 package dependency
+- fix Debian deprecated package name for Python Pillow
+- fix window aspect ratio handling in client
+- fix compatibility with Fedora 26: disable broken systemd-run
+- fix RPM build dependency: the test phase needs rencode
+- fix build prefix stripping with newer Debian versions
 - fix proxy server errors with scroll encoded packets
 - fix errors during launcher cleanup
 - fix Mac OS corrupted build patch
 - fix crashes accessing some xsettings
 - fix systray logging on posix OS
+- use a smaller initial display size with desktop mode
 
 * Sun May 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1
 - fix SSL connection failures
