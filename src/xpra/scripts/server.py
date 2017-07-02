@@ -178,9 +178,9 @@ def print_DE_warnings(desktop_display, pulseaudio, notifications, dbus_launch):
         warnings.append("notifications")
     if warnings:
         log.warn("Warning: xpra start from an existing '%s' desktop session", de)
-        log.warn(" %s forwarding may not work", " ".join(warnings))
+        log.warn(" %s forwarding may not work", " and ".join(warnings))
         log.warn(" try using a clean environment, a dedicated user,")
-        log.warn(" or turn off %s", " and ".join(warnings))
+        log.warn(" or disable xpra's %s option", " and ".join(['"%s"' % x for x in warnings]))
 
 
 def sanitize_env():
