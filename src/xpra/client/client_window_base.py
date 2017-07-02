@@ -415,7 +415,7 @@ class ClientWindowBase(ClientWidgetBase):
             v = size_constraints.intpair(a)
             if v:
                 v1, v2 = v
-                hints[h] = (v1*self._client.xscale)/(v2*self._client.yscale)
+                hints[h] = float(v1*self._client.xscale)/float(v2*self._client.yscale)
         #apply max-size override if needed:
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
