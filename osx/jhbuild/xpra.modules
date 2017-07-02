@@ -670,11 +670,11 @@
 
 
   <distutils id="python-lz4">
-	<branch repo="pypi.python.org"
-	        module="/packages/1b/69/6c106a77a804f08938487a9bf45a9771209f487c9dadea8ea819c1555e35/lz4-0.10.0.tar.gz"
-	        checkoutdir="python-lz4-0.10.0"
-	        hash="sha256:c3daab3974893b4a8641793af441cf30e9950fe048476d8649cac49cab4e2837"
-	        version="0.10.0"/>
+	<branch repo="github.com"
+	        module="/python-lz4/python-lz4/archive/v0.10.1.tar.gz"
+	        checkoutdir="python-lz4-0.10.1"
+	        hash="sha256:dc3b894a63c94970fbed9722b55f8cf92663f29386e62ab7b7969d34a32b2f8f"
+	        version="0.10.1"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>
