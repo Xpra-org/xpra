@@ -51,7 +51,7 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %endif
 
 %prep
-%setup -q -n lz4-%{version}
+%setup -q -n python-lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 %if 0%{?fedora:1}
 #should work... until things get out of sync again
