@@ -146,8 +146,8 @@ class XpraClient(GTKXpraClient):
         return encodings
 
 
-    def _startup_complete(self, *args):
-        GTKXpraClient._startup_complete(self, *args)
+    def _process_startup_complete(self, *args):
+        GTKXpraClient._process_startup_complete(self, *args)
         gdk.notify_startup_complete()
 
 
