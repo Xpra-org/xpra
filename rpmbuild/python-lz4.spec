@@ -96,7 +96,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Sat Jun 11 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.0-1
+* Sun Jul 02 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.1-1
+- New upstream release
+
+* Sat Jun 10 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.10.0-1
 - New upstream release
 
 * Sun May 14 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.9.1-1
