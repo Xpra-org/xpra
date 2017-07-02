@@ -1624,6 +1624,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
     ctx.server_is_desktop = Boolean(hello["desktop"]) || Boolean(hello["shadow"]);
+    if (ctx.server_is_desktop) {
+    	jQuery("body").addClass("desktop");
+    }
 
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);

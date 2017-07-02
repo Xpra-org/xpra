@@ -113,6 +113,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	}
 
 	if (this.client.server_is_desktop) {
+		jQuery(this.div).addClass("desktop");
 		this.resizable = false;
 	}
 	else if(this.override_redirect) {
@@ -273,6 +274,10 @@ XpraWindow.prototype.updateCanvasGeometry = function() {
 XpraWindow.prototype.updateCSSGeometry = function() {
 	// set size of canvas
 	this.updateCanvasGeometry();
+	if (this.client.server_is_desktop) {
+		jQuery(this.div).position({of : jQuery("#screen")});
+		return;
+	}
 	// work out outer size
 	this.outerH = this.h + this.topoffset + this.bottomoffset;
 	this.outerW = this.w + this.leftoffset + this.rightoffset;
@@ -324,6 +329,13 @@ XpraWindow.prototype.getMouse = function(e) {
 	else if ("button" in e)  // IE, Opera (zero based)
 		mbutton = Math.max(0, e.button)+1;
 	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
+
+	if (this.client.server_is_desktop) {
+		//substract window offset since the desktop's top-left corner should be at 0,0:
+		var pos = jQuery(this.div).position()
+		mx -= pos.left;
+		my -= pos.top;
+	}
 
 	// We return a simple javascript object (a hash) with x and y defined
 	return {x: mx, y: my, button: mbutton};
@@ -425,7 +437,7 @@ XpraWindow.prototype.toString = function() {
 
 XpraWindow.prototype.update_zindex = function() {
 	var z = 5000 + this.stacking_layer;
-	if (this.override_redirect) {
+	if (this.override_redirect || this.client.server_is_desktop) {
 		z = 15000;
 	}
 	else if (this.windowtype=="DROPDOWN" || this.windowtype=="TOOLTIP" ||

@@ -5,6 +5,11 @@ html, body {
 	margin: 0;
 	overflow: hidden;
 }
+
+body.desktop {
+	background-color: #555;
+}
+
 div#connect_form {
 	display: none;
 }
@@ -57,6 +62,11 @@ canvas {
 	padding: 0;
 	overflow: hidden; /* required for radius clip */
 }
+.window.desktop {
+	border-radius: 0;
+	box-shadow: none;
+}
+
 .window-NORMAL {
 	border-radius: 6px;
 }
