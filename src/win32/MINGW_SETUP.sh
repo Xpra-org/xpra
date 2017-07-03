@@ -47,14 +47,22 @@ for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenG
     easy_install-2.7 -U -Z $x
     easy_install-3.6 -U -Z $x
 done
+
 #problems with versions newer than 1.8.x:
 easy_install-2.7 -U -Z cryptography==1.8.1
 easy_install-3.6 -U -Z cryptography==1.8.1
+
 #this would install cx_Freeze 5.x - which is broken in many ways,
-#so we install version 4 via setuptools instead:
 #$PACMAN --noconfirm -S ${XPKG}python2-cx_Freeze
 #$PACMAN --noconfirm -S ${XPKG}python3-cx_Freeze
-easy_install-2.7 -U -Z cx_Freeze==4.3.4
-easy_install-3.6 -U -Z cx_Freeze==4.3.4
+#we could install version 4 via setuptools instead:
+#easy_install-2.7 -U -Z cx_Freeze==4.3.4
+#easy_install-3.5 -U -Z cx_Freeze==4.3.4
+#but using an archive of the known good version is safer:
+wget http://xpra.org/pkg/${XPKG}-python2-cx_Freeze-4.3.3-7-any.pkg.tar.xz
+pacman -U ${XPKG}-python2-cx_Freeze-4.3.3-7-any.pkg.tar.xz
+wget http://xpra.org/pkg/${XPKG}-python3-cx_Freeze-4.3.3-7-any.pkg.tar.xz
+pacman -U ${XPKG}-python3-cx_Freeze-4.3.3-7-any.pkg.tar.xz
+
 #for webcam support:
 $PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
