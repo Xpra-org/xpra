@@ -415,7 +415,6 @@ class ServerSource(FileTransferHandler):
         self.share = False
         self.desktop_size = None
         self.desktop_mode_size = None
-        self.desktop_mode_resize = False
         self.desktop_size_unscaled = None
         self.desktop_size_server = None
         self.screen_sizes = []
@@ -749,7 +748,6 @@ class ServerSource(FileTransferHandler):
                 log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
                 self.desktop_size = None
         self.desktop_mode_size = c.intpair("desktop_mode_size")
-        self.desktop_mode_resize = c.boolget("desktop_mode_resize")
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.set_screen_sizes(c.listget("screen_sizes"))
         self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
@@ -1496,7 +1494,6 @@ class ServerSource(FileTransferHandler):
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
                 "desktop_mode_size" : self.desktop_mode_size,
-                "desktop_mode_resize" : self.desktop_mode_resize,
                 "desktops"          : self.desktops,
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),

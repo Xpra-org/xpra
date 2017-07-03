@@ -147,7 +147,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         w, h = screen.get_width(), screen.get_height()
         screenlog("screen dimensions: %ix%i", w, h)
         if RandR.has_randr():
-            #TODO: get this from randr:
+            #TODO: get all of this from randr:
+            #screen_sizes = RandR.get_screen_sizes()
             size_hints = {
                 "maximum-size"  : (8192, 4096),
                 "minimum-size"  : (640, 640),
@@ -423,10 +424,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
 
 
     def _process_desktop_size(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss and ss.desktop_mode_resize:
-            X11ServerBase._process_desktop_size(self, proto, packet)
-
+        pass
     def calculate_desktops(self):
         pass
     def calculate_workarea(self, w, h):

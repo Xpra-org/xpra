@@ -258,6 +258,8 @@ class X11ServerBase(GTKServerBase):
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
                     })
+            if self.randr and len(RandR.get_screen_sizes())>1:
+                capabilities["screen-sizes"] = RandR.get_screen_sizes()
             if self.default_cursor_data and source.wants_default_cursor:
                 capabilities["cursor.default"] = self.default_cursor_data
         return capabilities

@@ -123,6 +123,7 @@ XpraClient.prototype.init_state = function(container) {
     this.dQ_interval_id = null;
     this.process_interval = 4;
 
+    this.server_screen_sizes = [];
     this.server_is_desktop = false;
 
 	// a list of our windows
@@ -1044,7 +1045,6 @@ XpraClient.prototype._make_hello = function() {
 		"xkbmap_query"				: "",
 		"desktop_size"				: [this.desktop_width, this.desktop_height],
 		"desktop_mode_size"			: [this.desktop_width, this.desktop_height],
-		"desktop_mode_resize"		: true,
 		"screen_sizes"				: this._get_screen_sizes(),
 		"dpi"						: this._get_DPI(),
 		//not handled yet, but we will:
@@ -1627,6 +1627,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
     if (ctx.server_is_desktop) {
     	jQuery("body").addClass("desktop");
     }
+    ctx.server_screen_sizes = hello["screen-sizes"] || [];
+    console.log("server screen sizes:", ctx.server_screen_sizes)
 
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);

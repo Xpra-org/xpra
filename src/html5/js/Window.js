@@ -780,12 +780,58 @@ XpraWindow.prototype.handle_moved = function(e) {
  * if it is fullscreen or maximized.
  */
 XpraWindow.prototype.screen_resized = function() {
+	if (this.client.server_is_desktop) {
+		this.match_screen_size();
+		this.handle_resized();
+	}
 	if (this.fullscreen || this.maximized) {
 		this.fill_screen();
 		this.handle_resized();
 	}
 	this.ensure_visible();
 };
+
+XpraWindow.prototype.match_screen_size = function() {
+	if (this.client.server_screen_sizes.length==0) {
+		return;
+	}
+	//try to find the best screen size to use,
+	//cannot be larger than the browser area
+	var maxw = this.client.desktop_width;
+	var maxh = this.client.desktop_height;
+	var best = 0;
+	var neww = 0, newh = 0;
+	var w = 0, h = 0;
+	var screen_sizes = this.client.server_screen_sizes;
+	var screen_size;
+	for (var i = 0; i < screen_sizes.length; i++) {
+		screen_size = screen_sizes[i];
+		w = screen_size[0];
+		h = screen_size[1];
+		if (w<=maxw && h<=maxh && w*h>best) {
+			best = w*h;
+			neww = w;
+			newh = h;
+		}
+	}
+	if (neww==0 && newh==0) {
+		//not found, try to fine the smallest one:
+		best = 0;
+		for (var i = 0; i < screen_sizes.length; i++) {
+			screen_size = screen_sizes[i];
+			w = screen_size[0];
+			h = screen_size[1];
+			if (best==0 || w*h<best) {
+				best = w*h;
+				neww = w;
+				newh = h;
+			}
+		}
+	}
+	console.log("best screen size:", neww, newh);
+	this.resize(neww, newh);
+};
+
 
 /**
  * Things ported from original shape
