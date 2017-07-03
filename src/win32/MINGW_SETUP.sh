@@ -45,16 +45,16 @@ $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython
 easy_install-2.7 -U -Z enum34 enum-compat
 for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle; do
     easy_install-2.7 -U -Z $x
-    easy_install-3.5 -U -Z $x
+    easy_install-3.6 -U -Z $x
 done
 #problems with versions newer than 1.8.x:
 easy_install-2.7 -U -Z cryptography==1.8.1
-easy_install-3.5 -U -Z cryptography==1.8.1
+easy_install-3.6 -U -Z cryptography==1.8.1
 #this would install cx_Freeze 5.x - which is broken in many ways,
 #so we install version 4 via setuptools instead:
 #$PACMAN --noconfirm -S ${XPKG}python2-cx_Freeze
 #$PACMAN --noconfirm -S ${XPKG}python3-cx_Freeze
 easy_install-2.7 -U -Z cx_Freeze==4.3.4
-easy_install-3.5 -U -Z cx_Freeze==4.3.4
+easy_install-3.6 -U -Z cx_Freeze==4.3.4
 #for webcam support:
 $PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr

@@ -11,5 +11,5 @@
 for x in rencode xxhash enum34 enum-compat zeroconf lz4 websocket-client comtypes PyOpenGL PyOpenGL_accelerate cffi pycparser nvidia-ml-py appdirs setproctitle netifaces;
 do
     easy_install-2.7 -U -Z $x
-    easy_install-3.5 -U -Z $x
+    easy_install-3.6 -U -Z $x
 done
