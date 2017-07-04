@@ -462,21 +462,22 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                    #"XDG_SESSION_CLASS"      : "user",
                    "XDG_SESSION_DESKTOP"    : "xpra",
                    }
-            pam.start()
-            pam.set_env(env)
-            items = {}
-            if display_name.startswith(":"):
-                items["XDISPLAY"] = display_name
-            if xauth_data:
-                items["XAUTHDATA"] = xauth_data
-            pam.set_items(items)
-            if pam.open():
-                #we can't close it, because we're not going to be root any more,
-                #but since we're the process leader for the session,
-                #terminating will also close the session
-                #add_cleanup(pam.close)
-                protected_env = pam.get_envlist()
-                os.environ.update(protected_env)
+            #maybe we should just bail out instead?
+            if pam.start():
+                pam.set_env(env)
+                items = {}
+                if display_name.startswith(":"):
+                    items["XDISPLAY"] = display_name
+                if xauth_data:
+                    items["XAUTHDATA"] = xauth_data
+                pam.set_items(items)
+                if pam.open():
+                    #we can't close it, because we're not going to be root any more,
+                    #but since we're the process leader for the session,
+                    #terminating will also close the session
+                    #add_cleanup(pam.close)
+                    protected_env = pam.get_envlist()
+                    os.environ.update(protected_env)
         #closing the pam fd causes the session to be closed,
         #and we don't want that!
         protected_fds = fdc.get_new_fds()
