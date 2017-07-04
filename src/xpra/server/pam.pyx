@@ -16,38 +16,34 @@ log = Logger("util", "auth")
 from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer
 from libc.stdint cimport uintptr_t
-from posix.types cimport gid_t, pid_t, off_t, uid_t
+from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
+
 
 cdef extern from "errno.h" nogil:
     int errno
 
-cdef extern from "pwd.h":
-    struct passwd:
-        char   *pw_name         #username
-        char   *pw_passwd       #user password
-        uid_t   pw_uid          #user ID
-        gid_t   pw_gid          #group ID
-        char   *pw_gecos        #user information
-        char   *pw_dir          #home directory
-        char   *pw_shell        #shell program
-    passwd *getpwuid(uid_t uid)
+cdef extern from "string.h":
+    char *strdup(const char *s1)
+
+cdef extern from "stdlib.h":
+    void *calloc(size_t nitems, size_t size)
 
 cdef extern from "pam_misc.h":
     ctypedef struct pam_handle_t:
         pass
     void misc_conv(int num_msg, const pam_message **msgm, pam_response **response, void *appdata_ptr)
 
-
 cdef extern from "pam_appl.h":
-    int PAM_SUCCESS
     struct pam_conv:
         void *conv
         #int (*conv)(int num_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr)
         void *appdata_ptr
     struct pam_message:
-        pass
+        int msg_style
+        const char *msg
     struct pam_response:
-        pass
+        char *resp
+        int resp_retcode
     struct pam_xauth_data:
         int namelen
         char *name
@@ -63,6 +59,8 @@ cdef extern from "pam_appl.h":
     int pam_set_item(pam_handle_t *pamh, int item_type, const void *item)
     char **pam_getenvlist(pam_handle_t *pamh)
 
+    int pam_authenticate(pam_handle_t *pamh, int flags)
+
     int PAM_SERVICE             # The service name
     int PAM_USER                # The user name
     int PAM_TTY                 # The tty name
@@ -77,8 +75,29 @@ cdef extern from "pam_appl.h":
     int PAM_XAUTHDATA           # X server authentication data
     int PAM_AUTHTOK_TYPE        # The type for pam_get_authtok
 
+    int PAM_PROMPT_ECHO_ON
+    int PAM_PROMPT_ECHO_OFF
+    int PAM_PROMPT_TEXT_INFO
 
-PAM_ERR_STR = {PAM_SUCCESS : "success"}
+    int PAM_SILENT
+
+    int PAM_ABORT               #The application should exit immediately after calling pam_end(3) first
+    int PAM_AUTH_ERR            #The user was not authenticated
+    int PAM_CRED_INSUFFICIENT   #For some reason the application does not have sufficient credentials to authenticate the user
+    int PAM_AUTHINFO_UNAVAIL    #The modules were not able to access the authentication information. This might be due to a network or hardware failure etc
+    int PAM_MAXTRIES            #One or more of the authentication modules has reached its limit of tries authenticating the user. Do not try again
+    int PAM_SUCCESS             #The user was successfully authenticated
+    int PAM_USER_UNKNOWN        #User unknown to authentication service
+
+PAM_ERR_STR = {
+    PAM_ABORT               : "ABORT",
+    PAM_AUTH_ERR            : "AUTH_ERR",
+    PAM_CRED_INSUFFICIENT   : "CRED_INSUFFICIENT",
+    PAM_AUTHINFO_UNAVAIL    : "AUTHINFO_UNAVAIL",
+    PAM_MAXTRIES            : "MAXTRIES",
+    PAM_SUCCESS             : "SUCCESS",
+    PAM_USER_UNKNOWN        : "USER_UNKNOWN",
+    }
 
 PAM_ITEMS = {
     "SERVICE"       : PAM_SERVICE,
@@ -97,36 +116,57 @@ PAM_ITEMS = {
     }
 
 
+cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr):
+    if appdata_ptr==NULL:
+        return 1
+    cdef pam_response* response = <pam_response*> calloc(n_msg, sizeof(pam_response))
+    if response==NULL:
+        return 1
+    cdef char *password = <char*> appdata_ptr
+    resp[0] = response
+    for i in range(n_msg):
+        if msg[i].msg_style == PAM_PROMPT_ECHO_OFF:
+            response[i].resp = strdup(password)
+            response[i].resp_retcode = 0
+    return 0
+
+
 cdef class pam_session(object):
 
     cdef pam_handle_t *pam_handle
     cdef object service_name
     cdef object username
+    cdef object password
 
-    def __init__(self, username, service_name="xpra"):
+    def __init__(self, username, password="", service_name="xpra"):
         self.service_name = service_name
         self.username = username
+        self.password = password
         self.pam_handle = NULL
 
     def __repr__(self):
         return "pam_session(%#x)" % (<uintptr_t> self.pam_handle)
 
-    def start(self):
-        cdef passwd *passwd_struct
+    def start(self, password=False):
         cdef pam_conv conv
         cdef int r
+        cdef Py_ssize_t buffer_len
 
         if self.pam_handle!=NULL:
             log.error("Error: cannot open the pam session more than once!")
             return False
 
-        conv.conv = <void*> misc_conv
-        conv.appdata_ptr = NULL
+        if password:
+            conv.conv = <void *> &password_conv
+            assert object_as_buffer(self.password, <const void **> &conv.appdata_ptr, &buffer_len)==0
+        else:
+            conv.conv = <void*> misc_conv
+            conv.appdata_ptr = NULL
         r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
-            log.error("Error: pam_start failed:")
+            log.error("Error: pam_start failed: %s", PAM_ERR_STR.get(r, r))
             log.error(" %s", pam_strerror(self.pam_handle, r))
             return False
         return True
@@ -167,6 +207,7 @@ cdef class pam_session(object):
         for k,v in items.items():
             v = strtobytes(v)
             item_type = PAM_ITEMS.get(k.upper())
+            log("item_type(%s)=%s", k, item_type)
             if item_type is None or item_type in (PAM_CONV, PAM_FAIL_DELAY):
                 log.error("Error: invalid pam item '%s'", k)
                 continue
@@ -194,7 +235,18 @@ cdef class pam_session(object):
         log("pam_open_session: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
-            log.error("Error: pam_open_session failed:")
+            log.error("Error: pam_open_session failed: %s", PAM_ERR_STR.get(r, r))
+            log.error(" %s", pam_strerror(self.pam_handle, r))
+            return False
+        return True
+
+    def authenticate(self):
+        log("authenticate()")
+        assert self.pam_handle!=NULL
+        cdef int r = pam_authenticate(self.pam_handle, PAM_SILENT)
+        log("pam_authenticate: %s", PAM_ERR_STR.get(r, r))
+        if r!=PAM_SUCCESS:
+            log.warn("Warning: pam authentication failed: %s", PAM_ERR_STR.get(r, r))
             log.error(" %s", pam_strerror(self.pam_handle, r))
             return False
         return True
@@ -208,7 +260,7 @@ cdef class pam_session(object):
         log("pam_close_session: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
-            log.error("Error: failed to close the pam session:")
+            log.error("Error: failed to close the pam session: %s", PAM_ERR_STR.get(r, r))
             log.error(" %s", pam_strerror(self.pam_handle, r))
             return False
 

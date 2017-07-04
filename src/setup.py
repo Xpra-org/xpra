@@ -69,6 +69,7 @@ LINUX = sys.platform.startswith("linux")
 NETBSD = sys.platform.startswith("netbsd")
 FREEBSD = sys.platform.startswith("freebsd")
 PYTHON3 = sys.version_info[0] == 3
+POSIX = os.name=="posix"
 import struct
 BITS = struct.calcsize("P")*8
 
@@ -160,7 +161,7 @@ html5_ENABLED = DEFAULT
 html5_gzip_ENABLED = DEFAULT
 html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and os.name=="posix" and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -813,7 +814,7 @@ def build_xpra_conf(install_dir):
         bind = "auto"
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
-    if os.name=="posix" and printing_ENABLED:
+    if POSIX and printing_ENABLED:
         try:
             if "/usr/sbin" not in sys.path:
                 sys.path.append("/usr/sbin")
@@ -1549,7 +1550,7 @@ else:
                 if chmod:
                     os.chmod(dst_file, chmod)
 
-            if printing_ENABLED and os.name=="posix":
+            if printing_ENABLED and POSIX:
                 #install "/usr/lib/cups/backend" with 0700 permissions:
                 copytodir("cups/xpraforwarder", "lib/cups/backend", chmod=0o700)
 
