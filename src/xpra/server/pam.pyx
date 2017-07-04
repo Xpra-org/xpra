@@ -101,11 +101,11 @@ cdef class pam_session(object):
 
     cdef pam_handle_t *pam_handle
     cdef object service_name
-    cdef int uid
+    cdef object username
 
-    def __init__(self, service_name="xpra", uid=os.geteuid()):
+    def __init__(self, username, service_name="xpra"):
         self.service_name = service_name
-        self.uid = uid
+        self.username = username
         self.pam_handle = NULL
 
     def __repr__(self):
@@ -120,25 +120,16 @@ cdef class pam_session(object):
             log.error("Error: cannot open the pam session more than once!")
             return False
 
-        passwd_struct = getpwuid(self.uid)
-        if passwd_struct==NULL:
-            try:
-                estr = os.strerror(errno)
-            except ValueError:
-                estr = str(errno)
-            log.error("Error: cannot find pwd entry for uid %i", self.uid)
-            log.error(" %s", estr)
-            return False
-
         conv.conv = <void*> misc_conv
-        conv.appdata_ptr = NULL;
-        r = pam_start(strtobytes(self.service_name), strtobytes(passwd_struct.pw_name), &conv, &self.pam_handle)
+        conv.appdata_ptr = NULL
+        r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: pam_start failed:")
             log.error(" %s", pam_strerror(self.pam_handle, r))
             return False
+        return True
 
     def set_env(self, env={}):
         assert self.pam_handle!=NULL

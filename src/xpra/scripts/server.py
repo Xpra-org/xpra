@@ -454,7 +454,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         fdc = FDChangeCaptureContext()
         with fdc:
             from xpra.server.pam import pam_session #@UnresolvedImport
-            pam = pam_session(uid=uid)
+            pam = pam_session(username)
             env = {
                    #"XDG_SEAT"               : "seat1",
                    #"XDG_VTNR"               : "0",
