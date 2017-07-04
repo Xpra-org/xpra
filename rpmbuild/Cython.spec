@@ -10,14 +10,15 @@ Name:		python-Cython
 Name:		python2-Cython
 %endif
 
-Version:	0.25.2
-Release:	2%{?dist}
+Version:	0.26.0
+Release:	0%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source:		http://www.cython.org/Cython-%{version}.tar.gz
+#Source:		http://www.cython.org/Cython-%{version}.tar.gz
+Source:		https://github.com/cython/cython/archive/0.26b0.zip
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 %if 0%{?suse_version}
@@ -53,6 +54,7 @@ for writing Python extension modules.
 
 %prep
 %setup -q -n Cython-%{version}
+%setup -q -n cython-0.26b0
 
 %if %{with_python3}
 rm -rf %{py3dir}
@@ -120,6 +122,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jul 04 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26.0-0
+- new beta release
+
 * Sun Dec 25 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-2
 - add provides for python2 package naming
 
