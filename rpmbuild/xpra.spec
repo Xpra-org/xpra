@@ -51,7 +51,7 @@
 %define requires_printing , python2-cups
 %define py3requires_printing %{nil}
 #Anything extra (distro specific):
-%define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good, gstreamer1-plugins-ugly-free
+%define gstreamer1 , gstreamer1, gstreamer1-plugins-base, gstreamer1-plugins-good
 #this requires rpmfusion:
 #gstreamer1-plugins-bad-free
 %define requires_pulseaudio pulseaudio, pulseaudio-utils
@@ -276,8 +276,13 @@ Requires: python2-xpra = %{version}-%{build_no}%{dist}
 %if ! 0%{?el7}
 #EL7 requires 3rd party repos like "media.librelamp.com"
 Requires: %{requires_sound}
-%{Recommends}: gstreamer1-plugins-ugly
 %{Recommends}: gstreamer1-plugin-timestamp
+%{Recommends}: gstreamer1-plugins-ugly
+%if 0%{?fedora}<26
+%{Recommends}: gstreamer1-plugins-ugly-free
+%else
+Requires: gstreamer1-plugins-ugly-free
+%endif
 %endif
 %{Recommends}: %{requires_pulseaudio}
 BuildRequires: python, %{requires_setuptools}
@@ -369,9 +374,15 @@ Requires: python3-xpra = %{version}-%{build_no}%{dist}
 %if ! 0%{?el7}
 #EL7 requires 3rd party repos like "media.librelamp.com"
 Requires: %{py3requires_sound}
-%{Recommends}: gstreamer1-plugins-ugly
 %{Recommends}: gstreamer1-plugin-timestamp
+%{Recommends}: gstreamer1-plugins-ugly
+%if 0%{?fedora}<26
+%{Recommends}: gstreamer1-plugins-ugly-free
+%else
+Requires: gstreamer1-plugins-ugly-free
 %endif
+%endif
+
 BuildRequires: python3
 %description -n python3-xpra-audio
 This package contains audio support for python2 builds of xpra.
