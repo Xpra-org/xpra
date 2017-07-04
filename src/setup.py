@@ -2133,9 +2133,6 @@ if csc_libyuv_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("swscale", "avutil")
-    if cython_version>="0.26":
-        #see #1564
-        add_to_keywords(swscale_pkgconfig, 'extra_compile_args', "-Wno-error=unused-function")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
@@ -2144,9 +2141,6 @@ if csc_swscale_ENABLED:
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx")
-    if cython_version>="0.26":
-        #see #1564
-        add_to_keywords(vpx_pkgconfig, 'extra_compile_args', "-Wno-error=unused-function")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"],
                 **vpx_pkgconfig))
