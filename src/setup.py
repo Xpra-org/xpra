@@ -105,6 +105,20 @@ if PKG_CONFIG:
     if has_pkg_config:
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
 
+cython_version = ""
+cython_version_output = get_status_output(["cython", "--version"])
+if cython_version_output and cython_version_output[0]==0:
+    #print("cython version %s" % (cython_version_output, ))
+    try:
+        cython_version_output = cython_version_output[2].replace("\n", "").replace("\r", "")
+        cython_version = cython_version_output.split("Cython version ")[1]
+        #from xpra.os_util import strtobytes
+        #cython_version = [strtobytes(x) for x in cython_version]
+    except:
+        pass
+    else:
+        print("cython version: %s" % (cython_version,))
+
 for arg in list(sys.argv):
     if arg.startswith("--pkg-config-path="):
         pcp = arg[len("--pkg-config-path="):]
@@ -2135,6 +2149,9 @@ if csc_libyuv_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("swscale", "avutil")
+    if cython_version>="0.26":
+        #see #1564
+        add_to_keywords(swscale_pkgconfig, 'extra_compile_args', "-Wno-error=unused-function")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
@@ -2143,6 +2160,9 @@ if csc_swscale_ENABLED:
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx")
+    if cython_version>="0.26":
+        #see #1564
+        add_to_keywords(vpx_pkgconfig, 'extra_compile_args', "-Wno-error=unused-function")
     cython_add(Extension("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"],
                 **vpx_pkgconfig))
