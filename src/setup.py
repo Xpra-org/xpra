@@ -105,19 +105,7 @@ if PKG_CONFIG:
     if has_pkg_config:
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
 
-cython_version = ""
-cython_version_output = get_status_output(["cython", "--version"])
-if cython_version_output and cython_version_output[0]==0:
-    #print("cython version %s" % (cython_version_output, ))
-    try:
-        cython_version_output = cython_version_output[2].replace("\n", "").replace("\r", "")
-        cython_version = cython_version_output.split("Cython version ")[1]
-        #from xpra.os_util import strtobytes
-        #cython_version = [strtobytes(x) for x in cython_version]
-    except:
-        pass
-    else:
-        print("cython version: %s" % (cython_version,))
+from Cython.Compiler.Version import version as cython_version
 
 for arg in list(sys.argv):
     if arg.startswith("--pkg-config-path="):
@@ -494,10 +482,6 @@ def print_option(prefix, k, v):
 #*******************************************************************************
 # Utility methods for building with Cython
 def cython_version_check(min_version):
-    try:
-        from Cython.Compiler.Version import version as cython_version
-    except ImportError as e:
-        sys.exit("ERROR: Cannot find Cython: %s" % e)
     from distutils.version import LooseVersion
     if LooseVersion(cython_version) < LooseVersion(".".join([str(x) for x in min_version])):
         sys.exit("ERROR: Your version of Cython is too old to build this package\n"
