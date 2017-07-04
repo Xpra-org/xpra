@@ -7,8 +7,7 @@
 # this used to be implemented using a gtk.gdk.Rectangle
 # but we don't want its union() behaviour which can be too expensive
 
-#cython: boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True, always_allow_keywords=False
-
+#cython: auto_pickle=False, boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True, always_allow_keywords=False
 
 #what I want is a real macro!
 cdef inline int MIN(int a, int b):

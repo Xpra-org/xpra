@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #!python
-#cython: boundscheck=False, wraparound=False, cdivision=True
+#cython: auto_pickle=False, boundscheck=False, wraparound=False, cdivision=True
 
 import os
 import time

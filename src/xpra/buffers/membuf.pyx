@@ -14,6 +14,8 @@
 # 2) object to buffer conversion utility functions,
 # 3) xxhash wrapper
 
+#cython: auto_pickle=False, wraparound=False, cdivision=True
+
 
 from cpython.buffer cimport PyBuffer_FillInfo
 from libc.stdlib cimport free

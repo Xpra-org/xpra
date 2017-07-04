@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#cython: auto_pickle=False
+
 import errno as pyerrno
 from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer

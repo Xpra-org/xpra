@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#cython: wraparound=False
+
 from xpra.buffers.membuf cimport getbuf, MemBuf
 from xpra.buffers.membuf cimport object_as_buffer
 

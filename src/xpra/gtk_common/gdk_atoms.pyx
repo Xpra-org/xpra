@@ -8,6 +8,8 @@
 # split from bindings.pyx as this needs to be built on win32 too
 # and win32 does not have all the X11 stuff
 
+#cython: wraparound=False
+
 import gobject
 import gtk
 import gtk.gdk
