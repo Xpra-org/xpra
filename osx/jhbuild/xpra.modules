@@ -423,19 +423,6 @@
         </after>
   </distutils>
 
-  <distutils id="python-pam">
-	<branch repo="pypi.python.org"
-		module="/packages/source/p/pam/pam-0.1.4.tar.gz"
-		hash="md5:4c5247af579352bb6882dac64be10a33"
-		version="0.1.4"/>
-        <dependencies>
-                <dep package="python"/>
-        </dependencies>
-        <after>
-                <dep package="python"/>
-        </after>
-  </distutils>
-
   <distutils id="pycparser">
 	<branch repo="pypi.python.org"
 		module="/packages/be/64/1bb257ffb17d01f4a38d7ce686809a736837ad4371bcc5c42ba7a715c3ac/pycparser-2.17.tar.gz"
@@ -986,7 +973,6 @@
       <dep package="setuptools"/>
       <dep package="python-zeroconf"/>
       <dep package="python-netifaces"/>
-      <dep package="python-pam"/>
       <dep package="python-pyasn1"/>
       <dep package="python-pillow"/>
       <dep package="python-py2app"/>
