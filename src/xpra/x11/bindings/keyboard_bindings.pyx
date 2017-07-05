@@ -481,7 +481,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                 return int(symbol, 16)
             if len(symbol)>0 and symbol[0] in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
                 return int(symbol)
-            return  None
+            return NoSymbol
         return keysym
 
     def parse_keysym(self, symbol):
@@ -503,13 +503,15 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             by calling parse_keysym on each one
         """
         keysymlist = []
+        cdef KeySym keysym
         for x in symbols:
             keysym = self._parse_keysym(x)
-            if keysym is not None:
+            if keysym!=NoSymbol:
                 keysymlist.append(keysym)
         return keysymlist
 
-    cdef _parse_keycode(self, keycode_str):
+    cdef int _parse_keycode(self, keycode_str):
+        cdef int keycode
         if keycode_str=="any":
             #find a free one:
             keycode = 0
@@ -562,16 +564,16 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                     keysyms = []
                     for ks in keysyms_strs:
                         if ks in (None, ""):
-                            k = None
+                            keysym = NoSymbol
                         elif type(ks) in [long, int]:
-                            k = ks
+                            keysym = ks
                         else:
-                            k = self.parse_keysym(ks)
-                        if k is not None:
-                            keysyms.append(k)
+                            keysym = self._parse_keysym(ks)
+                        if keysym!=NoSymbol:
+                            keysyms.append(keysym)
                         else:
                             keysyms.append(NoSymbol)
-                            if ks is not None:
+                            if ks:
                                 missing_keysyms.append(str(ks))
                 for j in range(keysyms_per_keycode):
                     keysym = NoSymbol
