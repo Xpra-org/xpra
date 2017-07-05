@@ -18,6 +18,7 @@ MAX_SIZE = 256*1024*1024
 
 python_lz4_version = None
 lz4_version = None
+has_lz4 = False
 def lz4_compress(packet, level):
     raise Exception("lz4 is not supported!")
 try:
@@ -29,10 +30,10 @@ try:
     except:
         pass
     from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
-    has_lz4 = True
     if hasattr(lz4, "block"):
         from lz4.block import compress, decompress
         LZ4_uncompress = decompress
+        has_lz4 = True
         def lz4_compress(packet, level):
             flag = min(15, level) | LZ4_FLAG
             if level>=7:
@@ -45,6 +46,7 @@ try:
         from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
         if hasattr(lz4, "LZ4_compress_fast"):
             from lz4 import LZ4_compress_fast     #@UnresolvedImport
+            has_lz4 = True
             def lz4_compress(packet, level):
                 if level>=9:
                     return level | LZ4_FLAG, compressHC(packet)
@@ -57,7 +59,6 @@ try:
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
-    has_lz4 = False
 
 python_lzo_version = None
 lzo_version = None
