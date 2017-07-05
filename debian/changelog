@@ -14,9 +14,11 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix Mac OS corrupted build patch
   * fix crashes accessing some xsettings
   * fix systray logging on posix OS
+  * fix Cython runtime warnings in keyboard definition parsing
+  * fix compilation with Cython 0.26b0
   * use a smaller initial display size with desktop mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 02 Jul 2017 17:27:39 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 05 Jul 2017 20:00:17 +0700
 
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath

@@ -1,4 +1,4 @@
-v1.0.7 (2017-07-02)
+v1.0.7 (2017-07-05)
 ======================
 	-- fix authentication with unencrypted xor mode
 	-- fix potential symlink attacks when running the proxy server as root
@@ -15,6 +15,8 @@ v1.0.7 (2017-07-02)
 	-- fix Mac OS corrupted build patch
 	-- fix crashes accessing some xsettings
 	-- fix systray logging on posix OS
+	-- fix Cython runtime warnings in keyboard definition parsing
+	-- fix compilation with Cython 0.26b0
 	-- use a smaller initial display size with desktop mode
 
 

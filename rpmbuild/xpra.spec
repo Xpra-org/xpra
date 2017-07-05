@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Sun Jul 02 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Wed Jul 05 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root
 - fix packet handling errors with AES encryption enabled
