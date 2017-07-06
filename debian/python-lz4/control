@@ -1,0 +1,42 @@
+Source: python-lz4
+Section: python
+Priority: optional
+Maintainer: Antoine Martin <antoine@nagafix.co.uk>
+Build-Depends: debhelper (>= 9), dh-python, python-all-dev, python3-all-dev
+              ,liblz4-dev (>= 0.0~r131~)
+              ,pkg-config
+              ,python-nose
+              ,python3-nose
+              ,python-setuptools
+              ,python3-setuptools
+              ,python-setuptools-scm
+              ,python3-setuptools-scm
+X-Python-Version: >= 2.7
+X-Python3-Version: >= 3.3
+Standards-Version: 3.9.8
+Homepage: https://github.com/steeve/python-lz4
+Vcs-Browser: https://github.com/steeve/python-lz4
+
+Package: python-lz4
+Architecture: any
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Description: Python interface to the lz4 compression library
+ This package provides bindings for the liblz4 compression library.
+ .
+ LZ4 is a very fast lossless compression algorithm, providing compression
+ speed at 400 MB/s per core, scalable with multi-cores CPU. It also
+ features an extremely fast decoder, with speed in multiple GB/s per core,
+ typically reaching RAM speed limits on multi-core systems.
+
+Package: python3-lz4
+Architecture: any
+Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
+Description: Python interface to the lz4 compression library (Python 3)
+ This package provides bindings for the liblz4 compression library.
+ .
+ LZ4 is a very fast lossless compression algorithm, providing compression
+ speed at 400 MB/s per core, scalable with multi-cores CPU. It also
+ features an extremely fast decoder, with speed in multiple GB/s per core,
+ typically reaching RAM speed limits on multi-core systems.
+ .
+ This package is for Python 3.
