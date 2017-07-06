@@ -9,7 +9,7 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, PYTHON2
+from xpra.os_util import bytestostr, PYTHON2, OSX
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
@@ -408,14 +408,15 @@ class ClientWindowBase(ClientWidgetBase):
             if v:
                 v1, v2 = v
                 hints[h1], hints[h2] = self._client.sp(v1, v2)
-        for (a, h) in [
-            (b"minimum-aspect-ratio", b"min_aspect"),
-            (b"maximum-aspect-ratio", b"max_aspect"),
-            ]:
-            v = size_constraints.intpair(a)
-            if v:
-                v1, v2 = v
-                hints[h] = float(v1*self._client.xscale)/float(v2*self._client.yscale)
+        if not OSX:
+            for (a, h) in [
+                (b"minimum-aspect-ratio", b"min_aspect"),
+                (b"maximum-aspect-ratio", b"max_aspect"),
+                ]:
+                v = size_constraints.intpair(a)
+                if v:
+                    v1, v2 = v
+                    hints[h] = float(v1*self._client.xscale)/float(v2*self._client.yscale)
         #apply max-size override if needed:
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
