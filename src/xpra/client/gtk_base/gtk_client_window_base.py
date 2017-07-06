@@ -908,6 +908,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         else:
             self.pointer_grab()
 
+    def toggle_fullscreen(self):
+        geomlog("toggle_fullscreen()")
+        if self._fullscreen:
+            self.unfullscreen()
+        else:
+            self.fullscreen()
+
 
     def set_menu(self, menu):
         menulog("set_menu(%s)", menu)
