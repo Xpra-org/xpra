@@ -151,7 +151,7 @@ cdef class _RandRBindings(_X11CoreBindings):
                 if xrr.width==width and xrr.height==height:
                     sizeID = i
             if sizeID<0:
-                log.error("size not found for %ix%i" % (width, height))
+                log.error("Error: size not found for %ix%i" % (width, height))
                 return False
             rates = XRRConfigRates(config, sizeID, &num_rates)
             if rates==NULL:
@@ -162,7 +162,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             time = CurrentTime
             status = XRRSetScreenConfigAndRate(self.display, config, window, sizeID, rotation, rate, time)
             if status != Success:
-                log.error("failed to set new screen size")
+                log.error("Error: failed to set new screen size")
                 return False
             return True
         finally:
