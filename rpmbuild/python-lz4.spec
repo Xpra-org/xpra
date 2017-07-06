@@ -19,11 +19,11 @@
 Name:           python2-lz4
 Version:        0.10.1
 Release:        1%{?dist}
-URL:            https://pypi.python.org/packages/f5/c6/ef2890b5e287735576e15c1389aa0b9032c9d78ed72385fbd1149af593cd/lz4-0.10.1.tar.gz
+URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://github.com/python-lz4/python-lz4/archive/v%{version}.tar.gz
+Source:         https://pypi.python.org/packages/f5/c6/ef2890b5e287735576e15c1389aa0b9032c9d78ed72385fbd1149af593cd/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -51,7 +51,7 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %endif
 
 %prep
-%setup -q -n python-lz4-%{version}
+%setup -q -n lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 %if 0%{?fedora:1}
 #should work... until things get out of sync again
