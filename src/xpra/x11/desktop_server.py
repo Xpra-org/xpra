@@ -10,6 +10,8 @@ import gobject
 import socket
 
 from xpra.util import updict, log_screen_sizes
+from xpra.os_util import get_generic_os_name
+from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import xswallow
@@ -68,7 +70,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         }
 
 
-    _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth"]
+    _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth", "icon"]
     _dynamic_property_names = ["size-hints"]
 
     def __init__(self, root):
@@ -104,6 +106,11 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         return bool(self._xshm_handle)
 
 
+    def get_default_window_icon(self):
+        icon_name = get_generic_os_name()+".png"
+        return get_icon(icon_name)
+
+
     def get_property(self, prop):
         if prop=="xid":
             return self.client_window.xid
@@ -119,6 +126,15 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return True
         elif prop=="class-instance":
             return ("xpra-desktop", "Xpra-Desktop")
+        elif prop=="icon":
+            try:
+                icon_name = get_wm_name()+".png"
+                icon = get_icon(icon_name)
+                log("get_icon(%s)=%s", icon_name, icon)
+                return icon
+            except:
+                log("failed to return window icon")
+                return None
         else:
             return gobject.GObject.get_property(self, prop)
 

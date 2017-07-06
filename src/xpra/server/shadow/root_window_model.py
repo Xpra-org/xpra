@@ -1,16 +1,16 @@
 # coding=utf8
 # This file is part of Xpra.
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import socket
 
 from xpra.log import Logger
 log = Logger("shadow")
 
 from xpra.util import prettify_plug_name
+from xpra.os_util import get_generic_os_name
 
 
 class RootWindowModel(object):
@@ -69,15 +69,6 @@ class RootWindowModel(object):
     def get_internal_property_names(self):
         return self.internal_property_names
 
-    def get_generic_os_name(self):
-        for k,v in {"linux"     : "linux",
-                    "darwin"    : "osx",
-                    "win"       : "win32",
-                    "freebsd"   : "freebsd"}.items():
-            if sys.platform.startswith(k):
-                return v
-        return sys.platform
-
     def get_property(self, prop):
         if prop=="title":
             return prettify_plug_name(self.window.get_screen().get_display().get_name())
@@ -99,26 +90,15 @@ class RootWindowModel(object):
                     "minimum-size"  : size,
                     "base-size" : size}
         elif prop=="class-instance":
-            osn = self.get_generic_os_name()
+            osn = get_generic_os_name()
             return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
         elif prop=="icon":
-            #convert it to a cairo surface..
-            #because that's what the property is expected to be
             try:
-                import gtk.gdk
                 from xpra.platform.paths import get_icon
                 icon_name = self.get_generic_os_name()+".png"
                 icon = get_icon(icon_name)
                 log("icon(%s)=%s", icon_name, icon)
-                if not icon:
-                    return None
-                import cairo
-                surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, icon.get_width(), icon.get_height())
-                gc = gtk.gdk.CairoContext(cairo.Context(surf))
-                gc.set_source_pixbuf(icon, 0, 0)
-                gc.paint()
-                log("icon=%s", surf)
-                return surf
+                return icon
             except:
                 log("failed to return window icon")
                 return None

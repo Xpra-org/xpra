@@ -300,6 +300,17 @@ def getUbuntuVersion():
 def is_unity():
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().startswith("unity")
 
+def get_generic_os_name():
+    for k,v in {
+        "linux"     : "linux",
+        "darwin"    : "osx",
+        "win"       : "win32",
+        "freebsd"   : "freebsd",
+        }.items():
+        if sys.platform.startswith(k):
+            return v
+    return sys.platform
+
 
 def load_binary_file(filename):
     if not os.path.exists(filename):

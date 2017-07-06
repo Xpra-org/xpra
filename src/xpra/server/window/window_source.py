@@ -418,13 +418,14 @@ class WindowSource(object):
             info["pixel-format"] = self.pixel_format
         idata = self.window_icon_data
         if idata:
-            pixel_data, stride, w, h = idata
+            pixel_data, pixel_format, stride, w, h = idata
             info["icon"] = {
-                            "width"     : w,
-                            "height"    : h,
-                            "stride"    : stride,
-                            "bytes"     : len(pixel_data)
-                            }
+                "pixel_format"  : pixel_format,
+                "width"         : w,
+                "height"        : h,
+                "stride"        : stride,
+                "bytes"         : len(pixel_data),
+                }
         return info
 
     def get_quality_speed_info(self):
@@ -542,12 +543,16 @@ class WindowSource(object):
             surf = WindowSource.get_fallback_window_icon_surface()
             iconlog("using fallback window icon")
         if surf:
-            #for debugging, save to a file so we can see it:
-            #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
-            #extract the data from the cairo surface for processing in the work queue:
-            import cairo
-            assert surf.get_format() == cairo.FORMAT_ARGB32
-            self.window_icon_data = (surf.get_data(), surf.get_stride(), surf.get_width(), surf.get_height())
+            if hasattr(surf, "get_pixels"):
+                #looks like a gdk.Pixbuf:
+                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height())
+            else:
+                #for debugging, save to a file so we can see it:
+                #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
+                #extract the data from the cairo surface
+                import cairo
+                assert surf.get_format() == cairo.FORMAT_ARGB32
+                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height())
             if not self.send_window_icon_due:
                 self.send_window_icon_due = True
                 #call compress_clibboard via the work queue
@@ -562,7 +567,7 @@ class WindowSource(object):
         idata = self.window_icon_data
         if not idata:
             return
-        pixel_data, stride, w, h = idata
+        pixel_data, pixel_format, stride, w, h = idata
         PIL = get_codec("PIL")
         max_w, max_h = self.window_icon_max_size
         if stride!=w*4:
@@ -574,10 +579,10 @@ class WindowSource(object):
         #or if we want to save window icons
         has_png = PIL and ("png" in self.window_icon_encodings)
         has_premult = "premult_argb32" in self.window_icon_encodings
-        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or not has_premult)
+        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or (not has_premult) or (pixel_format!="BGRA"))
         iconlog("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
         if use_png:
-            img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", "BGRA", 0, 1)
+            img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", pixel_format, 0, 1)
             icon_w, icon_h = self.window_icon_size
             if w>icon_w or h>icon_h:
                 #scale the icon down to the size the client wants
@@ -598,7 +603,7 @@ class WindowSource(object):
                 filename = "server-window-%i-icon-%i.png" % (self.wid, int(time.time()))
                 img.save(filename, 'PNG')
                 iconlog("server window icon saved to %s", filename)
-        elif "premult_argb32" in self.window_icon_encodings:
+        elif ("premult_argb32" in self.window_icon_encodings) and pixel_format=="BGRA":
             wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
         else:
             iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)

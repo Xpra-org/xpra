@@ -611,7 +611,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if xrd:
             os.environ["XDG_RUNTIME_DIR"] = xrd
         os.environ["XDG_SESSION_TYPE"] = "x11"
-        os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
+        if not starting_desktop:
+            os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         configure_imsettings_env(opts.input_method)
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
