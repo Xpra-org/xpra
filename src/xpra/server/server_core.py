@@ -939,9 +939,11 @@ class ServerCore(object):
         self.disconnect_client(protocol, message)
 
 
-    def send_version_info(self, proto):
-        response = {"version" : XPRA_VERSION}
-        proto.send_now(("hello", response))
+    def send_version_info(self, proto, full=False):
+        version = XPRA_VERSION
+        if full:
+            version = full_version_str()
+        proto.send_now(("hello", {"version" : version}))
         #client is meant to close the connection itself, but just in case:
         self.timeout_add(5*1000, self.send_disconnect, proto, DONE, "version sent")
 
@@ -959,7 +961,7 @@ class ServerCore(object):
 
         log("process_hello: capabilities=%s", capabilities)
         if c.boolget("version_request"):
-            self.send_version_info(proto)
+            self.send_version_info(proto, c.boolget("full-version-request"))
             return
 
         auth_caps = self.verify_hello(proto, c)

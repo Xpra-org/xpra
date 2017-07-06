@@ -29,6 +29,7 @@ from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std,
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
+from xpra.scripts.main import full_version_str
 from xpra.server.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
@@ -349,7 +350,10 @@ class ProxyInstanceProcess(Process):
                 self.stop("socket request", None)
                 return
             elif caps.get("version_request", False):
-                proto.send_now(("hello", {"version" : XPRA_VERSION}))
+                version = XPRA_VERSION
+                if caps.boolget("full-version-request"):
+                    version = full_version_str()
+                proto.send_now(("hello", {"version" : version}))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "version sent")
                 return
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")

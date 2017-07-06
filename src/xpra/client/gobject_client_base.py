@@ -316,7 +316,10 @@ class VersionXpraClient(HelloRequestClient):
     """
 
     def hello_request(self):
-        return {"version_request" : True}
+        return {
+            "version_request"       : True,
+            "full-version-request"  : True,
+            }
 
     def do_command(self):
         v = self.server_capabilities.get("version")
