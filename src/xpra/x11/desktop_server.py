@@ -124,16 +124,40 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
     def resize(self, w, h):
         if not RandR.has_randr():
-            log.error("Error: cannot honour resize request,")
-            log.error(" not RandR support on display")
+            geomlog.error("Error: cannot honour resize request,")
+            geomlog.error(" not RandR support on display")
             return
         try:
             with xsync:
+                screen_sizes = RandR.get_screen_sizes()
+                if (w,h) not in screen_sizes:
+                    geomlog.warn("Warning: invalid screen size %ix%i", w, h)
+                    #find the nearest:
+                    distances = {}
+                    lower_distances = {}        #for sizes lower than requested
+                    for sw, sh in screen_sizes:
+                        distance = abs(sw*sh - w*h)
+                        distances.setdefault(distance, []).append((sw, sh))
+                        if sw<=w and sh<=h:
+                            lower_distances.setdefault(distance, []).append((sw, sh))
+                    geomlog("lower distances=%s", distances)
+                    if lower_distances:
+                        w, h = lower_distances[sorted(lower_distances.keys())[0]][0]
+                    else:
+                        geomlog("distances=%s", distances)
+                        w, h = distances[sorted(distances.keys())[0]][0]
+                    geomlog.warn(" using %ix%i instead", w, h)
+                    if RandR.get_screen_size()==(w,h):
+                        #this is already the resolution we have,
+                        #but the client has other ideas,
+                        #so tell the client we ain't budging:
+                        self.emit("resized")
+                        return
                 RandR.set_screen_size(w, h)
         except Exception as e:
-            log("resize(%i, %i)", w, h, exc_info=True)
-            log.error("Error: failed to resize desktop display to %ix%i:", w, h)
-            log.error(" %s", e)
+            geomlog("resize(%i, %i)", w, h, exc_info=True)
+            geomlog.error("Error: failed to resize desktop display to %ix%i:", w, h)
+            geomlog.error(" %s", e)
 
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
@@ -290,7 +314,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         #the vfb has been resized
         wid = self._window_to_id[window]
         x, y, w, h = window.get_geometry()
-        windowlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
+        geomlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
         for ss in self._server_sources.values():
             ss.resize_window(wid, window, w, h)
             ss.damage(wid, window, 0, 0, w, h)
