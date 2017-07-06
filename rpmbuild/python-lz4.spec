@@ -19,7 +19,7 @@
 Name:           python2-lz4
 Version:        0.10.1
 Release:        1%{?dist}
-URL:            https://github.com/python-lz4/python-lz4
+URL:            https://pypi.python.org/packages/f5/c6/ef2890b5e287735576e15c1389aa0b9032c9d78ed72385fbd1149af593cd/lz4-0.10.1.tar.gz
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
