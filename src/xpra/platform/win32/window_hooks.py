@@ -43,6 +43,7 @@ class MINMAXINFO(ctypes.Structure):
 #but should be pretty easy to tweak if needed.
 
 HOOK_MINMAXINFO = envbool("XPRA_WIN32_MINMAXINFO", True)
+HOOK_MINMAXINFO_OVERRIDE = envbool("XPRA_WIN32_MINMAXINFO_OVERRIDE", False)
 
 
 class Win32Hooks(object):
@@ -89,11 +90,12 @@ class Win32Hooks(object):
                 minw, minh = self.min_size
                 minw += dw
                 minh += dh
-                for v in (info.ptMinTrackSize, ):
-                    if v and v.x>0:
-                        minw = max(minw, v.x)
-                    if v and v.y>0:
-                        minh = max(minh, v.y)
+                if not HOOK_MINMAXINFO_OVERRIDE:
+                    for v in (info.ptMinTrackSize, ):
+                        if v and v.x>0:
+                            minw = max(minw, v.x)
+                        if v and v.y>0:
+                            minh = max(minh, v.y)
                 point  = POINT(minw, minh)
                 info.ptMinSize       = point
                 info.ptMinTrackSize  = point
@@ -102,11 +104,12 @@ class Win32Hooks(object):
                 maxw, maxh = self.max_size
                 maxw += dw
                 maxh += dh
-                for v in (info.ptMaxSize, info.ptMaxTrackSize):
-                    if v and v.x>0:
-                        maxw = min(maxw, v.x)
-                    if v and v.y>0:
-                        maxh = min(maxh, v.y)
+                if not HOOK_MINMAXINFO_OVERRIDE:
+                    for v in (info.ptMaxSize, info.ptMaxTrackSize):
+                        if v and v.x>0:
+                            maxw = min(maxw, v.x)
+                        if v and v.y>0:
+                            maxh = min(maxh, v.y)
                 point  = POINT(maxw, maxh)
                 info.ptMaxSize       = point
                 info.ptMaxTrackSize  = point
