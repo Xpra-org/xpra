@@ -135,6 +135,8 @@ class ServerBase(ServerCore):
         self.start_env = []
         self.exec_cwd = None
         self.exec_wrapper = None
+        self.terminate_children = False
+        self.children_started = []
         self.child_reaper = None
         self.pings = 0
         self.scaling_control = False
@@ -233,6 +235,7 @@ class ServerBase(ServerCore):
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
+        self.terminate_children = opts.terminate_children
         self.start_new_commands = opts.start_new_commands
         if opts.exec_wrapper:
             import shlex
@@ -904,6 +907,7 @@ class ServerBase(ServerCore):
             execlog("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:
                 execlog.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
+            self.children_started.append((name, proc))
             return proc
         except OSError as e:
             execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
@@ -920,9 +924,24 @@ class ServerBase(ServerCore):
             execlog.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
 
+    def terminate_children_processes(self):
+        cl = list(self.children_started)
+        self.children_started = []
+        execlog("terminate_children_processes() children=%s", cl)
+        if not cl:
+            return
+        for name, proc in cl:
+            if self.is_child_alive(proc):
+                execlog("child command '%s' is still alive, calling terminate on %s", name, proc)
+                try:
+                    proc.terminate()
+                except Exception as e:
+                    execlog("failed to terminate %s: %s", proc, e)
 
     def do_cleanup(self, *args):
         self.server_event("exit")
+        if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
+            self.terminate_children_processes()
         if self.notifications_forwarder:
             thread.start_new_thread(self.notifications_forwarder.release, ())
             self.notifications_forwarder = None

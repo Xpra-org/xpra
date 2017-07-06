@@ -20,6 +20,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-start\-child\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
 [\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
+[\fB\-\-terminate\-children\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-start\-new\-commands\fP]
 [\fB\-\-start\-via\-proxy\fP]
@@ -164,6 +165,7 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
+[\fB\-\-terminate\-children\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-start\-new\-commands\fP]
 [\fB\-\-start\-via\-proxy\fP]
@@ -848,7 +850,14 @@ account by \fB\-\-exit\-with\-children\fP.
 Wait for the first client to connect before starting the \fB\-\-start\fP
 and \fB\-\-start\-child\fP commands.
 .TP
-\fB\-\-exit\-with\-children\fP
+\fB\-\-terminate\-children\fP=\fIyes\fP|\fIno\fP
+On server \fBstop\fP, terminate all the child commands that have been started
+by the server. This does not affect server \fBexit\fP.
+Most child commands are tied to the display so they are normally
+forced to shutdown anyway, but this gives them more time to cleanup properly
+and can be used to stop background commands that aren't tied to a display.
+.TP
+\fB\-\-exit\-with\-children\fP=\fIyes\fP|\fIno\fP
 This option may only be used if \fB\-\-start\-child\fP is also
 given.  If it is given, then the xpra server will monitor the status
 of the children started by \fB\-\-start\-child\fP, and will

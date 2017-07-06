@@ -351,7 +351,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")
-    group.add_option("--exit-with-children", action="store_true",
+    legacy_bool_parse("terminate-children")
+    group.add_option("--terminate-children", action="store", metavar="yes|no",
+                      dest="terminate_children", default=defaults.terminate_children,
+                      help="Terminate all the child commands on server stop. Default: %default")
+    legacy_bool_parse("exit-with-children")
+    group.add_option("--exit-with-children", action="store", metavar="yes|no",
                       dest="exit_with_children", default=defaults.exit_with_children,
                       help="Terminate the server when the last --start-child command(s) exit")
     legacy_bool_parse("start-new-commands")
