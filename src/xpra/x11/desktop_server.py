@@ -142,10 +142,12 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                             lower_distances.setdefault(distance, []).append((sw, sh))
                     geomlog("lower distances=%s", distances)
                     if lower_distances:
-                        w, h = lower_distances[sorted(lower_distances.keys())[0]][0]
+                        nearest = lower_distances[sorted(lower_distances.keys())[0]]
                     else:
                         geomlog("distances=%s", distances)
-                        w, h = distances[sorted(distances.keys())[0]][0]
+                        nearest = distances[sorted(distances.keys())[0]]
+                    geomlog("nearest matches: %s", nearest)
+                    w, h = nearest[0]
                     geomlog.warn(" using %ix%i instead", w, h)
                     if RandR.get_screen_size()==(w,h):
                         #this is already the resolution we have,
