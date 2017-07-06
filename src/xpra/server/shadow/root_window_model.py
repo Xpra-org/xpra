@@ -95,7 +95,7 @@ class RootWindowModel(object):
         elif prop=="icon":
             try:
                 from xpra.platform.paths import get_icon
-                icon_name = self.get_generic_os_name()+".png"
+                icon_name = get_generic_os_name()+".png"
                 icon = get_icon(icon_name)
                 log("icon(%s)=%s", icon_name, icon)
                 return icon
