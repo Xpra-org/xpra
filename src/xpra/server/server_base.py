@@ -908,7 +908,7 @@ class ServerBase(ServerCore):
             execlog("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:
                 execlog.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
-            self.children_started.append((name, procinfo))
+            self.children_started.append(procinfo)
             return proc
         except OSError as e:
             execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
@@ -933,10 +933,11 @@ class ServerBase(ServerCore):
             return
         wait_for = []
         self.child_reaper.poll()
-        for name, procinfo in cl:
+        for procinfo in cl:
             proc = procinfo.process
+            name = procinfo.name
             if self.is_child_alive(proc):
-                wait_for.append((name, proc))
+                wait_for.append(procinfo)
                 execlog("child command '%s' is still alive, calling terminate on %s", name, proc)
                 try:
                     proc.terminate()
@@ -950,7 +951,7 @@ class ServerBase(ServerCore):
             self.child_reaper.poll()
             #this is called from the UI thread, we cannot sleep
             #sleep(1)
-            wait_for = [(name, proc) for name,proc in wait_for if self.is_child_alive(proc)]
+            wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
             execlog("still not terminated: %s", wait_for)
         execlog("done waiting for child commands")
 
