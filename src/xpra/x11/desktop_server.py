@@ -9,7 +9,7 @@ import gtk.gdk
 import gobject
 import socket
 
-from xpra.util import updict, log_screen_sizes
+from xpra.util import updict, log_screen_sizes, envbool
 from xpra.os_util import get_generic_os_name
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
@@ -32,7 +32,7 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 X11Keyboard = X11KeyboardBindings()
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 RandR = RandRBindings()
-
+from xpra.x11.x11_server_base import X11ServerBase, mouselog
 from xpra.gtk_common.error import xsync
 
 from xpra.log import Logger
@@ -44,7 +44,8 @@ settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 
-from xpra.x11.x11_server_base import X11ServerBase, mouselog
+
+FORCE_SCREEN_MISMATCH = envbool("XPRA_FORCE_SCREEN_MISMATCH", False)
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
@@ -139,6 +140,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return gobject.GObject.get_property(self, prop)
 
     def resize(self, w, h):
+        geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" not RandR support on display")
@@ -146,6 +148,10 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         try:
             with xsync:
                 screen_sizes = RandR.get_screen_sizes()
+                #hack: force mistmatch
+                if FORCE_SCREEN_MISMATCH:
+                    screen_sizes = [(sw,sh) for sw,sh in screen_sizes if (sw!=w and sh!=h)]
+                geomlog("screen sizes=%s", screen_sizes)
                 if (w,h) not in screen_sizes:
                     geomlog.warn("Warning: invalid screen size %ix%i", w, h)
                     #find the nearest:
