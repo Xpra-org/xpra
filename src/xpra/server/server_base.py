@@ -39,7 +39,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, OSX, POSIX, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, envbool, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
+from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
@@ -59,6 +59,7 @@ DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
+TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 
 
 class ServerBase(ServerCore):
@@ -930,13 +931,25 @@ class ServerBase(ServerCore):
         execlog("terminate_children_processes() children=%s", cl)
         if not cl:
             return
+        wait_for = []
         for name, proc in cl:
             if self.is_child_alive(proc):
+                wait_for.append((name, proc))
                 execlog("child command '%s' is still alive, calling terminate on %s", name, proc)
                 try:
                     proc.terminate()
                 except Exception as e:
                     execlog("failed to terminate %s: %s", proc, e)
+        if not wait_for:
+            return
+        execlog("waiting for child commands to exit: %s", wait_for)
+        start = monotonic_time()
+        while monotonic_time()-start<TERMINATE_DELAY and wait_for:
+            #this is called from the UI thread, we cannot sleep
+            #sleep(1)
+            wait_for = [(name, proc) for name,proc in wait_for if self.is_child_alive(proc)]
+            execlog("still not terminated: %s", wait_for)
+        execlog("done waiting for child commands")
 
     def do_cleanup(self, *args):
         self.server_event("exit")
