@@ -434,7 +434,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             w, h = self.size
             self.gl_marker("Initializing GL context for window size %s, backing size %s", self.render_size, self.size)
             # Initialize viewport and matrices for 2D rendering
-            glViewport(0, 0, w, h)
+            x, _, _, y = self.offsets
+            glViewport(x, y, w, h)
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             glOrtho(0.0, w, h, 0.0, -1.0, 1.0)
@@ -645,7 +646,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             glClearColor(1.0, 1.0, 1.0, 1.0)
 
         #viewport for painting to window:
-        glViewport(0, 0, ww, wh)
+        x, _, _, y = self.offsets
+        glViewport(x, y, ww, wh)
         target = GL_TEXTURE_RECTANGLE_ARB
         if ww!=bw or wh!=bh:
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR)

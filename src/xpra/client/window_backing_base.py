@@ -73,6 +73,7 @@ class WindowBackingBase(object):
         load_video_decoders()
         self.wid = wid
         self.size = 0, 0
+        self.offsets = 0, 0, 0, 0       #top,left,bottom,right
         self.idle_add = idle_add
         self._alpha_enabled = window_alpha
         self._backing = None

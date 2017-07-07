@@ -178,6 +178,9 @@ class PixmapBacking(GTK2WindowBacking):
                 return False
             if w!=ww or h!=wh:
                 context.scale(float(ww)/w, float(wh)/h)
+            x, y = self.offsets[:2]
+            if x!=0 or y!=0:
+                context.translate(x, y)
             context.set_source_pixmap(drawable, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
