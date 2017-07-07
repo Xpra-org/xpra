@@ -904,18 +904,18 @@ class ServerBase(ServerCore):
                 shell = not use_wrapper or not self.exec_wrapper
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
-            self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
+            procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             execlog("pid(%s)=%s", real_cmd, proc.pid)
             if not ignore:
                 execlog.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
-            self.children_started.append((name, proc))
+            self.children_started.append((name, procinfo))
             return proc
         except OSError as e:
             execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
             return None
 
     def add_process(self, process, name, command, ignore=False, callback=None):
-        self.child_reaper.add_process(process, name, command, ignore, callback=callback)
+        return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
     def is_child_alive(self, proc):
         return proc is not None and proc.poll() is None
@@ -932,7 +932,9 @@ class ServerBase(ServerCore):
         if not cl:
             return
         wait_for = []
-        for name, proc in cl:
+        self.child_reaper.poll()
+        for name, procinfo in cl:
+            proc = procinfo.process
             if self.is_child_alive(proc):
                 wait_for.append((name, proc))
                 execlog("child command '%s' is still alive, calling terminate on %s", name, proc)
@@ -945,6 +947,7 @@ class ServerBase(ServerCore):
         execlog("waiting for child commands to exit: %s", wait_for)
         start = monotonic_time()
         while monotonic_time()-start<TERMINATE_DELAY and wait_for:
+            self.child_reaper.poll()
             #this is called from the UI thread, we cannot sleep
             #sleep(1)
             wait_for = [(name, proc) for name,proc in wait_for if self.is_child_alive(proc)]
