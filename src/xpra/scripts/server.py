@@ -203,7 +203,6 @@ def sanitize_env():
              "XDG_SESSION_ID",
              "XDG_SEAT",
              "XDG_VTNR",
-             "XDG_RUNTIME_DIR",
              "QT_GRAPHICSSYSTEM_CHECKED",
              "CKCON_TTY",
              "CKCON_X11_DISPLAY",
