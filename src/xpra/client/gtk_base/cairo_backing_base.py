@@ -11,8 +11,10 @@ cairo           = import_cairo()
 PixbufLoader    = import_pixbufloader()
 
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
+from xpra.gtk_common.paint_colors import get_paint_box_color
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.codecs.loader import get_codec
+from xpra.util import envint
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
 
 from xpra.log import Logger
@@ -24,11 +26,13 @@ for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
     FORMATS[getattr(cairo, x)] = x.replace("FORMAT_", "")
 
 
+CAIRO_PAINT_BOX = envint("XPRA_CAIRO_PAINT_BOX", 0)
+
+
 """
 Superclass for gtk2 and gtk3 cairo implementations.
 """
 class CairoBackingBase(GTKWindowBacking):
-
 
     def init(self, ww, wh, w, h):
         self.size = w, h
@@ -85,21 +89,36 @@ class CairoBackingBase(GTKWindowBacking):
         cairo_set_source_pixbuf(gc, pixbuf, x, y)
         gc.paint()
 
-    def cairo_paint_surface(self, img_surface, x, y):
+    def cairo_paint_surface(self, img_surface, x, y, options={}):
         """ must be called from UI thread """
-        log("cairo_paint_surface(%s, %s, %s)", img_surface, x, y)
-        log("source image surface: %s", (img_surface.get_format(), img_surface.get_width(), img_surface.get_height(), img_surface.get_stride(), img_surface.get_content(), ))
+        log("cairo_paint_surface(%s, %s, %s, %s) CAIRO_PAINT_BOX=%i", img_surface, x, y, options, CAIRO_PAINT_BOX)
+        w, h = img_surface.get_width(), img_surface.get_height()
+        log("source image surface: %s", (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
         gc = gdk_cairo_context(cairo.Context(self._backing))
-        gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
+        if CAIRO_PAINT_BOX:
+            gc.save()
+
+        gc.rectangle(x, y, w, h)
         gc.clip()
+
         gc.set_operator(cairo.OPERATOR_CLEAR)
-        gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
+        gc.rectangle(x, y, w, h)
         gc.fill()
+
         gc.set_operator(cairo.OPERATOR_SOURCE)
         gc.translate(x, y)
-        gc.rectangle(0, 0, img_surface.get_width(), img_surface.get_height())
+        gc.rectangle(0, 0, w, h)
         gc.set_source_surface(img_surface, 0, 0)
         gc.paint()
+        if CAIRO_PAINT_BOX and options:
+            gc.restore()
+            encoding = options.get("encoding")
+            if encoding:
+                color = get_paint_box_color(encoding)
+                gc.set_line_width(CAIRO_PAINT_BOX)
+                gc.set_source_rgba(*color)
+                gc.rectangle(x, y, w, h)
+                gc.stroke()
 
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):

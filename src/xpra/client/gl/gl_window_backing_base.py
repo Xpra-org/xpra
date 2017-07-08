@@ -32,49 +32,8 @@ if SAVE_BUFFERS:
     import numpy
     from PIL import Image, ImageOps
 
-from xpra.gtk_common.gtk_util import color_parse, is_realized
-
-
-_DEFAULT_BOX_COLORS = {
-              "png"     : "yellow",
-              "h264"    : "blue",
-              "vp8"     : "green",
-              "rgb24"   : "orange",
-              "rgb32"   : "red",
-              "jpeg"    : "purple",
-              "png/P"   : "indigo",
-              "png/L"   : "teal",
-              "h265"    : "khaki",
-              "vp9"     : "lavender",
-              "mpeg4"   : "black",
-              "scroll"  : "brown",
-              }
-
-def get_fcolor(encoding):
-    color_name = os.environ.get("XPRA_BOX_COLOR_%s" % encoding.upper(), _DEFAULT_BOX_COLORS.get(encoding))
-    try:
-        c = color_parse(color_name)
-    except:
-        c = color_parse("black")
-    #try and hope this works:
-    try:
-        return c.red/65536.0, c.green/65536.0, c.blue/65536.0, 0.3
-    except:
-        pass
-    try:
-        #it seems that in some GDK versions, we get a return value
-        #made of (boolean, GDK.Color), we only want the color..
-        c = c[1]
-    except:
-        log.warn("failed to parse color %s", color_name)
-        return 0, 0, 0
-    return c.red/65536.0, c.green/65536.0, c.blue/65536.0, 0.3
-_DEFAULT_BOX_COLOR = get_fcolor("black")
-BOX_COLORS = {}
-for x in _DEFAULT_BOX_COLORS.keys():
-    BOX_COLORS[x] = get_fcolor(x)
-
-
+from xpra.gtk_common.gtk_util import is_realized
+from xpra.gtk_common.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
@@ -883,7 +842,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glLineStipple(1, 0xaaaa)
             glEnable(GL_LINE_STIPPLE)
         glBegin(GL_LINE_LOOP)
-        color = BOX_COLORS.get(encoding, _DEFAULT_BOX_COLOR)
+        color = get_paint_box_color(encoding)
         log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
         glColor4f(*color)
         for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
