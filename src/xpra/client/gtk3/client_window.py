@@ -67,15 +67,19 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
         #self.set_data("_kde_no_window_grab", 1)
         def motion(w, event):
             self.do_motion_notify_event(event)
+            return True
         self.connect("motion-notify-event", motion)
         def press(w, event):
             self.do_button_press_event(event)
+            return True
         self.connect("button-press-event", press)
         def release(w, event):
             self.do_button_release_event(event)
+            return True
         self.connect("button-release-event", release)
         def scroll(w, event):
             self.do_scroll_event(event)
+            return True
         self.connect("scroll-event", scroll)
 
     def get_backing_class(self):
