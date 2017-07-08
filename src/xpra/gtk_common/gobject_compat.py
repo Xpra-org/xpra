@@ -117,6 +117,15 @@ def import_gdk3():
 def import_gdk():
     return  _try_import(import_gdk3, import_gdk2)
 
+def import_pixbuf2():
+    from gtk.gdk import Pixbuf
+    return Pixbuf
+def import_pixbuf3():
+    from gi.repository import GdkPixbuf             #@UnresolvedImport
+    return GdkPixbuf
+def import_pixbuf():
+    return  _try_import(import_pixbuf3, import_pixbuf2)
+
 def import_pixbufloader2():
     from gtk.gdk import PixbufLoader
     return PixbufLoader

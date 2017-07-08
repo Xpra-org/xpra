@@ -8,13 +8,14 @@ import os.path
 import array
 from xpra.util import iround
 from xpra.os_util import strtobytes, WIN32
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
 pango   = import_pango()
 cairo   = import_cairo()
 gobject = import_gobject()
 PixbufLoader = import_pixbufloader()
+Pixbuf = import_pixbuf()
 
 from xpra.log import Logger
 log = Logger("gtk", "util")
@@ -59,6 +60,9 @@ def get_gtk_version_info():
             av("cairo", cairo.version)
         if hasattr(pango, "version_string"):
             av("pango", pango.version_string())
+        pv = getattr(Pixbuf, "PIXBUF_VERSION", None) 
+        if pv:
+            av("pixbuf", pv)
         try:
             import glib
             av("glib", glib.glib_version)
