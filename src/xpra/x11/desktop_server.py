@@ -14,6 +14,7 @@ from xpra.os_util import get_generic_os_name
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import xswallow
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
 from xpra.x11.gtk2.models.model_stub import WindowModelStub
@@ -44,6 +45,8 @@ settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 
+
+glib = import_glib()
 
 FORCE_SCREEN_MISMATCH = envbool("XPRA_FORCE_SCREEN_MISMATCH", False)
 
@@ -77,6 +80,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def __init__(self, root):
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
+        self.resize_timer = None
+        self.resize_value = None
 
     def __repr__(self):
         return "DesktopModel(%#x)" % (self.client_window.xid)
@@ -95,6 +100,10 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
         self._managed = False
+        rt = self.resize_timer
+        if rt:
+            self.resize_timer = None
+            glib.source_remove(rt)
 
 
     def get_geometry(self):
@@ -145,7 +154,16 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" not RandR support on display")
             return
+        #FIXME: small race if the user resizes with randr,
+        #at the same time as he resizes the window..
+        self.resize_value = (w, h)
+        if not self.resize_timer:
+            self.resize_timer = glib.timeout_add(250, self.do_resize)
+
+    def do_resize(self):
+        self.resize_timer = None
         try:
+            w, h = self.resize_value
             with xsync:
                 screen_sizes = RandR.get_screen_sizes()
                 #hack: force mistmatch
