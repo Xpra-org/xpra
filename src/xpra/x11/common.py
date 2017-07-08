@@ -3,7 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gtk import gdk
+from xpra.gtk_common.gobject_compat import import_gdk
+gdk = import_gdk()
 
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.

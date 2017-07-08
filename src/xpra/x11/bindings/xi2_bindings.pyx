@@ -14,7 +14,7 @@ import collections
 from xpra.log import Logger
 log = Logger("x11", "bindings", "xinput")
 
-from xpra.x11.gtk2.common import X11Event
+from xpra.x11.common import X11Event
 
 from libc.stdint cimport uintptr_t
 
