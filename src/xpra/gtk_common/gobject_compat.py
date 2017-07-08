@@ -121,6 +121,8 @@ def import_pixbuf2():
     from gtk.gdk import Pixbuf
     return Pixbuf
 def import_pixbuf3():
+    import gi
+    gi.require_version('GdkPixbuf', '2.0')
     from gi.repository import GdkPixbuf             #@UnresolvedImport
     return GdkPixbuf
 def import_pixbuf():
