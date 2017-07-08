@@ -104,15 +104,6 @@ class PixmapBacking(GTK2WindowBacking):
             cr.rectangle(0, 0, w, h)
             cr.fill()
 
-    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data, width, height, options)
-        rgb_format = img.get_pixel_format()
-        img_data = img.get_pixels()
-        rowstride = img.get_rowstride()
-        w = img.get_width()
-        h = img.get_height()
-        self.idle_add(self.paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
-
     def paint_scroll(self, x, y, width, height, img_data, options, callbacks):
         #Warning: unused as this causes strange visual corruption
         self.idle_add(self.do_paint_scroll, x, y, width, height, img_data, options, callbacks)

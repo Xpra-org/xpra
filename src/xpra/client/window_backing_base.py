@@ -201,6 +201,16 @@ class WindowBackingBase(object):
         return rgb_data
 
 
+    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+        img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data, width, height, options)
+        rgb_format = img.get_pixel_format()
+        img_data = img.get_pixels()
+        rowstride = img.get_rowstride()
+        w = img.get_width()
+        h = img.get_height()
+        self.idle_add(self.paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
+
+
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
