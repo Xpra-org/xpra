@@ -21,6 +21,8 @@ from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_plac
 
 DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
+PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
+
 
 #ie:
 #CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
@@ -82,6 +84,8 @@ class WindowBackingBase(object):
         self._csc_decoder = None
         self._decoder_lock = Lock()
         self._PIL_encodings = []
+        self.default_paint_box_line_width = PAINT_BOX or 1
+        self.paint_box_line_width = PAINT_BOX
         self.pointer_overlay = None
         self.cursor_data = None
         self.default_cursor_data = None

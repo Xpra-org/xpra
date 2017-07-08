@@ -15,7 +15,6 @@ log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
-OPENGL_PAINT_BOX = envint("XPRA_OPENGL_PAINT_BOX", 0)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
@@ -204,8 +203,6 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.tmp_fbo = None
         self.pending_fbo_paint = []
         self.last_flush = monotonic_time()
-        self.default_paint_box_line_width = OPENGL_PAINT_BOX or 1
-        self.paint_box_line_width = OPENGL_PAINT_BOX
 
         GTKWindowBacking.__init__(self, wid, window_alpha)
         self.init_gl_config(window_alpha)

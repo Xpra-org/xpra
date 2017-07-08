@@ -13,6 +13,7 @@ log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.gtk_common.paint_colors import get_paint_box_color
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.util import csv, envbool
 
@@ -132,6 +133,8 @@ class PixmapBacking(GTK2WindowBacking):
             img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
         gc = self._backing.new_gc()
         self._backing.draw_rgb_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        if self.paint_box_line_width>0:
+            self.paint_box(x, y, width, height, options)
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
@@ -153,7 +156,22 @@ class PixmapBacking(GTK2WindowBacking):
             #no alpha or scaling is easier:
             gc = self._backing.new_gc()
             self._backing.draw_rgb_32_image(gc, x, y, width, height, gdk.RGB_DITHER_NONE, img_data, rowstride)
+        if self.paint_box_line_width>0:
+            self.paint_box(x, y, width, height, options)
         return True
+
+    def paint_box(self, x, y, w, h, options):
+        encoding = options.get("encoding")
+        b = self._backing
+        if not encoding or not b:
+            return
+        gc = b.cairo_create()
+        color = get_paint_box_color(encoding)
+        gc.set_line_width(self.paint_box_line_width)
+        gc.set_source_rgba(*color)
+        gc.rectangle(x, y, w, h)
+        gc.stroke()
+
 
     def cairo_draw(self, context):
         self.cairo_draw_from_drawable(context, self._backing)

@@ -491,6 +491,15 @@ class ClientWindowBase(ClientWidgetBase):
         pass
 
 
+    def toggle_debug(self, *args):
+        b = self._backing
+        if not b:
+            return
+        if b.paint_box_line_width>0:
+            b.paint_box_line_width = 0
+        else:
+            b.paint_box_line_width = b.default_paint_box_line_width
+
     def increase_quality(self, *args):
         if self._client.quality>0:
             #change fixed quality:

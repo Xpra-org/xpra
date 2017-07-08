@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,6 @@ from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.gtk_common.paint_colors import get_paint_box_color
 from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 from xpra.codecs.loader import get_codec
-from xpra.util import envint
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
 
 from xpra.log import Logger
@@ -24,9 +23,6 @@ log = Logger("paint", "cairo")
 FORMATS = {-1   : "INVALID"}
 for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
     FORMATS[getattr(cairo, x)] = x.replace("FORMAT_", "")
-
-
-CAIRO_PAINT_BOX = envint("XPRA_CAIRO_PAINT_BOX", 0)
 
 
 """
@@ -91,11 +87,11 @@ class CairoBackingBase(GTKWindowBacking):
 
     def cairo_paint_surface(self, img_surface, x, y, options={}):
         """ must be called from UI thread """
-        log("cairo_paint_surface(%s, %s, %s, %s) CAIRO_PAINT_BOX=%i", img_surface, x, y, options, CAIRO_PAINT_BOX)
+        log("cairo_paint_surface(%s, %s, %s, %s) paint box line width=%i", img_surface, x, y, options, self.paint_box_line_width)
         w, h = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s", (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
         gc = gdk_cairo_context(cairo.Context(self._backing))
-        if CAIRO_PAINT_BOX:
+        if self.paint_box_line_width:
             gc.save()
 
         gc.rectangle(x, y, w, h)
@@ -110,12 +106,12 @@ class CairoBackingBase(GTKWindowBacking):
         gc.rectangle(0, 0, w, h)
         gc.set_source_surface(img_surface, 0, 0)
         gc.paint()
-        if CAIRO_PAINT_BOX and options:
+        if self.paint_box_line_width and options:
             gc.restore()
             encoding = options.get("encoding")
             if encoding:
                 color = get_paint_box_color(encoding)
-                gc.set_line_width(CAIRO_PAINT_BOX)
+                gc.set_line_width(self.paint_box_line_width)
                 gc.set_source_rgba(*color)
                 gc.rectangle(x, y, w, h)
                 gc.stroke()
