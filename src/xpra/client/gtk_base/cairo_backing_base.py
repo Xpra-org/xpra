@@ -90,11 +90,15 @@ class CairoBackingBase(GTKWindowBacking):
         log("cairo_paint_surface(%s, %s, %s)", img_surface, x, y)
         log("source image surface: %s", (img_surface.get_format(), img_surface.get_width(), img_surface.get_height(), img_surface.get_stride(), img_surface.get_content(), ))
         gc = gdk_cairo_context(cairo.Context(self._backing))
+        gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
+        gc.clip()
         gc.set_operator(cairo.OPERATOR_CLEAR)
         gc.rectangle(x, y, img_surface.get_width(), img_surface.get_height())
         gc.fill()
         gc.set_operator(cairo.OPERATOR_SOURCE)
-        gc.set_source_surface(img_surface, x, y)
+        gc.translate(x, y)
+        gc.rectangle(0, 0, img_surface.get_width(), img_surface.get_height())
+        gc.set_source_surface(img_surface, 0, 0)
         gc.paint()
 
 
@@ -140,14 +144,21 @@ class CairoBackingBase(GTKWindowBacking):
 
 
     def cairo_draw(self, context):
-        log("cairo_draw(%s) backing=%s", context, self._backing)
+        log("cairo_draw(%s) backing=%s, size=%s, render-size=%s, offsets=%s", context, self._backing, self.size, self.render_size, self.offsets)
         if self._backing is None:
             return False
+        try:
+            log("clip rectangles=%s", context.copy_clip_rectangle_list())
+        except:
+            log.error("clip:", exc_info=True)
         try:
             if self.render_size!=self.size:
                 ww, wh = self.render_size
                 w, h = self.size
                 context.scale(float(ww)/w, float(wh)/h)
+            x, y = self.offsets[:2]
+            if x!=0 or y!=0:
+                context.translate(x, y)
             context.set_source_surface(self._backing, 0, 0)
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
