@@ -2049,7 +2049,17 @@ class UIXpraClient(XpraClientBase):
             self.local_logging(log, logging.WARNING, "Warning: failed to send logging packet:")
             self.local_logging(log, logging.WARNING, " %s" % e)
             self.local_logging(log, logging.WARNING, " original unformatted message: %s", msg)
-            self.local_logging(log, level, msg, *args, **kwargs)
+            try:
+                self.local_logging(log, level, msg, *args, **kwargs)
+            except:
+                pass
+            try:
+                exc_info = sys.exc_info()
+                for x in traceback.format_tb(exc_info[2]):
+                    for v in x.splitlines():
+                        self.local_logging(log, logging.WARNING, v)
+            except:
+                pass
         finally:
             self.in_remote_logging = False
 
