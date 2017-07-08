@@ -60,7 +60,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -2034,12 +2034,12 @@ class UIXpraClient(XpraClientBase):
             return
         self.in_remote_logging = True
         try:
-            data = self.compressed_wrapper("text", str(msg % args), level=1)
+            data = self.compressed_wrapper("text", strtobytes(msg % args), level=1)
             self.send("logging", level, data)
             exc_info = kwargs.get("exc_info")
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, str(x))
+                    self.send("logging", level, strtobytes(x))
             if self.log_both:
                 self.local_logging(log, level, msg, *args, **kwargs)
         except Exception as e:
