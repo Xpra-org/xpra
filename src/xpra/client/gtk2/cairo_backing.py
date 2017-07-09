@@ -42,7 +42,7 @@ class CairoBacking(CairoBackingBase):
             #log("cairo_stride=%s, stride=%s", cairo_stride, rowstride)
             pix_data = bytearray(img_data)
             img_surface = cairo.ImageSurface.create_for_data(pix_data, cairo_format, width, height, rowstride)
-            self.cairo_paint_surface(img_surface, x, y)
+            self.cairo_paint_surface(img_surface, x, y, options)
             return True
 
         if rgb_format in ("RGBA", "RGBX", "RGB"):
@@ -53,7 +53,7 @@ class CairoBacking(CairoBackingBase):
             #Pixbuf cannot use the memoryview directly:
             img_data = memoryview_to_bytes(img_data)
             pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride)
-            self.cairo_paint_pixbuf(pixbuf, x, y)
+            self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
 
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
