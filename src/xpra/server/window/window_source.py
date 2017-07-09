@@ -53,6 +53,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
+HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 from xpra.os_util import StringIOClass, memoryview_to_bytes
 from xpra.server.window.window_stats import WindowPerformanceStatistics
@@ -756,6 +757,8 @@ class WindowSource(object):
                         force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
 
     def get_best_encoding_impl(self):
+        if HARDCODED_ENCODING:
+            return self.hardcoded_encoding
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
         if self._mmap and self._mmap_size>0:
@@ -800,6 +803,9 @@ class WindowSource(object):
         if self.encoding=="auto":
             return self.get_auto_encoding
         return self.get_current_or_rgb
+
+    def hardcoded_encoding(self, *args):
+        return HARDCODED_ENCODING
 
     def encoding_is_mmap(self, *args):
         return "mmap"
