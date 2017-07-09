@@ -19,14 +19,24 @@ def get_x11_property(atom_name):
     if not display:
         return ""
     try:
-        from xpra.x11.gtk_x11.gdk_display_source import init_display_source
-        init_display_source()
-        from xpra.gtk_common.gobject_compat import import_gdk
-        root = import_gdk().get_default_root_window()
-        from xpra.x11.gtk_x11.prop import prop_get
-        v = prop_get(root, atom_name, "latin1", ignore_errors=True, raise_xerrors=False)
-        log("get_x11_property(%s)=%s", atom_name, v)
-        return v
+        from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
+        with X11DisplayContext() as dc:
+            from xpra.x11.bindings.window_bindings import X11WindowBindings
+            X11Window = X11WindowBindings()
+            root = X11Window.getDefaultRootWindow()
+            log("getDefaultRootWindow()=%#x", root)
+            try:
+                prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")
+            except Exception as e:
+                log("cannot get X11 property '%s': %s", atom_name, e)
+                return ""
+            log("XGetWindowProperty(..)=%s", prop)
+            if prop:
+                from xpra.x11.prop_conv import prop_decode
+                v = prop_decode(dc.display, "latin1", prop)
+                log("get_x11_property(%s)=%s", atom_name, v)
+                return v
+            return ""
     except Exception:
         log.error("Error: cannot get X11 property '%s'", atom_name, exc_info=True)
         log.error(" for python %s", sys.version_info)

@@ -42,3 +42,32 @@ def close_display_source(uintptr_t ptr):
     set_display(NULL)
     set_display_name("CLOSED")
     return v
+
+
+class X11DisplayContext(object):
+    """
+        Ensures that there is an X11 display source available
+        so the X11 bindings will work as expected.
+        If one does not exist yet,
+        a temporary posix display source will be used.
+    """
+
+    def __init__(self):
+        self.close = False
+        self.display = 0
+
+    def __enter__(self):
+        if get_display()==NULL:
+            self.close = True
+            self.display = init_posix_display_source()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        d = self.display
+        if d and self.close:
+            self.display = 0
+            self.close = False
+            close_display_source(d)
+
+    def __repr__(self):
+        return "X11DisplayContext(%#x)" % self.display
