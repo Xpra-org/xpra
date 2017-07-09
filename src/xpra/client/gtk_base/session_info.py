@@ -170,8 +170,8 @@ class SessionInfo(gtk.Window):
                 if v is not None:
                     return v
             return None
-        def server_version_info(*prop_names):
-            return make_version_str(server_info(*prop_names))
+        def server_version_info(prop_name):
+            return make_version_str(server_info(prop_name))
         def make_revision_str(rev, changes):
             try:
                 cint = int(changes)
@@ -184,7 +184,7 @@ class SessionInfo(gtk.Window):
                 return bytestostr(date)
             return "%s %s" % (bytestostr(date), bytestostr(time))
         tb.new_row("Revision", slabel(make_revision_str(cl_rev, cl_ch)),
-                               slabel(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications", "local_modifications"))))
+                               slabel(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications"))))
         tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
                                  slabel(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
         gtk_version_info = get_gtk_version_info()
@@ -193,8 +193,7 @@ class SessionInfo(gtk.Window):
             return slabel(make_version_str(dictlook(gtk_version_info, k, fallback)))
         def server_vinfo(prop):
             k = "%s.version" % prop
-            fk = "%s_version" % prop
-            return slabel(server_version_info(k, fk))
+            return slabel(server_version_info(k))
         tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
         tb.new_row("PyGlib",    client_vinfo("pyglib"),     server_vinfo("pyglib"))
         tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
@@ -203,7 +202,7 @@ class SessionInfo(gtk.Window):
         tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
         tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
         tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
-        tb.new_row("Python", slabel(python_platform.python_version()), slabel(server_version_info("server.python.version", "python_version", "python.version")))
+        tb.new_row("Python", slabel(python_platform.python_version()), slabel(server_version_info("server.python.version")))
 
         try:
             from xpra.sound.wrapper import query_sound
@@ -213,8 +212,8 @@ class SessionInfo(gtk.Window):
             props = {}
         gst_version = props.get(b"gst.version", "")
         pygst_version = props.get(b"pygst.version", "")
-        tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version", "gst_version")))
-        tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version", "pygst_version")))
+        tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version")))
+        tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version")))
         tb.new_row("OpenGL", slabel(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), slabel(server_version_info("opengl.opengl")))
         tb.new_row("OpenGL Vendor", slabel(make_version_str(self.client.opengl_props.get("vendor", ""))), slabel(server_version_info("opengl.vendor")))
         tb.new_row("PyOpenGL", slabel(make_version_str(self.client.opengl_props.get("pyopengl", "n/a"))), slabel(server_version_info("opengl.pyopengl")))
