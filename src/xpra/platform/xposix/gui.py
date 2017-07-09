@@ -112,7 +112,7 @@ def _get_X11_window_property(xid, name, req_type):
         except PropertyError as e:
             log("_get_X11_window_property(%#x, %s, %s): %s", xid, name, req_type, e)
     except Exception as e:
-        log.warn("failed to get X11 window property %s on window %#x: %s", name, xid, e)
+        log.warn("Warning: failed to get X11 window property '%s' on window %#x: %s", name, xid, e)
         log("get_X11_window_property%s", (xid, name, req_type), exc_info=True)
     return None
 def _get_X11_root_property(name, req_type):
