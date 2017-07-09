@@ -9,6 +9,7 @@ log = Logger("gtk", "client")
 from xpra.os_util import OSX, POSIX
 if POSIX and not OSX:
     try:
-        from xpra.x11.gtk3 import gdk_display_source
+        from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
     except ImportError:
         log.warn("cannot import gtk3 x11 display source", exc_info=True)

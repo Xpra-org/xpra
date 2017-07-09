@@ -20,11 +20,12 @@ display_name = ""
 cdef Display* get_display():
     return display
 
-cdef void set_display(Display *d):
+cdef int set_display(Display *d) except 1:
     global display
-    if display!=NULL and d!=NULL:
+    if display!=NULL and d!=NULL and d!=display:
         raise Exception("display is already set")
     display = d
+    return 0
 
 
 def clear_display():

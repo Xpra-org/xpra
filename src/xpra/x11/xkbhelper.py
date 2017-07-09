@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,8 +7,8 @@ import os
 import re
 
 #ensure that we use gtk as display source:
-from xpra.x11.gtk2 import gdk_display_source
-assert gdk_display_source
+from xpra.x11.gtk_x11.gdk_display_source import init_display_source
+init_display_source()
 
 from xpra.util import std, csv
 from xpra.keyboard.layouts import parse_xkbmap_query

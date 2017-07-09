@@ -85,4 +85,3 @@ def init_gdk_display_source():
     set_display(x11_display)
     set_display_name(display.get_name())
 
-init_gdk_display_source()

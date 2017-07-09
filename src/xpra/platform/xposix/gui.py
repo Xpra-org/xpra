@@ -468,8 +468,8 @@ def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, b
 
 def _send_client_message(window, message_type, *values):
     try:
-        from xpra.x11.gtk2 import gdk_display_source
-        assert gdk_display_source
+        from xpra.x11.gtk_x11.gdk_display_source import init_display_source
+        init_display_source()
         from xpra.x11.bindings.window_bindings import constants #@UnresolvedImport
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()
@@ -858,8 +858,8 @@ class ClientExtras(object):
 
 def main():
     try:
-        from xpra.x11.gtk2 import gdk_display_source
-        assert gdk_display_source
+        from xpra.x11.gtk_x11.gdk_display_source import init_display_source
+        init_display_source()
     except:
         pass
     from xpra.platform.gui import main
