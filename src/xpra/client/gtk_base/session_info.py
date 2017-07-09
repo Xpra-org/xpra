@@ -76,14 +76,17 @@ def dictlook(d, k, fallback=None):
     if v is not None:
         return v
     parts = strtobytes(k).split(b".")
-    return newdictlook(d, parts, fallback)
+    v = newdictlook(d, parts, fallback)
+    if v is None:
+        return fallback
+    return v
 
 def newdictlook(d, parts, fallback=None):
     #ie: {}, ["batch", "delay", "avg"], 0
     v = d
     for p in parts:
         try:
-            v = v.get(p)
+            v = v.get(p) or v.get(bytestostr(p))
         except:
             return fallback
     return v
@@ -154,27 +157,32 @@ class SessionInfo(gtk.Window):
             pass
         def make_version_str(version):
             if version and type(version) in (tuple, list):
-                version = ".".join([str(x) for x in version])
-            return version or "unknown"
+                version = ".".join([bytestostr(x) for x in version])
+            return bytestostr(version or "unknown")
         def server_info(*prop_names):
             for x in prop_names:
-                v = dictlook(scaps, x)
+                k = strtobytes(x)
+                v = dictlook(scaps, k)
+                #log("server_info%s dictlook(%s)=%s", prop_names, k, v)
                 if v is not None:
                     return v
-                v = dictlook(self.client.server_last_info, x)
+                v = dictlook(self.client.server_last_info, k)
                 if v is not None:
                     return v
             return None
         def server_version_info(*prop_names):
             return make_version_str(server_info(*prop_names))
         def make_revision_str(rev, changes):
-            if not changes:
+            try:
+                cint = int(changes)
+            except:
                 return rev
-            return "%s (%s change%s)" % (rev, changes, engs(changes))
+            else:
+                return "%s (%s change%s)" % (rev, cint, engs(cint))
         def make_datetime(date, time):
             if not time:
-                return date
-            return "%s %s" % (date, time)
+                return bytestostr(date)
+            return "%s %s" % (bytestostr(date), bytestostr(time))
         tb.new_row("Revision", slabel(make_revision_str(cl_rev, cl_ch)),
                                slabel(make_revision_str(self.client._remote_revision, server_version_info("build.local_modifications", "local_modifications"))))
         tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
