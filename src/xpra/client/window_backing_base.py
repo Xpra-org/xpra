@@ -183,9 +183,9 @@ class WindowBackingBase(object):
             deltalog.error("invalid img data length: expected %s but got %s (%s: %s)", rowstride * height, len(img_data), type(img_data), str(img_data)[:256])
             raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
-        delta = options.intget("delta", -1)
-        bucket = options.intget("bucket", 0)
-        rgb_format = options.strget("rgb_format")
+        delta = options.intget(b"delta", -1)
+        bucket = options.intget(b"bucket", 0)
+        rgb_format = options.strget(b"rgb_format")
         rgb_data = img_data
         if delta>=0:
             assert bucket>=0 and bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
@@ -287,7 +287,7 @@ class WindowBackingBase(object):
             bpp = len(rgb_format)*8
             assert bpp in (24, 32), "invalid rgb format %s" % rgb_format
             paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
-            options["rgb_format"] = rgb_format
+            options[b"rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except KeyboardInterrupt:
@@ -485,7 +485,7 @@ class WindowBackingBase(object):
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
-        rgb_format = options.strget("rgb_format", "RGB")
+        rgb_format = options.strget(b"rgb_format", b"RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
 
@@ -514,7 +514,7 @@ class WindowBackingBase(object):
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding == "rgb24" or coding == "rgb32":
                 #avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.get("rgb_format")
+                rgb_format = options.get(b"rgb_format")
                 if rgb_format:
                     Bpp = len(rgb_format)
                 elif coding=="rgb24":
