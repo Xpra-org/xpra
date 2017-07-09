@@ -8,7 +8,7 @@ import os.path
 import array
 from xpra.util import iround
 from xpra.os_util import strtobytes, WIN32
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
 pango   = import_pango()
@@ -31,44 +31,49 @@ def get_gtk_version_info():
     global GTK_VERSION_INFO
     def av(k, v):
         GTK_VERSION_INFO.setdefault(k, {})["version"] = v
+    def V(k, module, *fields):
+        for field in fields:
+            v = getattr(module, field, None)
+            if v is not None:
+                av(k, v)
+                return True
+        return False
+
     if not GTK_VERSION_INFO:
-        if hasattr(gtk, "pygtk_version"):
-            av("pygtk", gtk.pygtk_version)
-        if hasattr(gtk, "gtk_version"):
-            #GTK2:
-            av("gtk", gtk.gtk_version)
-        elif hasattr(gtk, "_version"):
-            #GTK3:
-            av("gtk", gtk._version)
-        if hasattr(gdk, "__version__"):
-            #GTK2:
-            av("gdk", gdk.__version__)
-        elif hasattr(gdk, "_version"):
-            #GTK3:
-            av("gdk", gdk._version)
+        V("gobject",    gobject,    "pygobject_version")
+
         if is_gtk3():
+            #this isn't the actual version, (only shows as "3.0")
+            #but still better than nothing:
+            import gi
+            V("gi",         gi,         "__version__")
+            V("gtk",        gtk,        "_version")
+            V("gdk",        gdk,        "_version")
+            V("gobject",    gobject,    "_version")
+            V("pixbuf",     Pixbuf,     "_version")
+
+            av("pygtk", "n/a")
+            V("pixbuf",     Pixbuf,     "PIXBUF_VERSION")
             try:
-                import gi
-                av("gi", gi.__version__)
+                v = [getattr(gtk, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]                
+                av("gtk", ".".join(str(x) for x in v))
             except:
                 pass
-        if hasattr(gobject, "pygobject_version"):
-            av("gobject", gobject.pygobject_version)
-        elif hasattr(gobject, "_version"):
-            av("gobject", gobject._version)
-        if hasattr(cairo, "version"):
-            av("cairo", cairo.version)
-        if hasattr(pango, "version_string"):
-            av("pango", pango.version_string())
-        pv = getattr(Pixbuf, "PIXBUF_VERSION", None) 
-        if pv:
-            av("pixbuf", pv)
-        try:
-            import glib
-            av("glib", glib.glib_version)
-            av("pyglib", glib.pyglib_version)
-        except:
-            pass
+        else:
+            V("pygtk",      gtk,        "pygtk_version")
+            V("gtk",        gtk,        "gtk_version")
+            V("gdk",        gdk,        "__version__")
+
+        #from here on, the code is the same for both GTK2 and GTK3, hooray:
+        vfn = getattr(cairo, "cairo_version_string", None)
+        if vfn:
+            av("cairo", vfn())
+        vfn = getattr(pango, "version_string")
+        if vfn:
+            av("pango", vfn())
+        glib = import_glib()
+        V("glib",       glib,       "glib_version")
+        V("pyglib",     glib,       "pyglib_version")
     return GTK_VERSION_INFO.copy()
 
 
