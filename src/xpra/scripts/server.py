@@ -741,8 +741,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         server_type_info = "proxy"
     else:
         assert starting or starting_desktop or upgrading
-        from xpra.x11.gtk2 import gdk_display_source
-        assert gdk_display_source
+        from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
         #(now we can access the X11 server)
 
         if xvfb_pid is not None:
