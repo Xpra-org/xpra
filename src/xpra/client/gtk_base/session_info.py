@@ -13,7 +13,7 @@ import sys
 import datetime
 
 from xpra.version_util import XPRA_VERSION
-from xpra.os_util import bytestostr, get_linux_distribution, monotonic_time
+from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
 from xpra.util import prettify_plug_name, typedict, csv, engs
 from xpra.gtk_common.graph import make_graph_pixmap
 from collections import deque
@@ -75,7 +75,7 @@ def dictlook(d, k, fallback=None):
     v = d.get(k)
     if v is not None:
         return v
-    parts = k.split(".")
+    parts = strtobytes(k).split(b".")
     return newdictlook(d, parts, fallback)
 
 def newdictlook(d, parts, fallback=None):
