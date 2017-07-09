@@ -52,14 +52,15 @@ class X11DisplayContext(object):
         a temporary posix display source will be used.
     """
 
-    def __init__(self):
+    def __init__(self, display_name=os.environ.get("DISPLAY")):
         self.close = False
+        self.display_name = display_name
         self.display = 0
 
     def __enter__(self):
         if get_display()==NULL:
             self.close = True
-            self.display = init_posix_display_source()
+            self.display = do_init_posix_display_source(self.display_name)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -70,4 +71,4 @@ class X11DisplayContext(object):
             close_display_source(d)
 
     def __repr__(self):
-        return "X11DisplayContext(%#x)" % self.display
+        return "X11DisplayContext(%s @ %#x)" % (self.display_name, self.display)
