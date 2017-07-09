@@ -53,8 +53,8 @@ class XpraClient(GTKXpraClient):
 
     def do_get_core_encodings(self):
         cencs = GTKXpraClient.do_get_core_encodings(self)
-        #for some reason, the cairo_workaround does not work for ARGB32
-        #cencs.append("rgb32")
+        #we can now paint with alpha via pixbufs:
+        cencs.append("rgb32")
         return cencs
 
 

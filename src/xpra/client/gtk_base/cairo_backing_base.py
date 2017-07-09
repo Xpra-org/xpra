@@ -76,20 +76,22 @@ class CairoBackingBase(GTKWindowBacking):
         GTKWindowBacking.close(self)
 
 
-    def cairo_paint_pixbuf(self, pixbuf, x, y):
+    def cairo_paint_pixbuf(self, pixbuf, x, y, options):
         """ must be called from UI thread """
-        log("cairo_paint_pixbuf(%s, %s, %s) backing=%s", pixbuf, x, y, self._backing)
-        #now use it to paint:
-        gc = gdk_cairo_context(cairo.Context(self._backing))
-        gc.set_operator(cairo.OPERATOR_SOURCE)
-        cairo_set_source_pixbuf(gc, pixbuf, x, y)
-        gc.paint()
+        log("source pixbuf: %s", pixbuf)
+        w, h = pixbuf.get_width(), pixbuf.get_height()
+        self.cairo_paint_from_source(cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
 
     def cairo_paint_surface(self, img_surface, x, y, options={}):
-        """ must be called from UI thread """
-        log("cairo_paint_surface(%s, %s, %s, %s) paint box line width=%i", img_surface, x, y, options, self.paint_box_line_width)
         w, h = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s", (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
+        def set_source_surface(gc, surface, sx, sy):
+            gc.set_source_surface(surface, sx, sy)
+        self.cairo_paint_from_source(set_source_surface, img_surface, x, y, w, h, options)
+
+    def cairo_paint_from_source(self, set_source_fn, source, x, y, w, h, options):
+        """ must be called from UI thread """
+        log("cairo_paint_surface(%s, %s, %s, %s, %s, %s, %s) backing=%s, paint box line width=%i", set_source_fn, source, x, y, w, h, options, self._backing, self.paint_box_line_width)
         gc = gdk_cairo_context(cairo.Context(self._backing))
         if self.paint_box_line_width:
             gc.save()
@@ -104,7 +106,7 @@ class CairoBackingBase(GTKWindowBacking):
         gc.set_operator(cairo.OPERATOR_SOURCE)
         gc.translate(x, y)
         gc.rectangle(0, 0, w, h)
-        gc.set_source_surface(img_surface, 0, 0)
+        set_source_fn(gc, source, 0, 0)
         gc.paint()
         if self.paint_box_line_width and options:
             gc.restore()
@@ -128,7 +130,7 @@ class CairoBackingBase(GTKWindowBacking):
 
 
     def nasty_rgb_via_png_paint(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format):
-        log("nasty_rgb_via_png_paint%s", (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
+        log.warn("nasty_rgb_via_png_paint%s", (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
         PIL = get_codec("PIL")
         if has_alpha:
@@ -159,13 +161,13 @@ class CairoBackingBase(GTKWindowBacking):
 
 
     def cairo_draw(self, context):
-        log("cairo_draw(%s) backing=%s, size=%s, render-size=%s, offsets=%s", context, self._backing, self.size, self.render_size, self.offsets)
+        log("cairo_draw: size=%s, render-size=%s, offsets=%s", self.size, self.render_size, self.offsets)
         if self._backing is None:
             return False
-        try:
-            log("clip rectangles=%s", context.copy_clip_rectangle_list())
-        except:
-            log.error("clip:", exc_info=True)
+        #try:
+        #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
+        #except:
+        #    log.error("clip:", exc_info=True)
         try:
             if self.render_size!=self.size:
                 ww, wh = self.render_size
