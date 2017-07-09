@@ -9,7 +9,7 @@ import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import nonl, print_nested_dict
-from xpra.os_util import which, WIN32, OSX
+from xpra.os_util import which, WIN32, OSX, bytestostr
 
 from xpra.log import Logger
 log = Logger("sound")
@@ -134,21 +134,21 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
     name = None
     devices = {}
     for line in pactl_list_output.splitlines():
-        if not line.startswith(" ") and not line.startswith("\t"):        #clear vars when we encounter a new section
+        if not line.startswith(b" ") and not line.startswith(b"\t"):        #clear vars when we encounter a new section
             if name and device_class:
                 if name in ignored_devices:
                     continue
                 #Verify against monitor flag if set:
                 if monitors is not None:
-                    is_monitor = device_class=='"monitor"'
+                    is_monitor = device_class==b'"monitor"'
                     if is_monitor!=monitors:
                         continue
                 #Verify against input flag (if set):
                 if input_or_output is not None:
-                    is_input = name.lower().find("input")>=0
+                    is_input = name.lower().find(b"input")>=0
                     if is_input is True and input_or_output is False:
                         continue
-                    is_output = name.lower().find("output")>=0
+                    is_output = name.lower().find(b"output")>=0
                     if is_output is True and input_or_output is True:
                         continue
                 if not device_description:
@@ -156,12 +156,12 @@ def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=
                 devices[name] = device_description
             name = None; device_class = None
         line = line.strip()
-        if line.startswith("Name: "):
-            name = line[len("Name: "):]
-        if line.startswith("device.class = "):
-            device_class = line[len("device-class = "):]
-        if line.startswith("device.description = "):
-            device_description = line[len("device.description = "):].strip('"')
+        if line.startswith(b"Name: "):
+            name = line[len(b"Name: "):]
+        if line.startswith(b"device.class = "):
+            device_class = line[len(b"device-class = "):]
+        if line.startswith(b"device.description = "):
+            device_description = line[len(b"device.description = "):].strip(b'"')
     return devices
 
 
@@ -174,9 +174,9 @@ def get_info():
             for io in (True, False):
                 devices = do_get_pa_device_options(out, monitors, io, log_errors=False)
                 for d,name in devices.items():
-                    dinfo[d] = name
+                    dinfo[bytestostr(d)] = bytestostr(name)
                     i += 1
-    return {
+    info = {
             "device"        : dinfo,
             "devices"       : i,
             "pulseaudio"    : {
@@ -186,7 +186,8 @@ def get_info():
                                "server"    : get_pulse_server(False),
                                }
             }
-
+    log("pulseaudio_pactl_util.get_info()=%s", info)
+    return info
 
 def main():
     from xpra.os_util import load_binary_file
