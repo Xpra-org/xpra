@@ -269,6 +269,8 @@ PROP_TYPES = {
                       unsupported, NetWMStrut, None),
     "motif-hints": (MotifWMHints, "_MOTIF_WM_HINTS", 32,
               unsupported, MotifWMHints, None),
+    "icon": (cairo.ImageSurface, "CARDINAL", 32,
+              unsupported, NetWMIcons, None),
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:
     "debug-CARDINAL": (str, "CARDINAL", 32,

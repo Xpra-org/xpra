@@ -13,7 +13,8 @@ from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
-from xpra.x11.gtk_x11.prop import prop_set, prop_get, MotifWMHints
+from xpra.x11.gtk_x11.prop import prop_set, prop_get
+from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
