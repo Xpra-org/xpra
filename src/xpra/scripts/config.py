@@ -401,7 +401,7 @@ def may_create_user_config(xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
                 try:
                     if not os.path.exists(ad):
                         os.makedirs(ad, int('700', 8))
-                    with open(conf_file, 'wb') as f:
+                    with open(conf_file, 'w') as f:
                         f.write("# xpra user configuration file\n")
                         f.write("# place your custom settings in this file\n")
                         f.write("# they will take precedence over the system default ones.\n")
