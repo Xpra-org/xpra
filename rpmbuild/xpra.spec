@@ -338,6 +338,7 @@ Requires: x264-xpra
 Requires: ffmpeg-xpra
 
 %if 0%{?fedora}
+Recommends: python3-avahi
 #python3 ports are missing:
 #Requires: %{py3requires_lzo}
 #Requires: dbus-python
@@ -451,7 +452,7 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
 	%{build_args} \
-	--without-html5 --without-printing
+	--without-html5 --without-printing --without-cuda_kernels
 %{__python3} setup.py build %{build_args}
 popd
 %endif
@@ -483,7 +484,7 @@ rm -rf $RPM_BUILD_ROOT
 pushd xpra-%{version}-python3
 %{__python3} setup.py install \
 	%{build_args} \
-	--without-html5 --without-printing \
+	--without-html5 --without-printing --without-cuda_kernels \
 	--prefix /usr --skip-build --root %{buildroot}
 popd
 %endif

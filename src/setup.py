@@ -286,7 +286,7 @@ if "clean" not in sys.argv:
     for x in SWITCHES:
         switches_info[x] = vars()["%s_ENABLED" % x]
     print("build switches:")
-    for k in SWITCHES:
+    for k in sorted(SWITCHES):
         v = switches_info[k]
         print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
 
