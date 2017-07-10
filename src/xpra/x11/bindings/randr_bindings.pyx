@@ -95,10 +95,13 @@ cdef class _RandRBindings(_X11CoreBindings):
 
     def check_randr(self):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
-        if XRRQueryExtension(self.display, &event_base, &ignored):
+        cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
+        log("XRRQueryExtension()=%i", r)
+        if r:
+            log("found XRandR extension")
             if XRRQueryVersion(self.display, &cmajor, &cminor):
                 log("found XRandR extension version %i.%i", cmajor, cminor)
-                if cmajor==1 and cminor>=2:
+                if (cmajor==1 and cminor>=2) or cmajor>=2:
                     return True
         return False
 
@@ -119,7 +122,9 @@ cdef class _RandRBindings(_X11CoreBindings):
         return sizes
 
     def get_screen_sizes(self):
-        return self._get_screen_sizes()
+        v = self._get_screen_sizes()
+        log("get_screen_sizes()=%s", v)
+        return v
 
     cdef _set_screen_size(self, width, height):
         cdef Window window

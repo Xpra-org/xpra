@@ -14,7 +14,7 @@ import os.path
 
 from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException
-from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, POSIX
+from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
 from xpra.platform.dotxpra import osexpand
 
 
@@ -225,14 +225,17 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(display_name, 3) # 3s timeout
+        wait_for_x_server(strtobytes(display_name), 3) # 3s timeout
     except Exception as e:
-        sys.stderr.write("display %s failed:\n" % display_name)
-        sys.stderr.write("%s\n" % e)
+        from xpra.log import Logger
+        log = Logger("server")
+        log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
+        log.error("Error: failed to connect to display %s" % display_name)
+        log.error(" %s", e)
         return False
     if shadowing_check and not check_xvfb_process(xvfb):
         #if we're here, there is an X11 server, but it isn't the one we started!
-        from xpra.log import Logger
+        from xpra.log import Logger     #@Reimport
         log = Logger("server")
         log.error("There is an X11 server already running on display %s:" % display_name)
         log.error("You may want to use:")
