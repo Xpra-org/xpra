@@ -4,8 +4,10 @@
 # later version. See the file COPYING for details.
 
 #don't bother trying to forward system tray with Ubuntu's "unity":
-from xpra.os_util import is_unity
+from xpra.os_util import is_unity, PYTHON2
 SYSTEM_TRAY_SUPPORTED = not is_unity()
+
+SHADOW_SUPPORTED = PYTHON2
 
 DEFAULT_ENV = [
              "#avoid Ubuntu's global menu, which is a mess and cannot be forwarded:",
