@@ -711,9 +711,11 @@ class ApplicationWindow:
                     self.client.cleanup()
                     self.client.warn_and_quit = ignore_further_quit_events
                     self.client.quit = ignore_further_quit_events
-                self.set_sensitive(True)
-                self.reset_client()
-                glib.idle_add(self.window.show)
+                w = self.window
+                if w:
+                    self.set_sensitive(True)
+                    self.reset_client()
+                    glib.idle_add(w.show)
             else:
                 do_quit()
 
