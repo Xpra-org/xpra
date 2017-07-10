@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, OSX
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -247,19 +247,20 @@ class GLWindowBackingBase(GTKWindowBacking):
         self._backing = GLDrawingArea(self.glconfig)
         #must be overriden in subclasses to setup self._backing
         assert self._backing
+        log("init_backing() backing=%s, alpha_enabled=%s", self._backing, self._alpha_enabled)
         if self._alpha_enabled:
             assert GL_ALPHA_SUPPORTED, "BUG: cannot enable alpha if GL backing does not support it!"
             screen = self._backing.get_screen()
             rgba = screen.get_rgba_colormap()
             display = screen.get_display()
-            if not display.supports_composite():
+            if not display.supports_composite() and not OSX:
                 log.warn("display %s does not support compositing, transparency disabled", display.get_name())
                 self._alpha_enabled = False
             elif rgba:
                 log("%s.__init__() using rgba colormap %s", self, rgba)
                 self._backing.set_colormap(rgba)
             else:
-                log.warn("failed to enable transparency on screen %s", screen)
+                log.warn("Warning: failed to enable transparency, no RGBA colormap")
                 self._alpha_enabled = False
         self._backing.set_events(self._backing.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
 

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -276,8 +276,9 @@ class GTK2WindowBase(GTKClientWindowBase):
     def enable_alpha(self):
         screen = self.get_screen()
         rgba = screen.get_rgba_colormap()
+        statelog("enable_alpha() rgba colormap=%s", rgba)
         if rgba is None:
-            log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
+            log.error("Error: cannot handle window transparency, no RGBA colormap")
             return  False
         statelog("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
         self.set_colormap(rgba)
