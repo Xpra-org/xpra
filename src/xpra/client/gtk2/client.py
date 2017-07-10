@@ -130,12 +130,6 @@ class XpraClient(GTKXpraClient):
             log.warn("cannot load GTK2 notifier: %s", e)
         return ncs
 
-    def make_new_window(self, *args):
-        w = GTKXpraClient.make_new_window(self, *args)
-        if w:
-            w.border = self.border
-        return w
-
     def do_get_core_encodings(self):
         encodings = GTKXpraClient.do_get_core_encodings(self)
         #we can handle rgb32 format (but not necessarily transparency!)

@@ -2850,7 +2850,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border, self.max_window_size, self.default_cursor_data)
+                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border.clone(), self.max_window_size, self.default_cursor_data)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
