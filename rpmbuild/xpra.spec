@@ -228,8 +228,10 @@ Requires: %{numpy}
 %{Recommends}: %{requires_dbus}
 %{Recommends}: python2-netifaces
 %{Suggests}: %{requires_crypto}
+%if 0%{?el7}%{?fedora}
+Recommends: dbus-python
+%endif
 %if 0%{?fedora}
-Recommends: python-dbus
 Recommends: python-avahi
 Requires: libyuv
 BuildRequires: libyuv-devel
