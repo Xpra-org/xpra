@@ -321,12 +321,16 @@ class VersionXpraClient(HelloRequestClient):
             "full-version-request"  : True,
             }
 
+    def parse_network_capabilities(self, *args):
+        #don't bother checking anything - this could generate warnings
+        return True
+
     def do_command(self):
-        v = self.server_capabilities.get("version")
+        v = self.server_capabilities.get(b"version")
         if not v:
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:
-            sys.stdout.write("%s\n" % (v,))
+            sys.stdout.write("%s\n" % (bytestostr(v),))
             self.quit(EXIT_OK)
 
 
