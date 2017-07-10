@@ -45,7 +45,7 @@
 %define py3requires_crypto python3-cryptography
 %define py3requires_lzo %{nil}
 #OpenGL bits:
-%define requires_opengl , python2-pyopengl, pygtkglext
+%define requires_opengl pygtkglext
 %define py3requires_opengl , python3-pyopengl
 %define requires_server_printing , cups-filters, cups-pdf
 %define requires_printing , python2-cups
@@ -76,7 +76,7 @@
 #do not disable sound support, but do not declare deps for it either
 #(so it can be installed if desired):
 %define requires_sound %{nil}
-%define requires_opengl , python-pyopengl, pygtkglext
+%define requires_opengl pygtkglext
 #don't have python3 by default:
 %define with_python3 0
 #cups-pdf is not in the regular repos, so remove it from dependencies:
@@ -126,8 +126,6 @@
 %define py3requires_opengl , python3-opengl, python3-opengl-accelerate
 %define requires_crypto python-cryptography
 %define py3requires_crypto python-cryptography
-#different naming prefix ("python-") for pygtkglext:
-%define requires_opengl , PyOpenGL, PyOpenGL-accelerate, python-gtkglext
 %endif
 
 Name: xpra
