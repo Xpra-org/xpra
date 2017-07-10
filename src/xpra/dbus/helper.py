@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import dbus
 from xpra.log import Logger
 log = Logger("dbus")
+
+PY3 = sys.version_info[0]==3
+if PY3:
+    long = int          #@ReservedAssignment
+    basestring = str    #@ReservedAssignment
 
 
 def dbus_to_native(value):
@@ -22,8 +28,6 @@ def dbus_to_native(value):
         for k,v in value.items():
             d[dbus_to_native(k)] = dbus_to_native(v)
         return d
-    elif isinstance(value, unicode):
-        return str(value)
     elif isinstance(value, basestring):
         return str(value)
     elif isinstance(value, float):

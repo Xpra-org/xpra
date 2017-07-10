@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -201,7 +201,7 @@ if not WIN32:
 		def if_nametoindex(interfaceName):
 			return _libc.if_nametoindex(create_string_buffer(interfaceName.encode()))
 		def if_indextoname(index):
-			s = create_string_buffer('\000' * 256)
+			s = create_string_buffer(b'\000' * 256)
 			return _libc.if_indextoname(c_uint(index), s)
 
 net_sys_config = None
