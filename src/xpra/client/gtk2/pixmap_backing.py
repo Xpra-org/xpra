@@ -41,7 +41,7 @@ Backing using a gdk.Pixmap
 """
 class PixmapBacking(GTK2WindowBacking):
 
-    HAS_ALPHA = False
+    HAS_ALPHA = True
     RGB_MODES = PIXMAP_RGB_MODES
 
     def __repr__(self):
@@ -70,7 +70,7 @@ class PixmapBacking(GTK2WindowBacking):
                 self._backing.set_colormap(rgba)
             else:
                 #cannot use transparency
-                log.warn("cannot use transparency: no RGBA colormap!")
+                log.warn("Warning: cannot display transparency, no RGBA colormap")
                 self._alpha_enabled = False
                 self._backing = gdk.Pixmap(gdk.get_default_root_window(), w, h)
         else:
