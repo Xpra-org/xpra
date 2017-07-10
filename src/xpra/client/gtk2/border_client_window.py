@@ -18,7 +18,6 @@ class BorderClientWindow(ClientWindow):
     __gsignals__ = ClientWindow.__common_gsignals__
 
     def setup_window(self, *args):
-        self.border = None
         ClientWindow.setup_window(self, *args)
 
     def toggle_debug(self, *args):
@@ -27,7 +26,7 @@ class BorderClientWindow(ClientWindow):
     def magic_key(self, *args):
         b = self.border
         if b:
-            b.shown = (not b.shown)
+            b.toggle()
             self.queue_draw(0, 0, *self._size)
 
     def do_expose_event(self, event):
