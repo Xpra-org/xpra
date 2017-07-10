@@ -4,14 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import pango
 import os.path
 import subprocess
 from collections import OrderedDict
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_pango, import_glib
 gtk = import_gtk()
 gdk = import_gdk()
+pango = import_pango()
 glib = import_glib()
 glib.threads_init()
 
@@ -62,7 +62,8 @@ class mdns_sessions(gtk.Window):
         al = gtk.Alignment(xalign=1, yalign=0.5)
         al.add(gtk.Label("Password:"))
         hbox.add(al)
-        self.password_entry = gtk.Entry(max=128)
+        self.password_entry = gtk.Entry()
+        self.password_entry.set_max_length(128)
         self.password_entry.set_width_chars(16)
         self.password_entry.set_visibility(False)
         al = gtk.Alignment(xalign=0, yalign=0.5)
@@ -200,16 +201,14 @@ class mdns_sessions(gtk.Window):
             #on MS Windows, prefer ssh which has a GUI for accepting keys
             #and entering the password:
             order["ssh"] = 0
-        def cmp_rec(a, b):
-            def k(v):
-                text = v[-1]    #the text record
-                mode = (text or {}).get("mode", v)
-                host = v[6]
-                host_len = len(host)
-                #prefer order (from mode), then shorter host string:
-                return "%s-%s" % (order.get(mode, mode), host_len)
-            return cmp(k(a), k(b))
-        srecs = sorted(recs, cmp=cmp_rec)
+        def cmp_key(v):
+            text = v[-1]    #the text record
+            mode = (text or {}).get("mode", v)
+            host = v[6]
+            host_len = len(host)
+            #prefer order (from mode), then shorter host string:
+            return "%s-%s" % (order.get(mode, mode), host_len)
+        srecs = sorted(recs, key=cmp_key)
         for rec in srecs:
             uri = self.get_uri(None, *rec)
             uri_menu.append_text(uri)
