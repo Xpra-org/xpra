@@ -244,6 +244,8 @@ class SessionInfo(gtk.Window):
         tb.new_row("Client OpenGL", opengl_box)
         self.opengl_buffering = slabel()
         tb.new_row("OpenGL Mode", self.opengl_buffering)
+        self.window_rendering = slabel()
+        tb.new_row("Window Rendering", self.window_rendering)
         self.server_mmap_icon = gtk.Image()
         tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
         self.server_clipboard_icon = gtk.Image()
@@ -560,6 +562,7 @@ class SessionInfo(gtk.Window):
         self.last_populate_time = monotonic_time()
 
         self.show_opengl_state()
+        self.show_window_renderers()
         #record bytecount every second:
         self.net_in_bytecount.append(self.connection.input_bytecount)
         self.net_out_bytecount.append(self.connection.output_bytecount)
@@ -673,11 +676,20 @@ class SessionInfo(gtk.Window):
         self.client_opengl_label.set_text(glinfo)
         self.opengl_buffering.set_text(" ".join(info))
 
+    def show_window_renderers(self):
+        wr = []
+        renderers = {}
+        for wid, window in list(self.client._id_to_window.items()):
+            renderers.setdefault(window.get_backing_class(), []).append(wid)
+        for bclass, windows in renderers.items():
+            wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
+        self.window_rendering.set_text("GTK%s: %s" % (["2","3"][is_gtk3()], csv(wr)))
+
     def populate_features(self):
         size_info = ""
         if self.client.server_actual_desktop_size:
             w,h = self.client.server_actual_desktop_size
-            size_info = "%s*%s" % (w,h)
+            size_info = "%sx%s" % (w,h)
             if self.client.server_randr and self.client.server_max_desktop_size:
                 size_info += " (max %s)" % ("x".join([str(x) for x in self.client.server_max_desktop_size]))
         self.bool_icon(self.server_randr_icon, self.client.server_randr)
@@ -692,6 +704,7 @@ class SessionInfo(gtk.Window):
         self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
 
         scaps = self.client.server_capabilities
+        self.show_window_renderers()
         self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         self.bool_icon(self.server_clipboard_icon,      scaps.boolget("clipboard", False))
         self.bool_icon(self.server_notifications_icon,  scaps.boolget("notifications", False))
