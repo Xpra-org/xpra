@@ -38,7 +38,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, OSX, POSIX, PYTHON3
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
@@ -1952,23 +1952,39 @@ class ServerBase(ServerCore):
         #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.file_transfer.printing
         #printlog("_process_print(%s, %s)", proto, packet)
-        if len(packet)<9:
+        if len(packet)<3:
             log.error("Error: invalid print packet, only %i arguments", len(packet))
             log.error(" %s", [repr_ellipsized(x) for x in packet])
             return
-        filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
+        filename, file_data = packet[1:3]
+        mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
+        if len(packet)>=4:
+            mimetype = packet[3]
+        if len(packet)>=5:
+            source_uuid = packet[4]
+        if len(packet)>=6:
+            title = packet[5]
+        if len(packet)>=7:
+            printer = packet[6]
+        if len(packet)>=8:
+            no_copies = int(packet[7])
+        if len(packet)>=9:
+            print_options = packet[8]
+        #parse and validate:
         if len(mimetype)>=128:
             log.error("Error: invalid mimetype in print packet:")
             log.error(" %s", repr_ellipsized(mimetype))
             return
-        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options_str))
+        if type(print_options)!=dict:
+            s = bytestostr(print_options)
+            print_options = {}
+            for x in s.split(" "):
+                parts = x.split("=", 1)
+                if len(parts)==2:
+                    print_options[parts[0]] = parts[1]
+        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
         #parse the print options:
-        print_options = {}
-        for x in print_options_str.split(" "):
-            parts = x.split("=", 1)
-            if len(parts)==2:
-                print_options[parts[0]] = parts[1]
         u = hashlib.sha1()
         u.update(file_data)
         printlog("sha1 digest: %s", u.hexdigest())
