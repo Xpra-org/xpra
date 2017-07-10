@@ -190,7 +190,7 @@ class ScreenshotXpraClient(CommandConnectClient):
 
     def _process_screenshot(self, packet):
         (w, h, encoding, _, img_data) = packet[1:6]
-        assert encoding=="png"
+        assert encoding==b"png", "expected png screenshot data but got %s" % bytestostr(encoding)
         if len(img_data)==0:
             self.warn_and_quit(EXIT_OK, "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
             return
