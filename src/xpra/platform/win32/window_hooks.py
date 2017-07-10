@@ -85,7 +85,7 @@ class Win32Hooks(object):
                 fw, fh = self.frame_width, self.frame_height
                 dw = fw*2
                 dh = self.caption_height + fh*2
-            log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s", hwnd, self.min_size, self.max_size, fw, fh)
+                log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s", hwnd, self.min_size, self.max_size, fw, fh)
             if self.min_size:
                 minw, minh = self.min_size
                 minw += dw
