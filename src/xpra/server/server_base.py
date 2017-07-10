@@ -1991,7 +1991,9 @@ class ServerBase(ServerCore):
                 printlog.error(" %s", e)
 
         sent = 0
-        for ss in self._server_sources.values():
+        sources = list(self._server_sources.values())
+        printlog("will try to send to %i clients: %s", len(sources), sources)
+        for ss in sources:
             if source_uuid!='*' and ss.uuid!=source_uuid:
                 printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
                 continue
