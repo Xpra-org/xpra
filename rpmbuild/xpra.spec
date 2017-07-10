@@ -231,6 +231,7 @@ Requires: %{numpy}
 %{Recommends}: python2-netifaces
 %{Suggests}: %{requires_crypto}
 %if 0%{?fedora}
+Recommends: python-dbus
 Recommends: python-avahi
 Requires: libyuv
 BuildRequires: libyuv-devel
@@ -296,7 +297,7 @@ Conflicts: xpra < 2.1
 Requires: xpra-common-client = %{version}-%{build_no}%{dist}
 Requires: python2-xpra = %{version}-%{build_no}%{dist}
 Requires: %{requires_pygtk2}
-%{Recommends}: %{requires_opengl}
+Requires: %{requires_opengl}
 %{Recommends}: %{requires_printing}
 %if ! 0%{?el7}
 Requires: sshpass
