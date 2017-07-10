@@ -79,7 +79,7 @@ class GLClientWindow(ClientWindow):
     def magic_key(self, *args):
         b = self._backing
         if self.border:
-            self.border.shown = (not self.border.shown)
+            self.border.toggle()
             if b:
                 b.present_fbo(0, 0, *self._size)
         log("magic_key%s border=%s, backing=%s", args, self.border, b)

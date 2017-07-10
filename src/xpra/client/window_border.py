@@ -13,6 +13,9 @@ class WindowBorder(object):
         self.alpha = alpha
         self.size = size
 
+    def toggle(self):
+        self.shown = not self.shown
+
     def clone(self):
         return WindowBorder(self.shown, self.red, self.green, self.blue, self.alpha, self.size)
 
