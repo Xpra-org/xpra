@@ -679,7 +679,7 @@ def get_default_key_shortcuts():
                (True,   "Meta+Shift+F6:decrease_quality"),
                (True,   "Meta+Shift+F7:increase_speed"),
                (True,   "Meta+Shift+F8:decrease_speed"),
-               (True,   "Meta+Shift+F9:magic_key"),
+               (True,   "Meta+Shift+F10:magic_key"),
                (True,   "Meta+Shift+F11:show_session_info"),
                (True,   "Meta+Shift+F12:toggle_debug"),
                (True,   "Meta+Shift+plus:scaleup"),
