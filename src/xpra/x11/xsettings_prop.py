@@ -161,6 +161,7 @@ def main():
     from xpra.platform.gui import init as gui_init
     from xpra.os_util import POSIX
     from xpra.platform import program_context
+    from xpra.gtk_common.error import xsync
     with program_context("XSettings"):
         gui_init()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
@@ -174,21 +175,23 @@ def main():
             print("xsettings require a posix OS")
             return 1
 
-        from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
-        init_posix_display_source()
-        from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-        window_bindings = X11WindowBindings()
-        selection = "_XSETTINGS_S0"
-        owner = window_bindings.XGetSelectionOwner(selection)
-        print("owner(%s)=%#x" % (selection, owner))
-        XSETTINGS = "_XSETTINGS_SETTINGS"
-        data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-        serial, settings = get_settings(None, data)
-        print("serial=%s" % serial)
-        print("%s settings:" % len(settings))
-        for s in settings:
-            print(s)
-        return 0
+        with xsync:
+            from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+            init_posix_display_source()
+            from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+            window_bindings = X11WindowBindings()
+            selection = "_XSETTINGS_S0"
+            owner = window_bindings.XGetSelectionOwner(selection)
+            print("owner(%s)=%#x" % (selection, owner))
+            XSETTINGS = "_XSETTINGS_SETTINGS"
+            if owner:
+                data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
+                serial, settings = get_settings(None, data)
+                print("serial=%s" % serial)
+                print("%s settings:" % len(settings))
+                for s in settings:
+                    print(s)
+            return 0
 
 
 if __name__ == "__main__":
