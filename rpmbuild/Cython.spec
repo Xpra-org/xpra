@@ -10,15 +10,15 @@ Name:		python-Cython
 Name:		python2-Cython
 %endif
 
-Version:	0.26.0
-Release:	0%{?dist}
+Version:	0.26
+Release:	0b2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
 #Source:		http://www.cython.org/Cython-%{version}.tar.gz
-Source:		https://github.com/cython/cython/archive/0.26b0.zip
+Source:		https://github.com/cython/cython/archive/0.26b2.zip
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 %if 0%{?suse_version}
@@ -53,8 +53,8 @@ for writing Python extension modules.
 
 
 %prep
-%setup -q -n Cython-%{version}
-%setup -q -n cython-0.26b0
+#%setup -q -n Cython-%{version}
+%setup -q -n cython-0.26b2
 
 %if %{with_python3}
 rm -rf %{py3dir}
@@ -106,23 +106,24 @@ rm -rf %{buildroot}
 %{_bindir}/cython
 %{_bindir}/cythonize
 %{_bindir}/cygdb
-%{python_sitearch}/Cython
-%{python_sitearch}/cython.py*
-%{python_sitearch}/pyximport
-%{python_sitearch}/Cython*egg-info
+%{python_sitearch}/*
+%{python_sitearch}/*
+%doc *.txt Demos Doc Tools
 %if %{with_python3}
 %files -n python3-Cython
-%doc *.txt Demos Doc Tools
 %{python3_sitearch}/*
 %{_bindir}/cython3
 %{_bindir}/cygdb3
 %{python3_sitearch}/Cython*egg-info
-%endif
 %doc *.txt Demos Doc Tools
+%endif
 
 
 %changelog
-* Tue Jul 04 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26.0-0
+* Tue Jul 11 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b2
+- new beta release
+
+* Tue Jul 04 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b0
 - new beta release
 
 * Sun Dec 25 2016 Antoine Martin <antoine@devloop.org.uk> - 0.25.2-2
