@@ -107,7 +107,6 @@ rm -rf %{buildroot}
 %{_bindir}/cythonize
 %{_bindir}/cygdb
 %{python_sitearch}/*
-%{python_sitearch}/*
 %doc *.txt Demos Doc Tools
 %if %{with_python3}
 %files -n python3-Cython
