@@ -11,7 +11,7 @@ Name:		python2-Cython
 %endif
 
 Version:	0.26
-Release:	0b2%{?dist}
+Release:	0b2p1%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -19,6 +19,7 @@ License:	Python
 URL:		http://www.cython.org
 #Source:		http://www.cython.org/Cython-%{version}.tar.gz
 Source:		https://github.com/cython/cython/archive/0.26b2.zip
+Patch0:     cython-fallthrough.patch
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
 %if 0%{?suse_version}
@@ -55,6 +56,7 @@ for writing Python extension modules.
 %prep
 #%setup -q -n Cython-%{version}
 %setup -q -n cython-0.26b2
+%patch0 -p1
 
 %if %{with_python3}
 rm -rf %{py3dir}
@@ -119,6 +121,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jul 11 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b2p1
+- add fallthrough fix
+
 * Tue Jul 11 2017 Antoine Martin <antoine@devloop.org.uk> - 0.26-0b2
 - new beta release
 
