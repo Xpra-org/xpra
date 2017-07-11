@@ -1361,7 +1361,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     #warn and fall through to regular server start:
                     warn("Warning: cannot use the system proxy for '%s' subcommand,\n %s" % (mode, err))
                     #re-exec itself and disable start-via-proxy:
-                    args = sys.argv[:]+["--start-via-proxy=no", "--debug=all"]
+                    args = sys.argv[:]+["--start-via-proxy=no"]
                     #warn("re-running with: %s" % (args,))
                     os.execv(args[0], args)
                     #this code should be unreachable!
