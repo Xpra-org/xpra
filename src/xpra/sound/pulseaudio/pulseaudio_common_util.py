@@ -20,7 +20,7 @@ def get_x11_property(atom_name):
         return ""
     try:
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
-        with X11DisplayContext() as dc:
+        with X11DisplayContext(display) as dc:
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
             root = X11Window.getDefaultRootWindow()
