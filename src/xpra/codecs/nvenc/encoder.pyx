@@ -2787,7 +2787,7 @@ def cleanup_module():
 
 def selftest(full=False):
     v = get_nvidia_module_version(True)
-    assert NVENCAPI_MAJOR_VERSION==7, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
+    assert NVENCAPI_MAJOR_VERSION<7, "unsupported NVENC version %i" % NVENCAPI_MAJOR_VERSION
     if v:
         NVENC_UNSUPPORTED_DRIVER_VERSION = envbool("XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION", False)
         #SDK 7.0 requires version 367 or later
