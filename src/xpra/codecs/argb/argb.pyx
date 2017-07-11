@@ -6,7 +6,7 @@
 
 #cython: boundscheck=False, wraparound=False, cdivision=True
 
-from xpra.buffers.membuf cimport getbuf, MemBuf
+from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t
@@ -14,6 +14,8 @@ from libc.stdint cimport uint32_t, uint16_t, uint8_t
 import struct
 from xpra.log import Logger
 log = Logger("encoding")
+
+assert sizeof(int) == 4
 
 
 cdef int as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1:
@@ -44,7 +46,7 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return None
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = getbuf(rgb565_len*2)
+    cdef MemBuf output_buf = padbuf(rgb565_len*2, 2)
     cdef uint32_t *rgbx = <uint32_t*> output_buf.get_mem()
     cdef uint16_t v
     cdef unsigned int i = 0
@@ -66,7 +68,7 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return None
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = getbuf(rgb565_len*3//2)
+    cdef MemBuf output_buf = padbuf(rgb565_len*3//2, 3)
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v
     cdef unsigned int i = 0
@@ -146,7 +148,7 @@ cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
     if r210_len <= 0:
         return None
     assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    cdef MemBuf output_buf = getbuf(r210_len//4*3)
+    cdef MemBuf output_buf = padbuf(r210_len//4*3, 3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     #number of pixels:
     cdef int s = 0
@@ -201,7 +203,7 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
     #number of pixels:
     cdef unsigned int mi = argb_len//4                #@DuplicateSignature
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef MemBuf output_buf = padbuf(mi*3, 3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int i = 0, di = 0                          #@DuplicateSignature
     while i < argb_len:
@@ -228,7 +230,7 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4                #@DuplicateSignature
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef MemBuf output_buf = padbuf(mi*3, 3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0                  #@DuplicateSignature
     while si < bgra_len:
@@ -272,7 +274,6 @@ def premultiply_argb_in_place(buf):
     # b is a Python buffer object
     cdef unsigned int * cbuf = <unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0                #@DuplicateSignature
-    assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0
     do_premultiply_argb_in_place(cbuf, cbuf_len)
@@ -282,7 +283,6 @@ cdef do_premultiply_argb_in_place(unsigned int *buf, Py_ssize_t argb_len):
     # We convert to premultiplied ARGB32 data, in-place.
     cdef unsigned char a, r, g, b
     cdef unsigned int argb
-    assert sizeof(int) == 4
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     cdef int i
     for 0 <= i < argb_len / 4:
@@ -300,7 +300,6 @@ def unpremultiply_argb_in_place(buf):
     # b is a Python buffer object
     cdef unsigned int * cbuf = <unsigned int *> 0   #@DuplicateSignature
     cdef Py_ssize_t cbuf_len = 0                    #@DuplicateSignature
-    assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0, "cannot convert %s to a writable buffer" % type(buf)
     do_unpremultiply_argb_in_place(cbuf, cbuf_len)
@@ -310,7 +309,6 @@ cdef do_unpremultiply_argb_in_place(unsigned int * buf, Py_ssize_t buf_len):
     # We convert to premultiplied ARGB32 data, in-place.
     cdef unsigned char a, r, g, b                   #@DuplicateSignature
     cdef unsigned int argb                          #@DuplicateSignature
-    assert sizeof(int) == 4
     assert buf_len>0 and buf_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % buf_len
     cdef int i                                      #@DuplicateSignature
     for 0 <= i < buf_len // 4:
@@ -328,7 +326,6 @@ def unpremultiply_argb(buf):
     # b is a Python buffer object
     cdef unsigned int * argb = <unsigned int *> 0   #@DuplicateSignature
     cdef Py_ssize_t argb_len = 0                    #@DuplicateSignature
-    assert sizeof(int) == 4
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     assert as_buffer(buf, <const void **>&argb, &argb_len)==0
     return do_unpremultiply_argb(argb, argb_len)
@@ -348,7 +345,6 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     # We convert to premultiplied ARGB32 data
     cdef unsigned char a, r, g, b                #@DuplicateSignature
     cdef unsigned int argb                      #@DuplicateSignature
-    assert sizeof(int) == 4
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     cdef MemBuf output_buf = getbuf(argb_len)
     cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()
