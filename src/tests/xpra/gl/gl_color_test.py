@@ -30,11 +30,11 @@ class GLContext(object):
 class ColorTest(object):
 
     def __init__(self):
-        display_mode = gdkgl.MODE_RGBA | gdkgl.MODE_DOUBLE
+        display_mode = gdkgl.MODE_RGB | gdkgl.MODE_DOUBLE
         try:
             self.glconfig = gdkgl.Config(mode=display_mode)
         except gdkgl.NoMatches:
-            self.display_mode &= ~gdkgl.MODE_DOUBLE
+            display_mode &= ~gdkgl.MODE_DOUBLE
             self.glconfig = gdkgl.Config(mode=display_mode)
 
         win = gtk.Window()
