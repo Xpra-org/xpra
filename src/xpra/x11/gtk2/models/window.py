@@ -640,14 +640,21 @@ class WindowModel(BaseWindowModel):
             # actually display-clean.  Oh well.
             pixmap = gdk.Pixmap(None, surf.get_width(), surf.get_height(), 32)
             screen = get_display_for(pixmap).get_default_screen()
-            pixmap.set_colormap(screen.get_rgba_colormap())
-            cr = pixmap.cairo_create()
-            cr.set_source_surface(surf)
-            # Important to use SOURCE, because a newly created Pixmap can have
-            # random trash as its contents, and otherwise that will show
-            # through any alpha in the icon:
-            cr.set_operator(cairo.OPERATOR_SOURCE)
-            cr.paint()
+            colormap = screen.get_rgba_colormap()
+            if not colormap:
+                colormap = screen.get_rgb_colormap()
+            if not colormap:
+                iconlog.warn("Warning: cannot find colormap for default screen")
+                pixmap = None
+            else:
+                pixmap.set_colormap(colormap)
+                cr = pixmap.cairo_create()
+                cr.set_source_surface(surf)
+                # Important to use SOURCE, because a newly created Pixmap can have
+                # random trash as its contents, and otherwise that will show
+                # through any alpha in the icon:
+                cr.set_operator(cairo.OPERATOR_SOURCE)
+                cr.paint()
         else:
             pixmap = None
         #FIXME: it would be more efficient to notify first,
