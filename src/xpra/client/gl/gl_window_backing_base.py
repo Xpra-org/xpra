@@ -268,7 +268,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         props = GTKWindowBacking.get_encoding_properties(self)
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
-            props["encoding.bit-depth"] = self.bit_depth
+        props["encoding.bit-depth"] = self.bit_depth
         return props
 
 
