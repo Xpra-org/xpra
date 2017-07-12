@@ -101,9 +101,9 @@ cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
     cdef unsigned int v
     while i < r210_len:
         v = r210[i//4]
-        rgba[i]   = (v&0x000003ff) >> 2
+        rgba[i+2] = (v&0x000003ff) >> 2
         rgba[i+1] = (v&0x000ffc00) >> 12
-        rgba[i+2] = (v&0x3ff00000) >> 22
+        rgba[i]   = (v&0x3ff00000) >> 22
         rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
         i = i + 4
     return memoryview(output_buf)
@@ -128,9 +128,9 @@ cdef r210data_to_rgbx(const unsigned int* r210, const int r210_len):
     cdef unsigned int v
     while i < r210_len:
         v = r210[i//4]
-        rgbx[i]   = (v&0x000003ff) >> 2
+        rgbx[i+2] = (v&0x000003ff) >> 2
         rgbx[i+1] = (v&0x000ffc00) >> 12
-        rgbx[i+2] = (v&0x3ff00000) >> 22
+        rgbx[i]   = (v&0x3ff00000) >> 22
         rgbx[i+3] = 0xFF
         i = i + 4
     return memoryview(output_buf)
@@ -144,6 +144,11 @@ def r210_to_rgb(buf):
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     return r210data_to_rgb(cbuf, cbuf_len)
 
+#white:  3fffffff
+#red:    3ff00000
+#green:     ffc00
+#blue:        3ff
+#black:         0
 cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
     if r210_len <= 0:
         return None
@@ -156,9 +161,9 @@ cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
     cdef unsigned int v
     while s < r210_len//4:
         v = r210[s]
-        rgb[d]   = (v&0x000003ff) >> 2
+        rgb[d+2] = (v&0x000003ff) >> 2
         rgb[d+1] = (v&0x000ffc00) >> 12
-        rgb[d+2] = (v&0x3ff00000) >> 22
+        rgb[d]   = (v&0x3ff00000) >> 22
         s += 1
         d += 3
     return memoryview(output_buf)

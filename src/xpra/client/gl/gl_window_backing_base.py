@@ -52,7 +52,7 @@ from OpenGL.GL import \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, \
-    GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB10_A2, \
+    GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_RGB10_A2, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
@@ -81,6 +81,7 @@ from ctypes import c_uint
 
 PIXEL_FORMAT_TO_CONSTANT = {
     "r210"  : GL_BGRA,
+    "R210"  : GL_RGBA,
     "BGR"   : GL_BGR,
     "RGB"   : GL_RGB,
     "BGRA"  : GL_BGRA,
@@ -88,13 +89,32 @@ PIXEL_FORMAT_TO_CONSTANT = {
     "RGBA"  : GL_RGBA,
     "RGBX"  : GL_RGBA,
     }
+PIXEL_FORMAT_TO_DATATYPE = {
+    "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
+    "R210"  : GL_UNSIGNED_INT_10_10_10_2,
+    "BGR"   : GL_UNSIGNED_BYTE,
+    "RGB"   : GL_UNSIGNED_BYTE,
+    "BGRA"  : GL_UNSIGNED_BYTE,
+    "BGRX"  : GL_UNSIGNED_BYTE,
+    "RGBA"  : GL_UNSIGNED_BYTE,
+    "RGBX"  : GL_UNSIGNED_BYTE,
+    }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
     GL_RGB   : "RGB",
     GL_BGRA  : "BGRA",
     GL_RGBA  : "RGBA",
     }
-
+INTERNAL_FORMAT_TO_STR = {
+    GL_RGB10_A2     : "RGB10_A2",
+    GL_RGBA8        : "RGBA8",
+    GL_RGB8         : "RGB8",
+    }
+DATATYPE_TO_STR = {
+    GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
+    GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
+    GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
+    }
 
 #debugging variables:
 GL_DEBUG_OUTPUT = None
@@ -214,14 +234,12 @@ class GLWindowBackingBase(GTKWindowBacking):
         else:
             self.bit_depth = 24
         if self.bit_depth==30 and HIGH_BIT_DEPTH:
-            self.texture_pixel_type = GL_UNSIGNED_INT_2_10_10_10_REV    #GL_UNSIGNED_INT_10_10_10_2
             self.texture_pixel_format = GL_RGBA
             self.internal_format = GL_RGB10_A2
             if "r210" not in GLWindowBackingBase.RGB_MODES:
                 GLWindowBackingBase.RGB_MODES.append("r210")
         else:
             #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-            self.texture_pixel_type = GL_UNSIGNED_BYTE
             if self._alpha_enabled:
                 self.internal_format = GL_RGBA8
                 self.texture_pixel_format = GL_RGBA
@@ -427,7 +445,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             target = GL_TEXTURE_RECTANGLE_ARB
             glBindTexture(target, self.textures[TEX_TMP_FBO])
             set_texture_level(target)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.tmp_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -436,7 +454,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             glBindTexture(target, self.textures[TEX_FBO])
             # nvidia needs this even though we don't use mipmaps (repeated through this file):
             set_texture_level(target)
-            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, self.texture_pixel_type, None)
+            glTexImage2D(target, 0, self.internal_format, w, h, 0, self.texture_pixel_format, GL_UNSIGNED_BYTE, None)
             glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
             glClear(GL_COLOR_BUFFER_BIT)
@@ -919,9 +937,11 @@ class GLWindowBackingBase(GTKWindowBacking):
                 #convert it to a GL constant:
                 pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
                 assert pformat is not None, "could not find pixel format for %s" % rgb_format
+                ptype = PIXEL_FORMAT_TO_DATATYPE.get(rgb_format)
+                assert pformat is not None, "could not find pixel type for %s" % rgb_format
 
-                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), using GL %s format=%s",
-                               rgb_format, x, y, width, height, len(img_data), upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat))
+                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), using GL %s format=%s / %s to internal format=%s",
+                               rgb_format, x, y, width, height, len(img_data), upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype), INTERNAL_FORMAT_TO_STR.get(self.internal_format))
 
                 # Upload data as temporary RGB texture
                 target = GL_TEXTURE_RECTANGLE_ARB
@@ -933,7 +953,7 @@ class GLWindowBackingBase(GTKWindowBacking):
                 set_texture_level(target)
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-                glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, self.texture_pixel_type, img_data)
+                glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
