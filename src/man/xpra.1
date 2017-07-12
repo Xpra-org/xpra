@@ -86,6 +86,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-pixel\-depth\fP=\fIVALUE\fP]
 [\fB\-\-input\-method\fP=\fIMETHOD\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
@@ -154,6 +155,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-remote\-xpra\fP=\fICMD\fP]
 [\fB\-\-password\-file\fP=\fIFILENAME\fP]
 [\fB\-\-dpi\fP=\fIVALUE\fP]
+[\fB\-\-pixel\-depth\fP=\fIVALUE\fP]
 [\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
@@ -1011,6 +1013,15 @@ Many applications will only read this value when starting up,
 so connecting to an existing session started with a different DPI
 value may not have the desired effect.
 .TP
+\fB\-\-pixel\-depth\fP=\fIVALUE\fP
+When starting a server, this switch controls the bits per pixel
+of the virtual framebuffer. Possible values: 0 (auto), 16, 24, 30.
+When starting a client, this switch controls the picture rendering
+with the opengl backend: values higher than 24 will enable deep color,
+the value 24 enables regular true color rendering. Use the value 0
+to let the client decide if the rendering will benefit from using
+deep color. (this is only supported on some Posix clients)
+Other values should not be used.
 \fB\-\-cursors\fP=\fIyes\fP|\fIno\fP
 Enable or disable forwarding of custom application mouse cursors.
 Client applications may change the mouse cursor at any time, which

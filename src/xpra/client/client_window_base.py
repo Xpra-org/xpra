@@ -29,8 +29,8 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size, default_cursor_data):
-        log("%s%s", type(self), (client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size, default_cursor_data))
+    def __init__(self, client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, max_window_size, default_cursor_data, pixel_depth):
+        log("%s%s", type(self), (client, group_leader, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, max_window_size, default_cursor_data, pixel_depth))
         ClientWidgetBase.__init__(self, client, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -56,6 +56,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.default_cursor_data = default_cursor_data 
         self.max_window_size = max_window_size
         self.button_state = {}
+        self.pixel_depth = pixel_depth      #0 for default
 
         self.init_window(metadata)
         self.setup_window(bw, bh)

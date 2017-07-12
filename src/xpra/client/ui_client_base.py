@@ -156,6 +156,7 @@ class UIXpraClient(XpraClientBase):
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
         self.dpi = 0
+        self.pixel_depth = 0
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = 0
@@ -339,6 +340,10 @@ class UIXpraClient(XpraClientBase):
             self.initial_scaling = self.parse_scaling(opts.desktop_scaling)
             self.xscale, self.yscale = self.initial_scaling
 
+        self.pixel_depth = int(opts.pixel_depth)
+        if self.pixel_depth<0 or (self.pixel_depth>0 and self.pixel_depth<24) or (self.pixel_depth>24 and self.pixel_depth<30):
+            log.warn("Warning: invalid pixel depth %i", self.pixel_depth)
+            self.pixel_depth = 0
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
         if MMAP_SUPPORTED:
@@ -2850,7 +2855,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border.clone(), self.max_window_size, self.default_cursor_data)
+                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, self.border.clone(), self.max_window_size, self.default_cursor_data, self.pixel_depth)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)

@@ -44,7 +44,7 @@ class ClientWidgetBase(object):
                 from xpra.client.fake_window_backing import FakeBacking
                 bc = FakeBacking
             log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s", (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
-            backing = bc(self._id, self._window_alpha)
+            backing = bc(self._id, self._window_alpha, self.pixel_depth)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
         backing.init(ww, wh, bw, bh)

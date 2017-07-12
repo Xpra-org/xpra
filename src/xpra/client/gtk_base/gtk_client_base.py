@@ -645,9 +645,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             opengllog("OpenGL initialization error", exc_info=True)
             self.GLClientWindowClass = None
             self.client_supports_opengl = False
-            opengllog.warn("%s", msg)
+            opengllog.error("%s", msg)
             for x in str(e).split("\n"):
-                opengllog.warn(" %s", x)
+                opengllog.error(" %s", x)
             self.opengl_props["info"] = str(e)
 
         if warnings:
@@ -708,7 +708,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 window = None
                 try:
                     w, h = 50, 50
-                    window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data)
+                    window = self.GLClientWindowClass(self, None, 2**32-1, -100, -100, w, h, w, h, typedict({}), False, typedict({}), self.border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
                     window.realize()
                     pixel_format = "BGRX"
                     bpp = len(pixel_format)

@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time, OSX
+from xpra.os_util import monotonic_time, OSX, POSIX
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -204,7 +204,7 @@ class GLWindowBackingBase(GTKWindowBacking):
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
-    def __init__(self, wid, window_alpha):
+    def __init__(self, wid, window_alpha, pixel_depth=0):
         self.wid = wid
         self.size = 0, 0
         self.render_size = 0, 0
@@ -228,13 +228,10 @@ class GLWindowBackingBase(GTKWindowBacking):
         GTKWindowBacking.__init__(self, wid, window_alpha)
         self.init_gl_config(window_alpha)
         self.init_backing()
-        #this is how many bpp we keep in the texture
-        #OSX workaround (we hacked the bindings are removed this method - oops!)
-        if hasattr(self.glconfig, "get_depth"):
-            self.bit_depth = self.glconfig.get_depth()
-        else:
-            self.bit_depth = 24
-        if FORCE_HIGH_BIT_DEPTH or (self.bit_depth==30 and HIGH_BIT_DEPTH):
+        self.bit_depth = self.glconfig.get_depth()
+        high_bit_depth = HIGH_BIT_DEPTH and (pixel_depth>24 or (pixel_depth==0 and POSIX and self.bit_depth>24))
+        log("high_bit_depth=%s (HIGH_BIT_DEPTH=%s, pixel_depth=%i, bit_depth=%i)", high_bit_depth, HIGH_BIT_DEPTH, pixel_depth, self.bit_depth)
+        if high_bit_depth:
             self.texture_pixel_format = GL_RGBA
             self.internal_format = GL_RGB10_A2
             if "r210" not in GLWindowBackingBase.RGB_MODES:

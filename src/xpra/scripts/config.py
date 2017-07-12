@@ -855,7 +855,7 @@ def get_defaults():
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : 0,
-                    "pixel-depth"       : 24,
+                    "pixel-depth"       : 0,
                     "uid"               : getuid(),
                     "gid"               : getgid(),
                     "auto-refresh-delay": 0.15,

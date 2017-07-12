@@ -31,5 +31,5 @@ class GTKWindowBacking(WindowBackingBase):
 
     HAS_ALPHA = GTK_ALPHA_SUPPORTED
 
-    def __init__(self, wid, window_alpha):
+    def __init__(self, wid, window_alpha, pixel_depth=0):
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, glib.idle_add)

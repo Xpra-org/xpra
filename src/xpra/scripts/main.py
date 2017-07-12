@@ -913,7 +913,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The 'dots per inch' value that client applications should try to honour, from 10 to 1000 or 0 for automatic setting. Default: %s." % print_number(defaults.dpi))
     group.add_option("--pixel-depth", action="store",
                       dest="pixel_depth", default=defaults.pixel_depth,
-                      help="The bits per pixel of the virtual framebuffer (8, 16, 24 or 30). Default: %s." % defaults.pixel_depth)
+                      help="The bits per pixel of the virtual framebuffer when starting a server (8, 16, 24 or 30), or for rendering when starting a client. Default: %s." % (defaults.pixel_depth or "0 (auto)"))
     group.add_option("--sync-xvfb", action="store",
                       dest="sync_xvfb", default=defaults.sync_xvfb,
                       help="How often to synchronize the virtual framebuffer used for X11 seamless servers (0 to disable). Default: %s." % defaults.sync_xvfb)
