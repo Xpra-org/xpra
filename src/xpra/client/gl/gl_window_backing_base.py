@@ -958,14 +958,10 @@ class GLWindowBackingBase(GTKWindowBacking):
 
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
-                glTexCoord2i(0, 0)
-                glVertex2i(x, y)
-                glTexCoord2i(0, height)
-                glVertex2i(x, y+height)
-                glTexCoord2i(width, height)
-                glVertex2i(x+width, y+height)
-                glTexCoord2i(width, 0)
-                glVertex2i(x+width, y)
+                glTexCoord2i(0, 0);             glVertex2i(x, y)
+                glTexCoord2i(0, height);        glVertex2i(x, y+height)
+                glTexCoord2i(width, height);    glVertex2i(x+width, y+height)
+                glTexCoord2i(width, 0);         glVertex2i(x+width, y)
                 glEnd()
 
                 glBindTexture(target, 0)
