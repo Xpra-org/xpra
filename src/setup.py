@@ -193,6 +193,7 @@ nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
+example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
 annotate_ENABLED        = True
@@ -216,7 +217,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "clipboard",
             "server", "client", "dbus", "x11", "xinput", "sd_listen",
             "gtk_x11", "service",
-            "gtk2", "gtk3",
+            "gtk2", "gtk3", "example",
             "html5", "minify", "html5_gzip", "html5_brotli",
             "pam",
             "sound", "opengl", "printing", "webcam",
@@ -1428,6 +1429,14 @@ if WIN32:
         if nvfbc_ENABLED or nvenc_ENABLED:
             add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
+        if example_ENABLED:
+            add_gui_exe("xpra/client/gtk_base/example/colors.py",               "encoding.ico",     "Colors")
+            add_gui_exe("xpra/client/gtk_base/example/colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
+            add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
+            add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
+            add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent_Colors")
+            add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent_Window")
+
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
@@ -1866,6 +1875,7 @@ toggle_packages((client_ENABLED and gtk3_ENABLED) or (sound_ENABLED and WIN32 an
 toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gtk_base")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk2_ENABLED, "xpra.client.gl.gtk2")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+toggle_packages(client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED) and example_ENABLED, "xpra.client.gtk_base.example")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     propsys_pkgconfig = pkgconfig()
     if debug_ENABLED:

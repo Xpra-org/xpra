@@ -213,6 +213,7 @@ if is_gtk3():
     del mt
 
     em = gdk.EventMask
+    KEY_PRESS_MASK = em.KEY_PRESS_MASK
     WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
             | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
             | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
@@ -376,6 +377,7 @@ else:
                    gdk.BUTTON4_MASK : 4,
                    gdk.BUTTON5_MASK : 5}
 
+    KEY_PRESS_MASK = gdk.KEY_PRESS_MASK
     WINDOW_EVENT_MASK = gdk.STRUCTURE_MASK | gdk.KEY_PRESS_MASK | gdk.KEY_RELEASE_MASK \
             | gdk.POINTER_MOTION_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK \
             | gdk.PROPERTY_CHANGE_MASK
