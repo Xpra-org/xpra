@@ -52,8 +52,8 @@ from OpenGL.GL import \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
-    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, \
-    GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_RGB10_A2, \
+    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, \
+    GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
@@ -89,10 +89,14 @@ PIXEL_FORMAT_TO_CONSTANT = {
     "BGRX"  : GL_BGRA,
     "RGBA"  : GL_RGBA,
     "RGBX"  : GL_RGBA,
+    "BGR565": GL_BGR,
+    "RGB565": GL_RGB,
     }
 PIXEL_FORMAT_TO_DATATYPE = {
     "r210"  : GL_UNSIGNED_INT_2_10_10_10_REV,
     "R210"  : GL_UNSIGNED_INT_10_10_10_2,
+    "RGB565": GL_UNSIGNED_SHORT_5_6_5,
+    "BGR565": GL_UNSIGNED_SHORT_5_6_5,
     "BGR"   : GL_UNSIGNED_BYTE,
     "RGB"   : GL_UNSIGNED_BYTE,
     "BGRA"  : GL_UNSIGNED_BYTE,
@@ -110,11 +114,14 @@ INTERNAL_FORMAT_TO_STR = {
     GL_RGB10_A2     : "RGB10_A2",
     GL_RGBA8        : "RGBA8",
     GL_RGB8         : "RGB8",
+    GL_RGB565       : "RGB565",
+    GL_RGB5_A1      : "RGB5_A1",
     }
 DATATYPE_TO_STR = {
     GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
     GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
     GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
+    GL_UNSIGNED_SHORT_5_6_5         : "UNSIGNED_SHORT_5_6_5",
     }
 
 #debugging variables:
@@ -230,18 +237,31 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
         if self.bit_depth==30:
-            self.texture_pixel_format = GL_RGBA
             self.internal_format = GL_RGB10_A2
             if "r210" not in GLWindowBackingBase.RGB_MODES:
                 GLWindowBackingBase.RGB_MODES.append("r210")
+        if self.bit_depth==16:
+            #GL_UNSIGNED_SHORT_4_4_4_4
+            #GL_UNSIGNED_SHORT_5_5_5_1
+            if self._alpha_enabled:
+                self.internal_format = GL_RGB5_A1
+            else:
+                self.internal_format = GL_RGB565
+            if "BGR565" not in GLWindowBackingBase.RGB_MODES:
+                GLWindowBackingBase.RGB_MODES.append("BGR565")
+            if "RGB565" not in GLWindowBackingBase.RGB_MODES:
+                GLWindowBackingBase.RGB_MODES.append("RGB565")
         else:
-            #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+            #assume 24:
             if self._alpha_enabled:
                 self.internal_format = GL_RGBA8
-                self.texture_pixel_format = GL_RGBA
             else:
                 self.internal_format = GL_RGB8
-                self.texture_pixel_format = GL_RGB
+        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+        if self._alpha_enabled:
+            self.texture_pixel_format = GL_RGBA
+        else:
+            self.texture_pixel_format = GL_RGB
         self.draw_needs_refresh = False
         self._backing.show()
 

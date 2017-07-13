@@ -341,7 +341,7 @@ class UIXpraClient(XpraClientBase):
             self.xscale, self.yscale = self.initial_scaling
 
         self.pixel_depth = int(opts.pixel_depth)
-        if self.pixel_depth<0 or (self.pixel_depth>0 and self.pixel_depth<24) or (self.pixel_depth>24 and self.pixel_depth<30):
+        if self.pixel_depth not in (0, 16, 24, 30) and self.pixel_depth<32:
             log.warn("Warning: invalid pixel depth %i", self.pixel_depth)
             self.pixel_depth = 0
         self.dpi = int(opts.dpi)
