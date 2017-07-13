@@ -28,7 +28,7 @@
 
 Name:           %{py2prefix}-%{shortname}
 Version:        3.1.1a1
-Release:        4.1xpra4%{?dist}
+Release:        4.2xpra4%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -43,6 +43,8 @@ BuildRequires:  python-devel
 BuildRequires:  python-setuptools-devel
 Requires:       %{python2_numpy}
 Requires:       freeglut
+Obsoletes:      python-pyopengl < 3.1.2
+Provides:       python-pyopengl = %{version}-%{release}
 Obsoletes:      pyopengl < 3.1.2
 Provides:       pyopengl = %{version}-%{release}
 Conflicts:		pyopengl
@@ -220,6 +222,9 @@ popd
 
 
 %changelog
+* Thu Jul 13 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.2xpra4
+- also obsolete / provide "python-opengl" package name
+
 * Tue Jan 10 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.1xpra4
 - also use "python2-opengl" package name on CentOS
 
