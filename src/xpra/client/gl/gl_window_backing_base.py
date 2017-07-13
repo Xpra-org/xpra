@@ -240,7 +240,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             self.internal_format = GL_RGB10_A2
             if "r210" not in GLWindowBackingBase.RGB_MODES:
                 GLWindowBackingBase.RGB_MODES.append("r210")
-        if self.bit_depth==16:
+        elif self.bit_depth==16:
             #GL_UNSIGNED_SHORT_4_4_4_4
             #GL_UNSIGNED_SHORT_5_5_5_1
             if self._alpha_enabled:
