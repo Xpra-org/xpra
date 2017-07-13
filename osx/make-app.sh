@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PYTHON_VERSION="${PYTHON_VERSION:=python2}"
+
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=$STRIP_DEFAULT}"
@@ -24,7 +26,7 @@ export ARCH
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python*/site-packages | sort | tail -n 1`
+PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/${PYTHON_VERSION}*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist
 ln -sf ../src/dist ./dist
