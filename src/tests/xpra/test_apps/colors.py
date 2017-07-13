@@ -1,26 +1,38 @@
 #!/usr/bin/env python
+# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import cairo
-import gi
-gi.require_version('Gtk', '3.0')    #@UndefinedVariable
 
-from gi.repository import Gtk, Gdk, GLib   #@UnresolvedImport
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
+gtk = import_gtk()
+gLib = import_glib()
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK
 
-class TransparentColorWindow(Gtk.Window):
+
+class AnimatedColorWindow(gtk.Window):
 
     def __init__(self):
-        super(TransparentColorWindow, self).__init__()
-        self.set_position(Gtk.WindowPosition.CENTER)
+        super(AnimatedColorWindow, self).__init__()
+        self.set_position(WIN_POS_CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
-        self.connect("key_press_event", self.on_key_press)
+        self.set_events(KEY_PRESS_MASK)
         self.counter = 0
         self.increase = False
-        self.connect("draw", self.area_draw)
-        self.connect("destroy", Gtk.main_quit)
+        if is_gtk3():
+            self.connect("draw", self.area_draw)
+        else:
+            self.connect("expose-event", self.do_expose_event)
+        self.connect("destroy", gtk.main_quit)
+        self.connect("key_press_event", self.on_key_press)
         self.show_all()
-        GLib.timeout_add(50, self.repaint)
+        gLib.timeout_add(50, self.repaint)
+
+    def do_expose_event(self, *args):
+        cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
 
     def on_key_press(self, *args):
         self.increase = not self.increase
@@ -67,7 +79,13 @@ class TransparentColorWindow(Gtk.Window):
         #Black Shade Block:
         paint_block(w/2, h/2, w/2, h/2, 1, 1, 1)
 
-import signal
-signal.signal(signal.SIGINT, lambda x,y : Gtk.main_quit)
-TransparentColorWindow()
-Gtk.main()
+
+def main():
+    import signal
+    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
+    AnimatedColorWindow()
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()

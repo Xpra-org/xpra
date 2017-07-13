@@ -1,22 +1,33 @@
 #!/usr/bin/env python
+# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import cairo
-import gi
-gi.require_version('Gtk', '3.0')    #@UndefinedVariable
 
-from gi.repository import Gtk, Gdk  #@UnresolvedImport
+from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+gtk = import_gtk()
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK
 
-class TransparentColorWindow(Gtk.Window):
+
+class ColorPlainWindow(gtk.Window):
 
     def __init__(self):
-        super(TransparentColorWindow, self).__init__()
-        self.set_position(Gtk.WindowPosition.CENTER)
+        super(ColorPlainWindow, self).__init__()
+        self.set_position(WIN_POS_CENTER)
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
-        self.connect("draw", self.area_draw)
-        self.connect("destroy", Gtk.main_quit)
+        self.set_events(KEY_PRESS_MASK)
+        if is_gtk3():
+            self.connect("draw", self.area_draw)
+        else:
+            self.connect("expose-event", self.do_expose_event)
+        self.connect("destroy", gtk.main_quit)
         self.show_all()
+
+    def do_expose_event(self, *args):
+        cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
 
     def area_draw(self, widget, cr):
         cr.set_font_size(32)
@@ -46,7 +57,13 @@ class TransparentColorWindow(Gtk.Window):
         #Black Shade Block:
         paint_block(w/2, h/2, w/2, h/2, 128, 128, 128)
 
-import signal
-signal.signal(signal.SIGINT, lambda x,y : Gtk.main_quit)
-TransparentColorWindow()
-Gtk.main()
+
+def main():
+    import signal
+    signal.signal(signal.SIGINT, lambda x,y : Gtk.main_quit)
+    ColorPlainWindow()
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()

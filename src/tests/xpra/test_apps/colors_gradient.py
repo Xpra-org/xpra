@@ -1,22 +1,33 @@
 #!/usr/bin/env python
+# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 import cairo
-import gi
-gi.require_version('Gtk', '3.0')    #@UndefinedVariable
 
-from gi.repository import Gtk, Gdk  #@UnresolvedImport
+from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+gtk = import_gtk()
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK
 
-class TransparentColorWindow(Gtk.Window):
+
+class ColorGradientWindow(gtk.Window):
 
     def __init__(self):
-        super(TransparentColorWindow, self).__init__()
-        self.set_position(Gtk.WindowPosition.CENTER)
+        super(ColorGradientWindow, self).__init__()
+        self.set_position(WIN_POS_CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
-        self.connect("draw", self.area_draw)
-        self.connect("destroy", Gtk.main_quit)
+        self.set_events(KEY_PRESS_MASK)
+        if is_gtk3():
+            self.connect("draw", self.area_draw)
+        else:
+            self.connect("expose-event", self.do_expose_event)
+        self.connect("destroy", gtk.main_quit)
         self.show_all()
+
+    def do_expose_event(self, *args):
+        cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
 
     def area_draw(self, widget, cr):
         #Clear everything:
@@ -27,7 +38,7 @@ class TransparentColorWindow(Gtk.Window):
         cr.fill()
         cr.restore()
 
-        count = 10
+        count = 11
         self.index = 0
         bh = h//count
         def paint_block(R=255, G=255, B=255, label=""):
@@ -56,6 +67,7 @@ class TransparentColorWindow(Gtk.Window):
         paint_block(0, 252, 252, "C")
         paint_block(251, 0, 251, "M")
         paint_block(251, 251, 0, "Y")
+        paint_block(0, 0, 0, "K")
         #Black Shade Blocks:
         paint_block(255, 255, 255)
         paint_block(127, 127, 127)
@@ -63,7 +75,13 @@ class TransparentColorWindow(Gtk.Window):
         paint_block(31, 31, 31)
         paint_block(15, 15, 15)
 
-import signal
-signal.signal(signal.SIGINT, lambda x,y : Gtk.main_quit)
-TransparentColorWindow()
-Gtk.main()
+
+def main():
+    import signal
+    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
+    ColorGradientWindow()
+    gtk.main()
+
+
+if __name__ == "__main__":
+    main()
