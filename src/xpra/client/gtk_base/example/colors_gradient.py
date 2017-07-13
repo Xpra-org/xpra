@@ -33,8 +33,11 @@ class ColorGradientWindow(gtk.Window):
     def configure_event(self, *args):
         self.queue_draw()
 
-    def on_key_press(self, *args):
-        self.bpc = ((self.bpc-2) % 16)+1
+    def on_key_press(self, widget, key_event):
+        if key_event.string == "-":
+            self.bpc = ((self.bpc-2) % 16)+1
+        else:
+            self.bpc = (self.bpc%16)+1
         self.queue_draw()
 
     def do_expose_event(self, *args):

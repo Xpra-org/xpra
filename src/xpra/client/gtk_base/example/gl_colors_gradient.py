@@ -10,8 +10,8 @@ import gtk
 from gtk import gtkgl
 from gtk import gdkgl
 
-from OpenGL.GL import glClear, glBegin, glEnd, glClearColor, glViewport, \
-    glShadeModel, glColor3f, glVertex2f, glFlush, glRectf, GL_SMOOTH, GL_COLOR_BUFFER_BIT, GL_QUADS
+from OpenGL.GL import glClear, glClearColor, glViewport, \
+    glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT
 
 
 SIZE = 1600, 1200
@@ -70,8 +70,11 @@ class ColorTest(object):
         txt = "Clipped to %i bits per channel" % self.bpc
         self.label.set_text(txt)
 
-    def on_key_press(self, *args):
-        self.bpc = ((self.bpc-2) % 16)+1
+    def on_key_press(self, widget, key_event):
+        if key_event.string == "-":
+            self.bpc = ((self.bpc-2) % 16)+1
+        else:
+            self.bpc = (self.bpc%16)+1
         self.populate_label()
         self.win.queue_draw()
         self.on_expose_event(self.glarea, None)
@@ -115,21 +118,9 @@ class ColorTest(object):
                 r = normv(R*v)
                 g = normv(G*v)
                 b = normv(B*v)
-
                 glColor3f(r, g, b)
                 x = -1+float(i)/(w//2)
                 glRectf(x, y, x+bw, y+bh)
-
-            #if label:
-            #    cr.set_font_size(32)
-            #    cr.set_source_rgb(1, 1, 1)
-            #    cr.move_to(w//2-12, y+bh//2+8)
-            #    cr.show_text(label)
-
-        #txt = "Clipped to %i bits per channel" % self.bpc
-        #cr.move_to(w//2-8*len(txt), bh//2+8)
-        #cr.show_text(txt)
-
         self.index = 1
         paint_block(M, 0, 0, "R")
         paint_block(0, M-1, 0, "G")
