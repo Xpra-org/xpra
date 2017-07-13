@@ -90,7 +90,7 @@ class ColorGradientWindow(gtk.Window):
         #title
         cr.set_font_size(32)
         cr.set_source_rgb(0, 0, 0)
-        txt = "Clipped to %i bits per pixel" % self.bpc
+        txt = "Clipped to %i bits per channel" % self.bpc
         cr.move_to(w//2-8*len(txt), bh//2+8)
         cr.show_text(txt)
 
