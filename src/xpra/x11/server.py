@@ -1253,7 +1253,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.reset_settings()
             self._settings = {}
             if self.default_xsettings:
-                self._settings = self._default_xsettings[1]
+                #try to parse default xsettings into a dict:
+                try:
+                    for _, prop_name, value, _ in self.default_xsettings[1]:
+                        self._settings[prop_name] = value
+                except Exception as e:
+                    settingslog("failed to parse %s", self.default_xsettings)
+                    settingslog.warn("Warning: failed to parse default XSettings:")
+                    settingslog.warn(" %s", e)
         old_settings = dict(self._settings)
         settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
         settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
