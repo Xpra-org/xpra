@@ -62,8 +62,9 @@ cdef class _X11CoreBindings:
     def __cinit__(self):
         self.display = get_display()
         assert self.display!=NULL, "display is not set!"
-        dn = strtobytes(get_display_name())
-        self.display_name = dn
+        dn = get_display_name()
+        bstr = strtobytes(dn)
+        self.display_name = bstr
         if envbool("XPRA_X_SYNC", False):
             XSynchronize(self.display, True)
 
@@ -79,7 +80,8 @@ cdef class _X11CoreBindings:
         cdef char* string
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
-        string = str_or_int
+        bstr = strtobytes(str_or_int)
+        string = bstr
         assert self.display!=NULL, "display is closed"
         return XInternAtom(self.display, string, False)
 

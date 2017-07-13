@@ -914,7 +914,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         cdef char* string
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
-        string = str_or_int
+        bstr = strtobytes(str_or_int)
+        string = bstr
         return XInternAtom(self.display, string, False)
 
     def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name):

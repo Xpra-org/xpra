@@ -311,6 +311,9 @@ cdef class XImageWrapper(object):
             else:
                 self.pixel_format = BGRA
         elif self.depth==30:
+            #log.warn("30bpp, byte_order=%i, bitmap_bit_order=%i, bits_per_pixel=%s", image.byte_order, image.bitmap_bit_order, image.bits_per_pixel)
+            #log.warn("pad=%i, unit=%i, format=%i", image.bitmap_pad, image.bitmap_unit, image.format)
+            #log.warn("masks: red=%#x, green=%#x, blue=%#x", image.red_mask, image.green_mask, image.blue_mask)
             self.bytesperpixel = 4
             if image.byte_order==MSBFirst:
                 self.pixel_format = R210
