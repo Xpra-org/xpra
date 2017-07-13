@@ -1005,11 +1005,6 @@ def do_parse_cmdline(cmdline, defaults):
 
     options, args = parser.parse_args(cmdline[1:])
 
-    #only use the default bind option if the user hasn't specified one on the command line:
-    if not options.bind:
-        #use the default:
-        options.bind = defaults_bind
-
     #ensure all the option fields are set even though
     #some options are not shown to the user:
     for k,v in hidden_options.items():
@@ -1054,6 +1049,11 @@ def do_parse_cmdline(cmdline, defaults):
             raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_default+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
         raise InitInfo("No sound source plugins found!")
+
+    #only use the default bind option if the user hasn't specified one on the command line:
+    if not options.bind:
+        #use the default:
+        options.bind = defaults_bind
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
