@@ -122,6 +122,7 @@ class GLClientWindow(GTK2WindowBase):
             self.border.shown = (not self.border.shown)
             if b:
                 b.present_fbo(0, 0, *self._size)
+                self.queue_draw(0, 0, *self._size)
         log("magic_key%s border=%s, backing=%s", args, self.border, b)
 
 gobject.type_register(GLClientWindow)
