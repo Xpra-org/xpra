@@ -472,7 +472,7 @@ class WindowSource(object):
         self.statistics.reset()
         self.suspended = False
         self.refresh({"quality" : 100})
-        if not self.is_OR and not self.is_tray:
+        if not self.is_OR and not self.is_tray and "icon" in self.window.get_property_names():
             self.send_window_icon()
 
     def refresh(self, options={}):
