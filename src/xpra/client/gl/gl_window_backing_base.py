@@ -52,7 +52,7 @@ from OpenGL.GL import \
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_POLYGON, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER, \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
-    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, \
+    GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, \
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5, \
     GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
@@ -116,6 +116,7 @@ INTERNAL_FORMAT_TO_STR = {
     GL_RGB8         : "RGB8",
     GL_RGB565       : "RGB565",
     GL_RGB5_A1      : "RGB5_A1",
+    GL_RGBA4        : "RGBA4",
     }
 DATATYPE_TO_STR = {
     GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
@@ -236,21 +237,22 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.init_gl_config(window_alpha)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
+        self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
         if self.bit_depth==30:
             self.internal_format = GL_RGB10_A2
-            if "r210" not in GLWindowBackingBase.RGB_MODES:
-                GLWindowBackingBase.RGB_MODES.append("r210")
+            self.RGB_MODES.append("r210")
         elif self.bit_depth==16:
-            #GL_UNSIGNED_SHORT_4_4_4_4
-            #GL_UNSIGNED_SHORT_5_5_5_1
             if self._alpha_enabled:
-                self.internal_format = GL_RGB5_A1
+                if envbool("XPRA_GL_RGBA4", True):
+                    self.internal_format = GL_RGBA4
+                else:
+                    self.internal_format = GL_RGB5_A1
+                    #too much of a waste to enable?
+                    self.RGB_MODES.append("r210")
             else:
                 self.internal_format = GL_RGB565
-            if "BGR565" not in GLWindowBackingBase.RGB_MODES:
-                GLWindowBackingBase.RGB_MODES.append("BGR565")
-            if "RGB565" not in GLWindowBackingBase.RGB_MODES:
-                GLWindowBackingBase.RGB_MODES.append("RGB565")
+                self.RGB_MODES.append("BGR565")
+                self.RGB_MODES.append("RGB565")
         else:
             #assume 24:
             if self._alpha_enabled:
