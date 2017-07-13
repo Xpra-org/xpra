@@ -228,10 +228,8 @@ class GLWindowBackingBase(GTKWindowBacking):
         GTKWindowBacking.__init__(self, wid, window_alpha)
         self.init_gl_config(window_alpha)
         self.init_backing()
-        self.bit_depth = self.glconfig.get_depth()
-        high_bit_depth = HIGH_BIT_DEPTH and (pixel_depth>24 or (pixel_depth==0 and POSIX and self.bit_depth>24))
-        log("high_bit_depth=%s (HIGH_BIT_DEPTH=%s, pixel_depth=%i, bit_depth=%i)", high_bit_depth, HIGH_BIT_DEPTH, pixel_depth, self.bit_depth)
-        if high_bit_depth:
+        self.bit_depth = self.get_bit_depth(pixel_depth)
+        if self.bit_depth==30:
             self.texture_pixel_format = GL_RGBA
             self.internal_format = GL_RGB10_A2
             if "r210" not in GLWindowBackingBase.RGB_MODES:
@@ -279,6 +277,20 @@ class GLWindowBackingBase(GTKWindowBacking):
                 log.warn("Warning: failed to enable transparency, no RGBA colormap")
                 self._alpha_enabled = False
         self._backing.set_events(self._backing.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
+
+    def get_bit_depth(self, pixel_depth=0):
+        gl_depth = self.glconfig.get_depth()
+        log("get_bit_depth() glconfig depth=%i, HIGH_BIT_DEPTH=%s, requested pixel depth=%i", gl_depth, HIGH_BIT_DEPTH, pixel_depth)
+        bit_depth = 24
+        if HIGH_BIT_DEPTH:
+            if pixel_depth==0:
+                #auto detect
+                if POSIX and gl_depth>=24:
+                    bit_depth = gl_depth
+            elif pixel_depth>0:
+                bit_depth = pixel_depth
+        log("get_bit_depth()=%i", bit_depth)
+        return bit_depth
 
     def get_encoding_properties(self):
         props = GTKWindowBacking.get_encoding_properties(self)
