@@ -89,7 +89,7 @@ PIXEL_FORMAT_TO_CONSTANT = {
     "BGRX"  : GL_BGRA,
     "RGBA"  : GL_RGBA,
     "RGBX"  : GL_RGBA,
-    "BGR565": GL_BGR,
+    "BGR565": GL_RGB,
     "RGB565": GL_RGB,
     }
 PIXEL_FORMAT_TO_DATATYPE = {
