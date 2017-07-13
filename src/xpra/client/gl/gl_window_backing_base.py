@@ -237,33 +237,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.init_gl_config(window_alpha)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
-        self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
-        if self.bit_depth==30:
-            self.internal_format = GL_RGB10_A2
-            self.RGB_MODES.append("r210")
-        elif self.bit_depth==16:
-            if self._alpha_enabled:
-                if envbool("XPRA_GL_RGBA4", True):
-                    self.internal_format = GL_RGBA4
-                else:
-                    self.internal_format = GL_RGB5_A1
-                    #too much of a waste to enable?
-                    self.RGB_MODES.append("r210")
-            else:
-                self.internal_format = GL_RGB565
-                self.RGB_MODES.append("BGR565")
-                self.RGB_MODES.append("RGB565")
-        else:
-            #assume 24:
-            if self._alpha_enabled:
-                self.internal_format = GL_RGBA8
-            else:
-                self.internal_format = GL_RGB8
-        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
-        if self._alpha_enabled:
-            self.texture_pixel_format = GL_RGBA
-        else:
-            self.texture_pixel_format = GL_RGB
+        self.init_formats()
         self.draw_needs_refresh = False
         self._backing.show()
 
@@ -313,6 +287,36 @@ class GLWindowBackingBase(GTKWindowBacking):
                 bit_depth = pixel_depth
         log("get_bit_depth()=%i", bit_depth)
         return bit_depth
+
+    def init_formats(self):
+        self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
+        if self.bit_depth==30:
+            self.internal_format = GL_RGB10_A2
+            self.RGB_MODES.append("r210")
+        elif self.bit_depth==16:
+            if self._alpha_enabled:
+                if envbool("XPRA_GL_RGBA4", True):
+                    self.internal_format = GL_RGBA4
+                else:
+                    self.internal_format = GL_RGB5_A1
+                    #too much of a waste to enable?
+                    self.RGB_MODES.append("r210")
+            else:
+                self.internal_format = GL_RGB565
+                self.RGB_MODES.append("BGR565")
+                self.RGB_MODES.append("RGB565")
+        else:
+            #assume 24:
+            if self._alpha_enabled:
+                self.internal_format = GL_RGBA8
+            else:
+                self.internal_format = GL_RGB8
+        #(pixels are always stored in 32bpp - but this makes it clearer when we do/don't support alpha)
+        if self._alpha_enabled:
+            self.texture_pixel_format = GL_RGBA
+        else:
+            self.texture_pixel_format = GL_RGB
+        log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s", ["GL_RGB", "GL_RGBA"][self._alpha_enabled], INTERNAL_FORMAT_TO_STR.get(self.internal_format), self.RGB_MODES)
 
     def get_encoding_properties(self):
         props = GTKWindowBacking.get_encoding_properties(self)
