@@ -6,7 +6,7 @@ Source: http://xpra.org/
 Files: *
 Copyright: 2008-2010 Nathaniel Smith <njs@pobox.com>
            2011-2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-           2009-2016 Antoine Martin <antoine@devloop.org.uk>
+           2009-2017 Antoine Martin <antoine@devloop.org.uk>
 License: GPL-2+
 
 Files: xpra/client/gl_colorspace_conversions.py
@@ -48,7 +48,7 @@ License: LGPL-3+
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Files: debian/*
-Copyright: 2009-2016 Antoine Martin <antoine@devloop.org.uk>
+Copyright: 2009-2017 Antoine Martin <antoine@devloop.org.uk>
            2009 Evan Dandrea <evand@ubuntu.com>
            2010 Michael Schutte <michi@uiae.at>
            2010 Matthias Klose <doko@ubuntu.com>
