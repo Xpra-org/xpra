@@ -86,11 +86,14 @@ class X11ServerBase(GTKServerBase):
         GTKServerBase.__init__(self)
 
     def init(self, opts):
+        self.do_init(opts)
+        GTKServerBase.init(self, opts)
+
+    def do_init(self, opts):
         self.randr = opts.resize_display
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
         self.x11_init()
-        GTKServerBase.init(self, opts)
         self.pointer_device = XTestPointerDevice()
 
     def x11_init(self):

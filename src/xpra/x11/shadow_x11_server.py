@@ -91,7 +91,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
-        X11ServerBase.init(self, opts)
+        X11ServerBase.do_init(self, opts)
 
 
     def start_refresh(self):
