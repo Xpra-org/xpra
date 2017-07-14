@@ -266,6 +266,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
+                "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
                 })
         return capabilities
 

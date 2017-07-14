@@ -332,6 +332,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
+                "states"                 : ["iconified", "focused"],
                 })
         return capabilities
 

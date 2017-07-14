@@ -268,6 +268,7 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_sharing = False
         self.server_supports_window_filters = False
         self.server_input_devices = None
+        self.server_window_states = []
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -1905,6 +1906,7 @@ class UIXpraClient(XpraClientBase):
         c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
+        self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
         self.server_supports_sharing = c.boolget("sharing")
         self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")

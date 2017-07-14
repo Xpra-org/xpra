@@ -1460,6 +1460,7 @@ class ServerBase(ServerCore):
                  "virtual-video-devices"        : self.virtual_video_devices,
                  "input-devices"                : self.input_devices,
                  "client-shutdown"              : CLIENT_CAN_SHUTDOWN,
+                 "window.states"                : [],   #subclasses set this as needed
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
