@@ -111,7 +111,7 @@ class KeyboardHelper(object):
                 log.error("Error: invalid key shortcut '%s'", s)
                 continue
             #example for action: "quit"
-            action = parts[1]
+            action = parts[1].strip()
             args = ()
             if action.find("(")>0 and action.endswith(")"):
                 try:
@@ -133,6 +133,7 @@ class KeyboardHelper(object):
                 except Exception as e:
                     log.warn("failed to parse arguments of shortcut '%s': %s", s, e)
                     continue
+            action = action.replace("-", "_")       #must be an object attribute
             log("action(%s)=%s%s", s, action, args)
 
             #example for keyspec: ["Alt", "F8"]
