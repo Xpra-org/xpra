@@ -20,6 +20,45 @@ KEYS_TRANSLATION_OPTIONS = {
                     "Meta_R"        : ["Control_R", "Control_L"],
                     }
 
+#data extracted from:
+#https://support.apple.com/en-us/HT201794
+#"How to identify keyboard localizations"
+#maps Apple's names into standard X11 keyboard identifiers
+
+APPLE_LAYOUTS = {
+    "Arabic"    : "ar",
+    "Belgian"   : "be",
+    "Bulgarian" : "bg",
+    "Croatian"  : "cr",
+    "Czech"     : "cz",
+    "Danish"    : "dk",
+    "Dutch"     : "nl",
+    "British"   : "gb",
+    "US"        : "us",
+    "Finnish"   : "fi",
+    "Swedish"   : "se",
+    "French"    : "fr",
+    "German"    : "de",
+    "Greek"     : "gr",
+    "Hungarian" : "hu",
+    #"Icelandic" : "is",
+    "Israel"    : "il",
+    "Italian"   : "it",
+    "Japanese"  : "jp",
+    "Korean"    : "ko",
+    "Norwegian" : "no",
+    "Portugese" : "po",
+    "Romanian"  : "ro",
+    "Russian"   : "ru",
+    "Slovak"    : "sl",
+    "Spanish"   : "es",
+    #"Swiss"     : "ch",
+    "Taiwanese" : "tw",
+    "Thai"      : "th",
+    "Turkey"    : "tr",
+    }
+
+
 class Keyboard(KeyboardBase):
     """
         Switch Meta and Control
@@ -41,14 +80,27 @@ class Keyboard(KeyboardBase):
         variant = ""
         variants = []
         try:
-            from xpra.platform.darwin.keyboard_layout import get_keyboard_layout
-            i = get_keyboard_layout()
-            log("get_keyboard_layout()=%s", i)
-            locale = i["locale"]        #ie: "en_GB"
-            parts = locale.split("_")
-            if len(parts)==2:
-                layout = parts[1].lower()
-                layouts = [layout, 'us']
+            from AppKit import NSTextInputContext       #@UnresolvedImport
+            ic = NSTextInputContext.new()
+            current_keyboard = ic.selectedKeyboardInputSource()
+            code = APPLE_LAYOUTS.get(current_keyboard.split(".")[-1])
+            log("get_layout_spec() current_keyboard=%s, code=%s", current_keyboard, code)
+            all_keyboards = ic.keyboardInputSources()
+            log("get_layout_spec() other keyboards=%s", all_keyboards)
+            if code:
+                layout = code
+            if all_keyboards:
+                layouts = []
+                for k in all_keyboards:
+                    code = APPLE_LAYOUTS.get(k.split(".")[-1])
+                    if code:
+                        layouts.append(code)
+                if not layouts:
+                    layouts.append("us")
+            else:
+                if code not in layouts:
+                    layouts.insert(0, code)
+            log("get_layout_spec() layout=%s, layouts=%s", layout, layouts)
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
