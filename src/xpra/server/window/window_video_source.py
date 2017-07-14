@@ -1451,8 +1451,12 @@ class WindowVideoSource(WindowSource):
         ww, wh = self.window_dimensions
         scrolllog("encode_scrolling(%s, %s) window-dimensions=%s", image, options, (ww, wh))
         x, y, w, h = image.get_geometry()[:4]
-        raw_scroll, non_scroll = scroll_data.get_scroll_values()
-        assert raw_scroll, "failed to detect scroll values"
+        if x+y>ww or y+h>wh:
+            #window may have been resized
+            raw_scroll, non_scroll = [], {0 : h}
+        else:
+            raw_scroll, non_scroll = scroll_data.get_scroll_values()
+            assert raw_scroll, "failed to detect scroll values"
         if len(raw_scroll)>=20 or len(non_scroll)>20:
             #avoid fragmentation, which is too costly
             #(too many packets, too many loops through the encoder code)
