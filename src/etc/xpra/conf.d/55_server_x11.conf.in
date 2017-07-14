@@ -40,7 +40,3 @@ sync-xvfb = 0
 #
 # Selecting virtual X server:
 xvfb = %(xvfb_command)s
-
-# Bit depth of the virtual display:
-# (this will be added to the xvfb command line above as "-depth VALUE")
-pixel-depth = 24

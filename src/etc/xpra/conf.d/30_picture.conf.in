@@ -69,6 +69,15 @@ auto-refresh-delay = 0.15
 #automatic (which is the default):
 #dpi = 0
 
+# Bit depth of the virtual display or client display:
+# (this will be added to the xvfb command line above as "-depth VALUE")
+# for automatic mode, use the value 0:
+#pixel-depth = 0
+#pixel-depth = 16
+#pixel-depth = 24
+#pixel-depth = 30
+pixel-depth = 0
+
 # Video encoders loaded by the server
 # (all of them unless specified)
 # examples:
