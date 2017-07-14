@@ -1780,7 +1780,6 @@ class UIXpraClient(XpraClientBase):
             self.session_name = c.strget("session_name", "")
         from xpra.platform import set_name
         set_name("Xpra", self.session_name or "Xpra")
-        self.window_configure_skip_geometry = c.boolget("window.configure.skip-geometry")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
