@@ -603,6 +603,10 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 
 	var keyname = event.code || "";
 	var keycode = event.which || event.keyCode;
+	if (keycode==229) {
+		//this usually fires when we have received the event via "oninput" already
+		return;
+	}
 	var str = event.key || String.fromCharCode(keycode);
 
 	this._debug("processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);

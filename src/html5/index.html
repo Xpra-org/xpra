@@ -338,9 +338,9 @@
 			    // and connect
 			    client.connect();
 
+			    var pasteboard = $('#pasteboard');
 			   	if (clipboard) {
 				    //clipboard hooks:
-				    var pasteboard = $('#pasteboard');
 					pasteboard.on('paste', function (e) {
 						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
 						client._debug("paste event, data=", paste_data);
@@ -414,6 +414,33 @@
 					screen.addEventListener('dragover', handleDragOver, false);
 					screen.addEventListener('drop', handleFileSelect, false);
 			   	}
+			   	//keyboard input for tablets:
+			   	pasteboard.on("input", function(e) {
+			   		var txt = pasteboard.val();
+			   		pasteboard.val("");
+			   		client._debug("oninput:", txt);
+			   		if (!client.topwindow) {
+			   			return;
+			   		}
+			   		for (var i = 0, len = txt.length; i < len; i++) {
+			   			var str = txt[i];
+			   			var keycode = str.charCodeAt(0);
+				   		try {
+				   			modifiers = [];
+				   			keyval = keycode;
+				   			group = 0;
+							packet = ["key-action", client.topwindow, str, true, modifiers, keyval, str, keycode, group];
+							client._debug(packet);
+							client.send(packet);
+							packet = ["key-action", client.topwindow, str, false, modifiers, keyval, str, keycode, group];
+							client._debug(packet);
+							client.send(packet);
+				   		}
+				   		catch (e) {
+					   		client.error("input handling error: "+e);
+				   		}
+			   		}
+			   	});
 			});
 		</script>
 	</body>
