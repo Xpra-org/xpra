@@ -524,6 +524,12 @@ def checkdirs(*dirs):
             raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
+#override the pkgconfig file,
+#we don't need to link against any of these:
+gtk2_ignored_tokens=[("-l%s" % x) for x in 
+                     ["fontconfig", "freetype", "cairo",
+                      "atk-1.0", "pangoft2-1.0", "pango-1.0", "pangocairo-1.0",
+                      "gio-2.0", "glib-2.0", "gdk_pixbuf-2.0"]]
 
 GCC_VERSION = []
 def get_gcc_version():
@@ -1813,19 +1819,15 @@ if gtk_x11_ENABLED:
                     **pkgconfig("gdk-3.0")
                     ))
     else:
-        #override the pkgconfig file,
-        #we don't need to link against any of these:
-        no_link_libs = ["fontconfig", "freetype", "cairo", "atk-1.0", "pangoft2-1.0", "gio-2.0", "glib-2.0", "gdk_pixbuf-2.0", "pango-1.0", "pangocairo-1.0"]
-        ignored_tokens=[("-l%s" % x) for x in no_link_libs]
         #GTK2:
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=ignored_tokens)
+                    **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=ignored_tokens)
+                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                     ))
 
 if client_ENABLED and gtk3_ENABLED:
@@ -1914,7 +1916,7 @@ toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
     cython_add(Extension("xpra.gtk_common.gdk_atoms",
                 ["xpra/gtk_common/gdk_atoms.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES)
+                **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                 ))
 
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
