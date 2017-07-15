@@ -1813,18 +1813,19 @@ if gtk_x11_ENABLED:
                     **pkgconfig("gdk-3.0")
                     ))
     else:
-        #GTK2:
-        cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
-                    ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES)
-                    ))
-        GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
         #override the pkgconfig file,
         #we don't need to link against any of these:
         no_link_libs = ["fontconfig", "freetype", "cairo", "atk-1.0", "pangoft2-1.0", "gio-2.0", "glib-2.0", "gdk_pixbuf-2.0", "pango-1.0", "pangocairo-1.0"]
+        ignored_tokens=[("-l%s" % x) for x in no_link_libs]
+        #GTK2:
+        cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
+                    ["xpra/x11/gtk2/gdk_display_source.pyx"],
+                    **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=ignored_tokens)
+                    ))
+        GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=[("-l%s" % x) for x in no_link_libs])
+                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=ignored_tokens)
                     ))
 
 if client_ENABLED and gtk3_ENABLED:
