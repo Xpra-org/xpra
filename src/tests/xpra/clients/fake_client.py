@@ -56,7 +56,6 @@ class FakeClient(FileTransferHandler):
         self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.encoding_defaults = {}
-        self.window_configure_skip_geometry = True
         self.window_configure_pointer = True
         self.xscale = 1
         self.yscale = 1
