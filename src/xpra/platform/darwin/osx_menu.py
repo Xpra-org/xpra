@@ -287,8 +287,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         selected_items = [x for x in all_items if x==item] + [x for x in all_items if x.get_label()==label]
         if not selected_items:
             log.error("Error: cannot find any clipboard menu options to match '%s'", label)
-            log.error(" all menu items: %s", csv(all_items))
-            log.error(" selected: %s", csv(selected_items))
+            log.error(" all menu items: %s", csv(x.get_label() for x in all_items))
+            log.error(" selected: %s", csv(x.get_label() for x in selected_items))
             return None
         self._clipboard_change_pending = True
         sel = selected_items[0]
@@ -306,9 +306,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
         #and select it
         try:
             label = CLIPBOARD_NAME_TO_LABEL.get(self.client.clipboard_helper.remote_clipboard)
+            self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
         except:
-            label = None
-        self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
+            pass
         direction_label = CLIPBOARD_DIRECTION_NAME_TO_LABEL.get(self.client.client_clipboard_direction, "Disabled")
         clipboardlog("direction(%s)=%s", self.client.client_clipboard_direction, direction_label)
         self.select_clipboard_menu_option(None, direction_label, CLIPBOARD_DIRECTION_LABELS)
