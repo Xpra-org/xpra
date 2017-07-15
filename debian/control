@@ -18,6 +18,7 @@ Build-Depends: debhelper (>= 8)
               ,dh-systemd
               ,libjs-jquery
               ,libsystemd-dev
+              ,libpam-dev
 X-Python-Version: >= 2.5
 Standards-Version: 3.9.3
 Homepage: http://xpra.org/
