@@ -452,9 +452,15 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     protected_env = {}
     PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
+        try:
+            from xpra.server.pam import pam_session #@UnresolvedImport
+        except ImportError as e:
+            stderr.write("Error: failed to import pam module\n")
+            stderr.write(" %s" % e)
+            PAM_OPEN = False
+    if PAM_OPEN:
         fdc = FDChangeCaptureContext()
         with fdc:
-            from xpra.server.pam import pam_session #@UnresolvedImport
             pam = pam_session(username)
             env = {
                    #"XDG_SEAT"               : "seat1",
