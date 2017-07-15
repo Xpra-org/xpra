@@ -1800,7 +1800,7 @@ if x11_ENABLED:
                 ))
     cython_add(Extension("xpra.x11.bindings.ximage",
                 ["xpra/x11/bindings/ximage.pyx"],
-                **pkgconfig("x11", "xcomposite")
+                **pkgconfig("x11", "xext", "xcomposite")
                 ))
 if xinput_ENABLED:
     cython_add(Extension("xpra.x11.bindings.xi2_bindings",
