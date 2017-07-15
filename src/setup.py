@@ -1810,13 +1810,13 @@ if gtk_x11_ENABLED:
         #GTK3 display source:
         cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
                     ["xpra/x11/gtk3/gdk_display_source.pyx"],
-                    **pkgconfig("gtk+-3.0")
+                    **pkgconfig("gdk-3.0")
                     ))
     else:
-        #below uses gtk/gdk:
+        #GTK2:
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig(*PYGTK_PACKAGES)
+                    **pkgconfig("gdk-2.0")
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
