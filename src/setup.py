@@ -1816,7 +1816,7 @@ if gtk_x11_ENABLED:
         #GTK2:
         cython_add(Extension("xpra.x11.gtk2.gdk_display_source",
                     ["xpra/x11/gtk2/gdk_display_source.pyx"],
-                    **pkgconfig("gdk-2.0")
+                    **pkgconfig(*PYGTK_PACKAGES)
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
