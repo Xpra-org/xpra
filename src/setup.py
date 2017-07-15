@@ -624,10 +624,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             optimize = int(optimize)*3
         if not debug_ENABLED:
             add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
-    ignored_flags = []
-    if kw.get("ignored_flags"):
-        ignored_flags = kw.get("ignored_flags")
-        del kw["ignored_flags"]
+    ignored_flags = kw.pop("ignored_flags", [])
+    ignored_tokens = kw.pop("ignored_tokens", [])
 
     if len(pkgs_options)>0:
         package_names = []
@@ -667,7 +665,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             if not s:
                 continue
             for token in s.split():
-                if token[:2] in ignored_flags:
+                if token in ignored_tokens:
+                    pass
+                elif token[:2] in ignored_flags:
                     pass
                 elif token[:2] in flag_map:
                     add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
@@ -1819,9 +1819,12 @@ if gtk_x11_ENABLED:
                     **pkgconfig(*PYGTK_PACKAGES)
                     ))
         GDK_BINDINGS_PACKAGES = PYGTK_PACKAGES + ["x11", "xext", "xfixes", "xdamage"]
+        #override the pkgconfig file,
+        #we don't need to link against any of these:
+        no_link_libs = ["fontconfig", "freetype", "cairo", "atk-1.0", "pangoft2-1.0", "gio-2.0", "glib-2.0", "gdk_pixbuf-2.0", "pango-1.0", "pangocairo-1.0"]
         cython_add(Extension("xpra.x11.gtk2.gdk_bindings",
                     ["xpra/x11/gtk2/gdk_bindings.pyx"],
-                    **pkgconfig(*GDK_BINDINGS_PACKAGES)
+                    **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=[("-l%s" % x) for x in no_link_libs])
                     ))
 
 if client_ENABLED and gtk3_ENABLED:
