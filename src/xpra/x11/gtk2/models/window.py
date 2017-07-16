@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import gtk
 from gtk import gdk
 import cairo
 
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
@@ -66,6 +66,7 @@ def configure_bits(value_mask):
     return "|".join((v for k,v in CW_MASK_TO_NAME.items() if (k&value_mask)))
 
 
+VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
 
@@ -546,7 +547,8 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWWidth or event.value_mask & CWHeight:
             self._updateprop("requested-size", (rw, rh))
 
-        w, h = calc_constrained_size(w, h, hints)
+        if VALIDATE_CONFIGURE_REQUEST:
+            w, h = calc_constrained_size(w, h, hints)
         #update the geometry now, as another request may come in
         #before we've had a chance to process the ConfigureNotify that the code below will generate
         self._updateprop("geometry", (x, y, w, h))
