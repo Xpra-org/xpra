@@ -22,12 +22,15 @@ log = Logger("x11", "shadow")
 traylog = Logger("tray")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
+geomlog = Logger("geometry")
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def __init__(self, root_window):
         GTKRootWindowModel.__init__(self, root_window)
+        screen = root_window.get_screen()
+        screen.connect("size-changed", self._screen_size_changed)
         self.xshm = None
 
     def __repr__(self):
@@ -47,6 +50,9 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         #used by get_window_info only
         return self.window.get_size()
 
+    def _screen_size_changed(self, screen):
+        self.close_xshm()
+
     def get_image(self, x, y, width, height, logger=None):
         try:
             start = time.time()
@@ -64,10 +70,14 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
                 #fallback to gtk capture:
                 return GTKRootWindowModel.get_image(self, x, y, width, height, logger)
         except Exception as e:
-            log.warn("Warning: failed to capture root window pixels:")
-            log.warn(" %s", e)
+            if getattr(e, "msg", None)=="BadMatch":
+                log("BadMatch - temporary error?", exc_info=True)
+            else:
+                log.warn("Warning: failed to capture root window pixels:")
+                log.warn(" %s", e)
             #cleanup and hope for the best!
-            self.cleanup()
+            self.close_xshm()
+            return None
         finally:
             end = time.time()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
@@ -112,6 +122,21 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def makeRootWindowModel(self):
         return GTKX11RootWindowModel(self.root)
+
+    def send_updated_screen_size(self):
+        log("send_updated_screen_size")
+        X11ServerBase.send_updated_screen_size(self)
+        for wid, window in self._id_to_window.items():
+            w, h = window.get_dimensions()
+            geomlog("%i new window dimensions: %s", wid, (w, h))
+            for ss in self._server_sources.values():
+                #first, make sure the size-hints are updated:
+                ss.window_metadata(wid, window, "size-hints")
+                #tell client to resize now:
+                ss.resize_window(wid, window, w, h)
+                #refresh to ensure the client gets the new window contents:
+                ss.damage(wid, window, 0, 0, w, h)
+
 
     def last_client_exited(self):
         GTKShadowServerBase.last_client_exited(self)
