@@ -229,7 +229,7 @@ Requires: %{numpy}
 %{Recommends}: python2-netifaces
 %{Suggests}: %{requires_crypto}
 %if 0%{?el7}%{?fedora}
-Recommends: dbus-python
+%{Recommends}: dbus-python
 %endif
 %if 0%{?fedora}
 Recommends: python-avahi
@@ -337,11 +337,13 @@ Requires: %{libvpx}
 Requires: x264-xpra
 Requires: ffmpeg-xpra
 
+%if 0%{?el7}%{?fedora}
+%{Recommends}: dbus-python
+%endif
 %if 0%{?fedora}
 Recommends: python3-avahi
 #python3 ports are missing:
 #Requires: %{py3requires_lzo}
-#Requires: dbus-python
 Requires: %{py3requires_crypto}
 Requires: python3-netifaces
 Requires: python3-gobject
