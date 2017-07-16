@@ -1358,23 +1358,27 @@ class UIXpraClient(XpraClientBase):
             sss = ss
         capabilities["screen_sizes"] = sss
         #command line (or config file) override supplied:
+        dpi = 0
         if self.dpi>0:
             #scale it:
             dpi = self.cx(self.cy(self.dpi))
-            xdpi = self.cx(dpi)
-            ydpi = self.cy(dpi)
         else:
             #not supplied, use platform detection code:
-            xdpi = self.cx(get_xdpi())
-            ydpi = self.cy(get_ydpi())
-            dpi = iround((xdpi+ydpi)/2.0)
             #platforms may also provide per-axis dpi (later win32 versions do)
-            capabilities.update({
-                                 "dpi.x"    : xdpi,
-                                 "dpi.y"    : ydpi,
-                                 })
-        capabilities["dpi"] = dpi
-        screenlog("dpi: %i, xdpi=%i, ydpi=%i", dpi, xdpi, ydpi)
+            xdpi = get_xdpi()
+            ydpi = get_ydpi()
+            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
+            if xdpi>0 and ydpi>0:
+                xdpi = self.cx(xdpi)
+                ydpi = self.cy(ydpi)
+                dpi = iround((xdpi+ydpi)/2.0)
+                capabilities.update({
+                                     "dpi.x"    : xdpi,
+                                     "dpi.y"    : ydpi,
+                                     })
+        if dpi:
+            capabilities["dpi"] = dpi
+        screenlog("dpi: %i", dpi)
         self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
 
         if self.keyboard_helper:
