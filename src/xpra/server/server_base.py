@@ -1331,6 +1331,7 @@ class ServerBase(ServerCore):
                 "server-events",
                 "change-quality", "change-min-quality", "change-speed", "change-min-speed",
                 #newer flags:
+                "window.configure.skip-geometry",
                 "av-sync",
                 "auto-video-encoding",
                 "window-filters"))

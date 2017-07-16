@@ -501,10 +501,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.process_map_event()
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
-        if not self._client.window_configure_skip_geometry:
-            #we can't do it: the server can't handle configure packets for OR windows!
-            statelog("not sending updated window state %s to a server which is missing the configure skip-geometry feature", self._window_state)
-            return
         def send_updated_window_state():
             if self._window_state and self.get_window():
                 self.send_configure_event(True)
@@ -726,7 +722,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if self.is_OR() or self.is_tray():
                     #we can't do it: the server can't handle configure packets for OR windows!
                     return
-                if not self._client.window_configure_skip_geometry or not self._client.server_window_frame_extents:
+                if not self._client.server_window_frame_extents:
                     #can't send cheap "skip-geometry" packets or frame-extents feature not supported:
                     return
                 #tell server about new value:
