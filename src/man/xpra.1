@@ -139,7 +139,6 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-window\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-window\-close\fP=\fIACTION\fP]
 [\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP]
-[\fB\-\-shadow\-fullscreen\fP=\fIno\fP|\fIyes\fP]
 [\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
 [\fB\-\-ssh\fP=\fICMD\fP]
 [\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP]
@@ -1100,6 +1099,34 @@ certain key combinations from ever being sent to the server.
 Force the currently focused window to be refreshed.
 .IP \fBrefresh_all_windows\fP
 Force all windows to be refreshed.
+.IP \fBtoggle_keyboard_grab\fP
+The keyboard will be grabbed / ungrabbed by the current window.
+.IP \fBtottle_pointer_grab\fP
+The pointer will be grabbed and confined to the current window.
+.IP \fBtottle_fullscreen\fP
+Make the current window fullscreen / unfullscreen.
+.IP \fBtottle_debug\fP
+Turn debugging on or off.
+.IP \fBscaleup\fP
+Increase the current value of \fBdesktop-scaling\fP.
+.IP \fBscaledown\fP
+Decrease the current value of \fBdesktop-scaling\fP.
+.IP \fBscalereset\fP
+Reset the \fBdesktop-scaling\fP to its original value.
+.IP \fBscalingoff\fP
+Turn off \fBdesktop-scaling\fP.
+.IP \fBincrease_quality\fP
+Increase the \fBmin\-quality\fP or \fBquality\fP setting
+(whichever one is currently in use).
+.IP \fBdecrease_quality\fP
+Decrease the \fBmin\-quality\fP or \fBquality\fP setting
+(whichever one is currently in use).
+.IP \fBincrease_speed\fP
+Increase the \fBmin\-speed\fP or \fBspeed\fP setting
+(whichever one is currently in use).
+.IP \fBdecrease_speed\fP
+Decrease the \fBmin\-speed\fP or \fBspeed\fP setting
+(whichever one is currently in use).
 .RE
 .PP
 
@@ -1214,10 +1241,9 @@ Shutdown the server.
 \fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP
 Desktop scaling allows the windows to be scaled
 by the client.
-Downscaling will mostly waste bandwidth (though it can be
-useful when used with the \fBshadow\-fullscreen\fP option).
-Upscaling allows the window's pixels to be sent over the wire
-at a lower resolution, saving bandwidth and CPU time.
+Downscaling will mostly waste bandwidth, upscaling allows the window's
+pixels to be sent over the wire at a lower resolution,
+saving bandwidth and CPU time.
 This option can also be used to request a specific scaling value.
 For best results, use \fBopengl\fP client rendering, the other
 display backends may show visual artifacts when scaling.
@@ -1243,10 +1269,6 @@ the scaling will be enabled and use a different value for the X and Y axis. ie: 
 the scaling will be enabled and the server will render to the given size. ie: \fB1600x1200\fP
 .RE
 .PP
-
-\fB\-\-shadow\-fullscreen\fP=\fIno\fP|\fIyes\fP
-When connecting to shadow server, the remote display
-can be shown fullscreen using this option.
 
 \fB\-\-tray\fP=\fIyes\fP|\fIno\fP
 Enable or disable the system tray.  Not available on OSX since the dock
