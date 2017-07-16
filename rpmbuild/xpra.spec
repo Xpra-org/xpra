@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Wed Jul 05 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Sun Jul 16 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root
 - fix packet handling errors with AES encryption enabled
@@ -617,6 +617,20 @@ fi
 - fix Mac OS corrupted build patch
 - fix crashes accessing some xsettings
 - fix systray logging on posix OS
+- fix Cython runtime warnings in keyboard definition parsing
+- fix compilation with Cython 0.26b0
+- fix sample configuration file line endings on MS Windows
+- fix Mac OS build failures with python3 installed
+- fix Mac OS errors with clipboard disabled on server
+- fix XSettings error preventing server from starting
+- fix server startup error in the window icon capture code
+- fix window repaint after change in border paint status
+- fix icon error on resume from suspended state
+- fix error message for missing shadow X11 display
+- fix DPI miscalculation in case of platform API error
+- fix handling of shadow server screen resizing
+- fix window geometry feature flag wrongly removed
+- add missing man page entries
 - use a smaller initial display size with desktop mode
 
 * Sun May 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1

@@ -16,9 +16,21 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix systray logging on posix OS
   * fix Cython runtime warnings in keyboard definition parsing
   * fix compilation with Cython 0.26b0
+  * fix sample configuration file line endings on MS Windows
+  * fix Mac OS build failures with python3 installed
+  * fix Mac OS errors with clipboard disabled on server
+  * fix XSettings error preventing server from starting
+  * fix server startup error in the window icon capture code
+  * fix window repaint after change in border paint status
+  * fix icon error on resume from suspended state
+  * fix error message for missing shadow X11 display
+  * fix DPI miscalculation in case of platform API error
+  * fix handling of shadow server screen resizing
+  * fix window geometry feature flag wrongly removed
+  * add missing man page entries
   * use a smaller initial display size with desktop mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 05 Jul 2017 20:00:17 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 16 Jul 2017 22:27:14 +0700
 
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath
