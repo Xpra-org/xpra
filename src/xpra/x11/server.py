@@ -733,9 +733,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #boolean: but not a wm_state and renamed in the model... (iconic vs inconified!)
         iconified = new_window_state.get("iconified")
         if iconified is not None:
-            if window.get_property("iconic")!=bool(iconified):
-                window.set_property("iconic", iconified)
-                changes.append("iconified")
+            if window.is_OR():
+                log("ignoring iconified=%s on OR window %s", iconified, window)
+            else:
+                if window.get_property("iconic")!=bool(iconified):
+                    window.set_property("iconic", iconified)
+                    changes.append("iconified")
         #handle wm_state virtual booleans:
         for k in ("maximized", "above", "below", "fullscreen", "sticky", "shaded", "skip-pager", "skip-taskbar", "focused"):
             if k in new_window_state:
