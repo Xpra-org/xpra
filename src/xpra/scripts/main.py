@@ -24,7 +24,7 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CA
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
 from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX, POSIX
-from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
+from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
     make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
@@ -2393,7 +2393,7 @@ def get_start_new_session_dict(opts, mode, extra_args):
            }
     if len(extra_args)==1:
         sns["display"] = extra_args[0]
-    for x in START_COMMAND_OPTIONS:
+    for x in PROXY_START_OVERRIDABLE_OPTIONS:
         fn = x.replace("-", "_")
         v = getattr(opts, fn)
         if v:

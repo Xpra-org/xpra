@@ -640,7 +640,8 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
 #and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS = [
     "encoding", "encodings",
-    "quality", "min-quality", "speed", "min-speed", "auto-refresh-delay",
+    "quality", "min-quality", "speed", "min-speed",
+    #"auto-refresh-delay",    float!
     "compression_level", "video-scaling",
     "title", "wm-name", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
