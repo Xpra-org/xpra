@@ -1268,13 +1268,13 @@ def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    min_w, min_h = 32, 32
+    #undocumented and found the hard way, see:
+    #https://www.xpra.org/trac/ticket/1046#comment:6
+    #https://xpra.org/trac/ticket/1550#comment:13
+    min_w, min_h = 128, 128
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    if encoding=="h265":
-        #undocumented and found the hard way!
-        min_w, min_h = 72, 72
     has_lossless_mode = colorspace in ("BGRX", "BGRA" ) and encoding=="h264"
     cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
                       codec_class=Encoder, codec_type=get_type(),
@@ -1784,8 +1784,8 @@ cdef class Encoder:
                     raise Exception("unknown pixel format %s" % self.pixel_format)
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
-                #config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
-                #config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+                config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
+                config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
                 #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
@@ -1794,7 +1794,7 @@ cdef class Encoder:
             else:
                 assert self.codec_name=="H265"
                 #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
-                #config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
+                config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
                 config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
                 #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
                 #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
@@ -2235,6 +2235,7 @@ cdef class Encoder:
                numpy.int32(w), numpy.int32(h))
         log("calling %s%s with block=%s, grid=%s", self.kernel, args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
+        self.cuda_context.synchronize()
         cdef double end = monotonic_time()
         log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (end - start)*1000.0)
 
@@ -2243,7 +2244,6 @@ cdef class Encoder:
         cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
-        cdef double start = monotonic_time()
         assert input_size>0, "invalid input size %i" % input_size
         #map buffer so nvenc can access it:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
@@ -2260,9 +2260,11 @@ cdef class Encoder:
             log("compress_image(..) device buffer mapped to %#x", <uintptr_t> mappedResource)
         assert mappedResource!=NULL
 
+        cdef double start = monotonic_time()
         cdef double encode_end
-        memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
         try:
+            if DEBUG_API:
+                log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
             memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
             picParams.version = NV_ENC_PIC_PARAMS_VER
             picParams.bufferFmt = self.bufferFmt
@@ -2302,14 +2304,13 @@ cdef class Encoder:
             #picParams.rcParams.averageBitRate = self.target_bitrate
             #picParams.rcParams.maxBitRate = self.max_bitrate
 
-            if DEBUG_API:
-                log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
             with nogil:
                 r = self.functionList.nvEncEncodePicture(self.context, &picParams)
             raiseNVENC(r, "error during picture encoding")
             encode_end = monotonic_time()
             log("compress_image(..) encoded in %.1f ms", (encode_end-start)*1000.0)
 
+            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
             #lock output buffer:
             lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
             lockOutputBuffer.doNotWait = 0
@@ -2324,13 +2325,13 @@ cdef class Encoder:
             size = lockOutputBuffer.bitstreamSizeInBytes
             self.bytes_out += size
             data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
-        finally:
             if DEBUG_API:
                 log("nvEncUnlockBitstream(%#x)", <uintptr_t> self.bitstreamBuffer)
             if lockOutputBuffer.bitstreamBufferPtr!=NULL:
                 with nogil:
                     r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
             raiseNVENC(r, "unlocking output buffer")
+        finally:
             if DEBUG_API:
                 log("nvEncUnmapInputResource(%#x)", <uintptr_t> self.bitstreamBuffer)
             with nogil:
