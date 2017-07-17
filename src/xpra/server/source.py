@@ -779,13 +779,6 @@ class ServerSource(FileTransferHandler):
         soundlog("pulseaudio id=%s, server=%s, full-names=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.codec_full_names, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
-
-        log.info("%s", (self.client_type, self.client_platform,
-                        self.client_machine, self.client_processor,
-                        self.client_release, self.client_version,
-                        self.client_revision, self.client_proxy,
-                        self.client_wm_name, self.client_session_type, self.client_session_type_full))
-
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
         pinfo = ""
