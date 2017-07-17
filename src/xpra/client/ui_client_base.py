@@ -3355,7 +3355,12 @@ class UIXpraClient(XpraClientBase):
             "draw":                 self._process_draw,
             "webcam-stop":          self._process_webcam_stop,
             "webcam-ack":           self._process_webcam_ack,
-            # "clipboard-*" packets are handled by a special case below.
+            "clipboard-token":              self.process_clipboard_packet,
+            "clipboard-request":            self.process_clipboard_packet,
+            "clipboard-contents":           self.process_clipboard_packet,
+            "clipboard-contents-none":      self.process_clipboard_packet,
+            "clipboard-pending-requests":   self.process_clipboard_packet,
+            "clipboard-enable-selections":  self.process_clipboard_packet,
             })
         #these handlers can run directly from the network thread:
         self.set_packet_handlers(self._packet_handlers, {
@@ -3368,15 +3373,11 @@ class UIXpraClient(XpraClientBase):
 
 
     def process_clipboard_packet(self, packet):
-        clipboardlog("process_clipboard_packet: %s", packet[0])
-        self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
+        ch = self.clipboard_helper
+        clipboardlog("process_clipboard_packet: %s, helper=%s", packet[0], ch)
+        if ch:
+            ch.process_clipboard_packet(packet)
 
     def process_packet(self, proto, packet):
-        packet_type = packet[0]
         self.check_server_echo(0)
-        packet_type_str = bytestostr(packet_type)
-        if packet_type_str.startswith("clipboard-"):
-            if self.clipboard_enabled and self.clipboard_helper:
-                self.process_clipboard_packet(packet)
-        else:
-            XpraClientBase.process_packet(self, proto, packet)
+        XpraClientBase.process_packet(self, proto, packet)
