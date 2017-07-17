@@ -936,6 +936,8 @@ XpraClient.prototype._make_hello_base = function() {
 		"platform.name"				: Utilities.getPlatformName(),
 		"platform.processor"		: Utilities.getPlatformProcessor(),
 		"platform.platform"			: navigator.appVersion,
+		"session-type"				: Utilities.getSimpleUserAgentString(),
+		"session-type.full"			: navigator.userAgent,
 		"namespace"			 		: true,
 		"share"						: this.sharing,
 		"steal"						: this.steal,

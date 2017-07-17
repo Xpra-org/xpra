@@ -397,6 +397,7 @@ class ServerSource(FileTransferHandler):
         self.client_proxy = False
         self.client_wm_name = None
         self.client_session_type = None
+        self.client_session_type_full = None
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -710,6 +711,7 @@ class ServerSource(FileTransferHandler):
         self.client_proxy = c.boolget("proxy")
         self.client_wm_name = c.strget("wm_name")
         self.client_session_type = c.strget("session-type")
+        self.client_session_type_full = c.strget("session-type.full", "")
         #file transfers and printing:
         self.parse_file_transfer_caps(c)
         #general features:
@@ -777,6 +779,12 @@ class ServerSource(FileTransferHandler):
         soundlog("pulseaudio id=%s, server=%s, full-names=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_server, self.codec_full_names, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
+
+        log.info("%s", (self.client_type, self.client_platform,
+                        self.client_machine, self.client_processor,
+                        self.client_release, self.client_version,
+                        self.client_revision, self.client_proxy,
+                        self.client_wm_name, self.client_session_type, self.client_session_type_full))
 
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -1486,6 +1494,8 @@ class ServerSource(FileTransferHandler):
                 "version"           : self.client_version or "unknown",
                 "revision"          : self.client_revision or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
+                "session-type"      : self.client_session_type,
+                "session-type.full" : self.client_session_type_full,
                 "uuid"              : self.uuid,
                 "idle_time"         : int(monotonic_time()-self.last_user_event),
                 "idle"              : self.idle,
