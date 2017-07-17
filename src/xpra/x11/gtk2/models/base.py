@@ -657,13 +657,13 @@ class BaseWindowModel(CoreX11WindowModel):
                 log("ignoring 'HIDDEN' _NET_WM_STATE: %s", event)
                 #we don't honour those because they make little sense, see:
                 #https://mail.gnome.org/archives/wm-spec-list/2005-May/msg00004.html
-                pass
             elif atom1=="_NET_WM_STATE_MODAL":
                 update_wm_state("modal")
             elif atom1=="_NET_WM_STATE_DEMANDS_ATTENTION":
                 update_wm_state("attention-requested")
             else:
-                log.info("process_client_message_event(%s) unhandled atom=%s", event, atom1)
+                log.info("Unhandled _NET_WM_STATE request: '%s'", event, atom1)
+                log.info(" event%s", event)
             return True
         elif event.message_type=="WM_CHANGE_STATE":
             iconic = event.data[0]
