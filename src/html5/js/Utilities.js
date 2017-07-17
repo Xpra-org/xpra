@@ -214,12 +214,7 @@ var Utilities = {
 	},
 
 	getSimpleUserAgentString : function() {
-		console.log("userAgent=", navigator.userAgent);
-		console.log("isFirefox=", Utilities.isFirefox());
-		console.log("isChrome=", Utilities.isChrome());
 		var ua = navigator.userAgent.toLowerCase();
-		console.log("ua=", ua);
-		console.log("isChrome2=", ua.indexOf('chrome') >= 0 && ua.indexOf("safari") < 0);
 		if (Utilities.isFirefox()) {
 			return "Firefox";
 		}
