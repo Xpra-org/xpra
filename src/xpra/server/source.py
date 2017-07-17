@@ -991,6 +991,7 @@ class ServerSource(FileTransferHandler):
         self.send("startup-complete")
 
     def start_sending_sound(self, codec=None, volume=1.0, new_stream=None, new_buffer=None, skip_client_codec_check=False):
+        assert self.hello_sent
         soundlog("start_sending_sound(%s)", codec)
         if self.suspended:
             soundlog.warn("Warning: not starting sound whilst in suspended state")
@@ -1135,6 +1136,7 @@ class ServerSource(FileTransferHandler):
 
 
     def sound_control(self, action, *args):
+        assert self.hello_sent
         soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
             if len(args)>0:
@@ -1676,10 +1678,12 @@ class ServerSource(FileTransferHandler):
 
 
     def send_clipboard_enabled(self, reason=""):
+        if not self.hello_sent:
+            return
         self.send("set-clipboard-enabled", self.clipboard_enabled, reason)
 
     def send_clipboard_progress(self, count):
-        if not self.clipboard_notifications:
+        if not self.clipboard_notifications or not self.hello_sent:
             return
         #always set "pending" to the latest value:
         self.clipboard_notifications_pending = count
@@ -1693,7 +1697,7 @@ class ServerSource(FileTransferHandler):
         self.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet):
-        if not self.clipboard_enabled or self.suspended:
+        if not self.clipboard_enabled or self.suspended or not self.hello_sent:
             return
         now = monotonic_time()
         self.clipboard_stats.append(now)
@@ -1726,11 +1730,11 @@ class ServerSource(FileTransferHandler):
 
 
     def pointer_grab(self, wid):
-        if self.pointer_grabs:
+        if self.pointer_grabs and self.hello_sent:
             self.send("pointer-grab", wid)
 
     def pointer_ungrab(self, wid):
-        if self.pointer_grabs:
+        if self.pointer_grabs and self.hello_sent:
             self.send("pointer-ungrab", wid)
 
 
@@ -1745,7 +1749,7 @@ class ServerSource(FileTransferHandler):
         return Compressed(datatype, data, can_inline=True)
 
     def send_cursor(self):
-        if not self.send_cursors or self.suspended:
+        if not self.send_cursors or self.suspended or not self.hello_sent:
             return
         def do_send_cursor():
             self.send_cursor_pending = False
@@ -1795,7 +1799,7 @@ class ServerSource(FileTransferHandler):
 
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        if not self.send_bell or self.suspended:
+        if not self.send_bell or self.suspended or not self.hello_sent:
             return
         self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
@@ -1806,11 +1810,12 @@ class ServerSource(FileTransferHandler):
         if self.suspended:
             notifylog("client %s is suspended, notification not sent", self)
             return False
-        self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+        if self.hello_sent:
+            self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
         return True
 
     def notify_close(self, nid):
-        if not self.send_notifications or self.suspended:
+        if not self.send_notifications or self.suspended  or not self.hello_sent:
             return
         self.send("notify_close", nid)
 
@@ -1819,10 +1824,12 @@ class ServerSource(FileTransferHandler):
 
 
     def send_webcam_ack(self, device, frame, *args):
-        self.send("webcam-ack", device, frame, *args)
+        if self.hello_sent:
+            self.send("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message):
-        self.send("webcam-stop", device, message)
+        if self.hello_sent:
+            self.send("webcam-stop", device, message)
 
 
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
@@ -1931,11 +1938,13 @@ class ServerSource(FileTransferHandler):
 
 
     def send_client_command(self, *args):
-        self.send("control", *args)
+        if self.hello_sent:
+            self.send("control", *args)
 
 
     def rpc_reply(self, *args):
-        self.send("rpc-reply", *args)
+        if self.hello_sent:
+            self.send("rpc-reply", *args)
 
     def ping(self):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
@@ -1977,6 +1986,8 @@ class ServerSource(FileTransferHandler):
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
+        if not self.hello_sent:
+            return False
         if self.randr_notify and (not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h)):
             self.desktop_size_server = root_w, root_h
             self.send("desktop_size", root_w, root_h, max_w, max_h)
@@ -1985,7 +1996,7 @@ class ServerSource(FileTransferHandler):
 
 
     def show_desktop(self, show):
-        if self.show_desktop_allowed:
+        if self.show_desktop_allowed and self.hello_sent:
             self.send("show-desktop", show)
 
     def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
@@ -2077,6 +2088,8 @@ class ServerSource(FileTransferHandler):
             self.send_window_icon(wid, window)
 
     def send_window_icon(self, wid, window):
+        if not self.can_send_window(window):
+            return
         #we may need to make a new source at this point:
         ws = self.make_window_source(wid, window)
         if ws:
@@ -2117,7 +2130,9 @@ class ServerSource(FileTransferHandler):
         if ws:
             ws.unmap()
 
-    def raise_window(self, wid):
+    def raise_window(self, wid, window):
+        if not self.can_send_window(window):
+            return
         self.send("raise-window", wid)
 
     def remove_window(self, wid, window):
