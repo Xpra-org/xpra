@@ -368,6 +368,8 @@ class ServerSource(FileTransferHandler):
         return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
 
     def init_vars(self):
+        self.hello_sent = False
+
         self.encoding = None                        #the default encoding for all windows
         self.encodings = []                         #all the encodings supported by the client
         self.core_encodings = []
@@ -1439,7 +1441,7 @@ class ServerSource(FileTransferHandler):
         if not window_ids:
             self.encoding = encoding
 
-    def hello(self, server_capabilities):
+    def send_hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         if self.wants_sound and self.sound_properties:
             sound_props = self.sound_properties.copy()
@@ -1476,6 +1478,7 @@ class ServerSource(FileTransferHandler):
             if mck:
                 capabilities["modifier_keycodes"] = mck
         self.send("hello", capabilities)
+        self.hello_sent = True
 
 
     def get_info(self):
@@ -1503,6 +1506,7 @@ class ServerSource(FileTransferHandler):
                 "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
                 "counter"           : self.counter,
+                "hello-sent"        : self.hello_sent,
                 }
         if self.desktop_size_unscaled:
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
@@ -2030,6 +2034,8 @@ class ServerSource(FileTransferHandler):
         self.window_filters.append((self.uuid, window_filter.show))
 
     def can_send_window(self, window):
+        if not self.hello_sent:
+            return False
         for uuid,x in self.window_filters:
             v = x(window)
             if v is True:

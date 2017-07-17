@@ -1501,7 +1501,7 @@ class ServerBase(ServerCore):
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:
             capabilities.update(server_cipher)
-        server_source.hello(capabilities)
+        server_source.send_hello(capabilities)
 
 
     def _process_logging(self, proto, packet):
