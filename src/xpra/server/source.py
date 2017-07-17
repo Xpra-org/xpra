@@ -422,7 +422,6 @@ class ServerSource(FileTransferHandler):
         self.desktops = 1
         self.desktop_names = []
         self.system_tray = False
-        self.notify_startup_complete = False
         self.control_commands = []
         self.metadata_supported = []
         self.show_desktop_allowed = False
