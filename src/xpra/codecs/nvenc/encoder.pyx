@@ -1741,8 +1741,8 @@ cdef class Encoder:
             params.reportSliceOffsets = 0
             params.enableSubFrameWrite = 0
 
-            params.frameRateNum = 1
-            params.frameRateDen = 30
+            params.frameRateNum = 30
+            params.frameRateDen = 1
             params.encodeConfig = config
 
             #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
