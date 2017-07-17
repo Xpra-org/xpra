@@ -32,7 +32,7 @@ from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
 
-CLIENT_KEYS_STR = get_nvenc_license_keys(7) + get_nvenc_license_keys()
+CLIENT_KEYS_STR = get_nvenc_license_keys(NVENCAPI_MAJOR_VERSION) + get_nvenc_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
