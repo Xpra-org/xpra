@@ -293,6 +293,8 @@ class ServerCore(object):
             return None
         #separate options from the auth module name
         parts = auth_str.split(":", 1)
+        if len(parts)==1 and auth_str.find(",")>0:
+            parts = auth_str.split(",", 1)
         auth = parts[0]
         auth_options = {}
         if len(parts)>1:
