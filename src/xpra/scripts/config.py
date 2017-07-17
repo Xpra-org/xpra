@@ -639,6 +639,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
 #options that clients can pass to the proxy
 #and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS = [
+    "env", "start-env",
     "encoding", "encodings",
     "quality", "min-quality", "speed", "min-speed",
     #"auto-refresh-delay",    float!
