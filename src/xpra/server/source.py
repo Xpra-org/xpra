@@ -2034,7 +2034,9 @@ class ServerSource(FileTransferHandler):
         if ws:
             ws.unmap()
 
-    def raise_window(self, wid):
+    def raise_window(self, wid, window):
+        if not self.can_send_window(window):
+            return
         self.send("raise-window", wid)
 
     def remove_window(self, wid, window):

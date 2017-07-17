@@ -718,7 +718,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self._has_focus==wid:
             return
         for ss in self._server_sources.values():
-            ss.raise_window(wid)
+            ss.raise_window(wid, window)
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
