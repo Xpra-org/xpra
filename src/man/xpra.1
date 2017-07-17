@@ -25,6 +25,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-start\-new\-commands\fP]
 [\fB\-\-start\-via\-proxy\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-chdir\fP=\fIDIR\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
@@ -173,6 +174,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-uid\fP=\fIUID\fP]
 [\fB\-\-gid\fP=\fIGID\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-chdir\fP=\fIDIR\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
@@ -677,8 +679,12 @@ what the clients can execute on the server.
 .TP
 \fB\-\-daemon\fP=\fIyes\fP|\fIno\fP
 By default, the xpra server puts itself into the background,
-i.e. 'daemonizes', and redirects its output to a log file.  This
-prevents that behavior (useful mostly for debugging).
+i.e. 'daemonizes', and redirects its output to a log file.
+This can be used to prevent that behavior (useful mostly for debugging).
+.TP
+
+\fB\-\-chdir\fP=\fIDIR\fP
+Change to this directory after daemonizing.
 .TP
 
 \fB\-\-uid\fP=\fIUID\fP and \fB\-\-gid\fP=\fIGID\fP

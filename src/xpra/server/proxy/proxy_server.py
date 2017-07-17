@@ -380,12 +380,13 @@ class ProxyServer(ServerCore):
         opts.attach = False
         opts.start_via_proxy = False
         env = self.get_proxy_env()
-        log("starting new server subprocess: options=%s", opts)
-        log("env=%s", env)
-        log("args=%s", args)
         cwd = None
         if uid>0:
             cwd = get_home_for_uid(uid) or None
+        log("starting new server subprocess: options=%s", opts)
+        log("env=%s", env)
+        log("args=%s", args)
+        log("cwd=%s", cwd)
         proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid, env, cwd)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)

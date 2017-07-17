@@ -702,6 +702,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             })
         os.environ.update(protected_env)
 
+    if opts.chdir:
+        os.chdir(opts.chdir)
+
     display = None
     if not proxying:
         no_gtk()
@@ -845,7 +848,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     try:
         app._ssl_wrap_socket = wrap_socket_fn
         app.original_desktop_display = desktop_display
-        app.exec_cwd = cwd
+        app.exec_cwd = opts.chdir or cwd
         app.init(opts)
         app.init_components(opts)
     except InitException as e:

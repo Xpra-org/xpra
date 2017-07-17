@@ -457,6 +457,7 @@ OPTION_TYPES = {
                     "systemd-run"       : str,
                     "systemd-run-args"  : str,
                     "system-proxy-socket" : str,
+                    "chdir"             : str,
                     "xvfb"              : str,
                     "socket-dir"        : str,
                     "mmap"              : str,
@@ -602,7 +603,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-ssl", "bind-vsock"]
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid"]
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir"]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
@@ -639,7 +640,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
 #options that clients can pass to the proxy
 #and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS = [
-    "env", "start-env",
+    "env", "start-env", "chdir",
     "dpi",
     "encoding", "encodings",
     "quality", "min-quality", "speed", "min-speed",
@@ -806,6 +807,7 @@ def get_defaults():
                     "systemd-run-args"  : "",
                     "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
                     "xvfb"              : " ".join(xvfb),
+                    "chdir"             : "",
                     "socket-dir"        : "",
                     "log-dir"           : "auto",
                     "log-file"          : "$DISPLAY.log",

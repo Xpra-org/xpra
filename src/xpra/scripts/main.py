@@ -420,6 +420,9 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--daemon", action="store", metavar="yes|no",
                           dest="daemon", default=defaults.daemon,
                           help="Daemonize when running as a server (default: %s)" % enabled_str(defaults.daemon))
+        group.add_option("--chdir", action="store", metavar="DIR",
+                          dest="chdir", default=defaults.chdir,
+                          help="Change to this directory (default: %s)" % enabled_str(defaults.chdir))
         group.add_option("--attach", action="store", metavar="yes|no|auto",
                           dest="attach", default=defaults.attach,
                           help="Attach a client as soon as the server has started (default: %s)" % enabled_or_auto(defaults.attach))
@@ -443,6 +446,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "pidfile"   : defaults.pidfile,
                 "log_file"  : defaults.log_file,
                 "log_dir"   : defaults.log_dir,
+                "chdir"     : defaults.chdir,
                 })
 
     legacy_bool_parse("printing")
@@ -2398,6 +2402,10 @@ def get_start_new_session_dict(opts, mode, extra_args):
         v = getattr(opts, fn)
         if v:
             sns[x] = v
+    #make sure the server will start in the same path we were called from:
+    #(despite being started by a root owned process from a different directory)
+    if not opts.chdir:
+        sns["chdir"] = os.getcwd()
     return sns
 
 def shellquote(s):
