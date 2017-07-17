@@ -640,6 +640,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
 #and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS = [
     "env", "start-env",
+    "dpi",
     "encoding", "encodings",
     "quality", "min-quality", "speed", "min-speed",
     #"auto-refresh-delay",    float!
