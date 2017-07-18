@@ -536,6 +536,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    disableSPSPPS                       #[in]: Set 1 to disable VPS,SPS and PPS signalling in the bitstream.
         uint32_t    repeatSPSPPS                        #[in]: Set 1 to output VPS,SPS and PPS for every IDR frame.
         uint32_t    enableIntraRefresh                  #[in]: Set 1 to enable gradual decoder refresh or intra refresh. If the GOP structure uses B frames this will be ignored
+        uint32_t    chromaFormatIDC                     #[in]: Specifies the chroma format. Should be set to 1 for yuv420 input, 3 for yuv444 input.
+        uint32_t    pixelBitDepthMinus8                 #[in]: Specifies pixel bit depth minus 8. Should be set to 0 for 8 bit input, 2 for 10 bit input.
         uint32_t    reserved                            #[in]: Reserved bitfields.
         uint32_t    idrPeriod                           #[in]: Specifies the IDR interval. If not set, this is made equal to gopLength in NV_ENC_CONFIG.Low latency application client can set IDR interval to NVENC_INFINITE_GOPLENGTH so that IDR frames are not inserted automatically.
         uint32_t    intraRefreshPeriod                  #[in]: Specifies the interval between successive intra refresh if enableIntrarefresh is set. Requires enableIntraRefresh to be set.
@@ -1820,15 +1822,17 @@ cdef class Encoder:
                 #config.rcParams.initialRCQP.qpIntra = qpmin
                 #config.rcParams.initialRCQP.qpInterB = qpmin
 
+            if self.pixel_format=="BGRX":
+                chromaFormatIDC = 0
+            elif self.pixel_format=="NV12":
+                chromaFormatIDC = 1
+            elif self.pixel_format=="YUV444P":
+                chromaFormatIDC = 3
+            else:
+                raise Exception("unknown pixel format %s" % self.pixel_format)
+
             if self.codec_name=="H264":
-                if self.pixel_format=="BGRX":
-                    config.encodeCodecConfig.h264Config.chromaFormatIDC = 0
-                elif self.pixel_format=="NV12":
-                    config.encodeCodecConfig.h264Config.chromaFormatIDC = 1
-                elif self.pixel_format=="YUV444P":
-                    config.encodeCodecConfig.h264Config.chromaFormatIDC = 3
-                else:
-                    raise Exception("unknown pixel format %s" % self.pixel_format)
+                config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
                 config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
@@ -1840,6 +1844,7 @@ cdef class Encoder:
                 #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
             else:
                 assert self.codec_name=="H265"
+                config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
                 #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
                 config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
                 config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
