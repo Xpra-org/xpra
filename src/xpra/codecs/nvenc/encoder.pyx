@@ -1050,7 +1050,7 @@ cdef guidstr(GUID guid):
     parts.append(array.array('B', (guid.get("Data4")[2:8])).tostring())
     s = b"-".join(binascii.hexlify(b).upper() for b in parts)
     #log.info("guidstr(%s)=%s", guid, s)
-    return s
+    return bytestostr(s)
 
 cdef GUID c_parseguid(src) except *:
     #just as ugly as above - shoot me now
@@ -1094,7 +1094,7 @@ def parseguid(s):
     return c_parseguid(s)
 
 def test_parse():
-    sample_guid = b"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
+    sample_guid = u"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     x = c_parseguid(sample_guid)
     v = guidstr(x)
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
@@ -2439,7 +2439,7 @@ cdef class Encoder:
                 else:
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
-                log.warn("nvenc: found some unknown presets: %s", b", ".join(unknowns))
+                log.warn("Warning: found some unknown NVENC presets: %s", b", ".join(unknowns))
         finally:
             free(preset_GUIDs)
         if DEBUG_API:

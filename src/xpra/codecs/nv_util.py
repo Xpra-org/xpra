@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 from xpra.util import pver, print_nested_dict, engs, envbool
+from xpra.os_util import bytestostr
 
 
 MAX_TESTED = 384
@@ -19,7 +20,7 @@ def get_nvml_driver_version():
         try:
             nvmlInit()
             v = nvmlSystemGetDriverVersion()
-            log("nvmlSystemGetDriverVersion=%s", v)
+            log("nvmlSystemGetDriverVersion=%s", bytestostr(v))
             return v.split(b".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)

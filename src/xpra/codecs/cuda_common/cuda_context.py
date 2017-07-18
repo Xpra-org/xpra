@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013, 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -159,7 +159,7 @@ def init_all_devices():
                 log("   created context=%s", context)
                 log("   api version=%s", context.get_api_version())
                 free, total = driver.mem_get_info()
-                log("   memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
+                log("   memory: free=%sMB, total=%sMB",  int(free//1024//1024), int(total//1024//1024))
                 log("   multi-processors: %s, clock rate: %s", device.get_attribute(da.MULTIPROCESSOR_COUNT), device.get_attribute(da.CLOCK_RATE))
                 log("   max block sizes: (%s, %s, %s)", device.get_attribute(da.MAX_BLOCK_DIM_X), device.get_attribute(da.MAX_BLOCK_DIM_Y), device.get_attribute(da.MAX_BLOCK_DIM_Z))
                 log("   max grid sizes: (%s, %s, %s)", device.get_attribute(da.MAX_GRID_DIM_X), device.get_attribute(da.MAX_GRID_DIM_Y), device.get_attribute(da.MAX_GRID_DIM_Z))
