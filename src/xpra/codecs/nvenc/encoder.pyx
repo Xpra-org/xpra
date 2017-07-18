@@ -701,8 +701,46 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved[243]       #[in]: Reserved and must be set to 0.
         void*       reserved2[62]       #[in]: Reserved and must be set to NULL.
 
+    ctypedef struct NV_ENC_PIC_PARAMS_HEVC:
+        uint32_t displayPOCSyntax       #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
+        uint32_t refPicFlag             #[in]: Set to 1 for a reference picture. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
+        uint32_t temporalId             #[in]: Specifies the temporal id of the picture
+        uint32_t forceIntraRefreshWithFrameCnt  #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt. 
+                                        #When outputRecoveryPointSEI is set this is value is used for recovery_frame_cnt in recovery point SEI message 
+                                        #forceIntraRefreshWithFrameCnt cannot be used if B frames are used in the GOP structure specified
+        uint32_t constrainedFrame       #[in]: Set to 1 if client wants to encode this frame with each slice completely independent of other slices in the frame. 
+                                        #NV_ENC_INITIALIZE_PARAMS::enableConstrainedEncoding should be set to 1
+        uint32_t sliceModeDataUpdate    #[in]: Set to 1 if client wants to change the sliceModeData field to specify new sliceSize Parameter
+                                        #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
+        uint32_t ltrMarkFrame           #[in]: Set to 1 if client wants to mark this frame as LTR
+        uint32_t ltrUseFrames           #[in]: Set to 1 if client allows encoding this frame using the LTR frames specified in ltrFrameBitmap
+        uint32_t reservedBitFields      #[in]: Reserved bit fields and must be set to 0
+        uint8_t* sliceTypeData          #[in]: Array which specifies the slice type used to force intra slice for a particular slice. Currently supported only for NV_ENC_CONFIG_H264::sliceMode == 3. 
+                                        #Client should allocate array of size sliceModeData where sliceModeData is specified in field of ::_NV_ENC_CONFIG_H264 
+                                        #Array element with index n corresponds to nth slice. To force a particular slice to intra client should set corresponding array element to NV_ENC_SLICE_TYPE_I
+                                        #all other array elements should be set to NV_ENC_SLICE_TYPE_DEFAULT
+        uint32_t sliceTypeArrayCnt      #[in]: Client should set this to the number of elements allocated in sliceTypeData array. If sliceTypeData is NULL then this should be set to 0
+        uint32_t sliceMode              #[in]: This parameter in conjunction with sliceModeData specifies the way in which the picture is divided into slices
+                                        #sliceMode = 0 CTU based slices, sliceMode = 1 Byte based slices, sliceMode = 2 CTU row based slices, sliceMode = 3, numSlices in Picture
+                                        #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
+                                        #When sliceMode == 0 and sliceModeData == 0 whole picture will be coded with one slice
+        uint32_t sliceModeData          #[in]: Specifies the parameter needed for sliceMode. For:
+                                        #sliceMode = 0, sliceModeData specifies # of CTUs in each slice (except last slice)
+                                        #sliceMode = 1, sliceModeData specifies maximum # of bytes in each slice (except last slice)
+                                        #sliceMode = 2, sliceModeData specifies # of CTU rows in each slice (except last slice)
+                                        #sliceMode = 3, sliceModeData specifies number of slices in the picture. Driver will divide picture into slices optimally
+        uint32_t ltrMarkFrameIdx        #[in]: Specifies the long term reference frame index to use for marking this frame as LTR.
+        uint32_t ltrUseFrameBitmap      #[in]: Specifies the associated bitmap of LTR frame indices to use when encoding this frame.
+        uint32_t ltrUsageMode           #[in]: Not supported. Reserved for future use and must be set to 0.
+        uint32_t seiPayloadArrayCnt     #[in]: Specifies the number of elements allocated in  seiPayloadArray array.
+        uint32_t reserved               #[in]: Reserved and must be set to 0.
+        NV_ENC_SEI_PAYLOAD* seiPayloadArray #[in]: Array of SEI payloads which will be inserted for this frame.
+        uint32_t reserved2 [244]        #[in]: Reserved and must be set to 0.
+        void*    reserved3[61]          #[in]: Reserved and must be set to NULL.
+
     ctypedef union NV_ENC_CODEC_PIC_PARAMS:
         NV_ENC_PIC_PARAMS_H264 h264PicParams    #[in]: H264 encode picture params.
+        NV_ENC_PIC_PARAMS_HEVC hevcPicParams    #[in]: HEVC encode picture params.
         uint32_t               reserved[256]    #[in]: Reserved and must be set to 0.
 
     ctypedef struct NV_ENC_MEONLY_PARAMS:
@@ -1761,10 +1799,13 @@ cdef class Encoder:
             qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
             config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
             #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
-            if False:
+            if True:
                 #const QP:
                 config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
-                qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
+                if self.preset_name.find("lossless")>=0:
+                    qp = 0
+                else:
+                    qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
                 config.rcParams.constQP.qpInterP = qp
                 config.rcParams.constQP.qpInterB = qp
                 config.rcParams.constQP.qpIntra = qp
@@ -2291,11 +2332,15 @@ cdef class Encoder:
                 picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
             else:
                 picParams.pictureType = NV_ENC_PIC_TYPE_P
-            picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
-            picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-            #this causes crashes with Pascal (ie GTX-1070):
-            #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-            #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+            if self.encoding=="h264":
+                picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
+                picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
+                #this causes crashes with Pascal (ie GTX-1070):
+                #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+                #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+            else:
+                picParams.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
+                picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
             picParams.frameIdx = self.frames
             picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
             #inputDuration = 0      #FIXME: use frame delay?
