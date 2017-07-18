@@ -39,7 +39,7 @@ cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", True)
+cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", False)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
@@ -2779,7 +2779,7 @@ def init_module():
         else:
             raise Exception("you may need to provide a license key")
     if ENCODINGS:
-        log("NVENC v7 successfully initialized: %s", csv(ENCODINGS))
+        log("NVENC v%i successfully initialized: %s", NVENCAPI_MAJOR_VERSION, csv(ENCODINGS))
         nvenc_loaded()
 
 def cleanup_module():
