@@ -179,7 +179,7 @@ def init_all_devices():
                     DEVICES.append(i)
                 else:
                     log.info("  this device is too old!")
-                log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free/total, SMmajor, SMminor)
+                log.info("  + %s (memory: %s%% free, compute: %s.%s)", device_info(device), 100*free//total, SMmajor, SMminor)
             finally:
                 context.pop()
         except Exception as e:
