@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -317,7 +317,10 @@ BuildRequires: pam-devel
 BuildRequires: gcc
 BuildRequires: %{requires_cython}
 %ifarch x86_64
+%if 0%{?fedora}
 %{Recommends}: python2-pynvml
+%{Recommends}: python2-pycuda
+%endif
 %endif
 %description -n python2-xpra-server
 This package contains the python2 xpra server.
@@ -413,6 +416,12 @@ Recommends: gtk3-immodule-xim
 Recommends: python3-setproctitle
 BuildRequires: gcc, gcc-c++
 BuildRequires: python3-Cython
+%ifarch x86_64
+%if 0%{?fedora}
+%{Recommends}: python3-pynvml
+%{Recommends}: python3-pycuda
+%endif
+%endif
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
 %endif

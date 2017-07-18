@@ -206,7 +206,7 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
         preferred_device_name = get_pref("device-name")
     if preferred_device_id<0:
         device_id = get_pref("device-id")
-        if device_id>=0:
+        if device_id is not None and device_id>=0:
             preferred_device_id = device_id
     devices = init_all_devices()
     global DEVICE_STATE

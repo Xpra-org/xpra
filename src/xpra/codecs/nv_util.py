@@ -20,7 +20,7 @@ def get_nvml_driver_version():
             nvmlInit()
             v = nvmlSystemGetDriverVersion()
             log("nvmlSystemGetDriverVersion=%s", v)
-            return v.split(".")
+            return v.split(b".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version via NVML:")
@@ -41,13 +41,13 @@ def get_proc_driver_version():
         log.warn("Warning: NVidia kernel module not installed?")
         log.warn(" cannot open '%s'", proc_file)
         return ""
-    KSTR = "Kernel Module"
+    KSTR = b"Kernel Module"
     p = v.find(KSTR)
     if not p:
         log.warn("unknown NVidia kernel module version")
         return ""
-    v = v[p+len(KSTR):].strip().split(" ")[0]
-    v = v.split(".")
+    v = v[p+len(KSTR):].strip().split(b" ")[0]
+    v = v.split(b".")
     return v
 
 

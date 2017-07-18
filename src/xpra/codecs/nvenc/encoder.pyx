@@ -14,7 +14,7 @@ from collections import deque
 
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX
+from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
 from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
@@ -1044,11 +1044,11 @@ cdef guidstr(GUID guid):
         b = array.array('B', [0 for _ in range(s)])
         for j in range(s):
             b[s-j-1] = v % 256
-            v = v / 256
+            v = v // 256
         parts.append(b.tostring())
     parts.append(array.array('B', (guid.get("Data4")[:2])).tostring())
     parts.append(array.array('B', (guid.get("Data4")[2:8])).tostring())
-    s = "-".join([binascii.hexlify(b).upper() for b in parts])
+    s = b"-".join(binascii.hexlify(b).upper() for b in parts)
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
@@ -1058,22 +1058,29 @@ cdef GUID c_parseguid(src) except *:
     sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     if len(src)!=len(sample_guid):
         raise Exception("invalid GUID format: expected %s characters but got %s" % (len(sample_guid), len(src)))
+    cdef int i, s
+    src = bytestostr(src)
     for i in range(len(sample_guid)):
         if sample_guid[i]=="-":
             #dash must be in the same place:
             if src[i]!="-":
-                raise Exception("invalid GUID format: character at position %s is not '-'" % i)
+                raise Exception("invalid GUID format: character at position %s is not '-': %s" % (i, src[i]))
         else:
             #must be an hex number:
-            if src.upper()[i] not in ("0123456789ABCDEF"):
-                raise Exception("invalid GUID format: character at position %s is not in hex" % i)
+            c = src.upper()[i]
+            if c not in (u"0123456789ABCDEF"):
+                raise Exception("invalid GUID format: character at position %s is not in hex: %s" % (i, c))
     parts = src.split("-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         b = array.array('B', (binascii.unhexlify(parts[i]))).tostring()
         v = 0
         for j in range(s):
-            v += ord(b[j])<<((s-j-1)*8)
+            if PYTHON3:
+                c = b[j]
+            else:
+                c = ord(c)
+            v += c<<((s-j-1)*8)
         nparts.append(v)
     cdef GUID guid
     guid.Data1 = nparts[0]
@@ -1088,7 +1095,7 @@ def parseguid(s):
     return c_parseguid(s)
 
 def test_parse():
-    sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
+    sample_guid = b"CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     x = c_parseguid(sample_guid)
     v = guidstr(x)
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
@@ -1223,7 +1230,7 @@ def get_COLORSPACES(encoding):
     return COLORSPACES
 
 def get_input_colorspaces(encoding):
-    return get_COLORSPACES(encoding).keys()
+    return list(get_COLORSPACES(encoding).keys())
 
 def get_output_colorspaces(encoding, input_colorspace):
     cs = get_COLORSPACES(encoding)
@@ -2184,7 +2191,11 @@ cdef class Encoder:
             stride = image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
             log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(target_buffer), len(target_buffer))
-            buf[:pix_len] = pixels
+            if PYTHON3 and isinstance(pixels, bytearray):
+                tmp = numpy.frombuffer(pixels, numpy.int8)
+                buf[:pix_len] = tmp
+            else:
+                buf[:pix_len] = pixels
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
@@ -2429,7 +2440,7 @@ cdef class Encoder:
                 else:
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
-                log.warn("nvenc: found some unknown presets: %s", ", ".join(unknowns))
+                log.warn("nvenc: found some unknown presets: %s", b", ".join(unknowns))
         finally:
             free(preset_GUIDs)
         if DEBUG_API:
