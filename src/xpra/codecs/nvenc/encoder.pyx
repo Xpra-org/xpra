@@ -1076,9 +1076,8 @@ cdef GUID c_parseguid(src) except *:
         b = array.array('B', (binascii.unhexlify(parts[i]))).tostring()
         v = 0
         for j in range(s):
-            if PYTHON3:
-                c = b[j]
-            else:
+            c = b[j]
+            if not PYTHON3:
                 c = ord(c)
             v += c<<((s-j-1)*8)
         nparts.append(v)
