@@ -1578,19 +1578,20 @@ cdef class Encoder:
         else:
             x,y = self.scaling
             hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
+            hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
             if hasyuv444:
                 #NVENC and the client can handle it,
                 #now check quality and scaling:
                 #(don't use YUV444 is we're going to downscale or use low quality anyway)
-                if (quality>=YUV444_THRESHOLD and x==1 and y==1) or ("YUV420P" not in self.dst_formats):
+                if (quality>=YUV444_THRESHOLD and x==1 and y==1) or not hasyuv420:
                     v = "YUV444P"
             if not v:
-                if YUV420_ENABLED and "YUV420P" in self.dst_formats:
+                if hasyuv420:
                     v = "NV12"
                 else:
-                    raise Exception("no compatible formats found for quality=%i, YUV420_ENABLED=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (quality, YUV420_ENABLED, hasyuv444, self.codec_name, self.dst_formats))
+                    raise Exception("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (quality, self.scaling, hasyuv420, hasyuv444, self.codec_name, self.dst_formats))
         log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
-            quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, self.dst_formats)
+            quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
         return v
 
     def get_target_lossless(self, pixel_format, quality):
