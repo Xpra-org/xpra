@@ -16,7 +16,7 @@ log = Logger("encoder", "test", "nvenc")
 
 #TEST_DIMENSIONS = ((32, 32), (1920, 1080), (512, 512))
 #TEST_DIMENSIONS = ((4096, 2560), (3960, 2060), (1920, 1080), (512, 512), (32, 32))
-TEST_DIMENSIONS = ((1920, 1080), (512, 512), (32, 32))
+TEST_DIMENSIONS = ((1920, 1080), (512, 512))
 
 
 encoder_module = None
@@ -83,7 +83,7 @@ def test_encode_all_GPUs():
     cuda_devices = encoder_module.get_cuda_devices()
     log("")
     log.info("test_parallel_encode() will test one encoder on each of %s sequentially" % cuda_devices)
-    TEST_DIMENSIONS = [(32, 32)]
+    TEST_DIMENSIONS = [(256, 256)]
     for device_id, info in cuda_devices.items():
         options = {"cuda_device" : device_id}
         log("")

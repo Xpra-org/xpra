@@ -12,8 +12,8 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "test")
 
-DEFAULT_TEST_DIMENSIONS = [(512, 512)]
-DEFAULT_TEST_DIMENSIONS = [(32, 32), (72, 72), (256, 256), (1920, 1080), (512, 512)]
+#DEFAULT_TEST_DIMENSIONS = [(32, 32), (72, 72), (256, 256), (1920, 1080), (512, 512)]
+DEFAULT_TEST_DIMENSIONS = [(256, 256), (1920, 1080), (128, 128)]
 
 
 def test_encoder_dimensions(encoder_module):
@@ -139,5 +139,5 @@ def do_test_encoder(encoder, src_format, w, h, images, name="encoder", log=None,
     sized = "%sx%s" % (w, h)
     fsize = tsize/len(images)
     log.info("%60s finished encoding %3s %7s frames at %10s: %4s MPixels/s, %4sms/frame, %8sKB/frame (%s)",
-             encoder, len(images), src_format, sized, perf, tpf, fsize/1024, encoder.get_info().get("pixel_format"))
+             encoder, len(images), src_format, sized, perf, tpf, fsize//1024, encoder.get_info().get("pixel_format"))
     #log.info("info=%s", encoder.get_info())
