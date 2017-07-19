@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,6 +12,14 @@ from xpra.gtk_common.gdk_atoms import (
                 )
 
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
+
+
+try:
+    from xpra.x11.gtk2.gdk_bindings import sanitize_gtkselectiondata
+    from xpra.clipboard import clipboard_base
+    clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
+except ImportError as e:
+    log.error("Error: sanitize_gtkselectiondata not found: %s", e)
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):

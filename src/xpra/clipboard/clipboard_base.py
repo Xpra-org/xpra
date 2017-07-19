@@ -75,6 +75,12 @@ class ClipboardProtocolHelperBase(object):
                     self.filter_res.append(re.compile(x))
                 except:
                     log.error("invalid regular expression '%s' in clipboard filter")
+
+
+#may get overriden
+def nosanitize_gtkselectiondata(selectiondata):
+    return selectiondata
+sanitize_gtkselectiondata = nosanitize_gtkselectiondata
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self._want_targets = False
@@ -95,6 +101,7 @@ class ClipboardProtocolHelperBase(object):
                 "can-send"      : self.can_send,
                 "can-receive"   : self.can_receive,
                 "want_targets"  : self._want_targets,
+                "sanitize-gtkselectiondata" : sanitize_gtkselectiondata!=nosanitize_gtkselectiondata,
                 }
         for clipboard, proxy in self._clipboard_proxies.items():
             info[clipboard] = proxy.get_info()
@@ -725,6 +732,8 @@ class ClipboardProxy(gtk.Invisible):
             return
         def unpack(clipboard, selection_data, user_data):
             log("unpack %s: %s", clipboard, type(selection_data))
+            global sanitize_gtkselectiondata
+            selection_data = sanitize_gtkselectiondata(selection_data)
             if selection_data is None:
                 cb(None, None, None)
                 return
