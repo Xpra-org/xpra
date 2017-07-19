@@ -18,7 +18,7 @@ from xpra.server.window.motion import ScrollData                    #@Unresolved
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
-from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup
+from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict
 from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
@@ -1706,14 +1706,13 @@ class WindowVideoSource(WindowSource):
             log.error("Error: failed to encode %s video frame:", ve.get_type())
             log.error(" %s", e)
             log.error(" source: %s", csc_image)
-            log.error(" options: %s", options)
+            log.error(" options:")
+            print_nested_dict(options, prefix="   ", print_fn=log.error)
             log.error(" encoder:")
-            for k,v in ve.get_info().items():
-                log.error("   %-20s: %s", k, v)
+            print_nested_dict(ve.get_info(), prefix="   ", print_fn=log.error)
             if csce:
                 log.error(" csc %s:", csce.get_type())
-                for k,v in csce.get_info().items():
-                    log.error("   %-20s: %s", k, v)
+                print_nested_dict(csce.get_info(), prefix="   ", print_fn=log.error)
             return None
         finally:
             if image!=csc_image:
