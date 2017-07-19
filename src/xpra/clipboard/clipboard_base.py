@@ -527,6 +527,7 @@ class ClipboardProxy(gtk.Invisible):
         return info
 
     def cleanup(self):
+        self._enabled = False
         self.cancel_emit_token()
         if self._can_receive and not self._have_token and STORE_ON_EXIT:
             self._clipboard.store()
