@@ -529,7 +529,7 @@ PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 gtk2_ignored_tokens=[("-l%s" % x) for x in 
                      ["fontconfig", "freetype", "cairo",
                       "atk-1.0", "pangoft2-1.0", "pango-1.0", "pangocairo-1.0",
-                      "gio-2.0", "glib-2.0", "gdk_pixbuf-2.0"]]
+                      "gio-2.0", "gdk_pixbuf-2.0"]]
 
 GCC_VERSION = []
 def get_gcc_version():

@@ -55,6 +55,13 @@ cdef extern from "pygtk-2.0/pygobject.h":
     cGObject * pygobject_get(object box)
     object pygobject_new(cGObject * contents)
 
+    ctypedef void* gpointer
+    ctypedef int GType
+    ctypedef struct PyGBoxed:
+        #PyObject_HEAD
+        gpointer boxed
+        GType gtype
+
 cdef cGObject * unwrap(box, pyclass) except? NULL:
     # Extract a raw GObject* from a PyGObject wrapper.
     assert issubclass(pyclass, gobject.GObject)
@@ -74,6 +81,13 @@ cdef cGObject * unwrap(box, pyclass) except? NULL:
 cdef object wrap(cGObject * contents):
     # Put a raw GObject* into a PyGObject wrapper.
     return pygobject_new(contents)
+
+cdef extern from "glib/gmem.h":
+    #void g_free(gpointer mem)
+    ctypedef unsigned long gsize
+    gpointer g_malloc(gsize n_bytes)
+
+
 
 ###################################
 # Raw Xlib and GDK
@@ -387,6 +401,20 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
     Atom gdk_x11_get_xatom_by_name(char *atom_name)
     GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
 
+
+cdef extern from "gtk-2.0/gtk/gtkselection.h":
+    ctypedef int gint
+    ctypedef unsigned char guchar
+    ctypedef struct GtkSelectionData:
+        GdkAtom       selection
+        GdkAtom       target
+        GdkAtom       type
+        gint          format
+        guchar        *data
+        gint          length
+        cGdkDisplay   *display
+
+
 # Basic utilities:
 
 cdef int get_xwindow(pywindow):
@@ -412,7 +440,9 @@ cpdef get_display_for(obj):
         return obj
     elif isinstance(obj, (gdk.Drawable,
                           gtk.Widget,
-                          gtk.Clipboard)):
+                          gtk.Clipboard,
+                          gtk.SelectionData,
+                          )):
         return obj.get_display()
     else:
         raise TypeError("Don't know how to get a display from %r" % (obj,))
@@ -435,6 +465,35 @@ cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
 
 
+cdef void * pyg_boxed_get(v):
+    cdef PyGBoxed * pygboxed = <PyGBoxed *> v
+    return <void *> pygboxed.boxed
+
+def sanitize_gtkselectiondata(obj):
+    log("get_gtkselectiondata(%s) type=%s", obj, type(obj))
+    cdef GtkSelectionData * selectiondata = <GtkSelectionData *> pyg_boxed_get(obj)
+    if selectiondata==NULL:
+        return
+    log("selectiondata: selection=%s, target=%s, type=%#x, format=%#x, length=%#x, data=%#x",
+        selectiondata.selection, selectiondata.target, selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
+    cdef GdkAtom gdkatom
+    cdef gpointer data
+    cdef char* c
+    if selectiondata.length==-1 and selectiondata.data==NULL:
+        log.warn("Warning: sanitizing NULL gtk selection data to avoid crash")
+        xatom = get_xatom("STRING")
+        gdkatom = get_gdkatom(obj, xatom)
+        data = g_malloc(16)
+        assert data!=NULL
+        c = <char *> data
+        for i in range(16):
+            c[i] = 0
+        selectiondata.length = 0
+        selectiondata.format = 8
+        selectiondata.type = gdkatom
+        selectiondata.data = <guchar*> data
+
+
 def get_xatom(str_or_xatom):
     """Returns the X atom corresponding to the given Python string or Python
     integer (assumed to already be an X atom)."""
@@ -452,17 +511,21 @@ def get_xatom(str_or_xatom):
         return  0
     return gdk_x11_get_xatom_by_name(str_or_xatom)
 
-cpdef get_pyatom(display_source, xatom):
+cdef GdkAtom get_gdkatom(display_source, xatom):
     if long(xatom) > long(2) ** 32:
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
-        return  None
+        return GDK_NONE
     cdef cGdkDisplay * disp
     cdef GdkAtom gdk_atom
     disp = get_raw_display_for(display_source)
     gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
+    return gdk_atom
+
+cpdef get_pyatom(display_source, xatom):
+    gdk_atom = get_gdkatom(display_source, xatom)
     if gdk_atom==GDK_NONE:
-        return  None
+        return GDK_NONE
     return str(PyGdkAtom_New(gdk_atom))
 
 

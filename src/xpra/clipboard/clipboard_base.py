@@ -77,6 +77,12 @@ def nesting_check():
     return True
 
 
+#may get overriden
+def nosanitize_gtkselectiondata(selectiondata):
+    return selectiondata
+sanitize_gtkselectiondata = nosanitize_gtkselectiondata
+
+
 def must_discard(target):
     return any(x for x in DISCARD_TARGETS if x.match(target))
 
@@ -121,6 +127,7 @@ class ClipboardProtocolHelperBase(object):
                 "can-send"      : self.can_send,
                 "can-receive"   : self.can_receive,
                 "want_targets"  : self._want_targets,
+                "sanitize-gtkselectiondata" : sanitize_gtkselectiondata!=nosanitize_gtkselectiondata,
                 }
         for clipboard, proxy in self._clipboard_proxies.items():
             info[clipboard] = proxy.get_info()
@@ -771,6 +778,8 @@ class ClipboardProxy(gtk.Invisible):
             return
         def unpack(clipboard, selection_data, user_data):
             log("unpack %s: %s", clipboard, type(selection_data))
+            global sanitize_gtkselectiondata
+            selection_data = sanitize_gtkselectiondata(selection_data)
             if selection_data is None:
                 cb(None, None, None)
                 return
