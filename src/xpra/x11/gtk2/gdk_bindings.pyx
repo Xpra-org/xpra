@@ -20,6 +20,9 @@ log = Logger("x11", "bindings", "gtk")
 verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
+from libc.stdint cimport uintptr_t
+
+
 ###################################
 # Headers, python magic
 ###################################
