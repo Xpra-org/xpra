@@ -29,6 +29,8 @@ class XpraClient(GTKXpraClient):
         Gtk.main()
 
     def make_hello(self):
+        #see http://xpra.org/trac/ticket/640#comment:43
+        log.error("this client is fundamentally broken - do not use")
         capabilities = GTKXpraClient.make_hello(self)
         capabilities["encoding.supports_delta"] = [x for x in ("rgb24", "rgb32") if x in self.get_core_encodings()]
         return capabilities
