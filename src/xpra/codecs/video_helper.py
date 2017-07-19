@@ -444,7 +444,6 @@ def main():
         vh = getVideoHelper()
         vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
         vh.init()
-        log.info("VideoHelper.get_info():")
         info = vh.get_info()
         print_nested_dict(info)
 
