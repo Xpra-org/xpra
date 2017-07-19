@@ -2113,30 +2113,14 @@ cdef class Encoder:
             target_quality = 100
         self.quality = quality
         log("set_encoding_quality(%s) target quality=%s", quality, target_quality)
-        new_pixel_format = self.get_target_pixel_format(target_quality)
-        new_lossless = self.get_target_lossless(new_pixel_format, target_quality)
-        if new_pixel_format==self.pixel_format and new_lossless==self.lossless:
-            log("set_encoding_quality(%s) keeping current: %s / %s", quality, self.pixel_format, self.lossless)
-            return
-        cdef double start = monotonic_time()
-        memset(&reconfigure_params, 0, sizeof(NV_ENC_RECONFIGURE_PARAMS))
-        reconfigure_params.version = NV_ENC_RECONFIGURE_PARAMS_VER
-        try:
-            self.init_params(self.codec, &reconfigure_params.reInitEncodeParams)
-            reconfigure_params.resetEncoder = 1
-            reconfigure_params.forceIDR = 1
-            with nogil:
-                r =self.functionList.nvEncReconfigureEncoder(self.context, &reconfigure_params)
-            raiseNVENC(r, "reconfiguring encoder")
-        finally:
-            if reconfigure_params.reInitEncodeParams.encodeConfig!=NULL:
-                free(reconfigure_params.reInitEncodeParams.encodeConfig)
-        cdef double end = monotonic_time()
-        log("set_encoding_quality(%s) reconfigured from %s / %s to: %s / %s (took %ims)", quality, self.pixel_format, bool(self.lossless), new_pixel_format, new_lossless, int(1000*(end-start)))
-        self.pixel_format = new_pixel_format
-        self.lossless = new_lossless
-
-
+        #code removed:
+        #new_pixel_format = self.get_target_pixel_format(target_quality)
+        #etc...
+        #we can't switch pixel format,
+        #because we would need to free the buffers and re-allocate new ones
+        #best to just tear down the encoder context and create a new one
+        return
+        
     def update_bitrate(self):
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
         #speed=0   -> 1Mbit/s
