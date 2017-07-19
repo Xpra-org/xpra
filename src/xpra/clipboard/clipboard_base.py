@@ -64,8 +64,6 @@ TEXT_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 def nosanitize_gtkselectiondata(selectiondata):
     return selectiondata
 sanitize_gtkselectiondata = nosanitize_gtkselectiondata
-                    log.error("invalid regular expression '%s' in clipboard filter")
-        self._clipboard_request_counter = 0
 
 
 class ClipboardProtocolHelperBase(object):
@@ -83,6 +81,7 @@ class ClipboardProtocolHelperBase(object):
                     self.filter_res.append(re.compile(x))
                 except:
                     log.error("invalid regular expression '%s' in clipboard filter")
+        self._clipboard_request_counter = 0
 
 
 #may get overriden
