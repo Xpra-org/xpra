@@ -11,7 +11,7 @@ log = Logger("encoder", "nvenc")
 from xpra.util import pver, print_nested_dict, engs, envbool
 
 
-MAX_TESTED = 375
+MAX_TESTED = 384
 
 def get_nvml_driver_version():
     try:
