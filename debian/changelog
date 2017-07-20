@@ -27,10 +27,15 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix DPI miscalculation in case of platform API error
   * fix handling of shadow server screen resizing
   * fix window geometry feature flag wrongly removed
+  * fix missing window filter for raise packets
+  * fix command error when stopping a local server via TCP or SSL
+  * fix crashes due to a GTK clipboard bug
+  * fix NVENC complete system lockups
+  * add runtime warning: the GTK3 client should not be used
   * add missing man page entries
   * use a smaller initial display size with desktop mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 16 Jul 2017 22:27:14 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 20 Jul 2017 22:03:09 +0700
 
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath

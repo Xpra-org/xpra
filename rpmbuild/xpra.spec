@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Sun Jul 16 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Thu Jul 20 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root
 - fix packet handling errors with AES encryption enabled
@@ -630,6 +630,11 @@ fi
 - fix DPI miscalculation in case of platform API error
 - fix handling of shadow server screen resizing
 - fix window geometry feature flag wrongly removed
+- fix missing window filter for raise packets
+- fix command error when stopping a local server via TCP or SSL
+- fix crashes due to a GTK clipboard bug
+- fix NVENC complete system lockups
+- add runtime warning: the GTK3 client should not be used
 - add missing man page entries
 - use a smaller initial display size with desktop mode
 
