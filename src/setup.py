@@ -967,6 +967,10 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
             if WIN32 and ext!=".pxi":
                 #on win32, the build creates ".pyd" files, clean those too:
                 CLEAN_FILES.append(p+".pyd")
+                #when building with python3, we need to clean files named like:
+                #"xpra/codecs/csc_libyuv/colorspace_converter-cpython-36m.dll"
+                filename = os.path.join(os.getcwd(), p.replace("/", os.path.sep)+"*.dll")
+                CLEAN_FILES += glob.glob(filename)
     if 'clean' in sys.argv:
         CLEAN_FILES.append("xpra/build_info.py")
     for x in CLEAN_FILES:
