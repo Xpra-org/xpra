@@ -10,7 +10,7 @@ glib = import_glib()
 
 from xpra.util import CLIENT_EXIT, iround, envbool
 from xpra.os_util import bytestostr, OSX
-from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem
+from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem, MESSAGE_QUESTION, BUTTONS_NONE
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
@@ -1144,8 +1144,8 @@ class GTKTrayMenuBase(object):
 
     def make_shutdownmenuitem(self):
         def ask_shutdown_confirm(*args):
-            dialog = gtk.MessageDialog (None, 0, gtk.MESSAGE_QUESTION,
-                                    gtk.BUTTONS_NONE,
+            dialog = gtk.MessageDialog (None, 0, MESSAGE_QUESTION,
+                                    BUTTONS_NONE,
                                     "Shutting down this session may cause data loss,\nare you sure you want to proceed?")
             dialog.add_button(gtk.STOCK_CANCEL, 0)
             SHUTDOWN = 1
