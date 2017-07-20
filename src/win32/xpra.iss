@@ -28,7 +28,7 @@ Name: {app}; Flags: uninsalwaysuninstall;
 
 [Files]
 Source: dist\*; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
-Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs onlyifdoesntexist uninsneveruninstall; AfterInstall: PostInstall()
+Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; AfterInstall: PostInstall()
 
 [Icons]
 Name: "{group}\Xpra"; Filename: {app}\Xpra-Launcher.exe; WorkingDir: {app}
