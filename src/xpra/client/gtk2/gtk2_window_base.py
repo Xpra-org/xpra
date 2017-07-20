@@ -139,7 +139,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         flags = gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_HIGHLIGHT
         actions = gdk.ACTION_COPY   # | gdk.ACTION_LINK
         self.drag_dest_set(flags, targets, actions)
-        self.connect('drag_drop', self.drag_drop_cb)  
+        self.connect('drag_drop', self.drag_drop_cb)
         self.connect('drag_motion', self.drag_motion_cb)
         self.connect('drag_data_received', self.drag_got_data_cb)
 

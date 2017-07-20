@@ -48,7 +48,7 @@ class TransparentWindow(gtk.Window):
         # Draw the background
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.paint()
-    
+
         # Draw a circle
         (width, height) = widget.get_size()
         cr.set_source_rgba(1.0, 0.2, 0.2, 0.6)
@@ -57,7 +57,7 @@ class TransparentWindow(gtk.Window):
             radius = float(width)/2 - 0.8
         else:
             radius = float(height)/2 - 0.8
-    
+
         cr.arc(float(width)/2, float(height)/2, radius, 0, 2.0*3.14)
         cr.fill()
         cr.stroke()

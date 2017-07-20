@@ -735,7 +735,6 @@ class X11ServerBase(GTKServerBase):
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
 
     def _move_pointer(self, wid, pos, deviceid, *args):
-        #args = 
         #(this is called within an xswallow context)
         screen_no = self.get_screen_number(wid)
         device = self.pointer_device

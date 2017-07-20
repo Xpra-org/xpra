@@ -411,7 +411,7 @@ cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE cap
     create.eTrackingType = NVFBC_TRACKING_SCREEN
     create.dwOutputId = 0
     #create.captureBox.x = ...
-    #create.frameSize.w = 
+    #create.frameSize.w =
     create.bWithCursor = <NVFBC_BOOL> False
     create.bDisableAutoModesetRecovery = <NVFBC_BOOL> False
     cdef NVFBCSTATUS ret = function_list.nvFBCCreateCaptureSession(context, &create)

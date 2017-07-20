@@ -110,7 +110,7 @@ cdef extern from "X11/extensions/XInput2.h":
     int XIKeyClass
     int XIValuatorClass
     int XIScrollClass
-    int XITouchClass   
+    int XITouchClass
 
     int XIAllDevices
     int XIAllMasterDevices

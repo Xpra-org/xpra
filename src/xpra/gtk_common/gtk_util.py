@@ -55,7 +55,7 @@ def get_gtk_version_info():
             av("pygtk", "n/a")
             V("pixbuf",     Pixbuf,     "PIXBUF_VERSION")
             try:
-                v = [getattr(gtk, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]                
+                v = [getattr(gtk, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]
                 av("gtk", ".".join(str(x) for x in v))
             except:
                 pass

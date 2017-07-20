@@ -20,7 +20,7 @@ DEF SD_LISTEN_FDS_START=3
 cdef extern from "systemd/sd-daemon.h":
     int sd_listen_fds(int unset_environment);
     int sd_listen_fds_with_names(int unset_environment, char ***names);
-    
+
     int sd_is_fifo(int fd, const char *path)
     int sd_is_special(int fd, const char *path)
     int sd_is_socket(int fd, int family, int type, int listening)

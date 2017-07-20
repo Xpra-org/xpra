@@ -53,7 +53,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._focused = False
         self.border = border
         self.cursor_data = None
-        self.default_cursor_data = default_cursor_data 
+        self.default_cursor_data = default_cursor_data
         self.max_window_size = max_window_size
         self.button_state = {}
         self.pixel_depth = pixel_depth      #0 for default

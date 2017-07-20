@@ -2288,7 +2288,7 @@ class ServerBase(ServerCore):
 
     def get_http_scripts(self):
         scripts = ServerCore.get_http_scripts(self)
-        scripts["/audio.mp3"] = self.http_audio_mp3_request 
+        scripts["/audio.mp3"] = self.http_audio_mp3_request
         return scripts
 
     def http_audio_mp3_request(self, handler):

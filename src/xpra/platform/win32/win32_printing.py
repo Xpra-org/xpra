@@ -64,7 +64,7 @@ class DEVMODE(Structure):
 		("dmSize",			WORD),
 		("dmDriverExtra",	WORD),
 		("dmFields",		DWORD),	
-		] 
+		]
 LPDEVMODE = POINTER(DEVMODE)
 
 class PRINTER_INFO_1(Structure):

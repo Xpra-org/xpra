@@ -707,18 +707,18 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t displayPOCSyntax       #[in]: Specifies the display POC syntax This is required to be set if client is handling the picture type decision.
         uint32_t refPicFlag             #[in]: Set to 1 for a reference picture. This is ignored if NV_ENC_INITIALIZE_PARAMS::enablePTD is set to 1.
         uint32_t temporalId             #[in]: Specifies the temporal id of the picture
-        uint32_t forceIntraRefreshWithFrameCnt  #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt. 
-                                        #When outputRecoveryPointSEI is set this is value is used for recovery_frame_cnt in recovery point SEI message 
+        uint32_t forceIntraRefreshWithFrameCnt  #[in]: Forces an intra refresh with duration equal to intraRefreshFrameCnt.
+                                        #When outputRecoveryPointSEI is set this is value is used for recovery_frame_cnt in recovery point SEI message
                                         #forceIntraRefreshWithFrameCnt cannot be used if B frames are used in the GOP structure specified
-        uint32_t constrainedFrame       #[in]: Set to 1 if client wants to encode this frame with each slice completely independent of other slices in the frame. 
+        uint32_t constrainedFrame       #[in]: Set to 1 if client wants to encode this frame with each slice completely independent of other slices in the frame
                                         #NV_ENC_INITIALIZE_PARAMS::enableConstrainedEncoding should be set to 1
         uint32_t sliceModeDataUpdate    #[in]: Set to 1 if client wants to change the sliceModeData field to specify new sliceSize Parameter
                                         #When forceIntraRefreshWithFrameCnt is set it will have priority over sliceMode setting
         uint32_t ltrMarkFrame           #[in]: Set to 1 if client wants to mark this frame as LTR
         uint32_t ltrUseFrames           #[in]: Set to 1 if client allows encoding this frame using the LTR frames specified in ltrFrameBitmap
         uint32_t reservedBitFields      #[in]: Reserved bit fields and must be set to 0
-        uint8_t* sliceTypeData          #[in]: Array which specifies the slice type used to force intra slice for a particular slice. Currently supported only for NV_ENC_CONFIG_H264::sliceMode == 3. 
-                                        #Client should allocate array of size sliceModeData where sliceModeData is specified in field of ::_NV_ENC_CONFIG_H264 
+        uint8_t* sliceTypeData          #[in]: Array which specifies the slice type used to force intra slice for a particular slice. Currently supported only for NV_ENC_CONFIG_H264::sliceMode == 3.
+                                        #Client should allocate array of size sliceModeData where sliceModeData is specified in field of ::_NV_ENC_CONFIG_H264
                                         #Array element with index n corresponds to nth slice. To force a particular slice to intra client should set corresponding array element to NV_ENC_SLICE_TYPE_I
                                         #all other array elements should be set to NV_ENC_SLICE_TYPE_DEFAULT
         uint32_t sliceTypeArrayCnt      #[in]: Client should set this to the number of elements allocated in sliceTypeData array. If sliceTypeData is NULL then this should be set to 0
@@ -1694,7 +1694,7 @@ cdef class Encoder:
             max_input_stride = MAX(2560, self.input_width)*4
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
             log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
-            #CUDA 
+            #CUDA
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
             log("max_block_sizes=%s", self.max_block_sizes)
@@ -2120,7 +2120,7 @@ cdef class Encoder:
         #because we would need to free the buffers and re-allocate new ones
         #best to just tear down the encoder context and create a new one
         return
-        
+
     def update_bitrate(self):
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
         #speed=0   -> 1Mbit/s

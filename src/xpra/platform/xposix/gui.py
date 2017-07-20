@@ -595,7 +595,7 @@ class XI2_Window(object):
             return
         if client.server_input_devices=="xi":
             #skip synthetic scroll events for two-finger scroll,
-            #as the server should synthesize them from the motion events 
+            #as the server should synthesize them from the motion events
             #those have the same serial:
             matching_motion = self.XI2.find_event("XI_Motion", event.serial)
             #maybe we need more to distinguish?

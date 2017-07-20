@@ -98,7 +98,7 @@ def exec_database_sql_script(cursor_cb, filename, *sqlargs):
         log.error("Error: database access problem:")
         log.error(" %s", e)
         return 1
-    
+
 
 def create(filename):
     if os.path.exists(filename):

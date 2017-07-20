@@ -247,7 +247,7 @@ class TestAuth(unittest.TestCase):
 		if not POSIX or OSX:
 			#can't be used!
 			return
-		#no connection supplied: 
+		#no connection supplied:
 		pc = self._init_auth("peercred", {})
 		assert pc.requires_challenge()
 		assert not pc.authenticate("", "")

@@ -399,7 +399,7 @@ class Popen(subprocess.Popen):
             """Execute program (MS Windows version)"""
             commandline = (args if isinstance(args, types.StringTypes) else
                            subprocess.list2cmdline(args))
-            self._common_execute_child(executable, commandline, shell, 
+            self._common_execute_child(executable, commandline, shell,
                     close_fds, creationflags, env, cwd,
                     startupinfo, p2cread, c2pwrite, errwrite, to_close)
     else:
@@ -412,7 +412,7 @@ class Popen(subprocess.Popen):
             assert not pass_fds, "pass_fds not supported on Windows."
             commandline = (args if isinstance(args, str) else
                            subprocess.list2cmdline(args))
-            self._common_execute_child(executable, commandline, shell, 
+            self._common_execute_child(executable, commandline, shell,
                     close_fds, creationflags, env, cwd,
                     startupinfo, p2cread, c2pwrite, errwrite)
 
@@ -493,7 +493,7 @@ class Popen(subprocess.Popen):
                     break
             else:
                 raise RuntimeError('cannot start the main thread')
-        # The thread's previous suspend count was 0 or 1, 
+        # The thread's previous suspend count was 0 or 1,
         # so it should be running now.
         self._child_started = True
         hThread.Close()

@@ -208,7 +208,7 @@ class ApplicationWindow:
                     self.mdns_gui.present()
             mdns_button = self.image_button("", "Browse Sessions", icon_pixbuf, mdns)
             hbox.pack_start(mdns_button, expand=False, fill=False)
-            
+
         # Title
         label = gtk.Label("Connect to xpra server")
         label.modify_font(pango.FontDescription("sans 14"))
