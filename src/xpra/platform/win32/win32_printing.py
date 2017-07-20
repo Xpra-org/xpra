@@ -63,7 +63,7 @@ class DEVMODE(Structure):
 		("dmDriverVersion",	WORD),
 		("dmSize",			WORD),
 		("dmDriverExtra",	WORD),
-		("dmFields",		DWORD),	
+		("dmFields",		DWORD),
 		]
 LPDEVMODE = POINTER(DEVMODE)
 
