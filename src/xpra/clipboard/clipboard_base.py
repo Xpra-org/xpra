@@ -82,13 +82,6 @@ class ClipboardProtocolHelperBase(object):
                 except:
                     log.error("invalid regular expression '%s' in clipboard filter")
         self._clipboard_request_counter = 0
-
-
-#may get overriden
-def nosanitize_gtkselectiondata(selectiondata):
-    return selectiondata
-sanitize_gtkselectiondata = nosanitize_gtkselectiondata
-        self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self._want_targets = False
         self.init_packet_handlers()
