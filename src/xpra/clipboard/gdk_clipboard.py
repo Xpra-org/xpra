@@ -13,13 +13,14 @@ from xpra.gtk_common.gdk_atoms import (
 
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
 
-
-try:
-    from xpra.x11.gtk2.gdk_bindings import sanitize_gtkselectiondata
-    from xpra.clipboard import clipboard_base
-    clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
-except ImportError as e:
-    log.error("Error: sanitize_gtkselectiondata not found: %s", e)
+from xpra.os_util import WIN32, OSX
+if not WIN32 and not OSX:
+    try:
+        from xpra.x11.gtk2.gdk_bindings import sanitize_gtkselectiondata
+        from xpra.clipboard import clipboard_base
+        clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
+    except ImportError as e:
+        log.error("Error: sanitize_gtkselectiondata not found: %s", e)
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
