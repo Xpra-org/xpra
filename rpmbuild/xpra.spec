@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.6
+%define version 1.0.7
 %if ! %{defined build_no}
 %define build_no 0
 %endif
