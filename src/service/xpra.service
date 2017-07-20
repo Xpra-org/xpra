@@ -1,7 +1,7 @@
 [Unit]
 Description=Xpra System Server
 Wants=avahi-daemon.socket
-Documentation=https://xpra.org/trac/wiki/ProxyServer man:xpra
+Documentation=https://xpra.org/trac/wiki/Service man:xpra
 After=network.target xpra.socket
 Requires=xpra.socket
 
