@@ -244,12 +244,13 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 log.warn(" keycode %s points to %i modifiers: %s", keycode, len(mods), csv(list(mods)))
                 log.warn(" from definition: %s", estr(entries))
                 for mod in mods:
-                    emod = [entry for entry in entries if modifiers_for([entry])]
+                    emod = [entry for entry in entries if mod in modifiers_for([entry])]
                     log.warn(" %s: %s", mod, estr(emod))
                 #keep just the first one:
                 mods = list(mods)[:1]
-                entries = [entry for entry in entries if mods[0] in modifiers_for([entry])]
-                log.warn(" keeping: %s for %s", estr(entries), mods[0])
+                mod = mods[0]
+                entries = [entry for entry in entries if mod in modifiers_for([entry])]
+                log.warn(" keeping: %s for %s", estr(entries), mod)
             #now remove entries for keysyms we don't have:
             f_entries = set([(keysym, index) for keysym, index in entries if keysym and X11Keyboard.parse_keysym(keysym) is not None])
             for keysym, _ in entries:
