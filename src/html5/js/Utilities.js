@@ -338,6 +338,13 @@ var Utilities = {
 	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 	},
 
+	monotonicTime : function() {
+		if (performance) {
+			return performance.now()*1000.0;
+		}
+		return Date().now();
+	},
+
 	StringToUint8 : function(str) {
 		var u8a = new Uint8Array(str.length);
 		for(var i=0,j=str.length;i<j;++i){

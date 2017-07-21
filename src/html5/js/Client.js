@@ -560,7 +560,7 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 	 * This function may ssend the new detected keyboard layout.
 	 * (ignoring the keyboard_layout preference)
 	 */
-	var now = new Date().getTime();
+	var now = Utilities.monotonicTime();
 	if (now<this.browser_language_change_embargo_time) {
 		return;
 	}
@@ -865,7 +865,7 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 
 XpraClient.prototype._send_ping = function() {
 	var me = this;
-	var now_ms = Date.now();
+	var now_ms = Math.ceil(Utilities.monotonicTime());
 	this.send(["ping", now_ms]);
 	// add timeout to wait for ping timout
 	this.ping_timeout_timer = setTimeout(function () {
@@ -1958,7 +1958,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
         return;
     }
 
-    var start = new Date().getTime(),
+    var start = Utilities.monotonicTime(),
 		wid = packet[1],
 		x = packet[2],
 		y = packet[3],
@@ -1992,7 +1992,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 					ctx.request_redraw(win);
 				}
 				else {
-					decode_time = new Date().getTime() - start;
+					decode_time = Math.round(Utilities.monotonicTime() - start);
 				}
 				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
 				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, error || "");

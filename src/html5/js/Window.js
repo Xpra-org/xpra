@@ -37,7 +37,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.offscreen_canvas_mode = null;
 	this._init_2d_canvas();
 	this.paint_queue = [];
-	this.paint_pending = false;
+	this.paint_pending = 0;
 
 	//enclosing div in page DOM
 	this.div = jQuery("#" + String(wid));
@@ -1149,10 +1149,12 @@ XpraWindow.prototype.paint = function paint() {
  */
 XpraWindow.prototype.may_paint_now = function paint() {
 	this._debug("may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
-	while (!this.paint_pending && this.paint_queue.length>0) {
-		this.paint_pending = true;
+	var now = Utilities.monotonicTime();
+	while ((this.paint_pending==0 || (now-this.paint_pending)>=2000) && this.paint_queue.length>0) {
+		this.paint_pending = now;
 		var item = this.paint_queue.shift();
 		this.do_paint.apply(this, item);
+		now = Utilities.monotonicTime();
 	}
 }
 
@@ -1192,7 +1194,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	}
 
 	function painted(skip_box) {
-		me.paint_pending = false;
+		me.paint_pending = 0;
 		decode_callback(me.client);
 		if (me.debug && !skip_box) {
 			var color = DEFAULT_BOX_COLORS[coding] || "white";
@@ -1203,7 +1205,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 
 	function paint_error(e) {
 		me.error("error painting", coding, e);
-		me.paint_pending = false;
+		me.paint_pending = 0;
 		decode_callback(me.client, ""+e);
 		me.may_paint_now();
 	}
