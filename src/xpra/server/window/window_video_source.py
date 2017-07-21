@@ -1453,7 +1453,7 @@ class WindowVideoSource(WindowSource):
         x, y, w, h = image.get_geometry()[:4]
         if x+y>ww or y+h>wh:
             #window may have been resized
-            raw_scroll, non_scroll = [], {0 : h}
+            raw_scroll, non_scroll = {}, {0 : h}
         else:
             raw_scroll, non_scroll = scroll_data.get_scroll_values()
             assert raw_scroll, "failed to detect scroll values"
