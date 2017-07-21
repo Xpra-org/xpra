@@ -39,7 +39,7 @@ cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", False)
+cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", True)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
