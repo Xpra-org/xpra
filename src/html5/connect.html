@@ -411,6 +411,7 @@ $(document).ready(function() {
 		var action = $(this).val();
 		set_exit_actions(action=="connect");
 	});
+	set_exit_actions(action=="connect" || action=="")
 	$('input:radio[value="'+action+'"]').click();
 
 	var encoding = getparam("encoding") || "auto";
