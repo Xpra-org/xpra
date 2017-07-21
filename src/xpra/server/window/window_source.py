@@ -1225,17 +1225,17 @@ class WindowSource(object):
             #this is a different region
             return False
         #ouch: same region!
+        now = monotonic_time()
         options     = delayed[3]
-        elapsed = int(1000.0 * (monotonic_time() - region_time))
+        elapsed = int(1000.0 * (now - region_time))
         log.warn("Warning: delayed region timeout")
         log.warn(" region is %i seconds old, will retry - bad connection?", elapsed/1000)
         dap = dict(self.statistics.damage_ack_pending)
         if dap:
             log.warn(" %i late responses:", len(dap))
-            now = monotonic_time()
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
-                log.warn(" %4i %s: %is", seq, ack_data[1], now-ack_data[3])
+                log.warn(" %6i %s: %3is", seq, ack_data[1], now-ack_data[3])
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
