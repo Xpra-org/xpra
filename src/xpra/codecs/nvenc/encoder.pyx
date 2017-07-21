@@ -1707,7 +1707,7 @@ cdef class Encoder:
             self.kernel = None
             self.cudaInputBuffer = None
             self.inputPitch = self.outputPitch
-            self.max_block_sizes =0
+            self.max_block_sizes = 0
             self.max_grid_sizes = 0
             self.max_threads_per_block = 0
 
@@ -1824,7 +1824,7 @@ cdef class Encoder:
                 #config.rcParams.initialRCQP.qpInterB = qpmin
 
             if self.pixel_format=="BGRX":
-                chromaFormatIDC = 0
+                chromaFormatIDC = 3
             elif self.pixel_format=="NV12":
                 chromaFormatIDC = 1
             elif self.pixel_format=="YUV444P":
@@ -2174,7 +2174,7 @@ cdef class Encoder:
     cdef do_compress_image(self, image, options={}):
         cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
-        log("compress_image(%s, %s)", image, options)
+        log("compress_image(%s, %s) kernel_name=%s", image, options)
         assert self.context!=NULL, "context is not initialized"
         w = image.get_width()
         h = image.get_height()
@@ -2189,22 +2189,28 @@ cdef class Encoder:
 
         cdef unsigned long input_size
         if self.kernel:
-            stride = self.copy_image(image, self.inputBuffer, self.inputPitch)
+            stride = self.copy_image(image, self.inputBuffer, self.inputPitch, False)
             driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
             self.exec_kernel(w, h, stride)
             input_size = self.inputPitch * self.input_height
         else:
             #go direct to the CUDA "output" buffer:
-            self.copy_image(image, self.inputBuffer, self.outputPitch)
+            self.copy_image(image, self.inputBuffer, self.inputPitch, True)
             driver.memcpy_htod(self.cudaOutputBuffer, self.inputBuffer)
             input_size = self.outputPitch * self.encoder_height
         self.bytes_in += input_size
-        return self.nvenc_compress(input_size, image.get_timestamp())
 
-    cdef unsigned int copy_image(self, image, target_buffer, unsigned int target_stride) except -1:
+        cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
+        assert mappedResource!=NULL
+        try:
+            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp())
+        finally:
+            self.unmap_input_resource(mappedResource)
+
+    cdef unsigned int copy_image(self, image, target_buffer, unsigned int target_stride, int strict_stride) except -1:
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned int h = image.get_height()
-        cdef unsigned int i, stride
+        cdef unsigned int i, stride, min_stride
         pixels = image.get_pixels()
         assert pixels is not None, "failed to get pixels from %s" % image
         #copy to input buffer:
@@ -2217,7 +2223,7 @@ cdef class Encoder:
             buf = target_buffer.data
         cdef double start = monotonic_time()
         cdef unsigned long pix_len = len(pixels)
-        if image_stride<=target_stride:
+        if image_stride<=target_stride and not strict_stride:
             stride = image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
             log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(target_buffer), len(target_buffer))
@@ -2231,10 +2237,11 @@ cdef class Encoder:
             #before uploading to the device... this is probably costly!
             stride = target_stride
             log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i)", stride*h, type(pixels), type(target_buffer), stride, image_stride)
+            min_stride = min(stride, image_stride)
             for i in range(h):
                 x = i*stride
                 y = i*image_stride
-                buf[x:x+stride] = pixels[y:y+stride]
+                buf[x:x+min_stride] = pixels[y:y+min_stride]
         cdef double end = monotonic_time()
         log("copy_image: %i bytes uploaded in %ims", pix_len, int(1000*(end-start)))
         return stride
@@ -2280,12 +2287,9 @@ cdef class Encoder:
         cdef double end = monotonic_time()
         log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (end - start)*1000.0)
 
-    cdef nvenc_compress(self, int input_size, timestamp=0):
+    cdef NV_ENC_INPUT_PTR map_input_resource(self):
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
-        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
-        assert input_size>0, "invalid input size %i" % input_size
         #map buffer so nvenc can access it:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
         mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER
@@ -2299,89 +2303,95 @@ cdef class Encoder:
         cdef NV_ENC_INPUT_PTR mappedResource = mapInputResource.mappedResource
         if DEBUG_API:
             log("compress_image(..) device buffer mapped to %#x", <uintptr_t> mappedResource)
-        assert mappedResource!=NULL
+        return mappedResource
+
+    cdef unmap_input_resource(self, NV_ENC_INPUT_PTR mappedResource):
+        if DEBUG_API:
+            log("nvEncUnmapInputResource(%#x)", <uintptr_t> mappedResource)
+        cdef int r
+        with nogil:
+            r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
+        raiseNVENC(r, "unmapping input resource")
+
+    cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0):
+        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
+        assert input_size>0, "invalid input size %i" % input_size
 
         cdef double start = monotonic_time()
-        cdef double encode_end
-        try:
-            if DEBUG_API:
-                log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
-            memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
-            picParams.version = NV_ENC_PIC_PARAMS_VER
-            picParams.bufferFmt = self.bufferFmt
-            picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
-            picParams.inputWidth = self.encoder_width
-            picParams.inputHeight = self.encoder_height
-            picParams.inputPitch = self.outputPitch
-            picParams.inputBuffer = mappedResource
-            picParams.outputBitstream = self.bitstreamBuffer
-            #picParams.pictureType: required when enablePTD is disabled
-            if self.frames==0:
-                #only the first frame needs to be IDR (as we never lose frames)
-                picParams.pictureType = NV_ENC_PIC_TYPE_IDR
-                picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
-            else:
-                picParams.pictureType = NV_ENC_PIC_TYPE_P
-            if self.encoding=="h264":
-                picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
-                picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-                #this causes crashes with Pascal (ie GTX-1070):
-                #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-                #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
-            else:
-                picParams.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
-                picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
-            picParams.frameIdx = self.frames
-            picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
-            #inputDuration = 0      #FIXME: use frame delay?
-            #picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
-            #picParams.rcParams.enableMinQP = 1
-            #picParams.rcParams.enableMaxQP = 1
-            #0=max quality, 63 lowest quality
-            #qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
-            #qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
-            #picParams.rcParams.minQP.qpInterB = qmin
-            #picParams.rcParams.minQP.qpInterP = qmin
-            #picParams.rcParams.minQP.qpIntra = qmin
-            #picParams.rcParams.maxQP.qpInterB = qmax
-            #picParams.rcParams.maxQP.qpInterP = qmax
-            #picParams.rcParams.maxQP.qpIntra = qmax
-            #picParams.rcParams.averageBitRate = self.target_bitrate
-            #picParams.rcParams.maxBitRate = self.max_bitrate
+        if DEBUG_API:
+            log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
+        memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
+        picParams.version = NV_ENC_PIC_PARAMS_VER
+        picParams.bufferFmt = self.bufferFmt
+        picParams.pictureStruct = NV_ENC_PIC_STRUCT_FRAME
+        picParams.inputWidth = self.encoder_width
+        picParams.inputHeight = self.encoder_height
+        picParams.inputPitch = self.outputPitch
+        picParams.inputBuffer = input
+        picParams.outputBitstream = self.bitstreamBuffer
+        #picParams.pictureType: required when enablePTD is disabled
+        if self.frames==0:
+            #only the first frame needs to be IDR (as we never lose frames)
+            picParams.pictureType = NV_ENC_PIC_TYPE_IDR
+            picParams.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+        else:
+            picParams.pictureType = NV_ENC_PIC_TYPE_P
+        if self.encoding=="h264":
+            picParams.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
+            picParams.codecPicParams.h264PicParams.refPicFlag = self.frames==0
+            #this causes crashes with Pascal (ie GTX-1070):
+            #picParams.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
+            #picParams.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
+        else:
+            picParams.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
+            picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
+        picParams.frameIdx = self.frames
+        picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
+        #inputDuration = 0      #FIXME: use frame delay?
+        #picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+        #picParams.rcParams.enableMinQP = 1
+        #picParams.rcParams.enableMaxQP = 1
+        #0=max quality, 63 lowest quality
+        #qmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality+20)/100))
+        #qmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality-20)/100))
+        #picParams.rcParams.minQP.qpInterB = qmin
+        #picParams.rcParams.minQP.qpInterP = qmin
+        #picParams.rcParams.minQP.qpIntra = qmin
+        #picParams.rcParams.maxQP.qpInterB = qmax
+        #picParams.rcParams.maxQP.qpInterP = qmax
+        #picParams.rcParams.maxQP.qpIntra = qmax
+        #picParams.rcParams.averageBitRate = self.target_bitrate
+        #picParams.rcParams.maxBitRate = self.max_bitrate
 
-            with nogil:
-                r = self.functionList.nvEncEncodePicture(self.context, &picParams)
-            raiseNVENC(r, "error during picture encoding")
-            encode_end = monotonic_time()
-            log("compress_image(..) encoded in %.1f ms", (encode_end-start)*1000.0)
+        with nogil:
+            r = self.functionList.nvEncEncodePicture(self.context, &picParams)
+        raiseNVENC(r, "error during picture encoding")
+        cdef double encode_end = monotonic_time()
+        log("compress_image(..) encoded in %.1f ms", (encode_end-start)*1000.0)
 
-            memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
-            #lock output buffer:
-            lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
-            lockOutputBuffer.doNotWait = 0
-            lockOutputBuffer.outputBitstream = self.bitstreamBuffer
-            if DEBUG_API:
-                log("nvEncLockBitstream(%#x) bitstreamBuffer=%#x", <uintptr_t> &lockOutputBuffer, <uintptr_t> self.bitstreamBuffer)
+        memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
+        #lock output buffer:
+        lockOutputBuffer.version = NV_ENC_LOCK_BITSTREAM_VER
+        lockOutputBuffer.doNotWait = 0
+        lockOutputBuffer.outputBitstream = self.bitstreamBuffer
+        if DEBUG_API:
+            log("nvEncLockBitstream(%#x) bitstreamBuffer=%#x", <uintptr_t> &lockOutputBuffer, <uintptr_t> self.bitstreamBuffer)
+        with nogil:
+            r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
+        raiseNVENC(r, "locking output buffer")
+        assert lockOutputBuffer.bitstreamBufferPtr!=NULL
+        #copy to python buffer:
+        size = lockOutputBuffer.bitstreamSizeInBytes
+        self.bytes_out += size
+        data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
+        if DEBUG_API:
+            log("nvEncUnlockBitstream(%#x)", <uintptr_t> self.bitstreamBuffer)
+        if lockOutputBuffer.bitstreamBufferPtr!=NULL:
             with nogil:
-                r = self.functionList.nvEncLockBitstream(self.context, &lockOutputBuffer)
-            raiseNVENC(r, "locking output buffer")
-            assert lockOutputBuffer.bitstreamBufferPtr!=NULL
-            #copy to python buffer:
-            size = lockOutputBuffer.bitstreamSizeInBytes
-            self.bytes_out += size
-            data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
-            if DEBUG_API:
-                log("nvEncUnlockBitstream(%#x)", <uintptr_t> self.bitstreamBuffer)
-            if lockOutputBuffer.bitstreamBufferPtr!=NULL:
-                with nogil:
-                    r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
-            raiseNVENC(r, "unlocking output buffer")
-        finally:
-            if DEBUG_API:
-                log("nvEncUnmapInputResource(%#x)", <uintptr_t> self.bitstreamBuffer)
-            with nogil:
-                r = self.functionList.nvEncUnmapInputResource(self.context, mapInputResource.mappedResource)
-            raiseNVENC(r, "unmapping input resource")
+                r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
+        raiseNVENC(r, "unlocking output buffer")
 
         cdef double download_end = monotonic_time()
         log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
