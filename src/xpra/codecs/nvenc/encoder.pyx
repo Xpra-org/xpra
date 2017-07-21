@@ -1626,7 +1626,7 @@ cdef class Encoder:
                                      "device" : {
                                                  "name"         : d.name(),
                                                  "pci_bus_id"   : d.pci_bus_id(),
-                                                 "memory"       : int(d.total_memory()/1024/1024),
+                                                 "memory"       : int(d.total_memory()//1024//1024),
                                                  },
                                      "api_version" : self.cuda_context.get_api_version(),
                                      }
@@ -2844,6 +2844,6 @@ def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     if full:
         from xpra.codecs.codec_checks import get_encoder_max_sizes
-        from xpra.codecs.nvenc7 import encoder
+        from xpra.codecs.nvenc import encoder
         init_module()
         log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))
