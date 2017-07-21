@@ -1201,122 +1201,143 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		me.may_paint_now();
 	}
 
-	if (coding=="rgb32") {
-		this._non_video_paint(coding);
-		var img = this.offscreen_canvas_ctx.createImageData(width, height);
-		//show("options="+(options).toSource());
-		if (options!=null && options["zlib"]>0) {
-			//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
-			var inflated = new Zlib.Inflate(img_data).decompress();
-			//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
-			img_data = inflated;
-		} else if (options!=null && options["lz4"]>0) {
-			// in future we need to make sure that we use typed arrays everywhere...
-			if(img_data.subarray) {
-				var d = img_data.subarray(0, 4);
-			} else {
-				var d = img_data.slice(0, 4);
-			}
-			// will always be little endian
-			var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
-			// decode the LZ4 block
-			var inflated = new Buffer(length);
-			if(img_data.subarray) {
-				var uncompressedSize = LZ4.decodeBlock(img_data.subarray(4), inflated);
-			} else {
-				var uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
-			}
-			img_data = inflated.slice(0, uncompressedSize);
-		}
-		// set the imagedata rgb32 method
-		if(img_data.length > img.data.length) {
-			this.error("data size mismatch: wanted",img.data.length,", got",img_data.length, ", stride",rowstride);
-		} else {
-			this._debug("got ", img_data.length, "to paint with stride", rowstride);
-		}
-		img.data.set(img_data);
-		this.offscreen_canvas_ctx.putImageData(img, x, y);
-		painted();
+	function paint_error(e) {
+		me.error("error painting", coding, e);
+		me.paint_pending = false;
+		decode_callback(me.client, ""+e);
+		me.may_paint_now();
 	}
-	else if (coding=="jpeg" || coding=="png") {
-		this._non_video_paint(coding);
-		var img = this.offscreen_canvas_ctx.createImageData(width, height);
-		var j = new Image();
-		j.onload = function () {
-			me.offscreen_canvas_ctx.drawImage(j, x, y);
+
+	try {
+		if (coding=="rgb32") {
+			this._non_video_paint(coding);
+			var img = this.offscreen_canvas_ctx.createImageData(width, height);
+			//show("options="+(options).toSource());
+			if (options!=null && options["zlib"]>0) {
+				//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
+				var inflated = new Zlib.Inflate(img_data).decompress();
+				//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
+				img_data = inflated;
+			} else if (options!=null && options["lz4"]>0) {
+				// in future we need to make sure that we use typed arrays everywhere...
+				if(img_data.subarray) {
+					var d = img_data.subarray(0, 4);
+				} else {
+					var d = img_data.slice(0, 4);
+				}
+				// will always be little endian
+				var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+				// decode the LZ4 block
+				var inflated = new Buffer(length);
+				if(img_data.subarray) {
+					var uncompressedSize = LZ4.decodeBlock(img_data.subarray(4), inflated);
+				} else {
+					var uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
+				}
+				img_data = inflated.slice(0, uncompressedSize);
+			}
+			// set the imagedata rgb32 method
+			if(img_data.length > img.data.length) {
+				paint_error("data size mismatch: wanted "+img.data.length+", got "+img_data.length+", stride="+rowstride);
+			}
+			else {
+				this._debug("got ", img_data.length, "to paint with stride", rowstride);
+				img.data.set(img_data);
+				this.offscreen_canvas_ctx.putImageData(img, x, y);
+				painted();
+			}
+		}
+		else if (coding=="jpeg" || coding=="png") {
+			this._non_video_paint(coding);
+			var img = this.offscreen_canvas_ctx.createImageData(width, height);
+			var j = new Image();
+			j.onload = function () {
+				if (j.width==0 || j.height==0) {
+					paint_error("invalid image size: "+j.width+"x"+j.height);
+				}
+				else {
+					me.offscreen_canvas_ctx.drawImage(j, x, y);
+					painted();
+				}
+			};
+			j.onerror = function () {
+				paint_error("failed to load into image tag");
+			}
+			j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
+		}
+		else if (coding=="h264") {
+			var frame = options["frame"] || -1;
+			if(frame==0) {
+				this._close_broadway();
+			}
+			if(!this.broadway_decoder) {
+				this._init_broadway(enc_width, enc_height, width, height);
+			}
+			this.broadway_paint_location = [x, y];
+			// we can pass a buffer full of NALs to decode() directly
+			// as long as they are framed properly with the NAL header
+			if (!Array.isArray(img_data)) {
+				img_data = Array.from(img_data);
+			}
+			this.broadway_decoder.decode(img_data);
+			// broadway decoding is synchronous:
+			// (and already painted via the onPictureDecoded callback)
 			painted();
-		};
-		j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
-	}
-	else if (coding=="h264") {
-		var frame = options["frame"] || -1;
-		if(frame==0) {
-			this._close_broadway();
 		}
-		if(!this.broadway_decoder) {
-			this._init_broadway(enc_width, enc_height, width, height);
+		else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
+			var frame = options["frame"] || -1;
+			if(frame==0) {
+				this._close_video();
+			}
+			if(!this.video) {
+				var profile = options["profile"] || "baseline";
+				var level  = options["level"] || "3.0";
+				this._init_video(width, height, coding, profile, level);
+			}
+			else {
+				//keep it above the div:
+				this.video.style.zIndex = this.div.css("z-index")+1;
+			}
+			if(img_data.length>0) {
+				this._debug("video state=", MediaSourceConstants.READY_STATE[this.video.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.video.networkState]);
+				this._debug("video paused=", this.video.paused, ", video buffers=", this.video_buffers.length);
+				this.video_buffers.push(img_data);
+				if(this.video.paused) {
+					this.video.play();
+				}
+				this._push_video_buffers();
+				//try to throttle input:
+				var delay = Math.max(10, 50*(this.video_buffers.length-25));
+				var me = this;
+				setTimeout(function() {
+					painted();
+				}, delay);
+				//this._debug("video queue: ", this.video_buffers.length);
+			}
 		}
-		this.broadway_paint_location = [x, y];
-		// we can pass a buffer full of NALs to decode() directly
-		// as long as they are framed properly with the NAL header
-		if (!Array.isArray(img_data)) {
-			img_data = Array.from(img_data);
-		}
-		this.broadway_decoder.decode(img_data);
-		// broadway decoding is synchronous:
-		// (and already painted via the onPictureDecoded callback)
-		painted();
-	}
-	else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
-		var frame = options["frame"] || -1;
-		if(frame==0) {
-			this._close_video();
-		}
-		if(!this.video) {
-			var profile = options["profile"] || "baseline";
-			var level  = options["level"] || "3.0";
-			this._init_video(width, height, coding, profile, level);
+		else if (coding=="scroll") {
+			this._non_video_paint(coding);
+			for(var i=0,j=img_data.length;i<j;++i) {
+				var scroll_data = img_data[i];
+				var sx = scroll_data[0],
+					sy = scroll_data[1],
+					sw = scroll_data[2],
+					sh = scroll_data[3],
+					xdelta = scroll_data[4],
+					ydelta = scroll_data[5];
+				this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
+				if (this.debug) {
+					paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
+				}
+			}
+			painted(true);
 		}
 		else {
-			//keep it above the div:
-			this.video.style.zIndex = this.div.css("z-index")+1;
-		}
-		if(img_data.length>0) {
-			this._debug("video state=", MediaSourceConstants.READY_STATE[this.video.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.video.networkState]);
-			this._debug("video paused=", this.video.paused, ", video buffers=", this.video_buffers.length);
-			this.video_buffers.push(img_data);
-			if(this.video.paused) {
-				this.video.play();
-			}
-			this._push_video_buffers();
-			//try to throttle input:
-			var delay = Math.max(10, 50*(this.video_buffers.length-25));
-			var me = this;
-			setTimeout(function() {
-				painted();
-			}, delay);
-			//this._debug("video queue: ", this.video_buffers.length);
+			paint_error("unsupported encoding");
 		}
 	}
-	else if (coding=="scroll") {
-		this._non_video_paint(coding);
-		for(var i=0,j=img_data.length;i<j;++i) {
-			var scroll_data = img_data[i];
-			var sx = scroll_data[0],
-				sy = scroll_data[1],
-				sw = scroll_data[2],
-				sh = scroll_data[3],
-				xdelta = scroll_data[4],
-				ydelta = scroll_data[5];
-			this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
-			if (this.debug) {
-				paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
-			}
-		}
-		painted(true);
-	}
-	else {
-		throw "unsupported coding " + coding;
+	catch (e) {
+		paint_error(e);
 	}
 };
 

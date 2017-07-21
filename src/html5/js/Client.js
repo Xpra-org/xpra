@@ -1937,6 +1937,18 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
     }
 }
 
+XpraClient.prototype.request_redraw = function(win) {
+	// request that drawing to screen takes place at next available opportunity if possible
+	if(window.requestAnimationFrame) {
+		window.requestAnimationFrame(function() {
+			win.draw();
+		});
+	} else {
+		// requestAnimationFrame is not available, draw immediately
+		win.draw();
+	}
+}
+
 XpraClient.prototype._process_draw_queue = function(packet, ctx){
     if(!packet && ctx.queue_draw_packets){
         packet = ctx.dQ.shift();
@@ -1970,28 +1982,27 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		win.paint(x, y,
 			width, height,
 			coding, data, packet_sequence, rowstride, options,
-			function (ctx) {
+			function (ctx, error) {
 				var flush = options["flush"] || 0;
 				if(flush==0) {
-					// request that drawing to screen takes place at next available opportunity if possible
-					if(window.requestAnimationFrame) {
-						window.requestAnimationFrame(function() {
-							win.draw();
-						});
-					} else {
-						// requestAnimationFrame is not available, draw immediately
-						win.draw();
-					}
+					ctx.request_redraw(win);
 				}
-				decode_time = new Date().getTime() - start;
+				if (error) {
+					decode_time = -1;
+					ctx.request_redraw(win);
+				}
+				else {
+					decode_time = new Date().getTime() - start;
+				}
 				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
-				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, "");
+				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, error || "");
 			}
 		);
 	}
 	catch(e) {
 		ctx.error('error painting', coding, e);
 		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, String(e));
+		ctx.request_redraw(win);
 	}
 }
 
