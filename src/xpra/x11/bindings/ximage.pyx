@@ -394,6 +394,14 @@ cdef class XImageWrapper(object):
     def get_gpu_buffer(self):
         return None
 
+    def has_pixels(self):
+        if self.pixels!=NULL:
+            return True
+        cdef XImage *image = self.image
+        if image==NULL:
+            return False
+        return image.data!=NULL
+
     def is_thread_safe(self):
         return self.thread_safe
 

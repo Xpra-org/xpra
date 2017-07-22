@@ -1611,7 +1611,7 @@ class WindowVideoSource(WindowSource):
 
         #don't download the pixels if we have a GPU buffer,
         #since that means we're likely to be able to compress on the GPU too with NVENC:
-        if self.supports_scrolling and not image.get_gpu_buffer():
+        if self.supports_scrolling and image.has_pixels():
             scroll_data = self.scroll_data
             if self.b_frame_flush_timer and scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
