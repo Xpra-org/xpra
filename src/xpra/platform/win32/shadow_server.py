@@ -61,7 +61,7 @@ def init_capture(pixel_depth=32):
     capture = None
     if SHADOW_NVFBC:
         try:
-            from xpra.codecs.nvfbc.fbc_capture_win32 import init_nvfbc_library
+            from xpra.codecs.nvfbc.fbc_capture_win import init_nvfbc_library
         except ImportError as e:
             log("NvFBC capture is not available", exc_info=True)
         else:
@@ -74,10 +74,10 @@ def init_capture(pixel_depth=32):
                         30  : "r210",
                         }[pixel_depth]
                     if NVFBC_CUDA:
-                        from xpra.codecs.nvfbc.fbc_capture_win32 import NvFBC_CUDACapture
+                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_CUDACapture
                         capture = NvFBC_CUDACapture()
                     else:
-                        from xpra.codecs.nvfbc.fbc_capture_win32 import NvFBC_SysCapture
+                        from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture
                         capture = NvFBC_SysCapture()
                     capture.init_context(-1, -1, pixel_format)
             except Exception as e:

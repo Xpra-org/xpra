@@ -22,7 +22,7 @@ def main():
         from xpra.util import print_nested_dict
         from xpra.os_util import WIN32, LINUX
         if WIN32:
-            from xpra.codecs.nvfbc import fbc_capture_win32 as fbc_capture      #@UnresolvedImport @UnusedImport
+            from xpra.codecs.nvfbc import fbc_capture_win as fbc_capture      #@UnresolvedImport @UnusedImport
         elif LINUX:
             from xpra.codecs.nvfbc import fbc_capture_linux as fbc_capture      #@UnresolvedImport @Reimport
         else:
