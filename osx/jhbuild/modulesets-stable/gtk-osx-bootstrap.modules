@@ -191,7 +191,7 @@
       version="7.0">
     </branch>
   </autotools>
-  
+
   <metamodule id="meta-gtk-osx-bootstrap">
     <dependencies>
       <dep package="libpng"/>

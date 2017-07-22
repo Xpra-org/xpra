@@ -124,7 +124,7 @@ VOID WINAPI SvcMain(DWORD dwArgc, LPTSTR *lpszArgv)
     }
     // These SERVICE_STATUS members remain as set here
     gSvcStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    gSvcStatus.dwServiceSpecificExitCode = 0;   
+    gSvcStatus.dwServiceSpecificExitCode = 0;
 
     // Report initial status to the SCM
     ReportSvcStatus(SERVICE_START_PENDING, NO_ERROR, 3000);
@@ -166,7 +166,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     PROCESS_INFORMATION pi;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));   
+    ZeroMemory(&pi, sizeof(pi));
 
     //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra_cmd.exe\" proxy --bind-tcp=0.0.0.0:14500";
     //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
@@ -250,7 +250,7 @@ VOID ReportSvcStatus( DWORD dwCurrentState,
     {
         gSvcStatus.dwCheckPoint = 0;
     }
-    else 
+    else
 	{
     	gSvcStatus.dwCheckPoint = dwCheckPoint++;
 	}
@@ -272,7 +272,7 @@ VOID ReportSvcStatus( DWORD dwCurrentState,
 VOID WINAPI SvcCtrlHandler( DWORD dwCtrl )
 {
    switch(dwCtrl)
-   { 
+   {
       case SERVICE_CONTROL_STOP:
          ReportSvcStatus(SERVICE_STOP_PENDING, NO_ERROR, 0);
          SetEvent(ghSvcStopEvent);

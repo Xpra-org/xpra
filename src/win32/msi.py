@@ -2,7 +2,7 @@
 
 # BATch files are useless,
 # all we want is sed,
-# but is is MSWindows so it's easier to re-invent the wheel, sigh 
+# but is is MSWindows so it's easier to re-invent the wheel, sigh
 
 import sys
 

@@ -45,7 +45,7 @@ for writing Python extension modules.
 %package -n python3-Cython
 Summary:        A language for writing Python extension modules
 Group:          Development/Tools
- 
+
 %description -n python3-Cython
 This is a development version of Pyrex, a language
 for writing Python extension modules.
@@ -60,13 +60,13 @@ rm -rf %{py3dir}
 cp -a . %{py3dir}
 find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 %endif
- 
+
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python}|'
 
 
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
- 
+
 %if %{with_python3}
 pushd %{py3dir}
 CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build

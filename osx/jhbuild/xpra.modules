@@ -65,7 +65,7 @@
   </autotools>
 
   <autotools id="perl"
-        autogen-sh="Configure" 
+        autogen-sh="Configure"
         autogen-template="%(srcdir)s/%(autogen-sh)s -Dprefix=%(prefix)s %(autogenargs)s"
         autogenargs="-des">
 	<branch module="/src/5.0/perl-5.24.0.tar.gz"
@@ -337,7 +337,7 @@
 		<dep package="gmplib"/>
 	</after>
   </autotools>
- 
+
   <!--HACK: skip-install but do make install during autogen phase instead this allows us to bypass the error with DESTDIR since it doesn't actually install anywhere -->
   <autotools id="gtk-mac-bundler"
    skip-install="True"
@@ -908,8 +908,8 @@
         </after>
   </distutils>
 
-  <autotools id="serf" 
-        autogen-sh="scons" 
+  <autotools id="serf"
+        autogen-sh="scons"
         autogen-template="%(autogen-sh)s APR=%(prefix)s APU=%(prefix)s OPENSSL=%(prefix)s PREFIX=%(prefix)s %(autogenargs)s"
         autogenargs="install"
         makeargs="-v"

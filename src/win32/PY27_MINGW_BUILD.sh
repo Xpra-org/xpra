@@ -43,7 +43,7 @@ else
 	if [ "$?" != "0" ]; then
 		#try my hard-coded default first to save time:
 		export JAVA="C:\Program Files/Java/jdk1.8.0_121/bin/java.exe"
-		if [ ! -e "${JAVA}" ]; then	
+		if [ ! -e "${JAVA}" ]; then
 			export JAVA=`find "${PROGRAMFILES}/Java" "${PROGRAMFILES}" "${PROGRAMFILES_X86}" -name "java.exe" 2> /dev/null | head -n 1`
 		fi
 	fi

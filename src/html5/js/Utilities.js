@@ -205,7 +205,7 @@ var Utilities = {
 		  else if (isChromium !== null && isChromium !== undefined && vendorName === "Google Inc." && isOpera == false && isIEedge == false) {
 			  return true;
 		  }
-		  else { 
+		  else {
 			  return false;
 		  }
 	},

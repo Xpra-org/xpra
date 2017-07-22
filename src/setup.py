@@ -526,7 +526,7 @@ def checkdirs(*dirs):
 PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 #override the pkgconfig file,
 #we don't need to link against any of these:
-gtk2_ignored_tokens=[("-l%s" % x) for x in 
+gtk2_ignored_tokens=[("-l%s" % x) for x in
                      ["fontconfig", "freetype", "cairo",
                       "atk-1.0", "pangoft2-1.0", "pango-1.0", "pangocairo-1.0",
                       "gio-2.0", "gdk_pixbuf-2.0"]]

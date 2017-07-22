@@ -1414,7 +1414,7 @@ XpraClient.prototype._remove_audio_element = function() {
 			this._debug("failed to remove audio from page:", e);
 		}
 		this.audio = null;
-	}	
+	}
 }
 
 

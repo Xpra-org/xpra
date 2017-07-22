@@ -14,7 +14,7 @@
   </autotools>
 
   <autotools id="tigervnc"
-             autogenargs="" 
+             autogenargs=""
              autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; sed -i -e 's+-lXext -lX11+-lXext -lX11 -lintl -lgettextlib -L/usr/X11/lib/+g' unix/vncviewer/Makefile">
      <branch repo="winswitch.org" module="/src/tigervnc-1.1.0.tar.gz"
              hash="md5:1a5598b4a2ac530fb51411438959e11e"
@@ -23,7 +23,7 @@
 
   <autotools id="nxcomp"
              skip-install="True"
-             autogenargs="" 
+             autogenargs=""
              autogen-template="%(srcdir)s/configure --prefix %(prefix)s --libdir %(libdir)s %(autogenargs)s &amp;&amp; curl -O -k http://winswitch.org/src/nxcomp.patch &amp;&amp; patch -p1 &lt; nxcomp.patch &amp;&amp; sed -i -e 's+-bundle+-dynamiclib+g' Makefile"
              makeargs="&amp;&amp; cp -Rvp libXcomp.so* ${JHBUILD_PREFIX}/lib/ &amp;&amp; echo ' -j 3 because jhbuild mucks with this'">
      <branch repo="winswitch.org" module="/src/nxcomp-3.5.0-2.tar.gz"
@@ -41,7 +41,7 @@
              hash="md5:488bb4d9b8e9f82dc272b4e6e9c57d30"
              version="3.5.0-1"
              checkoutdir="nxproxy">
-     </branch> 
+     </branch>
   </autotools>
 
   <distutils id="xpra">
@@ -58,7 +58,7 @@
      <branch repo="winswitch.org" module="/src/winswitch-0.12.20.src.tar.bz2"
              hash="md5:79dd00cf44ebd047f49602e147308310"
              version="0.12.20">
-     </branch> 
+     </branch>
   </autotools>
 
   <metamodule id="osx-winswitch-deps">

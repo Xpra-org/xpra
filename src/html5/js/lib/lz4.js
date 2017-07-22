@@ -322,7 +322,7 @@ var SIZES = lz4_static.SIZES
 function Decoder (options) {
 	if ( !(this instanceof Decoder) )
 		return new Decoder(options)
-	
+
 	Transform.call(this, options)
 	// Options
 	this.options = options || {}
@@ -690,7 +690,7 @@ var defaultOptions = {
 function Encoder (options) {
 	if ( !(this instanceof Encoder) )
 		return new Encoder(options)
-	
+
 	Transform.call(this, options)
 
 	// Set the options

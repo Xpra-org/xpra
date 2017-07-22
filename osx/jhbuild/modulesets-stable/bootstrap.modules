@@ -162,7 +162,7 @@
     <branch repo="ftp.gnu.org" module="bison/bison-3.0.2.tar.xz"
             version="3.0.2"/>
   </autotools>
-  
+
   <autotools id="bison2" autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="bison/bison-2.7.1.tar.xz"
             version="2.7.1"/>

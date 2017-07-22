@@ -11,7 +11,7 @@ BuildRequires:  pango-devel
 
 %description
 This is a compatibility library providing the obsolete pangox library
-that is not shipped by Pango itself anymore.  
+that is not shipped by Pango itself anymore.
 
 %package devel
 Summary: Development files for pangox-compat
