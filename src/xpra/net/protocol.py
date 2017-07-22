@@ -8,6 +8,7 @@
 
 # but it works on win32, for whatever that's worth.
 
+import os
 from socket import error as socket_error
 import binascii
 from threading import Lock, Event
@@ -17,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes
+from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -48,6 +49,8 @@ LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 4096)
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
 MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
+SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
+SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
 
 def get_digests():
@@ -253,6 +256,8 @@ class Protocol(object):
             if not self._closed:
                 self._read_thread.start()
         self.idle_add(start_network_read_thread)
+        if SEND_INVALID_PACKET:
+            self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_now(self, packet):
         if self._closed:
