@@ -61,6 +61,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.printing = false;
 	this.reconnect = true;
 	this.reconnect_count = 5;
+	this.reconnect_in_progress = false;
 	this.reconnect_delay = 1000;	//wait 1 second before retrying
 	this.reconnect_attempt = 0;
 	this.swap_keys = Utilities.isMacOS();
@@ -850,6 +851,9 @@ XpraClient.prototype._check_server_echo = function(ping_sent_time) {
 }
 
 XpraClient.prototype._check_echo_timeout = function(ping_time) {
+	if (this.reconnect_in_progress) {
+		return;
+	}
 	if(this.last_ping_echoed_time < ping_time) {
 		if (this.reconnect && this.reconnect_attempt<this.reconnect_count) {
 			this.warn("ping timeout - reconnecting");
@@ -864,6 +868,9 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 }
 
 XpraClient.prototype._send_ping = function() {
+	if (this.reconnect_in_progress) {
+		return;
+	}
 	var me = this;
 	var now_ms = Math.ceil(Utilities.monotonicTime());
 	this.send(["ping", now_ms]);
@@ -1440,6 +1447,9 @@ XpraClient.prototype._process_open = function(packet, ctx) {
 
 XpraClient.prototype._process_error = function(packet, ctx) {
 	console.error("websocket error: ", packet[1], "reason: ", ctx.disconnect_reason);
+	if (ctx.reconnect_in_progress) {
+		return;
+	}
 	if (!ctx.disconnect_reason && packet[1]) {
 		ctx.disconnect_reason = packet[1];
 	}
@@ -1453,23 +1463,32 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 
 XpraClient.prototype.do_reconnect = function() {
 	//try again:
+	this.reconnect_in_progress = true;
 	var me = this;
 	setTimeout(function(){
-		me.close_windows();
-		me.close_audio();
-		me.clear_timers();
-		me.init_state();
-		if (me.protocol) {
-			me.open_protocol();
+		try {
+			me.close_windows();
+			me.close_audio();
+			me.clear_timers();
+			me.init_state();
+			if (me.protocol) {
+				me.open_protocol();
+			}
+			else {
+				me.connect();
+			}
 		}
-		else {
-			me.connect();
+		finally {
+			me.reconnect_in_progress = false;
 		}
 	}, this.reconnect_delay);
 }
 
 XpraClient.prototype._process_close = function(packet, ctx) {
-	console.log("websocket closed: ", packet[1], "reason: ", ctx.disconnect_reason, "reconnect: ", ctx.reconnect, ", reconnect attempt: ", ctx.reconnect_attempt);
+	console.log("websocket closed: ", packet[1], "reason: ", ctx.disconnect_reason, ", reconnect: ", ctx.reconnect, ", reconnect attempt: ", ctx.reconnect_attempt);
+	if (ctx.reconnect_in_progress) {
+		return;
+	}
 	if (!ctx.disconnect_reason && packet[1]) {
 		ctx.disconnect_reason = packet[1];
 	}
@@ -1491,6 +1510,9 @@ XpraClient.prototype._process_disconnect = function(packet, ctx) {
 	// save the disconnect reason
 	var reason = packet[1];
 	ctx._debug("disconnect reason:", reason);
+	if (ctx.reconnect_in_progress) {
+		return;
+	}	
 	ctx.disconnect_reason = reason;
 	ctx.close();
 	// call the client's close callback
