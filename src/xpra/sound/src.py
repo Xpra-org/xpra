@@ -85,7 +85,7 @@ class SoundSource(SoundPipeline):
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
         pipeline_els = [source_str]
-        log.info("has plugin(timestamp)=%s", has_plugins("timestamp"))
+        log("has plugin(timestamp)=%s", has_plugins("timestamp"))
         if has_plugins("timestamp"):
             pipeline_els.append("timestamp name=timestamp")
         if SOURCE_QUEUE_TIME>0:
