@@ -632,7 +632,7 @@ cdef class NvFBC_CUDACapture:
 
     def init_context(self, int width=-1, int height=-1, pixel_format="BGRX"):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
-        if pixel_format not in ("BGRA", "r210"):
+        if pixel_format not in ("BGRX", "r210"):
             raise Exception("unsupported pixel format '%s'" % pixel_format)
         self.pixel_format = pixel_format
         #CUDA init:
