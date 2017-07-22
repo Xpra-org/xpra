@@ -566,7 +566,7 @@ def get_default_source():
             else:
                 return "pulsesrc"
     except ImportError as e:
-        log("get_default_sink() no pulsesink: %s", e)
+        log("get_default_source() no pulsesrc: %s", e)
     for source in sources:
         if has_plugins(source):
             return source
