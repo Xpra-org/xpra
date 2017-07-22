@@ -2174,10 +2174,12 @@ cdef class Encoder:
     cdef do_compress_image(self, image, options={}):
         cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
-        log("compress_image(%s, %s) kernel_name=%s", image, options, self.kernel_name)
         assert self.context!=NULL, "context is not initialized"
         w = image.get_width()
         h = image.get_height()
+        gpu_buffer = image.get_gpu_buffer()
+        stride = image.get_rowstride()
+        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%s", image, options, self.kernel_name, gpu_buffer)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
@@ -2189,15 +2191,24 @@ cdef class Encoder:
 
         cdef unsigned long input_size
         if self.kernel:
-            stride = self.copy_image(image, self.inputBuffer, self.inputPitch, False)
-            driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
+            #copy to input buffer, CUDA kernel converts into output buffer:
+            if gpu_buffer and stride<=self.inputPitch:
+                driver.memcpy_dtod(self.cudaInputBuffer, int(gpu_buffer), stride*h)
+                log("GPU memcopy from %s to %s", gpu_buffer, self.cudaInputBuffer)
+            else:
+                stride = self.copy_image(image, self.inputBuffer, self.inputPitch, False)
+                driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
             self.exec_kernel(w, h, stride)
             input_size = self.inputPitch * self.input_height
         else:
             #go direct to the CUDA "output" buffer:
-            self.copy_image(image, self.inputBuffer, self.inputPitch, True)
-            driver.memcpy_htod(self.cudaOutputBuffer, self.inputBuffer)
-            input_size = self.outputPitch * self.encoder_height
+            if gpu_buffer and stride<=self.outputPitch:
+                driver.memcpy_dtod(self.cudaOutputBuffer, int(gpu_buffer), stride*h)
+                log("GPU memcopy from %s to %s", gpu_buffer, self.cudaOutputBuffer)
+            else:
+                stride = self.copy_image(image, self.inputBuffer, self.inputPitch, True)
+                driver.memcpy_htod(self.cudaOutputBuffer, self.inputBuffer)
+            input_size = stride * self.encoder_height
         self.bytes_in += input_size
 
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()

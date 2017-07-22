@@ -777,6 +777,9 @@ class CUDAImageWrapper(ImageWrapper):
         self.may_download()
         return True
 
+    def get_gpu_buffer(self):
+        return self.cuda_device_buffer
+
     def get_pixels(self):
         self.may_download()
         return ImageWrapper.get_pixels(self)

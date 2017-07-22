@@ -86,6 +86,9 @@ class ImageWrapper(object):
     def get_palette(self):
         return self.palette
 
+    def get_gpu_buffer(self):
+        return None
+
     def is_thread_safe(self):
         """ if True, free() and clone_pixel_data() can be called from any thread,
             if False, free() and clone_pixel_data() must be called from the same thread.

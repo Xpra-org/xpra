@@ -391,6 +391,9 @@ cdef class XImageWrapper(object):
             log.warn("get_pixels_ptr: image.data is NULL!")
         return image.data
 
+    def get_gpu_buffer(self):
+        return None
+
     def is_thread_safe(self):
         return self.thread_safe
 

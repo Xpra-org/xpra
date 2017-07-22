@@ -1609,7 +1609,9 @@ class WindowVideoSource(WindowSource):
             videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
-        if self.supports_scrolling:
+        #don't download the pixels if we have a GPU buffer,
+        #since that means we're likely to be able to compress on the GPU too with NVENC:
+        if self.supports_scrolling and not image.get_gpu_buffer():
             scroll_data = self.scroll_data
             if self.b_frame_flush_timer and scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
