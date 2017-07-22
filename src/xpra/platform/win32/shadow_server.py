@@ -289,7 +289,7 @@ class ShadowServer(GTKShadowServerBase):
                                  })
 
     def init(self, opts):
-        self.pixel_depth = int(opts.pixel_depth)
+        self.pixel_depth = int(opts.pixel_depth) or 32
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         GTKShadowServerBase.init(self, opts)

@@ -21,7 +21,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.platform.win32.common import (
     GetDesktopWindow, GetWindowDC, ReleaseDC, DeleteDC,
     CreateCompatibleDC, CreateCompatibleBitmap,
-    GetBitmapBits, SelectObject,
+    GetBitmapBits, SelectObject, DeleteObject,
     BitBlt, GetDeviceCaps,
     GetSystemPaletteEntries)
 
@@ -78,7 +78,7 @@ class GDICapture(object):
 
     def __init__(self):
         self.metrics = None
-        self.dc, self.memdc, self.bitmap = None, None, None
+        self.wnd, self.dc, self.memdc, self.bitmap = None, None, None, None
         self.bit_depth = 32
         self.bitblt_err_time = 0
         self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
@@ -95,10 +95,16 @@ class GDICapture(object):
     def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
+        bitmap = self.bitmap
+        if bitmap:
+            self.bitmap = None
+            DeleteObject(bitmap)
         dc = self.dc
-        if dc:
+        wnd = self.wnd
+        if dc and wnd:
             self.dc = None
-            ReleaseDC(dc)
+            self.wnd = None
+            ReleaseDC(wnd, dc)
         memdc = self.memdc
         if memdc:
             self.memdc = None
@@ -106,12 +112,11 @@ class GDICapture(object):
 
     def get_image(self, x=0, y=0, width=0, height=0):
         start = time.time()
-        desktop_wnd = GetDesktopWindow()
         metrics = get_virtualscreenmetrics()
         if self.metrics is None or self.metrics!=metrics:
             #new metrics, start from scratch:
             self.metrics = metrics
-            self.dc, self.memdc, self.bitmap = None, None, None
+            self.clean()
         dx, dy, dw, dh = metrics
         if width==0:
             width = dw
@@ -129,8 +134,9 @@ class GDICapture(object):
         if height>dh:
             height = dh
         if not self.dc:
-            self.dc = GetWindowDC(desktop_wnd)
-            assert self.dc, "failed to get a drawing context from the desktop window %s" % desktop_wnd
+            self.wnd = GetDesktopWindow()
+            self.dc = GetWindowDC(self.wnd)
+            assert self.dc, "failed to get a drawing context from the desktop window %s" % self.wnd
             self.bit_depth = GetDeviceCaps(self.dc, win32con.BITSPIXEL)
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
