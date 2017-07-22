@@ -2208,6 +2208,7 @@ cdef class Encoder:
             self.unmap_input_resource(mappedResource)
 
     cdef unsigned int copy_image(self, image, target_buffer, unsigned int target_stride, int strict_stride) except -1:
+        log("copy_image(%s, %s, %i, %i)", image, target_buffer, target_stride, strict_stride)
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned int h = image.get_height()
         cdef unsigned int i, stride, min_stride
@@ -2222,28 +2223,32 @@ cdef class Encoder:
             #this is a numpy.ndarray type:
             buf = target_buffer.data
         cdef double start = monotonic_time()
+        cdef unsigned long copy_len
         cdef unsigned long pix_len = len(pixels)
+        assert pix_len>=(h*image_stride), "image pixel buffer is too small: expected at least %ix%i=%i bytes but got %i bytes" % (h, image_stride, h*image_stride, pix_len)
         if image_stride<=target_stride and not strict_stride:
             stride = image_stride
+            copy_len = h*image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
             log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(target_buffer), len(target_buffer))
             if PYTHON3 and isinstance(pixels, bytearray):
                 tmp = numpy.frombuffer(pixels, numpy.int8)
-                buf[:pix_len] = tmp
+                buf[:copy_len] = tmp[:copy_len]
             else:
-                buf[:pix_len] = pixels
+                buf[:copy_len] = pixels[:copy_len]
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
             stride = target_stride
             log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i)", stride*h, type(pixels), type(target_buffer), stride, image_stride)
             min_stride = min(stride, image_stride)
+            copy_len = min_stride * h
             for i in range(h):
                 x = i*stride
                 y = i*image_stride
                 buf[x:x+min_stride] = pixels[y:y+min_stride]
         cdef double end = monotonic_time()
-        log("copy_image: %i bytes uploaded in %ims", pix_len, int(1000*(end-start)))
+        log("copy_image: %i bytes uploaded in %ims", copy_len, int(1000*(end-start)))
         return stride
 
     cdef exec_kernel(self, unsigned int w, unsigned int h, unsigned int stride):
