@@ -683,6 +683,7 @@ cdef class NvFBC_CUDACapture:
         cdef double start = monotonic_time()
         #allocate CUDA device memory:
         if not self.cuda_device_buffer:
+            #TODO: choose a better size
             self.cuda_device_buffer = driver.mem_alloc(self.max_buffer_size)
             log("max_buffer_size=%#x, cuda device buffer=%s", self.max_buffer_size, self.cuda_device_buffer)
         #cuda_device_buffer, stride = self.cuda_device.mem_alloc_pitch(4096, 2160, 16)
@@ -759,10 +760,12 @@ class CUDAImageWrapper(ImageWrapper):
         #size = self.rowstride*self.height*len(self.pixel_format)
         self.cuda_context.push()
         size = self.buffer_size
+        #TODO: download just pixel_len bytes, not the whole buffer... (which may be quite a lot bigger)
         host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
         driver.memcpy_dtoh(host_buffer, self.cuda_device_buffer)
         elapsed = monotonic_time()-start
-        self.pixels = host_buffer.tostring()
+        pixel_len = self.rowstride*self.height
+        self.pixels = host_buffer[:pixel_len].tobytes()
         self.downloaded = True
         elapsed = monotonic_time()-start
         log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, size, int(1000*elapsed), size/elapsed/1024/1024)
