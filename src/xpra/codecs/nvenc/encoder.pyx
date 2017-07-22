@@ -39,7 +39,7 @@ cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", True)
+cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", not WIN32)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
@@ -2174,7 +2174,7 @@ cdef class Encoder:
     cdef do_compress_image(self, image, options={}):
         cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
-        log("compress_image(%s, %s) kernel_name=%s", image, options)
+        log("compress_image(%s, %s) kernel_name=%s", image, options, self.kernel_name)
         assert self.context!=NULL, "context is not initialized"
         w = image.get_width()
         h = image.get_height()
