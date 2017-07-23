@@ -687,13 +687,18 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if strict_ENABLED:
         if os.environ.get("CC", "").find("clang")>=0:
             #clang emits too many warnings with cython code,
-            #so we can't enable Werror
+            #so we can't enable Werror without turning off some warnings:
+            #this list of flags should allow clang to build the whole source tree,
+            #as of Cython 0.26 + clang 4.0. Other version combinations may require
+            #(un)commenting other switches.
             eifd = ["-Werror",
-                    "-Wno-unneeded-internal-declaration",
-                    "-Wno-unknown-attributes",
-                    "-Wno-unused-function",
-                    "-Wno-self-assign",
-                    "-Wno-sometimes-uninitialized"]
+                    #"-Wno-unneeded-internal-declaration",
+                    #"-Wno-unknown-attributes",
+                    #"-Wno-unused-function",
+                    #"-Wno-self-assign",
+                    #"-Wno-sometimes-uninitialized",
+                    "-Wno-unused-command-line-argument",    #cython adds rpath to the compilation command??
+                    ]
         elif get_gcc_version()>=[4, 4]:
             eifd = ["-Werror",
                     #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
@@ -723,7 +728,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         if get_gcc_version()>=[4, 8]:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
-    if rpath:
+    if rpath and kw.get("libraries"):
         insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
     #add_to_keywords(kw, 'include_dirs', '.')
