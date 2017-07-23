@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #ensures we only load GTK2:
-from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source
+from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source        #@UnresolvedImport
 init_gdk_display_source()
 from xpra.x11.x11_server_base import X11ServerBase
 
@@ -26,39 +26,31 @@ geomlog = Logger("geometry")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
+USE_NVFBC = envbool("XPRA_NVFBC", True)
+USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
+if USE_NVFBC:
+    try:
+        from xpra.codecs.nvfbc.fbc_capture_linux import init_module, NvFBC_SysCapture, NvFBC_CUDACapture    #@UnresolvedImport
+        init_module()
+    except Exception:
+        log("NvFBC Capture is not available", exc_info=True)
+        USE_NVFBC = False
 
 
-class GTKX11RootWindowModel(GTKRootWindowModel):
 
-    def __init__(self, root_window):
-        GTKRootWindowModel.__init__(self, root_window)
-        screen = root_window.get_screen()
-        screen.connect("size-changed", self._screen_size_changed)
-        self.xshm = None
+class XImageCapture(object):
+    def __init__(self):
+        pass
 
-    def __repr__(self):
-        return "GTKX11RootWindowModel(%#x)" % get_xwindow(self.window)
-
-    def suspend(self):
-        #we can cleanup the current xshm area and we'll create a new one later
+    def clean(self):
         self.close_xshm()
-
-    def cleanup(self):
-        self.close_xshm()
-        GTKRootWindowModel.cleanup(self)
 
     def close_xshm(self):
+        xshm = self.xshm
         if self.xshm:
-            with xsync:
-                self.xshm.cleanup()
             self.xshm = None
-
-    def get_geometry(self):
-        #used by get_window_info only
-        return self.window.get_size()
-
-    def _screen_size_changed(self, screen):
-        self.close_xshm()
+            with xsync:
+                xshm.cleanup()
 
     def get_image(self, x, y, width, height, logger=None):
         try:
@@ -88,6 +80,52 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         finally:
             end = monotonic_time()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
+
+
+class GTKX11RootWindowModel(GTKRootWindowModel):
+
+    def __init__(self, root_window):
+        GTKRootWindowModel.__init__(self, root_window)
+        screen = root_window.get_screen()
+        screen.connect("size-changed", self._screen_size_changed)
+        self.capture = None
+
+    def __repr__(self):
+        return "GTKX11RootWindowModel(%#x)" % get_xwindow(self.window)
+
+    def suspend(self):
+        self.close_capture()
+
+    def cleanup(self):
+        self.close_capture()
+        GTKRootWindowModel.cleanup(self)
+
+    def close_capture(self):
+        capture = self.capture
+        if self.capture:
+            self.capture = None
+            capture.clean()
+
+    def get_geometry(self):
+        #used by get_window_info only
+        return self.window.get_size()
+
+    def _screen_size_changed(self, screen):
+        self.close_capture()
+
+    def get_image(self, x, y, width, height, logger=None):
+        if not self.capture:
+            ww, wh = self.get_geometry()
+            if USE_NVFBC:
+                if USE_NVFBC_CUDA:
+                    self.capture = NvFBC_CUDACapture()
+                else:
+                    self.capture = NvFBC_SysCapture()
+                self.capture.init_context(ww, wh)
+            else:
+                self.capture = XImageCapture()
+            log.info("capture=%s", self.capture)
+        return self.capture.get_image(x, y, width, height)
 
 
 #FIXME: warning: this class inherits from ServerBase twice..

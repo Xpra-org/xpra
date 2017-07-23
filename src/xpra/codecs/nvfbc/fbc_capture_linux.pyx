@@ -35,6 +35,7 @@ DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
 
 ctypedef unsigned long DWORD
 ctypedef int BOOL
+ctypedef unsigned int CUdeviceptr
 
 cdef extern from "string.h":
     void* memset(void * ptr, int value, size_t num)
@@ -200,14 +201,6 @@ cdef extern from "NvFBC.h":
     NVFBC_TOGL_FLAGS NVFBC_TOGL_GRAB_FLAGS_NOFLAGS  #Default, capturing waits for a new frame or mouse move
     NVFBC_TOGL_FLAGS NVFBC_TOGL_GRAB_FLAGS_NOWAIT   #Capturing does not wait for a new frame nor a mouse move
     NVFBC_TOGL_FLAGS NVFBC_TOGL_GRAB_FLAGS_FORCE_REFRESH    #[in] Forces the destination buffer to be refreshed even if the frame has not changed since previous capture.
-
-    ctypedef struct NVFBC_TOGL_SETUP_PARAMS:
-        uint32_t dwVersion                  #[in] Must be set to NVFBC_TOGL_SETUP_PARAMS_VER
-        NVFBC_BUFFER_FORMAT eBufferFormat   #[in] Desired buffer format
-        NVFBC_BOOL bWithDiffMap             #[in] Whether differential maps should be generated
-        void **ppDiffMap                    #[out] Pointer to a pointer to a buffer in system memory
-        uint32_t dwDiffMapScalingFactor     #[in] Scaling factor of the differential maps
-    uint32_t NVFBC_TOGL_SETUP_PARAMS_VER
 
     DEF NVFBC_TOGL_TEXTURES_MAX = 2
     ctypedef struct NVFBC_TOGL_SETUP_PARAMS:
@@ -403,7 +396,7 @@ cdef close_context(NVFBC_SESSION_HANDLE context):
     cdef NVFBCSTATUS ret = function_list.nvFBCDestroyHandle(context, &params)
     raiseNvFBC(context, ret, "NvFBCDestroyHandle")
 
-cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE capture_type):
+cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE capture_type, w=0, h=0):
     cdef NVFBC_CREATE_CAPTURE_SESSION_PARAMS create
     memset(&create, 0, sizeof(NVFBC_CREATE_CAPTURE_SESSION_PARAMS))
     create.dwVersion = NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER
@@ -411,7 +404,9 @@ cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE cap
     create.eTrackingType = NVFBC_TRACKING_SCREEN
     create.dwOutputId = 0
     #create.captureBox.x = ...
-    #create.frameSize.w =
+    if w>0 and h>0:
+        create.frameSize.w = w
+        create.frameSize.h = h
     create.bWithCursor = <NVFBC_BOOL> False
     create.bDisableAutoModesetRecovery = <NVFBC_BOOL> False
     cdef NVFBCSTATUS ret = function_list.nvFBCCreateCaptureSession(context, &create)
@@ -488,6 +483,7 @@ cdef class NvFBC_SysCapture:
         params.ppDiffMap = NULL
         params.dwDiffMapScalingFactor = 1
         ret = function_list.nvFBCToSysSetUp(self.context, &params)
+        log("nvFBCToSysSetUp()=%i", ret)
         self.raiseNvFBC(ret, "NvFBCToSysSetUp")
 
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
@@ -549,7 +545,7 @@ cdef class NvFBC_CUDACapture:
     cdef NVFBC_SESSION_HANDLE context
     cdef uint8_t setup
     cdef object pixel_format
-    cdef int max_buffer_size
+    cdef uint32_t buffer_size
     cdef int cuda_device_id
     cdef object cuda_device
     cdef object cuda_context
@@ -574,19 +570,21 @@ cdef class NvFBC_CUDACapture:
         self.cuda_context.push()
         self.context = create_context()
         get_context_status(self.context)
+        create_capture_session(self.context, NVFBC_CAPTURE_SHARED_CUDA)
         cdef NVFBC_TOCUDA_SETUP_PARAMS params
         memset(&params, 0, sizeof(NVFBC_TOCUDA_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOCUDA_SETUP_PARAMS_VER
         if pixel_format in ("BGRX", "BGRA"):
-            params.eFormat = NVFBC_BUFFER_FORMAT_ARGB
+            params.eBufferFormat = NVFBC_BUFFER_FORMAT_ARGB
         elif pixel_format=="YUV420P":
-            params.eFormat = NVFBC_BUFFER_FORMAT_YUV420P
+            params.eBufferFormat = NVFBC_BUFFER_FORMAT_YUV420P
         elif pixel_format=="YUV444P":
-            params.eFormat = NVFBC_BUFFER_FORMAT_YUV444P
+            params.eBufferFormat = NVFBC_BUFFER_FORMAT_YUV444P
         else:
             raise Exception("invalid pixel format %s" % pixel_format)
-        cdef NVFBCSTATUS res = <NVFBCSTATUS> 0    #self.context.NvFBCCudaSetup(&params)
+        cdef NVFBCSTATUS res = <NVFBCSTATUS> function_list.nvFBCToCudaSetUp(self.context, &params)
         self.raiseNvFBC(res, "NvFBCCudaSetup")
+        log("nvFBCToCudaSetUp()=%i", res)
         self.setup = True
 
     def raiseNvFBC(self, NVFBCSTATUS ret, msg):
@@ -608,39 +606,44 @@ cdef class NvFBC_CUDACapture:
 
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
+        #self.cuda_context.push()
         cdef double start = monotonic_time()
-        #allocate CUDA device memory:
-        if not self.cuda_device_buffer:
-            self.cuda_device_buffer = driver.mem_alloc(self.max_buffer_size)
-            log("max_buffer_size=%#x, cuda device buffer=%s", self.max_buffer_size, self.cuda_device_buffer)
-        #cuda_device_buffer, stride = self.cuda_device.mem_alloc_pitch(4096, 2160, 16)
+        cdef CUdeviceptr cuDevicePtr = 0
         cdef NVFBC_FRAME_GRAB_INFO grab_info
         memset(&grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         cdef NVFBC_TOCUDA_GRAB_FRAME_PARAMS grab
         memset(&grab, 0, sizeof(NVFBC_TOCUDA_GRAB_FRAME_PARAMS))
         grab.dwVersion = NVFBC_TOCUDA_GRAB_FRAME_PARAMS_VER
-        ptr = <uintptr_t> int(self.cuda_device_buffer)
-        grab.pCUDADeviceBuffer = <void*> ptr
+        grab.pCUDADeviceBuffer = &cuDevicePtr
         grab.pFrameGrabInfo = &grab_info
         grab.dwFlags = NVFBC_TOCUDA_GRAB_FLAGS_NOWAIT
         cdef NVFBCSTATUS res
         with nogil:
-            res = <NVFBCSTATUS> 0 #self.context.NvFBCCudaGrabFrame(&grab)
+            res = function_list.nvFBCToCudaGrabFrame(self.context, &grab)
         log("NvFBCCudaGrabFrame(%#x)=%i", <uintptr_t> &grab, res)
+        log("cuDevicePtr=%#x", <uintptr_t> cuDevicePtr)
         if res<0:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
         info = get_frame_grab_info(&grab_info)
         cdef double end = monotonic_time()
-        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwBufferWidth, int((end-start)*1000))
+        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwWidth, int((end-start)*1000))
         log("NvFBCCudaGrabFrame: info=%s", info)
-        #or when closing the context
+        #allocate CUDA device memory:
+        if not self.cuda_device_buffer or self.buffer_size!=grab_info.dwByteSize:
+            self.buffer_size = grab_info.dwByteSize
+            self.cuda_device_buffer = driver.mem_alloc(self.buffer_size)
+            log("buffer_size=%#x, cuda device buffer=%s", self.buffer_size, self.cuda_device_buffer)
+        #copy to the buffer we own:
+        log("memcpy_dtod(%#x, %#x, %#x)", int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
+        driver.memcpy_dtod(int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
+        #self.cuda_context.pop()
         Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
+        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwWidth*Bpp), Bpp)
         image.cuda_device_buffer = self.cuda_device_buffer
         image.cuda_context = self.cuda_context
-        image.buffer_size = self.max_buffer_size
+        image.buffer_size = self.buffer_size
         return image
 
     def clean(self):                        #@DuplicatedSignature
