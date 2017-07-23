@@ -316,7 +316,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 
 class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
-    def __init__(self, plugin, options, codec, volume, element_options):
+    def __init__(self, plugin, codec, volume, element_options):
         sound_subprocess_wrapper.__init__(self, "sound output")
         self.large_packets = ["add_data"]
         self.codec = codec
@@ -326,12 +326,7 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
     def add_data(self, data, metadata={}, packet_metadata=()):
         if DEBUG_SOUND:
             log("add_data(%s bytes, %s, %s) forwarding to %s", len(data), metadata, len(packet_metadata), self.protocol)
-        #theoretically, the sound process could be a different version,
-        #so don't add the extra packet_metadata argument unless we know we actually want it:
-        if packet_metadata:
-            self.send("add_data", data, dict(metadata), packet_metadata)
-        else:
-            self.send("add_data", data, dict(metadata))
+        self.send("add_data", data, dict(metadata), packet_metadata)
 
     def __repr__(self):
         try:
@@ -364,7 +359,7 @@ def start_sending_sound(plugins, sound_source_plugin, device, codec, volume, wan
 def start_receiving_sound(codec):
     log("start_receiving_sound(%s)", codec)
     try:
-        return sink_subprocess_wrapper(None, {}, codec, 1.0, {})
+        return sink_subprocess_wrapper(None, codec, 1.0, {})
     except:
         log.error("failed to start sound sink", exc_info=True)
         return None
