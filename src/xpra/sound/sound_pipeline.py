@@ -11,9 +11,8 @@ gstlog = Logger("gstreamer")
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
 MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
-from xpra.sound.gstreamer_util import gst_version       #must be done after import_gst()
 
-from xpra.util import csv, envint
+from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import one_arg_signal, gobject
@@ -65,12 +64,6 @@ class SoundPipeline(gobject.GObject):
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
-        if gst_version[0]<1:
-            #Gst 0.10: can handle both TAG and ELEMENT:
-            self.parse_message = self.parse_message0
-        else:
-            #Gst 1.0: (does not have MESSAGE_ELEMENT):
-            self.parse_message = self.parse_message1
 
     def idle_emit(self, sig, *args):
         self.idle_add(self.emit, sig, *args)
@@ -344,52 +337,7 @@ class SoundPipeline(gobject.GObject):
         self.emit_info()
         return 0
 
-    def parse_message0(self, message):
-        #message parsing code for GStreamer 0.10
-        structure = message.structure
-        found = False
-        if structure.has_field("bitrate"):
-            new_bitrate = int(structure["bitrate"])
-            self.update_bitrate(new_bitrate)
-            found = True
-        if structure.has_field("codec"):
-            desc = structure["codec"]
-            self.new_codec_description(desc)
-            found = True
-        if structure.has_field("audio-codec"):
-            desc = structure["audio-codec"]
-            self.new_codec_description(desc)
-            found = True
-        if structure.has_field("mode"):
-            mode = structure["mode"]
-            if self.codec_mode!=mode:
-                gstlog("mode: %s", mode)
-                self.codec_mode = mode
-                self.info["codec_mode"] = self.codec_mode
-            found = True
-        if structure.has_field("type"):
-            if structure["type"]=="volume-changed":
-                self.gstloginfo("volumes=%s", csv("%i%%" % (v*100/2**16) for v in structure["volumes"]))
-                found = True
-                self.info["volume"]  = self.get_volume()
-            else:
-                self.gstloginfo("type=%s", structure["type"])
-        if structure.has_field("container-format"):
-            v = structure["container-format"]
-            self.new_container_description(v)
-            found = True
-        if not found:
-            #these, we know about, so we just log them:
-            for x in ("minimum-bitrate", "maximum-bitrate", "channel-mode", "percent", "language-code", "src-pad"):
-                if structure.has_field(x):
-                    v = structure[x]
-                    gstlog("tag message: %s = %s", x, v)
-                    return      #handled
-            self.gstloginfo("unknown sound pipeline message %s: %s", message, structure)
-            self.gstloginfo(" %s", structure.keys())
-
-
-    def parse_message1(self, message):
+    def parse_message(self, message):
         #message parsing code for GStreamer 1.x
         taglist = message.parse_tag()
         tags = [taglist.nth_tag_name(x) for x in range(taglist.n_tags())]
