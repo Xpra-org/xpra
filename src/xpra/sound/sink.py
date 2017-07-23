@@ -71,10 +71,12 @@ class SoundSink(SoundPipeline):
         if not matching:
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_decoders().keys())))
         codec = matching[0]
-        decoder, parser, self.stream_compressor = get_decoder_elements(codec)
+        decoder, parser, stream_compressor = get_decoder_elements(codec)
         SoundPipeline.__init__(self, codec)
         self.container_format = (parser or "").replace("demux", "").replace("depay", "")
         self.sink_type = sink_type
+        self.stream_compressor = stream_compressor
+        log("container format=%s, stream_compressor=%s, sink type=%s", self.container_format, self.stream_compressor, self.sink_type)
         self.levels = deque(maxlen=100)
         self.volume = None
         self.src    = None
