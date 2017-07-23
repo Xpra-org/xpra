@@ -227,9 +227,13 @@ class SoundSource(SoundPipeline):
 
     def _emit_buffer(self, data, metadata={}):
         if self.stream_compressor and data:
-            data = compressed_wrapper("sound", data, level=9, zlib=False, lz4=(self.stream_compressor=="lz4"), lzo=(self.stream_compressor=="lzo"), can_inline=True)
-            #log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(odata), len(data))
-            metadata["compress"] = self.stream_compressor
+            cdata = compressed_wrapper("sound", data, level=9, zlib=False, lz4=(self.stream_compressor=="lz4"), lzo=(self.stream_compressor=="lzo"), can_inline=True)
+            if len(cdata)<len(data)*90//100:
+                log("compressed using %s from %i bytes down to %i bytes", self.stream_compressor, len(data), len(cdata))
+                metadata["compress"] = self.stream_compressor
+                data = cdata
+            else:
+                log("skipped inefficient %s stream compression: %i bytes down to %i bytes", self.stream_compressor, len(data), len(cdata))
         f = self.file
         if f:
             for x in self.pending_metadata:
