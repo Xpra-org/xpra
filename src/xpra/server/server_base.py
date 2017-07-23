@@ -476,6 +476,16 @@ class ServerBase(ServerCore):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
             return
+        #make sure that the sound subprocess will use the devices
+        #we define in the pulseaudio command
+        #(it is too difficult to parse the pulseaudio_command,
+        # so we just hope that it matches this):
+        #Note: speaker is the source and microphone the sink,
+        # because things are reversed on the server.
+        os.environ.update({
+            "XPRA_PULSE_SOURCE_DEVICE_NAME" : "Xpra-Speaker",
+            "XPRA_PULSE_SINK_DEVICE_NAME"   : "Xpra-Microphone",
+            })
         if not self.pulseaudio_command:
             soundlog.warn("Warning: pulseaudio command is not defined")
             return

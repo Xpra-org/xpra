@@ -22,8 +22,8 @@ if PYTHON3:
 
 
 #used on the server (reversed):
-XPRA_PULSE_SOURCE_DEVICE_NAME = "Speaker"
-XPRA_PULSE_SINK_DEVICE_NAME = "Microphone"
+XPRA_PULSE_SOURCE_DEVICE_NAME = "XPRA_PULSE_SOURCE_DEVICE_NAME"
+XPRA_PULSE_SINK_DEVICE_NAME = "XPRA_PULSE_SINK_DEVICE_NAME"
 
 GST_QUEUE_NO_LEAK             = 0
 GST_QUEUE_LEAK_UPSTREAM       = 1
@@ -43,7 +43,6 @@ def get_queue_time(default_value=450, prefix=""):
 
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
-PULSEAUDIO_DEVICE_NAME = os.environ.get("XPRA_PULSEAUDIO_DEVICE_NAME", "")
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
@@ -313,7 +312,7 @@ def prevent_import():
 def normv(v):
     if v==2**64-1:
         return -1
-    return v
+    return int(v)
 
 
 all_plugin_names = []
@@ -618,8 +617,13 @@ def get_test_defaults(*args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
-def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, xpra_device_name=None):
-    device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, xpra_device_name)
+def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, env_device_name=None):
+    try:
+        device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
+    except Exception as e:
+        log.warn("Warning: failed to identify the pulseaudio default device to use")
+        log.warn(" %s", e)
+        return {}
     if not device:
         return {}
     #make sure it is not muted:
@@ -634,10 +638,11 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True, input_o
         log("device %s may still be muted: %s", device, e)
     return {"device" : device}
 
-def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, xpra_device_name=None):
+def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_output=None, remote=None, env_device_name=None):
     """
         choose the device to use
     """
+    log("get_pulse_device%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name))
     try:
         from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink, get_pactl_server, get_pulse_id
         if not has_pa():
@@ -648,6 +653,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         log.warn(" %s", e)
         return None
     pa_server = get_pactl_server()
+    log("get_pactl_server()=%s", pa_server)
     if remote:
         log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
         #only worth comparing if we have a real server string
@@ -677,14 +683,17 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return None
 
+    env_device = None
+    if env_device_name:
+        env_device = os.environ.get(env_device_name)
     #try to match one of the devices using the device name filters:
     if len(devices)>1:
         filters = []
         matches = []
-        for match in (device_name_match, PULSEAUDIO_DEVICE_NAME, xpra_device_name):
+        for match in (device_name_match, env_device):
             if not match:
                 continue
-            if match!=xpra_device_name:
+            if match!=env_device:
                 filters.append(match)
             match = match.lower()
             matches = dict((k,v) for k,v in devices.items() if k.lower().find(match)>=0 or v.lower().find(match)>=0)
@@ -720,21 +729,22 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
-            if not PULSEAUDIO_DEVICE_NAME: #warned already
-                dtype = "audio"
-                if want_monitor_device:
-                    dtype = "output monitor"
-                elif input_or_output is False:
-                    dtype = "audio input"
-                elif input_or_output is True:
-                    dtype = "audio output"
-                log.warn("Warning: found %i %s devices:", len(devices), dtype)
+            dtype = "audio"
+            if want_monitor_device:
+                dtype = "output monitor"
+            elif input_or_output is False:
+                dtype = "audio input"
+            elif input_or_output is True:
+                dtype = "audio output"
+            log.warn("Warning: found %i %s devices:", len(devices), dtype)
+            if env_device:
+                log.warn(" matching '%s'", env_device)
             for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
-            if not PULSEAUDIO_DEVICE_NAME: #used already!
+            if not env_device: #used already!
                 log.warn(" to select a specific one,")
-                log.warn(" use the environment variable XPRA_PULSEAUDIO_DEVICE_NAME")
+                log.warn(" use the environment variable '%s'", env_device_name)
         #default to first one:
         if USE_DEFAULT_DEVICE:
             log.info("using default pulseaudio device")
@@ -746,10 +756,10 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
     return device
 
 def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
-    return get_pulse_defaults(device_name_match, want_monitor_device, input_or_output=not want_monitor_device, remote=remote, xpra_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
+    return get_pulse_defaults(device_name_match, want_monitor_device, input_or_output=not want_monitor_device, remote=remote, env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
 
 def get_pulse_sink_defaults():
-    return get_pulse_defaults(want_monitor_device=False, input_or_output=False, xpra_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
+    return get_pulse_defaults(want_monitor_device=False, input_or_output=False, env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
 def get_directsound_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
     try:
