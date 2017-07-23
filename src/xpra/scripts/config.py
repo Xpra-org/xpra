@@ -1282,8 +1282,6 @@ def main():
                 print(args[0] % args[1:])
             args.remove("-v")
 
-        print("Default Configuration:")
-        print_options(make_defaults_struct())
         if len(args)>0:
             for filename in args:
                 print("")
@@ -1294,6 +1292,9 @@ def main():
                 d = read_config(filename)
                 config = dict_to_validated_config(d)
                 print_options(config)
+        else:
+            print("Default Configuration:")
+            print_options(make_defaults_struct())
 
 
 if __name__ == "__main__":
