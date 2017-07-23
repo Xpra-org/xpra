@@ -235,8 +235,10 @@ class SoundPipeline(gobject.GObject):
         log("new_codec_description(%s) current codec description=%s", desc, self.codec_description)
         if not desc:
             return
-        cdl = self.codec_description.lower()
         dl = desc.lower()
+        if dl=="wav" and self.codec_description:
+            return
+        cdl = self.codec_description.lower()
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
             self.gstloginfo("using audio codec %s", dl)
         self.codec_description = dl
