@@ -39,7 +39,7 @@ def pactl_output(log_errors=True, *pactl_args):
     try:
         import subprocess
         log("running %s", cmd)
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, close_fds=True)
         from xpra.child_reaper import getChildReaper
         procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
         log("waiting for %s output", cmd)
