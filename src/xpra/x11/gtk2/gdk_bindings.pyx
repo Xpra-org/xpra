@@ -393,7 +393,9 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
     cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
-    ctypedef unsigned long GdkAtom
+    ctypedef struct _GdkAtom:
+        pass
+    ctypedef _GdkAtom* GdkAtom
     GdkAtom GDK_NONE
     # FIXME: this should have stricter type checking
     GdkAtom PyGdkAtom_Get(object)
@@ -474,8 +476,8 @@ def sanitize_gtkselectiondata(obj):
     cdef GtkSelectionData * selectiondata = <GtkSelectionData *> pyg_boxed_get(obj)
     if selectiondata==NULL:
         return
-    log("selectiondata: selection=%s, target=%s, type=%#x, format=%#x, length=%#x, data=%#x",
-        selectiondata.selection, selectiondata.target, selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
+    log("selectiondata: selection=%#x, target=%#x, type=%#x, format=%#x, length=%#x, data=%#x",
+        <uintptr_t> selectiondata.selection, <uintptr_t> selectiondata.target, <uintptr_t> selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
     cdef GdkAtom gdkatom
     cdef gpointer data
     cdef char* c
@@ -523,9 +525,9 @@ cdef GdkAtom get_gdkatom(display_source, xatom):
     return gdk_atom
 
 cpdef get_pyatom(display_source, xatom):
-    gdk_atom = get_gdkatom(display_source, xatom)
+    cdef GdkAtom gdk_atom = get_gdkatom(display_source, xatom)
     if gdk_atom==GDK_NONE:
-        return GDK_NONE
+        return ""
     return str(PyGdkAtom_New(gdk_atom))
 
 
