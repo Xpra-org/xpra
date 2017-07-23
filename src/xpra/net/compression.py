@@ -229,7 +229,7 @@ def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False
         algo = "lzo"
         cl, cdata = lzo_compress(data, level)
     else:
-        assert use_zlib, "cannot use zlib"
+        assert zlib and use_zlib, "cannot use zlib"
         algo = "zlib"
         cl, cdata = zcompress(data, level)
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
