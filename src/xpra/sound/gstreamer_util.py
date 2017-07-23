@@ -737,8 +737,6 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
             elif input_or_output is True:
                 dtype = "audio output"
             log.warn("Warning: found %i %s devices:", len(devices), dtype)
-            if env_device:
-                log.warn(" matching '%s'", env_device)
             for k,v in devices.items():
                 log.warn(" * %s", v)
                 log.warn("   %s", k)
