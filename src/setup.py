@@ -697,13 +697,12 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     #"-Wno-unused-function",
                     #"-Wno-self-assign",
                     #"-Wno-sometimes-uninitialized",
-                    "-Wno-unused-command-line-argument",    #cython adds rpath to the compilation command??
+                    #cython adds rpath to the compilation command??
+                    #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
+                    "-Wno-unused-command-line-argument",
                     ]
         elif get_gcc_version()>=[4, 4]:
-            eifd = ["-Werror",
-                    #CentOS 6.x gives us some invalid warnings in nvenc, ignore those:
-                    #"-Wno-error=uninitialized",
-                    ]
+            eifd = ["-Werror"]
             from xpra.os_util import is_Ubuntu, is_Debian, is_Raspbian
             if is_Debian() or is_Ubuntu() or is_Raspbian():
                 #needed on Debian and Ubuntu to avoid this error:
