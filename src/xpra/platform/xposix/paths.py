@@ -61,7 +61,7 @@ def do_get_script_bin_dirs():
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
         script_bin_dirs.append(runtime_dir)
-    if os.getuid()>0:
+    if os.geteuid()>0:
         script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
 
@@ -94,7 +94,7 @@ def do_get_socket_dirs():
     if runtime_dir:
         #private, per user: /run/user/1000/xpra
         SOCKET_DIRS.append(runtime_dir)
-    if os.getuid()>0:
+    if os.geteuid()>0:
         SOCKET_DIRS.append("~/.xpra")   #the old default path
     #for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):
@@ -108,7 +108,7 @@ def do_get_default_log_dirs():
     v = _get_xpra_runtime_dir()
     if v:
         log_dirs.append(v)
-    if os.getuid()>0:
+    if os.geteuid()>0:
         log_dirs.append("~/.xpra")
     log_dirs.append("/tmp")
     return log_dirs

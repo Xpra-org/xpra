@@ -21,8 +21,8 @@ def osexpand(s, actual_username="", uid=0, gid=0):
         s = "~%s/%s" % (actual_username, s[2:])
     v = os.path.expandvars(os.path.expanduser(s))
     if os.name=="posix":
-        v = v.replace("$UID", str(uid or os.getuid()))
-        v = v.replace("$GID", str(gid or os.getgid()))
+        v = v.replace("$UID", str(uid or os.geteuid()))
+        v = v.replace("$GID", str(gid or os.getegid()))
     if len(actual_username)>0:
         for k in ("USERNAME", "USER"):
             v = v.replace("$%s" % k, actual_username)
