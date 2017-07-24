@@ -7,7 +7,13 @@ import os
 
 from xpra.log import Logger
 log = Logger("webcam")
-from xpra.util import engs
+from xpra.util import engs, envbool
+from xpra.os_util import is_Ubuntu, is_Debian
+
+#on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
+#so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
+#see http://xpra.org/trac/ticket/1596
+CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not (is_Ubuntu() or is_Debian()))
 
 
 def _can_capture_video(dev_file, dev_info):
@@ -32,17 +38,20 @@ def check_virtual_dir(warn=True):
         return False
     return True
 
+def query_video_device(device):
+    try:
+        from xpra.codecs.v4l2.pusher import query_video_device as v4l_query_video_device
+        return v4l_query_video_device(device)
+    except ImportError:
+        return {}
+
+
 def get_virtual_video_devices(capture_only=True):
-    log("get_virtual_video_devices")
+    log("get_virtual_video_devices(%s) CHECK_VIRTUAL_CAPTURE=%s", capture_only, CHECK_VIRTUAL_CAPTURE)
     if not check_virtual_dir(False):
         return []
     contents = os.listdir(v4l2_virtual_dir)
     devices = {}
-    try:
-        from xpra.codecs.v4l2.pusher import query_video_device
-    except ImportError:
-        def query_video_device(device):
-            return {}
     for f in contents:
         if not f.startswith("video"):
             continue
@@ -53,7 +62,7 @@ def get_virtual_video_devices(capture_only=True):
             continue
         dev_file = "/dev/%s" % f
         dev_info = query_video_device(dev_file)
-        if capture_only and not _can_capture_video(dev_file, dev_info):
+        if CHECK_VIRTUAL_CAPTURE and capture_only and not _can_capture_video(dev_file, dev_info):
             continue
         info = {"device" : dev_file}
         info.update(dev_info)
@@ -77,11 +86,6 @@ def get_all_video_devices(capture_only=True):
     contents = os.listdir("/dev")
     devices = {}
     device_paths = set()
-    try:
-        from xpra.codecs.v4l2.pusher import query_video_device
-    except ImportError:
-        def query_video_device(device):
-            return {}
     for f in contents:
         if not f.startswith("video"):
             continue
