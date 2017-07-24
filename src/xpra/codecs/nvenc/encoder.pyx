@@ -1075,6 +1075,10 @@ def init_nvencode_library():
     log("init_nvencode_library() NvEncodeAPICreateInstance=%s", NvEncodeAPICreateInstance)
     #NVENCSTATUS NvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList)
 
+def atob(a):
+    if PYTHON3:
+        return a.tobytes()
+    return a.tostring()
 
 cdef guidstr(GUID guid):
     #really ugly! (surely there's a way using struct.unpack ?)
@@ -1085,9 +1089,9 @@ cdef guidstr(GUID guid):
         for j in range(s):
             b[s-j-1] = v % 256
             v = v // 256
-        parts.append(b.tostring())
-    parts.append(array.array('B', (guid.get("Data4")[:2])).tostring())
-    parts.append(array.array('B', (guid.get("Data4")[2:8])).tostring())
+        parts.append(atob(b))
+    parts.append(atob(array.array('B', guid.get("Data4")[:2])))
+    parts.append(atob(array.array('B', guid.get("Data4")[2:8])))
     s = b"-".join(binascii.hexlify(b).upper() for b in parts)
     #log.info("guidstr(%s)=%s", guid, s)
     return bytestostr(s)
@@ -1113,7 +1117,7 @@ cdef GUID c_parseguid(src) except *:
     parts = src.split("-")    #ie: ["CE788D20", "AAA9", ...]
     nparts = []
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
-        b = array.array('B', (binascii.unhexlify(parts[i]))).tostring()
+        b = atob(array.array('B', binascii.unhexlify(parts[i])))
         v = 0
         for j in range(s):
             c = b[j]
@@ -2227,6 +2231,8 @@ cdef class Encoder:
         assert pixels is not None, "failed to get pixels from %s" % image
         #copy to input buffer:
         cdef object buf
+        if isinstance(pixels, bytearray):
+            pixels = memoryview(pixels)
         if isinstance(pixels, memoryview):
             #copy memoryview to inputBuffer directly:
             buf = target_buffer
@@ -2251,8 +2257,8 @@ cdef class Encoder:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
             stride = target_stride
-            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i)", stride*h, type(pixels), type(target_buffer), stride, image_stride)
             min_stride = min(stride, image_stride)
+            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)", stride*h, type(pixels), type(target_buffer), min_stride, image_stride, target_stride)
             copy_len = min_stride * h
             for i in range(h):
                 x = i*stride
