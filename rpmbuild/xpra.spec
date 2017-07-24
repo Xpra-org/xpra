@@ -776,8 +776,32 @@ fi
 
 
 %changelog
-* Sun Mar 19 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
-- TODO
+* Mon Jul 24 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
+- improve system wide proxy server, logind support on, socket activation
+- new authentication modules: peercred, sqlite
+- split packages for RPM, MS Windows and Mac OS
+- digitally signed MS Windows installers
+- HTML5 client improvements:
+   file upload support
+   better non-us keyboard and language support
+   safe HMAC authentication over HTTP, re-connection etc
+   more complete window management, (pre-)compression (zlib, brotli)
+   mobile on-screen keyboard
+   audio forwarding for IE
+   remote drag and drop support
+- better Multicast DNS support, with a GUI launcher
+- improved image depth / deep color handling
+- desktop mode can now be resized easily
+- any window can be made fullscreen (Shift+F11 to trigger)
+- Python3 GTK3 client is now usable
+- shutdown the server from the tray menu
+- terminate child commands on server shutdown
+- macos library updates: #1501, support for virtual desktops
+- NVENC SDK version 8 and HEVC support
+- Nvidia capture SDK support for fast shadow servers
+- shadow servers improvements: show shadow pointer in opengl client
+- structural improvements and important bug fixes
+
 
 * Fri Mar 17 2017 Antoine Martin <antoine@devloop.org.uk> 2.0-1
 - dropped support for outdated OS and libraries (long list)
