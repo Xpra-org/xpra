@@ -39,8 +39,9 @@ if USE_NVFBC:
 
 
 class XImageCapture(object):
-    def __init__(self):
-        pass
+    def __init__(self, xwindow):
+        self.xshm = None
+        self.xwindow = xwindow
 
     def clean(self):
         self.close_xshm()
@@ -52,27 +53,27 @@ class XImageCapture(object):
             with xsync:
                 xshm.cleanup()
 
-    def get_image(self, x, y, width, height, logger=None):
+    def get_image(self, x, y, width, height):
         try:
             start = monotonic_time()
             with xsync:
                 if USE_XSHM:
                     log("X11 shadow get_image, xshm=%s", self.xshm)
                     if self.xshm is None:
-                        self.xshm = XImage.get_XShmWrapper(get_xwindow(self.window))
+                        self.xshm = XImage.get_XShmWrapper(self.xwindow)
                         self.xshm.setup()
                     if self.xshm:
-                        image = self.xshm.get_image(get_xwindow(self.window), x, y, width, height)
+                        image = self.xshm.get_image(self.xwindow, x, y, width, height)
                         #discard to ensure we will call XShmGetImage next time around
                         self.xshm.discard()
                         return image
                 #fallback to gtk capture:
-                return GTKRootWindowModel.get_image(self, x, y, width, height, logger)
+                return GTKRootWindowModel.get_image(self, x, y, width, height)
         except Exception as e:
             if getattr(e, "msg", None)=="BadMatch":
                 log("BadMatch - temporary error?", exc_info=True)
             else:
-                log.warn("Warning: failed to capture root window pixels:")
+                log.warn("Warning: failed to capture pixels of window %#x:", self.xwindow)
                 log.warn(" %s", e)
             #cleanup and hope for the best!
             self.close_xshm()
@@ -111,21 +112,29 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         return self.window.get_size()
 
     def _screen_size_changed(self, screen):
+        log("screen size changed: %s, closing current capture instance %s", screen, self.capture)
         self.close_capture()
 
     def get_image(self, x, y, width, height, logger=None):
+        image = None
         if not self.capture:
             ww, wh = self.get_geometry()
             if USE_NVFBC:
-                if USE_NVFBC_CUDA:
-                    self.capture = NvFBC_CUDACapture()
-                else:
-                    self.capture = NvFBC_SysCapture()
-                self.capture.init_context(ww, wh)
-            else:
-                self.capture = XImageCapture()
-            log.info("capture=%s", self.capture)
-        return self.capture.get_image(x, y, width, height)
+                try:
+                    if USE_NVFBC_CUDA:
+                        self.capture = NvFBC_CUDACapture()
+                    else:
+                        self.capture = NvFBC_SysCapture()
+                    self.capture.init_context(ww, wh)
+                    image = self.capture.get_image(x, y, width, height)
+                except Exception as e:
+                    log("get_image() NvFBC test failed", exc_info=True)
+                    log("not using %s: %s", self.capture, e)
+                    self.capture = None
+            if not self.capture:
+                self.capture = XImageCapture(get_xwindow(self.window))
+            log("shadow image capture=%s", self.capture)
+        return image or self.capture.get_image(x, y, width, height)
 
 
 #FIXME: warning: this class inherits from ServerBase twice..
