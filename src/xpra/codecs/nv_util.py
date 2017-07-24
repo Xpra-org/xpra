@@ -238,14 +238,14 @@ def get_nvenc_license_keys(nvenc_version=0):
                     log("get_nvenc_license_keys(%s) '%s' does not exist", nvenc_version, keys_file)
                     continue
                 log("loading nvenc%s keys from %s", nvenc_version, keys_file)
-                with open(keys_file, "rU") as f:
+                with open(keys_file, "rb") as f:
                     fkeys = []
                     for line in f:
-                        sline = line.strip().rstrip('\r\n').strip()
+                        sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
                         if len(sline) == 0:
                             log("skipping empty line")
                             continue
-                        if sline[0] in ( '!', '#' ):
+                        if sline[0] in ('!', '#'):
                             log("skipping comments")
                             continue
                         fkeys.append(sline)
@@ -270,7 +270,7 @@ def main():
         if is_blacklisted():
             log.warn("Warning: this driver version is blacklisted")
         log.info("NVENC license keys:")
-        for v in (0, 7):
+        for v in (0, 8):
             keys = get_nvenc_license_keys(v)
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
