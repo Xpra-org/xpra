@@ -1324,7 +1324,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_remote_server(error_cb, options, args, mode, defaults)
         elif (mode in ("start", "start-desktop", "upgrade") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
-            cwd = os.getcwd()
+            try:
+                cwd = os.getcwd()
+            except:
+                cwd = "/"
             env = os.environ.copy()
             start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
             if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
