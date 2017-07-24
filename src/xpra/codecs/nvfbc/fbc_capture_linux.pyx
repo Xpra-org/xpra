@@ -35,7 +35,7 @@ DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
 
 ctypedef unsigned long DWORD
 ctypedef int BOOL
-ctypedef unsigned int CUdeviceptr
+ctypedef unsigned long CUdeviceptr
 
 cdef extern from "string.h":
     void* memset(void * ptr, int value, size_t num)
@@ -444,7 +444,7 @@ def get_info():
 
 
 PIXEL_FORMAT_CONST = {
-    "BGRX"      : NVFBC_BUFFER_FORMAT_ARGB,
+    "XRGB"      : NVFBC_BUFFER_FORMAT_ARGB,
     "RGB"       : NVFBC_BUFFER_FORMAT_RGB,
     "YUV420P"   : NVFBC_BUFFER_FORMAT_YUV420P,
     "YUV444P"   : NVFBC_BUFFER_FORMAT_YUV444P,
@@ -553,10 +553,11 @@ cdef class NvFBC_CUDACapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format="BGRX"):
+    def init_context(self, int width=-1, int height=-1, pixel_format="XRGB"):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
-        if pixel_format not in ("BGRA", "BGRX", "YUV420P", "YUV444P"):
+        if pixel_format not in PIXEL_FORMAT_CONST:
             raise Exception("unsupported pixel format '%s'" % pixel_format)
+        cdef NVFBC_BUFFER_FORMAT buffer_format = PIXEL_FORMAT_CONST[pixel_format]
         self.pixel_format = pixel_format
         #CUDA init:
         self.cuda_device_id, self.cuda_device = select_device()
@@ -564,24 +565,15 @@ cdef class NvFBC_CUDACapture:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
         cf = driver.ctx_flags
-        self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+        self.cuda_context = d.make_context(flags=cf.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
-        self.cuda_context.pop()
-        self.cuda_context.push()
         self.context = create_context()
         get_context_status(self.context)
         create_capture_session(self.context, NVFBC_CAPTURE_SHARED_CUDA)
         cdef NVFBC_TOCUDA_SETUP_PARAMS params
         memset(&params, 0, sizeof(NVFBC_TOCUDA_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOCUDA_SETUP_PARAMS_VER
-        if pixel_format in ("BGRX", "BGRA"):
-            params.eBufferFormat = NVFBC_BUFFER_FORMAT_ARGB
-        elif pixel_format=="YUV420P":
-            params.eBufferFormat = NVFBC_BUFFER_FORMAT_YUV420P
-        elif pixel_format=="YUV444P":
-            params.eBufferFormat = NVFBC_BUFFER_FORMAT_YUV444P
-        else:
-            raise Exception("invalid pixel format %s" % pixel_format)
+        params.eBufferFormat = buffer_format
         cdef NVFBCSTATUS res = <NVFBCSTATUS> function_list.nvFBCToCudaSetUp(self.context, &params)
         self.raiseNvFBC(res, "NvFBCCudaSetup")
         log("nvFBCToCudaSetUp()=%i", res)
@@ -606,7 +598,6 @@ cdef class NvFBC_CUDACapture:
 
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
-        #self.cuda_context.push()
         cdef double start = monotonic_time()
         cdef CUdeviceptr cuDevicePtr = 0
         cdef NVFBC_FRAME_GRAB_INFO grab_info
@@ -630,15 +621,13 @@ cdef class NvFBC_CUDACapture:
         cdef double end = monotonic_time()
         log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwWidth, int((end-start)*1000))
         log("NvFBCCudaGrabFrame: info=%s", info)
-        #allocate CUDA device memory:
         if not self.cuda_device_buffer or self.buffer_size!=grab_info.dwByteSize:
+            #allocate CUDA device memory:
             self.buffer_size = grab_info.dwByteSize
             self.cuda_device_buffer = driver.mem_alloc(self.buffer_size)
             log("buffer_size=%#x, cuda device buffer=%s", self.buffer_size, self.cuda_device_buffer)
-        #copy to the buffer we own:
         log("memcpy_dtod(%#x, %#x, %#x)", int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
         driver.memcpy_dtod(int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
-        #self.cuda_context.pop()
         Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
         image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwWidth*Bpp), Bpp)
         image.cuda_device_buffer = self.cuda_device_buffer

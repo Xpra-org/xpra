@@ -27,7 +27,7 @@ geomlog = Logger("geometry")
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
 USE_NVFBC = envbool("XPRA_NVFBC", True)
-USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
+USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 if USE_NVFBC:
     try:
         from xpra.codecs.nvfbc.fbc_capture_linux import init_module, NvFBC_SysCapture, NvFBC_CUDACapture    #@UnresolvedImport

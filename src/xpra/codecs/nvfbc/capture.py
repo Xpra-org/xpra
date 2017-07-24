@@ -8,8 +8,12 @@ import sys
 import time
 import os.path
 
+from xpra.util import envbool
 from xpra.log import Logger, add_debug_category
 log = Logger("encoder", "nvfbc")
+
+USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", False)
+
 
 def main():
     if "-v" in sys.argv or "--verbose" in sys.argv:
@@ -34,7 +38,10 @@ def main():
         print_nested_dict(fbc_capture.get_status(), print_fn=log.info)
         try:
             log("creating test capture class")
-            c = fbc_capture.NvFBC_SysCapture()
+            if USE_NVFBC_CUDA:
+                c = fbc_capture.NvFBC_CUDACapture()     #@UndefinedVariable
+            else:
+                c = fbc_capture.NvFBC_SysCapture()      #@UndefinedVariable
             log("Capture=%s", c)
             c.init_context()
         except Exception as e:

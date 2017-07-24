@@ -935,10 +935,9 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/nvenc/encoder.c",
+                   "xpra/codecs/cuda_common/ARGB_to_NV12.fatbin",
+                   "xpra/codecs/cuda_common/ARGB_to_YUV444.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
-                   "xpra/codecs/cuda_common/BGRA_to_U.fatbin",
-                   "xpra/codecs/cuda_common/BGRA_to_V.fatbin",
-                   "xpra/codecs/cuda_common/BGRA_to_Y.fatbin",
                    "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
@@ -2024,7 +2023,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     #TODO:
     # * compile directly to output directory instead of using data files?
     # * detect which arches we want to build for? (does it really matter much?)
-    kernels = ("BGRA_to_NV12", "BGRA_to_YUV444")
+    kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
     for kernel in kernels:
         cuda_src = "xpra/codecs/cuda_common/%s.cu" % kernel
         cuda_bin = "xpra/codecs/cuda_common/%s.fatbin" % kernel

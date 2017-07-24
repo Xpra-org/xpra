@@ -1269,6 +1269,8 @@ def get_COLORSPACES(encoding):
     COLORSPACES = {
         "BGRX" : out_cs,
         "BGRA" : out_cs,
+        "XRGB" : out_cs,
+        "ARGB" : out_cs,
         }
     return COLORSPACES
 
@@ -1325,7 +1327,7 @@ def get_spec(encoding, colorspace):
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = colorspace in ("BGRX", "BGRA" ) and encoding=="h264"
+    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA" ) and encoding=="h264"
     cs = video_spec(encoding=encoding, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+has_lossless_mode*40, speed=100, setup_cost=80, cpu_cost=10, gpu_cost=100,
@@ -1401,16 +1403,6 @@ cdef inline raiseNVENC(NVENCSTATUS ret, msg):
         log("raiseNVENC(%i, %s)", ret, msg)
     if ret!=0:
         raise NVENCException(ret, msg)
-
-cpdef get_CUDA_CSC_function(int device_id, function_name):
-    return function_name, get_CUDA_function(device_id, function_name)
-
-
-cpdef get_BGRA2NV12(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA_to_NV12")
-
-cpdef get_BGRA2YUV444(int device_id):
-    return get_CUDA_CSC_function(device_id, "BGRA_to_YUV444")
 
 
 cdef class Encoder:
@@ -1519,6 +1511,7 @@ cdef class Encoder:
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
+        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX"), "invalid source format %s" % src_format
         self.width = width
         self.height = height
         self.speed = speed
@@ -1656,7 +1649,7 @@ cdef class Encoder:
         da = driver.device_attribute
         if self.pixel_format=="BGRX":
             assert NATIVE_RGB
-            kernel_gen = None
+            kernel_name = None
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB
             plane_size_div= 1
             wmult = 4
@@ -1664,7 +1657,7 @@ cdef class Encoder:
         #if supported (separate plane flag), use YUV444P:
         elif self.pixel_format=="YUV444P":
             assert YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED), "YUV444 is not enabled for %s" % self.encoding
-            kernel_gen = get_BGRA2YUV444
+            kernel_name = "%s_to_YUV444" % (self.src_format.replace("X", "A"))  #ie: ARGB_to_YUV444
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
             #3 full planes:
             plane_size_div = 1
@@ -1672,7 +1665,7 @@ cdef class Encoder:
             hmult = 3
         elif self.pixel_format=="NV12":
             assert YUV420_ENABLED
-            kernel_gen = get_BGRA2NV12
+            kernel_name = "%s_to_NV12" % (self.src_format.replace("X", "A"))  #ie: BGRA_to_NV12
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2
@@ -1688,9 +1681,10 @@ cdef class Encoder:
         self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width*wmult, self.encoder_height*hmult//plane_size_div, 16)
         log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
 
-        if kernel_gen:
+        if kernel_name:
             #load the kernel:
-            self.kernel_name, self.kernel = kernel_gen(self.cuda_device_id)
+            self.kernel = get_CUDA_function(self.cuda_device_id, kernel_name)
+            self.kernel_name = kernel_name
             assert self.kernel, "failed to load %s for device %i" % (self.kernel_name, self.cuda_device_id)
             #allocate CUDA input buffer (on device) 32-bit RGBX
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride)
