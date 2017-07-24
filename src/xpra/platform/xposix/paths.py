@@ -94,7 +94,9 @@ def do_get_socket_dirs():
     if runtime_dir:
         #private, per user: /run/user/1000/xpra
         SOCKET_DIRS.append(runtime_dir)
-    if os.geteuid()>0:
+    #Debian pretends to be root during build.. check FAKEROOTKEY
+    #to ensure we still include "~/.xpra" in the default config
+    if os.geteuid()>0 or os.environ.get("FAKEROOTKEY"):
         SOCKET_DIRS.append("~/.xpra")   #the old default path
     #for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):
