@@ -645,8 +645,10 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "encoding", "encodings",
     "quality", "min-quality", "speed", "min-speed",
     #"auto-refresh-delay",    float!
+    #no corresponding command line option:
+    #"wm-name", "download-path",
     "compression_level", "video-scaling",
-    "title", "wm-name", "session-name",
+    "title", "session-name",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
     "input-method",
     "microphone", "speaker", "sound-source", "pulseaudio",
@@ -656,7 +658,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "system-tray", "sharing", "windows", "webcam", "html",
     "terminate-children", "exit-with-children", "exit-with-client",
     "av-sync", "global-menus",
-    "printing", "file-transfer", "download-path", "open-command", "open-files", "start-new-commands",
+    "printing", "file-transfer", "open-command", "open-files", "start-new-commands",
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "ssl-auth",
     "bind", "bind-vsock", "bind-tcp", "bind-ssl",
