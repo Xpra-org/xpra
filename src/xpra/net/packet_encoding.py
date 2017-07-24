@@ -21,15 +21,7 @@ rencode_dumps, rencode_loads, rencode_version = None, None, None
 def init_rencode():
     global use_rencode, has_rencode, rencode_dumps, rencode_loads, rencode_version
     try:
-        import rencode
-        rencode_dumps = rencode.dumps
-        rencode_loads = rencode.loads
-        try:
-            rencode_version = rencode.__version__
-            log("loaded rencode version %s from %s", rencode_version, rencode.__file__)
-        except:
-            log.warn("rencode at '%s' lacks versioning information", rencode.__file__)
-            rencode_version = "unknown"
+        from rencode import dumps as rencode_dumps, loads as rencode_loads, __version__ as rencode_version
     except ImportError as e:
         log("init_rencode()", exc_info=True)
         if use_rencode:
