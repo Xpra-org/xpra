@@ -16,7 +16,7 @@ import pycuda
 from pycuda import driver
 
 from xpra.util import engs, print_nested_dict, envbool
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, bytestostr
 
 IGNORE_BLACKLIST = envbool("XPRA_CUDA_IGNORE_BLACKLIST", False)
 
@@ -86,9 +86,9 @@ def get_prefs():
                 log("get_prefs() '%s' is not a file!", conf_file)
                 continue
             try:
-                with open(conf_file, "rU") as f:
+                with open(conf_file, "rb") as f:
                     for line in f:
-                        sline = line.strip().rstrip('\r\n').strip()
+                        sline = bytestostr(line.strip().rstrip(b'\r\n').strip())
                         props = sline.split("=", 1)
                         if len(props)!=2:
                             continue

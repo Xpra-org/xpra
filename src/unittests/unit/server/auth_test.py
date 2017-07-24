@@ -266,6 +266,7 @@ class TestAuth(unittest.TestCase):
 		sock.bind(sockpath)
 		sock.listen(5)
 		verified = []
+		to_close = [sock]
 		def wait_for_connection():
 			conn, addr = sock.accept()
 			s = SocketConnection(conn, sockpath, addr, sockpath, "unix")
@@ -273,21 +274,20 @@ class TestAuth(unittest.TestCase):
 			assert not pc.requires_challenge()
 			assert pc.get_uid()==os.getuid()
 			verified.append(True)
+			to_close.append(s)
 		t = start_thread(wait_for_connection, "socket listener", daemon=True)
 		#connect a client:
 		client = socket.socket(socket.AF_UNIX)
 		client.settimeout(5)
 		client.connect(sockpath)
+		to_close.append(client)
 		#wait for it to trigger auth:
 		t.join(5)
-		try:
-			client.close()
-		except:
-			pass
-		try:
-			sock.close()
-		except:
-			pass
+		for x in to_close:
+			try:
+				x.close()
+			except:
+				pass
 		assert verified
 
 
