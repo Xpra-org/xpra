@@ -280,6 +280,14 @@ class TestAuth(unittest.TestCase):
 		client.connect(sockpath)
 		#wait for it to trigger auth:
 		t.join(5)
+		try:
+			client.close()
+		except:
+			pass
+		try:
+			sock.close()
+		except:
+			pass
 		assert verified
 
 
