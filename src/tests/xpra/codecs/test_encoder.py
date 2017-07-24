@@ -104,7 +104,7 @@ def gen_src_images(src_format, w, h, nframes):
             planes = ImageWrapper._3_PLANES
         else:
             pixels = make_rgb_input(src_format, w, h, use_strings=False, populate=True, seed=seed+i)
-            strides = w*3
+            strides = w*len(src_format)
             planes = ImageWrapper.PACKED
         image = ImageWrapper(0, 0, w, h, pixels, src_format, 24, strides, planes=planes)
         images.append(image)
