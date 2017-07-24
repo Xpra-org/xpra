@@ -76,9 +76,9 @@ def _get_runtime_dir():
             runtime_dir = os.path.join(head, "$UID")
         except (ValueError, AssertionError):
             pass
-    elif os.path.exists("/run/user") and os.path.isdir("/run/user"):
+    elif os.path.exists("/run") and os.path.isdir("/run"):
         runtime_dir = "/run/user/$UID"
-    elif os.path.exists("/var/run/user") and os.path.isdir("/var/run/user"):
+    elif os.path.exists("/var/run") and os.path.isdir("/var/run"):
         runtime_dir = "/var/run/user/$UID"
     return runtime_dir
 
