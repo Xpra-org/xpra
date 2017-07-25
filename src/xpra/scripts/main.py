@@ -1836,16 +1836,25 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 kwargs["stderr"] = PIPE
             remote_xpra = display_desc["remote_xpra"]
             assert len(remote_xpra)>0
-            remote_commands = []
             socket_dir = display_desc.get("socket_dir")
+            proxy_command = display_desc["proxy_command"]       #ie: "_proxy_start"
+            display_as_args = display_desc["display_as_args"]   #ie: "--start=xterm :10"
+            remote_cmd = ""
             for x in remote_xpra:
-                #ie: ["~/.xpra/run-xpra"] + ["_proxy"] + [":10"]
-                pc = [x] + display_desc["proxy_command"] + display_desc["display_as_args"]
+                if not remote_cmd:
+                    check = "if"
+                else:
+                    check = "elif"
+                if x=="xpra":
+                    #no absolute path, so use "type" to check that the command exists:
+                    pc = ['%s type "%s" > /dev/null 2>&1; then' % (check, x)]
+                else:
+                    pc = ['%s [ -x "%s" ]; then' % (check, x)]
+                pc += [x] + proxy_command + display_as_args
                 if socket_dir:
                     pc.append("--socket-dir=%s" % socket_dir)
-                remote_commands.append((" ".join(pc)))
-            #ie: ~/.xpra/run-xpra _proxy || $XDG_RUNTIME_DIR/run-xpra _proxy
-            remote_cmd = " || ".join(remote_commands)
+                remote_cmd += " ".join(pc)+";"
+            remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
             if INITENV_COMMAND:
                 remote_cmd = INITENV_COMMAND + ";" + remote_cmd
             #putty gets confused if we wrap things in shell command:
