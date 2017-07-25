@@ -21,10 +21,11 @@ try:
     import numpy
     from pycuda import driver
     from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
-except:
+except ImportError:
+    raise
+except Exception as e:
     log.error("Error: NvFBC requires CUDA", exc_info=True)
-    CUDA_ERRORS_INFO = {}
-    select_device = None
+    raise ImportError("NvFBC requires CUDA: %s" % e)
 
 import ctypes
 from ctypes import wintypes
