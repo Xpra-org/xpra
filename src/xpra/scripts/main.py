@@ -2750,7 +2750,11 @@ def run_showconfig(options, args):
             HIDDEN += ["socket-dirs", "socket-dir",
                        "wm-name", "pulseaudio-command", "pulseaudio", "xvfb", "input-method",
                        "socket-permissions", "fake-xinerama", "dbus-proxy", "xsettings",
-                       "exit-with-children", "start-new-commands", "start", "start-child"]
+                       "exit-with-children", "start-new-commands",
+                       "start", "start-child",
+                       "start-after-connect", "start-child-after-connect",
+                       "start-on-connect", "start-child-on-connect",
+                       ]
         if WIN32:
             #"exit-ssh"?
             HIDDEN += ["lpadmin", "daemon", "use-display", "mmap-group", "mdns"]
