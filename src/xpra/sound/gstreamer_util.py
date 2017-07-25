@@ -664,9 +664,9 @@ def get_default_sink():
             if not s:
                 log("cannot connect to pulseaudio server?")
             else:
-                return "pulsesink"
+                return "pulsesrc"
     except ImportError as e:
-        log("get_default_sink() no pulsesink: %s", e)
+        log("get_default_source() no pulsesrc: %s", e)
     return sinks[0]
 
 
@@ -695,7 +695,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         choose the device to use
     """
     try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink, get_pulse_server, get_pulse_id
+        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pa_device_options, get_default_sink, get_pactl_server, get_pulse_id
         if not has_pa():
             log.warn("Warning: pulseaudio is not available!")
             return None
@@ -703,7 +703,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         log.warn("Warning: pulseaudio is not available!")
         log.warn(" %s", e)
         return None
-    pa_server = get_pulse_server()
+    pa_server = get_pactl_server()
     if remote:
         log("start sound, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
         #only worth comparing if we have a real server string

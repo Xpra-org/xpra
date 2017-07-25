@@ -29,6 +29,9 @@ def get_pulse_server():
 def get_pulse_id():
     return ""
 
+def get_pactl_server():
+    return ""
+
 def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True):
     return {}
 

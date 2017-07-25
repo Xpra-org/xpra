@@ -51,6 +51,7 @@ get_pa_device_options   = _pulseaudio_util.get_pa_device_options
 get_default_sink        = _pulseaudio_util.get_default_sink
 get_pulse_server        = _pulseaudio_util.get_pulse_server
 get_pulse_id            = _pulseaudio_util.get_pulse_id
+get_pactl_server        = _pulseaudio_util.get_pactl_server
 set_source_mute         = _pulseaudio_util.set_source_mute
 set_sink_mute           = _pulseaudio_util.set_sink_mute
 
