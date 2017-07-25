@@ -1849,7 +1849,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     #no absolute path, so use "type" to check that the command exists:
                     pc = ['%s type "%s" > /dev/null 2>&1; then' % (check, x)]
                 else:
-                    pc = ['%s [ -x "%s" ]; then' % (check, x)]
+                    pc = ['%s [ -x %s ]; then' % (check, x)]
                 pc += [x] + proxy_command + display_as_args
                 if socket_dir:
                     pc.append("--socket-dir=%s" % socket_dir)
