@@ -637,6 +637,8 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "key-shortcut",
                   "env"]
 
+CLIENT_ONLY_OPTIONS = ["username"]
+
 #options that clients can pass to the proxy
 #and which will be forwarded to the new proxy instance process:
 PROXY_START_OVERRIDABLE_OPTIONS = [
