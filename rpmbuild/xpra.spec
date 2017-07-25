@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.1
+%define version 2.2
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -776,6 +776,9 @@ fi
 
 
 %changelog
+* Wed Jul 26 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
+- TODO
+
 * Mon Jul 24 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
 - improve system wide proxy server, logind support on, socket activation
 - new authentication modules: peercred, sqlite

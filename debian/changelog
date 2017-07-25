@@ -1,3 +1,8 @@
+xpra (2.2-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 26 Jul 2017 00:01:58 +0700
+
 xpra (2.1-1) UNRELEASED; urgency=low
   * improve system wide proxy server, logind support on, socket activation
   * new authentication modules: peercred, sqlite
