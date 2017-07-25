@@ -1244,7 +1244,13 @@ def parse_env(env):
 
 def configure_env(options):
     if options.env:
-        os.environ.update(parse_env(options.env))
+        env = parse_env(options.env)
+        if POSIX and os.getuid()==0:
+            #running as root!
+            #sanitize: only allow "safe" environment variables
+            #as these may have been specified by a non-root user
+            env = dict((k,v) for k,v in env.items() if k.startswith("XPRA_"))
+        os.environ.update(env)
 
 
 def systemd_run_command(mode, systemd_run_args, user=True):
@@ -2620,10 +2626,15 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts)      #ie: ["--exit-with-children", "--start-child=xterm"]
-    #add a unique uuid to the server env:
-    from xpra.os_util import get_hex_uuid
-    new_server_uuid = get_hex_uuid()
-    cmd.append("--env=XPRA_PROXY_START_UUID=%s" % new_server_uuid)
+    #when starting via the system proxy server,
+    #we may already have a XPRA_PROXY_START_UUID,
+    #specified by the proxy-start command:
+    new_server_uuid = parse_env(opts.env or []).get("XPRA_PROXY_START_UUID")
+    if not new_server_uuid:
+        #generate one now:
+        from xpra.os_util import get_hex_uuid
+        new_server_uuid = get_hex_uuid()
+        cmd.append("--env=XPRA_PROXY_START_UUID=%s" % new_server_uuid)
     if mode=="shadow" and OSX:
         #launch the shadow server via launchctl so it will have GUI access:
         LAUNCH_AGENT = "org.xpra.Agent"
@@ -2686,7 +2697,7 @@ def get_start_server_args(opts, compat=False):
             if x in START_COMMAND_OPTIONS+BIND_OPTIONS+[
                      "pulseaudio-configure-commands",
                      "speaker-codec", "microphone-codec",
-                     "key-shortcut", "env",
+                     "key-shortcut", "start-env", "env",
                      "socket-dirs",
                      ]:
                 #individual arguments (ie: "--start=xterm" "--start=gedit" ..)
