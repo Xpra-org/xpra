@@ -68,7 +68,7 @@ class SoundSource(SoundPipeline):
         if not matching:
             raise InitExit(1, "no matching codecs between arguments '%s' and supported list '%s'" % (csv(codecs), csv(get_encoders().keys())))
         codec = matching[0]
-        encoder, fmt, self.stream_compressor = get_encoder_elements(codec)
+        encoder, fmt, stream_compressor = get_encoder_elements(codec)
         SoundPipeline.__init__(self, codec)
         self.queue = None
         self.caps = None
@@ -81,6 +81,7 @@ class SoundSource(SoundPipeline):
         self.jitter_queue = None
         self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
+        self.stream_compressor = stream_compressor
         src_options["name"] = "src"
         source_str = plugin_str(src_type, src_options)
         #FIXME: this is ugly and relies on the fact that we don't pass any codec options to work!
