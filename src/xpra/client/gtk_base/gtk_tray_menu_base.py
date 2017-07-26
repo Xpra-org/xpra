@@ -39,6 +39,8 @@ WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
+WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
+
 
 LOSSLESS = "Lossless"
 QUALITY_OPTIONS_COMMON = {
@@ -264,9 +266,7 @@ class GTKTrayMenuBase(object):
                 m.set_title(self.client.session_name or "Xpra")
         self.client.after_handshake(set_menu_title)
 
-        menu.append(self.make_aboutmenuitem())
-        menu.append(self.make_sessioninfomenuitem())
-        menu.append(self.make_bugreportmenuitem())
+        menu.append(self.make_infomenuitem())
         menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_featuresmenuitem())
         if self.client.keyboard_helper:
@@ -279,16 +279,11 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_audiomenuitem())
         if WEBCAM_MENU:
             menu.append(self.make_webcammenuitem())
-        if self.client.windows_enabled:
-            menu.append(self.make_raisewindowsmenuitem())
+        if self.client.windows_enabled and WINDOWS_MENU:
+            menu.append(self.make_windowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
-        if RUNCOMMAND_MENU:
-            menu.append(self.make_runcommandmenu())
-        if SHOW_UPLOAD:
-            menu.append(self.make_uploadmenuitem())
-        if SHOW_SHUTDOWN:
-            menu.append(self.make_shutdownmenuitem())
+        menu.append(self.make_servermenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -357,8 +352,19 @@ class GTKTrayMenuBase(object):
         return check_item
 
 
+    def make_infomenuitem(self):
+        info_menu_item = self.menuitem("Information", "information.png", "About Xpra, session information..")
+        menu = gtk.Menu()
+        info_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        menu.append(self.make_aboutmenuitem())
+        menu.append(self.make_sessioninfomenuitem())
+        menu.append(self.make_bugreportmenuitem())
+        info_menu_item.show_all()
+        return info_menu_item
+
     def make_aboutmenuitem(self):
-        return  self.menuitem("About Xpra", "information.png", None, about)
+        return  self.menuitem("About Xpra", "xpra.png", None, about)
 
     def make_sessioninfomenuitem(self):
         title = "Session Info"
@@ -638,7 +644,7 @@ class GTKTrayMenuBase(object):
         return gl
 
     def make_picturemenuitem(self):
-        picture_menu_item = self.menuitem("Picture", "picture.png", "Encoding, quality, refresh..")
+        picture_menu_item = self.menuitem("Picture", "picture.png", "Encoding, quality, ..")
         menu = gtk.Menu()
         picture_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -648,7 +654,6 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_scalingmenuitem())
         menu.append(self.make_qualitymenuitem())
         menu.append(self.make_speedmenuitem())
-        menu.append(self.make_refreshmenuitem())
         picture_menu_item.show_all()
         return picture_menu_item
 
@@ -1139,6 +1144,17 @@ class GTKTrayMenuBase(object):
         return keyboard
 
 
+    def make_windowsmenuitem(self):
+        windows_menu_item = self.menuitem("Windows", "windows.png", "Windows Actions: refresh, raise, minimize")
+        menu = gtk.Menu()
+        windows_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        menu.append(self.make_raisewindowsmenuitem())
+        menu.append(self.make_minimizewindowsmenuitem())
+        menu.append(self.make_refreshmenuitem())
+        windows_menu_item.show_all()
+        return windows_menu_item
+
     def make_refreshmenuitem(self):
         def force_refresh(*args):
             log("force refresh")
@@ -1149,8 +1165,32 @@ class GTKTrayMenuBase(object):
         def raise_windows(*args):
             for win in self.client._window_to_id.keys():
                 if not win.is_OR():
+                    win.deiconify()
                     win.present()
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
+
+    def make_minimizewindowsmenuitem(self):
+        def minimize_windows(*args):
+            for win in self.client._window_to_id.keys():
+                if not win.is_OR():
+                    win.iconify()
+        return self.handshake_menuitem("Minimize Windows", "minimize.png", None, minimize_windows)
+
+
+    def make_servermenuitem(self):
+        server_menu_item = self.menuitem("Server", "server.png", "Server Actions: run command, upload, shutdown")
+        menu = gtk.Menu()
+        server_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        if RUNCOMMAND_MENU:
+            menu.append(self.make_runcommandmenu())
+        if SHOW_UPLOAD:
+            menu.append(self.make_uploadmenuitem())
+        if SHOW_SHUTDOWN:
+            menu.append(self.make_shutdownmenuitem())
+        server_menu_item.show_all()
+        return server_menu_item
+
 
     def make_runcommandmenu(self):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
