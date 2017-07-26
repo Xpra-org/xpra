@@ -1417,24 +1417,6 @@ if WIN32:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             add_DLLs("pdfium")  #libpdfium.dll
-            if os.path.exists("C:\\Program Files\\Ghostgum\\gsview"):
-                GSVIEW = "C:\\Program Files\\Ghostgum\\gsview"
-            else:
-                GSVIEW = "C:\\Program Files (x86)\\Ghostgum\\gsview"
-            if os.path.exists("C:\\Program Files\\gs"):
-                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files\\gs"
-            else:
-                GHOSTSCRIPT_PARENT_DIR = "C:\\Program Files (x86)\\gs"
-            GHOSTSCRIPT = None
-            for x in reversed(sorted(os.listdir(GHOSTSCRIPT_PARENT_DIR))):
-                f = os.path.join(GHOSTSCRIPT_PARENT_DIR, x)
-                if os.path.isdir(f):
-                    GHOSTSCRIPT = os.path.join(f, "bin")
-                    print("found ghostscript: %s" % GHOSTSCRIPT)
-                    break
-            assert GHOSTSCRIPT is not None, "cannot find ghostscript installation directory in %s" % GHOSTSCRIPT_PARENT_DIR
-            add_data_files('gsview', glob.glob(GSVIEW+'\\*.*'))
-            add_data_files('gsview', glob.glob(GHOSTSCRIPT+'\\*.*'))
         if nvenc_ENABLED:
             add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:

@@ -15,7 +15,6 @@ from xpra.util import csv, envint, envbool
 
 #allows us to skip some printers we don't want to export
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
-PDFIUM_PRINT = envbool("XPRA_PDFIUM_PRINT", True)
 
 
 PRINTER_ENUM_VALUES = {
@@ -63,24 +62,11 @@ log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 JOB_ID = 0
 PROCESSES = {}
 
-GSVIEW_DIR = None
-GSPRINT_EXE = None
-GSWINXXC_EXE = None
 printers_modified_callback = None
 def init_printing(callback=None):
     global printers_modified_callback, GSVIEW_DIR, GSPRINT_EXE, GSWINXXC_EXE
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
-    #ensure we can find gsprint.exe in a subdirectory:
-    GSVIEW_DIR = os.path.join(get_app_dir(), "gsview")
-    assert os.path.exists(GSVIEW_DIR) and os.path.isdir(GSVIEW_DIR), "cannot find gsview directory in '%s'" % GSVIEW_DIR
-    GSPRINT_EXE = os.path.join(GSVIEW_DIR, "gsprint.exe")
-    assert os.path.exists(GSPRINT_EXE), "cannot find gsprint.exe in '%s'" % GSVIEW_DIR
-    for bits in (32, 64):
-        GSWINXXC_EXE = os.path.join(GSVIEW_DIR, "gswin%sc.exe" % bits)
-        if os.path.exists(GSWINXXC_EXE):
-            break
-    assert os.path.exists(GSWINXXC_EXE), "cannot find gswin??c.exe in '%s'" % GSVIEW_DIR
     try:
         init_winspool_listener()
     except Exception:
@@ -154,10 +140,6 @@ def get_info():
         "printer-level"         : PRINTER_LEVEL,
         "default-printer-flags" : DEFAULT_PRINTER_FLAGS,
         "printer-flags"         : PRINTER_FLAGS,
-        "commands" : {
-            "gsview"    : GSPRINT_EXE or "",
-            "gswin"     : GSWINXXC_EXE or "",
-            },
         })
     return i
 
@@ -203,20 +185,8 @@ def print_files(printer, filenames, title, options):
     assert GSVIEW_DIR, "cannot print files without gsprint!"
     processes = []
     for filename in filenames:
-        #command = ["C:\\Program Files\\Xpra\\gsview\\gsprint.exe"]
-        if PDFIUM_PRINT:
-            cwd = get_app_dir()
-            command = ["PDFIUM_Print.exe", filename, printer, title]
-        else:
-            cwd = GSVIEW_DIR
-            command = [GSPRINT_EXE, "-ghostscript", GSWINXXC_EXE, "-colour"]
-            if printer:
-                command += ["-printer", printer]
-            command += [filename]
-            #add gsview directory
-            PATH = os.environ.get("PATH")
-            os.environ["PATH"] = str(PATH+";"+GSVIEW_DIR)
-            log("environment: %s", os.environ)
+        cwd = get_app_dir()
+        command = ["PDFIUM_Print.exe", filename, printer, title]
         log("print command: %s", command)
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
