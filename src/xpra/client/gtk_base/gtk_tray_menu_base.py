@@ -268,15 +268,7 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_sessioninfomenuitem())
         menu.append(self.make_bugreportmenuitem())
         menu.append(gtk.SeparatorMenuItem())
-        menu.append(self.make_readonlymenuitem())
-        menu.append(self.make_bellmenuitem())
-        menu.append(self.make_notificationsmenuitem())
-        if self.client.windows_enabled:
-            menu.append(self.make_cursorsmenuitem())
-        if self.client.client_supports_opengl:
-            menu.append(self.make_openglmenuitem())
-        if self.client.windows_enabled:
-            menu.append(self.make_keyboardsyncmenuitem())
+        menu.append(self.make_featuresmenuitem())
         if self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
         if SHOW_CLIPBOARD_MENU:
@@ -388,6 +380,25 @@ class GTKTrayMenuBase(object):
         def show_bug_report_cb(*args):
             self.show_bug_report()
         return  self.handshake_menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
+
+
+    def make_featuresmenuitem(self):
+        features_menu_item = self.menuitem("Features", None, "OpenGL, Bell, Cursor, etc..")
+        menu = gtk.Menu()
+        features_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        menu.append(self.make_readonlymenuitem())
+        menu.append(self.make_bellmenuitem())
+        menu.append(self.make_notificationsmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_cursorsmenuitem())
+        if self.client.client_supports_opengl:
+            menu.append(self.make_openglmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_keyboardsyncmenuitem())
+        features_menu_item.show_all()
+        return features_menu_item
+        
 
     def make_readonlymenuitem(self):
         def readonly_toggled(*args):
