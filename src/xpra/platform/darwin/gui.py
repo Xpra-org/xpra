@@ -554,7 +554,7 @@ class Delegate(NSObject):
     def wheel_event_handler(self, nsview, deltax, deltay):
         global VIEW_TO_WINDOW
         window = VIEW_TO_WINDOW.get(nsview)
-        scrolllog("wheel_event_handler%s window=%s", (nsview, deltax, deltay), window)
+        scrolllog("wheel_event_handler(%#x, %.4f, %.4f) window=%s", nsview, deltax, deltay, window)
         if not window:
             return False    #not handled
         client = window._client
@@ -564,7 +564,7 @@ class Delegate(NSObject):
         pointer = client.get_mouse_position()
         def send_button(button, distance):
             v = math.sqrt(10.0*abs(distance))       #ie: 0.1 -> 1, -0.9 -> 3
-            scrolllog("send_button(%i, %f) steps=%i", button, distance, v)
+            scrolllog("send_button(%i, %.4f) steps=%i", button, distance, v)
             for _ in range(int(v)):
                 window._client.send_button(wid, button, True, pointer, modifiers, buttons)
                 window._client.send_button(wid, button, False, pointer, modifiers, buttons)
