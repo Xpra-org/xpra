@@ -273,19 +273,13 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_layoutsmenuitem())
         if SHOW_CLIPBOARD_MENU:
             menu.append(self.make_clipboardmenuitem())
-        if self.client.windows_enabled and len(self.client.get_encodings())>1:
-            menu.append(self.make_encodingsmenuitem())
-        if self.client.can_scale:
-            menu.append(self.make_scalingmenuitem())
-        menu.append(self.make_qualitymenuitem())
-        menu.append(self.make_speedmenuitem())
+        if self.client.windows_enabled:
+            menu.append(self.make_picturemenuitem())
         if STARTSTOP_SOUND_MENU:
-            menu.append(self.make_speakermenuitem())
-            menu.append(self.make_microphonemenuitem())
+            menu.append(self.make_audiomenuitem())
         if WEBCAM_MENU:
             menu.append(self.make_webcammenuitem())
         if self.client.windows_enabled:
-            menu.append(self.make_refreshmenuitem())
             menu.append(self.make_raisewindowsmenuitem())
         #menu.append(item("Options", "configure", None, self.options))
         menu.append(gtk.SeparatorMenuItem())
@@ -383,7 +377,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_featuresmenuitem(self):
-        features_menu_item = self.menuitem("Features", None, "OpenGL, Bell, Cursor, etc..")
+        features_menu_item = self.menuitem("Features", "features.png", "OpenGL, Bell, Cursor, etc..")
         menu = gtk.Menu()
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -643,6 +637,21 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(gl_set)
         return gl
 
+    def make_picturemenuitem(self):
+        picture_menu_item = self.menuitem("Picture", "picture.png", "Encoding, quality, refresh..")
+        menu = gtk.Menu()
+        picture_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        if self.client.windows_enabled and len(self.client.get_encodings())>1:
+            menu.append(self.make_encodingsmenuitem())
+        if self.client.can_scale:
+            menu.append(self.make_scalingmenuitem())
+        menu.append(self.make_qualitymenuitem())
+        menu.append(self.make_speedmenuitem())
+        menu.append(self.make_refreshmenuitem())
+        picture_menu_item.show_all()
+        return picture_menu_item
+
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
         set_sensitive(encodings, False)
@@ -828,6 +837,17 @@ class GTKTrayMenuBase(object):
                 self.speed.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
             else:
                 self.speed.set_tooltip_text("Encoding latency vs size")
+
+
+    def make_audiomenuitem(self):
+        audio_menu_item = self.menuitem("Audio", "audio.png", "Speaker and Microphone forwarding")
+        menu = gtk.Menu()
+        audio_menu_item.set_submenu(menu)
+        self.popup_menu_workaround(menu)
+        menu.append(self.make_speakermenuitem())
+        menu.append(self.make_microphonemenuitem())
+        audio_menu_item.show_all()
+        return audio_menu_item
 
 
     def spk_on(self, *args):
