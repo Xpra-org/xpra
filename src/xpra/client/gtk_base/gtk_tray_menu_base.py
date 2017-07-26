@@ -267,7 +267,6 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_infomenuitem())
-        menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_featuresmenuitem())
         if self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
@@ -281,8 +280,6 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_webcammenuitem())
         if self.client.windows_enabled and WINDOWS_MENU:
             menu.append(self.make_windowsmenuitem())
-        #menu.append(item("Options", "configure", None, self.options))
-        menu.append(gtk.SeparatorMenuItem())
         menu.append(self.make_servermenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
