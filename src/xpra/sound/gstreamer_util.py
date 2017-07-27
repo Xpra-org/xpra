@@ -95,6 +95,7 @@ CODEC_OPTIONS = [
         #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
+        (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
         (WAV        , "wavenc",         None,           "wavparse",                     None),
         (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,                       "lz4"),
