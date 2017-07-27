@@ -913,7 +913,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     CLEAN_FILES = [
                    "xpra/build_info.py",
                    "xpra/monotonic_time.c",
-                   "xpra/gtk_common/gdk_atoms.c",
+                   "xpra/gtk_common/gtk2/gdk_atoms.c",
+                   "xpra/gtk_common/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
@@ -1735,6 +1736,13 @@ if gtk_x11_ENABLED:
                     **pkgconfig(*GDK_BINDINGS_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                     ))
 
+toggle_packages(not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED), "xpra.gtk_common.gtk2")
+if not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED):
+    cython_add(Extension("xpra.gtk_common.gtk2.gdk_bindings",
+                ["xpra/gtk_common/gtk2/gdk_bindings.pyx"],
+                **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                ))
+
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
     cython_add(Extension("xpra.client.gtk3.cairo_workaround",
@@ -1819,8 +1827,8 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
-    cython_add(Extension("xpra.gtk_common.gdk_atoms",
-                ["xpra/gtk_common/gdk_atoms.pyx"],
+    cython_add(Extension("xpra.gtk_common.gtk2.gdk_atoms",
+                ["xpra/gtk_common/gtk2/gdk_atoms.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
                 ))
 

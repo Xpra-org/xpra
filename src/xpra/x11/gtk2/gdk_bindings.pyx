@@ -23,6 +23,7 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
 from libc.stdint cimport uintptr_t
+from xpra.gtk_common.gtk2.gdk_bindings cimport wrap, unwrap, get_display_for, get_raw_display_for, get_raw_atom_for
 
 
 ###################################
@@ -50,43 +51,6 @@ init_pygtk()
 cdef extern from "glib-2.0/glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
-
-cdef extern from "pygtk-2.0/pygobject.h":
-    cGObject * pygobject_get(object box)
-    object pygobject_new(cGObject * contents)
-
-    ctypedef void* gpointer
-    ctypedef int GType
-    ctypedef struct PyGBoxed:
-        #PyObject_HEAD
-        gpointer boxed
-        GType gtype
-
-cdef cGObject * unwrap(box, pyclass) except? NULL:
-    # Extract a raw GObject* from a PyGObject wrapper.
-    assert issubclass(pyclass, gobject.GObject)
-    if not isinstance(box, pyclass):
-        raise TypeError("object %r is not a %r" % (box, pyclass))
-    return pygobject_get(box)
-
-# def print_unwrapped(box):
-#     "For debugging the above."
-#     cdef cGObject * unwrapped
-#     unwrapped = unwrap(box, gobject.GObject)
-#     if unwrapped == NULL:
-#         print("contents is NULL!")
-#     else:
-#         print("contents is %s" % (<long long>unwrapped))
-
-cdef object wrap(cGObject * contents):
-    # Put a raw GObject* into a PyGObject wrapper.
-    return pygobject_new(contents)
-
-cdef extern from "glib/gmem.h":
-    #void g_free(gpointer mem)
-    ctypedef unsigned long gsize
-    gpointer g_malloc(gsize n_bytes)
-
 
 
 ###################################
@@ -398,23 +362,9 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
     ctypedef _GdkAtom* GdkAtom
     GdkAtom GDK_NONE
     # FIXME: this should have stricter type checking
-    GdkAtom PyGdkAtom_Get(object)
     object PyGdkAtom_New(GdkAtom)
     Atom gdk_x11_get_xatom_by_name(char *atom_name)
     GdkAtom gdk_x11_xatom_to_atom_for_display(cGdkDisplay *, Atom)
-
-
-cdef extern from "gtk-2.0/gtk/gtkselection.h":
-    ctypedef int gint
-    ctypedef unsigned char guchar
-    ctypedef struct GtkSelectionData:
-        GdkAtom       selection
-        GdkAtom       target
-        GdkAtom       type
-        gint          format
-        guchar        *data
-        gint          length
-        cGdkDisplay   *display
 
 
 # Basic utilities:
@@ -435,20 +385,6 @@ cdef object _get_pywindow(object display_source, Window xwindow):
         raise XError(BadWindow)
     return win
 
-cpdef get_display_for(obj):
-    if obj is None:
-        raise TypeError("Cannot get a display: instance is None!")
-    if isinstance(obj, gdk.Display):
-        return obj
-    elif isinstance(obj, (gdk.Drawable,
-                          gtk.Widget,
-                          gtk.Clipboard,
-                          gtk.SelectionData,
-                          )):
-        return obj.get_display()
-    else:
-        raise TypeError("Don't know how to get a display from %r" % (obj,))
-
 def get_xvisual(pyvisual):
     cdef Visual * xvisual
     xvisual = _get_xvisual(pyvisual)
@@ -460,40 +396,8 @@ cdef Visual *_get_xvisual(pyvisual):
     return GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, gdk.Visual))
 
 
-cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
-    return <cGdkDisplay*> unwrap(get_display_for(obj), gdk.Display)
-
 cdef Display * get_xdisplay_for(obj) except? NULL:
     return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
-
-
-cdef void * pyg_boxed_get(v):
-    cdef PyGBoxed * pygboxed = <PyGBoxed *> v
-    return <void *> pygboxed.boxed
-
-def sanitize_gtkselectiondata(obj):
-    log("get_gtkselectiondata(%s) type=%s", obj, type(obj))
-    cdef GtkSelectionData * selectiondata = <GtkSelectionData *> pyg_boxed_get(obj)
-    if selectiondata==NULL:
-        return
-    log("selectiondata: selection=%#x, target=%#x, type=%#x, format=%#x, length=%#x, data=%#x",
-        <uintptr_t> selectiondata.selection, <uintptr_t> selectiondata.target, <uintptr_t> selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
-    cdef GdkAtom gdkatom
-    cdef gpointer data
-    cdef char* c
-    if selectiondata.length==-1 and selectiondata.data==NULL:
-        log.warn("Warning: sanitizing NULL gtk selection data to avoid crash")
-        xatom = get_xatom("STRING")
-        gdkatom = get_gdkatom(obj, xatom)
-        data = g_malloc(16)
-        assert data!=NULL
-        c = <char *> data
-        for i in range(16):
-            c[i] = 0
-        selectiondata.length = 0
-        selectiondata.format = 8
-        selectiondata.type = gdkatom
-        selectiondata.data = <guchar*> data
 
 
 def get_xatom(str_or_xatom):
@@ -565,47 +469,6 @@ cpdef get_children(pywindow):
 def get_parent(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pyparent
-
-# Geometry hints
-
-cdef extern from "gtk-2.0/gdk/gdkwindow.h":
-    ctypedef struct cGdkGeometry "GdkGeometry":
-        int min_width, min_height, max_width, max_height,
-        int base_width, base_height, width_inc, height_inc
-        double min_aspect, max_aspect
-    void gdk_window_constrain_size(cGdkGeometry *geometry,
-                                   unsigned int flags, int width, int height,
-                                   int * new_width, int * new_height)
-
-def calc_constrained_size(int width, int height, object hints):
-    if hints is None:
-        return width, height
-
-    cdef cGdkGeometry geom
-    cdef int new_width = 0, new_height = 0
-    cdef int new_larger_width = 0, new_larger_height = 0
-    cdef int flags = 0
-
-    if "maximum-size" in hints:
-        flags = flags | gdk.HINT_MAX_SIZE
-        geom.max_width, geom.max_height = hints["maximum-size"]
-    if "minimum-size" in hints:
-        flags = flags | gdk.HINT_MIN_SIZE
-        geom.min_width, geom.min_height = hints["minimum-size"]
-    if "base-size" in hints:
-        flags = flags | gdk.HINT_BASE_SIZE
-        geom.base_width, geom.base_height = hints["base-size"]
-    if "increment" in hints:
-        flags = flags | gdk.HINT_RESIZE_INC
-        geom.width_inc, geom.height_inc = hints["increment"]
-    if "min_aspect" in hints:
-        assert "max_aspect" in hints
-        flags = flags | gdk.HINT_ASPECT
-        geom.min_aspect = hints["min_aspect"]
-        geom.max_aspect = hints["max_aspect"]
-    gdk_window_constrain_size(&geom, flags, width, height, &new_width, &new_height)
-    return new_width, new_height
-
 
 
 ###################################

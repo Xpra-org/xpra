@@ -24,6 +24,8 @@ from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk2.gdk_bindings import (
                 add_event_receiver,                         #@UnresolvedImport
                 remove_event_receiver,                      #@UnresolvedImport
+               )
+from xpra.gtk_common.gtk2.gdk_bindings import (
                 get_display_for,                            #@UnresolvedImport
                 calc_constrained_size,                      #@UnresolvedImport
                )

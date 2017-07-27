@@ -6,7 +6,7 @@
 
 import struct
 
-from xpra.gtk_common.gdk_atoms import (
+from xpra.gtk_common.gtk2.gdk_atoms import (
                 gdk_atom_objects_from_gdk_atom_array,   #@UnresolvedImport
                 gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
                 )
@@ -14,9 +14,9 @@ from xpra.gtk_common.gdk_atoms import (
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
 
 from xpra.os_util import WIN32, OSX
-if not WIN32 and not OSX:
+if False:
     try:
-        from xpra.x11.gtk2.gdk_bindings import sanitize_gtkselectiondata
+        from xpra.gtk_common.gtk2.gdk_bindings import sanitize_gtkselectiondata
         from xpra.clipboard import clipboard_base
         clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
     except ImportError as e:
