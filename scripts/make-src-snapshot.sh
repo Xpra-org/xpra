@@ -5,7 +5,8 @@ if [ -z "${VERSION}" ]; then
 	VERSION=`PYTHONPATH="./src" python -c "from xpra import __version__; print(__version__)"`
 fi
 DIR=xpra-${VERSION}
-rm -fr "${DIR}"
+rm -fr ${DIR}
+rm -fr ${DIR}.tar.*
 rm -f "src/xpra/build_info.py"
 rm -f "src/xpra/src_info.py"
 #record current svn info into xpra/src_info.py:
@@ -49,3 +50,18 @@ done
 echo "xz / bz2 with checksums:"
 ls -al ${DIR}.tar.*
 rm -fr "${DIR}"
+
+#html5 client only:
+DIR=xpra-html5-${VERSION}
+rm -fr ${DIR}
+mkdir ${DIR}
+cp -apr src/html5 src/setup_html5.py ${DIR}
+tar -cf ${DIR}.tar ${DIR}
+ls -la ${DIR}.tar
+xz -k ${DIR}.tar
+bzip2 ${DIR}.tar
+for a in ${DIR}.tar.bz2 ${DIR}.tar.xz; do
+	md5sum ${a} > ${a}.md5
+	sha1sum ${a} > ${a}.sha
+done
+rm -fr ${DIR}

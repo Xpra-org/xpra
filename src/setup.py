@@ -250,6 +250,7 @@ install = "dist"
 rpath = None
 ssl_cert = None
 ssl_key = None
+minifier = None
 filtered_args = []
 for arg in sys.argv:
     matched = False
@@ -1022,93 +1023,8 @@ def glob_recurse(srcdir):
 
 
 def install_html5(install_dir="www"):
-    if minify_ENABLED:
-        print("minifying html5 client to %s using %s" % (install_dir, minifier))
-    else:
-        print("copying html5 client to %s" % (install_dir, ))
-    symlinks = {
-        "jquery.js"     : [
-            "/usr/share/javascript/jquery/jquery.js",
-            "/usr/share/javascript/jquery/3/jquery.js",
-            ],
-        }
-    for k,files in glob_recurse("html5").items():
-        if (k!=""):
-            k = os.sep+k
-        for f in files:
-            src = os.path.join(os.getcwd(), f)
-            parts = f.split(os.path.sep)
-            if parts[-1] in ("AUTHORS", "LICENSE"):
-                continue
-            if parts[0]=="html5":
-                f = os.path.join(*parts[1:])
-            if install_dir==".":
-                install_dir = os.getcwd()
-            dst = os.path.join(install_dir, f)
-            if os.path.exists(dst):
-                os.unlink(dst)
-            #try to find an existing installed library and symlink it:
-            symlink_options = symlinks.get(os.path.basename(f), [])
-            for symlink_option in symlink_options:
-                if os.path.exists(symlink_option):
-                    os.symlink(symlink_option, dst)
-                    break
-            if os.path.exists(dst):
-                #we've created a symlink, skip minification and compression
-                continue
-            ddir = os.path.split(dst)[0]
-            if ddir and not os.path.exists(ddir):
-                os.makedirs(ddir, 0o755)
-            ftype = os.path.splitext(f)[1].lstrip(".")
-            if minify_ENABLED and ftype=="js":
-                if minifier=="uglifyjs":
-                    minify_cmd = ["uglifyjs",
-                                  "--screw-ie8",
-                                  src,
-                                  "-o", dst,
-                                  "--compress",
-                                  ]
-                else:
-                    assert minifier=="yuicompressor"
-                    assert yuicompressor
-                    jar = yuicompressor.get_jar_filename()
-                    java_cmd = os.environ.get("JAVA", "java")
-                    minify_cmd = [java_cmd, "-jar", jar,
-                                  src,
-                                  "--nomunge",
-                                  "--line-break", "400",
-                                  "--type", ftype,
-                                  "-o", dst,
-                                  ]
-                r = get_status_output(minify_cmd)[0]
-                if r!=0:
-                    print("Error: failed to minify '%s', command returned error %i" % (f, r))
-                    if verbose_ENABLED:
-                        print(" command: %s" % (minify_cmd,))
-                else:
-                    print("minified %s" % (f, ))
-            else:
-                r = -1
-            if r!=0:
-                shutil.copyfile(src, dst)
-                os.chmod(dst, 0o644)
-            if ftype not in ("png", ):
-                if html5_gzip_ENABLED:
-                    gzip_dst = "%s.gz" % dst
-                    if os.path.exists(gzip_dst):
-                        os.unlink(gzip_dst)
-                    cmd = ["gzip", "-f", "-n", "-9", "-k", dst]
-                    get_status_output(cmd)
-                    if os.path.exists(gzip_dst):
-                        os.chmod(gzip_dst, 0o644)
-                if html5_brotli_ENABLED:
-                    br_dst = "%s.br" % dst
-                    if os.path.exists(br_dst):
-                        os.unlink(br_dst)
-                    cmd = ["bro", "--input", dst, "--output", br_dst]
-                    get_status_output(cmd)
-                    if os.path.exists(br_dst):
-                        os.chmod(br_dst, 0o644)
+    from setup_html5 import install_html5 as do_install_html5
+    do_install_html5(install_dir, minifier, html5_gzip_ENABLED, html5_brotli_ENABLED, verbose_ENABLED)
 
 
 #*******************************************************************************
@@ -1442,7 +1358,7 @@ if WIN32:
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
         if "clean" not in sys.argv and html5_ENABLED:
-            install_html5(os.path.join(install, "www"))
+            install_html5(os.path.join(install, "www"), )
             for k,v in glob_recurse("build/www").items():
                 if (k!=""):
                     k = os.sep+k
