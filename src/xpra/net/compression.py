@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import zlib
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
@@ -78,25 +77,36 @@ except Exception as e:
         raise Exception("lzo is not supported!")
 
 
-#stupid python version breakage:
-if sys.version > '3':
+try:
+    import zlib
+    has_zlib = True
+    #stupid python version breakage:
+    if sys.version > '3':
+        def zcompress(packet, level):
+            if type(packet)!=bytes:
+                packet = bytes(packet, 'UTF-8')
+            return level + ZLIB_FLAG, zlib.compress(packet, level)
+    else:
+        def zcompress(packet, level):
+            return level + ZLIB_FLAG, zlib.compress(str(packet), level)
+except ImportError as e:
+    has_zlib = False
     def zcompress(packet, level):
-        if type(packet)!=bytes:
-            packet = bytes(packet, 'UTF-8')
-        return level + ZLIB_FLAG, zlib.compress(packet, level)
+        raise Exception("zlib is not supported!")
 
+
+if sys.version > '3':
     def nocompress(packet, level):
         if type(packet)!=bytes:
             packet = bytes(packet, 'UTF-8')
         return 0, packet
 else:
-    def zcompress(packet, level):
-        return level + ZLIB_FLAG, zlib.compress(str(packet), level)
     def nocompress(packet, level):
         return 0, packet
 
+
 #defaults to True if available:
-use_zlib = True
+use_zlib = has_zlib
 use_lzo = has_lzo
 use_lz4 = has_lz4
 
@@ -134,8 +144,9 @@ def get_compression_caps():
                               }
     _zlib = {
              ""             : use_zlib,
-             "version"      : zlib.__version__
              }
+    if has_zlib:
+        _zlib["version"] = zlib.__version__
     caps.update({
                  "lz4"                   : _lz4,
                  "lzo"                   : _lzo,
