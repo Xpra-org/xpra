@@ -16,7 +16,7 @@ required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
 
 WHITELIST = {
-    "renderer"  : ["Skylake", "Kabylake"],
+    "renderer"  : ["Haswell", "Skylake", "Kabylake", "Cannonlake"],
     }
 GREYLIST = {
             "vendor"    : ["Intel", "Humper"]
