@@ -43,7 +43,7 @@ class MINMAXINFO(ctypes.Structure):
 #but should be pretty easy to tweak if needed.
 
 HOOK_MINMAXINFO = envbool("XPRA_WIN32_MINMAXINFO", True)
-HOOK_MINMAXINFO_OVERRIDE = envbool("XPRA_WIN32_MINMAXINFO_OVERRIDE", False)
+HOOK_MINMAXINFO_OVERRIDE = envbool("XPRA_WIN32_MINMAXINFO_OVERRIDE", True)
 
 
 class Win32Hooks(object):
