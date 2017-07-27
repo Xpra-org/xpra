@@ -81,7 +81,7 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                                   ]
                 else:
                     assert minifier=="yuicompressor"
-                    assert yuicompressor
+                    import yuicompressor        #@UnresolvedImport
                     jar = yuicompressor.get_jar_filename()
                     java_cmd = os.environ.get("JAVA", "java")
                     minify_cmd = [java_cmd, "-jar", jar,
