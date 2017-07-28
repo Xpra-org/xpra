@@ -13,7 +13,7 @@ from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem, MESSAGE_QUESTION, BUTTONS_NONE
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_encoding_help, get_encoding_to_name
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_encoding_help, get_encoding_name
 from xpra.platform.gui import get_icon_size
 try:
     from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
