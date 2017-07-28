@@ -1405,7 +1405,7 @@ class UIXpraClient(XpraClientBase):
         dpi = 0
         if self.dpi>0:
             #scale it:
-            dpi = self.cx(self.cy(self.dpi))
+            xdpi = ydpi = dpi = self.cx(self.cy(self.dpi))
         else:
             #not supplied, use platform detection code:
             #platforms may also provide per-axis dpi (later win32 versions do)
