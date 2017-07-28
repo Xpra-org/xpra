@@ -1,0 +1,11 @@
+--- a/rencode/rencode.pyx
++++ b/rencode/rencode.pyx
+@@ -22,6 +22,8 @@
+ #     Boston, MA  02110-1301, USA.
+ #
+ 
++from __future__ import absolute_import
++
+ import sys
+ 
+ py3 = sys.version_info[0] >= 3

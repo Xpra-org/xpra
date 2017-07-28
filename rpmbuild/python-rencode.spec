@@ -13,7 +13,7 @@
 
 Name:           python2-rencode
 Version:        1.0.5
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
@@ -21,6 +21,7 @@ Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
 Provides:		python-rencode
 Obsoletes:		python-rencode
 Conflicts:		python-rencode
+Patch0:         python-rencode-py36-importwarning.patch
 
 
 %if 0%{?suse_version}
@@ -59,6 +60,9 @@ b-encodings.
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
+pushd %{py3dir}
+%patch0 -p1
+popd
 %endif
 
 %build
@@ -113,6 +117,9 @@ popd
 %endif
 
 %changelog
+* Fri Jul 28 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-3
+- avoid import warnings with python 3.6
+
 * Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-2
 - try harder to supersede the old package name
 
