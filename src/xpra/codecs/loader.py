@@ -240,38 +240,46 @@ PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4
 EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "png/P", "png/L", "rgb"]
 
 
-from xpra.net import compression
-RGB_COMP_OPTIONS  = ["Raw RGB"]
-if compression.get_enabled_compressors():
-    RGB_COMP_OPTIONS  += ["/".join(compression.get_enabled_compressors())]
+def get_rgb_compression_options():
+    from xpra.net import compression
+    compressors = compression.get_enabled_compressors()
+    RGB_COMP_OPTIONS  = ["Raw RGB"]
+    if compressors:
+        RGB_COMP_OPTIONS  += ["/".join(compressors)]
+    return RGB_COMP_OPTIONS
 
-ENCODINGS_TO_NAME = {
-      "auto"    : "automatic",
-      "h264"    : "H.264",
-      "h265"    : "H.265",
-      "mpeg4"   : "MPEG4",
-      "vp8"     : "VP8",
-      "vp9"     : "VP9",
-      "png"     : "PNG (24/32bpp)",
-      "png/P"   : "PNG (8bpp colour)",
-      "png/L"   : "PNG (8bpp grayscale)",
-      "jpeg"    : "JPEG",
-      "rgb"     : " + ".join(RGB_COMP_OPTIONS) + " (24/32bpp)",
-    }
+def get_encoding_name(encoding):
+    ENCODINGS_TO_NAME = {
+          "auto"    : "automatic",
+          "h264"    : "H.264",
+          "h265"    : "H.265",
+          "mpeg4"   : "MPEG4",
+          "vp8"     : "VP8",
+          "vp9"     : "VP9",
+          "png"     : "PNG (24/32bpp)",
+          "png/P"   : "PNG (8bpp colour)",
+          "png/L"   : "PNG (8bpp grayscale)",
+          "jpeg"    : "JPEG",
+          "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
+        }
+    return ENCODINGS_TO_NAME.get(encoding, encoding)
 
-ENCODINGS_HELP = {
-      "auto"    : "automatic mode (recommended)",
-      "h264"    : "H.264 video codec",
-      "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
-      "vp8"     : "VP8 video codec",
-      "vp9"     : "VP9 video codec",
-      "mpeg4"   : "MPEG-4 video codec",
-      "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
-      "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
-      "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
-      "jpeg"    : "JPEG lossy compression",
-      "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
-      }
+def get_encoding_help(encoding):
+    from xpra.net import compression
+    compressors = compression.get_enabled_compressors()
+    ENCODINGS_HELP = {
+          "auto"    : "automatic mode (recommended)",
+          "h264"    : "H.264 video codec",
+          "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
+          "vp8"     : "VP8 video codec",
+          "vp9"     : "VP9 video codec",
+          "mpeg4"   : "MPEG-4 video codec",
+          "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
+          "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
+          "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
+          "jpeg"    : "JPEG lossy compression",
+          "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
+          }
 
 HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "rgb", "jpeg")
 

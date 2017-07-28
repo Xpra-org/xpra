@@ -1213,10 +1213,11 @@ def configure_logging(options, mode):
 
 def configure_network(options):
     from xpra.net import compression, packet_encoding
+    ecs = compression.get_enabled_compressors()
     for c in compression.ALL_COMPRESSORS:
-        enabled = c in compression.get_enabled_compressors() and c in options.compressors
+        enabled = c in ecs and c in options.compressors
         setattr(compression, "use_%s" % c, enabled)
-    if not compression.get_enabled_compressors():
+    if not ecs:
         #force compression level to zero since we have no compressors available:
         options.compression_level = 0
     for pe in packet_encoding.ALL_ENCODERS:

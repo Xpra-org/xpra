@@ -13,7 +13,7 @@ from xpra.os_util import bytestostr, OSX
 from xpra.gtk_common.gtk_util import ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem, MESSAGE_QUESTION, BUTTONS_NONE
 from xpra.client.client_base import EXIT_OK
 from xpra.gtk_common.about import about, close_about
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, ENCODINGS_HELP, ENCODINGS_TO_NAME
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_encoding_help, get_encoding_to_name
 from xpra.platform.gui import get_icon_size
 try:
     from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
@@ -201,8 +201,8 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.encoding_to_index = {}
     NAME_TO_ENCODING = {}
     for i, encoding in enumerate(encodings):
-        name = ENCODINGS_TO_NAME.get(encoding, encoding)
-        descr = ENCODINGS_HELP.get(encoding)
+        name = get_encoding_name(encoding)
+        descr = get_encoding_help(encoding)
         NAME_TO_ENCODING[name] = encoding
         encoding_item = CheckMenuItem(name)
         if descr:
