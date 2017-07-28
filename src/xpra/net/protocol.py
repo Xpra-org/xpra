@@ -53,26 +53,6 @@ SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
 
-def get_digests():
-    import hashlib
-    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
-
-def get_network_caps():
-    try:
-        from xpra.platform.features import MMAP_SUPPORTED
-    except:
-        MMAP_SUPPORTED = False
-    caps = {
-                "digest"                : get_digests(),
-                "compressors"           : compression.get_enabled_compressors(),
-                "encoders"              : packet_encoding.get_enabled_encoders(),
-                "mmap"                  : MMAP_SUPPORTED,
-               }
-    caps.update(get_crypto_caps())
-    caps.update(get_compression_caps())
-    caps.update(get_packet_encoding_caps())
-    return caps
-
 def sanity_checks():
     """ warns the user if important modules are missing """
     compression_sanity_checks()

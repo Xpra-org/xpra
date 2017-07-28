@@ -30,10 +30,11 @@ from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
 from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
-from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
+from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
@@ -1292,7 +1293,6 @@ class ServerCore(object):
         if self.original_desktop_display:
             si["original-desktop-display"] = self.original_desktop_display
         up("server", si)
-        from xpra.net.net_util import get_info as get_net_info
         ni = get_net_info()
         ni.update({
                    "sockets"        : self.get_socket_info(),

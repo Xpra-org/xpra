@@ -23,7 +23,8 @@ authlog = Logger("auth")
 from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.protocol import Protocol, get_network_caps, sanity_checks
+from xpra.net.protocol import Protocol, sanity_checks
+from xpra.net.net_util import get_network_caps
 from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, get_digest_module, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION

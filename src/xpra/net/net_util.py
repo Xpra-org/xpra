@@ -315,8 +315,29 @@ def get_ssl_info():
 			info.setdefault("openssl", {})[name] = v
 	return info
 
+
+def get_network_caps():
+    try:
+        from xpra.platform.features import MMAP_SUPPORTED
+    except:
+        MMAP_SUPPORTED = False
+    from xpra.net.crypto import get_digests, get_crypto_caps
+    from xpra.net.compression import get_enabled_compressors, get_compression_caps
+    from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
+    caps = {
+                "digest"                : get_digests(),
+                "compressors"           : get_enabled_compressors(),
+                "encoders"              : get_enabled_encoders(),
+                "mmap"                  : MMAP_SUPPORTED,
+               }
+    caps.update(get_crypto_caps())
+    caps.update(get_compression_caps())
+    caps.update(get_packet_encoding_caps())
+    return caps
+
+
 def get_info():
-	from xpra.net.protocol import get_network_caps
+	log.info("net_util.get_info()")
 	i = get_network_caps()
 	if has_netifaces:
 		i["interfaces"] = get_interfaces()
@@ -329,6 +350,7 @@ def get_info():
 	if s:
 		i["system"] = s
 	i["config"] = get_net_config()
+	log.info("net_util.get_info()=%s", i)
 	return i
 
 

@@ -18,8 +18,9 @@ enclog = Logger("encoding")
 from xpra.server.server_core import get_server_info, get_thread_info
 from xpra.scripts.server import deadly_signal
 from xpra.net import compression
+from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
-from xpra.net.protocol import Protocol, get_network_caps
+from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER

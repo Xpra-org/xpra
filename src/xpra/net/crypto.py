@@ -81,6 +81,10 @@ def validate_backend(try_backend):
     log("validate_backend(%s) passed", try_backend)
 
 
+def get_digests():
+    import hashlib
+    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+
 def get_digest_module(digest):
     log("get_digest_module(%s)", digest)
     if not digest or not digest.startswith("hmac"):

@@ -23,7 +23,7 @@ from xpra.log import Logger
 from xpra.gtk_common.gtk_util import add_close_accel, label, title_box, \
                         TableBuilder, imagebutton, scaled_image, get_preferred_size, get_gtk_version_info, \
                         RELIEF_NONE, RELIEF_NORMAL, EXPAND, FILL, WIN_POS_CENTER
-from xpra.net.protocol import get_network_caps
+from xpra.net.net_util import get_network_caps
 log = Logger("info")
 
 N_SAMPLES = 20      #how many sample points to show on the graphs
