@@ -12,7 +12,8 @@ from xpra.net.net_util import get_info
 class TestVersionUtilModule(unittest.TestCase):
 
     def test_get_info(self):
-        get_info()
+        #from rencode import dumps as rencode_dumps, loads as rencode_loads, __version__ as rencode_version
+        from rencode import dumps as rencode_dumps
 
 
 def main():
