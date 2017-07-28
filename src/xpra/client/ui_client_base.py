@@ -109,6 +109,8 @@ WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split(",")
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
+SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
+
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
@@ -1211,7 +1213,7 @@ class UIXpraClient(XpraClientBase):
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
-        if PYTHON3 and WIN32 and pressed_state==pressed:
+        if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state==pressed:
             mouselog("button action: unchanged state, ignoring event")
             return
         self._button_state[button] = pressed
