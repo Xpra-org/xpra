@@ -29,8 +29,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_widget = None
         self.tray = False
         self.tray_icon = None
-        #the pointer position timer:
-        self.start_poll_pointer_position()
 
     def init(self, opts):
         GTKServerBase.init(self, opts)
@@ -41,7 +39,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def cleanup(self):
         self.cleanup_tray()
-        self.stop_poll_pointer_position()
         GTKServerBase.cleanup(self)
         ShadowServerBase.cleanup(self)
 
@@ -57,6 +54,15 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.tray_icon:
             self.set_tray_icon("server-notconnected")
         GTKServerBase.last_client_exited(self)
+
+
+    def start_refresh(self):
+        self.start_poll_pointer_position()
+        ShadowServerBase.start_refresh(self)
+
+    def stop_refresh(self):
+        self.stop_poll_pointer_position()
+        ShadowServerBase.stop_refresh(self)
 
 
     def stop_poll_pointer_position(self):
