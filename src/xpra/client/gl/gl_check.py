@@ -505,6 +505,7 @@ def check_support(force_enable=False, check_colormap=False):
         glconfig = Config_new_by_mode(display_mode)
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
+        return {}
     props["display_mode"] = get_MODE_names(display_mode)
     #on OSX, we had to patch out get_depth...
     #so take extra precautions when querying properties:

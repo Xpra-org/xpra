@@ -102,6 +102,7 @@ else:
             return "gtk2.GLContextManager(%s)" % self.widget
 
 def GLDrawingArea(glconfig):
+    assert glconfig, "missing GLConfig"
     glarea = gtk.DrawingArea()
     # Set OpenGL-capability to the widget
     gtkgl.widget_set_gl_capability(glarea, glconfig, None, True, RGBA_TYPE)
