@@ -26,7 +26,9 @@ from libc.stdint cimport uintptr_t
 # Headers, python magic
 ###################################
 cdef extern from "gdk/gdk.h":
-    pass
+    ctypedef unsigned int gboolean
+    ctypedef unsigned char gchar
+    GdkAtom gdk_atom_intern(const gchar *atom_name, gboolean only_if_exists)
 
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":
@@ -100,11 +102,6 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
         pass
     ctypedef _GdkAtom* GdkAtom
 
-    GdkAtom GDK_NONE
-    # FIXME: this should have stricter type checking
-    GdkAtom PyGdkAtom_Get(object)
-    object PyGdkAtom_New(GdkAtom)
-
 
 cdef extern from "gtk-2.0/gtk/gtkselection.h":
     ctypedef int gint
@@ -137,9 +134,6 @@ cpdef get_display_for(obj):
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL:
     return <cGdkDisplay*> unwrap(get_display_for(obj), gdk.Display)
 
-cdef GdkAtom get_raw_atom_for(obj) except? NULL:
-   return <GdkAtom> unwrap(obj, gdk.Atom)
-
 
 cdef void * pyg_boxed_get(v):
     cdef PyGBoxed * pygboxed = <PyGBoxed *> v
@@ -155,17 +149,20 @@ def sanitize_gtkselectiondata(obj):
     cdef GdkAtom gdkatom
     cdef gpointer data
     cdef char* c
-    if selectiondata.length==-1 and selectiondata.data==NULL:
-        log.warn("Warning: sanitizing NULL gtk selection data to avoid crash")
+    if (<uintptr_t> selectiondata.type)>=2**16:
+        log.warn("Warning: sanitizing invalid gtk selection type atom %#x", <uintptr_t> selectiondata.type)
         data = g_malloc(16)
         assert data!=NULL
         c = <char *> data
         for i in range(16):
             c[i] = 0
+        gdkatom = gdk_atom_intern(b"STRING", 0)
         selectiondata.length = 0
         selectiondata.format = 8
-        selectiondata.type = get_raw_atom_for(gdk.atom_intern("STRING"))
+        selectiondata.type = gdkatom
         selectiondata.data = <guchar*> data
+        return True
+    return False
 
 
 cdef extern from "gtk-2.0/gdk/gdkwindow.h":

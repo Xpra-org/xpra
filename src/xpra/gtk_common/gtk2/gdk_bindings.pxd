@@ -21,7 +21,6 @@ cdef cGObject * unwrap(box, pyclass) except? NULL
 
 cpdef get_display_for(obj)
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL
-cdef GdkAtom get_raw_atom_for(obj) except? NULL
 
 cdef void * pyg_boxed_get(v)
 

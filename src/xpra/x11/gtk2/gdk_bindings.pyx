@@ -23,7 +23,7 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
 from libc.stdint cimport uintptr_t
-from xpra.gtk_common.gtk2.gdk_bindings cimport wrap, unwrap, get_display_for, get_raw_display_for, get_raw_atom_for
+from xpra.gtk_common.gtk2.gdk_bindings cimport wrap, unwrap, get_display_for, get_raw_display_for
 
 
 ###################################

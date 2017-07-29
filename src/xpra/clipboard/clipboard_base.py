@@ -79,7 +79,7 @@ def nesting_check():
 
 #may get overriden
 def nosanitize_gtkselectiondata(selectiondata):
-    return selectiondata
+    return False
 sanitize_gtkselectiondata = nosanitize_gtkselectiondata
 
 
@@ -779,7 +779,8 @@ class ClipboardProxy(gtk.Invisible):
         def unpack(clipboard, selection_data, user_data):
             log("unpack %s: %s", clipboard, type(selection_data))
             global sanitize_gtkselectiondata
-            selection_data = sanitize_gtkselectiondata(selection_data)
+            if selection_data and sanitize_gtkselectiondata(selection_data):
+                self._clipboard.set_text("")
             if selection_data is None:
                 cb(None, None, None)
                 return
