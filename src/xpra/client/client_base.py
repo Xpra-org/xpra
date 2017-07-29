@@ -863,7 +863,8 @@ class XpraClientBase(FileTransferHandler):
                 for x in data.split("\n"):
                     netlog.warn(x.strip("\r"))
             else:
-                netlog.warn("Failed to connect, received: %s", repr_ellipsized(data.strip("\n").strip("\r")))
+                netlog.error("Error: failed to connect, received")
+                netlog.error(" %s", repr_ellipsized(data.strip("\n").strip("\r")))
         else:
             netlog.warn("Received uninterpretable nonsense: %s", message)
             netlog.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
