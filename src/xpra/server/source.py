@@ -921,7 +921,9 @@ class ServerSource(FileTransferHandler):
                 mmap_filename = self.mmap_filename
             if not self.supports_mmap:
                 mmaplog("client enabled mmap but mmap mode is not supported", mmap_filename)
-            elif not os.path.exists(mmap_filename) and not WIN32:
+            elif WIN32 and mmap_filename.startswith("/"):
+                mmaplog("mmap_file '%s' is a unix path", mmap_filename)
+            elif not os.path.exists(mmap_filename):
                 mmaplog("mmap_file '%s' cannot be found!", mmap_filename)
             else:
                 from xpra.net.mmap_pipe import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
