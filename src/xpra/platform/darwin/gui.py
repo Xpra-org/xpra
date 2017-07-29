@@ -582,7 +582,7 @@ class Delegate(NSObject):
                 send_button(button, dy)
                 dy = 0
         setattr(window, "deltax", dx)
-        setattr(window, "deltax", dy)
+        setattr(window, "deltay", dy)
         return True
 
     @objc.python_method
