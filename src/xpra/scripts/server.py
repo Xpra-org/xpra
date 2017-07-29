@@ -522,7 +522,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 except:
                     pass
             stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
-            stdout.write("Entering daemon mode; "
+            stderr.write("Entering daemon mode; "
                      + "any further errors will be reported to:\n"
                      + ("  %s\n" % log_filename0))
 
