@@ -438,7 +438,7 @@ def do_parse_cmdline(cmdline, defaults):
                       )
     else:
         ignore({
-                "daemon"    : False,
+                "daemon"    : defaults.daemon,
                 "pidfile"   : defaults.pidfile,
                 "log_file"  : defaults.log_file,
                 "log_dir"   : defaults.log_dir,
@@ -487,7 +487,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="exit_with_client", default=defaults.exit_with_client,
                           help="Terminate the server when the last client disconnects. Default: %s" % enabled_str(defaults.exit_with_client))
     else:
-        ignore({"exit_with_client" : False})
+        ignore({"exit_with_client" : defaults.exit_with_client})
     group.add_option("--idle-timeout", action="store",
                       dest="idle_timeout", type="int", default=defaults.idle_timeout,
                       help="Disconnects the client when idle (0 to disable). Default: %s seconds" % defaults.idle_timeout)
@@ -510,8 +510,8 @@ def do_parse_cmdline(cmdline, defaults):
                           default=defaults.fake_xinerama,
                           help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
-        ignore({"use-display"   : False,
-                "xvfb"          : '',
+        ignore({"use-display"   : defaults.use_display,
+                "xvfb"          : defaults.xvfb,
                 "fake-xinerama" : defaults.fake_xinerama})
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
@@ -554,7 +554,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="mdns", default=defaults.mdns,
                           help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
     else:
-        ignore({"mdns" : False})
+        ignore({"mdns" : defaults.mdns})
     legacy_bool_parse("pulseaudio")
     legacy_bool_parse("dbus-proxy")
     legacy_bool_parse("dbus-control")
@@ -640,7 +640,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="xsettings", default=defaults.xsettings,
                           help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     else:
-        ignore({"xsettings" : False})
+        ignore({"xsettings" : defaults.xsettings})
     legacy_bool_parse("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                       dest="mmap", default=defaults.mmap,
@@ -681,12 +681,13 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="av_sync", default=defaults.av_sync,
                           help="Try to synchronize sound and video. Default: %s." % enabled_str(defaults.av_sync))
     else:
-        ignore({"av-sync"           : False,
-                "speaker"           : "no",
+        ignore({"av-sync"           : defaults.av_sync,
+                "speaker"           : defaults.speaker,
                 "speaker-codec"     : [],
-                "microphone"        : "no",
+                "microphone"        : defaults.microphone,
                 "microphone-codec"  : [],
-                "sound-source"      : ""})
+                "sound-source"      : defaults.sound_source,
+                })
 
     group = optparse.OptionGroup(parser, "Encoding and Compression Options",
                 "These options are used by the client to specify the desired picture and network data compression."
@@ -967,8 +968,9 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="socket_permissions", default=defaults.socket_permissions,
                           help="When creating the server unix domain socket, what file access mode to use (default: '%default')")
     else:
-        ignore({"mmap-group"            : False,
-                "socket-permissions"    : defaults.socket_permissions})
+        ignore({"mmap-group"            : defaults.mmap_group,
+                "socket-permissions"    : defaults.socket_permissions,
+                })
 
     replace_option("--enable-pings", "--pings=5")
     group.add_option("--pings", action="store", metavar="yes|no",
