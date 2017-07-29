@@ -27,6 +27,7 @@ scrolllog = Logger("osx", "events", "scroll")
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
+OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 10)
 WHEEL = envbool("XPRA_WHEEL", True)
 
 ALPHA = {
@@ -563,7 +564,8 @@ class Delegate(NSObject):
         buttons = []
         pointer = client.get_mouse_position()
         def send_button(button, distance):
-            v = math.sqrt(10.0*abs(distance))       #ie: 0.1 -> 1, -0.9 -> 3
+            #ie with OSX_WHEEL_MULTIPLIER=10: 0.1 -> 1, -0.9 -> 3
+            v = math.sqrt(OSX_WHEEL_MULTIPLIER*abs(distance))
             scrolllog("send_button(%i, %.4f) steps=%i", button, distance, v)
             for _ in range(int(v)):
                 window._client.send_button(wid, button, True, pointer, modifiers, buttons)
