@@ -2481,10 +2481,15 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         return connect_or_fail(params, opts)
 
     if opts.attach is False:
-        from xpra.client.gobject_client_base import RequestStartClient
-        app = RequestStartClient((connect(), params), opts)
+        from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
+        if isdisplaytype(args, "ssh"):
+            #ssh will start the instance we requested,
+            #then we just detach and we're done
+            app = WaitForDisconnectXpraClient((connect(), params), opts)
+        else:
+            app = RequestStartClient((connect(), params), opts)
+            app.start_new_session = sns
         app.hello_extra = {"connect" : False}
-        app.start_new_session = sns
     else:
         app = make_client(error_cb, opts)
         app.init(opts)

@@ -464,6 +464,13 @@ class DetachXpraClient(HelloRequestClient):
         #not exiting the client here,
         #the server should disconnect us with the response
 
+class WaitForDisconnectXpraClient(DetachXpraClient):
+    """ we just want the connection to close """
+
+    def _process_disconnect(self, packet):
+        self.quit(EXIT_OK)
+
+
 class RequestStartClient(HelloRequestClient):
     """ request the system proxy server to start a new session for us """
     #wait longer for this command to return:
