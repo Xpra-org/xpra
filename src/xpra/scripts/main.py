@@ -423,9 +423,6 @@ def do_parse_cmdline(cmdline, defaults):
         group.add_option("--chdir", action="store", metavar="DIR",
                           dest="chdir", default=defaults.chdir,
                           help="Change to this directory (default: %s)" % enabled_str(defaults.chdir))
-        group.add_option("--attach", action="store", metavar="yes|no|auto",
-                          dest="attach", default=defaults.attach,
-                          help="Attach a client as soon as the server has started (default: %s)" % enabled_or_auto(defaults.attach))
         group.add_option("--pidfile", action="store",
                       dest="pidfile", default=defaults.pidfile,
                       help="Write the process id to this file (default: '%default')")
@@ -442,12 +439,14 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({
                 "daemon"    : False,
-                "attach"    : "no",
                 "pidfile"   : defaults.pidfile,
                 "log_file"  : defaults.log_file,
                 "log_dir"   : defaults.log_dir,
                 "chdir"     : defaults.chdir,
                 })
+    group.add_option("--attach", action="store", metavar="yes|no|auto",
+                      dest="attach", default=defaults.attach,
+                      help="Attach a client as soon as the server has started (default: %s)" % enabled_or_auto(defaults.attach))
 
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
