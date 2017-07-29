@@ -27,6 +27,7 @@ from xpra.x11.gtk2.gdk_bindings import (
                                cleanup_all_event_receivers  #@UnresolvedImport
                                )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
+from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.gtk2.window_damage import WindowDamageHandler
 X11Window = X11WindowBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -44,6 +45,7 @@ traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
+iconlog = Logger("icon")
 
 
 glib = import_glib()
@@ -71,15 +73,24 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         "size-hints": (gobject.TYPE_PYOBJECT,
                        "Client hints on constraining its size", "",
                        gobject.PARAM_READABLE),
+        "wm-name": (gobject.TYPE_PYOBJECT,
+                       "The name of the window manager or session manager", "",
+                       gobject.PARAM_READABLE),
+        "icon": (gobject.TYPE_PYOBJECT,
+                       "The icon of the window manager or session manager", "",
+                       gobject.PARAM_READABLE),
         }
 
 
     _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth", "icon"]
-    _dynamic_property_names = ["size-hints"]
+    _dynamic_property_names = ["size-hints", "title", "icon"]
 
     def __init__(self, root):
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
+        self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
+        self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
+        self.update_icon()
         self.resize_timer = None
         self.resize_value = None
 
@@ -100,10 +111,38 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
         self._managed = False
+        rpw = self.root_prop_watcher
+        if rpw:
+            self.root_prop_watcher = None
+            rpw.cleanup()
         rt = self.resize_timer
         if rt:
             self.resize_timer = None
             glib.source_remove(rt)
+
+    def root_prop_changed(self, watcher, prop):
+        iconlog("root_prop_changed(%s, %s)", watcher, prop)
+        if self.update_wm_name():
+            self.update_icon()
+
+    def update_wm_name(self):
+        wm_name = ""
+        try:
+            wm_name = get_wm_name()
+        except:
+            pass
+        iconlog("update_wm_name() wm-name=%s", wm_name)
+        return self._updateprop("wm-name", wm_name)
+
+    def update_icon(self):
+        icon = None
+        try:
+            icon_name = (get_wm_name() or "").lower()+".png"
+            icon = get_icon(icon_name)
+            iconlog("get_icon(%s)=%s", icon_name, icon)
+        except:
+            iconlog("failed to return window icon")
+        return self._updateprop("icon", icon)
 
 
     def get_geometry(self):
@@ -136,15 +175,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return True
         elif prop=="class-instance":
             return ("xpra-desktop", "Xpra-Desktop")
-        elif prop=="icon":
-            try:
-                icon_name = get_wm_name()+".png"
-                icon = get_icon(icon_name)
-                log("get_icon(%s)=%s", icon_name, icon)
-                return icon
-            except:
-                log("failed to return window icon")
-                return None
         else:
             return gobject.GObject.get_property(self, prop)
 

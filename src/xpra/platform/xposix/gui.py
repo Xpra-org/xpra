@@ -387,8 +387,8 @@ def get_vrefresh():
 def _get_xresources():
     try:
         from xpra.x11.gtk_x11.prop import prop_get
-        import gtk.gdk
-        root = gtk.gdk.get_default_root_window()
+        from xpra.gtk_common.gtk_util import get_default_root_window
+        root = get_default_root_window()
         v = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
         log("RESOURCE_MANAGER=%s", v)
         if v is None:
@@ -763,14 +763,16 @@ class ClientExtras(object):
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             self.init_x11_filter()
+            from xpra.gtk_common.gtk_util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
+            root = get_default_root_window()
             if self._xsettings_watcher is None:
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
                 self._handle_xsettings_changed()
             if self._root_props_watcher is None:
-                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
+                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS, root)
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
                 #ensure we get the initial value:
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")

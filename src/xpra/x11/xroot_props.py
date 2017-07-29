@@ -1,10 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
+from gtk import gdk
 import gobject
 from xpra.gtk_common.gobject_util import n_arg_signal, SIGNAL_RUN_LAST
 from xpra.x11.gtk2.gdk_bindings import (add_event_receiver, remove_event_receiver,  #@UnresolvedImport
@@ -21,12 +21,12 @@ class XRootPropWatcher(gobject.GObject):
         "xpra-property-notify-event": n_arg_signal(1),
         }
 
-    def __init__(self, props):
+    def __init__(self, props, root_window):
         gobject.GObject.__init__(self)
         self._props = props
-        self._root = gtk.gdk.get_default_root_window()
+        self._root = root_window
         self._saved_event_mask = self._root.get_events()
-        self._root.set_events(self._saved_event_mask | gtk.gdk.PROPERTY_CHANGE_MASK)
+        self._root.set_events(self._saved_event_mask | gdk.PROPERTY_CHANGE_MASK)
         add_event_receiver(self._root, self)
 
     def cleanup(self):
