@@ -859,7 +859,7 @@ class XpraClientBase(FileTransferHandler):
         if show_as_text:
             #looks like the first packet back is just text, print it:
             data = bytestostr(data)
-            if data.find("Traceback "):
+            if data.find("Traceback ")>=0:
                 for x in data.split("\n"):
                     netlog.warn(x.strip("\r"))
             else:
