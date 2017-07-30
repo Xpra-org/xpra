@@ -18,3 +18,7 @@ double getNSEventScrollingDeltaY(NSEvent *nsevent) {
 void *getNSEventView(NSEvent *nsevent) {
 	return [[nsevent window] contentView];
 }
+
+int getPreciseScrollingDeltas(NSEvent *nsevent) {
+	return [nsevent hasPreciseScrollingDeltas];
+}

@@ -10,4 +10,5 @@
 NSEventType getNSEventType(NSEvent *nsevent);
 double getNSEventScrollingDeltaX(NSEvent *nsevent);
 double getNSEventScrollingDeltaY(NSEvent *nsevent);
+int getPreciseScrollingDeltas(NSEvent *nsevent);
 void *getNSEventView(NSEvent *nsevent);

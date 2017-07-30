@@ -27,7 +27,8 @@ scrolllog = Logger("osx", "events", "scroll")
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
-OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 10)
+OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
+OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 WHEEL = envbool("XPRA_WHEEL", True)
 
 ALPHA = {
@@ -552,10 +553,10 @@ class Delegate(NSObject):
             init_quartz_filter()
 
     @objc.python_method
-    def wheel_event_handler(self, nsview, deltax, deltay):
+    def wheel_event_handler(self, nsview, deltax, deltay, precise):
         global VIEW_TO_WINDOW
         window = VIEW_TO_WINDOW.get(nsview)
-        scrolllog("wheel_event_handler(%#x, %.4f, %.4f) window=%s", nsview, deltax, deltay, window)
+        scrolllog("wheel_event_handler(%#x, %.4f, %.4f, %s) window=%s", nsview, deltax, deltay, precise, window)
         if not window:
             return False    #not handled
         client = window._client
@@ -564,25 +565,40 @@ class Delegate(NSObject):
         buttons = []
         pointer = client.get_mouse_position()
         def send_button(button, distance):
-            #ie with OSX_WHEEL_MULTIPLIER=10: 0.1 -> 1, -0.9 -> 3
-            v = math.sqrt(OSX_WHEEL_MULTIPLIER*abs(distance))
-            scrolllog("send_button(%i, %.4f) steps=%i", button, distance, v)
-            for _ in range(int(v)):
+            steps = abs(int(distance))
+            scrolllog("send_button(%i, %.4f) steps=%i", button, distance, steps)
+            for _ in range(steps):
                 window._client.send_button(wid, button, True, pointer, modifiers, buttons)
                 window._client.send_button(wid, button, False, pointer, modifiers, buttons)
+            #return remainder:
+            return float(distance) - int(distance)
+        def normalize_precision(distance):
+            if distance==0:
+                return 0
+            if precise:
+                m = OSX_WHEEL_PRECISE_MULTIPLIER
+            else:
+                m = OSX_WHEEL_MULTIPLIER
+            v = abs(distance)/10.0*m
+            if v>1:
+                #cancel out some of the crazy fast scroll acceleration from macos:
+                v = math.sqrt(v)
+            if distance<0:
+                #restore sign:
+                v = -v
+            scrolllog("normalize_precision(%.3f)=%.3f (multiplier=%i)", distance, v, m)
+            return v
         #accumulate deltas:
-        dx = getattr(window, "deltax", 0)+deltax
-        dy = getattr(window, "deltay", 0)+deltay
-        if abs(dx)>0.1:
+        dx = getattr(window, "deltax", 0)+normalize_precision(deltax)
+        dy = getattr(window, "deltay", 0)+normalize_precision(deltay)
+        if abs(dx)>=1:
             button = client.wheel_map.get(6+int(dx>0))            #RIGHT=7, LEFT=6
             if button>0:
-                send_button(button, dx)
-                dx = 0
-        if abs(dy)>0.1:
+                dx = send_button(button, dx)
+        if abs(dy)>=1:
             button = client.wheel_map.get(5-int(dy>0))            #UP=4, DOWN=5
             if button>0:
-                send_button(button, dy)
-                dy = 0
+                dy = send_button(button, dy)
         setattr(window, "deltax", dx)
         setattr(window, "deltay", dy)
         return True

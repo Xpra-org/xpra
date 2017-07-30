@@ -28,6 +28,7 @@ cdef extern from "nsevent_glue.h":
     NSEventType getNSEventType(NSEvent *nsevent)
     double getNSEventScrollingDeltaX(NSEvent *nsevent)
     double getNSEventScrollingDeltaY(NSEvent *nsevent)
+    int getPreciseScrollingDeltas(NSEvent *nsevent)
     void *getNSEventView(NSEvent *nsevent)
     int getNSEventMouseLocationX(NSEvent *nsevent)
     int getNSEventMouseLocationY(NSEvent *nsevent)
@@ -88,10 +89,11 @@ cdef GdkFilterReturn quartz_event_filter(GdkXEvent * event,
             #log.info(" type=%i, window=%i, deltas=%s", nsevent._type, nsevent._windowNumber, (nsevent.deltaX, nsevent.deltaY, nsevent.deltaZ))
             deltaX = getNSEventScrollingDeltaX(nsevent)
             deltaY = getNSEventScrollingDeltaY(nsevent)
-            log("wheel view=%i, deltaX=%f, deltaY=%f, wheel_event_handler=%s", <uintptr_t> view, deltaX, deltaY, wheel_event_handler)
+            precise = getPreciseScrollingDeltas(nsevent)
+            log("wheel view=%i, deltaX=%f, deltaY=%f, precise=%s, wheel_event_handler=%s", <uintptr_t> view, deltaX, deltaY, precise, wheel_event_handler)
             global wheel_event_handler
             if wheel_event_handler:
-                r = wheel_event_handler(<uintptr_t> view, deltaX, deltaY)
+                r = wheel_event_handler(<uintptr_t> view, deltaX, deltaY, bool(precise))
                 log("%s=%s", wheel_event_handler, r)
                 if r:
                     return GDK_FILTER_REMOVE
