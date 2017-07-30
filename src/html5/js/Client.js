@@ -1218,17 +1218,7 @@ XpraClient.prototype._window_set_focus = function(win) {
 		iwin.updateFocus();
 		iwin.update_zindex();
 	}
-	client._set_favicon(wid);
-}
-
-XpraClient.prototype._set_favicon = function(wid) {
-	//set favicon to the icon of this window:
-	var icon = jQuery('#windowicon' + String(wid)).attr('src');
-	if (!icon || Utilities.endsWith(icon, "/noicon.png")) {
-		//none available, use the default instead:
-		icon = "/favicon.png";
-	}
-	jQuery("#favicon").attr("href", icon);
+	//client._set_favicon(wid);
 }
 
 XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time, error_message) {
@@ -1938,11 +1928,11 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	ctx._debug("window-icon: ", encoding, " size ", w, "x", h);
 	var win = ctx.id_to_window[wid];
 	if (win) {
-		win.update_icon(w, h, encoding, img_data);
-	}
-	//update favicon too:
-	if (wid==ctx.focus) {
-		ctx._set_favicon(wid);
+		var src = win.update_icon(w, h, encoding, img_data);
+		//update favicon too:
+		if (wid==ctx.focus || ctx.server_is_desktop) {
+			jQuery("#favicon").attr("href", src);
+		}
 	}
 }
 
