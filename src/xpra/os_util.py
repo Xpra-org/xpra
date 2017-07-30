@@ -615,7 +615,7 @@ def setuidgid(uid, gid):
             #don't run as root!
             raise
         log.error(" %s", e)
-        log.error(" continuing with gid=%i", os.getuid())
+        log.error(" continuing with uid=%i", os.getuid())
     log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
 def get_peercred(sock):
