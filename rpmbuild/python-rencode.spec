@@ -13,7 +13,7 @@
 
 Name:           python2-rencode
 Version:        1.0.5
-Release:        3%{?dist}
+Release:        5.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
@@ -117,6 +117,9 @@ popd
 %endif
 
 %changelog
+* Sun Jul 30 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-5.xpra1
+- we're ahead of Fedora with the patch, make sure the release number is too
+
 * Fri Jul 28 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-3
 - avoid import warnings with python 3.6
 
