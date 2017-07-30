@@ -1795,8 +1795,8 @@ class ServerBase(ServerCore):
         return "auto-refresh delay set to %sms for windows %s" % (delay, wids)
 
     def control_command_refresh(self, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
-            ws.full_quality_refresh(window, {})
+        for ws in self._control_windowsources_from_args(*wids).keys():
+            ws.full_quality_refresh({})
         return "refreshed windows %s" % str(wids)
 
     def control_command_scaling_control(self, scaling_control, *wids):
