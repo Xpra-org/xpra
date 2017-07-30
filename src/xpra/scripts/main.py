@@ -386,8 +386,8 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="systemd_run_args", default=defaults.systemd_run_args,
                           help="Command line arguments passed to systemd-run. Default: '%default'.")
     else:
-        ignore({"systemd_run"       : "no",
-                "systemd_run_args"  : ""})
+        ignore({"systemd_run"       : defaults.systemd_run,
+                "systemd_run_args"  : defaults.systemd_run_args})
 
     legacy_bool_parse("html")
     if supports_server or supports_shadow:
@@ -533,9 +533,9 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Listen for connections over SSL (use --ssl-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
     else:
-        ignore({"bind" : []})
-        ignore({"bind-tcp" : []})
-        ignore({"bind-ssl" : []})
+        ignore({"bind"      : defaults.bind})
+        ignore({"bind-tcp"  : defaults.bind_tcp})
+        ignore({"bind-ssl"  : defaults.bind_ssl})
     try:
         from xpra.net import vsock
     except:
@@ -683,9 +683,9 @@ def do_parse_cmdline(cmdline, defaults):
     else:
         ignore({"av-sync"           : defaults.av_sync,
                 "speaker"           : defaults.speaker,
-                "speaker-codec"     : [],
+                "speaker-codec"     : defaults.speaker_codec,
                 "microphone"        : defaults.microphone,
-                "microphone-codec"  : [],
+                "microphone-codec"  : defaults.microphone_codec,
                 "sound-source"      : defaults.sound_source,
                 })
 
@@ -702,12 +702,9 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Which image compression algorithm to use, specify 'help' to get a list of options."
                             " Default: %default."
                       )
-    if (supports_server or supports_shadow):
-        group.add_option("--video-encoders", action="store",
-                          dest="video_encoders", default=defaults.video_encoders,
-                          help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
-    else:
-        ignore({"video-encoders" : []})
+    group.add_option("--video-encoders", action="store",
+                      dest="video_encoders", default=defaults.video_encoders,
+                      help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
     hidden_options["proxy-video-encoders"] =  defaults.proxy_video_encoders
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
@@ -958,7 +955,7 @@ def do_parse_cmdline(cmdline, defaults):
                          dest="vsock_auth", default=defaults.vsock_auth,
                          help="The authentication module to use for vsock sockets (default: '%default')")
     else:
-        ignore({"vsock-auth" : ""})
+        ignore({"vsock-auth" : defaults.vsock_auth})
     ignore({"password"           : defaults.password})
     if POSIX:
         group.add_option("--mmap-group", action="store_true",

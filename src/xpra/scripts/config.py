@@ -637,7 +637,8 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "key-shortcut",
                   "env"]
 
-CLIENT_ONLY_OPTIONS = ["username"]
+CLIENT_ONLY_OPTIONS = ["username", "swap-keys", "dock-icon",
+                       "tray", "delay-tray", "tray-icon"]
 
 #options that clients can pass to the proxy
 #and which will be forwarded to the new proxy instance process:
