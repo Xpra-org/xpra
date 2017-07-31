@@ -77,6 +77,8 @@ BuildRequires:  python3-numpy
 
 Provides:       python-imaging = %{version}-%{release}
 Obsoletes:      python-imaging <= 1.1.7-12
+Provides:       python2-imaging = %{version}-%{release}
+Obsoletes:      python2-imaging <= 1.1.7-12
 %if "%{?lcms}"!="%{nil}"
 Requires:		%{lcms}
 %endif
@@ -288,6 +290,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Mon Jul 31 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.1-2
+- we should provide and obsolete "python2-imaging" as well as "python-imaging"
+
 * Sat Jul 08 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.1-1
 - new upstream release
 
