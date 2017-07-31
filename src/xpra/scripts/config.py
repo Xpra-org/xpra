@@ -70,6 +70,15 @@ def get_xorg_bin():
     return None
 
 
+def get_Xdummy_confdir():
+    from xpra.platform.xposix.paths import _get_runtime_dir
+    xrd = _get_runtime_dir()
+    if xrd:
+        base = "${XDG_RUNTIME_DIR}/xpra"
+    else:
+        base = "${HOME}/.xpra"
+    return base+"/xorg.conf.d/$PID"
+
 def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     cmd += [
@@ -82,7 +91,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
           #must be specified with some Xorg versions (ie: arch linux)
           #this directory can store xorg config files, it does not need to be created:
-          "-configdir", "${HOME}/.xpra/xorg.conf.d",
+          "-configdir", get_Xdummy_confdir(),
           "-config", xorg_conf
           ]
     return cmd

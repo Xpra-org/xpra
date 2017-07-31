@@ -24,4 +24,4 @@ DEFAULT_ENV = [
 DEFAULT_SSH_CMD = "ssh"
 CLIPBOARDS=["CLIPBOARD", "PRIMARY", "SECONDARY"]
 
-INPUT_DEVICES = ["auto", "xi"]
+INPUT_DEVICES = ["auto", "xi", "uinput"]

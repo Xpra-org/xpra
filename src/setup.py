@@ -1487,6 +1487,7 @@ else:
                     etc_xpra_files += ["cuda.conf", "nvenc.keys"]
                 for x in etc_xpra_files:
                     copytodir("etc/xpra/%s" % x, "/etc/xpra")
+                copytodir("etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
 
             if pam_ENABLED:
                 copytodir("etc/pam.d/xpra", "/etc/pam.d")

@@ -71,6 +71,64 @@ class XTestPointerDevice(object):
     def close(self):
         pass
 
+class UInputPointerDevice(object):
+
+    def __init__(self, device, device_path):
+        self.device = device
+        self.device_path = device_path
+
+    def __repr__(self):
+        return "UInput device %s" % self.device_path
+
+    def move_pointer(self, screen_no, x, y, *args):
+        mouselog("UInput.move_pointer(%i, %s, %s)", screen_no, x, y)
+        #calculate delta:
+        with xsync:
+            cx, cy = X11Keyboard.query_pointer()
+            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
+            dx = x-cx
+            dy = y-cy
+            mouselog("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
+        import uinput
+        #self.device.emit(uinput.ABS_X, x, syn=(dy==0))
+        #self.device.emit(uinput.ABS_Y, y, syn=True)
+        if dx or dy:
+            if dx!=0:
+                self.device.emit(uinput.REL_X, dx, syn=(dy==0))
+            if dy!=0:
+                self.device.emit(uinput.REL_Y, dy, syn=True)
+
+    def click(self, button, pressed, *args):
+        import uinput
+        if button==4:
+            ubutton = uinput.REL_WHEEL
+            val = 1
+            if pressed: #only send one event
+                return
+        elif button==5:
+            ubutton = uinput.REL_WHEEL
+            val = -1
+            if pressed: #only send one event
+                return
+        else:
+            ubutton = {
+                1   : uinput.BTN_LEFT,
+                2   : uinput.BTN_RIGHT,
+                3   : uinput.BTN_MIDDLE,
+                8   : uinput.BTN_SIDE,
+                9   : uinput.BTN_EXTRA,
+                }.get(button)
+            val = bool(pressed)
+        if ubutton:
+            mouselog("UInput.click(%i, %s) uinput button=%#x, %#x, value=%s", button, pressed, ubutton[0], ubutton[1], val)
+            self.device.emit(ubutton, val)
+        else:
+            mouselog("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
+            X11Keyboard.xtest_fake_button(button, pressed)
+
+    def close(self):
+        pass
+
 
 class X11ServerBase(GTKServerBase):
     """
@@ -82,6 +140,7 @@ class X11ServerBase(GTKServerBase):
     def __init__(self):
         self.screen_number = gdk.display_get_default().get_default_screen().get_number()
         self.root_window = gdk.get_default_root_window()
+        self.pointer_device = XTestPointerDevice()
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
 
@@ -94,7 +153,6 @@ class X11ServerBase(GTKServerBase):
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
         self.x11_init()
-        self.pointer_device = XTestPointerDevice()
 
     def x11_init(self):
         if self.fake_xinerama:
@@ -217,6 +275,22 @@ class X11ServerBase(GTKServerBase):
     def init_packet_handlers(self):
         GTKServerBase.init_packet_handlers(self)
         self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
+
+
+    def init_virtual_devices(self, devices):
+        #for the time being, we only use the pointer if there is one:
+        pointer = devices.get("pointer")
+        if pointer:
+            mouselog("init_virtual_devices(%s) got pointer=%s", devices, pointer)
+            uinput_device = pointer.get("uinput")
+            #name = pointer.get("name")
+            device_path = pointer.get("device")
+            if uinput_device:
+                self.pointer_device = UInputPointerDevice(uinput_device, device_path)
+        try:
+            mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
+        except Exception as e:
+            mouselog("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
 
     def get_server_source_class(self):

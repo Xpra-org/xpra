@@ -95,6 +95,9 @@ cdef extern from "X11/Xlib.h":
     int XQueryKeymap(Display * display, char [32] keys_return)
     int XFlush(Display *dpy)
 
+    Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
+                       int *win_x_return, int *win_y_return, unsigned int *mask_return)
+
 
 cdef extern from "X11/extensions/XKB.h":
     unsigned long XkbUseCoreKbd
@@ -1061,3 +1064,15 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         if not on:
             bits = 0
         return XkbSelectEvents(self.display, XkbUseCoreKbd, XkbBellNotifyMask, bits)
+
+
+    def query_pointer(self):
+        cdef Window root_window
+        root_window = XDefaultRootWindow(self.display)
+        cdef Window root, child
+        cdef int root_x, root_y
+        cdef int win_x, win_y
+        cdef unsigned int mask
+        XQueryPointer(self.display, root_window, &root, &child,
+                      &root_x, &root_y, &win_x, &win_y, &mask)
+        return root_x, root_y

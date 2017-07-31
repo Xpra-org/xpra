@@ -424,7 +424,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir
+    from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts, write_pidfile, find_log_dir, create_input_devices
     script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     uid = int(opts.uid)
@@ -632,6 +632,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     os.environ.update(protected_env)
     log("env=%s", os.environ)
 
+    #create devices for vfb if needed:
+    devices = {}
+    if start_vfb and ROOT and opts.input_devices.lower()=="uinput":
+        devices = create_input_devices(uid)
+
     # Start the Xvfb server first to get the display_name if needed
     from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
     odisplay_name = display_name
@@ -640,7 +645,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
-        xvfb, display_name = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, xauth_data)
+        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, devices)
+        for f in cleanups:
+            add_cleanup(f)
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
@@ -827,6 +834,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.desktop_server import XpraDesktopServer
             app = XpraDesktopServer()
             server_type_info = "xpra desktop"
+        app.init_virtual_devices(devices)
 
     #publish mdns records:
     if opts.mdns:

@@ -13,9 +13,8 @@ import sys
 import os.path
 
 from xpra.scripts.main import no_gtk
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
-from xpra.platform.dotxpra import osexpand
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
@@ -24,12 +23,84 @@ DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFA
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
+XORG_MATCH_OPTIONS = {
+    "pointer"   : """
+    MatchIsPointer "True"
+    Driver "libinput"
+    Option "AccelProfile" "flat"
+""",
+    "keyboard"  : 'MatchIsKeyboard "True"',
+    }
+
+
+def create_xorg_device_configs(xorg_conf_dir, devices, uid, gid):
+    from xpra.log import Logger
+    log = Logger("server", "x11")
+    cleanups = []
+    if not devices:
+        return cleanups
+
+    def makedir(dirname):
+        log("makedir(%s)", dirname)
+        os.mkdir(dirname)
+        os.lchown(dirname, uid, gid)
+        def cleanup_dir():
+            try:
+                log("cleanup_dir() %s", dirname)
+                os.rmdir(dirname)
+            except Exception as e:
+                log("failed to cleanup %s: %s", dirname, e)
+        cleanups.insert(0, cleanup_dir)
+    
+    #create conf dir if needed:
+    d = xorg_conf_dir
+    dirs = []
+    while d and not os.path.exists(d):
+        log("create_device_configs: dir does not exist: %s", d)
+        dirs.insert(0, d)
+        d = os.path.dirname(d)
+    for d in dirs:
+        makedir(d)
+
+    #create individual device files:
+    i = 0
+    for dev_type, devdef in devices.items():
+        #ie:
+        #name = "pointer"
+        #devdef = {"uinput" : uninput.Device, "device" : "/dev/input20" }
+        match_type = XORG_MATCH_OPTIONS.get(dev_type)
+        uinput = devdef.get("uinput")
+        device = devdef.get("device")
+        name = devdef.get("name")
+        if match_type and uinput and device and name:
+            conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
+            with open(conf_file, "wb") as f:
+                f.write("""
+Section "InputClass"
+    Identifier "xpra-virtual-%s"
+    MatchProduct "%s"
+    Option "Ignore" "False"
+%s
+EndSection
+""" % (dev_type, name, match_type))
+                os.fchown(f.fileno(), uid, gid)
+                #Option "AccelerationProfile" "-1"
+                #Option "AccelerationScheme" "none"
+                #Option "AccelSpeed" "-1"
+            def cleanup_conf_file():
+                log("cleanup_conf_file: %s", conf_file)
+                os.unlink(conf_file) 
+            cleanups.insert(0, cleanup_conf_file)
+    return cleanups
+
+
+def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, devices={}):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
 
+    from xpra.platform.xposix.paths import _get_runtime_dir
     from xpra.log import Logger
     log = Logger("server", "x11")
 
@@ -47,6 +118,26 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
             log.error(" %s", e)
     use_display_fd = display_name[0]=='S'
 
+    HOME = os.path.expanduser("~%s" % username)
+    subs = {
+            "XAUTHORITY"        : xauthority,
+            "USER"              : username or os.environ.get("USER", "unknown-user"),
+            "UID"               : uid,
+            "GID"               : gid,
+            "PID"               : os.getpid(),
+            "HOME"              : HOME,
+            "DISPLAY"           : display_name,
+            "XDG_RUNTIME_DIR"   : os.environ.get("XDG_RUNTIME_DIR", _get_runtime_dir()),
+            "XPRA_LOG_DIR"      : os.environ.get("XPRA_LOG_DIR"),
+            }
+    def pathexpand(s):
+        return shellsub(s, subs)
+
+    #create uinput device definition files:
+    #(we are assuming that Xorg is configured to use this path..)
+    xorg_conf_dir = pathexpand(get_Xdummy_confdir())
+    cleanups = create_xorg_device_configs(xorg_conf_dir, devices, uid, gid)
+
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
     import shlex
@@ -62,7 +153,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
             #keep track of it so we can rename it later:
             tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
         #make sure the Xorg log directory exists:
-        xorg_log_dir = osexpand(os.path.dirname(xvfb_cmd[logfile_argindex+1]))
+        xorg_log_dir = os.path.dirname(pathexpand(xvfb_cmd[logfile_argindex+1]))
+        log.info("xorg_log_dir=%s - exists=%s", xorg_log_dir, os.path.exists(xorg_log_dir))
         if not os.path.exists(xorg_log_dir):
             try:
                 log("creating Xorg log dir '%s'", xorg_log_dir)
@@ -76,17 +168,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 
     #apply string substitutions:
-    subs = {
-            "XAUTHORITY"    : xauthority,
-            "USER"          : os.environ.get("USER", "unknown-user"),
-            "UID"           : os.getuid(),
-            "GID"           : os.getgid(),
-            "HOME"          : os.environ.get("HOME", cwd),
-            "DISPLAY"       : display_name,
-            "XPRA_LOG_DIR"  : os.environ.get("XPRA_LOG_DIR"),
-            }
-    xvfb_cmd = shellsub(xvfb_str, subs).split()
-    log("shellsub(%s, %s)=%s", xvfb_str, subs, xvfb_cmd)
+    xvfb_cmd = pathexpand(xvfb_str).split()
 
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
@@ -160,7 +242,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, xauth_data):
     xauth_add(display_name, xauth_data)
     log("xvfb process=%s", xvfb)
     log("display_name=%s", display_name)
-    return xvfb, display_name
+    return xvfb, display_name, cleanups
 
 
 def set_initial_resolution(desktop=False):

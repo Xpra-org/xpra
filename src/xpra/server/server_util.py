@@ -257,3 +257,105 @@ def write_pidfile(pidfile, uid, gid):
     except Exception as e:
         log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
         log.error(" %s", e)
+
+
+def get_uinput_device_path(device):
+    from xpra.log import Logger
+    log = Logger("server", "mouse")
+    try:
+        log("get_uinput_device_path(%s)", device)
+        fd = device._Device__uinput_fd
+        log("fd(%s)=%s", device, fd)
+        import fcntl        #@UnresolvedImport
+        import ctypes
+        l = 16
+        buf = ctypes.create_string_buffer(l)
+        _IOC_READ = 2
+        #this magic value was calculated using the C macros:
+        l = fcntl.ioctl(fd, 2148554028, buf)
+        if l>0 and l<16:
+            virt_dev_path = buf.raw[:l].rstrip("\0")
+            log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
+            uevent_path = b"/sys/devices/virtual/input/%s" % virt_dev_path
+            event_dirs = [x for x in os.listdir(uevent_path) if x.startswith("event")]
+            log("event dirs(%s)=%s", uevent_path, event_dirs)
+            for d in event_dirs:
+                uevent_filename = os.path.join(uevent_path, d, "uevent")
+                uevent_conf = open(uevent_filename, "rb").read()
+                for line in uevent_conf.splitlines():
+                    if line.find(b"=")>0:
+                        k,v = line.split(b"=", 1)
+                        log("%s=%s", k, v)
+                        if k==b"DEVNAME":
+                            dev_path = b"/dev/%s" % v
+                            log("found device path: %s" % dev_path)
+                            return dev_path
+    except Exception as e:
+        log.error("Error: cannot query uinput device path:")
+        log.error(" %", e)
+    return None
+
+def create_uinput_pointer_device(uid, gid):
+    from xpra.log import Logger
+    log = Logger("server")
+    try:
+        import uinput
+    except ImportError as e:
+        log.error("Error: cannot create uinput devices:")
+        log.error(" %s", e)
+        return None
+    events = (
+        uinput.REL_X,
+        uinput.REL_Y,
+        uinput.REL_WHEEL,
+        #REL_HIRES_WHEEL = 0x10
+        #uinput.REL_HWHEEL,
+        uinput.BTN_LEFT,
+        uinput.BTN_RIGHT,
+        uinput.BTN_MIDDLE,
+        uinput.BTN_SIDE,
+        uinput.BTN_EXTRA,
+        uinput.BTN_FORWARD,
+        uinput.BTN_BACK,
+        )
+    BUS_USB = 0x03
+    #BUS_VIRTUAL = 0x06
+    name = "Xpra Virtual Pointer"
+    try:
+        uinput_pointer = uinput.Device(events, name=name, bustype=BUS_USB, vendor=0, product=0, version=0)
+    except OSError as e:
+        log.error("Error: cannot open uinput,")
+        log.error(" make sure that the kernel module is loaded")
+        log.error(" and that the /dev/uinput device exists:")
+        log.error(" %s", e)
+        return None
+    dev_path = get_uinput_device_path(uinput_pointer)
+    if not dev_path:
+        uinput_pointer.destroy()
+        return None
+    #log("chown%s", (dev_path, uid, gid))
+    #os.lchown(dev_path, uid, gid)
+    #udev rules change the device ownership
+    #FIXME: fix udev or use inotify? (racy)
+    import time
+    time.sleep(1)
+    log("chown%s", (dev_path, uid, gid))
+    os.lchown(dev_path, uid, gid)
+    os.lchown("/dev/input/mouse2", uid, gid)
+    return name, uinput_pointer, dev_path
+
+def create_uinput_devices(uid, gid):
+    d = create_uinput_pointer_device(uid, gid)
+    if not d:
+        return {}
+    name, uinput_pointer, dev_path = d
+    return {
+        "pointer" : {
+            "name"      : name,
+            "uinput"    : uinput_pointer,
+            "device"    : dev_path,
+            }
+        }
+
+def create_input_devices(uid, gid=-1):
+    return create_uinput_devices(uid, gid)
