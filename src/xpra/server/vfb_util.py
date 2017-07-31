@@ -154,7 +154,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
         #make sure the Xorg log directory exists:
         xorg_log_dir = os.path.dirname(pathexpand(xvfb_cmd[logfile_argindex+1]))
-        log.info("xorg_log_dir=%s - exists=%s", xorg_log_dir, os.path.exists(xorg_log_dir))
+        log("xorg_log_dir=%s - exists=%s", xorg_log_dir, os.path.exists(xorg_log_dir))
         if not os.path.exists(xorg_log_dir):
             try:
                 log("creating Xorg log dir '%s'", xorg_log_dir)
