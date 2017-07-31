@@ -33,7 +33,7 @@
 
 Name:           python2-pillow
 Version:        4.2.1
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
