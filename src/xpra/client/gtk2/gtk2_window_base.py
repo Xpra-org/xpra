@@ -22,12 +22,13 @@ draglog = Logger("dragndrop")
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint, AdHocStruct
 from xpra.os_util import strtobytes
 
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
+FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
 
 try:
     from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
@@ -404,10 +405,18 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def queue_draw(self, x, y, width, height):
         window = self.get_window()
-        if window:
-            window.invalidate_rect(gdk.Rectangle(x, y, width, height), False)
-        else:
+        if not window:
             log.warn("ignoring draw received for a window which is not realized yet!")
+            return
+        rect = gdk.Rectangle(x, y, width, height)
+        if not FORCE_IMMEDIATE_PAINT:
+            window.invalidate_rect(rect, False)
+        else:
+            #draw directly (bad) to workaround buggy window managers:
+            #see: http://xpra.org/trac/ticket/1610
+            event = AdHocStruct()
+            event.area = rect
+            self.do_expose_event(event)
 
     def do_expose_event(self, event):
         #cannot use self
