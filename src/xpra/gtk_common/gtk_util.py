@@ -716,6 +716,7 @@ def get_display_info():
                         gdk.SHIFT_MASK          : "SHIFT",
                         gdk.LOCK_MASK           : "LOCK",
                         gdk.CONTROL_MASK        : "CONTROL",
+                        gdk.META_MASK           : "META",
                         gdk.MOD1_MASK           : "MOD1",
                         gdk.MOD2_MASK           : "MOD2",
                         gdk.MOD3_MASK           : "MOD3",
