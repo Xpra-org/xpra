@@ -600,7 +600,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     # systemd socket activation:
     try:
-        from xpra.server.sd_listen import get_sd_listen_sockets
+        from xpra.platform.xposix.sd_listen import get_sd_listen_sockets
     except ImportError:
         pass
     else:
