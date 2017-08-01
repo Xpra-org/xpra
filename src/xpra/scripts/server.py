@@ -638,7 +638,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         devices = create_input_devices(uid)
 
     # Start the Xvfb server first to get the display_name if needed
-    from xpra.server.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, verify_gdk_display, set_initial_resolution
+    from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, set_initial_resolution
     odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
@@ -719,6 +719,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #check that we can access the X11 display:
             if not verify_display_ready(xvfb, display_name, shadowing):
                 return 1
+            from xpra.x11.gtk2.gdk_display_util import verify_gdk_display
             display = verify_gdk_display(display_name)
             if not display:
                 return 1

@@ -326,17 +326,3 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
         log.error("")
         return False
     return True
-
-def verify_gdk_display(display_name):
-    # Now we can safely load gtk and connect:
-    no_gtk()
-    import gtk.gdk          #@Reimport
-    import glib
-    glib.threads_init()
-    display = gtk.gdk.Display(display_name)
-    manager = gtk.gdk.display_manager_get()
-    default_display = manager.get_default_display()
-    if default_display is not None and default_display!=display:
-        default_display.close()
-    manager.set_default_display(display)
-    return display
