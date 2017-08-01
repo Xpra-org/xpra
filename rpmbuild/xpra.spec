@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Thu Jul 20 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Tue Aug 01 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root
 - fix packet handling errors with AES encryption enabled
@@ -634,8 +634,14 @@ fi
 - fix command error when stopping a local server via TCP or SSL
 - fix crashes due to a GTK clipboard bug
 - fix NVENC complete system lockups
+- fix invalid packet error message logging
+- fix OpenGL context creation failure message
+- fix duplicate button click events (causing triple clicks with MS Windows servers)
+- fix X11 timetstamp overflow
+- full quality refresh control command
 - add runtime warning: the GTK3 client should not be used
 - add missing man page entries
+- add missing "meta" modifier to keyboard tools
 - use a smaller initial display size with desktop mode
 
 * Sun May 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.6-1

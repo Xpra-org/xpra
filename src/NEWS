@@ -1,4 +1,4 @@
-v1.0.7 (2017-07-20)
+v1.0.7 (2017-08-01)
 ======================
 	-- fix authentication with unencrypted xor mode
 	-- fix potential symlink attacks when running the proxy server as root
@@ -32,8 +32,14 @@ v1.0.7 (2017-07-20)
 	-- fix command error when stopping a local server via TCP or SSL
 	-- fix crashes due to a GTK clipboard bug
 	-- fix NVENC complete system lockups
+	-- fix invalid packet error message logging
+	-- fix OpenGL context creation failure message
+	-- fix duplicate button click events (causing triple clicks with MS Windows servers)
+	-- fix X11 timetstamp overflow
+	-- full quality refresh control command
 	-- add runtime warning: the GTK3 client should not be used
 	-- add missing man page entries
+	-- add missing "meta" modifier to keyboard tools
 	-- use a smaller initial display size with desktop mode
 
 
