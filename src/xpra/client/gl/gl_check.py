@@ -493,6 +493,7 @@ def check_support(force_enable=False, check_colormap=False):
         glconfig = Config_new_by_mode(display_mode)
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
+        return {}
     props["display_mode"] = get_MODE_names(display_mode)
     props["glconfig"] = glconfig
     props["has_alpha"] = glconfig.has_alpha()
