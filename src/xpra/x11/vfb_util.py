@@ -12,7 +12,6 @@ import subprocess
 import sys
 import os.path
 
-from xpra.scripts.main import no_gtk
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
 
@@ -23,7 +22,7 @@ DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFA
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
-XORG_MATCH_OPTIONS = {
+XORG_DEVICE_OPTIONS = {
     "pointer"   : """
     MatchIsPointer "True"
     Driver "libinput"
@@ -68,7 +67,7 @@ def create_xorg_device_configs(xorg_conf_dir, devices, uid, gid):
         #ie:
         #name = "pointer"
         #devdef = {"uinput" : uninput.Device, "device" : "/dev/input20" }
-        match_type = XORG_MATCH_OPTIONS.get(dev_type)
+        match_type = XORG_DEVICE_OPTIONS.get(dev_type)
         uinput = devdef.get("uinput")
         device = devdef.get("device")
         name = devdef.get("name")
