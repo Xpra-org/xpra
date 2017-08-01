@@ -1408,7 +1408,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                             else:
                                 v = str(c)
                             cmd.append("--%s=%s" % (x, v))
-                    proc = Popen(cmd, close_fds=True, preexec_fn=setsid, cwd=cwd, env=env)
+                    preexec_fn = None
+                    if POSIX and not OSX:
+                        preexec_fn = setsid
+                    proc = Popen(cmd, close_fds=True, preexec_fn=preexec_fn, cwd=cwd, env=env)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
@@ -1832,13 +1835,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             kwargs = {}
             env = display_desc.get("env")
             kwargs["stderr"] = sys.stderr
-            if not display_desc.get("exit_ssh", False) and not OSX:
-                kwargs["preexec_fn"] = setsid
-            elif WIN32:
+            if WIN32:
                 from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE
                 flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
                 kwargs["creationflags"] = flags
                 kwargs["stderr"] = PIPE
+            elif not display_desc.get("exit_ssh", False) and not OSX:
+                kwargs["preexec_fn"] = setsid
             remote_xpra = display_desc["remote_xpra"]
             assert len(remote_xpra)>0
             socket_dir = display_desc.get("socket_dir")
