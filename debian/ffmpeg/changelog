@@ -1,3 +1,9 @@
+ffmpeg-xpra (3.3.3-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Tue, 01 Aug 2017 15:42:43 +0700
+
 ffmpeg-xpra (3.3.2-1) UNRELEASED; urgency=low
 
   * new upstream release
