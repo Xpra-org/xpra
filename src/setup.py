@@ -146,7 +146,7 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
 service_ENABLED = LINUX and server_ENABLED
-sd_listen_ENABLED = pkg_config_ok("--exists", "libsystemd")
+sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
@@ -931,6 +931,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/bindings/xi2_bindings.c",
                    "xpra/platform/win32/propsys.cpp",
                    "xpra/platform/darwin/gdk_bindings.c",
+                   "xpra/platform/xposix/sd_listen.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
@@ -960,7 +961,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/server/window/region.c",
                    "xpra/server/window/motion.c",
                    "xpra/server/pam.c",
-                   "xpra/server/sd_listen.c",
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra conf files in build (see #891):
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
@@ -1853,8 +1853,8 @@ if server_ENABLED:
 
 if sd_listen_ENABLED:
     sdp = pkgconfig("libsystemd")
-    cython_add(Extension("xpra.server.sd_listen",
-                ["xpra/server/sd_listen.pyx"],
+    cython_add(Extension("xpra.platform.xposix.sd_listen",
+                ["xpra/platform/xposix/sd_listen.pyx"],
                 **sdp))
 
 
