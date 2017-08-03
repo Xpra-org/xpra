@@ -366,7 +366,7 @@
 						//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 						if (client.clipboard_pending) {
 					        var clipboard_buffer = client.get_clipboard_buffer();
-					        $('#pasteboard').text(client.clipboard_buffer);
+					        $('#pasteboard').text(clipboard_buffer);
 					        $('#pasteboard').select();
 							client._debug("click event, with pending clipboard buffer=", clipboard_buffer);
 							//for IE:
