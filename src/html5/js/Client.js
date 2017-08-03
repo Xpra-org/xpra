@@ -2156,6 +2156,10 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	// when we get a click, control-C or control-X event
 	if(ctx.clipboard_targets.indexOf(packet[3])>=0) {
 		var data = packet[7];
+		try {
+			data = Utilities.Uint8ToString(data);
+		}
+		catch (e) { }
 		if (ctx.clipboard_buffer!=data) {
 			ctx.clipboard_buffer = data;
 			ctx.clipboard_pending = true;
@@ -2180,10 +2184,11 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		target = packet[3];
 
 	var packet;
-	if(ctx.clipboard_buffer == "") {
+	var clipboard_buffer = ctx.get_clipboard_buffer();
+	if(clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
-		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", ctx.clipboard_buffer];
+		packet = ["clipboard-contents", request_id, selection, "UTF8_STRING", 8, "bytes", clipboard_buffer];
 	}
 	ctx.send(packet);
 }
