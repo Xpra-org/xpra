@@ -146,6 +146,15 @@ def import_pango3():
 def import_pango():
     return  _try_import(import_pango3, import_pango2)
 
+def import_pangocairo2():
+    import pangocairo
+    return pangocairo
+def import_pangocairo3():
+    from gi.repository import PangoCairo            #@UnresolvedImport
+    return PangoCairo
+def import_pangocairo():
+    return  _try_import(import_pangocairo3, import_pangocairo2)
+
 def import_cairo():
     #we cannot use cairocffi with the do_paint callbacks..
     #import cairocffi                            #@UnresolvedImport
