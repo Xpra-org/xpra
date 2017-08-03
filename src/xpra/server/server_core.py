@@ -29,7 +29,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform
-from xpra.net.bytestreams import SocketConnection, log_new_connection, inject_ssl_socket_info, pretty_socket, SOCKET_TIMEOUT
+from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX
@@ -143,6 +143,8 @@ class ServerCore(object):
         self.start_time = monotonic_time()
         self.auth_class = None
         self.tcp_auth_class = None
+        self.ws_auth_class = None
+        self.wss_auth_class = None
         self.ssl_auth_class = None
         self.vsock_auth_class = None
         self._when_ready = []
@@ -164,6 +166,7 @@ class ServerCore(object):
         self._aliases = {}
         self._reverse_aliases = {}
         self.socket_types = {}
+        self.socket_info = {}
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
@@ -284,9 +287,12 @@ class ServerCore(object):
     def init_auth(self, opts):
         self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
         self.tcp_auth_class = self.get_auth_module("tcp", opts.tcp_auth or opts.auth, opts)
+        self.ws_auth_class = self.get_auth_module("ws", opts.ws_auth, opts)
+        self.wss_auth_class = self.get_auth_module("wss", opts.wss_auth, opts)
         self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth or opts.tcp_auth or opts.auth, opts)
         self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
-        authlog("init_auth(..) auth class=%s, tcp auth class=%s, ssl auth class=%s, vsock auth class=%s", self.auth_class, self.tcp_auth_class, self.ssl_auth_class, self.vsock_auth_class)
+        authlog("init_auth(..) auth=%s, tcp auth=%s, ws auth=%s, wss auth=%s, ssl auth=%s, vsock auth=%s",
+                self.auth_class, self.tcp_auth_class, self.ws_auth_class, self.wss_auth_class, self.ssl_auth_class, self.vsock_auth_class)
 
     def get_auth_module(self, socket_type, auth_str, opts):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
@@ -356,6 +362,7 @@ class ServerCore(object):
         ### All right, we're ready to accept customers:
         for socktype, sock, info in sockets:
             netlog("init_sockets(%s) will add %s socket %s (%s)", sockets, socktype, sock, info)
+            self.socket_info[sock] = info
             self.idle_add(self.add_listen_socket, socktype, sock)
             if socktype=="unix-domain" and info:
                 try:
@@ -577,6 +584,7 @@ class ServerCore(object):
             netlog.warn("ignoring new connection during shutdown")
             return False
         socktype = self.socket_types.get(listener)
+        socket_info = self.socket_info.get(listener)
         assert socktype, "cannot find socket type for %s" % listener
         #TODO: just like add_listen_socket above, this needs refactoring
         if socktype=="named-pipe":
@@ -584,7 +592,7 @@ class ServerCore(object):
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, pipe_handle)
             netlog.info("New %s connection received on %s", socktype, conn.target)
-            return self.make_protocol(socktype, conn, frominfo=conn.target)
+            return self.make_protocol(socktype, conn)
 
         try:
             sock, address = listener.accept()
@@ -598,23 +606,23 @@ class ServerCore(object):
             peername = sock.getpeername()
         except:
             peername = str(address)
+        #limit number of concurrent network connections:
+        if socktype not in ("unix-domain", ) and len(self._potential_protocols)>=self._max_connections:
+            netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
+            netlog.error(" ignoring new one: %s", peername)
+            sock.close()
+            return True
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
-        #limit number of concurrent network connections:
-        if socktype not in ("unix-domain", "named-pipe") and len(self._potential_protocols)>=self._max_connections:
-            netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
-            netlog.error(" ignoring new one: %s", target)
-            sock.close()
-            return True
-        netlog("new_connection(%s) sock=%s, timeout=%s, sockname=%s, address=%s, peername=%s. timeout=%s", args, sock, self._socket_timeout, sockname, address, peername, self._socket_timeout)
+        netlog("new_connection(%s) sock=%s, socket_info=%s, timeout=%s, address=%s, peername=%s. timeout=%s", args, sock, socket_info, self._socket_timeout, address, peername, self._socket_timeout)
         conn = SocketConnection(sock, sockname, address, target, socktype)
 
         #from here on, we run in a thread, so we can poll (peek does)
-        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, socktype))
+        start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, address, socktype, peername, socket_info))
         return True
 
-    def handle_new_connection(self, conn, sock, socktype):
+    def handle_new_connection(self, conn, sock, address, socktype, peername, socket_info):
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
@@ -622,44 +630,114 @@ class ServerCore(object):
         def conn_err(msg="invalid packet format, not an xpra client?"):
             #not an xpra client
             netlog.error("Error: %s connection failed:", socktype)
-            netlog.error(" %s", msg)
             if conn.remote:
-                netlog.error(" %s", pretty_socket(conn.remote))
+                netlog.error(" packet from %s", pretty_socket(conn.remote))
+            if socket_info:
+                netlog.error(" received on %s", pretty_socket(socket_info))
+            netlog.error(" %s", msg)
             try:
                 sock.settimeout(1)
-                conn.write("disconnect: %s?\n" % msg)
-                conn.close()
+                conn.write("disconnect: connection failed, %s?\n" % msg)
+                def close_connection():
+                    try:
+                        conn.close()
+                    except:
+                        log("close_connection()", exc_info=True)
+                self.timeout_add(500, close_connection)
             except Exception as e:
                 netlog("error sending '%s': %s", nonl(msg), e)
+        sockname = sock.getsockname()
+        target = peername or sockname
+        sock.settimeout(self._socket_timeout)
+
+        netlog("handle_new_connection%s sockname=%s, target=%s", (conn, sock, address, socktype, peername, socket_info), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
         PEEK_SIZE = 8192
         try:
-            v = conn.peek(PEEK_SIZE)
+            peek_data = conn.peek(PEEK_SIZE)
         except:
-            v = None
-        if socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
+            peek_data = ""
+        netlog("socket peek: got %i bytes", len(peek_data))
+        line1 = peek_data.splitlines()[0]
+        if peek_data:
+            netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
+            netlog("socket peek hex=%s", binascii.hexlify(peek_data))
+            netlog("socket peek line1=%s", repr_ellipsized(line1))
+
+        def ssl_wrap():
+            ssl_sock = self._ssl_wrap_socket(sock)
+            netlog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
+            if ssl_sock is None:
+                #None means EOF! (we don't want to import ssl bits here)
+                netlog("ignoring SSL EOF error")
+                return None
+            ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
+            netlog("ssl_wrap()=%s", ssl_conn)
+            return ssl_conn
+
+        if socktype=="SSL" or socktype=="wss":
+            #verify that this isn't plain HTTP / xpra:
+            if peek_data:
+                packet_type = None
+                if peek_data[0] in ("P", ord("P")):
+                    packet_type = "xpra"
+                elif line1.find("HTTP/")>0:
+                    packet_type = "HTTP"
+                if packet_type:
+                    conn_err("packet looks like a plain %s packet" % packet_type)
+                    return
+            #always start by wrapping with SSL:
+            ssl_conn = ssl_wrap()
+            log_new_connection(conn, socket_info)
+            handle_as_https = False
+            if socktype=="wss" or self.ssl_mode=="www":
+                handle_as_https = True
+            elif self.ssl_mode=="auto":
+                #look for HTTPS request to handle:
+                if line1.find("HTTP/")>0 or peek_data.find("\x08http/1.1")>0:
+                    handle_as_https = True
+            if handle_as_https:
+                self.start_http_socket(ssl_conn, True, peek_data)
+            else:
+                self.make_protocol(socktype, ssl_conn)
+            return
+
+        elif socktype=="ws":
+            if peek_data:
+                if self.ssl_mode in ("auto", ) and peek_data[0] in ("\x16", 0x16):
+                    netlog("ws socket receiving ssl, upgrading")
+                    conn = ssl_wrap()
+                elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
+                    conn_err("packet looks like a plain xpra packet")
+                    return
+            log_new_connection(conn, socket_info)
+            self.start_http_socket(conn, False, peek_data)
+            return
+
+        if socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
-                cont, conn, v = self.may_wrap_socket(conn, socktype, v)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data)
                 if not cont:
                     return
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
                 conn_err(str(e))
                 return
-        if v and v[0] not in ("P", ord("P")):
-            msg = self.guess_header_protocol(v)
+        if peek_data and peek_data[0] not in ("P", ord("P")):
+            msg = self.guess_header_protocol(peek_data)
             conn_err("invalid packet header, %s" % msg)
             return True
+
         sock.settimeout(self._socket_timeout)
-        inject_ssl_socket_info(conn)
-        log_new_connection(conn)
+        log_new_connection(conn, socket_info)
         self.make_protocol(socktype, conn)
 
-
-    def make_protocol(self, socktype, conn, frominfo=""):
+    def make_protocol(self, socktype, conn):
+        netlog("make_protocol(%s, %s)", socktype, conn)
+        socktype = socktype.lower()
         protocol = Protocol(self, conn, self.process_packet)
         self._potential_protocols.append(protocol)
         protocol.large_packets.append("info-response")
@@ -671,8 +749,12 @@ class ServerCore(object):
             protocol.auth_class = self.tcp_auth_class
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
-        elif socktype=="SSL":
+        elif socktype=="ssl":
             protocol.auth_class = self.ssl_auth_class
+        elif socktype=="ws":
+            protocol.auth_class = self.ws_auth_class
+        elif socktype=="wss":
+            protocol.auth_class = self.wss_auth_class
         elif socktype=="vsock":
             protocol.auth_class = self.vsock_auth_class
         else:
@@ -688,6 +770,7 @@ class ServerCore(object):
             protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.start()
         self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
+        return protocol
 
     def may_wrap_socket(self, conn, socktype, peek_data=""):
         """
@@ -715,27 +798,17 @@ class ServerCore(object):
                 #None means EOF! (we don't want to import ssl bits here)
                 netlog("ignoring SSL EOF error")
                 return False, None, None
-            conn = SocketConnection(sock, sockname, address, target, socktype)
+            conn = SSLSocketConnection(sock, sockname, address, target, socktype)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s", conn)
             v = None
         is_ssl = socktype=="SSL"
         if self._html and self.ssl_mode!="tcp":
-            httplog("peek_data=%s", nonl(peek_data))
+            httplog("peek_data=%s", repr_ellipsized(peek_data))
             line1 = peek_data.splitlines()[0]
             httplog("line 1=%s", repr_ellipsized(line1))
             if line1.find("HTTP/")>0 or (is_ssl and (self.ssl_mode=="www" or (self.ssl_mode=="auto" and peek_data.find("\x08http/1.1")>0))):
-                http_proto = "http"+["","s"][int(is_ssl)]
-                if line1.startswith("GET ") or line1.startswith("POST "):
-                    parts = line1.split(" ")
-                    httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
-                    tname = "%s-request" % parts[0]
-                    req_info = "%s %s" % (http_proto, parts[0])
-                else:
-                    httplog("New %s connection received from %s", http_proto, frominfo)
-                    req_info = "ws"+["","s"][int(is_ssl)]
-                    tname = "%s-proxy" % req_info
-                start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, req_info, conn.remote))
+                self.start_http_socket(conn, is_ssl, peek_data)
                 return False, conn, None
         if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
@@ -767,8 +840,25 @@ class ServerCore(object):
             "/Info"         : self.http_info_request,
             }
 
-    def start_websockify(self, conn, req_info, frominfo):
-        wslog("start_websockify(%s, %s, %s) www dir=%s", conn, req_info, frominfo, self._www_dir)
+    def start_http_socket(self, conn, is_ssl=False, peek_data=""):
+        frominfo = pretty_socket(conn.remote)
+        line1 = peek_data.splitlines()[0]
+        http_proto = "http"+["","s"][int(is_ssl)]
+        if line1.startswith("GET ") or line1.startswith("POST "):
+            parts = line1.split(" ")
+            httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
+            tname = "%s-request" % parts[0]
+            req_info = "%s %s" % (http_proto, parts[0])
+        else:
+            httplog("New %s connection received from %s", http_proto, frominfo)
+            req_info = "ws"+["","s"][int(is_ssl)]
+            tname = "%s-proxy" % req_info
+        #we start a new thread,
+        #only so that the websocket handler thread is named correctly:
+        start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, is_ssl, req_info, conn.remote))
+
+    def start_websockify(self, conn, is_ssl, req_info, frominfo):
+        wslog("start_websockify(%s, %s, %s, %s) www dir=%s", conn, is_ssl, req_info, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
@@ -782,12 +872,13 @@ class ServerCore(object):
                 saved_send = sock.send
                 #now we can have a "is_active" that belongs to the real connection object:
                 def recv(*args):
-                    return untilConcludes(wsc.is_active, saved_recv, *args)
+                    return untilConcludes(wsc.is_active, wsc.can_retry, saved_recv, *args)
                 def send(*args):
-                    return untilConcludes(wsc.is_active, saved_send, *args)
+                    return untilConcludes(wsc.is_active, wsc.can_retry, saved_send, *args)
                 sock.recv = recv
                 sock.send = send
-                self.make_protocol("tcp", wsc, frominfo)
+                socktype = "ws%s" % ["","s"][int(is_ssl)]
+                self.make_protocol(socktype, wsc)
             scripts = self.get_http_scripts()
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts)
             return

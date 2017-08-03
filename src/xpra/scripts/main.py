@@ -527,15 +527,29 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="[HOST]:[PORT]",
                           help="Listen for connections over TCP (use --tcp-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-ws", action="append",
+                          dest="bind_ws", default=list(defaults.bind_ws or []),
+                          metavar="[HOST]:[PORT]",
+                          help="Listen for connections over Websocket (use --ws-auth to secure it)."
+                            + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-wss", action="append",
+                          dest="bind_wss", default=list(defaults.bind_wss or []),
+                          metavar="[HOST]:[PORT]",
+                          help="Listen for connections over HTTPS / wss (secure Websocket). Use --wss-auth to secure it."
+                            + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ssl", action="append",
                           dest="bind_ssl", default=list(defaults.bind_ssl or []),
                           metavar="[HOST]:PORT",
-                          help="Listen for connections over SSL (use --ssl-auth to secure it)."
+                          help="Listen for connections over SSL. Use --ssl-auth to secure it."
                             + " You may specify this option multiple times with different host and port combinations")
     else:
-        ignore({"bind"      : defaults.bind})
-        ignore({"bind-tcp"  : defaults.bind_tcp})
-        ignore({"bind-ssl"  : defaults.bind_ssl})
+        ignore({
+            "bind"      : defaults.bind,
+            "bind-tcp"  : defaults.bind_tcp,
+            "bind-ws"   : defaults.bind_ws,
+            "bind-wss"  : defaults.bind_wss,
+            "bind-ssl"  : defaults.bind_ssl,
+            })
     try:
         from xpra.net import vsock
     except:
@@ -947,6 +961,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-auth", action="store",
                       dest="tcp_auth", default=defaults.tcp_auth,
                       help="The authentication module to use for TCP sockets (default: '%default')")
+    group.add_option("--ws-auth", action="store",
+                      dest="ws_auth", default=defaults.ws_auth,
+                      help="The authentication module to use for Websockets (default: '%default')")
+    group.add_option("--wss-auth", action="store",
+                      dest="wss_auth", default=defaults.wss_auth,
+                      help="The authentication module to use for Secure Websockets (default: '%default')")
     group.add_option("--ssl-auth", action="store",
                       dest="ssl_auth", default=defaults.ssl_auth,
                       help="The authentication module to use for SSL sockets (default: '%default')")
@@ -1218,12 +1238,15 @@ def configure_network(options):
     if not ecs:
         #force compression level to zero since we have no compressors available:
         options.compression_level = 0
+    ees = packet_encoding.get_enabled_encoders()
+    count = 0
     for pe in packet_encoding.ALL_ENCODERS:
-        enabled = pe in packet_encoding.get_enabled_encoders() and pe in options.packet_encoders
+        enabled = pe in ees and pe in options.packet_encoders
         setattr(packet_encoding, "use_%s" % pe, enabled)
+        count += int(enabled)
     #verify that at least one encoder is available:
-    if not packet_encoding.get_enabled_encoders():
-        raise InitException("at least one valid packet encoder must be enabled (not '%s')" % options.packet_encoders)
+    if not count:
+        raise InitException("at least one valid packet encoder must be enabled")
 
 def parse_env(env):
     d = {}
@@ -2077,7 +2100,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             try:
                 ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"], socket=sock)
             except ValueError as e:
-                raise InitException("websocket connection failed: %s" % e)
+                raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
             from xpra.net.bytestreams import Connection, log as connlog
             class WebSocketClientConnection(Connection):
                 def __init__(self, ws, target, socktype):
@@ -2251,9 +2274,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
                 raise InitExit(EXIT_SSL_FAILURE, "SSL handshake failed: %s" % e)
-        #ensure we handle ssl exceptions as we should from now on:
-        from xpra.net.bytestreams import init_ssl
-        init_ssl()
         return ssl_sock
     return do_wrap_socket
 

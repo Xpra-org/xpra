@@ -361,6 +361,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     from xpra.server.socket_util import parse_bind_tcp, parse_bind_vsock
     bind_tcp = parse_bind_tcp(opts.bind_tcp)
     bind_ssl = parse_bind_tcp(opts.bind_ssl)
+    bind_ws = parse_bind_tcp(opts.bind_ws)
+    bind_wss = parse_bind_tcp(opts.bind_wss)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
@@ -534,14 +536,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     log = Logger("server")
     netlog = Logger("network")
 
-    mdns_recs = []
+    mdns_recs = {}
     sockets = []
 
     #SSL sockets:
     wrap_socket_fn = None
     need_ssl = False
     ssl_opt = opts.ssl.lower()
-    if ssl_opt in TRUE_OPTIONS or bind_ssl:
+    if ssl_opt in TRUE_OPTIONS or bind_ssl or bind_wss:
         need_ssl = True
     if opts.bind_tcp:
         if ssl_opt=="auto" and opts.ssl_cert:
@@ -560,43 +562,42 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
-    from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
-    netlog("setting up SSL sockets: %s", bind_ssl)
-    for host, iport in bind_ssl:
-        _, tcp_socket, host_port = setup_tcp_socket(host, iport, "SSL")
-        socket = ("SSL", wrap_socket_fn(tcp_socket), host_port)
+    def add_mdns(socktype, host, port):
+        recs = mdns_recs.setdefault(socktype, [])
+        rec = (host, port)
+        if rec not in recs:
+            recs.append(rec)
+    def add_tcp_socket(socktype, host, iport):
+        socket = setup_tcp_socket(host, iport, socktype)
         sockets.append(socket)
-        rec = "ssl", [(host, iport)]
-        netlog("%s : %s", rec, socket)
-        mdns_recs.append(rec)
+        add_mdns(socktype, host, iport)
 
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
+    from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
+    netlog("setting up SSL sockets: %s", bind_ssl)
+    for host, iport in bind_ssl:
+        add_tcp_socket("SSL", host, iport)
+    netlog("setting up https / wss (secure websockets): %s", bind_wss)
+    for host, iport in bind_wss:
+        add_tcp_socket("wss", host, iport)
     tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
-    def add_tcp_mdns_rec(host, iport):
-        rec = "tcp", [(host, iport)]
-        netlog("%s : %s", rec, socket)
-        mdns_recs.append(rec)
-        if tcp_ssl:
-            #SSL is also available on this TCP socket:
-            rec = "ssl", [(host, iport)]
-            netlog("%s : %s", rec, socket)
-            mdns_recs.append(rec)
     netlog("setting up TCP sockets: %s", bind_tcp)
     for host, iport in bind_tcp:
-        socket = setup_tcp_socket(host, iport)
-        sockets.append(socket)
-        add_tcp_mdns_rec(host, iport)
-
-    # VSOCK:
+        add_tcp_socket("tcp", host, iport)
+        if tcp_ssl:
+            add_mdns("ssl", host, iport)
+    netlog("setting up http / ws (websockets): %s", bind_ws)
+    for host, iport in bind_ws:
+        add_tcp_socket("ws", host, iport)
+        if tcp_ssl:
+            add_mdns("wss", host, iport)
     netlog("setting up vsock sockets: %s", bind_vsock)
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
-        rec = "vsock", [("", iport)]
-        netlog("%s : %s", rec, socket)
-        mdns_recs.append(rec)
+        add_mdns("vsock", host, iport)
 
     # systemd socket activation:
     try:
@@ -611,7 +612,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             netlog("%s : %s", (stype, [addr]), socket)
             if stype=="tcp":
                 host, iport = addr
-                add_tcp_mdns_rec(host, iport)
+                add_mdns("tcp", host, iport)
 
     sanitize_env()
     if POSIX:
@@ -740,14 +741,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         socktype, socket, sockpath = rec
         #ie: ("unix-domain", sock, sockpath), cleanup_socket
         sockets.append(rec)
-        netlog("%s : %s", (socktype, [sockpath]), socket)
+        netlog("%s %s : %s", socktype, sockpath, socket)
         add_cleanup(cleanup_socket)
         if opts.mdns:
             ssh_port = get_ssh_port()
-            rec = "ssh", [("", ssh_port)]
-            netlog("%s : %s", rec, socket)
-            if ssh_port and rec not in mdns_recs:
-                mdns_recs.append(rec)
+            netlog("ssh %s:%s : %s", "", ssh_port, socket)
+            if ssh_port:
+                add_mdns("ssh", "", ssh_port)
 
     kill_dbus = None
     if shadowing:
@@ -851,7 +851,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      }
         if opts.session_name:
             mdns_info["session"] = opts.session_name
-        for mode, listen_on in mdns_recs:
+        for mode, listen_on in mdns_recs.items():
             mdns_publish(display_name, mode, listen_on, mdns_info)
 
     try:

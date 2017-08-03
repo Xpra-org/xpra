@@ -5,11 +5,9 @@
 # later version. See the file COPYING for details.
 
 import time
-import sys
 import os
 import errno
 import socket
-import types
 
 from xpra.log import Logger
 log = Logger("network", "protocol")
@@ -27,7 +25,7 @@ SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 #raises an IOError but we should continue if the error code is EINTR
 #this wrapper takes care of it.
 #EWOULDBLOCK can also be hit with the proxy server when we handover the socket
-CONTINUE = {
+CONTINUE_ERRNO = {
             errno.EINTR         : "EINTR",
             errno.EWOULDBLOCK   : "EWOULDBLOCK"
             }
@@ -44,6 +42,16 @@ OS_READ = os.read
 OS_WRITE = os.write
 TTY_READ = os.read
 TTY_WRITE = os.write
+if WIN32 and PYTHON2:
+    #win32 has problems writing more than 32767 characters to stdout!
+    #see: http://bugs.python.org/issue11395
+    #(this is fixed in python 3.2 and we don't care about 3.0 or 3.1)
+    def win32ttywrite(fd, buf):
+        #this awful limitation only applies to tty devices:
+        if len(buf)>32767:
+            buf = buf[:32767]
+        return os.write(fd, buf)
+    TTY_WRITE = win32ttywrite
 
 
 PROTOCOL_STR = {}
@@ -60,30 +68,6 @@ for x in ("STREAM", "DGRAM", "RAW", "RDM", "SEQPACKET"):
         pass
 
 
-if WIN32:
-    #on win32, we have to deal with a few more odd error codes:
-    CONTINUE[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"       #@UndefinedVariable
-
-    #some of these may be redundant or impossible to hit? (does not hurt I think)
-    for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
-              "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
-              "WSAEHOSTUNREACH", "WSAEDISCON"):
-        ABORT[getattr(errno, x)] = x
-    #duplicated from winerror module:
-    ERROR_BROKEN_PIPE = 109
-    ERROR_PIPE_NOT_CONNECTED = 233
-    ABORT[ERROR_BROKEN_PIPE] = "BROKENPIPE"
-    ABORT[ERROR_PIPE_NOT_CONNECTED] = "PIPE_NOT_CONNECTED"
-    if PYTHON2:
-        #win32 has problems writing more than 32767 characters to stdout!
-        #see: http://bugs.python.org/issue11395
-        #(this is fixed in python 3.2 and we don't care about 3.0 or 3.1)
-        def win32ttywrite(fd, buf):
-            #this awful limitation only applies to tty devices:
-            if len(buf)>32767:
-                buf = buf[:32767]
-            return os.write(fd, buf)
-        TTY_WRITE = win32ttywrite
 
 def set_continue_wait(v):
     global continue_wait
@@ -95,34 +79,25 @@ CONTINUE_EXCEPTIONS = {
                        socket.timeout   : "socket.timeout",
                        }
 
-def init_ssl():
-    import ssl
-    assert ssl
-    global CONTINUE_EXCEPTIONS
-    CONTINUE_EXCEPTIONS[ssl.SSLError] = "SSLError"
-    CONTINUE_EXCEPTIONS[ssl.SSLWantReadError] = "SSLWantReadError"
-    CONTINUE_EXCEPTIONS[ssl.SSLWantWriteError] = "SSLWantWriteError"
-    return ssl
-
 
 def can_retry(e):
     continue_exception = CONTINUE_EXCEPTIONS.get(type(e))
     if continue_exception:
         return continue_exception
     if isinstance(e, (IOError, OSError)):
-        global CONTINUE
+        global CONTINUE_ERRNO
         code = e.args[0]
-        can_continue = CONTINUE.get(code)
+        can_continue = CONTINUE_ERRNO.get(code)
         if can_continue:
             return can_continue
 
         abort = ABORT.get(code, code)
         if abort is not None:
-            log("untilConcludes: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
+            log("can_retry: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
             raise ConnectionClosedException(e)
     return False
 
-def untilConcludes(is_active_cb, f, *a, **kw):
+def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
     global continue_wait
     wait = 0
     while is_active_cb():
@@ -130,7 +105,7 @@ def untilConcludes(is_active_cb, f, *a, **kw):
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry(e)
-            log("untilConcludes(%s, %s, %s, %s) %s, retry=%s", is_active_cb, f, a, kw, e, retry)
+            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry)
             if retry:
                 if wait>0:
                     time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
@@ -173,8 +148,11 @@ class Connection(object):
     def close(self):
         self.set_active(False)
 
+    def can_retry(self, e):
+        return can_retry(e)
+
     def untilConcludes(self, *args):
-        return untilConcludes(self.is_active, *args)
+        return untilConcludes(self.is_active, self.can_retry, *args)
 
     def peek(self, n):
         #not implemented
@@ -345,6 +323,43 @@ class SocketConnection(Connection):
                 }
 
 
+class SSLSocketConnection(SocketConnection):
+
+    def can_retry(self, e):
+        if getattr(e, "library", None)=="SSL":
+            reason = getattr(e, "reason", None)
+            if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
+                return False
+            #log.info("can_retry(%s) %s", e, type(e))
+            #for x in ('args', 'errno', 'filename', 'library', 'message', 'reason', 'strerror'):
+            #    log.info("%s=%s", x, getattr(e, x, None))
+        return SocketConnection.can_retry(self, e)
+
+    def get_info(self):
+        i = SocketConnection.get_info(self)
+        i["ssl"] = True
+        for k,fn in {
+                     "compression"      : "compression",
+                     "alpn-protocol"    : "selected_alpn_protocol",
+                     "npn-protocol"     : "selected_npn_protocol",
+                     "version"          : "version",
+                     }.items():
+            sfn = getattr(self._socket, fn, None)
+            if sfn:
+                v = sfn()
+                if v is not None:
+                    i[k] = v
+        cipher_fn = getattr(self._socket, "cipher", None)
+        if cipher_fn:
+            cipher = cipher_fn()
+            if cipher:
+                i["cipher"] = {
+                               "name"       : cipher[0],
+                               "protocol"   : cipher[1],
+                               "bits"       : cipher[2],
+                               }
+        return i
+
 
 def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?
@@ -353,48 +368,7 @@ def set_socket_timeout(conn, timeout=None):
         conn._socket.settimeout(timeout)
 
 
-def inject_ssl_socket_info(conn):
-    """
-        If the socket is an SSLSocket,
-        we patch the Connection's get_info method
-        to return additional ssl data.
-        This method does not load the 'ssl' module.
-    """
-    sock = conn._socket
-    ssl = sys.modules.get("ssl")
-    log("ssl=%s, socket class=%s", ssl, type(sock))
-    if ssl and isinstance(sock, ssl.SSLSocket):
-        #inject extra ssl info into the socket class:
-        def get_ssl_socket_info(sock):
-            d = sock.do_get_socket_info()
-            d["ssl"] = True
-            s = sock._socket
-            if not s:
-                return d
-            for k,fn in {
-                         "compression"      : "compression",
-                         "alpn-protocol"    : "selected_alpn_protocol",
-                         "npn-protocol"     : "selected_npn_protocol",
-                         "version"          : "version",
-                         }.items():
-                sfn = getattr(s, fn, None)
-                if sfn:
-                    v = sfn()
-                    if v is not None:
-                        d[k] = v
-            cipher_fn = getattr(s, "cipher", None)
-            if cipher_fn:
-                cipher = cipher_fn()
-                if cipher:
-                    d["cipher"] = {
-                                   "name"       : cipher[0],
-                                   "protocol"   : cipher[1],
-                                   "bits"       : cipher[2],
-                                   }
-            return d
-        conn.get_socket_info = types.MethodType(get_ssl_socket_info, conn)
-
-def log_new_connection(conn):
+def log_new_connection(conn, socket_info=""):
     """ logs the new connection message """
     sock = conn._socket
     address = conn.remote
@@ -404,14 +378,17 @@ def log_new_connection(conn):
     except:
         peername = str(address)
     sockname = sock.getsockname()
-    log("log_new_connection(%s) sock=%s, sockname=%s, address=%s, peername=%s", conn, sock, sockname, address, peername)
+    log("log_new_connection(%s, %s) type=%s, sock=%s, sockname=%s, address=%s, peername=%s", conn, socket_info, type(conn), sock, sockname, address, peername)
     if peername:
         frominfo = pretty_socket(peername)
         info_msg = "New %s connection received from %s" % (socktype, frominfo)
+        if socket_info:
+            info_msg += " on %s" % (pretty_socket(socket_info),)
     elif socktype=="unix-domain":
         frominfo = sockname
         info_msg = "New %s connection received on %s" % (socktype, frominfo)
     else:
-        frominfo = ""
         info_msg = "New %s connection received"
+        if socket_info:
+            info_msg += " on %s" % (pretty_socket(socket_info),)
     log.info(info_msg)

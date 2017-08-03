@@ -6,9 +6,11 @@
 
 #@PydevCodeAnalysisIgnore
 
+import errno
 from ctypes import WinDLL, addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 
 from xpra.net.bytestreams import Connection
+from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.namedpipes.common import OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE, ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED, INFINITE, ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING
 from xpra.platform.win32.constants import FILE_FLAG_OVERLAPPED, GENERIC_READ, GENERIC_WRITE, OPEN_EXISTING, PIPE_READMODE_BYTE
 
@@ -31,6 +33,16 @@ GetOverlappedResult = kernel32.GetOverlappedResult
 
 BUFSIZE = 65536
 
+CONNECTION_CLOSED_ERRORS = {
+    ERROR_BROKEN_PIPE           : "BROKENPIPE",
+    ERROR_PIPE_NOT_CONNECTED    : "PIPE_NOT_CONNECTED",
+    }
+#some of these may be redundant or impossible to hit? (does not hurt I think)
+for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
+          "WSAENOTCONN", "WSAESHUTDOWN", "WSAETIMEDOUT", "WSAETIMEDOUT",
+          "WSAEHOSTUNREACH", "WSAEDISCON"):
+    CONNECTION_CLOSED_ERRORS[getattr(errno, x)] = x
+
 
 class NamedPipeConnection(Connection):
     def __init__(self, name, pipe_handle):
@@ -52,9 +64,20 @@ class NamedPipeConnection(Connection):
         self.write_overlapped.InternalHigh = None
         self.write_overlapped.union.Pointer = None
 
+    def can_retry(self, e):
+        code = e.args[0]
+        if code==errno.WSAEWOULDBLOCK:      #@UndefinedVariable
+            return "WSAEWOULDBLOCK"
+        #convert those to a connection closed:
+        closed = CONNECTION_CLOSED_ERRORS.get(code)
+        if closed:
+            raise ConnectionClosedException(e)
+        return False
+        
+
     def untilConcludes(self, fn, *args, **kwargs):
         try:
-            return Connection.untilConcludes(self, fn, *args, **kwargs)
+            return Connection.untilConcludes(self, self.can_retry, fn, *args, **kwargs)
         except Exception as e:
             code = GetLastError()
             log("untilConcludes(%s, ) exception: %s, error code=%s", fn, e, code, exc_info=True)

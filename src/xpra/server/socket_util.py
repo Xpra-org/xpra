@@ -99,7 +99,7 @@ def create_tcp_socket(host, iport):
     listener.bind(sockaddr)
     return listener
 
-def setup_tcp_socket(host, iport, socktype="TCP"):
+def setup_tcp_socket(host, iport, socktype="tcp"):
     from xpra.log import Logger
     log = Logger("network")
     try:
@@ -114,7 +114,8 @@ def setup_tcp_socket(host, iport, socktype="TCP"):
         except:
             pass
     add_cleanup(cleanup_tcp_socket)
-    return "tcp", tcp_socket, (host, iport)
+    log("%s: %s:%s : %s", socktype, host, iport, socket)
+    return socktype, tcp_socket, (host, iport)
 
 
 def parse_bind_tcp(bind_tcp):
