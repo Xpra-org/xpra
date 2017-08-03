@@ -15,7 +15,7 @@ import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import (EXIT_OK, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
+from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
 FLATTEN_INFO = envbool("XPRA_FLATTEN_INFO", True)
 
@@ -126,7 +126,11 @@ class CommandConnectClient(GObjectXpraClient):
     def _process_connection_lost(self, packet):
         #override so we don't log a warning
         #"command clients" are meant to exit quickly by losing the connection
-        self.quit(EXIT_OK)
+        p = self._protocol
+        if p and p.input_packetcount==0:
+            self.quit(EXIT_CONNECTION_LOST)
+        else:
+            self.quit(EXIT_OK)
 
     def server_connection_established(self):
         #don't bother parsing the network caps:
