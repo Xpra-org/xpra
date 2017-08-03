@@ -853,21 +853,22 @@ class XpraClientBase(FileTransferHandler):
 
 
     def _process_gibberish(self, packet):
+        log("process_gibberish(%s)", repr_ellipsized(packet))
         (_, message, data) = packet
         p = self._protocol
         show_as_text = p and p.input_packetcount==0 and all(c in string.printable for c in bytestostr(data))
         if show_as_text:
             #looks like the first packet back is just text, print it:
             data = bytestostr(data)
-            if data.find("Traceback ")>=0:
-                for x in data.split("\n"):
-                    netlog.warn(x.strip("\r"))
+            if data.find("\n")>=0:
+                for x in data.splitlines():
+                    netlog.warn(x)
             else:
                 netlog.error("Error: failed to connect, received")
-                netlog.error(" %s", repr_ellipsized(data.strip("\n").strip("\r")))
+                netlog.error(" %s", repr_ellipsized(data))
         else:
-            netlog.warn("Received uninterpretable nonsense: %s", message)
-            netlog.warn(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
+            netlog.error("Error: received uninterpretable nonsense: %s", message)
+            netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
         self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
