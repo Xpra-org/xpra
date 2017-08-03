@@ -9,7 +9,7 @@ import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
 from xpra.util import nonl, print_nested_dict
-from xpra.os_util import which, WIN32, OSX, bytestostr
+from xpra.os_util import which, WIN32, OSX, bytestostr, strtobytes
 
 from xpra.log import Logger
 log = Logger("sound")
@@ -87,7 +87,7 @@ def get_pactl_info_line(prefix):
             log.warn(" %s", nonl(err))
         return    ""
     stat = ""
-    for line in out.splitlines():
+    for line in strtobytes(out).splitlines():
         if line.startswith(prefix):
             stat = line[len(prefix):].strip()
             break
@@ -95,10 +95,10 @@ def get_pactl_info_line(prefix):
     return stat
 
 def get_default_sink():
-    return get_pactl_info_line("Default Sink:")
+    return get_pactl_info_line(b"Default Sink:")
 
 def get_pactl_server():
-    return get_pactl_info_line("Server String:")
+    return get_pactl_info_line(b"Server String:")
 
 
 def get_pulse_server(may_start_it=True):
