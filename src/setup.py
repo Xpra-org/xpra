@@ -1347,8 +1347,9 @@ if WIN32:
             add_gui_exe("xpra/client/gtk_base/example/gl_colors_gradient.py",   "encoding.ico",     "OpenGL-Colors-Gradient")
             add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
             add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
-            add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent_Colors")
-            add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent_Window")
+            add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
+            add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent-Window")
+            add_gui_exe("xpra/client/gtk_base/example/fontrendering.py",        "font.ico",         "Font-Rendering")
 
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
