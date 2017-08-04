@@ -1,0 +1,22 @@
+From fe367e1c9b5bfb8cc0ef73624989c2bbaf4ab6a6 Mon Sep 17 00:00:00 2001
+From: Andrew Resch <andrewresch@gmail.com>
+Date: Sat, 16 Jul 2016 13:18:59 -0700
+Subject: [PATCH] Fix test for python 2.6
+
+---
+ tests/test_rencode.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/test_rencode.py b/tests/test_rencode.py
+index d7e8357..35b2dc0 100644
+--- a/tests/test_rencode.py
++++ b/tests/test_rencode.py
+@@ -143,7 +143,7 @@ def test_decode_long_long(self):
+ 
+     def test_decode_int_big_number(self):
+         n = int(b"9"*62)
+-        toobig = '={}\x7f'.format('9'*65).encode()
++        toobig = '={x}\x7f'.format(x='9'*65).encode()
+         self.assertEqual(rencode.loads(rencode.dumps(n)), n)
+         self.assertRaises(IndexError, rencode.loads, bytes(bytearray([61])))
+         self.assertRaises(ValueError, rencode.loads, toobig)
