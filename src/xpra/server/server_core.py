@@ -626,10 +626,11 @@ class ServerCore(object):
         PEEK_SIZE = 8192
         try:
             peek_data = conn.peek(PEEK_SIZE)
+            line1 = peek_data.splitlines()[0]
         except:
+            line1 = b""
             peek_data = ""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
-        line1 = peek_data.splitlines()[0]
         if peek_data:
             netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
             netlog("socket peek hex=%s", binascii.hexlify(peek_data))
@@ -726,7 +727,7 @@ class ServerCore(object):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
-                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, socket_info)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, peek_data, line1)
                 if not cont:
                     return
             except IOError as e:
@@ -779,7 +780,7 @@ class ServerCore(object):
         self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype, peek_data=b"", socket_info=b""):
+    def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b""):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -795,7 +796,6 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        line1 = peek_data.splitlines()[0]
         if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
             socktype = "SSL"
             sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
