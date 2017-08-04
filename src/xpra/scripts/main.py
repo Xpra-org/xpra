@@ -288,6 +288,9 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog print DISPLAY filename\n",
                         "\t%prog version [DISPLAY]\n"
                         "\t%prog showconfig\n"
+                        "\t%prog list\n"
+                        "\t%prog stop [DISPLAY]\n"
+                        "\t%prog exit [DISPLAY]\n"
                       ]
     if supports_mdns:
         command_options.append("\t%prog list-mdns\n")
@@ -299,9 +302,6 @@ def do_parse_cmdline(cmdline, defaults):
         server_modes.append("upgrade")
         command_options = ["\t%prog start [DISPLAY]\n",
                            "\t%prog start-desktop [DISPLAY]\n",
-                           "\t%prog stop [DISPLAY]\n",
-                           "\t%prog exit [DISPLAY]\n",
-                           "\t%prog list\n",
                            "\t%prog upgrade [DISPLAY]\n",
                            ] + command_options
     if supports_shadow:
@@ -1447,10 +1447,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             return run_server(error_cb, options, mode, script_file, args, current_display)
         elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test", "request-start", "request-start-desktop", "request-shadow"):
             return run_client(error_cb, options, args, mode)
-        elif mode in ("stop", "exit") and (supports_server or supports_shadow):
+        elif mode in ("stop", "exit"):
             nox()
             return run_stopexit(mode, error_cb, options, args)
-        elif mode == "list" and (supports_server or supports_shadow):
+        elif mode == "list":
             return run_list(error_cb, options, args)
         elif mode == "list-mdns" and supports_mdns:
             return run_list_mdns(error_cb, options, args)
