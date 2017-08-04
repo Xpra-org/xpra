@@ -185,12 +185,12 @@ class SoundSink(SoundPipeline):
 
 
     def queue_pushing(self, *args):
-        gstlog("queue_pushing")
+        gstlog("queue_pushing%s", args)
         self.emit_info()
         return True
 
     def queue_running(self, *args):
-        gstlog("queue_running")
+        gstlog("queue_running%s", args)
         self.queue_state = "running"
         self.set_min_level()
         self.set_max_level()
@@ -202,7 +202,7 @@ class SoundSink(SoundPipeline):
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
-        gstlog("queue_underrun")
+        gstlog("queue_underrun%s", args)
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
             self.last_underrun = now
@@ -226,7 +226,7 @@ class SoundSink(SoundPipeline):
             gstlog("ignoring overrun during startup")
             return 1
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        log("overrun level=%ims", clt)
+        log("queue_overrun%s level=%ims", args, clt)
         now = monotonic_time()
         #grace period of recording overruns:
         #(because when we record an overrun, we lower the max-time,
@@ -455,7 +455,7 @@ def main():
         QUEUE_SILENT = True
         ss = SoundSink(codecs=codecs)
         def eos(*args):
-            print("eos")
+            print("eos%s" % (args,))
             glib.idle_add(glib_mainloop.quit)
         ss.connect("eos", eos)
         ss.start()
@@ -463,10 +463,10 @@ def main():
         glib_mainloop = glib.MainLoop()
 
         import signal
-        def deadly_signal(*args):
+        def deadly_signal(*_args):
             glib.idle_add(ss.stop)
             glib.idle_add(glib_mainloop.quit)
-            def force_quit(sig, frame):
+            def force_quit(_sig, _frame):
                 sys.exit()
             signal.signal(signal.SIGINT, force_quit)
             signal.signal(signal.SIGTERM, force_quit)
@@ -475,7 +475,7 @@ def main():
             signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
-        def check_for_end(*args):
+        def check_for_end(*_args):
             qtime = ss.queue.get_property("current-level-time")//MS_TO_NS
             if qtime<=0:
                 log.info("underrun (end of stream)")

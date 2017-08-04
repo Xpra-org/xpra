@@ -1066,7 +1066,7 @@ class ServerSource(FileTransferHandler):
             self.stop_sending_sound()
 
     def sound_source_info(self, source, info):
-        soundlog("sound_source_info: %s", info)
+        soundlog("sound_source_info(%s, %s)", source, info)
 
     def stop_sending_sound(self):
         ss = self.sound_source
@@ -1241,6 +1241,7 @@ class ServerSource(FileTransferHandler):
         if not self.sound_sink:
             try:
                 def sound_sink_error(*args):
+                    soundlog("sound_sink_error%s", args)
                     soundlog.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
                 from xpra.sound.wrapper import start_receiving_sound
@@ -1312,7 +1313,7 @@ class ServerSource(FileTransferHandler):
 
     # Takes the name of a WindowModel property, and returns a dictionary of
     # xpra window metadata values that depend on that property
-    def _make_metadata(self, wid, window, propname):
+    def _make_metadata(self, window, propname):
         if propname not in self.metadata_supported:
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
@@ -1954,7 +1955,7 @@ class ServerSource(FileTransferHandler):
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send("ping", now_ms)
         timeout = 60
-        def check_echo_timeout(*args):
+        def check_echo_timeout():
             if self.last_ping_echoed_time<now_ms and not self.is_closed():
                 self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
         self.timeout_add(timeout*1000, check_echo_timeout)
@@ -2066,7 +2067,7 @@ class ServerSource(FileTransferHandler):
             return
         metadata = {}
         for propname in list(window.get_property_names()):
-            metadata.update(self._make_metadata(wid, window, propname))
+            metadata.update(self._make_metadata(window, propname))
         self.send("new-tray", wid, w, h, metadata)
 
     def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
@@ -2078,7 +2079,7 @@ class ServerSource(FileTransferHandler):
             send_props.remove("icon")
         metadata = {}
         for prop in send_props:
-            v = self._make_metadata(wid, window, prop)
+            v = self._make_metadata(window, prop)
             if prop in PROPERTIES_DEBUG:
                 metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             else:
@@ -2127,7 +2128,7 @@ class ServerSource(FileTransferHandler):
         if ws:
             ws.cancel_damage()
 
-    def unmap_window(self, wid, window):
+    def unmap_window(self, wid, _window):
         ws = self.window_sources.get(wid)
         if ws:
             ws.unmap()
