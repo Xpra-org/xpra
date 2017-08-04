@@ -215,7 +215,7 @@ class WindowBackingBase(object):
         self.idle_add(self.paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
 
 
-    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
+    def paint_image(self, _coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
         PIL = get_codec("PIL")
@@ -533,7 +533,7 @@ class WindowBackingBase(object):
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":
-                self.paint_scroll(x, y, width, height, img_data, options, callbacks)
+                self.paint_scroll(img_data, options, callbacks)
             else:
                 self.do_draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
         except Exception:
@@ -542,7 +542,7 @@ class WindowBackingBase(object):
             else:
                 raise
 
-    def do_draw_region(self, x, y, width, height, coding, img_data, rowstride, options, callbacks):
+    def do_draw_region(self, _x, _y, _width, _height, coding, _img_data, _rowstride, _options, callbacks):
         msg = "invalid encoding: '%s'" % coding
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)

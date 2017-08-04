@@ -104,11 +104,11 @@ class PixmapBacking(GTK2WindowBacking):
             cr.rectangle(0, 0, w, h)
             cr.fill()
 
-    def paint_scroll(self, x, y, width, height, img_data, options, callbacks):
+    def paint_scroll(self, img_data, _options, callbacks):
         #Warning: unused as this causes strange visual corruption
-        self.idle_add(self.do_paint_scroll, x, y, width, height, img_data, options, callbacks)
+        self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
-    def do_paint_scroll(self, x, y, w, h, scrolls, options, callbacks):
+    def do_paint_scroll(self, scrolls, callbacks):
         gc = self._backing.new_gc()
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             self._backing.draw_drawable(gc, self._backing, sx, sy, sx+xdelta, sy+ydelta, sw, sh)

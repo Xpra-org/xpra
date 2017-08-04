@@ -259,7 +259,7 @@ class SoundPipeline(gobject.GObject):
         self.info["container_description"]  = dl
 
 
-    def on_message(self, bus, message):
+    def on_message(self, _bus, message):
         #log("on_message(%s, %s)", bus, message)
         gstlog("on_message: %s", message)
         t = message.type

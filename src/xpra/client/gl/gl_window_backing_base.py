@@ -520,7 +520,7 @@ class GLWindowBackingBase(GTKWindowBacking):
             b.destroy()
         self.glconfig = None
 
-    def paint_scroll(self, x, y, w, h, scroll_data, options, callbacks):
+    def paint_scroll(self, scroll_data, options, callbacks):
         flush = options.intget("flush", 0)
         self.idle_add(self.do_scroll_paints, scroll_data, flush, callbacks)
 
