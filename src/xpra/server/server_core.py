@@ -704,10 +704,10 @@ class ServerCore(object):
                     ssl_conn.enable_peek()
                     peek_data, line1 = self.peek_connection(ssl_conn)
                     http = line1.find("HTTP/")>0
-            log_new_connection(conn, socket_info)
             if http:
                 self.start_http_socket(ssl_conn, True, peek_data)
             else:
+                log_new_connection(conn, socket_info)
                 self.make_protocol(socktype, ssl_conn)
             return
 
@@ -719,7 +719,6 @@ class ServerCore(object):
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
                     conn_err("packet looks like a plain xpra packet")
                     return
-            log_new_connection(conn, socket_info)
             self.start_http_socket(conn, False, peek_data)
             return
 
@@ -826,7 +825,6 @@ class ServerCore(object):
             http = line1.find("HTTP/")>0
             is_ssl = False
         if http:
-            log_new_connection(conn, socket_info)
             self.start_http_socket(conn, is_ssl, peek_data)
             return False, conn, None
         if self._tcp_proxy:
