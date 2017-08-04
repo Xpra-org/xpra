@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from __future__ import absolute_import
+
 import struct
 from xpra.log import Logger
 log = Logger("win32")

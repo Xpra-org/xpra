@@ -7,6 +7,7 @@
 # Taken from BitTorrent 3.4.2 (which is MIT-licensed), then hacked up
 # further.
 # Original version written by Petru Paler
+from __future__ import absolute_import
 
 
 __version__ = ("Cython", 0, 13)

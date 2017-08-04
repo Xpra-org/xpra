@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import os
 import time
@@ -74,7 +75,7 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
-from core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
 
 cdef _RandRBindings singleton = None
 def RandRBindings():

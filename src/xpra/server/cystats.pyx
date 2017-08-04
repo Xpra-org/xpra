@@ -6,6 +6,7 @@
 
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True
+from __future__ import absolute_import
 
 import time
 from xpra.monotonic_time cimport monotonic_time

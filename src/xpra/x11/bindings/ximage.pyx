@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import errno as pyerrno
 from libc.stdint cimport uint64_t, uintptr_t
@@ -866,7 +867,7 @@ cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     pw.init(xdisplay, xwindow, width, height)
     return pw
 
-from core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
 
 cdef _XImageBindings singleton = None
 def XImageBindings():

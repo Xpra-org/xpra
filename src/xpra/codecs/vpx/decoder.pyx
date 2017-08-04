@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True
+from __future__ import absolute_import
 
 import os
 import sys

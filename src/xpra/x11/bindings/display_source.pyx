@@ -8,6 +8,7 @@
 # other times we may get an existing "Display" pointer from
 # somewhere else, so we need this file to hide that...
 # (we can't just pass pointers around easily with Python/Cython)
+from __future__ import absolute_import
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:

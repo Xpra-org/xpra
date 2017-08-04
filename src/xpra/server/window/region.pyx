@@ -8,6 +8,7 @@
 # but we don't want its union() behaviour which can be too expensive
 
 #cython: auto_pickle=False, boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True, always_allow_keywords=False
+from __future__ import absolute_import
 
 #what I want is a real macro!
 cdef inline int MIN(int a, int b):

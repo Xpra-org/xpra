@@ -6,6 +6,7 @@
 
 # Special guard to work around Fedora/RH's pygtk2 silliness
 # see http://partiwm.org/ticket/34 for details
+from __future__ import absolute_import
 
 from time import sleep
 from xpra.monotonic_time cimport monotonic_time

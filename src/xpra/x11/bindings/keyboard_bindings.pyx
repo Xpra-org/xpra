@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import os
 import time
@@ -239,7 +240,7 @@ cdef s(const char *v):
 # to the original C xmodmap code
 
 
-from core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
 
 cdef _X11KeyboardBindings singleton = None
 def X11KeyboardBindings():

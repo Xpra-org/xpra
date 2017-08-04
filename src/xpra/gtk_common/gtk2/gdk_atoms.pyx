@@ -9,6 +9,7 @@
 # and win32 does not have all the X11 stuff
 
 #cython: wraparound=False
+from __future__ import absolute_import
 
 import gobject
 import gtk

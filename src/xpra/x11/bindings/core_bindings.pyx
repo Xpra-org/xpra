@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import os
 import time
@@ -47,8 +48,8 @@ cdef extern from "X11/Xlib.h":
     int *XSynchronize(Display *display, Bool onoff)
 
 
-from display_source cimport get_display
-from display_source import get_display_name
+from xpra.x11.bindings.display_source cimport get_display
+from xpra.x11.bindings.display_source import get_display_name
 
 cdef _X11CoreBindings singleton = None
 def X11CoreBindings():

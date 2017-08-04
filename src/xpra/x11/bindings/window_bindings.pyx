@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import struct
 import time
@@ -395,7 +396,7 @@ class PropertyOverflow(PropertyError):
     pass
 
 
-from core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 

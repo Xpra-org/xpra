@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+from __future__ import absolute_import
 
 import os
 import socket

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False
+from __future__ import absolute_import
 
 import os
 import time
@@ -313,7 +314,7 @@ CLASS_INFO = {
     }
 
 
-from core_bindings cimport _X11CoreBindings
+from xpra.x11.bindings.core_bindings cimport _X11CoreBindings
 
 cdef _X11XI2Bindings singleton = None
 def X11XI2Bindings():

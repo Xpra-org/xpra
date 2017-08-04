@@ -23,6 +23,7 @@
 
 
 #cython: boundscheck=False
+from __future__ import absolute_import
 
 
 import cairo

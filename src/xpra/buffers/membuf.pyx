@@ -15,6 +15,7 @@
 # 3) xxhash wrapper
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True
+from __future__ import absolute_import
 
 
 from cpython.buffer cimport PyBuffer_FillInfo

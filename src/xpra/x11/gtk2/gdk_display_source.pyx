@@ -7,6 +7,7 @@
 
 # This class simply hooks the current GDK display into
 # the core X11 bindings.
+from __future__ import absolute_import
 
 from xpra.x11.bindings.display_source cimport set_display
 from xpra.x11.bindings.display_source import set_display_name

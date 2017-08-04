@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: boundscheck=False, wraparound=False, cdivision=True
+from __future__ import absolute_import
 
 from libc.time cimport time_t
 
