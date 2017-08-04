@@ -74,16 +74,9 @@ def set_continue_wait(v):
     continue_wait = v
 
 
-#so we can inject ssl.SSLError:
-CONTINUE_EXCEPTIONS = {
-                       socket.timeout   : "socket.timeout",
-                       }
-
-
 def can_retry(e):
-    continue_exception = CONTINUE_EXCEPTIONS.get(type(e))
-    if continue_exception:
-        return continue_exception
+    if isinstance(e, socket.timeout):
+        return "socket.timeout"
     if isinstance(e, (IOError, OSError)):
         global CONTINUE_ERRNO
         code = e.args[0]
@@ -323,6 +316,56 @@ class SocketConnection(Connection):
                 }
 
 
+try:
+    #this wrapper class allows us to override the normal ssl.Socket
+    #class so that we can fake peek() support by actually reading from the socket
+    #and caching the result.
+    class SSLSocket(socket._socketobject):
+    
+        def __init__(self, sock):
+            socket._socketobject.__init__(self, _sock=sock)
+            #patch recv:
+            self.saved_recv = getattr(self, "recv")
+            setattr(self, "recv", self._recv)
+            self.saved_makefile = getattr(self, "makefile")
+            setattr(self, "makefile", self._makefile)
+            self.peeked = b""
+    
+        def _recv(self, bufsize, flags=0):
+            #log("_recv(%s, %#x) peeked=%i bytes", bufsize, flags, len(self.peeked))
+            peek = flags & socket.MSG_PEEK
+            if self.peeked:
+                #we have peek data aleady
+                if bufsize<len(self.peeked):
+                    r = self.peeked[:bufsize]
+                else:
+                    r = self.peeked
+                if not peek:
+                    #remove what we return from peek buffer:
+                    if bufsize<len(self.peeked):
+                        self.peeked = self.peeked[bufsize:]
+                    else:
+                        self.peeked = b""
+                return r
+            r = self.saved_recv(bufsize, flags & (0xffffffff ^ socket.MSG_PEEK))
+            if peek:
+                self.peeked = r
+            return r
+    
+        def _makefile(self, mode='r', bufsize=-1):
+            from socket import _fileobject
+            fo = _fileobject(self, mode, bufsize)
+            return fo
+    
+        def __repr__(self):
+            return "SSLSocket(%s)" % self._sock
+except Exception as e:
+    log.warn("Warning: unable to override socket object")
+    log.warn(" SSL peek support will not be available")
+    log.warn(" %s", e)
+    SSLSocket = None
+
+
 class SSLSocketConnection(SocketConnection):
 
     def can_retry(self, e):
@@ -334,6 +377,10 @@ class SSLSocketConnection(SocketConnection):
             #for x in ('args', 'errno', 'filename', 'library', 'message', 'reason', 'strerror'):
             #    log.info("%s=%s", x, getattr(e, x, None))
         return SocketConnection.can_retry(self, e)
+
+    def enable_peek(self):
+        if SSLSocket:
+            self._socket = SSLSocket(self._socket)
 
     def get_info(self):
         i = SocketConnection.get_info(self)
