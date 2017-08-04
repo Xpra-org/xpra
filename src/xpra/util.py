@@ -227,8 +227,10 @@ class MutableInteger(object):
 
 class typedict(dict):
 
-    from xpra.log import Logger
-    log = Logger("util")
+    def _warn(self, msg, *args, **kwargs):
+        from xpra.log import Logger
+        log = Logger("util")
+        log.warn(msg, *args, **kwargs)
 
     def capsget(self, key, default=None):
         v = self.get(key)
@@ -255,9 +257,9 @@ class typedict(dict):
         try:
             return int(v)
         except Exception as e:
-            typedict.log("intget(%s, %s)", k, d, exc_info=True)
-            typedict.log.warn("Warning: failed to parse %s value '%s':", k, v)
-            typedict.log.warn(" %s", e)
+            self._warn("intget(%s, %s)", k, d, exc_info=True)
+            self._warn("Warning: failed to parse %s value '%s':", k, v)
+            self._warn(" %s", e)
             return d
 
     def boolget(self, k, default_value=False):
@@ -268,8 +270,8 @@ class typedict(dict):
         if v is None:
             return None
         if type(v)!=dict:
-            typedict.log("dictget(%s, %s)", k, default_value, exc_info=True)
-            typedict.log.warn("Warning: expected a dict value for %s but got %s", k, type(v))
+            self._warn("dictget(%s, %s)", k, default_value, exc_info=True)
+            self._warn("Warning: expected a dict value for %s but got %s", k, type(v))
             return default_value
         return v
 
@@ -296,7 +298,8 @@ class typedict(dict):
         if v is None:
             return default_value
         if type(v) not in (list, tuple):
-            typedict.log.warn("expected a list or tuple value for %s but got %s", k, type(v))
+            self._warn("listget%s", (k, default_value, item_type, max_items), exc_info=True)
+            self._warn("expected a list or tuple value for %s but got %s", k, type(v))
             return default_value
         aslist = list(v)
         if item_type:
@@ -310,11 +313,11 @@ class typedict(dict):
                     x = str(x)
                     aslist[i] = x
                 if type(x)!=item_type:
-                    typedict.log.warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
+                    self._warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
                     return default_value
         if max_items is not None:
             if len(v)>max_items:
-                typedict.log.warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
+                self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))
                 return default_value
         return aslist
 
