@@ -438,6 +438,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         xauth_data = get_hex_uuid()
     ROOT = POSIX and getuid()==0
 
+    protected_fds = []
+    protected_env = {}
     stdout = sys.stdout
     stderr = sys.stderr
     # Daemonize:
@@ -448,10 +450,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.server.server_util import daemonize
         daemonize()
 
+    displayfd = None
+    if POSIX and opts.displayfd:
+        try:
+            displayfd = int(opts.displayfd)
+            protected_fds.append(displayfd)
+        except ValueError as e:
+            stderr.write("Error: invalid displayfd '%s':\n" % opts.displayfd)
+            stderr.write(" %s\n" % e)
+
     # if pam is present, try to create a new session:
     pam = None
-    protected_fds = []
-    protected_env = {}
     PAM_OPEN = POSIX and envbool("XPRA_PAM_OPEN", ROOT and uid!=0)
     if PAM_OPEN:
         try:
@@ -489,7 +498,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                     os.environ.update(protected_env)
         #closing the pam fd causes the session to be closed,
         #and we don't want that!
-        protected_fds = fdc.get_new_fds()
+        protected_fds += fdc.get_new_fds()
 
     xrd = create_runtime_dir(uid, gid)
 
@@ -656,6 +665,20 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ.update(protected_env)
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
+    if POSIX and displayfd:
+        from xpra.server.server_util import write_displayfd
+        try:
+            display = display_name[1:]
+            log.info("writing display='%s' to displayfd=%i", display, displayfd)
+            assert write_displayfd(displayfd, display), "timeout"
+        except Exception as e:
+            log.error("write_displayfd failed", exc_info=True)
+            log.error("Error: failed to write '%s' to fd=%s", display_name, opts.displayfd)
+            log.error(" %s", str(e) or type(e))
+        try:
+            os.close(displayfd)
+        except:
+            pass
 
     close_display = None
     if not proxying:

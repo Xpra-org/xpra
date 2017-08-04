@@ -505,14 +505,20 @@ def do_parse_cmdline(cmdline, defaults):
                           default=defaults.xvfb,
                           metavar="CMD",
                           help="How to run the headless X server. Default: '%default'.")
+        group.add_option("--displayfd", action="store", metavar="FD",
+                          dest="displayfd", default=defaults.displayfd,
+                          help="The xpra server will write the display number back on this file descriptor as a newline-terminated string.")
         group.add_option("--fake-xinerama", action="store", metavar="yes|no",
                           dest="fake_xinerama",
                           default=defaults.fake_xinerama,
                           help="Setup fake xinerama support for the session. Default: %s." % enabled_str(defaults.fake_xinerama))
     else:
-        ignore({"use-display"   : defaults.use_display,
-                "xvfb"          : defaults.xvfb,
-                "fake-xinerama" : defaults.fake_xinerama})
+        ignore({
+            "use-display"   : defaults.use_display,
+            "xvfb"          : defaults.xvfb,
+            "displayfd"     : defaults.displayfd,
+            "fake-xinerama" : defaults.fake_xinerama,
+            })
     group.add_option("--resize-display", action="store",
                       dest="resize_display", default=defaults.resize_display, metavar="yes|no",
                       help="Whether the server display should be resized to match the client resolution. Default: %s." % enabled_str(defaults.resize_display))
@@ -2690,17 +2696,45 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             proc.wait()
         proc = None
     else:
-        cmd.append("--systemd-run=no")
-        cmd.append("--daemon=yes")
         #useful for testing failures that cause the whole XDG_RUNTIME_DIR to get nuked
         #(and the log file with it):
         #cmd.append("--log-file=/tmp/proxy.log")
-        if POSIX and getuid()==0 and (uid!=0 or gid!=0):
-            cmd.append("--uid=%i" % uid)
-            cmd.append("--gid=%i" % gid)
+        if POSIX:
+            cmd.append("--daemon=yes")
+            cmd.append("--systemd-run=no")
+            if getuid()==0 and (uid!=0 or gid!=0):
+                cmd.append("--uid=%i" % uid)
+                cmd.append("--gid=%i" % gid)
+            r_pipe, w_pipe = os.pipe()
+            cmd.append("--displayfd=%s" % w_pipe)
+            close_fds = False
+            def preexec_fn():
+                from xpra.os_util import close_fds as osclose_fds
+                osclose_fds([0, 1, 2, r_pipe, w_pipe])
+        else:
+            close_fds = True
+            preexec_fn = None
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, shell=False, close_fds=True, env=env, cwd=cwd)
+        proc = Popen(cmd, shell=False, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
         log("proc=%s", proc)
+        if POSIX:
+            from xpra.server.server_util import read_displayfd, parse_displayfd
+            buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
+            try:
+                os.close(r_pipe)
+            except:
+                pass
+            try:
+                os.close(w_pipe)
+            except:
+                pass
+            def displayfd_err(msg):
+                log.error("Error: displayfd failed")
+                log.error(" %s", msg)
+            n = parse_displayfd(buf, displayfd_err)
+            if n is not None:
+                matching_display = ":%s" % n
+                log("matching display=%s", matching_display)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 

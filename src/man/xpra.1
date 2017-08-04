@@ -31,6 +31,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
+[\fB\-\-displayfd\fP]=\fIFD\fP]
 [\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
 [\fB\-\-systemd\-run\-args\fP=\fIARGS\fP]
 [\fB\-\-xvfb\fP=\fICMD\fP]
@@ -923,6 +924,12 @@ You are responsible for starting the display yourself.
 This can also be used to rescue an existing display whose
 xpra server instance crashed or for running xpra against
 an accelerated X11 server.
+.TP
+\fB\-\-displayfd\fP]=\fIFD\fP
+The xpra server will write the display number back on this
+file descriptor as a newline-terminated string.
+This is most useful when the display number is not specified
+with the xpra \fIstart\fP or \fIstart\-desktop\fP subcommands.
 .TP
 \fB\-\-xvfb\fP=\fICMD\fP
 When starting a seamless server, xpra starts a virtual X server to

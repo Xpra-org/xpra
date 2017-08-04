@@ -13,7 +13,8 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
-from xpra.os_util import setsid, shellsub, monotonic_time, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
+from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
+from xpra.server.server_util import read_displayfd, parse_displayfd
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
@@ -153,7 +154,6 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             tmp_xorg_log_file = xvfb_cmd[logfile_argindex+1]
         #make sure the Xorg log directory exists:
         xorg_log_dir = os.path.dirname(pathexpand(xvfb_cmd[logfile_argindex+1]))
-        log("xorg_log_dir=%s - exists=%s", xorg_log_dir, os.path.exists(xorg_log_dir))
         if not os.path.exists(xorg_log_dir):
             try:
                 log("creating Xorg log dir '%s'", xorg_log_dir)
@@ -176,41 +176,24 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
     if use_display_fd:
-        # 'S' means that we allocate the display automatically
         r_pipe, w_pipe = os.pipe()
         xvfb_cmd += ["-displayfd", str(w_pipe)]
         xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
         def preexec():
             setsid()
-            if POSIX and getuid()==0 and uid:
+            if getuid()==0 and uid:
                 setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
         log("xvfb_cmd=%s", xvfb_cmd)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb
-        # waiting up to 10 seconds for it to show up
-        limit = monotonic_time()+10
-        buf = ""
-        import select   #@UnresolvedImport
-        while monotonic_time()<limit and len(buf)<8:
-            r, _, _ = select.select([r_pipe], [], [], max(0, limit-monotonic_time()))
-            if r_pipe in r:
-                buf += os.read(r_pipe, 8)
-                if buf[-1] == '\n':
-                    break
+        buf = read_displayfd(r_pipe)
         os.close(r_pipe)
         os.close(w_pipe)
-        if len(buf) == 0:
-            raise InitException("%s did not provide a display number using -displayfd" % xvfb_executable)
-        if buf[-1] != '\n':
-            raise InitException("%s output not terminated by newline: %s" % (xvfb_executable, buf))
-        try:
-            n = int(buf[:-1])
-        except:
-            raise InitException("%s display number is not a valid number: %s" % (xvfb_executable, buf[:-1]))
-        if n<0 or n>=2**16:
-            raise InitException("%s provided an invalid display number: %s" % (xvfb_executable, n))
+        def displayfd_err(msg):
+            raise InitException("%s: %s" % (xvfb_executable, msg))
+        n = parse_displayfd(buf, displayfd_err)
         new_display_name = ":%s" % n
         log("Using display number provided by %s: %s", xvfb_executable, new_display_name)
         if tmp_xorg_log_file != None:

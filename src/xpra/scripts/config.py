@@ -515,6 +515,7 @@ OPTION_TYPES = {
                     "ssl-server-hostname" : str,
                     "ssl-options"       : str,
                     #int options:
+                    "displayfd"         : int,
                     "pings"             : int,
                     "quality"           : int,
                     "min-quality"       : int,
@@ -899,6 +900,7 @@ def get_defaults():
                     "microphone"        : ["disabled", "off"][has_sound_support()],
                     "readonly"          : False,
                     "keyboard-sync"     : True,
+                    "displayfd"         : 0,
                     "pings"             : 5,
                     "cursors"           : True,
                     "bell"              : True,
