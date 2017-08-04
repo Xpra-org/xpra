@@ -106,6 +106,15 @@ def getgid():
         return os.getgid()
     return 0
 
+def get_shell_for_uid(uid):
+    if POSIX:
+        from pwd import getpwuid
+        try:
+            return getpwuid(uid).pw_shell
+        except KeyError:
+            pass
+    return ""
+
 def get_username_for_uid(uid):
     if POSIX:
         from pwd import getpwuid

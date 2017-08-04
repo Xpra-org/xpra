@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -731,6 +731,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             "USER"      : username,
             "LOGNAME"   : username,
             })
+        shell = get_shell_for_uid(uid)
+        if shell:
+            os.environ["SHELL"] = shell
         os.environ.update(protected_env)
 
     if opts.chdir:
