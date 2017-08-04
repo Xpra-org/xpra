@@ -57,13 +57,13 @@ b-encodings.
 
 %prep
 %setup -qn rencode-%{version}
+%patch1 -p1
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
 pushd %{py3dir}
 %patch0 -p1
-%patch1 -p1
 popd
 %endif
 
