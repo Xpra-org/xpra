@@ -52,6 +52,7 @@ CAN_DOUBLE_BUFFER = not PYTHON3
 #needed on win32?:
 DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
+TEST_GTKGL_RENDERING = envbool("XPRA_TEST_GTKGL_RENDERING", 1)
 
 from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR
 VISUAL_NAMES = {
@@ -537,51 +538,55 @@ def check_support(force_enable=False, check_colormap=False):
             pass
     log("GL props=%s", props)
 
-    from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
-    gtk = import_gtk()
-    assert gdkgl.query_extension()
-    glext, w = None, None
-    try:
-        #ugly code for win32 and others (virtualbox broken GL drivers)
-        #for getting a GL drawable and context: we must use a window...
-        #(which we do not even show on screen)
-        #
-        #here is the old simpler alternative which does not work on some platforms:
-        # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
-        # gldrawable = glext.set_gl_capability(glconfig)
-        # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
-        w = gtk.Window()
-        w.set_decorated(False)
-        vbox = gtk.VBox()
-        glarea = GLDrawingArea(glconfig)
-        glarea.set_size_request(32, 32)
-        vbox.add(glarea)
-        vbox.show_all()
-        w.add(vbox)
-        #we don't need to actually show the window!
-        #w.show_all()
-        glarea.realize()
-        gdk_window_process_all_updates()
+    if TEST_GTKGL_RENDERING:
+        log("testing gtkgl rendering")
+        from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
+        gtk = import_gtk()
+        assert gdkgl.query_extension()
+        glext, w = None, None
+        try:
+            #ugly code for win32 and others (virtualbox broken GL drivers)
+            #for getting a GL drawable and context: we must use a window...
+            #(which we do not even show on screen)
+            #
+            #here is the old simpler alternative which does not work on some platforms:
+            # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+            # gldrawable = glext.set_gl_capability(glconfig)
+            # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+            w = gtk.Window()
+            w.set_decorated(False)
+            vbox = gtk.VBox()
+            glarea = GLDrawingArea(glconfig)
+            glarea.set_size_request(32, 32)
+            vbox.add(glarea)
+            vbox.show_all()
+            w.add(vbox)
+            #we don't need to actually show the window!
+            #w.show_all()
+            glarea.realize()
+            gdk_window_process_all_updates()
 
-        gl_props = check_GL_support(glarea, force_enable)
+            gl_props = check_GL_support(glarea, force_enable)
 
-        if check_colormap:
-            s = w.get_screen()
-            for x in ("rgb_visual", "rgba_visual", "system_visual"):
-                try:
-                    visual = getattr(s, "get_%s" % x)()
-                    gl_props[x] = visual_to_str(visual)
-                except:
-                    pass
-            #i = 0
-            #for v in s.list_visuals():
-            #    gl_props["visual[%s]" % i] = visual_to_str(v)
-            #    i += 1
-    finally:
-        if w:
-            w.destroy()
-        del glext, glconfig
-    props.update(gl_props)
+            if check_colormap:
+                s = w.get_screen()
+                for x in ("rgb_visual", "rgba_visual", "system_visual"):
+                    try:
+                        visual = getattr(s, "get_%s" % x)()
+                        gl_props[x] = visual_to_str(visual)
+                    except:
+                        pass
+                #i = 0
+                #for v in s.list_visuals():
+                #    gl_props["visual[%s]" % i] = visual_to_str(v)
+                #    i += 1
+        finally:
+            if w:
+                w.destroy()
+            del glext, glconfig
+        props.update(gl_props)
+    else:
+        log("gtkgl rendering test skipped")
     return props
 
 
