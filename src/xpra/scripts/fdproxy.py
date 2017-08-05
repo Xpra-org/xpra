@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -16,6 +16,9 @@ from xpra.util import repr_ellipsized, envint, envbool
 SHOW_DATA = envbool("XPRA_PROXY_SHOW_DATA")
 PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
 
+
+def noretry(_e):
+    return False
 
 class XpraProxy(object):
     """
@@ -64,7 +67,7 @@ class XpraProxy(object):
         try:
             while not self._closed:
                 log("%s: waiting for data", log_name)
-                buf = untilConcludes(self.is_active, from_conn.read, PROXY_BUFFER_SIZE)
+                buf = untilConcludes(self.is_active, noretry, from_conn.read, PROXY_BUFFER_SIZE)
                 if not buf:
                     log("%s: connection lost", log_name)
                     return
@@ -73,7 +76,7 @@ class XpraProxy(object):
                     log("%s:           %s", log_name, repr_ellipsized(binascii.hexlify(buf)))
                 while buf and not self._closed:
                     log("%s: writing %s bytes", log_name, len(buf))
-                    written = untilConcludes(self.is_active, to_conn.write, buf)
+                    written = untilConcludes(self.is_active, noretry, to_conn.write, buf)
                     buf = buf[written:]
                     log("%s: written %s bytes", log_name, written)
         except Exception as e:
