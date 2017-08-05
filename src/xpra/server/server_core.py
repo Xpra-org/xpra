@@ -427,7 +427,7 @@ class ServerCore(object):
             self.reaper_exit = noop
             log("clean_quit: reaper_exit=%s", self.reaper_exit)
         self.cleanup()
-        def quit_timer(*args):
+        def quit_timer():
             log.debug("quit_timer()")
             stop_worker(True)
             self.quit(upgrading)
@@ -436,7 +436,7 @@ class ServerCore(object):
         #not from signal: use force stop worker after delay
         self.timeout_add(250, stop_worker, True)
         self.timeout_add(500, quit_timer)
-        def force_quit(*args):
+        def force_quit():
             log.debug("force_quit()")
             from xpra import os_util
             os_util.force_quit()
@@ -1300,7 +1300,7 @@ class ServerCore(object):
         if reschedule:
             self.server_idle_timer = self.timeout_add(self.server_idle_timeout*1000, self.server_idle_timedout)
 
-    def server_idle_timedout(self, *args):
+    def server_idle_timedout(self):
         timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
         self.clean_quit(False)
 
