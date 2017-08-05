@@ -669,7 +669,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         from xpra.server.server_util import write_displayfd
         try:
             display = display_name[1:]
-            log.info("writing display='%s' to displayfd=%i", display, displayfd)
+            log("writing display='%s' to displayfd=%i", display, displayfd)
             assert write_displayfd(displayfd, display), "timeout"
         except Exception as e:
             log.error("write_displayfd failed", exc_info=True)
