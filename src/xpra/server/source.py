@@ -2019,7 +2019,7 @@ class ServerSource(FileTransferHandler):
         if prop=="icon":
             self.send_window_icon(wid, window)
         else:
-            v = self._make_metadata(wid, window, prop)
+            v = self._make_metadata(window, prop)
             if prop in PROPERTIES_DEBUG:
                 metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             else:
