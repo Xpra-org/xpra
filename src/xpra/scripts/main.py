@@ -2711,25 +2711,26 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         #useful for testing failures that cause the whole XDG_RUNTIME_DIR to get nuked
         #(and the log file with it):
         #cmd.append("--log-file=/tmp/proxy.log")
+        close_fds = True
+        preexec_fn = None
         if POSIX:
             cmd.append("--daemon=yes")
             cmd.append("--systemd-run=no")
             if getuid()==0 and (uid!=0 or gid!=0):
                 cmd.append("--uid=%i" % uid)
                 cmd.append("--gid=%i" % gid)
-            r_pipe, w_pipe = os.pipe()
-            cmd.append("--displayfd=%s" % w_pipe)
-            close_fds = False
-            def preexec_fn():
-                from xpra.os_util import close_fds as osclose_fds
-                osclose_fds([0, 1, 2, r_pipe, w_pipe])
-        else:
-            close_fds = True
-            preexec_fn = None
+            if not matching_display:
+                #use "--displayfd" switch to tell us which display was chosen:
+                r_pipe, w_pipe = os.pipe()
+                cmd.append("--displayfd=%s" % w_pipe)
+                close_fds = False
+                def preexec_fn():
+                    from xpra.os_util import close_fds as osclose_fds
+                    osclose_fds([0, 1, 2, r_pipe, w_pipe])
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, shell=False, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
         log("proc=%s", proc)
-        if POSIX:
+        if POSIX and not matching_display:
             from xpra.server.server_util import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
             try:
