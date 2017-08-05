@@ -37,6 +37,7 @@ SSH_DEBUG = envbool("XPRA_SSH_DEBUG", False)
 WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 15)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
+VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
 
 
 def enabled_str(v, true_str="yes", false_str="no"):
@@ -2525,9 +2526,11 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.setup_connection(connect())
     return do_run_client(app)
 
+
+X11_SOCKET_DIR = "/tmp/.X11-unix/"
+
 def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     displays = []
-    X11_SOCKET_DIR = "/tmp/.X11-unix/"
     if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
         for x in os.listdir(X11_SOCKET_DIR):
             socket_path = os.path.join(X11_SOCKET_DIR, x)
@@ -2556,8 +2559,17 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                 if not is_socket:
                     warn("display path '%s' is not a socket!" % socket_path)
                     continue
-                #print("found display path '%s'" % socket_path)
-                displays.append(v)
+                try:
+                    if VERIFY_X11_SOCKET_TIMEOUT:
+                        sockpath = os.path.join(X11_SOCKET_DIR, "X%i" % v)
+                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                        sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
+                        sock.connect(sockpath)
+                except:
+                    pass
+                else:
+                    #print("found display path '%s'" % socket_path)
+                    displays.append(v)
             except Exception as e:
                 warn("failure on %s: %s" % (socket_path, e))
     return displays
