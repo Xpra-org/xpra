@@ -13,7 +13,7 @@ log = Logger("gobject", "client")
 
 import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
-from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3
+from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
@@ -502,7 +502,18 @@ class RequestStartClient(HelloRequestClient):
                     }.get(mode, "")
                 sys.stderr.write("%ssession now available on display %s\n" % (session_type, display))
                 sys.stderr.flush()
+                if POSIX and self.displayfd>0 and display and display.startswith(b":"):
+                    from xpra.server.server_util import write_displayfd
+                    log("writing display %s to displayfd=%s", display, self.displayfd)
+                    write_displayfd(self.displayfd, display[1:])
             except:
-                pass
+                log("server_connection_established()", exc_info=True)
         if not self.exit_code:
             self.quit(0)
+
+    def __init__(self, conn, opts):
+        HelloRequestClient.__init__(self, conn, opts)
+        try:
+            self.displayfd = int(opts.displayfd)
+        except:
+            self.displayfd = 0
