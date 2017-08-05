@@ -1780,13 +1780,13 @@ class ServerBase(ServerCore):
         return "%s set to %i" % (name, value)
 
     def control_command_quality(self, quality, *wids):
-        return self._set_encoding_property("quality", quality)
+        return self._set_encoding_property("quality", quality, *wids)
     def control_command_min_quality(self, min_quality, *wids):
-        return self._set_encoding_property("min-quality", min_quality)
+        return self._set_encoding_property("min-quality", min_quality, *wids)
     def control_command_speed(self, speed, *wids):
-        return self._set_encoding_property("speed", speed)
+        return self._set_encoding_property("speed", speed, *wids)
     def control_command_min_speed(self, min_speed, *wids):
-        return self._set_encoding_property("min-speed", min_speed)
+        return self._set_encoding_property("min-speed", min_speed, *wids)
 
     def control_command_auto_refresh(self, auto_refresh, *wids):
         delay = int(float(auto_refresh)*1000.0)      # ie: 0.5 -> 500 (milliseconds)
