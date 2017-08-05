@@ -2631,7 +2631,7 @@ def run_glcheck(opts):
 def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     from xpra.log import Logger
     log = Logger("proxy")
-    log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid))
+    log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     username = get_username_for_uid(uid)
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
