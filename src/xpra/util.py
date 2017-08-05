@@ -268,7 +268,7 @@ class typedict(dict):
     def dictget(self, k, default_value={}):
         v = self.capsget(k, default_value)
         if v is None:
-            return None
+            return default_value
         if type(v)!=dict:
             self._warn("dictget(%s, %s)", k, default_value, exc_info=True)
             self._warn("Warning: expected a dict value for %s but got %s", k, type(v))

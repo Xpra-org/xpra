@@ -494,7 +494,13 @@ class RequestStartClient(HelloRequestClient):
         display = self.server_capabilities.get("display")
         if display:
             try:
-                sys.stderr.write("session now available on display %s\n" % display)
+                mode = self.server_capabilities.get("mode")
+                session_type = {
+                    "start"         : "seamless ",
+                    "start-desktop" : "desktop ",
+                    "shadow"        : "shadow ",
+                    }.get(mode, "")
+                sys.stderr.write("%ssession now available on display %s\n" % (session_type, display))
                 sys.stderr.flush()
             except:
                 pass

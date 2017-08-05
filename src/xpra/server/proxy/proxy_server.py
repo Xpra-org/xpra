@@ -269,6 +269,10 @@ class ProxyServer(ServerCore):
             hello = {"display" : display}
             if socket_path:
                 hello["socket-path"] = socket_path
+            #echo mode if present:
+            mode = sns.get("mode")
+            if mode:
+                hello["mode"] = mode
             client_proto.send_now(("hello", hello))
             return
 
