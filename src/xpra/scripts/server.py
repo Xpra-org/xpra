@@ -645,7 +645,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #create devices for vfb if needed:
     devices = {}
-    if start_vfb and ROOT and opts.input_devices.lower()=="uinput":
+    if start_vfb and opts.input_devices.lower()=="uinput":
         devices = create_input_devices(uid)
 
     # Start the Xvfb server first to get the display_name if needed
