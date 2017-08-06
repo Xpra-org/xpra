@@ -16,7 +16,7 @@ import signal
 import socket
 import traceback
 
-from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption
+from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.os_util import SIGNAMES, POSIX, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
@@ -249,15 +249,14 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, imsettings_module, xmo
     os.environ.update(v)
     return v
 
-def create_runtime_dir(uid, gid):
+def create_runtime_dir(xrd, uid, gid):
     if not POSIX or OSX or getuid()!=0 or (uid==0 and gid==0):
         return
     #workarounds:
     #* some distros don't set a correct value,
     #* or they don't create the directory for us,
     #* or pam_open is going to create the directory but needs time to do so..
-    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    if xrd.endswith("/user/0"):
+    if xrd and xrd.endswith("/user/0"):
         #don't keep root's directory, as this would not work:
         xrd = None
     if not xrd:
@@ -501,7 +500,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #and we don't want that!
         protected_fds += fdc.get_new_fds()
 
-    xrd = create_runtime_dir(uid, gid)
+    #get XDG_RUNTIME_DIR from env options,
+    #which may not be have updated os.environ yet when running as root with "--uid="
+    xrd = parse_env(opts.env).get("XDG_RUNTIME_DIR") or os.environ.get("XDG_RUNTIME_DIR")
+    xrd = create_runtime_dir(xrd, uid, gid)
 
     if opts.pidfile:
         write_pidfile(opts.pidfile, uid, gid)
@@ -735,6 +737,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         shell = get_shell_for_uid(uid)
         if shell:
             os.environ["SHELL"] = shell
+        #now we've changed uid, it is safe to honour all the env updates:
+        configure_env(opts.env)
         os.environ.update(protected_env)
 
     if opts.chdir:

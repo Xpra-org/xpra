@@ -1271,9 +1271,9 @@ def parse_env(env):
             warn(" %s", e)
     return d
 
-def configure_env(options):
-    if options.env:
-        env = parse_env(options.env)
+def configure_env(env_str):
+    if env_str:
+        env = parse_env(env_str)
         if POSIX and os.getuid()==0:
             #running as root!
             #sanitize: only allow "safe" environment variables
@@ -1335,7 +1335,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             if SYSTEMD_RUN:
                 return systemd_run_wrap(mode, sys.argv, options.systemd_run_args)
 
-    configure_env(options)
+    configure_env(options.env)
     configure_logging(options, mode)
     configure_network(options)
 
