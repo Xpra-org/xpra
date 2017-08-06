@@ -7,14 +7,17 @@ from xpra.log import Logger
 from xpra.platform.paths import get_app_dir
 log = Logger("printing")
 
-import os.path
+import os
 import subprocess
 from xpra.platform.win32 import constants as win32con
-from xpra.util import csv, envint, envbool
+from xpra.util import csv, envint
 
 
 #allows us to skip some printers we don't want to export
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
+PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
+DEFAULT_PRINTER_FLAGS = "LOCAL,SHARED+NETWORK+CONNECTIONS"
+PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", DEFAULT_PRINTER_FLAGS).split(",")]
 
 
 PRINTER_ENUM_VALUES = {
@@ -39,10 +42,6 @@ PRINTER_ENUM_VALUES = {
 PRINTER_ENUM_NAMES = dict((v,k) for k,v in PRINTER_ENUM_VALUES.items())
 log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
-PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
-#DEFAULT_PRINTER_FLAGS = "LOCAL"
-DEFAULT_PRINTER_FLAGS = "LOCAL,SHARED+NETWORK+CONNECTIONS"
-PRINTER_FLAGS = [x.strip() for x in os.environ.get("XPRA_WIN32_PRINTER_FLAGS", DEFAULT_PRINTER_FLAGS).split(",")]
 log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
 VALID_PRINTER_FLAGS = ("LOCAL", "SHARED", "CONNECTIONS", "NETWORK", "REMOTE")
 PRINTER_ENUMS = []
