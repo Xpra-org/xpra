@@ -666,8 +666,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ.update(protected_env)
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
-    if POSIX and displayfd>0:
-        from xpra.server.server_util import write_displayfd
+    if POSIX and not OSX and displayfd>0:
+        from xpra.platform.displayfd import write_displayfd
         try:
             display = display_name[1:]
             log("writing display='%s' to displayfd=%i", display, displayfd)

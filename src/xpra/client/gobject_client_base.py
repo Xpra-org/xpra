@@ -13,7 +13,7 @@ log = Logger("gobject", "client")
 
 import sys
 from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
-from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX
+from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
@@ -54,7 +54,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         #overriden in subclasses!
         return "Python%s/GObject" % sys.version_info[0]
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         log.warn("timeout!")
 
     def init_packet_handlers(self):
@@ -123,7 +123,7 @@ class CommandConnectClient(GObjectXpraClient):
             glib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         glib.idle_add(self.send_hello)
 
-    def _process_connection_lost(self, packet):
+    def _process_connection_lost(self, _packet):
         #override so we don't log a warning
         #"command clients" are meant to exit quickly by losing the connection
         p = self._protocol
@@ -168,7 +168,7 @@ class HelloRequestClient(SendCommandConnectClient):
         caps.update(self.hello_request())
         return caps
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not disconnect us")
 
     def hello_request(self):
@@ -189,7 +189,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         CommandConnectClient.__init__(self, conn, opts)
         self.hello_extra["screenshot_request"] = True
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
 
     def _process_screenshot(self, packet):
@@ -218,7 +218,7 @@ class InfoXpraClient(CommandConnectClient):
         if FLATTEN_INFO!=1:
             self.hello_extra["info-namespace"] = True
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
     def do_command(self):
@@ -263,10 +263,10 @@ class ConnectTestXpraClient(CommandConnectClient):
             })
         self.hello_extra.update(kwargs)
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: no server response")
 
-    def _process_connection_lost(self, packet):
+    def _process_connection_lost(self, _packet):
         #we should always receive a hello back and call do_command,
         #which sets the correct exit code, landing here is an error:
         self.quit(EXIT_FAILURE)
@@ -325,7 +325,7 @@ class VersionXpraClient(HelloRequestClient):
             "full-version-request"  : True,
             }
 
-    def parse_network_capabilities(self, *args):
+    def parse_network_capabilities(self, *_args):
         #don't bother checking anything - this could generate warnings
         return True
 
@@ -344,7 +344,7 @@ class ControlXpraClient(CommandConnectClient):
     def set_command_args(self, command):
         self.command = command
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
     def do_command(self):
@@ -404,7 +404,7 @@ class PrintClient(SendCommandConnectClient):
     def client_type(self):
         return "Python/GObject/Print"
 
-    def timeout(self, *args):
+    def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: server did not respond")
 
     def do_command(self):
@@ -471,7 +471,7 @@ class DetachXpraClient(HelloRequestClient):
 class WaitForDisconnectXpraClient(DetachXpraClient):
     """ we just want the connection to close """
 
-    def _process_disconnect(self, packet):
+    def _process_disconnect(self, _packet):
         self.quit(EXIT_OK)
 
 
@@ -502,8 +502,8 @@ class RequestStartClient(HelloRequestClient):
                     }.get(mode, "")
                 sys.stderr.write("%ssession now available on display %s\n" % (session_type, display))
                 sys.stderr.flush()
-                if POSIX and self.displayfd>0 and display and display.startswith(b":"):
-                    from xpra.server.server_util import write_displayfd
+                if POSIX and not OSX and self.displayfd>0 and display and display.startswith(b":"):
+                    from xpra.platform.displayfd import write_displayfd
                     log("writing display %s to displayfd=%s", display, self.displayfd)
                     write_displayfd(self.displayfd, display[1:])
             except:

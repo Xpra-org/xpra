@@ -2719,7 +2719,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
             if getuid()==0 and (uid!=0 or gid!=0):
                 cmd.append("--uid=%i" % uid)
                 cmd.append("--gid=%i" % gid)
-            if not matching_display:
+            if not OSX and not matching_display:
                 #use "--displayfd" switch to tell us which display was chosen:
                 r_pipe, w_pipe = os.pipe()
                 cmd.append("--displayfd=%s" % w_pipe)
@@ -2730,8 +2730,8 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, shell=False, close_fds=close_fds, env=env, cwd=cwd, preexec_fn=preexec_fn)
         log("proc=%s", proc)
-        if POSIX and not matching_display:
-            from xpra.server.server_util import read_displayfd, parse_displayfd
+        if POSIX and not OSX and not matching_display:
+            from xpra.platform.displayfd import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
             try:
                 os.close(r_pipe)

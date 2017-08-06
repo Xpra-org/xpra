@@ -14,7 +14,7 @@ import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
-from xpra.server.server_util import read_displayfd, parse_displayfd
+from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
