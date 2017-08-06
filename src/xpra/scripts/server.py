@@ -575,7 +575,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
     def add_mdns(socktype, host, port):
-        recs = mdns_recs.setdefault(socktype, [])
+        recs = mdns_recs.setdefault(socktype.lower(), [])
         rec = (host, port)
         if rec not in recs:
             recs.append(rec)
