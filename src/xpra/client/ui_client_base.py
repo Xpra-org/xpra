@@ -292,6 +292,8 @@ class UIXpraClient(XpraClientBase):
         self.border = None
         self.window_close_action = "forward"
         self.wheel_map = {}
+        self.wheel_deltax = 0
+        self.wheel_deltay = 0
 
         self.supports_mmap = MMAP_SUPPORTED
 
@@ -1201,7 +1203,7 @@ class UIXpraClient(XpraClientBase):
                 self.mmap_filename = None
 
 
-    def init_opengl(self, enable_opengl):
+    def init_opengl(self, _enable_opengl):
         self.opengl_enabled = False
         self.client_supports_opengl = False
         self.opengl_props = {"info" : "not supported"}
@@ -1209,6 +1211,46 @@ class UIXpraClient(XpraClientBase):
 
     def scale_pointer(self, pointer):
         return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
+
+
+    def send_wheel_delta(self, wid, button, distance, *args):
+        modifiers = self.get_current_modifiers()
+        pointer = self.get_mouse_position()
+        buttons = []
+        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s", wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
+        if self.server_precise_wheel:
+            #send the exact value multiplied by 1000 (as an int)
+            packet =  ["wheel-motion", wid,
+                       button, int(distance*1000),
+                       pointer, modifiers, buttons] + list(args)
+            mouselog("button packet: %s", packet)
+            self.send_positional(packet)
+            return 0
+        else:
+            #server cannot handle precise wheel,
+            #so we have to use discrete events,
+            #and send a click for each step:
+            steps = abs(int(distance))
+            for _ in range(steps):
+                self.send_button(wid, button, True, pointer, modifiers, buttons)
+                self.send_button(wid, button, False, pointer, modifiers, buttons)
+            #return remainder:
+            return float(distance) - int(distance)
+
+    def wheel_event(self, wid, deltax=0, deltay=0, deviceid=0):
+        #this is a different entry point for mouse wheel events,
+        #which provides finer grained deltas (if supported by the server)
+        #accumulate deltas:
+        self.wheel_deltax += deltax
+        self.wheel_deltay += deltay
+        if abs(self.wheel_deltax)>=1:
+            button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
+            if button>0:
+                self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
+        if abs(self.wheel_deltay)>=1:
+            button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
+            if button>0:
+                self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
@@ -1957,6 +1999,7 @@ class UIXpraClient(XpraClientBase):
 
         #input devices:
         self.server_input_devices = c.strget("input-devices")
+        self.server_precise_wheel = c.boolget("wheel.precise", False)
 
         #sound:
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")

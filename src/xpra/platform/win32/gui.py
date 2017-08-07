@@ -33,7 +33,7 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         GetDeviceCaps,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
-from xpra.os_util import monotonic_time, PYTHON2
+from xpra.os_util import PYTHON2
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
@@ -112,7 +112,7 @@ DPI_AWARE = envbool("XPRA_DPI_AWARE", True)
 DPI_AWARENESS = envint("XPRA_DPI_AWARENESS", 1)
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
 WHEEL = envbool("XPRA_WHEEL", True)
-WHEEL_DELTA = envint("XPRA_WHEEL_DELTA", 120)
+WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA>0
 
 
@@ -540,15 +540,12 @@ def add_window_hooks(window):
                 apply_maxsize_hints(window, window.geometry_hints)
 
         if LANGCHANGE:
-            def inputlangchange(hwnd, event, wParam, lParam):
+            def inputlangchange(_hwnd, _event, wParam, lParam):
                 log("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
 
         if WHEEL:
-            #keep track of the pointer offsets:
-            #(difference between the GTK event values and raw win32 values)
-            window._get_pointer = types.MethodType(cache_pointer_offset, window)
             VERTICAL = "vertical"
             HORIZONTAL = "horizontal"
             def handle_wheel(orientation, wParam, lParam):
@@ -559,62 +556,27 @@ def add_window_hooks(window):
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
-                last_event_time = getattr(window, "_wheel_event_time", 0)
-                #only accumulate if the last event was less than 5 seconds ago:
-                if monotonic_time()-last_event_time<5:
-                    cval = getattr(window, "_win32_%swheel" % orientation, 0)
-                else:
-                    cval = 0
-                nval = cval + distance
-                units = abs(nval) // WHEEL_DELTA
+                units = float(abs(distance)) / WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
-                gtk_offset = getattr(window, "win32_pointer_offset", None)
-                if gtk_offset:
-                    dx, dy = gtk_offset
-                    x += dx
-                    y += dy
-                mouselog("mousewheel: orientation=%s distance=%.1f, units=%i, new value=%.1f, keys=%#x, x=%i, y=%i, gtk_offset=%s, client=%s, wid=%i", orientation, distance, units, nval, keys, x, y, gtk_offset, client, wid)
-                if units>0 and client and wid>0:
+                mouselog("win32 mousewheel: orientation=%s distance=%i, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, units, distance, keys, x, y, client, wid)
+                if client and wid>0:
                     if orientation==VERTICAL:
-                        button = 4 + int(nval<0)        #4 for UP, 5 for DOWN
+                        deltax = 0
+                        deltay = units
                     else:
-                        button = 7 - int(nval<0)        #6 for LEFT, 7 for RIGHT
-                    button = client.wheel_map.get(button)
-                    buttons = []
-                    modifiers = client.get_current_modifiers()
-                    pointer = window._pointer(x, y)
-                    def send_button(pressed):
-                        if button:
-                            client.send_button(wid, button, pressed, pointer, modifiers, buttons)
-                    count = 0
-                    v = nval
-                    while abs(v)>=WHEEL_DELTA:
-                        send_button(True)
-                        send_button(False)
-                        if v>0:
-                            v -= WHEEL_DELTA
-                        else:
-                            v += WHEEL_DELTA
-                        count += 1
-                    mouselog("mousewheel: sent %i wheel events to the server for button=%s, distance=%s, remainder=%s", count, button, nval, v)
-                    nval = v
-                setattr(window, "_win32_%swheel" % orientation, nval)
-                setattr(window, "_wheel_event_time", monotonic_time())
-            def mousewheel(hwnd, event, wParam, lParam):
+                        deltax = units
+                        deltay = 0
+                    client.wheel_event(wid, deltax, deltay)
+            def mousewheel(_hwnd, _event, wParam, lParam):
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0
-            def mousehwheel(hwnd, event, wParam, lParam):
+            def mousehwheel(_hwnd, _event, wParam, lParam):
                 handle_wheel(HORIZONTAL, wParam, lParam)
                 return 0
             WM_MOUSEHWHEEL = 0x020E
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
             win32hooks.add_window_event_handler(WM_MOUSEHWHEEL, mousehwheel)
-            def reset_wheel_counters(*args):
-                mouselog("window lost focus, resetting current wheel deltas")
-                for orientation in (VERTICAL, HORIZONTAL):
-                    setattr(window, "_win32_%swheel" % orientation, 0)
-            window.connect("focus-out-event", reset_wheel_counters)
 
 
 def remove_window_hooks(window):

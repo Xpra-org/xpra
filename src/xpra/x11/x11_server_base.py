@@ -72,11 +72,15 @@ class XTestPointerDevice(object):
     def close(self):
         pass
 
+    def has_precise_wheel(self):
+        return False
+
 class UInputPointerDevice(object):
 
     def __init__(self, device, device_path):
         self.device = device
         self.device_path = device_path
+        self.wheel_delta = 0
 
     def __repr__(self):
         return "UInput device %s" % self.device_path
@@ -139,8 +143,26 @@ class UInputPointerDevice(object):
             mouselog("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
             X11Keyboard.xtest_fake_button(button, pressed)
 
+    def wheel_motion(self, button, distance):
+        if button in (4, 5):
+            val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
+        else:
+            log.warn("Warning: %s cannot handle wheel motion %i", self, button)
+            log.warn(" this event has been dropped")
+            return
+        delta = self.wheel_delta+val
+        mouselog("UInput.wheel_motion(%i, %.4f) REL_WHEEL: %s+%s=%s", button, distance, self.wheel_delta, val, delta)
+        ival = int(delta)
+        if ival!=0:
+            import uinput
+            self.device.emit(uinput.REL_WHEEL, ival)
+            self.wheel_delta += val-ival
+
     def close(self):
         pass
+
+    def has_precise_wheel(self):
+        return True
 
 
 class X11ServerBase(GTKServerBase):
@@ -288,6 +310,7 @@ class X11ServerBase(GTKServerBase):
     def init_packet_handlers(self):
         GTKServerBase.init_packet_handlers(self)
         self._authenticated_ui_packet_handlers["force-ungrab"] = self._process_force_ungrab
+        self._authenticated_ui_packet_handlers["wheel-motion"] = self._process_wheel_motion
 
 
     def init_virtual_devices(self, devices):
@@ -359,6 +382,7 @@ class X11ServerBase(GTKServerBase):
                     "resize_screen"             : self.randr,
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
+                    "wheel.precise"             : self.pointer_device.has_precise_wheel(),
                     })
             if self.randr and len(RandR.get_screen_sizes())>1:
                 capabilities["screen-sizes"] = RandR.get_screen_sizes()
@@ -817,7 +841,7 @@ class X11ServerBase(GTKServerBase):
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name or "")
 
 
-    def get_screen_number(self, wid):
+    def get_screen_number(self, _wid):
         #maybe this should be in all cases (it is in desktop_server):
         #model = self._id_to_window.get(wid)
         #return model.client_window.get_screen().get_number()
@@ -832,6 +856,15 @@ class X11ServerBase(GTKServerBase):
 
     def setup_input_devices(self):
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
+
+
+    def _process_wheel_motion(self, proto, packet):
+        assert self.pointer_device.has_precise_wheel()
+        wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
+        with xsync:
+            self._update_modifiers(proto, wid, modifiers)
+            self.do_process_mouse_common(proto, wid, pointer)
+            self.pointer_device.wheel_motion(button, distance/1000.0)
 
     def _move_pointer(self, wid, pos, deviceid, *args):
         #(this is called within an xswallow context)

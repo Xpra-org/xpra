@@ -19,7 +19,7 @@ menulog = Logger("posix", "menu")
 mouselog = Logger("posix", "mouse")
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import iround, envbool, csv
+from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
 try:
@@ -35,6 +35,7 @@ GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
+XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 
 
 def hexstr(v):
@@ -549,6 +550,7 @@ class XI2_Window(object):
         self.window = window
         self.xid = window.get_window().xid
         self.windows = ()
+        self.motion_valuators = {}
         window.connect("configure-event", self.configured)
         self.configured()
         #replace event handlers with XI2 version:
@@ -562,13 +564,13 @@ class XI2_Window(object):
     def noop(self, *args):
         pass
 
-    def cleanup(self, *args):
+    def cleanup(self, *_args):
         for window in self.windows:
             self.XI2.disconnect(window)
         self.windows = []
         self.window = None
 
-    def configured(self, *args):
+    def configured(self, *_args):
         self.windows = self.get_parent_windows(self.xid)
         for window in self.windows:
             self.XI2.connect(window, "XI_Motion", self.do_xi_motion)
@@ -593,8 +595,9 @@ class XI2_Window(object):
         client = window._client
         if client.readonly:
             return
-        if client.server_input_devices=="xi":
-            #skip synthetic scroll events for two-finger scroll,
+        log("do_xi_button(%s) server_input_devices=%s", event, client.server_input_devices)
+        if client.server_input_devices=="xi" or (client.server_input_devices=="uinput" and client.server_precise_wheel):
+            #skip synthetic scroll events,
             #as the server should synthesize them from the motion events
             #those have the same serial:
             matching_motion = self.XI2.find_event("XI_Motion", event.serial)
@@ -612,20 +615,52 @@ class XI2_Window(object):
             window.motion_moveresize(event)
             self.do_motion_notify_event(event)
             return
-        if window._client.readonly:
+        client = window._client
+        if client.readonly:
             return
-        #find the motion events in the xi2 event list:
         pointer, modifiers, buttons = window._pointer_modifiers(event)
         wid = self.window.get_mouse_event_wid(*pointer)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, wid, window._client._focused, self.window._id, event.device, pointer, modifiers, buttons)
+        #log("server_input_devices=%s, server_precise_wheel=%s", client.server_input_devices, client.server_precise_wheel)
+        if client.server_input_devices=="uinput" and client.server_precise_wheel:
+            #wheel motion, send it using precise wheel:
+            #new absolute motion values:
+            wheel_x = event.valuators.get(2, None)
+            wheel_y = event.valuators.get(3, None)
+            #previous values:
+            mv = self.motion_valuators.setdefault(event.device, {})
+            try:
+                wx = mv.pop(2)
+            except:
+                wx = None
+            try:
+                wy = mv.pop(3)
+            except:
+                wy = None
+            #calculate delta if we have both old and new values:
+            dx, dy = 0, 0
+            if wx is not None and wheel_x is not None:
+                dx = wheel_x-wx
+            if wy is not None and wheel_y is not None:
+                dy = wheel_y-wy
+            #whatever happens, update our motion cached values:
+            mv.update(event.valuators)
+            #now see if we have anything to send as a wheel event:
+            if dx!=0 or dy!=0:
+                mouselog("do_xi_motion() wheel deltas: dx=%i, dy=%i", dx, dy)
+                #normalize (xinput is always using 15 degrees?)
+                client.wheel_event(wid, float(dx)/XINPUT_WHEEL_DIV, float(dy)/XINPUT_WHEEL_DIV, event.device)
+            if not mv:
+                #we've dealt with all the valuators
+                return
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
         packet = ["pointer-position", wid, pointer, modifiers, buttons] + self.get_pointer_extra_args(event)
-        window._client.send_mouse_position(packet)
+        client.send_mouse_position(packet)
 
     def get_pointer_extra_args(self, event):
         def intscaled(f):
             return int(f*1000000), 1000000
-        def dictscaled(v):
-            return dict((k,intscaled(v)) for k,v in v.items())
+        def dictscaled(d):
+            return dict((k,intscaled(v)) for k,v in d.items())
         raw_valuators = {}
         raw_event_name = event.name.replace("XI_", "XI_Raw")    #ie: XI_Motion -> XI_RawMotion
         raw = self.XI2.find_event(raw_event_name, event.serial)

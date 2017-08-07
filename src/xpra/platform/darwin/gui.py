@@ -22,7 +22,7 @@ from xpra.util import envbool, envint, roundup
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
-scrolllog = Logger("osx", "events", "scroll")
+mouselog = Logger("osx", "events", "mouse")
 
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
@@ -556,22 +556,9 @@ class Delegate(NSObject):
     def wheel_event_handler(self, nsview, deltax, deltay, precise):
         global VIEW_TO_WINDOW
         window = VIEW_TO_WINDOW.get(nsview)
-        scrolllog("wheel_event_handler(%#x, %.4f, %.4f, %s) window=%s", nsview, deltax, deltay, precise, window)
+        mouselog("wheel_event_handler(%#x, %.4f, %.4f, %s) window=%s", nsview, deltax, deltay, precise, window)
         if not window:
             return False    #not handled
-        client = window._client
-        wid = window._id
-        modifiers = client.get_current_modifiers()
-        buttons = []
-        pointer = client.get_mouse_position()
-        def send_button(button, distance):
-            steps = abs(int(distance))
-            scrolllog("send_button(%i, %.4f) steps=%i", button, distance, steps)
-            for _ in range(steps):
-                window._client.send_button(wid, button, True, pointer, modifiers, buttons)
-                window._client.send_button(wid, button, False, pointer, modifiers, buttons)
-            #return remainder:
-            return float(distance) - int(distance)
         def normalize_precision(distance):
             if distance==0:
                 return 0
@@ -586,21 +573,14 @@ class Delegate(NSObject):
             if distance<0:
                 #restore sign:
                 v = -v
-            scrolllog("normalize_precision(%.3f)=%.3f (multiplier=%i)", distance, v, m)
+            mouselog("normalize_precision(%.3f)=%.3f (multiplier=%i)", distance, v, m)
             return v
-        #accumulate deltas:
-        dx = getattr(window, "deltax", 0)+normalize_precision(deltax)
-        dy = getattr(window, "deltay", 0)+normalize_precision(deltay)
-        if abs(dx)>=1:
-            button = client.wheel_map.get(6+int(dx>0))            #RIGHT=7, LEFT=6
-            if button>0:
-                dx = send_button(button, dx)
-        if abs(dy)>=1:
-            button = client.wheel_map.get(5-int(dy>0))            #UP=4, DOWN=5
-            if button>0:
-                dy = send_button(button, dy)
-        setattr(window, "deltax", dx)
-        setattr(window, "deltay", dy)
+        dx = normalize_precision(deltax)
+        dy = normalize_precision(deltay)
+        if dx!=0 or dy!=0:
+            client = window._client
+            wid = window._id
+            client.wheel_event(wid, dx, dy)
         return True
 
     @objc.python_method
