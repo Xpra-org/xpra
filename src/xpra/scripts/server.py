@@ -502,7 +502,17 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #get XDG_RUNTIME_DIR from env options,
     #which may not be have updated os.environ yet when running as root with "--uid="
-    xrd = parse_env(opts.env).get("XDG_RUNTIME_DIR") or os.environ.get("XDG_RUNTIME_DIR")
+    xrd = os.path.abspath(parse_env(opts.env).get("XDG_RUNTIME_DIR", ""))
+    if ROOT and (uid>0 or gid>0):
+        #we're going to chown the directory if we create it,
+        #ensure this cannot be abused, only use "safe" paths:
+        if not any(x for x in ("/run/user/%i" % uid, "/tmp", "/var/tmp") if xrd.startswith(x)):
+            xrd = ""
+        #these paths could cause problems if we were to create and chown them:
+        if xrd.startswith("/tmp/.X11-unix") or xrd.startswith("/tmp/.XIM-unix"):
+            xrd = ""
+    if not xrd:
+        xrd = os.environ.get("XDG_RUNTIME_DIR")
     xrd = create_runtime_dir(xrd, uid, gid)
 
     if opts.pidfile:
