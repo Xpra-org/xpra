@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Tue Aug 01 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
+* Mon Aug 07 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root
 - fix packet handling errors with AES encryption enabled
@@ -639,6 +639,8 @@ fi
 - fix duplicate button click events (causing triple clicks with MS Windows servers)
 - fix X11 timetstamp overflow
 - full quality refresh control command
+- honour window ids when using the control channel to ajust speed and quality
+- ignore dead sockets when enumerating possible X11 displays
 - add runtime warning: the GTK3 client should not be used
 - add missing man page entries
 - add missing "meta" modifier to keyboard tools

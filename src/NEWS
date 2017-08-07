@@ -1,4 +1,4 @@
-v1.0.7 (2017-08-01)
+v1.0.7 (2017-08-07)
 ======================
 	-- fix authentication with unencrypted xor mode
 	-- fix potential symlink attacks when running the proxy server as root
@@ -37,6 +37,8 @@ v1.0.7 (2017-08-01)
 	-- fix duplicate button click events (causing triple clicks with MS Windows servers)
 	-- fix X11 timetstamp overflow
 	-- full quality refresh control command
+	-- honour window ids when using the control channel to ajust speed and quality
+	-- ignore dead sockets when enumerating possible X11 displays
 	-- add runtime warning: the GTK3 client should not be used
 	-- add missing man page entries
 	-- add missing "meta" modifier to keyboard tools

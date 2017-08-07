@@ -36,12 +36,14 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix duplicate button click events (causing triple clicks with MS Windows servers)
   * fix X11 timetstamp overflow
   * full quality refresh control command
+  * honour window ids when using the control channel to ajust speed and quality
+  * ignore dead sockets when enumerating possible X11 displays
   * add runtime warning: the GTK3 client should not be used
   * add missing man page entries
   * add missing "meta" modifier to keyboard tools
   * use a smaller initial display size with desktop mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 01 Aug 2017 15:36:34 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 07 Aug 2017 23:45:23 +0700
 
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath
