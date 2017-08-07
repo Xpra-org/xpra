@@ -60,11 +60,11 @@ class XTestPointerDevice(object):
     def __repr__(self):
         return "XTestPointerDevice"
 
-    def move_pointer(self, screen_no, x, y, *args):
+    def move_pointer(self, screen_no, x, y, *_args):
         mouselog("xtest_fake_motion(%i, %s, %s)", screen_no, x, y)
         X11Keyboard.xtest_fake_motion(screen_no, x, y)
 
-    def click(self, button, pressed, *args):
+    def click(self, button, pressed, *_args):
         mouselog("xtest_fake_button(%i, %s)", button, pressed)
         X11Keyboard.xtest_fake_button(button, pressed)
 
@@ -80,7 +80,7 @@ class UInputPointerDevice(object):
     def __repr__(self):
         return "UInput device %s" % self.device_path
 
-    def move_pointer(self, screen_no, x, y, *args):
+    def move_pointer(self, screen_no, x, y, *_args):
         mouselog("UInput.move_pointer(%i, %s, %s)", screen_no, x, y)
         #calculate delta:
         with xsync:
@@ -98,7 +98,7 @@ class UInputPointerDevice(object):
             if dy!=0:
                 self.device.emit(uinput.REL_Y, dy, syn=True)
 
-    def click(self, button, pressed, *args):
+    def click(self, button, pressed, *_args):
         import uinput
         if button==4:
             ubutton = uinput.REL_WHEEL
@@ -287,6 +287,18 @@ class X11ServerBase(GTKServerBase):
             device_path = pointer.get("device")
             if uinput_device:
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
+                nx, ny = 100, 100
+                self.pointer_device.move_pointer(0, nx, ny)
+                def verify_uinput_moved():
+                    pos = None  #@UnusedVariable
+                    with xswallow:
+                        pos = X11Keyboard.query_pointer()
+                        mouselog("X11Keyboard.query_pointer=%s", pos)
+                    if pos!=(nx, ny):
+                        mouselog.warn("Warning: %s failed verification", self.pointer_device)
+                        mouselog.warn(" usign XTest fallback")
+                        self.pointer_device = XTestPointerDevice()
+                self.timeout_add(100, verify_uinput_moved)
         try:
             mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:
