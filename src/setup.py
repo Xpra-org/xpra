@@ -1482,8 +1482,8 @@ else:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("scripts/xpra_Xdummy", "bin", chmod=0o755)
-                #install xorg.conf, cuda.conf and nvenc.keys:
-                etc_xpra_files = ["xorg.conf"]
+                #install xorg*.conf, cuda.conf and nvenc.keys:
+                etc_xpra_files = ["xorg.conf", "xorg-uinput.conf"]
                 if nvenc_ENABLED:
                     etc_xpra_files += ["cuda.conf", "nvenc.keys"]
                 for x in etc_xpra_files:
