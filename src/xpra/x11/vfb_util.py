@@ -167,7 +167,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 
     #apply string substitutions:
-    xvfb_cmd = pathexpand(xvfb_str).split()
+    xvfb_cmd = shlex.split(pathexpand(xvfb_str))
 
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
