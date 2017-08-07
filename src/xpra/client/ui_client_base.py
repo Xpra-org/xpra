@@ -60,7 +60,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, OSX, POSIX
 from xpra.util import nonl, std, iround, envint, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
