@@ -639,14 +639,14 @@ class XI2_Window(object):
             #calculate delta if we have both old and new values:
             dx, dy = 0, 0
             if wx is not None and wheel_x is not None:
-                dx = wheel_x-wx
+                dx = wx-wheel_x
             if wy is not None and wheel_y is not None:
-                dy = wheel_y-wy
+                dy = wy-wheel_y
             #whatever happens, update our motion cached values:
             mv.update(event.valuators)
             #now see if we have anything to send as a wheel event:
             if dx!=0 or dy!=0:
-                mouselog("do_xi_motion() wheel deltas: dx=%i, dy=%i", dx, dy)
+                mouselog("do_xi_motion(%s) wheel deltas: dx=%i, dy=%i", event, dx, dy)
                 #normalize (xinput is always using 15 degrees?)
                 client.wheel_event(wid, float(dx)/XINPUT_WHEEL_DIV, float(dy)/XINPUT_WHEEL_DIV, event.device)
             if not mv:
@@ -676,7 +676,7 @@ class XI2_Window(object):
 
 
 class ClientExtras(object):
-    def __init__(self, client, opts):
+    def __init__(self, client, _opts):
         self.client = client
         self._xsettings_watcher = None
         self._root_props_watcher = None
@@ -823,7 +823,7 @@ class ClientExtras(object):
             self.client.send_input_devices("xi", devices)
 
     def setup_xi(self):
-        if self.client.server_input_devices!="xi":
+        if self.client.server_input_devices not in ("xi", "uinput"):
             log.info("server does not support xi input devices")
         try:
             from xpra.gtk_common.error import xsync
@@ -859,7 +859,7 @@ class ClientExtras(object):
             log.error("failed to get XSETTINGS", exc_info=True)
         return None
 
-    def _handle_xsettings_changed(self, *args):
+    def _handle_xsettings_changed(self, *_args):
         settings = self._get_xsettings()
         log("xsettings_changed new value=%s", settings)
         if settings is not None:

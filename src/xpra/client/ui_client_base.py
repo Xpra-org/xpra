@@ -1220,11 +1220,13 @@ class UIXpraClient(XpraClientBase):
         mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s", wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             #send the exact value multiplied by 1000 (as an int)
-            packet =  ["wheel-motion", wid,
-                       button, int(distance*1000),
-                       pointer, modifiers, buttons] + list(args)
-            mouselog("button packet: %s", packet)
-            self.send_positional(packet)
+            idist = int(distance*1000)
+            if abs(idist)>0:
+                packet =  ["wheel-motion", wid,
+                           button, idist,
+                           pointer, modifiers, buttons] + list(args)
+                mouselog.info("%s", packet)
+                self.send_positional(packet)
             return 0
         else:
             #server cannot handle precise wheel,
@@ -1243,14 +1245,13 @@ class UIXpraClient(XpraClientBase):
         #accumulate deltas:
         self.wheel_deltax += deltax
         self.wheel_deltay += deltay
-        if abs(self.wheel_deltax)>=1:
-            button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
-            if button>0:
-                self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
-        if abs(self.wheel_deltay)>=1:
-            button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
-            if button>0:
-                self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
+        button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
+        if button>0:
+            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
+        button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
+        if button>0:
+            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
+        log.info("wheel_delta%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)

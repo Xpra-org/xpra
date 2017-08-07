@@ -115,6 +115,9 @@ WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA>0
 
+log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s, LANGCHANGE=%s, DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
+    CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, GEOMETRY, LANGCHANGE, DPI_AWARE, DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
+
 
 KNOWN_EVENTS = {}
 POWER_EVENTS = {}
@@ -556,10 +559,10 @@ def add_window_hooks(window):
                 keys = wParam & 0xFFFF
                 y = lParam>>16
                 x = lParam & 0xFFFF
-                units = float(abs(distance)) / WHEEL_DELTA
+                units = float(distance) / WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
-                mouselog("win32 mousewheel: orientation=%s distance=%i, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, units, distance, keys, x, y, client, wid)
+                mouselog("win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i", orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
                 if client and wid>0:
                     if orientation==VERTICAL:
                         deltax = 0
