@@ -6,7 +6,7 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, monotonic_time
+from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid
 from xpra.platform.dotxpra import osexpand, norm_makepath
 from xpra.scripts.config import InitException
 
@@ -333,15 +333,21 @@ def create_uinput_pointer_device(uid, gid):
     if not dev_path:
         uinput_pointer.destroy()
         return None
-    #log("chown%s", (dev_path, uid, gid))
-    #os.lchown(dev_path, uid, gid)
-    #udev rules change the device ownership
-    #FIXME: fix udev or use inotify? (racy)
-    import time
-    time.sleep(1)
-    log("chown%s", (dev_path, uid, gid))
-    os.lchown(dev_path, uid, gid)
-    os.lchown("/dev/input/mouse2", uid, gid)
+    try:
+        #log("chown%s", (dev_path, uid, gid))
+        os.lchown(dev_path, uid, gid)
+        #udev rules change the device ownership
+        #FIXME: fix udev or use inotify? (racy)
+        import time
+        time.sleep(1)
+        log("chown%s", (dev_path, uid, gid))
+        os.lchown(dev_path, uid, gid)
+        #os.lchown("/dev/input/mouse2", uid, gid)
+    except OSError as e:
+        log.error("Error: failed to change ownership of '%s':", name)
+        log.error(" at %s:", dev_path)
+        log.error(" %s", e)
+        return None
     return name, uinput_pointer, dev_path
 
 def create_uinput_devices(uid, gid):
