@@ -79,10 +79,11 @@ def create_xorg_device_configs(xorg_conf_dir, devices, uid, gid):
 Section "InputClass"
     Identifier "xpra-virtual-%s"
     MatchProduct "%s"
+    MatchDevicePath "%s"
     Option "Ignore" "False"
 %s
 EndSection
-""" % (dev_type, name, match_type))
+""" % (dev_type, name, device, match_type))
                 os.fchown(f.fileno(), uid, gid)
                 #Option "AccelerationProfile" "-1"
                 #Option "AccelerationScheme" "none"
