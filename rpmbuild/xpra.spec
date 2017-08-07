@@ -579,6 +579,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/pam.d/xpra
 %config(noreplace) %{_sysconfdir}/X11/xorg.conf.d/90-xpra-virtual.conf
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
+%config(noreplace) %{_sysconfdir}/xpra/xorg-uinput.conf
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf

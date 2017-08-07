@@ -12,8 +12,7 @@ usr/share/man/man1/xpra*
 usr/share/xpra/icons/*.png
 usr/share/xpra/www/*
 usr/share/xpra/cuda/*
-etc/xpra/xorg.conf
-etc/xpra/xpra.conf
+etc/xpra/*.conf
 etc/xpra/conf.d/*conf
 etc/pam.d/xpra
 etc/default/xpra
