@@ -152,6 +152,7 @@ client_ENABLED = DEFAULT
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
+uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk2_ENABLED = DEFAULT and client_ENABLED and not PYTHON3
@@ -215,7 +216,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "csc_libyuv",
             "bencode", "cython_bencode", "vsock", "mdns",
             "clipboard",
-            "server", "client", "dbus", "x11", "xinput", "sd_listen",
+            "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
             "gtk_x11", "service",
             "gtk2", "gtk3", "example",
             "html5", "minify", "html5_gzip", "html5_brotli",
@@ -1483,7 +1484,9 @@ else:
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("scripts/xpra_Xdummy", "bin", chmod=0o755)
                 #install xorg*.conf, cuda.conf and nvenc.keys:
-                etc_xpra_files = ["xorg.conf", "xorg-uinput.conf"]
+                etc_xpra_files = ["xorg.conf"]
+                if uinput_ENABLED:
+                    etc_xpra_files.append("xorg-uinput.conf")
                 if nvenc_ENABLED:
                     etc_xpra_files += ["cuda.conf", "nvenc.keys"]
                 for x in etc_xpra_files:
@@ -1535,6 +1538,8 @@ else:
         #not supported by all distros, but doesn't hurt to install them anyway:
         for x in ("tmpfiles.d", "sysusers.d"):
             add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
+        if uinput_ENABLED:
+            add_data_files("lib/udev/rules.d/", ["udev/rules.d/71-xpra-virtual-pointer.rules"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:

@@ -53,6 +53,7 @@ from xpra.x11.server_keyboard_config import KeyboardConfig
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 20)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
+MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
 
 
 class XTestPointerDevice(object):
@@ -100,14 +101,26 @@ class UInputPointerDevice(object):
 
     def click(self, button, pressed, *_args):
         import uinput
+        BUTTON_STR = {
+            uinput.BTN_LEFT     : "BTN_LEFT",
+            uinput.BTN_RIGHT    : "BTN_RIGHT",
+            uinput.BTN_MIDDLE   : "BTN_MIDDLE",
+            uinput.BTN_SIDE     : "BTN_SIDE",
+            uinput.BTN_EXTRA    : "BTN_EXTRA",
+            uinput.REL_WHEEL    : "REL_WHEEL",
+            }
+        #this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
+        #MOUSE_WHEEL_CLICK_COUNT=360
+        #MOUSE_WHEEL_CLICK_ANGLE=1
+        mult = MOUSE_WHEEL_CLICK_MULTIPLIER
         if button==4:
             ubutton = uinput.REL_WHEEL
-            val = 1
+            val = 1*mult
             if pressed: #only send one event
                 return
         elif button==5:
             ubutton = uinput.REL_WHEEL
-            val = -1
+            val = -1*mult
             if pressed: #only send one event
                 return
         else:
@@ -120,7 +133,7 @@ class UInputPointerDevice(object):
                 }.get(button)
             val = bool(pressed)
         if ubutton:
-            mouselog("UInput.click(%i, %s) uinput button=%#x, %#x, value=%s", button, pressed, ubutton[0], ubutton[1], val)
+            mouselog("UInput.click(%i, %s) uinput button=%s (%#x), %#x, value=%s", button, pressed, BUTTON_STR.get(ubutton), ubutton[0], ubutton[1], val)
             self.device.emit(ubutton, val)
         else:
             mouselog("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
