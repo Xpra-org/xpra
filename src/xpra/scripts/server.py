@@ -514,6 +514,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR")
     xrd = create_runtime_dir(xrd, uid, gid)
+    if xrd:
+        #this may override the value we get from pam
+        #with the value supplied by the user:
+        protected_env["XDG_RUNTIME_DIR"] = xrd
 
     if opts.pidfile:
         write_pidfile(opts.pidfile, uid, gid)
