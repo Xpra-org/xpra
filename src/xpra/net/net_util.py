@@ -393,7 +393,6 @@ def main():
 
         print("")
         print("Protocol Capabilities:")
-        from xpra.net.protocol import get_network_caps
         netcaps = get_network_caps()
         netif = {""    : has_netifaces}
         if netifaces_version:
