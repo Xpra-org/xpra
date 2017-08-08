@@ -261,7 +261,7 @@ class SocketConnection(Connection):
             self.filename = remote
 
     def peek(self, n):
-        return self.untilConcludes(self._socket.recv, n, socket.MSG_PEEK)
+        return self._socket.recv(n, socket.MSG_PEEK)
 
     def read(self, n):
         return self._read(self._socket.recv, n)
