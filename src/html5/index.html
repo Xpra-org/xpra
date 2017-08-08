@@ -143,9 +143,9 @@
 				var steal = getboolparam("steal", true);
 				var reconnect = getboolparam("reconnect", true);
 				var swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
-				//delete session params:
+				//delete sensitive session params:
 				try {
-					sessionStorage.clear();
+					sessionStorage.removeItem("password");
 				}
 				catch (e) {
 					//ignore
