@@ -182,10 +182,11 @@ class XpraClient(GTKXpraClient):
         if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
             #try to match the string specified:
             filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
-            if len(filtered)>0:
-                clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type)
-            else:
+            if len(filtered)==0:
                 clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
+                clipboardlog.warn(" clipboard synchronization is disabled")
+                return []
+            clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type)
             clipboard_options = filtered
         #now try to load them:
         clipboardlog("get_clipboard_helper_classes() options=%s", clipboard_options)
