@@ -318,6 +318,7 @@ BuildRequires: gcc
 BuildRequires: %{requires_cython}
 %ifarch x86_64
 %if 0%{?fedora}
+%{Recommends}: python-uinput
 %{Recommends}: python2-pynvml
 %{Recommends}: python2-pycuda
 %endif
@@ -418,6 +419,7 @@ BuildRequires: gcc, gcc-c++
 BuildRequires: python3-Cython
 %ifarch x86_64
 %if 0%{?fedora}
+#%{Recommends}: python3-uinput
 %{Recommends}: python3-pynvml
 %{Recommends}: python3-pycuda
 %endif
