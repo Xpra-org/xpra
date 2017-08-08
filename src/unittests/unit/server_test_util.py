@@ -68,10 +68,22 @@ class ServerTestUtil(unittest.TestCase):
 		return dict((k,v) for k,v in os.environ.items() if
 				k.startswith("XPRA") or k in ("HOME", "HOSTNAME", "SHELL", "TERM", "USER", "USERNAME", "PATH", "PWD", "XAUTHORITY", "PYTHONPATH", ))
 
+	@classmethod
+	def which(cls, cmd):
+		try:
+			from xpra.os_util import get_status_output, strtobytes
+			code, out, _ = get_status_output(["which", cmd])
+			if code==0:
+				return strtobytes(out.splitlines()[0])
+		except:
+			pass
+		return cmd
 
 	@classmethod
 	def run_xpra(cls, command, env=None):
 		xpra_cmd = get_xpra_command()
+		if xpra_cmd==["xpra"]:
+			xpra_cmd = [cls.which("xpra")]
 		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + command + cls.default_xpra_args
 		return cls.run_command(cmd, env)
 
