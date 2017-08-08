@@ -29,7 +29,7 @@ from libc.stdint cimport uintptr_t
 ###################################
 cdef extern from "gdk/gdk.h":
     ctypedef unsigned int gboolean
-    ctypedef unsigned char gchar
+    ctypedef char gchar
     GdkAtom gdk_atom_intern(const gchar *atom_name, gboolean only_if_exists)
 
 # Serious black magic happens here (I owe these guys beers):
