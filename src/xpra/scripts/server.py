@@ -661,13 +661,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         devices = create_input_devices(uid)
 
     # Start the Xvfb server first to get the display_name if needed
-    from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, verify_display_ready, set_initial_resolution
     odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
+        from xpra.x11.vfb_util import start_Xvfb
         xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, devices)
         for f in cleanups:
             add_cleanup(f)
@@ -732,9 +732,11 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     del stdout
     del stderr
 
-    if not check_xvfb_process(xvfb):
-        #xvfb problem: exit now
-        return  1
+    if start_vfb:
+        from xpra.x11.vfb_util import check_xvfb_process
+        if not check_xvfb_process(xvfb):
+            #xvfb problem: exit now
+            return  1
 
     if ROOT and (uid!=0 or gid!=0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
@@ -759,6 +761,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         no_gtk()
         if POSIX and (starting or starting_desktop or shadowing):
             #check that we can access the X11 display:
+            from xpra.x11.vfb_util import verify_display_ready
             if not verify_display_ready(xvfb, display_name, shadowing):
                 return 1
             from xpra.x11.gtk2.gdk_display_util import verify_gdk_display
@@ -853,6 +856,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.bindings.window_bindings import X11WindowBindings
             X11Window = X11WindowBindings()
             if (starting or starting_desktop) and not clobber and opts.resize_display:
+                from xpra.x11.vfb_util import set_initial_resolution
                 set_initial_resolution(starting_desktop)
         except ImportError as e:
             log.error("Failed to load Xpra server components, check your installation: %s" % e)
