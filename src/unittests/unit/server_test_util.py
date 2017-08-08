@@ -22,6 +22,7 @@ log = Logger("test")
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 8)
+DELETE_TEMP_FILES = envbool("XPRA_DELETE_TEMP_FILES", True)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -108,7 +109,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def _temp_file(self, data=None):
-		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword')
+		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword', delete=DELETE_TEMP_FILES)
 		if data:
 			f.file.write(data)
 		f.file.flush()
