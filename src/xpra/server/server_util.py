@@ -300,7 +300,7 @@ def create_uinput_pointer_device(uid, gid):
     log = Logger("server")
     try:
         import uinput
-    except ImportError as e:
+    except (ImportError, NameError) as e:
         log.error("Error: cannot create uinput devices:")
         log.error(" %s", e)
         return None
