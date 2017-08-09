@@ -13,13 +13,13 @@
 %define __requires_exclude ^libcuda.*$
 
 Name:           python2-pycuda
-Version:        2017.1
-Release:        2
+Version:        2017.1.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source:        	https://pypi.python.org/packages/3b/55/22c03d8daa62a07c93d4b5771ec346f91477c904653186863f622f079e59/pycuda-%{version}.tar.gz
+Source:        	https://pypi.python.org/packages/b3/30/9e1c0a4c10e90b4c59ca7aa3c518e96f37aabcac73ffe6b5d9658f6ef843/pycuda-2017.1.1.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
@@ -128,6 +128,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Aug 09 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1.1-1
+- new upstream release
+
 * Tue Jul 18 2017 Antoine Martin <antoine@devloop.org.uk> - 2017.1-2
 - build python3 variant too
 
