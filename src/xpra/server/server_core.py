@@ -146,6 +146,7 @@ class ServerCore(object):
         self.ws_auth_class = None
         self.wss_auth_class = None
         self.ssl_auth_class = None
+        self.rfb_auth_class = None
         self.vsock_auth_class = None
         self._when_ready = []
         self.child_reaper = None
@@ -290,6 +291,7 @@ class ServerCore(object):
         self.ws_auth_class = self.get_auth_module("ws", opts.ws_auth, opts)
         self.wss_auth_class = self.get_auth_module("wss", opts.wss_auth, opts)
         self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth or opts.tcp_auth or opts.auth, opts)
+        self.rfb_auth_class = self.get_auth_module("rfb", opts.rfb_auth, opts)
         self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
         authlog("init_auth(..) auth=%s, tcp auth=%s, ws auth=%s, wss auth=%s, ssl auth=%s, vsock auth=%s",
                 self.auth_class, self.tcp_auth_class, self.ws_auth_class, self.wss_auth_class, self.ssl_auth_class, self.vsock_auth_class)
@@ -723,7 +725,11 @@ class ServerCore(object):
             self.start_http_socket(conn, False, peek_data)
             return
 
-        if socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
+        elif socktype=="rfb" and not peek_data:
+            self.handle_rfb_connection(conn)
+            return
+
+        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
@@ -734,7 +740,8 @@ class ServerCore(object):
                 netlog("socket wrapping failed", exc_info=True)
                 conn_err(str(e))
                 return
-        if peek_data and peek_data[0] not in ("P", ord("P")):
+
+        if peek_data and (socktype=="rfb" or (peek_data[0] not in ("P", ord("P")))):
             msg = self.guess_header_protocol(peek_data)
             conn_err("invalid packet header, %s" % msg)
             return True
@@ -743,12 +750,20 @@ class ServerCore(object):
         log_new_connection(conn, socket_info)
         self.make_protocol(socktype, conn)
 
+
     def make_protocol(self, socktype, conn):
+        def xpra_protocol_class(conn):
+            protocol = Protocol(self, conn, self.process_packet)
+            protocol.large_packets.append("info-response")
+            protocol.receive_aliases.update(self._aliases)
+            return protocol
+        return self.do_make_protocol(socktype, conn, xpra_protocol_class)
+
+    def do_make_protocol(self, socktype, conn, protocol_class):
         netlog("make_protocol(%s, %s)", socktype, conn)
         socktype = socktype.lower()
-        protocol = Protocol(self, conn, self.process_packet)
+        protocol = protocol_class(conn)
         self._potential_protocols.append(protocol)
-        protocol.large_packets.append("info-response")
         protocol.challenge_sent = False
         protocol.authenticator = None
         protocol.encryption = None
@@ -757,25 +772,25 @@ class ServerCore(object):
             protocol.auth_class = self.tcp_auth_class
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
+            if protocol.encryption and ENCRYPT_FIRST_PACKET:
+                authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
+                password = self.get_encryption_key(None, protocol.keyfile)
+                protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         elif socktype=="ssl":
             protocol.auth_class = self.ssl_auth_class
         elif socktype=="ws":
             protocol.auth_class = self.ws_auth_class
         elif socktype=="wss":
             protocol.auth_class = self.wss_auth_class
+        elif socktype=="rfb":
+            protocol.auth_class = self.rfb_auth_class
         elif socktype=="vsock":
             protocol.auth_class = self.vsock_auth_class
         else:
             protocol.auth_class = self.auth_class
-            protocol.encryption = self.encryption
-            protocol.keyfile = self.encryption_keyfile
         protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
-        protocol.receive_aliases.update(self._aliases)
         authlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
-        if protocol.encryption and ENCRYPT_FIRST_PACKET:
-            password = self.get_encryption_key(None, protocol.keyfile)
-            protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.start()
         self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
         return protocol
@@ -1286,6 +1301,9 @@ class ServerCore(object):
         #this will need to be increased up to file-size-limit
         proto.max_packet_size = 1024*1024  #1MB
         proto.send_aliases = c.dictget("aliases")
+        self.accept_protocol(proto)
+
+    def accept_protocol(self, proto):
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         self.reset_server_timeout(False)
@@ -1452,3 +1470,7 @@ class ServerCore(object):
             raise
         except:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+
+    def handle_rfb_connection(self, conn):
+        log.error("Error: RFB protocol is not supported by this server")
+        conn.close()

@@ -66,6 +66,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
@@ -197,6 +198,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
@@ -731,7 +733,7 @@ create the socket using the path specified
 .PP
 .TP
 \fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP
-Create a TCP socket for each \fB\-\-bind-\-tcp\fP option specified.
+Create a TCP socket for each \fB\-\-bind\-tcp\fP option specified.
 If the host portion is omitted, then 127.0.0.1 (localhost) will be
 used.  If you wish to accept connections on all interfaces, pass
 0.0.0.0 for the host portion.
@@ -756,8 +758,13 @@ See \fBbind\-tcp\fP for host restrictions,
 you should use the \fBauth\-wss\fP to secure access.
 .TP
 \fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP
-Just like \-\-bind-\-tcp\fP but for SSL sockets.
+Just like \-\-bind\-tcp\fP but for SSL sockets.
 See \fIssl\-auth\fP and the other SSL options.
+.TP
+\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT\fP
+Listens for RFB connections on the given port.
+These sockets are only supported with the \fBstart\-desktop\fP mode.
+.TP
 \fB\-\-bind\-vsock\fP=\fICID:PORT\fP
 Create a VSOCK socket for each \fB\-\-bind\-vsock\fP option specified.
 .TP
@@ -846,16 +853,24 @@ to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
 .TP
 \fB\-\-ws\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
-to ws sockets (sockets defined using the \fBbind\-ws\fP switch).
+to ws sockets: sockets defined using the \fBbind\-ws\fP switch,
+or TCP sockets upgraded to websockets. (if the \fBhtmlfP option is enabled).
 .TP
 \fB\-\-wss\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
-to wss sockets (sockets defined using the \fBbind\-wss\fP switch).
+to wss sockets: sockets defined using the \fBbind\-wss\fP switch,
+ws sockets upgraded to SSL (if the \fBssl\fP option is enabled) or
+TCP sockets upgraded to SSL and then to wss.
+(if both the \fBssl\fP and \fBhtml\fP options are enabled).
 .TP
 \fB\-\-ssl\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to SSL sockets: sockets defined using the \fBbind\-ssl\fP switch,
 or TCP sockets upgraded by \fBssl=auto\fP or \fBssl=on\fP.
+.TP
+\fB\-\-rfb\-auth\fP=\fIMODULE\fP
+Authentication module to use for the \fBbind\-rfb\fP sockets.
+.TP
 \fB\-\-vsock\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).

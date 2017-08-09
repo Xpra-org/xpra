@@ -549,6 +549,11 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="[HOST]:PORT",
                           help="Listen for connections over SSL. Use --ssl-auth to secure it."
                             + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-rfb", action="append",
+                          dest="bind_rfb", default=list(defaults.bind_rfb or []),
+                          metavar="[HOST]:PORT",
+                          help="Listen for RFB connections. Use --rfb-auth to secure it."
+                            + " You may specify this option multiple times with different host and port combinations")
     else:
         ignore({
             "bind"      : defaults.bind,
@@ -556,6 +561,7 @@ def do_parse_cmdline(cmdline, defaults):
             "bind-ws"   : defaults.bind_ws,
             "bind-wss"  : defaults.bind_wss,
             "bind-ssl"  : defaults.bind_ssl,
+            "bind-rfb"  : defaults.bind_rfb,
             })
     try:
         from xpra.net import vsock
@@ -977,6 +983,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--ssl-auth", action="store",
                       dest="ssl_auth", default=defaults.ssl_auth,
                       help="The authentication module to use for SSL sockets (default: '%default')")
+    group.add_option("--rfb-auth", action="store",
+                      dest="rfb_auth", default=defaults.rfb_auth,
+                      help="The authentication module to use for RFB sockets (default: '%default')")
     if vsock:
         group.add_option("--vsock-auth", action="store",
                          dest="vsock_auth", default=defaults.vsock_auth,

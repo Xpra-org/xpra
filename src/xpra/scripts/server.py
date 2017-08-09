@@ -362,6 +362,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     bind_ssl = parse_bind_tcp(opts.bind_ssl)
     bind_ws = parse_bind_tcp(opts.bind_ws)
     bind_wss = parse_bind_tcp(opts.bind_wss)
+    bind_rfb = parse_bind_tcp(opts.bind_rfb)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
@@ -619,6 +620,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         add_tcp_socket("ws", host, iport)
         if tcp_ssl:
             add_mdns("wss", host, iport)
+    netlog("setting up rfb sockets: %s", bind_rfb)
+    for host, iport in bind_rfb:
+        add_tcp_socket("rfb", host, iport)
     netlog("setting up vsock sockets: %s", bind_vsock)
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
