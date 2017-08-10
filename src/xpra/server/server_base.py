@@ -142,6 +142,7 @@ class ServerBase(ServerCore):
         self.pings = 0
         self.scaling_control = False
         self.rpc_handlers = {}
+        self.webcam_option = ""
         self.webcam_forwarding = False
         self.webcam_encodings = []
         self.webcam_forwarding_device = None
@@ -262,6 +263,7 @@ class ServerBase(ServerCore):
         self.notifications_forwarder = None
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
+        self.webcam_option = opts.webcam
         self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
         self.input_devices = opts.input_devices or "auto"
 
@@ -427,9 +429,12 @@ class ServerBase(ServerCore):
             webcamlog.error("Error: webcam forwarding disabled:")
             webcamlog.error(" %s", e)
             self.webcam_forwarding = False
-        self.virtual_video_devices = self.init_virtual_video_devices()
-        if self.virtual_video_devices==0:
-            self.webcam_forwarding = False
+        if self.webcam_option.startswith("/dev/video"):
+            self.virtual_video_devices = 1
+        else:
+            self.virtual_video_devices = self.init_virtual_video_devices()
+            if self.virtual_video_devices==0:
+                self.webcam_forwarding = False
 
     def init_virtual_video_devices(self):
         webcamlog("init_virtual_video_devices")
@@ -2218,8 +2223,10 @@ class ServerBase(ServerCore):
     def get_webcam_info(self):
         webcam_info = {
                        ""                       : self.webcam_forwarding,
-                       "virtual-video-devices"  : self.virtual_video_devices,
                        }
+        if self.webcam_option.startswith("/dev/video"):
+            webcam_info["device"] = self.webcam_option
+        webcam_info["virtual-video-devices"] = self.virtual_video_devices
         d = self.webcam_forwarding_device
         if d:
             webcam_info.update(d.get_info())
@@ -3146,15 +3153,23 @@ class ServerBase(ServerCore):
 
     def start_virtual_webcam(self, ss, device, w, h):
         assert w>0 and h>0
-        from xpra.platform.xposix.webcam import get_virtual_video_devices
-        devices = get_virtual_video_devices()
-        if len(devices)==0:
-            webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
-            ss.send_webcam_stop(device)
-            return
-        if self.webcam_forwarding_device:
-            self.stop_virtual_webcam()
-        webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
+        if self.webcam_option.startswith("/dev/video"):
+            #use the device specified:
+            devices = {
+                0 : {
+                    "device" : self.webcam_option,
+                    }
+                       }
+        else:
+            from xpra.platform.xposix.webcam import get_virtual_video_devices
+            devices = get_virtual_video_devices()
+            if len(devices)==0:
+                webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
+                ss.send_webcam_stop(device)
+                return
+            if self.webcam_forwarding_device:
+                self.stop_virtual_webcam()
+            webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
         errs = {}
         for device_id, device_info in devices.items():
             webcamlog("trying device %s: %s", device_id, device_info)

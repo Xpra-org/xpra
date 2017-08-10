@@ -361,7 +361,7 @@ class UIXpraClient(XpraClientBase):
         self.desktop_fullscreen = opts.desktop_fullscreen
 
         self.webcam_option = opts.webcam
-        self.webcam_forwarding = self.webcam_option.lower() not in ("no", "false")
+        self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
         self.server_supports_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
