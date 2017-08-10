@@ -10,8 +10,6 @@ gstlog = Logger("gstreamer")
 #must be done before importing gobject!
 from xpra.sound.gstreamer_util import import_gst
 gst = import_gst()
-MESSAGE_ELEMENT = getattr(gst, "MESSAGE_ELEMENT", None)
-
 from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.gtk_common.gobject_compat import import_glib
@@ -289,11 +287,17 @@ class SoundPipeline(gobject.GObject):
             self.idle_emit("error", str(err))
             #exit
             self.cleanup()
-        elif t == gst.MESSAGE_TAG or t == MESSAGE_ELEMENT:
+        elif t == gst.MESSAGE_TAG:
             try:
                 self.parse_message(message)
             except Exception as e:
                 self.gstlogwarn("Warning: failed to parse gstreamer message:")
+                self.gstlogwarn(" %s: %s", type(e), e)
+        elif t == gst.MessageType.ELEMENT:
+            try:
+                self.parse_element_message(message)
+            except Exception as e:
+                self.gstlogwarn("Warning: failed to parse gstreamer element message:")
                 self.gstlogwarn(" %s: %s", type(e), e)
         elif t == gst.MESSAGE_STREAM_STATUS:
             gstlog("stream status: %s", message)
@@ -339,6 +343,19 @@ class SoundPipeline(gobject.GObject):
         self.emit_info()
         return 0
 
+    def parse_element_message(self, message):
+        structure = message.get_structure()
+        props = {
+            "seqnum"    : int(message.seqnum),
+            }
+        for i in range(structure.n_fields()):
+            name = structure.nth_field_name(i)
+            props[name] = structure.get_value(name)
+        self.do_parse_element_message(message, message.src.get_name(), props)
+
+    def do_parse_element_message(self, message, name, props={}):
+        gstlog("do_parse_element_message%s", (message, name, props))
+
     def parse_message(self, message):
         #message parsing code for GStreamer 1.x
         taglist = message.parse_tag()
@@ -380,4 +397,4 @@ class SoundPipeline(gobject.GObject):
             #no match yet
             if len([x for x in tags if x in ("minimum-bitrate", "maximum-bitrate", "channel-mode")])==0:
                 structure = message.get_structure()
-                self.gstloginfo("unknown sound pipeline tag message: %s", structure.to_string())
+                self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)

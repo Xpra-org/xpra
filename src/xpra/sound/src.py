@@ -12,7 +12,7 @@ from xpra.util import csv, envint, envbool, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, has_plugins, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
@@ -27,6 +27,10 @@ BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
 LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+try:
+    CUTTER_THRESHOLD = float(os.environ.get("XPRA_CUTTER_THRESHOLD", "0.02"))
+except:
+    CUTTER_THRESHOLD = 0
 
 generation = AtomicInteger()
 
@@ -76,6 +80,8 @@ class SoundSource(SoundPipeline):
         self.src = None
         self.src_type = src_type
         self.timestamp = None
+        self.min_timestamp = 0
+        self.max_timestamp = 0
         self.pending_metadata = []
         self.buffer_latency = True
         self.jitter_queue = None
@@ -100,6 +106,8 @@ class SoundSource(SoundPipeline):
             pipeline_els += [" ".join(queue_el)]
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
+        if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER:
+            pipeline_els.append("cutter threshold=%.4f leaky=false name=cutter" % CUTTER_THRESHOLD)
         pipeline_els.append("volume name=volume volume=%s" % volume)
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
@@ -180,12 +188,28 @@ class SoundSource(SoundPipeline):
         info = SoundPipeline.get_info(self)
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}
+        if CUTTER_THRESHOLD>0 and (self.min_timestamp or self.max_timestamp):
+            info["cutter.min-timestamp"] = self.min_timestamp
+            info["cutter.max-timestamp"] = self.max_timestamp
         if self.buffer_latency:
             for x in ("actual-buffer-time", "actual-latency-time"):
                 v = self.src.get_property(x)
                 if v>=0:
                     info[x] = v
         return info
+
+
+    def do_parse_element_message(self, _message, name, props={}):
+        if name=="cutter":
+            above = props.get("above")
+            ts = props.get("timestamp", 0)
+            if above is False:
+                self.max_timestamp = ts
+                self.min_timestamp = 0
+            elif above is True:
+                self.max_timestamp = 0
+                self.min_timestamp = ts
+            gstlog("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s", above, self.min_timestamp, self.max_timestamp)
 
 
     def on_new_preroll(self, appsink):
@@ -199,10 +223,15 @@ class SoundSource(SoundPipeline):
 
     def emit_buffer(self, sample):
         buf = sample.get_buffer()
-        #info = sample.get_info()
+        pts = normv(buf.pts)
+        if self.min_timestamp>0 and pts<self.min_timestamp:
+            gstlog("cutter: skipping buffer with pts=%s (min-timestamp=%s)", pts, self.min_timestamp)
+            return 0
+        elif self.max_timestamp>0 and pts>self.max_timestamp:
+            gstlog("cutter: skipping buffer with pts=%s (max-timestamp=%s)", pts, self.max_timestamp)
+            return 0
         size = buf.get_size()
         data = buf.extract_dup(0, size)
-        pts = normv(buf.pts)
         duration = normv(buf.duration)
         metadata = {
             "timestamp"  : pts,
