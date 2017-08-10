@@ -545,6 +545,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/README
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
+%{_datadir}/xpra/*.wav
 %ifarch x86_64
 %{_datadir}/xpra/cuda
 %endif

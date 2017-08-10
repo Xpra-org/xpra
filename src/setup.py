@@ -1416,6 +1416,7 @@ if WIN32:
                     raise
 
     add_data_files('', glob.glob("win32\\bundle-extra\\*"))
+    add_data_files('', "bell.wav")
 
     #END OF win32
 #*******************************************************************************
@@ -1429,6 +1430,7 @@ else:
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
     add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
+    add_data_files('share/xpra/',         ["bell.wav"])
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf

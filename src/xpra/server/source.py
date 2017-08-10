@@ -43,7 +43,7 @@ from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, WIN32
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -61,6 +61,7 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
+NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -1083,6 +1084,24 @@ class ServerSource(FileTransferHandler):
 
 
     def new_stream(self, sound_source, codec):
+        if NEW_STREAM_SOUND:
+            try:
+                from xpra.platform.paths import get_resources_dir
+                sample = os.path.join(get_resources_dir(), "bell.wav")
+                soundlog("new_stream(%s, %s) sample=%s, exists=%s", sound_source, codec, sample, os.path.exists(sample))
+                if os.path.exists(sample):
+                    if POSIX:
+                        sink = "alsasink"
+                    else:
+                        sink = "autoaudiosink"
+                    cmd = ["gst-launch-1.0", "-q", "filesrc", "location=%s" % sample, "!", "decodebin", "!", "audioconvert", "!", sink]
+                    import subprocess
+                    proc = subprocess.Popen(cmd, close_fds=True)
+                    soundlog("Popen(%s)=%s", cmd, proc)
+                    from xpra.child_reaper import getChildReaper
+                    getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
+            except:
+                pass
         soundlog("new_stream(%s, %s)", sound_source, codec)
         if self.sound_source!=sound_source:
             soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
