@@ -15,7 +15,7 @@ from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
 
 
 import sys
-if False:
+if sys.platform.startswith("linux"):
     try:
         from xpra.x11.gtk2.gdk_bindings import sanitize_gtkselectiondata
         from xpra.clipboard import clipboard_base

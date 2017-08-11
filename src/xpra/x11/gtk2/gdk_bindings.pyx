@@ -489,7 +489,7 @@ def sanitize_gtkselectiondata(obj):
     cdef GdkAtom gdkatom
     cdef gpointer data
     cdef char* c
-    if selectiondata.length==-1 and selectiondata.data==NULL:
+    if (<uintptr_t> selectiondata.type)>=2**16:
         log.warn("Warning: sanitizing NULL gtk selection data to avoid crash")
         xatom = get_xatom("STRING")
         gdkatom = get_gdkatom(obj, xatom)
