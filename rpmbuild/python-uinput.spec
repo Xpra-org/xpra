@@ -2,7 +2,7 @@
 %global with_python3 1
 
 # No python3 on el6
-%if 0%{?el6}
+%if 0%{?el6}%{?el7}
 %global with_python3 0
 %endif
 
