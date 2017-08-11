@@ -130,8 +130,8 @@ class UInputPointerDevice(object):
         else:
             ubutton = {
                 1   : uinput.BTN_LEFT,
-                2   : uinput.BTN_RIGHT,
-                3   : uinput.BTN_MIDDLE,
+                3   : uinput.BTN_RIGHT,
+                2   : uinput.BTN_MIDDLE,
                 8   : uinput.BTN_SIDE,
                 9   : uinput.BTN_EXTRA,
                 }.get(button)
