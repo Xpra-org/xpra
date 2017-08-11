@@ -22,6 +22,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-env\fP=\fIKEY=VALUE\fP]
 [\fB\-\-exit\-with\-children\fP]
 [\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-exit\-with\-client\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
@@ -172,6 +173,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
+[\fB\-\-exit\-with\-client\fP]
 [\fB\-\-auth\fP=\fIMODULE\fP]
 [\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
 [\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
@@ -790,6 +792,9 @@ This option may only be used if \fB\-\-start\-child\fP is also
 given.  If it is given, then the xpra server will monitor the status
 of the children started by \fB\-\-start\-child\fP, and will
 automatically terminate itself when the last of them has exited.
+.TP
+\fB\-\-exit\-with\-client\fP=\fIyes\fP|\fIno\fP
+The server will terminate when the last client disconnects.
 .TP
 \fB\-\-env\fP=\fIKEY=VALUE\fP
 Extra environment variables which will only affect commands started using
