@@ -133,8 +133,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
 
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
-        log.error("Error: failed to instantiate a JPEG decompressor")
-        return None
+        raise Exception("failed to instantiate a JPEG decompressor")
 
     def close():
         r = tjDestroy(decompressor)
@@ -147,10 +146,8 @@ def decompress_to_yuv(data, int width, int height, options={}):
                             <const unsigned char *> buf, buf_len,
                             &w, &h, &subsamp, &cs)
     if r:
-        log.error("Error: failed to decompress JPEG header")
-        log.error(" %s", get_error_str())
         close()
-        return None
+        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
@@ -186,10 +183,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
                                         buf, buf_len,
                                         planes, width, strides, height, flags)
         if r:
-            log.error("Error: failed to decompress %s JPEG data to YUV", subsamp_str)
-            log.error(" %s", get_error_str())
-            log.error(" width=%i, strides=%s, height=%s", width, pystrides, height)
-            return None
+            raise Exception("failed to decompress %s JPEG data to YUV: %s" % (subsamp_str, get_error_str()))
     finally:
         close()
     if LOG_PERF:
@@ -207,8 +201,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
 
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
-        log.error("Error: failed to instantiate a JPEG decompressor")
-        return None
+        raise Exception("failed to instantiate a JPEG decompressor")
 
     def close():
         r = tjDestroy(decompressor)
@@ -221,10 +214,8 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
                             <const unsigned char *> buf, buf_len,
                             &w, &h, &subsamp, &cs)
     if r:
-        log.error("Error: failed to decompress JPEG header")
-        log.error(" %s", get_error_str())
         close()
-        return None
+        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("decompress_to_rgb: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
@@ -245,10 +236,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
                               buf, buf_len, dst_buf,
                               width, stride, height, pixel_format, flags)
         if r:
-            log.error("Error: failed to decompress %s JPEG data to %s", subsamp_str, rgb_format)
-            log.error(" %s", get_error_str())
-            log.error(" width=%i, stride=%s, height=%s", width, stride, height)
-            return None
+            raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
     finally:
         close()
     if LOG_PERF:
