@@ -19,8 +19,8 @@ class GTKRootWindowModel(RootWindowModel):
     def __repr__(self):
         return "GTKRootWindowModel(%s)" % self.window
 
-    def get_image(self, x, y, width, height, logger=None):
-        v = get_rgb_rawdata(self.window, x, y, width, height, logger=logger)
+    def get_image(self, x, y, width, height):
+        v = get_rgb_rawdata(self.window, x, y, width, height)
         if v is None:
             return None
         return ImageWrapper(*v)

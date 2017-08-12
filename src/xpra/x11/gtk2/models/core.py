@@ -306,8 +306,8 @@ class CoreX11WindowModel(WindowModelStub):
         c = self._composite
         return c and c.get_xshm_handle() is not None
 
-    def get_image(self, x, y, width, height, logger=log.debug):
-        return self._composite.get_image(x, y, width, height, logger)
+    def get_image(self, x, y, width, height):
+        return self._composite.get_image(x, y, width, height)
 
 
     def _setup_property_sync(self):

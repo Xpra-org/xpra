@@ -14,7 +14,7 @@ log = Logger("gtk")
 #For reference, argb to pixbuf done in pixman:
 #http://cgit.freedesktop.org/pixman/tree/demos/gtk-utils.c?id=87ecec8d72be4106358e843a1e7a907b0e814f7f
 
-def get_rgb_rawdata(pixmap, x, y, width, height, logger=None):
+def get_rgb_rawdata(pixmap, x, y, width, height):
     """
         Extracts pixels from the given pixmap
     """
@@ -38,8 +38,7 @@ def get_rgb_rawdata(pixmap, x, y, width, height, logger=None):
         return None
     pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
     pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
-    if logger:
-        logger("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, visual depth=%s",
+    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, visual depth=%s",
              int(1000*(monotonic_time()-start)), colormap.get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()

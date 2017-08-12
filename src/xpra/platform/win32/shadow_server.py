@@ -243,7 +243,7 @@ class Win32RootWindowModel(RootWindowModel):
         h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         return w, h
 
-    def get_image(self, x, y, width, height, logger=None):
+    def get_image(self, x, y, width, height):
         if not self.capture:
             self.capture = init_capture(self.pixel_depth)
         try:

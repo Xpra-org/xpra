@@ -15,11 +15,10 @@ import math
 from collections import deque
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import AdHocStruct, updict, rindex, iround, nonl, typedict, envbool, envint
+from xpra.util import AdHocStruct, updict, rindex, envbool, envint
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
-from xpra.x11.xsettings import XSettingsManager, XSettingsHelper
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.wm import Wm
@@ -45,17 +44,16 @@ grablog = Logger("server", "grab")
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
 traylog = Logger("server", "tray")
-settingslog = Logger("x11", "xsettings")
 workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
 menulog  = Logger("x11", "menu")
 eventlog = Logger("x11", "events")
+mouselog = Logger("x11", "mouse")
 
-from xpra.x11.x11_server_base import X11ServerBase, mouselog
+from xpra.x11.x11_server_base import X11ServerBase
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
-SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 
@@ -187,12 +185,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         X11ServerBase.__init__(self)
 
     def init(self, opts):
-        self.xsettings_enabled = opts.xsettings
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb)
         self.global_menus = int(opts.global_menus)
         X11ServerBase.init(self, opts)
-        self.init_all_server_settings()
         if self.global_menus:
             self.rpc_handlers["menu"] = self._handle_menu_rpc
         def log_server_event(_, event):
@@ -234,12 +230,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
-
-        #save default xsettings:
-        self.default_xsettings = XSettingsHelper().get_settings()
-        settingslog("default_xsettings=%s", self.default_xsettings)
-        self._settings = {}
-        self._xsettings_manager = None
 
         #for handling resize synchronization between client and server (this is not xsync!):
         self.last_client_configure_event = 0
@@ -369,15 +359,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.X11_ungrab()
 
 
-    def cleanup_protocol(self, protocol):
-        had_client = len(self._server_sources)>0
-        X11ServerBase.cleanup_protocol(self, protocol)
-        has_client = len(self._server_sources)>0
-        if had_client and not has_client:
-            #last client is gone:
-            self.reset_settings()
-            if self._has_grab:
-                self.X11_ungrab()
+    def last_client_exited(self):
+        #last client is gone:
+        X11ServerBase.last_client_exited(self)
+        if self._has_grab:
+            self._has_grab = 0
+            self.X11_ungrab()
 
     def add_system_tray(self):
         # Tray handler:
@@ -1191,174 +1178,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 regions.append(item)
         log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
         return self.make_screenshot_packet_from_regions(OR_regions+regions)
-
-
-    def reset_settings(self):
-        if not self.xsettings_enabled:
-            return
-        settingslog("resetting xsettings to: %s", self.default_xsettings)
-        self.set_xsettings(self.default_xsettings or (0, ()))
-
-    def set_xsettings(self, v):
-        settingslog("set_xsettings(%s)", v)
-        if self._xsettings_manager is None:
-            self._xsettings_manager = XSettingsManager()
-        self._xsettings_manager.set_settings(v)
-
-
-    def _get_antialias_hintstyle(self, antialias):
-        hintstyle = antialias.strget("hintstyle", "").lower()
-        if hintstyle in ("hintnone", "hintslight", "hintmedium", "hintfull"):
-            #X11 clients can give us what we need directly:
-            return hintstyle
-        #win32 style contrast value:
-        contrast = antialias.intget("contrast", -1)
-        if contrast>1600:
-            return "hintfull"
-        elif contrast>1000:
-            return "hintmedium"
-        elif contrast>0:
-            return "hintslight"
-        return "hintnone"
-
-
-    def dpi_changed(self):
-        #re-apply the same settings, which will apply the new dpi override to it:
-        self.update_server_settings(self._settings)
-
-
-    def init_all_server_settings(self):
-        settingslog("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
-        #almost like update_all, except we use the default_dpi,
-        #since this is called before the first client connects
-        self.do_update_server_settings({"resource-manager"  : "",
-                                        "xsettings-blob"    : (0, [])},
-                                        reset = True,
-                                        dpi = self.default_dpi,
-                                        cursor_size=24)
-
-    def update_all_server_settings(self, reset=False):
-        self.update_server_settings({"resource-manager"  : "",
-                                     "xsettings-blob"    : (0, [])},
-                                     reset=reset)
-
-    def update_server_settings(self, settings, reset=False):
-        self.do_update_server_settings(settings, reset,
-                                self.dpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
-
-    def do_update_server_settings(self, settings, reset=False,
-                                  dpi=0, double_click_time=0, double_click_distance=(-1, -1), antialias={}, cursor_size=-1):
-        if not self.xsettings_enabled:
-            settingslog("ignoring xsettings update: %s", settings)
-            return
-        if reset:
-            #FIXME: preserve serial? (what happens when we change values which had the same serial?)
-            self.reset_settings()
-            self._settings = {}
-            if self.default_xsettings:
-                #try to parse default xsettings into a dict:
-                try:
-                    for _, prop_name, value, _ in self.default_xsettings[1]:
-                        self._settings[prop_name] = value
-                except Exception as e:
-                    settingslog("failed to parse %s", self.default_xsettings)
-                    settingslog.warn("Warning: failed to parse default XSettings:")
-                    settingslog.warn(" %s", e)
-        old_settings = dict(self._settings)
-        settingslog("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
-        settingslog("overrides: dpi=%s, double click time=%s, double click distance=%s", dpi, double_click_time, double_click_distance)
-        settingslog("overrides: antialias=%s", antialias)
-        self._settings.update(settings)
-        for k, v in settings.items():
-            #cook the "resource-manager" value to add the DPI and/or antialias values:
-            if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
-                value = v.decode("utf-8")
-                #parse the resources into a dict:
-                values={}
-                options = value.split("\n")
-                for option in options:
-                    if not option:
-                        continue
-                    parts = option.split(":\t", 1)
-                    if len(parts)!=2:
-                        settingslog("skipped invalid option: '%s'", option)
-                        continue
-                    values[parts[0]] = parts[1]
-                if cursor_size>0:
-                    values["Xcursor.size"] = cursor_size
-                if dpi>0:
-                    values["Xft.dpi"] = dpi
-                    values["Xft/DPI"] = dpi*1024
-                    values["gnome.Xft/DPI"] = dpi*1024
-                if antialias:
-                    ad = typedict(antialias)
-                    subpixel_order = "none"
-                    sss = self._server_sources.values()
-                    if len(sss)==1:
-                        #only honour sub-pixel hinting if a single client is connected
-                        #and only when it is not using any scaling (or overriden with SCALED_FONT_ANTIALIAS):
-                        ss = sss[0]
-                        if SCALED_FONT_ANTIALIAS or (not ss.desktop_size_unscaled or ss.desktop_size_unscaled==ss.desktop_size):
-                            subpixel_order = ad.strget("orientation", "none").lower()
-                    values.update({
-                                   "Xft.antialias"  : ad.intget("enabled", -1),
-                                   "Xft.hinting"    : ad.intget("hinting", -1),
-                                   "Xft.rgba"       : subpixel_order,
-                                   "Xft.hintstyle"  : self._get_antialias_hintstyle(ad)})
-                settingslog("server_settings: resource-manager values=%s", nonl(values))
-                #convert the dict back into a resource string:
-                value = ''
-                for vk, vv in values.items():
-                    value += "%s:\t%s\n" % (vk, vv)
-                #record the actual value used
-                self._settings["resource-manager"] = value
-                v = value.encode("utf-8")
-
-            #cook xsettings to add various settings:
-            #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k=="xsettings-blob" and (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
-                from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString
-                def set_xsettings_value(name, value_type, value):
-                    #remove existing one, if any:
-                    serial, values = v
-                    new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=name]
-                    new_values.append((value_type, name, value, 0))
-                    return serial, new_values
-                def set_xsettings_int(name, value):
-                    if value<0: #not set, return v unchanged
-                        return v
-                    return set_xsettings_value(name, XSettingsTypeInteger, value)
-                if dpi>0:
-                    v = set_xsettings_int("Xft/DPI", dpi*1024)
-                if double_click_time>0:
-                    v = set_xsettings_int("Net/DoubleClickTime", self.double_click_time)
-                if antialias:
-                    ad = typedict(antialias)
-                    v = set_xsettings_int("Xft/Antialias",  ad.intget("enabled", -1))
-                    v = set_xsettings_int("Xft/Hinting",    ad.intget("hinting", -1))
-                    v = set_xsettings_value("Xft/RGBA",     XSettingsTypeString, ad.strget("orientation", "none").lower())
-                    v = set_xsettings_value("Xft/HintStyle", XSettingsTypeString, self._get_antialias_hintstyle(ad))
-                if double_click_distance!=(-1, -1):
-                    #some platforms give us a value for each axis,
-                    #but X11 only has one, so take the average
-                    try:
-                        x,y = double_click_distance
-                        if x>0 and y>0:
-                            d = iround((x+y)/2.0)
-                            d = max(1, min(128, d))     #sanitize it a bit
-                            v = set_xsettings_int("Net/DoubleClickDistance", d)
-                    except Exception as e:
-                        log.warn("error setting double click distance from %s: %s", double_click_distance, e)
-
-            if k not in old_settings or v != old_settings[k]:
-                root = gdk.get_default_root_window()
-                def root_set(p):
-                    settingslog("server_settings: setting %s to %s", nonl(p), nonl(v))
-                    prop_set(root, p, "latin1", v.decode("utf-8"))
-                if k == "xsettings-blob":
-                    self.set_xsettings(v)
-                elif k == "resource-manager":
-                    root_set("RESOURCE_MANAGER")
 
 
     def make_dbus_server(self):

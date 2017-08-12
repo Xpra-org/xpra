@@ -7,7 +7,7 @@
 #ensures we only load GTK2:
 from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source        #@UnresolvedImport
 init_gdk_display_source()
-from xpra.x11.x11_server_base import X11ServerBase
+from xpra.x11.x11_server_core import X11ServerCore
 
 from xpra.os_util import monotonic_time
 from xpra.util import envbool, envint, XPRA_APP_ID
@@ -115,7 +115,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         log("screen size changed: %s, closing current capture instance %s", screen, self.capture)
         self.close_capture()
 
-    def get_image(self, x, y, width, height, logger=None):
+    def get_image(self, x, y, width, height):
         image = None
         if not self.capture:
             ww, wh = self.get_geometry()
@@ -139,17 +139,16 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
 #FIXME: warning: this class inherits from ServerBase twice..
 #so many calls will happen twice there (__init__ and init)
-class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
+class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def __init__(self):
         GTKShadowServerBase.__init__(self)
-        X11ServerBase.__init__(self)
+        X11ServerCore.__init__(self)
         self.cursor_poll_timer = None
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
-        X11ServerBase.do_init(self, opts)
-
+        X11ServerCore.do_init(self, opts)
 
     def start_refresh(self):
         GTKShadowServerBase.start_refresh(self)
@@ -190,7 +189,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
-        X11ServerBase.send_updated_screen_size(self)
+        X11ServerCore.send_updated_screen_size(self)
         for wid, window in self._id_to_window.items():
             w, h = window.get_dimensions()
             geomlog("%i new window dimensions: %s", wid, (w, h))
@@ -205,7 +204,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def last_client_exited(self):
         GTKShadowServerBase.last_client_exited(self)
-        X11ServerBase.last_client_exited(self)
+        X11ServerCore.last_client_exited(self)
 
 
     def start_poll_cursor(self):
@@ -222,7 +221,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
 
     def poll_cursor(self):
         prev = self.last_cursor_data
-        X11ServerBase.get_cursor_data(self)
+        X11ServerCore.get_cursor_data(self)
         def cmpv(v):
             if v and len(v)>2:
                 return v[2:]
@@ -240,24 +239,17 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerBase):
         return True
 
     def get_cursor_data(self):
-        return X11ServerBase.get_cursor_data(self)
-
-
-    def set_icc_profile(self):
-        pass
-
-    def reset_icc_profile(self):
-        pass
+        return X11ServerCore.get_cursor_data(self)
 
 
     def make_hello(self, source):
-        capabilities = X11ServerBase.make_hello(self, source)
+        capabilities = X11ServerCore.make_hello(self, source)
         capabilities.update(GTKShadowServerBase.make_hello(self, source))
         capabilities["server_type"] = "Python/gtk2/x11-shadow"
         return capabilities
 
     def get_info(self, proto):
-        info = X11ServerBase.get_info(self, proto)
+        info = X11ServerCore.get_info(self, proto)
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk2/x11-shadow"
         return info

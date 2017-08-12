@@ -43,7 +43,6 @@ from xpra.log import Logger
 log = Logger("server")
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
-traylog = Logger("server", "tray")
 settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")

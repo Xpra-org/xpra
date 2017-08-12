@@ -45,7 +45,7 @@ def patch_picture_encode():
 
 class OSXRootWindowModel(RootWindowModel):
 
-    def get_image(self, x, y, width, height, logger=None):
+    def get_image(self, x, y, width, height):
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
 

@@ -110,7 +110,7 @@ def get_settings(disp, d):
         XSETTINGS_CACHE[disp] = (serial, settings)
     return  serial, settings
 
-def set_settings(disp, d):
+def set_settings(_disp, d):
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
     log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))

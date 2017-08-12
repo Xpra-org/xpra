@@ -156,25 +156,25 @@ class WindowDamageHandler(object):
         return self._contents_handle
 
 
-    def get_image(self, x, y, width, height, logger=log.debug):
+    def get_image(self, x, y, width, height):
         handle = self.get_contents_handle()
         if handle is None:
-            logger("get_image(..) pixmap is None for window %#x", self.client_window.xid)
+            log("get_image(..) pixmap is None for window %#x", self.client_window.xid)
             return None
 
         #try XShm:
         try:
             shm = self.get_xshm_handle()
-            #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
+            #log("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
             if shm is not None:
                 with xsync:
                     shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
-                #logger("get_image(..) XShm image: %s", shm_image)
+                #log("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
                     return shm_image
         except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
-                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+                log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
 
@@ -182,12 +182,12 @@ class WindowDamageHandler(object):
             w = min(handle.get_width(), width)
             h = min(handle.get_height(), height)
             if w!=width or h!=height:
-                logger("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
+                log("get_image(%s, %s, %s, %s) clamped to pixmap dimensions: %sx%s", x, y, width, height, w, h)
             with xsync:
                 return handle.get_image(x, y, w, h)
         except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
-                logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+                log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
             return None

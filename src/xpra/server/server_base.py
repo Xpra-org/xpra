@@ -1026,6 +1026,7 @@ class ServerBase(ServerCore):
         return source
 
     def cleanup_source(self, source):
+        had_client = len(self._server_sources)>0
         self.server_event("connection-lost", source.uuid)
         if self.ui_driver==source.uuid:
             self.ui_driver = None
@@ -1033,7 +1034,8 @@ class ServerBase(ServerCore):
         remaining_sources = [x for x in self._server_sources.values() if x!=source]
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("xpra client %i disconnected.", source.counter)
-        if len(remaining_sources)==0:
+        has_client = len(remaining_sources)>0
+        if had_client and not has_client:
             self.idle_add(self.last_client_exited)
 
     def last_client_exited(self):
@@ -1316,10 +1318,10 @@ class ServerBase(ServerCore):
 
 
     def set_icc_profile(self):
-        pass
+        screenlog("set_icc_profile() not implemented")
 
     def reset_icc_profile(self):
-        pass
+        screenlog("reset_icc_profile() not implemented")
 
 
     def parse_hello_ui_clipboard(self, ss, c):

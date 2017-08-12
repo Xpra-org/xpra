@@ -742,7 +742,7 @@ class WindowVideoSource(WindowSource):
             return
 
         rgb_request_time = monotonic_time()
-        image = self.window.get_image(x, y, w, h, logger=log)
+        image = self.window.get_image(x, y, w, h)
         if image is None:
             log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
             return

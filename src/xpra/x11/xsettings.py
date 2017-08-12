@@ -26,7 +26,6 @@ XSETTINGS = "_XSETTINGS_SETTINGS"
 #constant type in prop.py:
 XSETTINGS_TYPE = "xsettings-settings"
 
-
 XNone = constants["XNone"]
 
 
