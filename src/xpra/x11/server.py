@@ -346,7 +346,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def is_shown(self, window):
         return self._desktop_manager.is_shown(window)
 
-    def do_cleanup(self, *args):
+    def do_cleanup(self):
         if self._tray:
             self._tray.cleanup()
             self._tray = None

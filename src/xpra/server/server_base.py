@@ -970,7 +970,7 @@ class ServerBase(ServerCore):
             execlog("still not terminated: %s", wait_for)
         execlog("done waiting for child commands")
 
-    def do_cleanup(self, *args):
+    def do_cleanup(self):
         self.server_event("exit")
         if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
             self.terminate_children_processes()
@@ -987,12 +987,12 @@ class ServerBase(ServerCore):
             self.dbus_server = None
 
 
-    def _process_exit_server(self, proto, packet):
+    def _process_exit_server(self, _proto, _packet):
         log.info("Exiting in response to client request")
         self.cleanup_all_protocols(SERVER_EXIT)
         self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
 
-    def _process_shutdown_server(self, proto, packet):
+    def _process_shutdown_server(self, _proto, _packet):
         if not CLIENT_CAN_SHUTDOWN:
             log.warn("Warning: ignoring shutdown request")
             return

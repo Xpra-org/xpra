@@ -753,24 +753,24 @@ class X11ServerBase(GTKServerBase):
         prop_del(self.root_window, "_ICC_PROFILE_IN_X_VERSION")
 
 
-    def do_cleanup(self, *args):
+    def do_cleanup(self):
         GTKServerBase.do_cleanup(self)
         cleanup_fakeXinerama()
         self.cleanup_input_devices()
 
 
-    def _process_server_settings(self, proto, packet):
+    def _process_server_settings(self, _proto, packet):
         settings = packet[1]
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
 
-    def update_server_settings(self, settings, reset=False):
+    def update_server_settings(self, _settings, _reset=False):
         #implemented in the X11 xpra server only for now
         #(does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
 
 
-    def _process_force_ungrab(self, proto, packet):
+    def _process_force_ungrab(self, proto, _packet):
         #ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()

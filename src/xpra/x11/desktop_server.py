@@ -299,7 +299,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         add_catchall_receiver("xpra-xkb-event", self)
         X11Keyboard.selectBellNotification(True)
 
-    def do_cleanup(self, *args):
+    def do_cleanup(self):
         X11ServerBase.do_cleanup(self)
         remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
@@ -385,7 +385,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             model.managed_connect("resized", self._window_resized_signaled)
 
 
-    def _window_resized_signaled(self, window, *args):
+    def _window_resized_signaled(self, window):
         #the vfb has been resized
         wid = self._window_to_id[window]
         x, y, w, h = window.get_geometry()
@@ -420,7 +420,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def _set_window_state(self, proto, wid, window, new_window_state):
         if not new_window_state:
             return []
-        metadatalog("set_window_state%s", (wid, window, new_window_state))
+        metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
         changes = []
         #boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
         iconified = new_window_state.get("iconified")
@@ -438,7 +438,7 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
         model = self._id_to_window.get(wid)
         return model.client_window.get_screen().get_number()
 
-    def get_window_position(self, window):
+    def get_window_position(self, _window):
         #we export the whole desktop as a window:
         return 0, 0
 
