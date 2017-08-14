@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.platform.options import add_client_options
-from xpra.util import csv, envbool, DEFAULT_PORT
+from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.os_util import getuid, getgid
 from xpra.scripts.config import OPTION_TYPES, \
     InitException, InitInfo, InitExit, \
