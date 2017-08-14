@@ -35,6 +35,8 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix OpenGL context creation failure message
   * fix duplicate button click events (causing triple clicks with MS Windows servers)
   * fix X11 timetstamp overflow
+  * fix DoS with invalid connections
+  * fix clipboard synchronization crash
   * full quality refresh control command
   * honour window ids when using the control channel to ajust speed and quality
   * ignore dead sockets when enumerating possible X11 displays
@@ -43,7 +45,7 @@ xpra (1.0.7-1) UNRELEASED; urgency=low
   * add missing "meta" modifier to keyboard tools
   * use a smaller initial display size with desktop mode
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 07 Aug 2017 23:45:23 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 14 Aug 2017 14:07:29 +0700
 
 xpra (1.0.6-2) UNRELEASED; urgency=low
   * force rebuild against updated ffmpeg library built with rpath

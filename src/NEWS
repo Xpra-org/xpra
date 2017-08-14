@@ -1,4 +1,4 @@
-v1.0.7 (2017-08-07)
+v1.0.7 (2017-08-14)
 ======================
 	-- fix authentication with unencrypted xor mode
 	-- fix potential symlink attacks when running the proxy server as root
@@ -36,6 +36,8 @@ v1.0.7 (2017-08-07)
 	-- fix OpenGL context creation failure message
 	-- fix duplicate button click events (causing triple clicks with MS Windows servers)
 	-- fix X11 timetstamp overflow
+	-- fix DoS with invalid connections
+	-- fix clipboard synchronization crash
 	-- full quality refresh control command
 	-- honour window ids when using the control channel to ajust speed and quality
 	-- ignore dead sockets when enumerating possible X11 displays
