@@ -1416,7 +1416,7 @@ if WIN32:
                     raise
 
     add_data_files('', glob.glob("win32\\bundle-extra\\*"))
-    add_data_files('', "bell.wav")
+    add_data_files('', ["bell.wav"])
 
     #END OF win32
 #*******************************************************************************
