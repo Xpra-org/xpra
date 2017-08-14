@@ -619,6 +619,7 @@ def get_default_systemd_run():
         #systemd-run is broken in Fedora 26:
         #https://github.com/systemd/systemd/issues/3388
         try:
+            from xpra.os_util import get_linux_distribution
             ld = get_linux_distribution()
             if int(ld[1])>=26:
                 return "no"
