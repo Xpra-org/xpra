@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="XpraWindowButton">
-        <item name="android:layout_width">20dip</item>
-        <item name="android:layout_height">20dip</item>
-        <item name="android:padding">1dip</item>
-    </style>
-</resources>
