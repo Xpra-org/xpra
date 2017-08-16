@@ -664,9 +664,9 @@ def get_default_sink():
             if not s:
                 log("cannot connect to pulseaudio server?")
             else:
-                return "pulsesrc"
+                return "pulsesink"
     except ImportError as e:
-        log("get_default_source() no pulsesrc: %s", e)
+        log("get_default_sink() no pulsesink: %s", e)
     return sinks[0]
 
 
