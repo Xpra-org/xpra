@@ -28,7 +28,7 @@ start() {
 	--bind-tcp=0.0.0.0:$PORT --auth=$AUTH --tcp-auth=$TCP_AUTH --ssl-cert=/etc/xpra/ssl-cert.pem \
 	--socket-permissions=666 --debug=$DEBUG \
 	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR --pidfile=$PIDFILE
-  if [ "$?" == "0" ];then
+  if [ "$?" = "0" ];then
 	echo 'Service started' >&2
   else
   	echo 'Service failed to start' >&2
