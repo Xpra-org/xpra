@@ -12,7 +12,7 @@ from gtk import gdk
 import glib
 import gobject
 import math
-from collections import deque
+from collections import deque, namedtuple
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import AdHocStruct, updict, rindex, envbool, envint
@@ -217,8 +217,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(root.xid)
                     if self.root_overlay:
-                        root_overlay = AdHocStruct()        #ugly: API expects a window object with a ".xid"
-                        root_overlay.xid = self.root_overlay
+                        #ugly: API expects a window object with a ".xid"
+                        X11WindowModel = namedtuple("X11-WindowModel", "xid")
+                        root_overlay = X11WindowModel(xid=self.root_overlay)
                         prop_set(root_overlay, "WM_TITLE", "latin1", u"RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:

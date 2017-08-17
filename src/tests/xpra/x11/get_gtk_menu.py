@@ -41,9 +41,9 @@ def query_menuactions(app_id, bus_name,
     return (aa, wa, am)
 
 def dump_menuactions(display, xid):
-    from xpra.util import AdHocStruct
-    w = AdHocStruct()
-    w.xid = xid
+    from collections import namedtuple
+    window = namedtuple("Window", "w")
+    w = window(xid=xid)
     try:
         props = get_menuaction_props(w)
     except Exception as e:
@@ -67,7 +67,7 @@ def dump_menuactions(display, xid):
                              menu_path,     None, None)
 
 
-def main(args):
+def main(_args):
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("GTK-Menu Info"):

@@ -10,12 +10,13 @@ import ctypes
 from ctypes.wintypes import RECT
 
 from xpra.log import Logger
-from xpra.util import AdHocStruct, envbool, prettify_plug_name
+from xpra.util import envbool, prettify_plug_name
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
 netlog = Logger("network")
 
+from collections import namedtuple
 from xpra.util import XPRA_APP_ID
 from xpra.scripts.config import InitException
 from xpra.codecs.codec_constants import CodecStateException, TransientCodecException
@@ -133,8 +134,8 @@ class Win32RootWindowModel(RootWindowModel):
         self.rectangles = rectangles
         shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
         #notify listeners:
-        pspec = AdHocStruct()
-        pspec.name = "shape"
+        PSpec = namedtuple("PSpec", "name")
+        pspec = PSpec(name="shape")
         for cb, args in self.shape_notify:
             shapelog("refresh_shape() notifying: %s", cb)
             try:

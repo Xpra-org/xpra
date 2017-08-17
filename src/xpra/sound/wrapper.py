@@ -6,13 +6,14 @@
 import os
 import sys
 
+from collections import namedtuple
 from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink, get_default_source, \
                             import_gst, format_element_options, \
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
 from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
-from xpra.util import AdHocStruct, typedict, parse_simple_dict, envint, envbool
+from xpra.util import typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
 log = Logger("sound")
@@ -339,10 +340,10 @@ def start_sending_sound(plugins, sound_source_plugin, device, codec, volume, wan
     log("start_sending_sound%s", (plugins, sound_source_plugin, device, codec, volume, want_monitor_device, remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     try:
         #info about the remote end:
-        remote = AdHocStruct()
-        remote.pulseaudio_server = remote_pulseaudio_server
-        remote.pulseaudio_id = remote_pulseaudio_id
-        remote.remote_decoders = remote_decoders
+        PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")
+        remote = PAInfo(pulseaudio_server=remote_pulseaudio_server,
+                        pulseaudio_id=remote_pulseaudio_id,
+                        remote_decoders=remote_decoders)
         plugin, options = parse_sound_source(plugins, sound_source_plugin, device, want_monitor_device, remote)
         if not plugin:
             log.error("failed to setup '%s' sound stream source", (sound_source_plugin or "auto"))

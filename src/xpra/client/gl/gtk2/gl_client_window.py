@@ -9,9 +9,13 @@ log = Logger("opengl", "window")
 
 import gobject
 
-from xpra.util import AdHocStruct
+from collections import namedtuple
 from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 from xpra.client.gl.gtk2.gl_window_backing import GLPixmapBacking
+
+
+Rectangle = namedtuple("Rectangle", "x,y,w,h")
+DrawEvent = namedtuple("DrawEvent", "area")
 
 
 class GLClientWindow(GTK2WindowBase):
@@ -56,13 +60,7 @@ class GLClientWindow(GTK2WindowBase):
         if not b:
             return
         if b._backing and b.paint_screen:
-            area = AdHocStruct()
-            area.x = x
-            area.y = y
-            area.width = w
-            area.height = h
-            event = AdHocStruct()
-            event.area = area
+            event = DrawEvent(area=Rectangle(x=x, y=y, width=w, height=h))
             b.gl_expose_event(b._backing, event)
 
     def do_expose_event(self, event):

@@ -11,7 +11,8 @@ import urllib
 from xpra.log import Logger
 log = Logger("network", "websocket")
 
-from xpra.util import AdHocStruct, envbool, std
+from collections import namedtuple
+from xpra.util import envbool, std
 from xpra.os_util import memoryview_to_bytes
 from xpra.net.bytestreams import SocketConnection
 from websockify.websocket import WebSocketRequestHandler
@@ -20,6 +21,8 @@ WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
 HTTP_NOCACHE = envbool("XPRA_HTTP_NOCACHE", True)
+
+WSServerConfig = namedtuple("WSServerConfig", "logger,run_once,verbose")
 
 
 class WSRequestHandler(WebSocketRequestHandler):
@@ -32,10 +35,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         self.web_root = web_root
         self._new_websocket_client = new_websocket_client
         self.script_paths = script_paths
-        server = AdHocStruct()
-        server.logger = log
-        server.run_once = True
-        server.verbose = WEBSOCKET_DEBUG
+        server = WSServerConfig(logger=log, run_once=True, verbose=WEBSOCKET_DEBUG)
         WebSocketRequestHandler.__init__(self, sock, addr, server)
 
     def new_websocket_client(self):

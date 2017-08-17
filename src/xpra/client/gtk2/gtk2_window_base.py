@@ -19,10 +19,11 @@ mouselog = Logger("mouse")
 draglog = Logger("dragndrop")
 
 
+from collections import namedtuple
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint, AdHocStruct
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint
 from xpra.os_util import strtobytes
 
 
@@ -37,6 +38,8 @@ except:
 
 def wn(w):
     return WORKSPACE_NAMES.get(w, w)
+
+DrawEvent = namedtuple("DrawEvent", "area")
 
 
 GTK2_OR_TYPE_HINTS = (gdk.WINDOW_TYPE_HINT_DIALOG,
@@ -414,8 +417,7 @@ class GTK2WindowBase(GTKClientWindowBase):
         else:
             #draw directly (bad) to workaround buggy window managers:
             #see: http://xpra.org/trac/ticket/1610
-            event = AdHocStruct()
-            event.area = rect
+            event = DrawEvent(area=rect)
             self.do_expose_event(event)
 
     def do_expose_event(self, event):

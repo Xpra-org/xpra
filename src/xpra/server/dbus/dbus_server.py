@@ -4,9 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections import namedtuple
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
-from xpra.util import parse_scaling_value, from0to100, AdHocStruct
+from xpra.util import parse_scaling_value, from0to100
 import dbus.service
 
 from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
@@ -15,6 +16,8 @@ log = Logger("dbus", "server")
 BUS_NAME = "org.xpra.Server"
 INTERFACE = "org.xpra.Server"
 PATH = "/org/xpra/Server"
+
+Rectangle = namedtuple("Workarea", "x,y,width,height")
 
 
 def n(*args):
@@ -175,8 +178,7 @@ class DBUS_Server(dbus.service.Object):
     @dbus.service.method(INTERFACE, in_signature='iiii')
     def SetWorkarea(self, x, y, w, h):
         self.log(".SetWorkarea%s", (x, y, w, h))
-        workarea = AdHocStruct()
-        workarea.x, workarea.y, workarea.width, workarea.height = ni(x), ni(y), ni(w), ni(h)
+        workarea = Rectangle(x=ni(x), y=ni(y), width=ni(w), height=ni(h))
         self.server.set_workarea(workarea)
 
 

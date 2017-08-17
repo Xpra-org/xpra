@@ -1148,6 +1148,7 @@ class ClientExtras(object):
 
 
 def main():
+    from collections import namedtuple
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
         if "-v" in sys.argv or "--verbose" in sys.argv:
@@ -1165,13 +1166,9 @@ def main():
             log.info("suspend event")
         def resume():
             log.info("resume event")
-        fake_client = AdHocStruct()
-        fake_client._focused = False
-        fake_client.keyboard_grabbed = False
-        fake_client.window_with_grab = None
-        fake_client.suspend = suspend
-        fake_client.resume = resume
-        fake_client.keyboard_helper = None
+        FakeClient = namedtuple("FakeClient", "_focused,keyboard_grabbed,window_with_grab,suspend,resume,keyboard_helper")
+        fake_client = FakeClient(_focused=False, keyboard_grabbed=False, window_with_grab=None,
+                                 suspend=suspend, resume=resume, keyboard_helper=None)
         def signal_quit(*args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit
