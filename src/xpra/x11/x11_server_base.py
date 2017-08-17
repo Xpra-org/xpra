@@ -161,8 +161,8 @@ class X11ServerBase(X11ServerCore):
 
 
     def last_client_exited(self):
-        self.reset_settings(self)
-        X11ServerBase.last_client_exited(self)
+        self.reset_settings()
+        X11ServerCore.last_client_exited(self)
 
     def init_virtual_devices(self, devices):
         #for the time being, we only use the pointer if there is one:
