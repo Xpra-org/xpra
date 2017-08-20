@@ -14,7 +14,7 @@ from xpra.client.gtk2.gtk2_window_base import GTK2WindowBase
 from xpra.client.gl.gtk2.gl_window_backing import GLPixmapBacking
 
 
-Rectangle = namedtuple("Rectangle", "x,y,w,h")
+Rectangle = namedtuple("Rectangle", "x,y,width,height")
 DrawEvent = namedtuple("DrawEvent", "area")
 
 
