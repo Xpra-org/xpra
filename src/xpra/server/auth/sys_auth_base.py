@@ -3,11 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import hmac, binascii
+import binascii
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
-from xpra.net.crypto import get_salt, choose_digest, get_digest_module
+from xpra.net.crypto import get_salt, choose_digest, verify_digest
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("auth")
@@ -65,11 +65,11 @@ class SysAuthenticator(object):
     def check(self, password):
         raise NotImplementedError()
 
-    def authenticate(self, challenge_response, client_salt):
+    def authenticate(self, challenge_response, client_salt=None):
         #this will call check(password)
         return self.authenticate_check(challenge_response, client_salt)
 
-    def authenticate_check(self, challenge_response, client_salt):
+    def authenticate_check(self, challenge_response, client_salt=None):
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
@@ -91,7 +91,7 @@ class SysAuthenticator(object):
             return False
         return ret
 
-    def authenticate_hmac(self, challenge_response, client_salt):
+    def authenticate_hmac(self, challenge_response, client_salt=None):
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
@@ -107,15 +107,7 @@ class SysAuthenticator(object):
             log.error("Error: %s authentication failed", self)
             log.error(" no password defined for '%s'", self.username)
             return False
-        digestmod = get_digest_module(self.digest)
-        if not digestmod:
-            log.error("Error: %s authentication failed", self)
-            log.error(" digest module '%s' is invalid", self.digest)
-            return False
-        verify = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
-        log("%s auth: authenticate(%s) password=%s, hex(salt)=%s, hash=%s", self, challenge_response, password, binascii.hexlify(strtobytes(salt)), verify)
-        if not hmac.compare_digest(verify, challenge_response):
-            log("expected '%s' but got '%s'", verify, challenge_response)
+        if not verify_digest(self.digest, password, salt, challenge_response):
             log.error("Error: hmac password challenge for '%s' does not match", self.username)
             return False
         return True

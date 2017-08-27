@@ -17,13 +17,13 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self):
         return False
 
-    def get_challenge(self, digests):
+    def get_challenge(self, _digests):
         return None
 
     def get_password(self):
         return None
 
-    def authenticate(self, challenge_response, client_salt):
+    def authenticate(self, _challenge_response, _client_salt=None):
         return True
 
     def __repr__(self):

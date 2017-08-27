@@ -91,7 +91,7 @@ class Authenticator(SysAuthenticator):
         #pretend to require a challenge and fail it:
         return self.uid<0
 
-    def authenticate(self, challenge_response, client_salt):
+    def authenticate(self, _challenge_response, _client_salt=None):
         return False
 
     def __repr__(self):

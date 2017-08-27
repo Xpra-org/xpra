@@ -8,12 +8,11 @@
 
 import os
 import binascii
-import hmac
 
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
 from xpra.os_util import strtobytes, POSIX
 from xpra.util import xor, parse_simple_dict
-from xpra.net.crypto import get_digest_module
+from xpra.net.crypto import verify_digest
 
 
 socket_dir = None
@@ -126,7 +125,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         return entry[0]
 
-    def authenticate_hmac(self, challenge_response, client_salt):
+    def authenticate_hmac(self, challenge_response, client_salt=None):
         log("authenticate_hmac(%s, %s)", challenge_response, client_salt)
         self.sessions = None
         if not self.salt:
@@ -145,11 +144,8 @@ class Authenticator(FileAuthenticatorBase):
             return None
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
-        digestmod = get_digest_module(self.digest)
-        verify = hmac.HMAC(strtobytes(fpassword), strtobytes(salt), digestmod=digestmod).hexdigest()
         log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s, hash=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)), verify)
-        if not hmac.compare_digest(verify, challenge_response):
-            log("expected '%s' but got '%s'", verify, challenge_response)
+        if not verify_digest(self.digest, fpassword, salt, challenge_response):
             log.error("Error: hmac password challenge for '%s' does not match", self.username)
             return False
         self.sessions = uid, gid, displays, env_options, session_options

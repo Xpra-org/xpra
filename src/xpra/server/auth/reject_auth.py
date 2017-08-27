@@ -11,7 +11,7 @@ def init(opts):
 
 
 class Authenticator(object):
-    def __init__(self, username, **kwargs):
+    def __init__(self, username, **_kwargs):
         self.username = username
 
     def requires_challenge(self):
@@ -29,7 +29,7 @@ class Authenticator(object):
     def get_password(self):
         return None
 
-    def authenticate(self, challenge_response, client_salt):
+    def authenticate(self, _challenge_response, _client_salt=None):
         return False
 
     def get_sessions(self):

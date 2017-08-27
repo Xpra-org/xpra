@@ -5,8 +5,14 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envint, envbool, csv
+import hmac
+import hashlib
+import binascii
+
+from xpra.util import envint, envbool, csv, xor
 from xpra.log import Logger
+from xpra.os_util import strtobytes, memoryview_to_bytes
+
 log = Logger("network", "crypto")
 
 ENABLE_CRYPTO = envbool("XPRA_ENABLE_CRYPTO", True)
@@ -33,6 +39,13 @@ for x in ALL_PADDING_OPTIONS:
         PADDING_OPTIONS.append(x)
 
 
+try:
+    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+    xor = xor_str
+except Exception as e:
+    log("no accelerated xor: %s", e)
+
+
 ENCRYPTION_CIPHERS = []
 backend = False
 def crypto_backend_init():
@@ -55,8 +68,6 @@ def crypto_backend_init():
     backend = None
 
 def validate_backend(try_backend):
-    import binascii
-    from xpra.os_util import strtobytes
     try_backend.init()
     message = b"some message1234"
     password = "this is our secret"
@@ -82,14 +93,12 @@ def validate_backend(try_backend):
 
 
 def get_digests():
-    import hashlib
     return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
 
 def get_digest_module(digest):
     log("get_digest_module(%s)", digest)
     if not digest or not digest.startswith("hmac"):
         return None
-    import hashlib
     try:
         digest_module = digest.split("+")[1]        #ie: "hmac+sha512" -> "sha512"
     except:
@@ -113,6 +122,31 @@ def choose_digest(options):
     if "xor" in options:
         return "xor"
     raise Exception("no known digest options found in '%s'" % csv(options))
+
+def get_hexdigest(digest, password, salt):
+    assert digest and password and salt
+    if digest=="xor":
+        salt = salt.ljust(16, "\x00")[:len(password)]
+        v = memoryview_to_bytes(xor(password, salt))
+        return binascii.hexlify(v)
+    digestmod = get_digest_module(digest)
+    if not digestmod:
+        log("invalid digest module '%s': %s", digest)
+        return None
+        #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
+    password = strtobytes(password)
+    salt = memoryview_to_bytes(salt)
+    v = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
+    return v
+
+def verify_digest(digest, password, salt, challenge_response):
+    if not password or not salt or not challenge_response:
+        return False
+    verify = get_hexdigest(digest, password, salt)
+    if not hmac.compare_digest(verify, challenge_response):
+        log("expected '%s' but got '%s'", verify, challenge_response)
+        return False
+    return True
 
 
 def pad(padding, size):
@@ -146,10 +180,7 @@ def get_rand_str(l):
     assert l<256, "salt is too long: %i bytes" % l
     #all server versions support a client salt,
     #they also tell us which digest to use:
-    salt = get_hex_uuid()
-    while len(salt)<l:
-        salt += get_hex_uuid()
-    return salt[:l]
+    return os.urandom(l)
 
 def get_salt(l=64):
     return get_rand_str(l)
