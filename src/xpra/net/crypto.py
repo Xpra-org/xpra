@@ -151,7 +151,7 @@ def get_hexdigest(digest, password, salt):
         #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
     password = strtobytes(password)
     salt = memoryview_to_bytes(salt)
-    v = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
+    v = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
     return v
 
 def verify_digest(digest, password, salt, challenge_response):
