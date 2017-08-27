@@ -625,12 +625,12 @@ class WindowSource(object):
         self.scaling_control = max(0, min(100, scaling_control))
         self.reconfigure(True)
 
-    def _fullscreen_changed(self, window, *args):
+    def _fullscreen_changed(self, window, *_args):
         self.fullscreen = self.window.get_property("fullscreen")
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
 
-    def _iconic_changed(self, window, *args):
+    def _iconic_changed(self, window, *_args):
         self.iconic = self.window.get_property("iconic")
         if self.iconic:
             self.go_idle()
@@ -804,25 +804,25 @@ class WindowSource(object):
             return self.get_auto_encoding
         return self.get_current_or_rgb
 
-    def hardcoded_encoding(self, *args):
+    def hardcoded_encoding(self, *_args):
         return HARDCODED_ENCODING
 
-    def encoding_is_mmap(self, *args):
+    def encoding_is_mmap(self, *_args):
         return "mmap"
 
-    def encoding_is_pngL(self, *args):
+    def encoding_is_pngL(self, *_args):
         return "png/L"
 
-    def encoding_is_pngP(self, *args):
+    def encoding_is_pngP(self, *_args):
         return "png/P"
 
-    def encoding_is_rgb32(self, *args):
+    def encoding_is_rgb32(self, *_args):
         return "rgb32"
 
-    def encoding_is_rgb24(self, *args):
+    def encoding_is_rgb24(self, *_args):
         return "rgb24"
 
-    def get_strict_encoding(self, *args):
+    def get_strict_encoding(self, *_args):
         return self.encoding
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
@@ -1235,7 +1235,7 @@ class WindowSource(object):
             log.warn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
-                log.warn(" %6i %s: %3is", seq, ack_data[1], now-ack_data[3])
+                log.warn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
@@ -1500,7 +1500,7 @@ class WindowSource(object):
         """
         self.statistics.encoding_pending[sequence] = (damage_time, w, h)
         try:
-            packet = self.make_data_packet(damage_time, process_damage_time, image, coding, sequence, options, flush)
+            packet = self.make_data_packet(image, coding, sequence, options, flush)
         finally:
             self.free_image_wrapper(image)
             del image
@@ -1779,7 +1779,7 @@ class WindowSource(object):
             self.timeout_add(250, self.full_quality_refresh)
 
 
-    def make_data_packet(self, damage_time, process_damage_time, image, coding, sequence, options, flush):
+    def make_data_packet(self, image, coding, sequence, options, flush):
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'

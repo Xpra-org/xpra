@@ -538,7 +538,7 @@ class WindowVideoSource(WindowSource):
         options = self.get_refresh_options()
         WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
 
-    def get_refresh_subregion_encoding(self, *args):
+    def get_refresh_subregion_encoding(self, *_args):
         ww, wh = self.window_dimensions
         w, h = ww, wh
         vr = self.video_subregion.rectangle
