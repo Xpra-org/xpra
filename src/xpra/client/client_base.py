@@ -25,11 +25,11 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
-from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, get_digest_module, \
+from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, get_hexdigest, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, PYTHON2, strtobytes, bytestostr, memoryview_to_bytes
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, PYTHON2, strtobytes, bytestostr
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -165,12 +165,12 @@ class XpraClientBase(FileTransferHandler):
 
 
     def install_signal_handlers(self):
-        def deadly_signal(signum, frame):
+        def deadly_signal(signum, _frame):
             sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
             sys.stderr.flush()
             self.cleanup()
             os._exit(128 + signum)
-        def app_signal(signum, frame):
+        def app_signal(signum, _frame):
             sys.stderr.write("\ngot signal %s, exiting\n" % SIGNAMES.get(signum, signum))
             sys.stderr.flush()
             signal.signal(signal.SIGINT, deadly_signal)
@@ -217,7 +217,7 @@ class XpraClientBase(FileTransferHandler):
             log("disconnect_and_quit: protocol_closed()")
             self.idle_add(self.quit, exit_code)
         if p:
-            p.flush_then_close(["disconnect", reason], done_callback=protocol_closed)
+            p.send_disconnect([reason], done_callback=protocol_closed)
         self.timeout_add(1000, self.quit, exit_code)
 
     def exit(self):
@@ -232,7 +232,7 @@ class XpraClientBase(FileTransferHandler):
         raise NotImplementedError()
 
     def setup_connection(self, conn):
-        netlog("setup_connection(%s) timeout=%s", conn, conn.timeout)
+        netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
         self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
@@ -513,7 +513,7 @@ class XpraClientBase(FileTransferHandler):
             return
         self.warn_and_quit(e, "server requested disconnect: %s" % s)
 
-    def _process_connection_lost(self, packet):
+    def _process_connection_lost(self, _packet):
         p = self._protocol
         if p and p.input_raw_packetcount==0:
             props = p.get_info()
@@ -555,20 +555,10 @@ class XpraClientBase(FileTransferHandler):
         client_salt = get_salt(len(server_salt))
         #TODO: use some key stretching algorigthm? (meh)
         salt = xor(server_salt, client_salt)
-        if digest.startswith(b"hmac"):
-            import hmac
-            digestmod = get_digest_module(digest)
-            if not digestmod:
-                log("invalid digest module '%s': %s", digest)
-                warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
-                return
-            password = strtobytes(password)
-            salt = memoryview_to_bytes(salt)
-            challenge_response = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
-            authlog("hmac.HMAC(%s, %s)=%s", binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
-        elif digest==b"xor":
-            #don't send XORed password unencrypted:
-            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type")=="ssl"
+
+        #don't send XORed password unencrypted:
+        if digest==b"xor":
+            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
             local = self.display_desc.get("local", False)
             authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
             if local and ALLOW_LOCALHOST_PASSWORDS:
@@ -576,13 +566,12 @@ class XpraClientBase(FileTransferHandler):
             elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
-            salt = salt[:len(password)]
-            challenge_response = memoryview_to_bytes(xor(password, salt))
-        else:
-            warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
+        challenge_response = get_hexdigest(digest, password, salt)
+        if not challenge_response:
+            log("invalid digest module '%s': %s", digest)
+            warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
             return
-        if digest:
-            authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
+        authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
         self.password_sent = True
         self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)
@@ -878,7 +867,7 @@ class XpraClientBase(FileTransferHandler):
         self.quit(EXIT_PACKET_FAILURE)
 
 
-    def process_packet(self, proto, packet):
+    def process_packet(self, _proto, packet):
         try:
             handler = None
             packet_type = packet[0]

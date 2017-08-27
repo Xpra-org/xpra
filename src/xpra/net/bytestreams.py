@@ -98,7 +98,7 @@ def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
             return f(*a, **kw)
         except Exception as e:
             retry = can_retry(e)
-            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry)
+            log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
             if retry:
                 if wait>0:
                     time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
@@ -147,7 +147,7 @@ class Connection(object):
     def untilConcludes(self, *args):
         return untilConcludes(self.is_active, self.can_retry, *args)
 
-    def peek(self, n):
+    def peek(self, _n):
         #not implemented
         return None
 
@@ -277,7 +277,6 @@ class SocketConnection(Connection):
             i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
-        s.settimeout(0)
         #this is more proper but would break the proxy server:
         #s.shutdown(socket.SHUT_RDWR)
         s.close()
@@ -314,7 +313,6 @@ class SocketConnection(Connection):
                 "proto"         : s.proto,
                 "type"          : PROTOCOL_STR.get(s.type, s.type),
                 }
-
 
 try:
     #this wrapper class allows us to override the normal ssl.Socket
