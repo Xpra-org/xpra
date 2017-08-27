@@ -550,7 +550,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         def do_set_shape():
             xid = get_xid(self.get_window())
             x_off, y_off = shape.get("x", 0), shape.get("y", 0)
-            for kind, name in SHAPE_KIND.items():
+            for kind, name in SHAPE_KIND.items():       #@UndefinedVariable
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
                 if rectangles:
                     #adjust for scaling:

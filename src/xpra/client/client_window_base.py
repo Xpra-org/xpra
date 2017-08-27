@@ -492,7 +492,7 @@ class ClientWindowBase(ClientWidgetBase):
         pass
 
 
-    def toggle_debug(self, *args):
+    def toggle_debug(self, *_args):
         b = self._backing
         if not b:
             return
@@ -501,7 +501,7 @@ class ClientWindowBase(ClientWidgetBase):
         else:
             b.paint_box_line_width = b.default_paint_box_line_width
 
-    def increase_quality(self, *args):
+    def increase_quality(self, *_args):
         if self._client.quality>0:
             #change fixed quality:
             self._client.quality = min(100, self._client.quality + 10)
@@ -512,7 +512,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.send_min_quality()
             log("new min-quality=%s", self._client.min_quality)
 
-    def decrease_quality(self, *args):
+    def decrease_quality(self, *_args):
         if self._client.quality>0:
             #change fixed quality:
             self._client.quality = max(1, self._client.quality - 10)
@@ -523,7 +523,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.send_min_quality()
             log("new min-quality=%s", self._client.min_quality)
 
-    def increase_speed(self, *args):
+    def increase_speed(self, *_args):
         if self._client.speed>0:
             #change fixed speed:
             self._client.speed = min(100, self._client.speed + 10)
@@ -534,7 +534,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.send_min_speed()
             log("new min-speed=%s", self._client.min_speed)
 
-    def decrease_speed(self, *args):
+    def decrease_speed(self, *_args):
         if self._client.speed>0:
             #change fixed speed:
             self._client.speed = max(1, self._client.speed - 10)
@@ -545,16 +545,16 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.send_min_speed()
             log("new min-speed=%s", self._client.min_speed)
 
-    def scaleup(self, *args):
+    def scaleup(self, *_args):
         self._client.scaleup()
 
-    def scaledown(self, *args):
+    def scaledown(self, *_args):
         self._client.scaledown()
 
     def scalingoff(self):
         self._client.scalingoff()
 
-    def scalereset(self, *args):
+    def scalereset(self, *_args):
         self._client.scalereset()
 
     def magic_key(self, *args):
@@ -564,7 +564,7 @@ class ClientWindowBase(ClientWidgetBase):
         log("refresh_window(%s) wid=%s", args, self._id)
         self._client.send_refresh(self._id)
 
-    def refresh_all_windows(self, *args):
+    def refresh_all_windows(self, *_args):
         #this method is only here because we may want to fire it
         #from a --key-shortcut action and the event is delivered to
         #the "ClientWindow"
@@ -662,7 +662,7 @@ class ClientWindowBase(ClientWidgetBase):
         return self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
-    def get_mouse_event_wid(self, x, y):
+    def get_mouse_event_wid(self, _x, _y):
         #overriden in GTKClientWindowBase
         return self._id
 

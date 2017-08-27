@@ -39,6 +39,7 @@ scalinglog = Logger("scaling")
 webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 cursorlog = Logger("cursor")
+netlog = Logger("network")
 
 
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -386,7 +387,7 @@ class UIXpraClient(XpraClientBase):
         if self.microphone_allowed and len(mic)==2:
             self.microphone_device = mic[1]
         self.sound_source_plugin = opts.sound_source
-        def sound_option_or_all(*args):
+        def sound_option_or_all(*_args):
             return []
         if self.speaker_allowed or self.microphone_allowed:
             try:
@@ -755,13 +756,13 @@ class UIXpraClient(XpraClientBase):
         self.send_refresh(-1)
 
 
-    def show_about(self, *args):
+    def show_about(self, *_args):
         log.warn("show_about() is not implemented in %s", self)
 
-    def show_session_info(self, *args):
+    def show_session_info(self, *_args):
         log.warn("show_session_info() is not implemented in %s", self)
 
-    def show_bug_report(self, *args):
+    def show_bug_report(self, *_args):
         log.warn("show_bug_report() is not implemented in %s", self)
 
 
@@ -896,7 +897,7 @@ class UIXpraClient(XpraClientBase):
         return None
 
 
-    def show_menu(self, *args):
+    def show_menu(self, *_args):
         if self.menu_helper:
             self.menu_helper.activate()
 
@@ -1697,8 +1698,8 @@ class UIXpraClient(XpraClientBase):
         if FAKE_BROKEN_CONNECTION>0:
             self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
         else:
-            self._server_ok = not FAKE_BROKEN_CONNECTION and self.last_ping_echoed_time>=ping_sent_time
-        log("check_server_echo(%s) last=%s, server_ok=%s", ping_sent_time, last, self._server_ok)
+            self._server_ok = self.last_ping_echoed_time>=ping_sent_time
+        log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
         if last!=self._server_ok and not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
             def timer_redraw():
@@ -1724,7 +1725,7 @@ class UIXpraClient(XpraClientBase):
                 w.spinner(ok)
 
     def check_echo_timeout(self, ping_time):
-        log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
+        netlog("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
             #no point trying to use disconnect_and_quit() to tell the server here..
             self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
@@ -1738,7 +1739,7 @@ class UIXpraClient(XpraClientBase):
             l = [x for _,x in list(self.server_ping_latency)]
             avg = sum(l) / len(l)
             wait = min(5, 1.0+avg*2.0)
-            log("average server latency=%.1f, using max wait %.2fs", 1000.0*avg, wait)
+            netlog("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
         self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
         return True
 
@@ -1751,7 +1752,7 @@ class UIXpraClient(XpraClientBase):
         self.server_load = l1, l2, l3
         if cl>=0:
             self.client_ping_latency.append((monotonic_time(), cl/1000.0))
-        log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
+        netlog("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet):
         echotime = packet[1]
@@ -2458,7 +2459,7 @@ class UIXpraClient(XpraClientBase):
     def start_sound_source(self, device=None):
         soundlog("start_sound_source(%s)", device)
         assert self.sound_source is None
-        def sound_source_state_changed(*args):
+        def sound_source_state_changed(*_args):
             self.emit("microphone-changed")
         #find the matching codecs:
         matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_sound_decoders)
@@ -2796,7 +2797,7 @@ class UIXpraClient(XpraClientBase):
         if self.server_supports_clipboard_enable_selections:
             self.send("clipboard-enable-selections", selections)
 
-    def send_keyboard_sync_enabled_status(self, *args):
+    def send_keyboard_sync_enabled_status(self, *_args):
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
 
 
