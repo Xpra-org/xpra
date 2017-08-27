@@ -102,6 +102,10 @@
 			}
 
 			$(document).ready(function() {
+				if (typeof jQuery == 'undefined') {
+					window.alert("Incomplete Xpra HTML5 client installation: jQuery is missing, cannot continue.");
+					return;
+				}
 				// look at url parameters
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
