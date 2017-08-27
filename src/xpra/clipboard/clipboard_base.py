@@ -78,7 +78,7 @@ def nesting_check():
 
 
 #may get overriden
-def nosanitize_gtkselectiondata(selectiondata):
+def nosanitize_gtkselectiondata(_selectiondata):
     return False
 sanitize_gtkselectiondata = nosanitize_gtkselectiondata
 
@@ -554,7 +554,7 @@ class ClipboardProxy(gtk.Invisible):
     def __repr__(self):
         return  "ClipboardProxy(%s)" % self._selection
 
-    def do_owner_changed(self, *args):
+    def do_owner_changed(self, *_args):
         #an application on our side owns the clipboard selection
         #(they are ready to provide something via the clipboard)
         log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", self._selection, self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
@@ -740,7 +740,7 @@ class ClipboardProxy(gtk.Invisible):
                 glib.idle_add(self.remove_block)
             self.claim()
 
-    def remove_block(self, *args):
+    def remove_block(self, *_args):
         log("remove_block: %s", self._selection)
         self._block_owner_change = False
 
@@ -776,7 +776,7 @@ class ClipboardProxy(gtk.Invisible):
                 self._last_targets = targets or ()
             self._clipboard.request_targets(got_targets)
             return
-        def unpack(clipboard, selection_data, user_data):
+        def unpack(clipboard, selection_data, _user_data):
             log("unpack %s: %s", clipboard, type(selection_data))
             global sanitize_gtkselectiondata
             if selection_data and sanitize_gtkselectiondata(selection_data):

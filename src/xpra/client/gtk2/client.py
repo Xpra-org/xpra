@@ -251,7 +251,7 @@ class XpraClient(GTKXpraClient):
                         clipboardlog("compress_clipboard() compressing %s", v)
                         return self.compressed_wrapper(v.datatype, v.data)
                     v.compress = compress_clipboard
-            self.send(*packet)
+            self.send_now(*packet)
         def clipboard_progress(local_requests, remote_requests):
             clipboardlog("clipboard_progress(%s, %s)", local_requests, remote_requests)
             if local_requests is not None:
@@ -260,8 +260,8 @@ class XpraClient(GTKXpraClient):
                 self.remote_clipboard_requests = remote_requests
             n = self.local_clipboard_requests+self.remote_clipboard_requests
             self.clipboard_notify(n)
-        def register_clipboard_toggled(*args):
-            def clipboard_toggled(*targs):
+        def register_clipboard_toggled(*_args):
+            def clipboard_toggled(*_args):
                 #reset tray icon:
                 self.local_clipboard_requests = 0
                 self.remote_clipboard_requests = 0
