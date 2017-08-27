@@ -12,12 +12,13 @@ log = Logger("shadow")
 from xpra.net.compression import Compressed
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.server.rfb.rfb_server import RFBServer
 from xpra.util import envint, DONE
 
 REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 
 
-class ShadowServerBase(object):
+class ShadowServerBase(RFBServer):
 
     def __init__(self, root_window):
         self.root = root_window
@@ -29,6 +30,7 @@ class ShadowServerBase(object):
         self.timer = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
+        RFBServer.init(self)
 
     def cleanup(self):
         self.stop_refresh()
@@ -52,16 +54,16 @@ class ShadowServerBase(object):
         else:
             log.info(" on display of size %ix%i", w, h)
 
-    def make_hello(self, source):
+    def make_hello(self, _source):
         return {"shadow" : True}
 
-    def get_info(self, proto=None):
+    def get_info(self, _proto=None):
         if self.root_window_model:
             return {"root-window" : self.root_window_model.get_info()}
         return {}
 
 
-    def get_window_position(self, window):
+    def get_window_position(self, _window):
         #we export the whole desktop as a window:
         return 0, 0
 
@@ -113,7 +115,7 @@ class ShadowServerBase(object):
 
     ############################################################################
 
-    def sanity_checks(self, proto, c):
+    def sanity_checks(self, _proto, c):
         server_uuid = c.strget("server_uuid")
         if server_uuid:
             if server_uuid==self.uuid:
@@ -144,7 +146,7 @@ class ShadowServerBase(object):
         """ don't override the existing desktop """
         pass
 
-    def set_keymap(self, server_source, force=False):
+    def set_keymap(self, server_source, _force=False):
         log.info("shadow server: setting default keymap translation")
         self.keyboard_config = server_source.set_default_keymap()
 

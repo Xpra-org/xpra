@@ -720,7 +720,7 @@ class X11ServerCore(GTKServerBase):
             self.do_process_mouse_common(proto, wid, pointer)
             self.pointer_device.wheel_motion(button, distance/1000.0)
 
-    def _move_pointer(self, wid, pos, deviceid, *args):
+    def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
         screen_no = self.get_screen_number(wid)
         device = self.pointer_device

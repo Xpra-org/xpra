@@ -93,7 +93,14 @@ def validate_backend(try_backend):
 
 
 def get_digests():
-    return ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+    try:
+        from xpra.net import d3des
+        assert d3des
+        digests.append("des")
+    except:
+        pass
+    return digests
 
 def get_digest_module(digest):
     log("get_digest_module(%s)", digest)
@@ -121,11 +128,19 @@ def choose_digest(options):
         return "hmac"
     if "xor" in options:
         return "xor"
+    if "des" in options:
+        return "des"
     raise Exception("no known digest options found in '%s'" % csv(options))
 
 def get_hexdigest(digest, password, salt):
     assert digest and password and salt
-    if digest=="xor":
+    if digest=="des":
+        from xpra.net.d3des import generate_response
+        password = password.ljust(8, "\x00")[:8]
+        salt = salt.ljust(16, "\x00")[:16]
+        v = generate_response(password, salt)
+        return binascii.hexlify(v)
+    elif digest=="xor":
         salt = salt.ljust(16, "\x00")[:len(password)]
         v = memoryview_to_bytes(xor(password, salt))
         return binascii.hexlify(v)

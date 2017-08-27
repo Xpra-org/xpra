@@ -141,13 +141,7 @@ class ServerCore(object):
     def __init__(self):
         log("ServerCore.__init__()")
         self.start_time = monotonic_time()
-        self.auth_class = None
-        self.tcp_auth_class = None
-        self.ws_auth_class = None
-        self.wss_auth_class = None
-        self.ssl_auth_class = None
-        self.rfb_auth_class = None
-        self.vsock_auth_class = None
+        self.auth_classes = {}
         self._when_ready = []
         self.child_reaper = None
         self.original_desktop_display = None
@@ -286,15 +280,15 @@ class ServerCore(object):
             self._tcp_proxy = False
 
     def init_auth(self, opts):
-        self.auth_class = self.get_auth_module("unix-domain", opts.auth, opts)
-        self.tcp_auth_class = self.get_auth_module("tcp", opts.tcp_auth or opts.auth, opts)
-        self.ws_auth_class = self.get_auth_module("ws", opts.ws_auth, opts)
-        self.wss_auth_class = self.get_auth_module("wss", opts.wss_auth, opts)
-        self.ssl_auth_class = self.get_auth_module("ssl", opts.ssl_auth or opts.tcp_auth or opts.auth, opts)
-        self.rfb_auth_class = self.get_auth_module("rfb", opts.rfb_auth, opts)
-        self.vsock_auth_class = self.get_auth_module("vsock", opts.vsock_auth, opts)
-        authlog("init_auth(..) auth=%s, tcp auth=%s, ws auth=%s, wss auth=%s, ssl auth=%s, vsock auth=%s",
-                self.auth_class, self.tcp_auth_class, self.ws_auth_class, self.wss_auth_class, self.ssl_auth_class, self.vsock_auth_class)
+        auth = self.get_auth_module("local-auth", opts.auth, opts)
+        if WIN32:
+            self.auth_classes["named-pipes"] = auth
+        else:
+            self.auth_classes["unix-domain"] = auth
+        for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock"):
+            opts_value = getattr(opts, "%s_auth" % x)
+            self.auth_classes[x] = self.get_auth_module(x, opts_value, opts)
+        authlog("init_auth(..) auth=%s", self.auth_classes)
 
     def get_auth_module(self, socket_type, auth_str, opts):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
@@ -408,7 +402,7 @@ class ServerCore(object):
     def reaper_exit(self):
         self.clean_quit()
 
-    def signal_quit(self, signum, frame):
+    def signal_quit(self, signum, _frame):
         sys.stdout.write("\n")
         sys.stdout.flush()
         self._closing = True
@@ -524,7 +518,7 @@ class ServerCore(object):
     def do_run(self):
         raise NotImplementedError()
 
-    def cleanup(self, *args):
+    def cleanup(self, *_args):
         netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
         for p in list(self._tcp_proxy_clients):
             p.quit()
@@ -763,34 +757,22 @@ class ServerCore(object):
         netlog("make_protocol(%s, %s)", socktype, conn)
         socktype = socktype.lower()
         protocol = protocol_class(conn)
+        protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.challenge_sent = False
         protocol.authenticator = None
         protocol.encryption = None
         protocol.keyfile = None
         if socktype=="tcp":
-            protocol.auth_class = self.tcp_auth_class
+            #special case for legacy encryption code:
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
             if protocol.encryption and ENCRYPT_FIRST_PACKET:
                 authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
                 password = self.get_encryption_key(None, protocol.keyfile)
                 protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
-        elif socktype=="ssl":
-            protocol.auth_class = self.ssl_auth_class
-        elif socktype=="ws":
-            protocol.auth_class = self.ws_auth_class
-        elif socktype=="wss":
-            protocol.auth_class = self.wss_auth_class
-        elif socktype=="rfb":
-            protocol.auth_class = self.rfb_auth_class
-        elif socktype=="vsock":
-            protocol.auth_class = self.vsock_auth_class
-        else:
-            protocol.auth_class = self.auth_class
-        protocol.socket_type = socktype
         protocol.invalid_header = self.invalid_header
-        authlog("socktype=%s, auth class=%s, encryption=%s, keyfile=%s", socktype, protocol.auth_class, protocol.encryption, protocol.keyfile)
+        authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
         self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
         return protocol
@@ -850,7 +832,8 @@ class ServerCore(object):
         return True, conn, peek_data
 
     def invalid_header(self, proto, data, msg=""):
-        netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s", proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
+        netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
+               proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_server_socket))
         err = "invalid packet format, %s" % self.guess_header_protocol(data)
         proto.gibberish(err, data)
 
@@ -999,11 +982,11 @@ class ServerCore(object):
             log.error("connection timedout: %s", protocol)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
-    def send_disconnect(self, proto, reason, *extra):
-        netlog("send_disconnect(%s, %s, %s)", proto, reason, extra)
+    def send_disconnect(self, proto, *reasons):
+        netlog("send_disconnect(%s, %s)", proto, reasons)
         if proto._closed:
             return
-        proto.send_now(["disconnect", reason]+list(extra))
+        proto.send_disconnect(*reasons)
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
@@ -1015,18 +998,18 @@ class ServerCore(object):
         if protocol and not protocol._closed:
             self.disconnect_protocol(protocol, reason, *extra)
 
-    def disconnect_protocol(self, protocol, reason, *extra):
-        netlog("disconnect_protocol(%s, %s, %s)", protocol, reason, extra)
-        i = str(reason)
-        if extra:
-            i += " (%s)" % extra
+    def disconnect_protocol(self, protocol, *reasons):
+        netlog("disconnect_protocol(%s, %s)", protocol, reasons)
+        i = str(reasons[0])
+        if len(reasons)>1:
+            i += " (%s)" % csv(reasons[1:])
         try:
             proto_info = " %s" % protocol._conn.get_info().get("endpoint")
         except:
             proto_info = " %s" % protocol
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
         self._log_disconnect(protocol, " %s", i)
-        protocol.flush_then_close(["disconnect", reason]+list(extra))
+        protocol.send_disconnect(reasons)
 
 
     def _process_disconnect(self, proto, packet):
@@ -1038,10 +1021,10 @@ class ServerCore(object):
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
         self.disconnect_protocol(proto, CLIENT_REQUEST)
 
-    def _log_disconnect(self, proto, *args):
+    def _log_disconnect(self, _proto, *args):
         netlog.info(*args)
 
-    def _disconnect_proto_info(self, proto):
+    def _disconnect_proto_info(self, _proto):
         #overriden in server_base in case there is more than one protocol
         return ""
 
@@ -1097,21 +1080,21 @@ class ServerCore(object):
                 #call from UI thread:
                 self.idle_add(self.handle_command_request, proto, *command_req)
                 return
-            #continue processing hello packet:
-            try:
-                if SIMULATE_SERVER_HELLO_ERROR:
-                    raise Exception("Simulating a server error")
-                self.hello_oked(proto, packet, c, auth_caps)
-            except ClientException as e:
-                log.error("Error setting up new connection for")
-                log.error(" %s:", proto)
-                log.error(" %s", e)
-                self.disconnect_client(proto, SERVER_ERROR, str(e))
-            except Exception as e:
-                #log exception but don't disclose internal details to the client
-                log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
-                self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
+            #continue processing hello packet in UI thread:
+            self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
 
+    def make_authenticator(self, socktype, username, conn):
+        authlog("make_authenticator%s", (socktype, username, conn))
+        authenticator = None
+        auth_class = self.auth_classes[socktype]
+        if auth_class:
+            authlog("creating authenticator %s for %s, with username=%s, connection=%s", auth_class, socktype, username, conn)
+            auth, aclass, options = auth_class
+            opts = dict(options)
+            opts["connection"] = conn
+            authenticator = aclass(username, **opts)
+            authlog("authenticator: %s(%s, %s)=%s", auth, username, opts, authenticator)
+        return authenticator
 
     def verify_hello(self, proto, c):
         remote_version = c.strget("version")
@@ -1119,7 +1102,7 @@ class ServerCore(object):
         if verr is not None:
             self.disconnect_client(proto, VERSION_ERROR, "incompatible version: %s" % verr)
             proto.close()
-            return  False
+            return False
 
         def auth_failed(msg):
             authlog.error("Error: authentication failed")
@@ -1127,19 +1110,13 @@ class ServerCore(object):
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
         #authenticator:
-        username = c.strget("username")
-        if proto.authenticator is None and proto.auth_class:
-            authlog("creating authenticator %s with username=%s", proto.auth_class, username)
+        if not proto.authenticator:
+            username = c.strget("username")
             try:
-                auth, aclass, options = proto.auth_class
-                opts = dict(options)
-                opts["connection"] = proto._conn
-                ainstance = aclass(username, **opts)
-                proto.authenticator = ainstance
-                authlog("authenticator: %s(%s, %s)=%s", auth, username, opts, ainstance)
+                proto.authenticator = self.make_authenticator(proto.socket_type, username, proto._conn)
             except Exception as e:
-                authlog("instantiating authenticator for %s", proto, exc_info=True)
-                authlog.error("Error instantiating %s:", proto.auth_class)
+                authlog("instantiating authenticator for %s", proto.socket_type, exc_info=True)
+                authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
                 authlog.error(" %s", e)
                 auth_failed("authentication failed")
                 return False
@@ -1246,7 +1223,22 @@ class ServerCore(object):
             v = authenticator.get_password()
         return v
 
-    def hello_oked(self, proto, packet, c, auth_caps):
+    def call_hello_oked(self, proto, packet, c, auth_caps):
+        try:
+            if SIMULATE_SERVER_HELLO_ERROR:
+                raise Exception("Simulating a server error")
+            self.hello_oked(proto, packet, c, auth_caps)
+        except ClientException as e:
+            log.error("Error setting up new connection for")
+            log.error(" %s:", proto)
+            log.error(" %s", e)
+            self.disconnect_client(proto, SERVER_ERROR, str(e))
+        except Exception as e:
+            #log exception but don't disclose internal details to the client
+            log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
+            self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
+
+    def hello_oked(self, proto, _packet, c, _auth_caps):
         ctr = c.strget("connect_test_request")
         if ctr:
             response = {"connect_test_response" : ctr}
@@ -1384,14 +1376,14 @@ class ServerCore(object):
             callback(proto, ui_info)
         start_thread(in_thread, "Info", daemon=True)
 
-    def get_ui_info(self, proto, *args):
+    def get_ui_info(self, _proto, *_args):
         #this function is for info which MUST be collected from the UI thread
         return {}
 
     def get_thread_info(self, proto):
         return get_thread_info(proto)
 
-    def get_info(self, proto, *args):
+    def get_info(self, proto, *_args):
         start = monotonic_time()
         #this function is for non UI thread info
         info = {}
@@ -1441,12 +1433,7 @@ class ServerCore(object):
         for socktype, _, info in self._socket_info:
             if info:
                 si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
-        for socktype, auth_class in {
-                                     "tcp"          : self.tcp_auth_class,
-                                     "ssl"          : self.ssl_auth_class,
-                                     "unix-domain"  : self.auth_class,
-                                     "vsock"        : self.vsock_auth_class,
-                                     }.items():
+        for socktype, auth_class in self.auth_classes.items():
             if auth_class:
                 si.setdefault(socktype, {})["authenticator"] = auth_class[0], auth_class[2]
         return si
@@ -1470,6 +1457,7 @@ class ServerCore(object):
             raise
         except:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s", packet_type, handler, exc_info=True)
+
 
     def handle_rfb_connection(self, conn):
         log.error("Error: RFB protocol is not supported by this server")

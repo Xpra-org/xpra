@@ -59,7 +59,32 @@ def sanity_checks():
     packet_encoding_sanity_checks()
 
 
+def exit_queue():
+    queue = Queue()
+    for _ in range(10):     #just 2 should be enough!
+        queue.put(None)
+    return queue
+
+def force_flush_queue(q):
+    try:
+        #discard all elements in the old queue and push the None marker:
+        try:
+            while q.qsize()>0:
+                q.read(False)
+        except:
+            pass
+        q.put_nowait(None)
+    except:
+        pass
+
+
 class Protocol(object):
+    """
+        This class handles sending and receiving packets,
+        it will encode and compress them before sending,
+        and decompress and decode when receiving.
+    """
+
     CONNECTION_LOST = "connection-lost"
     GIBBERISH = "gibberish"
     INVALID = "invalid"
@@ -72,6 +97,7 @@ class Protocol(object):
         assert conn is not None
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
+        self.source_remove = scheduler.source_remove
         self._conn = conn
         if FAKE_JITTER>0:
             from xpra.net.fake_jitter import FakeJitter
@@ -81,6 +107,7 @@ class Protocol(object):
             self._process_packet_cb = process_packet_cb
         self._write_queue = Queue(1)
         self._read_queue = Queue(20)
+        self._process_read = self.read_queue_put
         self._read_queue_put = self.read_queue_put
         # Invariant: if .source is None, then _source_has_more == False
         self._get_packet_cb = get_packet_cb
@@ -139,13 +166,14 @@ class Protocol(object):
         self.enable_encoder(self.encoder)
 
     def wait_for_io_threads_exit(self, timeout=None):
-        for t in (self._read_thread, self._write_thread):
-            if t and t.isAlive():
+        io_threads = [x for x in (self._read_thread, self._write_thread) if x is not None]
+        for t in io_threads:
+            if t.isAlive():
                 t.join(timeout)
         exited = True
         cinfo = self._conn or "cleared connection"
-        for t in (self._read_thread, self._write_thread):
-            if t and t.isAlive():
+        for t in io_threads:
+            if t.isAlive():
                 log.warn("Warning: %s thread of %s is still alive (timeout=%s)", t.name, cinfo, timeout)
                 exited = False
         return exited
@@ -238,6 +266,10 @@ class Protocol(object):
         self.idle_add(start_network_read_thread)
         if SEND_INVALID_PACKET:
             self.timeout_add(SEND_INVALID_PACKET*1000, self.raw_write, SEND_INVALID_PACKET_DATA)
+
+
+    def send_disconnect(self, reasons, done_callback=None):
+        self.flush_then_close(["disconnect"]+list(reasons), done_callback=done_callback)
 
     def send_now(self, packet):
         if self._closed:
@@ -333,15 +365,15 @@ class Protocol(object):
                 if type(data) not in JOIN_TYPES:
                     data = memoryview_to_bytes(data)
                 header_and_data = pack_header(proto_flags, level, index, payload_size) + data
-                items.append((header_and_data, scb, ecb))
+                items.append(header_and_data)
             else:
                 header = pack_header(proto_flags, level, index, payload_size)
-                items.append((header, scb, None))
-                items.append((data, None, ecb))
+                items.append(header)
+                items.append(data)
             counter += 1
         if self._write_thread is None:
             self.start_write_thread()
-        self._write_queue.put(items)
+        self._write_queue.put((items, scb, ecb))
         self.output_packetcount += 1
 
     def start_write_thread(self):
@@ -539,6 +571,7 @@ class Protocol(object):
         assert level>=0 and level<=10, "invalid compression level: %s (must be between 0 and 10" % level
         self.compression_level = level
 
+
     def _io_thread_loop(self, name, callback):
         try:
             log("io_thread_loop(%s, %s) loop starting", name, callback)
@@ -559,6 +592,7 @@ class Protocol(object):
                 log.error("Error: %s on %s failed: %s", name, self._conn, type(e), exc_info=True)
                 self.close()
 
+
     def _write_thread_loop(self):
         self._io_thread_loop("write", self._write)
     def _write(self):
@@ -568,16 +602,32 @@ class Protocol(object):
             log("write thread: empty marker, exiting")
             self.close()
             return False
-        for buf, start_cb, end_cb in items:
-            con = self._conn
-            if not con:
-                return False
-            if start_cb:
-                try:
-                    start_cb(con.output_bytecount)
-                except:
-                    if not self._closed:
-                        log.error("Error on write start callback %s", start_cb, exc_info=True)
+        return self.write_items(*items)
+
+    def write_items(self, buf_data, start_cb=None, end_cb=None):
+        con = self._conn
+        if not con:
+            return False
+        if start_cb:
+            try:
+                start_cb(con.output_bytecount)
+            except:
+                if not self._closed:
+                    log.error("Error on write start callback %s", start_cb, exc_info=True)
+        self.write_buffers(buf_data)
+        if end_cb:
+            try:
+                end_cb(self._conn.output_bytecount)
+            except:
+                if not self._closed:
+                    log.error("Error on write end callback %s", end_cb, exc_info=True)
+        return True
+
+    def write_buffers(self, buf_data):
+        con = self._conn
+        if not con:
+            return 0
+        for buf in buf_data:
             while buf and not self._closed:
                 written = con.write(buf)
                 #example test code, for sending small chunks very slowly:
@@ -587,13 +637,8 @@ class Protocol(object):
                 if written:
                     buf = buf[written:]
                     self.output_raw_packetcount += 1
-            if end_cb:
-                try:
-                    end_cb(self._conn.output_bytecount)
-                except:
-                    if not self._closed:
-                        log.error("Error on write end callback %s", end_cb, exc_info=True)
-        return True
+        self.output_packetcount += 1
+
 
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
@@ -601,7 +646,7 @@ class Protocol(object):
         buf = self._conn.read(READ_BUFFER_SIZE)
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         #add to the read queue (or whatever takes its place - see steal_connection)
-        self._read_queue_put(buf)
+        self._process_read(buf)
         if not buf:
             log("read thread: eof")
             #give time to the parse thread to call close itself
@@ -646,12 +691,15 @@ class Protocol(object):
     def _invalid_header(self, data, msg=""):
         self.invalid_header(self, data, msg)
 
-    def invalid_header(self, proto, data, msg="invalid packet header"):
+    def invalid_header(self, _proto, data, msg="invalid packet header"):
         err = "%s: '%s'" % (msg, binascii.hexlify(data[:8]))
         if len(data)>1:
             err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
+
+    def process_read(self, data):
+        self._read_queue_put(data)
 
     def read_queue_put(self, data):
         #start the parse thread if needed:
@@ -660,12 +708,14 @@ class Protocol(object):
                 log("empty marker in read queue, exiting")
                 self.idle_add(self.close)
                 return
-            self._read_parser_thread = make_thread(self._read_parse_thread_loop, "parse", daemon=True)
-            self._read_parser_thread.start()
+            self.start_read_parser_thread()
         self._read_queue.put(data)
         #from now on, take shortcut:
         if self._read_queue_put==self.read_queue_put:
             self._read_queue_put = self._read_queue.put
+
+    def start_read_parser_thread(self):
+        self._read_parser_thread = start_thread(self._read_parse_thread_loop, "parse", daemon=True)
 
     def _read_parse_thread_loop(self):
         log("read_parse_thread_loop starting")
@@ -911,7 +961,7 @@ class Protocol(object):
                         close_and_release()
                         return False
                     return not self._closed     #run until we manage to close (here or via the timeout)
-                def packet_queued(*args):
+                def packet_queued(*_args):
                     #if we're here, we have the lock and the packet is in the write queue
                     log("flush_then_close: packet_queued() closed=%s", self._closed)
                     if wait_for_packet_sent():
@@ -952,21 +1002,21 @@ class Protocol(object):
         self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         c = self._conn
         if c:
+            self._conn = None
             try:
                 log("Protocol.close() calling %s", c.close)
                 c.close()
-                if self._log_stats is None and self._conn.input_bytecount==0 and self._conn.output_bytecount==0:
+                if self._log_stats is None and c.input_bytecount==0 and c.output_bytecount==0:
                     #no data sent or received, skip logging of stats:
                     self._log_stats = False
                 if self._log_stats:
                     from xpra.simple_stats import std_unit, std_unit_dec
                     log.info("connection closed after %s packets received (%s bytes) and %s packets sent (%s bytes)",
-                         std_unit(self.input_packetcount), std_unit_dec(self._conn.input_bytecount),
-                         std_unit(self.output_packetcount), std_unit_dec(self._conn.output_bytecount)
+                         std_unit(self.input_packetcount), std_unit_dec(c.input_bytecount),
+                         std_unit(self.output_packetcount), std_unit_dec(c.output_bytecount)
                          )
             except:
-                log.error("error closing %s", self._conn, exc_info=True)
-            self._conn = None
+                log.error("error closing %s", c, exc_info=True)
         self.terminate_queue_threads()
         self.idle_add(self.clean)
         log("Protocol.close() done")
@@ -1007,32 +1057,13 @@ class Protocol(object):
         self._get_packet_cb = None
         self._source_has_more.set()
         #make all the queue based threads exit by adding the empty marker:
-        exit_queue = Queue()
-        for _ in range(10):     #just 2 should be enough!
-            exit_queue.put(None)
-        try:
-            owq = self._write_queue
-            self._write_queue = exit_queue
-            #discard all elements in the old queue and push the None marker:
-            try:
-                while owq.qsize()>0:
-                    owq.read(False)
-            except:
-                pass
-            owq.put_nowait(None)
-        except:
-            pass
-        try:
-            orq = self._read_queue
-            self._read_queue = exit_queue
-            #discard all elements in the old queue and push the None marker:
-            try:
-                while orq.qsize()>0:
-                    orq.read(False)
-            except:
-                pass
-            orq.put_nowait(None)
-        except:
-            pass
+        #write queue:
+        owq = self._write_queue
+        self._write_queue = exit_queue()
+        force_flush_queue(owq)
+        #read queue:
+        orq = self._read_queue
+        self._read_queue = exit_queue()
+        force_flush_queue(orq)
         #just in case the read thread is waiting again:
         self._source_has_more.set()

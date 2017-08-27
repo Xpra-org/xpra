@@ -145,6 +145,7 @@ if "--minimal" in sys.argv:
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       #shadow servers use some GTK2 code..
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
+rfb_ENABLED = server_ENABLED
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
@@ -224,7 +225,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "sound", "opengl", "printing", "webcam",
             "rebuild",
             "annotate", "warn", "strict",
-            "shadow", "proxy",
+            "shadow", "proxy", "rfb",
             "debug", "PIC",
             "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests"]
 if WIN32:
@@ -1643,6 +1644,7 @@ cython_add(Extension("xpra.buffers.membuf",
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
 toggle_packages(server_ENABLED or proxy_ENABLED or shadow_ENABLED, "xpra.server", "xpra.server.auth")
+toggle_packages(rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")

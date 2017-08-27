@@ -8,13 +8,12 @@ import os
 import gtk.gdk
 import gobject
 import socket
-import struct
-from threading import Event
 
-from xpra.util import updict, log_screen_sizes, envbool, nonl
-from xpra.os_util import get_generic_os_name, memoryview_to_bytes
+from xpra.util import updict, log_screen_sizes, envbool
+from xpra.os_util import get_generic_os_name
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
+from xpra.server.rfb.rfb_server import RFBServer
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import xswallow
@@ -47,7 +46,6 @@ settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
-rfblog = Logger("rfb")
 
 glib = import_glib()
 
@@ -274,7 +272,7 @@ gobject.type_register(DesktopModel)
     A server class for RFB / VNC-like desktop displays,
     used with the "start-desktop" subcommand.
 """
-class XpraDesktopServer(gobject.GObject, X11ServerBase):
+class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     __gsignals__ = {
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
@@ -284,6 +282,10 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
     def __init__(self):
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
+
+    def init(self, opts):
+        X11ServerBase.init(self, opts)
+        RFBServer.init(self)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -566,204 +568,5 @@ class XpraDesktopServer(gobject.GObject, X11ServerBase):
             offset_x += w
             offset_y += 0
         return self.make_screenshot_packet_from_regions(regions)
-
-
-    def _get_rfb_desktop_model(self):
-        models = self._window_to_id.keys()
-        if len(models)!=1:
-            rfblog.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
-            return None
-        return models[0]
-
-    def _get_rfb_desktop_wid(self):
-        ids = self._window_to_id.values()
-        if len(ids)!=1:
-            rfblog.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
-            return None
-        return ids[0]
-
-    def handle_rfb_connection(self, conn):
-        model = self._get_rfb_desktop_model()
-        if not model:
-            conn.close()
-            return
-        from xpra.net.rfb import RFBProtocol
-        def rfb_protocol_class(conn):
-            return RFBProtocol(self, conn, self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
-        p = self.do_make_protocol("rfb", conn, rfb_protocol_class)
-        p.send_protocol_handshake()
-
-    def get_rfb_pixelformat(self):
-        model = self._get_rfb_desktop_model()
-        w, h = model.get_dimensions()
-        return w, h, 32, 32, False, True, 255, 255, 255, 16, 8, 0
-
-    def process_rfb_packet(self, proto, packet):
-        rfblog("RFB packet: '%s'", nonl(packet))
-        fn_name = "_process_rfb_%s" % packet[0]
-        fn = getattr(self, fn_name, None)
-        if not fn:
-            rfblog.warn("Warning: no RFB handler for %s", fn_name)
-            return
-        self.idle_add(fn, proto, packet)
-
-    def _process_rfb_invalid(self, proto, packet):
-        self.disconnect_protocol(proto, "invalid packet: %s" % (packet[1:]))
-
-    def _process_rfb_gibberish(self, proto, packet):
-        self.disconnect_protocol(proto, "invalid packet: %s" % (packet[1:]))
-
-    def _process_rfb_authenticated(self, proto, _packet):
-        model = self._get_rfb_desktop_model()
-        if not model:
-            proto.close()
-            return
-        self.rfb_init()
-        self.accept_protocol(proto)
-        #use blocking sockets from now on:
-        from xpra.net.bytestreams import set_socket_timeout
-        set_socket_timeout(proto._conn, None)
-        source = RFBSource(proto, self._window_to_id.keys()[0])
-        self._server_sources[proto] = source
-        w, h = model.get_dimensions()
-        source.damage(self._window_to_id[model], model, 0, 0, w, h)
-
-    def rfb_init(self):
-        self.rfb_buttons = 0
-        self.x11_keycodes_for_keysym = {}
-        x11_keycodes = X11Keyboard.get_keycode_mappings()
-        for keycode, keysyms in x11_keycodes.items():
-            for keysym in keysyms:
-                self.x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
-        rfblog("x11_keycodes_for_keysym=%s", self.x11_keycodes_for_keysym)
-
-    def _process_rfb_PointerEvent(self, _proto, packet):
-        buttons, x, y = packet[1:4]
-        wid = self._get_rfb_desktop_wid()
-        self._move_pointer(wid, (x, y))
-        if buttons!=self.rfb_buttons:
-            #figure out which buttons have changed:
-            for button in range(8):
-                mask = 2**button
-                if buttons & mask != self.rfb_buttons & mask:
-                    pressed = bool(buttons & mask)
-                    self.button_action(1+button, pressed, -1)
-            self.rfb_buttons = buttons
-
-    def _process_rfb_KeyEvent(self, _proto, packet):
-        pressed, _, _, key = packet[1:5]
-        wid = self._get_rfb_desktop_wid()
-        keyval = 0
-        name = RFB_KEYNAMES.get(key) or chr(key)
-        keycode = 0
-        keycodes = self.x11_keycodes_for_keysym.get(name, 0)
-        rfblog("keycodes(%s)=%s", name, keycodes)
-        if keycodes:
-            keycode = keycodes[0]
-            modifiers = []
-            self._handle_key(wid, bool(pressed), name, keyval, keycode, modifiers)
-
-    def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
-        #pressed, _, _, keycode = packet[1:5]
-        inc, x, y, w, h = packet[1:6]
-        if not inc:
-            model = self._get_rfb_desktop_model()
-            self._damage(model, x, y, w, h)
-
-    def _process_rfb_ClientCutText(self, _proto, packet):
-        #l = packet[4]
-        text = packet[5]
-        rfblog("got rfb clipboard text: %s", nonl(text))
-
-
-RFB_KEYNAMES = {
-    0xff08      : "BackSpace",
-    0xff09      : "Tab",
-    0xff0d      : "Return",
-    0xff1b      : "Escape",
-    0xff63      : "Insert",
-    0xffff      : "Delete",
-    0xff50      : "Home",
-    0xff57      : "End",
-    0xff55      : "PageUp",
-    0xff56      : "PageDown",
-    0xff51      : "Left",
-    0xff52      : "Up",
-    0xff53      : "Right",
-    0xff54      : "Down",
-    0xffe1      : "Shift_L",
-    0xffe2      : "Shift_R",
-    0xffe3      : "Control_L",
-    0xffe4      : "Control_R",
-    0xffe7      : "Meta_L",
-    0xffe8      : "Meta_R",
-    0xffe9      : "Alt_L",
-    0xffea      : "Alt_R",
-    }
-for i in range(1, 13):
-    RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i
-
-
-class RFBSource(object):
-
-    def __init__(self, protocol, desktop):
-        self.protocol = protocol
-        self.desktop = desktop
-        self.close_event = Event()
-        self.log_disconnect = True
-        self.ui_client = True
-        self.counter = 0
-        self.uuid = "todo: use protocol?"
-
-    def is_closed(self):
-        return self.close_event.isSet()
-
-    def close(self):
-        pass
-
-    def ping(self):
-        pass
-
-    def keys_changed(self):
-        pass
-
-    def send_server_event(self, *_args):
-        pass
-
-    def send_cursor(self):
-        pass
-
-
-    def damage(self, _wid, window, x, y, w, h, _options=None):
-        img = window.get_image(x, y, w, h)
-        rfblog("damage: %s", img)
-        fbupdate = struct.pack("!BBH", 0, 0, 1)
-        encoding = 0    #Raw
-        rect = struct.pack("!HHHHi", x, y, w, h, encoding)
-        if img.get_rowstride()!=w*4:
-            img.restride(w*4)
-        pixels = img.get_pixels()
-        assert len(pixels)>=4*w*h
-        pixels = pixels[:4*w*h]
-        if len(pixels)<=4096:
-            self.send(fbupdate+rect+memoryview_to_bytes(pixels))
-        else:
-            self.send(fbupdate+rect)
-            self.send(pixels)
-
-    def send_clipboard(self, text):
-        nocr = text.replace("\r", "")
-        msg = struct.pack("!BBBBI", 3, 0, 0, 0, len(nocr))+nocr
-        self.send(msg)
-
-    def bell(self, *_args):
-        msg = struct.pack("!B", 2)
-        self.send(msg)
-
-    def send(self, msg):
-        p = self.protocol
-        if p:
-            p.send(msg)
-
 
 gobject.type_register(XpraDesktopServer)

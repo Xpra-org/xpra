@@ -359,11 +359,11 @@ class ProxyInstanceProcess(Process):
                 return
         self.send_disconnect(proto, CONTROL_COMMAND_ERROR, "this socket only handles 'info', 'version' and 'stop' requests")
 
-    def send_disconnect(self, proto, reason, *extra):
-        log("send_disconnect(%s, %s, %s)", proto, reason, extra)
+    def send_disconnect(self, proto, *reasons):
+        log("send_disconnect(%s, %s)", proto, reasons)
         if proto._closed:
             return
-        proto.send_now(["disconnect", reason]+list(extra))
+        proto.send_disconnect(reasons)
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
@@ -501,7 +501,7 @@ class ProxyInstanceProcess(Process):
         for proto in (self.client_protocol, self.server_protocol):
             if proto and proto!=skip_proto:
                 log("sending disconnect to %s", proto)
-                proto.flush_then_close(["disconnect", SERVER_SHUTDOWN, reason])
+                proto.send_disconnect([SERVER_SHUTDOWN, reason])
 
 
     def queue_client_packet(self, packet):
@@ -639,25 +639,20 @@ class ProxyInstanceProcess(Process):
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="challenge":
-            from xpra.net.crypto import get_salt, get_digest_module
+            from xpra.net.crypto import get_salt, get_hexdigest
             #client may have already responded to the challenge,
             #so we have to handle authentication from this end
             salt = packet[1]
             digest = packet[3]
             client_salt = get_salt(len(salt))
             salt = xor_str(salt, client_salt)
-            digestmod = get_digest_module(digest)
-            if not digestmod:
-                self.stop("digest mode '%s' not supported", std(digest))
-                return
             password = self.session_options.get("password")
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
-            import hmac
             password = strtobytes(password)
             salt = memoryview_to_bytes(salt)
-            challenge_response = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
+            challenge_response = get_hexdigest(digest, password, salt)
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
             return

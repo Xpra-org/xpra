@@ -1100,6 +1100,34 @@ class ServerBase(ServerCore):
         self.cleanup_protocol(proto)
 
 
+    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False):
+        server_exit = False
+        share_count = 0
+        disconnected = 0
+        for p,ss in self._server_sources.items():
+            if detach_request and p!=proto:
+                self.disconnect_client(p, DETACH_REQUEST)
+                disconnected += 1
+            elif ui_client and ss.ui_client:
+                #check if existing sessions are willing to share:
+                if not self.sharing:
+                    self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
+                    disconnected += 1
+                elif not share:
+                    self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
+                    disconnected += 1
+                elif not ss.share:
+                    self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
+                    disconnected += 1
+                else:
+                    share_count += 1
+
+        #don't accept this connection if we're going to exit-with-client:
+        if disconnected>0 and share_count==0 and self.exit_with_client:
+            self.disconnect_client(proto, SERVER_EXIT, "last client has exited")
+            server_exit = True
+        return server_exit, share_count, disconnected
+
     def hello_oked(self, proto, packet, c, auth_caps):
         if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
             #has been handled
@@ -1124,29 +1152,9 @@ class ServerBase(ServerCore):
         # Things are okay, we accept this connection, and may disconnect previous one(s)
         # (but only if this is going to be a UI session - control sessions can co-exist)
         ui_client = c.boolget("ui_client", True)
-        share_count = 0
-        disconnected = 0
-        for p,ss in self._server_sources.items():
-            if detach_request and p!=proto:
-                self.disconnect_client(p, DETACH_REQUEST)
-                disconnected += 1
-            elif ui_client and ss.ui_client:
-                #check if existing sessions are willing to share:
-                if not self.sharing:
-                    self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
-                    disconnected += 1
-                elif not c.boolget("share"):
-                    self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
-                    disconnected += 1
-                elif not ss.share:
-                    self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
-                    disconnected += 1
-                else:
-                    share_count += 1
-
-        #don't accept this connection if we're going to exit-with-client:
-        if disconnected>0 and share_count==0 and self.exit_with_client:
-            self.disconnect_client(proto, SERVER_EXIT, "last client has exited")
+        share = c.boolget("share")
+        server_exit, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share)
+        if server_exit:
             return
 
         if detach_request:
@@ -3320,8 +3328,8 @@ class ServerBase(ServerCore):
                 handlers = self._authenticated_packet_handlers
                 ui_handlers = self._authenticated_ui_packet_handlers
             else:
-                handlers = {}
-                ui_handlers = self._default_packet_handlers
+                handlers = self._default_packet_handlers
+                ui_handlers = {}
             handler = handlers.get(packet_type)
             if handler:
                 netlog("process non-ui packet %s", packet_type)

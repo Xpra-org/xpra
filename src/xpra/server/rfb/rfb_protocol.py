@@ -13,47 +13,22 @@ from xpra.log import Logger
 log = Logger("network", "protocol", "rfb")
 
 from xpra.os_util import Queue
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
+from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
+from xpra.server.rfb.rfb_const import RFBClientMessage, RFBAuth, PIXEL_FORMAT
 
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
-PIXEL_FORMAT = "BBBBHHHBBBBBB"
-
-RFB_SETPIXELFORMAT = 0
-RFB_SETENCODINGS = 2
-RFB_FRAMEBUFFERUPDATEREQUEST = 3
-RFB_KEYEVENT = 4
-RFB_POINTEREVENT = 5
-RFB_CLIENTCUTTEXT = 6
-PACKET_TYPE = {
-    RFB_SETPIXELFORMAT              : "SetPixelFormat",
-    RFB_SETENCODINGS                : "SetEncodings",
-    RFB_FRAMEBUFFERUPDATEREQUEST    : "FramebufferUpdateRequest",
-    RFB_KEYEVENT                    : "KeyEvent",
-    RFB_POINTEREVENT                : "PointerEvent",
-    RFB_CLIENTCUTTEXT               : "ClientCutText",
-    }
-PACKET_FMT = {
-    RFB_SETPIXELFORMAT              : "!BBBB"+PIXEL_FORMAT,
-    RFB_SETENCODINGS                : "!BBH",
-    RFB_FRAMEBUFFERUPDATEREQUEST    : "!BBHHHH",
-    RFB_KEYEVENT                    : "!BBBBi",
-    RFB_POINTEREVENT                : "!BBHH",
-    RFB_CLIENTCUTTEXT               : "!BBBBi",
-    }
-PACKET_STRUCT = {}
-for ptype, fmt in PACKET_FMT.items():
-    PACKET_STRUCT[ptype] = struct.Struct(fmt)
 
 
 class RFBProtocol(object):
     CONNECTION_LOST = "connection-lost"
     INVALID = "invalid"
 
-    def __init__(self, scheduler, conn, process_packet_cb, get_rfb_pixelformat, session_name="Xpra"):
+    def __init__(self, scheduler, conn, auth, process_packet_cb, get_rfb_pixelformat, session_name="Xpra"):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
@@ -62,11 +37,14 @@ class RFBProtocol(object):
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self._conn = conn
+        self._authenticator = auth
         self._process_packet_cb = process_packet_cb
         self._get_rfb_pixelformat = get_rfb_pixelformat
         self.session_name = session_name
         self._write_queue = Queue(1)
         self._buffer = b""
+        self._challenge = None
+        self.share = False
         #counters:
         self.input_packetcount = 0
         self.input_raw_packetcount = 0
@@ -87,6 +65,7 @@ class RFBProtocol(object):
         return len(packet)
 
     def _parse_protocol_handshake(self, packet):
+        log("parse_protocol_handshake(%s)", nonl(packet))
         if len(packet)<12:
             return 0
         if not packet.startswith(b'RFB '):
@@ -94,25 +73,79 @@ class RFBProtocol(object):
             return 0
         #ie: packet==b'RFB 003.008\n'
         self._protocol_version = tuple(int(x) for x in packet[4:11].split("."))
-        log.info("RFB version %s", b".".join(str(x) for x in self._protocol_version))
+        log.info("RFB version %s connection from %s", b".".join(str(x) for x in self._protocol_version), self._conn.target)
+        if self._protocol_version!=(3, 8):
+            msg = "unsupported protocol version"
+            log.error("Error: %s", msg)
+            self.send(struct.pack("!BI", 0, len(msg))+msg)
+            self.invalid(msg, packet)
+            return 0
         #reply with Security Handshake:
         self._packet_parser = self._parse_security_handshake
-        self.send(struct.pack("BB", 1, 1))
+        if self._authenticator and self._authenticator.requires_challenge():
+            security_types = [RFBAuth.VNC]
+        else:
+            security_types = [RFBAuth.NONE]
+        packet = struct.pack("B", len(security_types))
+        for x in security_types:
+            packet += struct.pack("B", x)
+        self.send(packet)
         return 12
 
     def _parse_security_handshake(self, packet):
-        if packet!=b"\1":
-            self._invalid_header(packet, "invalid security handshake response")
+        log("parse_security_handshake(%s)", binascii.hexlify(packet))
+        try:
+            auth = struct.unpack("B", packet)[0]
+        except:
+            self._internal_error(packet, "cannot parse security handshake response '%s'" % binascii.hexlify(packet))
             return 0
+        auth_str = RFBAuth.AUTH_STR.get(auth, auth)
+        if auth==RFBAuth.VNC:
+            #send challenge:
+            self._packet_parser = self._parse_challenge
+            assert self._authenticator
+            challenge, digest = self._authenticator.get_challenge("des")
+            assert digest=="des"
+            self._challenge = challenge[:16]
+            log("sending RFB challenge value: %s", binascii.hexlify(self._challenge))
+            self.send(self._challenge)
+            return 1
+        if self._authenticator and self._authenticator.requires_challenge():
+            self._invalid_header(packet, "invalid security handshake response, authentication is required")
+            return 0
+        log("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
         #Security Handshake, send SecurityResult Handshake
         self._packet_parser = self._parse_security_result
-        self.send(struct.pack("BBBB", 0, 0, 0, 0))
+        self.send(struct.pack("!I", 0))
         return 1
 
+    def _parse_challenge(self, response):
+        assert self._authenticator
+        log("parse_challenge(%s)", binascii.hexlify(response))
+        try:
+            assert len(response)==16
+            hex_response = binascii.hexlify(response)
+            #log("padded password=%s", password)
+            if self._authenticator.authenticate(hex_response):
+                log("challenge authentication succeeded")
+                self.send(struct.pack("!I", 0))
+                self._packet_parser = self._parse_security_result
+                return 16
+            log.warn("Warning: authentication challenge response failure")
+            log.warn(" password does not match")
+        except Exception as e:
+            log("parse_challenge(%s)", binascii.hexlify(response), exc_info=True)
+            log.error("Error: authentication challenge failure:")
+            log.error(" %s", e)
+        def fail_challenge():
+            self.send(struct.pack("!I", 1))
+            self.close()
+        self.timeout_add(1000, fail_challenge)
+        return len(response)
+
     def _parse_security_result(self, packet):
-        if packet!=b"\0":
-            self._invalid_header(packet, "invalid security result")
-            return 0
+        self.share  = packet != b"\0"
+        log("parse_security_result: sharing=%s, sending ClientInit", self.share)
         #send ClientInit
         self._packet_parser = self._parse_rfb
         w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self._get_rfb_pixelformat()
@@ -126,18 +159,21 @@ class RFBProtocol(object):
             ptype = ord(packet[0])
         except:
             ptype = packet[0]
-        packet_type = PACKET_TYPE.get(ptype)
+        packet_type = RFBClientMessage.PACKET_TYPE_STR.get(ptype)
         if not packet_type:
             self.invalid("unknown RFB packet type: %#x" % ptype, packet)
             return 0
-        s = PACKET_STRUCT[ptype]        #ie: Struct("!BBBB")
+        s = RFBClientMessage.PACKET_STRUCT.get(ptype)     #ie: Struct("!BBBB")
+        if not s:
+            self.invalid("RFB packet type '%s' is not supported" % packet_type, packet)
+            return 0
         if len(packet)<s.size:
             return 0
         size = s.size
         values = list(s.unpack(packet[:size]))
         values[0] = packet_type
         #some packets require parsing extra data:
-        if ptype==RFB_SETENCODINGS:
+        if ptype==RFBClientMessage.SETENCODINGS:
             N = values[2]
             estruct = struct.Struct("!"+"i"*N)
             size += estruct.size
@@ -145,7 +181,7 @@ class RFBProtocol(object):
                 return 0
             encodings = estruct.unpack(packet[s.size:size])
             values.append(encodings)
-        elif ptype==RFB_CLIENTCUTTEXT:
+        elif ptype==RFBClientMessage.CLIENTCUTTEXT:
             l = values[4]
             size += l
             if len(packet)<size:
@@ -153,24 +189,12 @@ class RFBProtocol(object):
             text = packet[s.size:size]
             values.append(text)
         self.input_packetcount += 1
-        #log("RFB packet: %s", values)
+        log("RFB packet: %s: %s", packet_type, values[1:])
         #now trigger the callback:
         self._process_packet_cb(self, values)
         #return part of packet not consumed:
         return size
 
-
-    def wait_for_io_threads_exit(self, timeout=None):
-        for t in (self._read_thread, self._write_thread):
-            if t and t.isAlive():
-                t.join(timeout)
-        exited = True
-        cinfo = self._conn or "cleared connection"
-        for t in (self._read_thread, self._write_thread):
-            if t and t.isAlive():
-                log.warn("Warning: %s thread of %s is still alive (timeout=%s)", t.name, cinfo, timeout)
-                exited = False
-        return exited
 
     def __repr__(self):
         return "RFBProtocol(%s)" % self._conn
@@ -181,9 +205,8 @@ class RFBProtocol(object):
 
     def get_info(self, *_args):
         info = {"protocol" : self._protocol_version}
-        for t in (self._write_thread, self._read_thread):
-            if t:
-                info.setdefault("thread", {})[t.name] = t.is_alive()
+        for t in self.get_threads():
+            info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
 
 
@@ -193,11 +216,17 @@ class RFBProtocol(object):
                 self._read_thread.start()
         self.idle_add(start_network_read_thread)
 
+
+    def send_disconnect(self, *_args, **_kwargs):
+        #no such packet in RFB, just close
+        self.close()
+
+
     def send(self, packet):
         if self._closed:
-            log("send(%s ...) connection is closed already, not sending", packet[0])
+            log("connection is closed already, not sending packet")
             return
-        log("send(%s ...)", packet[0])
+        log("send(%i bytes: %s..)", len(packet), binascii.hexlify(packet[:16]))
         with self._write_lock:
             if self._closed:
                 return
@@ -255,7 +284,10 @@ class RFBProtocol(object):
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
     def _read(self):
-        buf = self._conn.read(READ_BUFFER_SIZE)
+        c = self._conn
+        if not c:
+            return None
+        buf = c.read(READ_BUFFER_SIZE)
         #log("read()=%s", repr_ellipsized(buf))
         if not buf:
             log("read thread: eof")
@@ -312,81 +344,8 @@ class RFBProtocol(object):
         self.invalid(err, data)
 
 
-    def flush_then_close(self, _last_packet, done_callback=None):
-        """ Note: this is best effort only
-            the packet may not get sent.
-
-            We try to get the write lock,
-            we try to wait for the write queue to flush
-            we queue our last packet,
-            we wait again for the queue to flush,
-            then no matter what, we close the connection and stop the threads.
-        """
-        log("flush_then_close(%s) closed=%s", done_callback, self._closed)
-        def done():
-            log("flush_then_close: done, callback=%s", done_callback)
-            if done_callback:
-                done_callback()
-        if self._closed:
-            log("flush_then_close: already closed")
-            return done()
-        def wait_for_queue(timeout=10):
-            #IMPORTANT: if we are here, we have the write lock held!
-            if not self._write_queue.empty():
-                #write queue still has stuff in it..
-                if timeout<=0:
-                    log("flush_then_close: queue still busy, closing without sending the last packet")
-                    self._write_lock.release()
-                    self.close()
-                    done()
-                else:
-                    log("flush_then_close: still waiting for queue to flush")
-                    self.timeout_add(100, wait_for_queue, timeout-1)
-            else:
-                log("flush_then_close: queue is now empty, sending the last packet and closing")
-                def close_and_release():
-                    log("flush_then_close: wait_for_packet_sent() close_and_release()")
-                    self.close()
-                    try:
-                        self._write_lock.release()
-                    except:
-                        pass
-                    done()
-                def wait_for_packet_sent():
-                    log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s", self._write_queue.empty(), self._closed)
-                    if self._write_queue.empty() or self._closed:
-                        #it got sent, we're done!
-                        close_and_release()
-                        return False
-                    return not self._closed     #run until we manage to close (here or via the timeout)
-                self.timeout_add(100, wait_for_packet_sent)
-                #just in case wait_for_packet_sent never fires:
-                self.timeout_add(5*1000, close_and_release)
-
-        def wait_for_write_lock(timeout=100):
-            if not self._write_lock.acquire(False):
-                if timeout<=0:
-                    log("flush_then_close: timeout waiting for the write lock")
-                    self.close()
-                    done()
-                else:
-                    log("flush_then_close: write lock is busy, will retry %s more times", timeout)
-                    self.timeout_add(10, wait_for_write_lock, timeout-1)
-            else:
-                log("flush_then_close: acquired the write lock")
-                #we have the write lock - we MUST free it!
-                wait_for_queue()
-        #normal codepath:
-        # -> wait_for_write_lock
-        # -> wait_for_queue
-        # -> wait_for_packet_sent
-        # -> close_and_release
-        log("flush_then_close: wait_for_write_lock()")
-        wait_for_write_lock()
-
-
     def close(self):
-        log("Protocol.close() closed=%s, connection=%s", self._closed, self._conn)
+        log("RFBProtocol.close() closed=%s, connection=%s", self._closed, self._conn)
         if self._closed:
             return
         self._closed = True
@@ -394,14 +353,14 @@ class RFBProtocol(object):
         c = self._conn
         if c:
             try:
-                log("Protocol.close() calling %s", c.close)
+                log("RFBProtocol.close() calling %s", c.close)
                 c.close()
             except:
                 log.error("error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
         self.idle_add(self.clean)
-        log("Protocol.close() done")
+        log("RFBProtocol.close() done")
 
     def clean(self):
         #clear all references to ensure we can get garbage collected quickly:
@@ -412,30 +371,6 @@ class RFBProtocol(object):
     def terminate_queue_threads(self):
         log("terminate_queue_threads()")
         #make all the queue based threads exit by adding the empty marker:
-        exit_queue = Queue()
-        for _ in range(10):     #just 2 should be enough!
-            exit_queue.put(None)
-        try:
-            owq = self._write_queue
-            self._write_queue = exit_queue
-            #discard all elements in the old queue and push the None marker:
-            try:
-                while owq.qsize()>0:
-                    owq.read(False)
-            except:
-                pass
-            owq.put_nowait(None)
-        except:
-            pass
-        try:
-            orq = self._read_queue
-            self._read_queue = exit_queue
-            #discard all elements in the old queue and push the None marker:
-            try:
-                while orq.qsize()>0:
-                    orq.read(False)
-            except:
-                pass
-            orq.put_nowait(None)
-        except:
-            pass
+        owq = self._write_queue
+        self._write_queue = exit_queue()
+        force_flush_queue(owq)
