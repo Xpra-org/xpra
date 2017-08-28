@@ -478,11 +478,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 actual_updates[state] = value
                 statelog("%s=%s (was %s)", var, value, cur)
         server_updates = dict((k,v) for k,v in actual_updates.items() if k in self._client.server_window_states)
-        statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s", state_updates, actual_updates, server_updates)
-        self._window_state.update(server_updates)
         #iconification is handled a bit differently...
-        iconified = server_updates.get("iconified")
-        if iconified is not None:
+        try:
+            iconified = server_updates.pop("iconified")
+        except:
+            iconified = None
+        else:
             statelog("iconified=%s", iconified)
             #handle iconification as map events:
             if iconified:
@@ -506,6 +507,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             else:
                 self._frozen = False
                 self.process_map_event()
+        statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s", state_updates, actual_updates, server_updates)
+        self._window_state.update(server_updates)
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
         def send_updated_window_state():
