@@ -687,7 +687,7 @@ class ClientExtras(object):
         self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
-        if client.input_devices=="xi":
+        if client.input_devices in ("xi", "auto"):
             #this would trigger warnings with our temporary opengl windows:
             #only enable it after we have connected:
             self.client.after_handshake(self.setup_xi)
@@ -825,6 +825,7 @@ class ClientExtras(object):
     def setup_xi(self):
         if self.client.server_input_devices not in ("xi", "uinput"):
             log.info("server does not support xi input devices")
+            return
         try:
             from xpra.gtk_common.error import xsync
             with xsync:
