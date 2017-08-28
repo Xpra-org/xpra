@@ -289,6 +289,7 @@ class FileTransferHandler(FileTransferAttributes):
             self._open_file(filename)
 
     def _print_file(self, filename, mimetype, options):
+        printlog("print_file%s", (filename, mimetype, options))
         printer = options.strget("printer")
         title   = options.strget("title")
         copies  = options.intget("copies", 1)
@@ -355,7 +356,7 @@ class FileTransferHandler(FileTransferAttributes):
         command = shlex.split(self.open_command)+[filename]
         proc = subprocess.Popen(command)
         cr = getChildReaper()
-        def open_done(*args):
+        def open_done(*_args):
             returncode = proc.poll()
             filelog("open_done: command %s has ended, returncode=%s", command, returncode)
             if returncode!=0:

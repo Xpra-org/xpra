@@ -96,12 +96,12 @@ except ImportError as e:
 
 
 if sys.version > '3':
-    def nocompress(packet, level):
+    def nocompress(packet, _level):
         if type(packet)!=bytes:
             packet = bytes(packet, 'UTF-8')
         return 0, packet
 else:
-    def nocompress(packet, level):
+    def nocompress(packet, _level):
         return 0, packet
 
 
