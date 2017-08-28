@@ -374,7 +374,7 @@ class Wm(gobject.GObject):
         self._update_window_list()
         self.notify("windows")
 
-    def _update_window_list(self, *args):
+    def _update_window_list(self, *_args):
         # Ignore errors because not all the windows may still exist; if so,
         # then it's okay to leave the lists out of date for a moment, because
         # in a moment we'll get a signal telling us about the window that

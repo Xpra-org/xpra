@@ -68,7 +68,7 @@ def setup_dbus_window_menu(add, wid, menus, application_action_callback=None, wi
     #           }
     enabled = menus.get("enabled", False)
     app_actions_service, window_actions_service, window_menu_service = None, None, None
-    def remove_services(*args):
+    def remove_services(*_args):
         """ removes all the services if they are not longer used by any windows """
         for x in (app_actions_service, window_actions_service, window_menu_service):
             if x:

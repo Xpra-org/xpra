@@ -117,7 +117,7 @@ class WorldWindow(gtk.Window):
             xid = self.window.xid
         return "WorldWindow(%#x)" % xid
 
-    def _resize(self, *args):
+    def _resize(self, *_args):
         x = gtk.gdk.screen_width()
         y = gtk.gdk.screen_height()
         log("sizing world to %sx%s", x, y)
@@ -186,7 +186,7 @@ class WorldWindow(gtk.Window):
             root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
         trap.swallow_synced(do_reset_x_focus)
 
-    def _after_set_focus(self, *args):
+    def _after_set_focus(self, *_args):
         focuslog("after_set_focus")
         # GTK focus has changed.  See comment in __init__ for why this isn't a
         # default handler.

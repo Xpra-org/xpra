@@ -23,7 +23,7 @@ class X11_DBUS_Server(DBUS_Server):
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetDPI(self, xdpi, ydpi):
-        self.server.set_dpi()
+        self.server.set_dpi(xdpi, ydpi)
 
     @dbus.service.method(INTERFACE, in_signature='ii', out_signature='ii')
     def SetScreenSize(self, width, height):
