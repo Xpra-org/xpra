@@ -79,7 +79,7 @@ class KeyboardStateInfoWindow:
         if icon:
             self.window.set_icon(icon)
 
-    def populate_modifiers(self, *args):
+    def populate_modifiers(self, *_args):
         (x, y, current_mask) = self.window.get_root_window().get_pointer()[-3:]
         self.mouse.set_text("%s %s" % (x, y))
         modifiers = self.mask_to_names(current_mask, modifier_names)
@@ -114,7 +114,7 @@ class KeyboardStateInfoWindow:
         self.key_events.append(text)
         self.keys.set_text("\n".join(self.key_events))
 
-    def destroy(self, *args):
+    def destroy(self, *_args):
         gtk.main_quit()
 
 

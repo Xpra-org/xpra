@@ -435,12 +435,12 @@ else:
                 This code must be added to all the sub-menus of the popup menu too!
             """
             global mouse_in_tray_menu, mouse_in_tray_menu_counter
-            def enter_menu(*args):
+            def enter_menu(*_args):
                 global mouse_in_tray_menu, mouse_in_tray_menu_counter
                 traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
                 mouse_in_tray_menu_counter += 1
                 mouse_in_tray_menu = True
-            def leave_menu(*args):
+            def leave_menu(*_args):
                 global mouse_in_tray_menu, mouse_in_tray_menu_counter
                 traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
                 mouse_in_tray_menu_counter += 1

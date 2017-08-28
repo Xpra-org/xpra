@@ -46,10 +46,10 @@ def about(on_close=None):
     xpra_icon = get_icon("xpra.png")
     dialog = gtk.AboutDialog()
     if not is_gtk3():
-        def on_website_hook(dialog, web, *args):
+        def on_website_hook(*_args):
             ''' called when the website item is selected '''
             webbrowser.open(SITE_URL)
-        def on_email_hook(dialog, mail, *args):
+        def on_email_hook(*_args):
             webbrowser.open("mailto://shifter-users@lists.devloop.org.uk")
         gtk.about_dialog_set_url_hook(on_website_hook)
         gtk.about_dialog_set_email_hook(on_email_hook)
@@ -71,7 +71,7 @@ def about(on_close=None):
         dialog.set_logo(xpra_icon)
     if hasattr(dialog, "set_program_name"):
         dialog.set_program_name(APPLICATION_NAME)
-    def close(*args):
+    def close(*_args):
         close_about()
         #the about function may be called as a widget callback
         #so avoid calling the widget as if it was a function!
@@ -82,7 +82,7 @@ def about(on_close=None):
     about_dialog = dialog
     dialog.show()
 
-def close_about(*args):
+def close_about(*_args):
     global about_dialog
     if about_dialog:
         about_dialog.destroy()

@@ -162,7 +162,7 @@ class XSyncContext(object):
     def __enter__(self):
         trap._enter()
 
-    def __exit__(self, e_typ, e_val, trcbak):
+    def __exit__(self, e_typ, _e_val, _trcbak):
         #log("xsync.exit%s", (e_typ, e_val, trcbak))
         try:
             trap._exit(True)
@@ -182,7 +182,7 @@ class XSwallowContext(object):
     def __enter__(self):
         trap._enter()
 
-    def __exit__(self, e_typ, e_val, trcbak):
+    def __exit__(self, *_args):
         #log("xswallow.exit%s", (e_typ, e_val, trcbak))
         try:
             trap._exit(True)
