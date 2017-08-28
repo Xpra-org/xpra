@@ -615,7 +615,7 @@ def get_default_sink():
     return None
 
 
-def get_test_defaults(*args):
+def get_test_defaults(*_args):
     return  {"wave" : 2, "freq" : 110, "volume" : 0.4}
 
 WARNED_MULTIPLE_DEVICES = False
