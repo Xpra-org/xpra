@@ -63,7 +63,7 @@ class Win32Tray(TrayBase):
             el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
         log("Win32Tray.cleanup() ended")
 
-    def calculate_offset(self, *args):
+    def calculate_offset(self, *_args):
         #GTK returns coordinates as unsigned ints, but win32 can give us negative coordinates!
         self.offset_x = 0
         self.offset_y = 0

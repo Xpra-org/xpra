@@ -49,7 +49,7 @@ except:
 
 
 exit_cb = None
-def quit_handler(*args):
+def quit_handler(*_args):
     global exit_cb
     if exit_cb:
         exit_cb()
@@ -107,7 +107,7 @@ def get_native_tray_classes():
         return [OSXTray]
     return []
 
-def system_bell(*args):
+def system_bell(*_args):
     NSBeep()
     return True
 
@@ -523,7 +523,7 @@ def register_URL_handler(handler):
     log("register_URL_handler(%s)", handler)
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
-            log("GURLHandler.handleEvent")
+            log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
             url = event.descriptorForKeyword_(fourCharToInt('----')).stringValue()
             log("URL=%s", url)
             handler(url.encode())
@@ -646,9 +646,9 @@ class Delegate(NSObject):
 class ClientExtras(object):
     def __init__(self, client, opts):
         if OSX_FOCUS_WORKAROUND:
-            def disable_focus_workaround(*args):
+            def disable_focus_workaround(*_args):
                 NSApp.activateIgnoringOtherApps_(False)
-            def enable_focus_workaround(*args):
+            def enable_focus_workaround(*_args):
                 NSApp.activateIgnoringOtherApps_(True)
                 client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
             client.connect("first-ui-received", enable_focus_workaround)

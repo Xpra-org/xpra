@@ -22,12 +22,12 @@ class GTKMenuTray(TrayBase):
         self.shown = False
         self.set_global_menu()
 
-    def hide(self, *args):
+    def hide(self, *_args):
         if self.shown:
             self.shown = False
             self.set_global_menu()
 
-    def show(self, *args):
+    def show(self, *_args):
         if not self.shown:
             self.shown = True
             self.set_global_menu()

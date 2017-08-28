@@ -184,7 +184,7 @@ def get_native_tray_classes():
             log.warn(" %s", e)
     return c
 
-def get_native_system_tray_classes(*args):
+def get_native_system_tray_classes(*_args):
     #Win32Tray cannot set the icon from data
     #so it cannot be used for application trays
     return get_native_tray_classes()
@@ -354,7 +354,7 @@ def pointer_ungrab(window, *args):
         ClipCursor(None)
     window._client.pointer_grabbed = False
 
-def fixup_window_style(self, *args):
+def fixup_window_style(self, *_args):
     """ a fixup function we want to call from other places """
     hwnd = get_window_handle(self)
     if not hwnd:
@@ -1169,7 +1169,7 @@ def main():
         FakeClient = namedtuple("FakeClient", "_focused,keyboard_grabbed,window_with_grab,suspend,resume,keyboard_helper")
         fake_client = FakeClient(_focused=False, keyboard_grabbed=False, window_with_grab=None,
                                  suspend=suspend, resume=resume, keyboard_helper=None)
-        def signal_quit(*args):
+        def signal_quit(*_args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit
         ClientExtras(fake_client, None)

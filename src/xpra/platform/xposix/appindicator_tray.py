@@ -55,10 +55,10 @@ class AppindicatorTray(TrayBase):
         if self.menu:
             self.tray_widget.set_menu(self.menu)
 
-    def hide(self, *args):
+    def hide(self, *_args):
         self.tray_widget.set_status(self.appindicator.STATUS_PASSIVE)
 
-    def show(self, *args):
+    def show(self, *_args):
         self.tray_widget.set_status(self.appindicator.STATUS_ACTIVE)
 
     def set_blinking(self, on):

@@ -211,7 +211,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             menus.append(("Sound", sound_menu))
         if SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
-            def set_encodings_menu(*args):
+            def set_encodings_menu(*_args):
                 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
                 server_encodings = list(self.client.server_encodings)
                 encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
@@ -227,7 +227,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             actions_menu.add(self.make_raisewindowsmenuitem())
             #set_sensitive(bool) does not work on OSX,
             #so we only add the menu item if it does something
-            def add_ah(*args):
+            def add_ah(*_args):
                 if self.client.start_new_commands:
                     actions_menu.add(self.make_runcommandmenu())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:

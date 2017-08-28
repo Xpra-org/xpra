@@ -321,7 +321,7 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def do_process_mouse_common(self, proto, wid, pointer, *args):
+    def do_process_mouse_common(self, proto, wid, pointer, *_args):
         #adjust pointer position for offset in client:
         try:
             x, y = pointer
@@ -337,7 +337,7 @@ class ShadowServer(GTKShadowServerBase):
     def fake_key(self, keycode, press):
         fake_key(keycode, press)
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *_args):
         self._update_modifiers(proto, wid, modifiers)
         x, y = self._process_mouse_common(proto, wid, pointer)
         self._server_sources.get(proto).user_event()

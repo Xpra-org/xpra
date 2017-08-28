@@ -443,7 +443,7 @@ def get_window_frame_sizes():
     return {}
 
 
-def system_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id, bell_name):
     from xpra.gtk_common.error import XError
     global device_bell
     if device_bell is False:
