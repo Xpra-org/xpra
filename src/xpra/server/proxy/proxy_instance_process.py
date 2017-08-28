@@ -25,7 +25,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, std, envint, envbool, csv, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
@@ -121,7 +121,7 @@ class ProxyInstanceProcess(Process):
             else:
                 log.error("unexpected proxy server message: %s", m)
 
-    def signal_quit(self, signum, frame):
+    def signal_quit(self, signum, _frame):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         self.exit = True

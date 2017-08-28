@@ -183,7 +183,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             return  None
 
 
-    def tray_menu_deactivated(self, *args):
+    def tray_menu_deactivated(self, *_args):
         self.tray_menu_shown = False
 
     def tray_click_callback(self, button, pressed, time=0):
@@ -193,10 +193,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.tray_menu.popup(None, None, None, button, time)
         self.tray_menu_shown = True
 
-    def tray_exit_callback(self, *args):
+    def tray_exit_callback(self, *_args):
         self.clean_quit(False)
 
-    def close_tray_menu(self, *args):
+    def close_tray_menu(self, *_args):
         if self.tray_menu_shown:
             self.tray_menu.popdown()
             self.tray_menu_shown = False

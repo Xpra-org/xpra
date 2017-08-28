@@ -89,7 +89,7 @@ class ProxyServer(ServerCore):
         #add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 
-    def _process_proxy_shutdown_server(self, proto, packet):
+    def _process_proxy_shutdown_server(self, proto, _packet):
         assert proto in self._requests
         self.quit(False)
 
@@ -462,7 +462,7 @@ class ProxyServer(ServerCore):
             del self.processes[p]
 
 
-    def get_info(self, proto, *args):
+    def get_info(self, proto, *_args):
         info = ServerCore.get_info(self, proto)
         info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         #only show more info if we have authenticated
