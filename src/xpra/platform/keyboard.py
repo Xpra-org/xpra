@@ -31,7 +31,6 @@ def main():
             log.enable_debug()
 
         #naughty, but how else can I hook this up?
-        import os
         if POSIX and not OSX:
             try:
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport

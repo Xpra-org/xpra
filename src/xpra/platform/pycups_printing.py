@@ -250,7 +250,7 @@ def exec_lpadmin(args, success_cb=None):
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
     cr = getChildReaper()
-    def check_returncode(proc_cb):
+    def check_returncode(_proc_cb):
         returncode = proc.poll()
         log("returncode(%s)=%s", command, returncode)
         if returncode!=0:

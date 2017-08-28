@@ -24,7 +24,7 @@ def err(*args, **kwargs):
 def get_printers():
     return {}
 
-def get_printer_attributes(name):
+def get_printer_attributes(_name):
     return []
 
 def get_default_printer():
@@ -33,7 +33,7 @@ def get_default_printer():
 def print_files(printer, filenames, title, options):
     raise Exception("no print implementation available")
 
-def printing_finished(printpid):
+def printing_finished(_printpid):
     return True
 
 def init_printing(printers_modified_callback=None):

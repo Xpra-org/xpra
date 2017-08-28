@@ -36,15 +36,15 @@ def get_native_tray_menu_helper_classes():
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
     return []
-def get_native_tray_classes(*args):
+def get_native_tray_classes(*_args):
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
     return []
-def get_native_system_tray_classes(*args):
+def get_native_system_tray_classes(*_args):
     #the classes we can use for application system tray forwarding:
     #let the toolkit classes use their own
     return []
-def system_bell(*args):
+def system_bell(*_args):
     #let the toolkit classes use their own
     return False
 def get_native_notifier_classes():
@@ -171,7 +171,7 @@ def get_fixed_cursor_size():
 def get_cursor_size():
     return -1
 
-def get_window_frame_size(x, y, w, h):
+def get_window_frame_size(_x, _y, _w, _h):
     return None
 
 def get_window_frame_sizes():

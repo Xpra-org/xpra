@@ -39,7 +39,7 @@ class program_context(object):
         self.appname = appname
     def __enter__(self):
         init(self.prgname, self.appname)
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         clean()
     def __repr__(self):
         return "gui_context(%s, %s)" % (self.prgname, self.appname)
