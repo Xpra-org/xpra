@@ -425,7 +425,7 @@ def path_permission_info(filename, ftype=None):
 #ideally we would redirect to a buffer so we could still capture and show these messages in debug out
 class HideStdErr(object):
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *_args):
         self.savedstderr = None
 
     def __enter__(self):
@@ -439,20 +439,20 @@ class HideStdErr(object):
         os.close(devnull)
         sys.stderr = os.fdopen(self.savedstderr, 'w')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         if self.savedstderr is not None:
             os.dup2(self.savedstderr, 2)
 
 class HideSysArgv(object):
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *_args):
         self.savedsysargv = None
 
     def __enter__(self):
         self.savedsysargv = sys.argv
         sys.argv = sys.argv[:1]
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         if self.savedsysargv is not None:
             sys.argv = self.savedsysargv
 
@@ -463,7 +463,7 @@ class OSEnvContext(object):
         self.env = os.environ.copy()
     def __enter__(self):
         pass
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         os.environ.clear()
         os.environ.update(self.env)
     def __repr__(self):
@@ -474,7 +474,7 @@ class FDChangeCaptureContext(object):
 
     def __enter__(self):
         self.enter_fds = get_all_fds()
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         self.exit_fds = get_all_fds()
     def __repr__(self):
         return "FDChangeCaptureContext"

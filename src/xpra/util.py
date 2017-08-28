@@ -513,7 +513,6 @@ def detect_leaks(log, detailed=[]):
     before = defaultdict(int)
     after = defaultdict(int)
     gc.collect()
-    detailed = []
     ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)
     for i in gc.get_objects():
         if type(i) not in ignore:
