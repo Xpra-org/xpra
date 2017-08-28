@@ -267,7 +267,7 @@ def get_encoding_name(encoding):
 def get_encoding_help(encoding):
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
-    ENCODINGS_HELP = {
+    return {
           "auto"    : "automatic mode (recommended)",
           "h264"    : "H.264 video codec",
           "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
@@ -278,8 +278,8 @@ def get_encoding_help(encoding):
           "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "jpeg"    : "JPEG lossy compression",
-          "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compression.get_enabled_compressors())),
-          }
+          "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
+          }.get(encoding)
 
 HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "rgb", "jpeg")
 
@@ -295,7 +295,7 @@ def encodings_help(encodings):
     return h
 
 def encoding_help(encoding):
-    ehelp = ENCODINGS_HELP.get(encoding, "")
+    ehelp = get_encoding_help(encoding) or ""
     return encoding.ljust(12) + ehelp
 
 
