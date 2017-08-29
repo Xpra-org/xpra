@@ -836,7 +836,7 @@ class WindowSource(object):
                 return x
         return self.common_encodings[0]
 
-    def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *args):
+    def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
         if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
@@ -845,7 +845,7 @@ class WindowSource(object):
             return "jpeg"
         return [x for x in self.common_encodings if x!="rgb"][0]
 
-    def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *args):
+    def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
         return self.encoding
@@ -1726,7 +1726,18 @@ class WindowSource(object):
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
             self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
-        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent)
+        fail_cb = self.get_fail_cb(packet)
+        #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
+        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, fail_cb)
+
+    def get_fail_cb(self, packet):
+        def resend():
+            log("paint packet failure, resending")
+            x,y,width,height = packet[2:6]
+            damage_packet_sequence = packet[8]
+            self.damage_packet_acked(damage_packet_sequence, width, height, 0, "")
+            self.idle_add(self.damage, x, y, width, height)
+        return resend
 
     def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
         """

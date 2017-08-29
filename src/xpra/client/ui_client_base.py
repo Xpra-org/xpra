@@ -2048,9 +2048,10 @@ class UIXpraClient(XpraClientBase):
         if self.client_supports_remote_logging and c.boolget("remote-logging"):
             #check for debug:
             from xpra.log import is_debug_enabled
-            for x in ("network", "crypto"):
+            for x in ("network", "crypto", "udp"):
                 if is_debug_enabled(x):
-                    log.warn("Warning: cannot enable remote logging as '%s' debug logging is enabled", x)
+                    log.warn("Warning: cannot enable remote logging")
+                    log.warn(" because '%s' debug logging is enabled", x)
                     return
             log.info("enabled remote logging")
             if not self.log_both:

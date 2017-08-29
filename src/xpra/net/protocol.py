@@ -165,6 +165,7 @@ class Protocol(object):
         self.enable_compressor(self.compressor)
         self.enable_encoder(self.encoder)
 
+
     def wait_for_io_threads_exit(self, timeout=None):
         io_threads = [x for x in (self._read_thread, self._write_thread) if x is not None]
         for t in io_threads:
@@ -204,6 +205,9 @@ class Protocol(object):
 
     def get_threads(self):
         return  [x for x in [self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread] if x is not None]
+
+    def accept(self):
+        pass
 
 
     def get_info(self, alias_info=True):
@@ -311,7 +315,7 @@ class Protocol(object):
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, has_more=False):
+    def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False):
         if has_more:
             self._source_has_more.set()
         if packet is None:
@@ -322,24 +326,17 @@ class Protocol(object):
             if self._closed:
                 return
             try:
-                self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb)
+                self._add_chunks_to_queue(chunks, start_send_cb, end_send_cb, fail_cb, synchronous)
             except:
                 log.error("Error: failed to queue '%s' packet", packet[0])
-                log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb), exc_info=True)
+                log("add_chunks_to_queue%s", (chunks, start_send_cb, end_send_cb, fail_cb), exc_info=True)
                 raise
 
-    def _add_chunks_to_queue(self, chunks, start_send_cb=None, end_send_cb=None):
+    def _add_chunks_to_queue(self, chunks, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True):
         """ the write_lock must be held when calling this function """
         counter = 0
         items = []
         for proto_flags,index,level,data in chunks:
-            scb, ecb = None, None
-            #fire the start_send_callback just before the first packet is processed:
-            if counter==0:
-                scb = start_send_cb
-            #fire the end_send callback when the last packet (index==0) makes it out:
-            if index==0:
-                ecb = end_send_cb
             payload_size = len(data)
             actual_size = payload_size
             if self.cipher_out:
@@ -360,9 +357,9 @@ class Protocol(object):
                 assert not self.cipher_out
                 #for plain/text packets (ie: gibberish response)
                 log("sending %s bytes without header", payload_size)
-                items.append((data, scb, ecb))
+                items.append(data)
             elif actual_size<PACKET_JOIN_SIZE:
-                if type(data) not in JOIN_TYPES:
+                if not isinstance(data, JOIN_TYPES):
                     data = memoryview_to_bytes(data)
                 header_and_data = pack_header(proto_flags, level, index, payload_size) + data
                 items.append(header_and_data)
@@ -371,19 +368,17 @@ class Protocol(object):
                 items.append(header)
                 items.append(data)
             counter += 1
-        if self._write_thread is None:
-            self.start_write_thread()
-        self._write_queue.put((items, scb, ecb))
-        self.output_packetcount += 1
+        self.raw_write(items, start_send_cb, end_send_cb, fail_cb, synchronous)
 
     def start_write_thread(self):
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def raw_write(self, contents, start_cb=None, end_cb=None):
+    def raw_write(self, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True):
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
             self.start_write_thread()
-        self._write_queue.put(((contents, start_cb, end_cb), ))
+        self._write_queue.put((items, start_cb, end_cb, fail_cb, synchronous))
+
 
     def verify_packet(self, packet):
         """ look for None values which may have caused the packet to fail encoding """
@@ -604,7 +599,7 @@ class Protocol(object):
             return False
         return self.write_items(*items)
 
-    def write_items(self, buf_data, start_cb=None, end_cb=None):
+    def write_items(self, buf_data, start_cb=None, end_cb=None, fail_cb=None, synchronous=True):
         con = self._conn
         if not con:
             return False
@@ -614,7 +609,7 @@ class Protocol(object):
             except:
                 if not self._closed:
                     log.error("Error on write start callback %s", start_cb, exc_info=True)
-        self.write_buffers(buf_data)
+        self.write_buffers(buf_data, fail_cb, synchronous)
         if end_cb:
             try:
                 end_cb(self._conn.output_bytecount)
@@ -623,7 +618,7 @@ class Protocol(object):
                     log.error("Error on write end callback %s", end_cb, exc_info=True)
         return True
 
-    def write_buffers(self, buf_data):
+    def write_buffers(self, buf_data, _fail_cb, _synchronous):
         con = self._conn
         if not con:
             return 0
@@ -967,7 +962,7 @@ class Protocol(object):
                     if wait_for_packet_sent():
                         #check again every 100ms
                         self.timeout_add(100, wait_for_packet_sent)
-                self._add_chunks_to_queue(chunks, start_send_cb=None, end_send_cb=packet_queued)
+                self._add_chunks_to_queue(chunks, start_send_cb=None, end_send_cb=packet_queued, synchronous=False)
                 #just in case wait_for_packet_sent never fires:
                 self.timeout_add(5*1000, close_and_release)
 

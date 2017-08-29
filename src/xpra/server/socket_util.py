@@ -108,7 +108,7 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         log("create_tcp_socket%s", (host, iport), exc_info=True)
         raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
     def cleanup_tcp_socket():
-        log.info("closing %s socket %s:%s", socktype, host, iport)
+        log.info("closing %s socket %s:%s", socktype.lower(), host, iport)
         try:
             tcp_socket.close()
         except:
@@ -117,13 +117,43 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     log("%s: %s:%s : %s", socktype, host, iport, socket)
     return socktype, tcp_socket, (host, iport)
 
+def create_udp_socket(host, iport):
+    if host.find(":")<0:
+        listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sockaddr = (host, iport)
+    else:
+        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
+        res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
+        listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        sockaddr = res[0][-1]
+    listener.bind(sockaddr)
+    return listener
 
-def parse_bind_tcp(bind_tcp):
-    tcp_sockets = set()
-    if bind_tcp:
-        for spec in bind_tcp:
+def setup_udp_socket(host, iport, socktype="udp"):
+    from xpra.log import Logger
+    log = Logger("network")
+    try:
+        udp_socket = create_udp_socket(host, iport)
+    except Exception as e:
+        log("create_udp_socket%s", (host, iport), exc_info=True)
+        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
+    def cleanup_udp_socket():
+        log.info("closing %s socket %s:%s", socktype, host, iport)
+        try:
+            udp_socket.close()
+        except:
+            pass
+    add_cleanup(cleanup_udp_socket)
+    log("%s: %s:%s : %s", socktype, host, iport, socket)
+    return socktype, udp_socket, (host, iport)
+
+
+def parse_bind_ip(bind_ip):
+    ip_sockets = set()
+    if bind_ip:
+        for spec in bind_ip:
             if ":" not in spec:
-                raise InitException("TCP port must be specified as [HOST]:PORT")
+                raise InitException("port must be specified as [HOST]:PORT")
             host, port = spec.rsplit(":", 1)
             if host == "":
                 host = "127.0.0.1"
@@ -135,8 +165,8 @@ def parse_bind_tcp(bind_tcp):
                     assert iport>0 and iport<2**16
                 except:
                     raise InitException("invalid port number: %s" % port)
-            tcp_sockets.add((host, iport))
-    return tcp_sockets
+            ip_sockets.add((host, iport))
+    return ip_sockets
 
 def setup_vsock_socket(cid, iport):
     from xpra.log import Logger

@@ -534,6 +534,11 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="[HOST]:[PORT]",
                           help="Listen for connections over TCP (use --tcp-auth to secure it)."
                             + " You may specify this option multiple times with different host and port combinations")
+        group.add_option("--bind-udp", action="append",
+                          dest="bind_udp", default=list(defaults.bind_udp or []),
+                          metavar="[HOST]:[PORT]",
+                          help="Listen for connections over UDP (use --udp-auth to secure it)."
+                            + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ws", action="append",
                           dest="bind_ws", default=list(defaults.bind_ws or []),
                           metavar="[HOST]:[PORT]",
@@ -558,6 +563,7 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({
             "bind"      : defaults.bind,
             "bind-tcp"  : defaults.bind_tcp,
+            "bind-udp"  : defaults.bind_udp,
             "bind-ws"   : defaults.bind_ws,
             "bind-wss"  : defaults.bind_wss,
             "bind-ssl"  : defaults.bind_ssl,
@@ -974,6 +980,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-auth", action="store",
                       dest="tcp_auth", default=defaults.tcp_auth,
                       help="The authentication module to use for TCP sockets (default: '%default')")
+    group.add_option("--udp-auth", action="store",
+                      dest="udp_auth", default=defaults.udp_auth,
+                      help="The authentication module to use for UDP sockets (default: '%default')")
     group.add_option("--ws-auth", action="store",
                       dest="ws_auth", default=defaults.ws_auth,
                       help="The authentication module to use for Websockets (default: '%default')")
@@ -1163,7 +1172,7 @@ def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, password_
     #    elif tcp_encryption:
     #        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
 
-def dump_frames(*arsg):
+def dump_frames(*_args):
     frames = sys._current_frames()
     print("")
     print("found %s frames:" % len(frames))
@@ -1241,7 +1250,7 @@ def configure_logging(options, mode):
 
     #register posix signals for debugging:
     if POSIX:
-        def sigusr1(*args):
+        def sigusr1(*_args):
             dump_frames()
         signal.signal(signal.SIGUSR1, sigusr1)
 
@@ -1686,10 +1695,13 @@ def parse_display_name(error_cb, opts, display_name):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif display_name.startswith("tcp:") or display_name.startswith("tcp/") or \
-            display_name.startswith("ssl:") or display_name.startswith("ssl/"):
-        ctype = display_name[:3]        #ie: "ssl" or "tcp"
-        separator = display_name[3]     # ":" or "/"
+    elif (
+        display_name.startswith("tcp:") or display_name.startswith("tcp/") or \
+        display_name.startswith("ssl:") or display_name.startswith("ssl/") or \
+        display_name.startswith("udp:") or display_name.startswith("udp/")
+        ):
+        ctype = display_name[:3]                #ie: "ssl" or "tcp"
+        separator = display_name[len(ctype)]    # ":" or "/"
         desc.update({
                      "type"     : ctype,
                      })
@@ -2073,7 +2085,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         from xpra.net.bytestreams import SocketConnection
         return SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
 
-    elif dtype in ("tcp", "ssl", "ws", "wss"):
+    elif dtype in ("tcp", "ssl", "ws", "wss", "udp"):
         if display_desc.get("ipv6"):
             assert socket.has_ipv6, "no IPv6 support"
             family = socket.AF_INET6
@@ -2089,9 +2101,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 socket.AF_INET  : "IPv4",
                 }.get(family, family), (host, port), e))
         sockaddr = addrinfo[0][-1]
-        sock = socket.socket(family, socket.SOCK_STREAM)
-        sock.settimeout(SOCKET_TIMEOUT)
-        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
+        if dtype=="udp":
+            opts.mmap = False
+            sock = socket.socket(family, socket.SOCK_DGRAM)
+        else:
+            sock = socket.socket(family, socket.SOCK_STREAM)
+            sock.settimeout(SOCKET_TIMEOUT)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
@@ -2401,7 +2417,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 from xpra.codecs.loader import encodings_help
                 encodings = ["auto"] + app.get_encodings()
                 raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
-        def handshake_complete(*args):
+        def handshake_complete(*_args):
             from xpra.log import Logger
             log = Logger()
             log.info("Attached to %s (press Control-C to detach)\n", conn.target)

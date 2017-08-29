@@ -1120,8 +1120,8 @@ class ServerSource(FileTransferHandler):
         self.update_av_sync_delay_total()
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
-        soundlog("new_sound_buffer(%s, %s, %s, %s) suspended=%s",
-                 sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], self.suspended)
+        soundlog("new_sound_buffer(%s, %s, %s, %s) info=%s, suspended=%s",
+                 sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], sound_source.info, self.suspended)
         if self.sound_source!=sound_source or self.is_closed():
             soundlog("sound buffer dropped: from old source or closed")
             return
@@ -1137,16 +1137,26 @@ class ServerSource(FileTransferHandler):
             else:
                 #the packet metadata is compressed already:
                 packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
-        self.send_sound_data(sound_source, data, metadata, packet_metadata)
+        #don't drop the first 10 buffers
+        can_drop_packet = (sound_source.info or {}).get("buffer_count", 0)>10
+        self.send_sound_data(sound_source, data, metadata, packet_metadata, can_drop_packet)
 
-    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
+    def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=(), can_drop_packet=False):
         packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
         if packet_metadata:
             assert self.sound_bundle_metadata
             packet_data.append(packet_metadata)
-        if sound_source.sequence>=0:
-            metadata["sequence"] = sound_source.sequence
-        self.send("sound-data", *packet_data)
+        sequence = sound_source.sequence
+        if sequence>=0:
+            metadata["sequence"] = sequence
+        fail_cb = None
+        if can_drop_packet:
+            def sound_data_fail_cb():
+                #ideally we would tell gstreamer to send an audio "key frame"
+                #or synchronization point to ensure the stream recovers
+                soundlog("a sound data buffer was not received and will not be resent")
+            fail_cb = sound_data_fail_cb
+        self._send(fail_cb, False, "sound-data", *packet_data)
 
     def stop_receiving_sound(self):
         ss = self.sound_sink
@@ -1395,28 +1405,37 @@ class ServerSource(FileTransferHandler):
             return
         if self.mouse_last_position!=(x, y, rx, ry):
             self.mouse_last_position = (x, y, rx, ry)
-            self.send("pointer-position", wid, x, y, rx, ry)
+            self.send_async("pointer-position", wid, x, y, rx, ry)
 
 #
 # Functions for interacting with the network layer:
 #
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, start_send_cb, end_send_cb, have_more = None, None, None, False
+        packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more = None, None, None, None, True, False
         if not self.is_closed():
             if len(self.ordinary_packets)>0:
-                packet = self.ordinary_packets.pop(0)
+                packet, synchronous, fail_cb = self.ordinary_packets.pop(0)
             elif len(self.packet_queue)>0:
-                packet, _, _, start_send_cb, end_send_cb = self.packet_queue.popleft()
+                packet, _, _, start_send_cb, end_send_cb, fail_cb = self.packet_queue.popleft()
             have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.packet_queue)>0)
-        return packet, start_send_cb, end_send_cb, have_more
+        return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more
 
     def send(self, *parts):
         """ This method queues non-damage packets (higher priority) """
-        self.ordinary_packets.append(parts)
+        self._send(None, True, *parts)
+
+    def send_async(self, *parts):
+        self._send(None, False, *parts)
+
+    def _send(self, fail_cb=None, synchronous=True, *parts):
+        """ This method queues non-damage packets (higher priority) """
+        #log.info("_send%s", (fail_cb, synchronous, parts))
         p = self.protocol
         if p:
+            self.ordinary_packets.append((parts, synchronous, fail_cb))
             p.source_has_more()
+
 
 #
 # Functions used by the server to request something
@@ -1510,6 +1529,7 @@ class ServerSource(FileTransferHandler):
         if self.last_ping_echoed_time>0:
             lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)
         info = {
+                "protocol"          : "xpra",
                 "version"           : self.client_version or "unknown",
                 "revision"          : self.client_revision or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
@@ -1691,7 +1711,7 @@ class ServerSource(FileTransferHandler):
             v = notypedict(info)
         else:
             v = flatten_dict(info)
-        self.send("info-response", v)
+        self.send_async("info-response", v)
 
 
     def send_server_event(self, *args):
@@ -1702,7 +1722,7 @@ class ServerSource(FileTransferHandler):
     def send_clipboard_enabled(self, reason=""):
         if not self.hello_sent:
             return
-        self.send("set-clipboard-enabled", self.clipboard_enabled, reason)
+        self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
 
     def send_clipboard_progress(self, count):
         if not self.clipboard_notifications or not self.hello_sent:
@@ -1823,7 +1843,7 @@ class ServerSource(FileTransferHandler):
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
         if not self.send_bell or self.suspended or not self.hello_sent:
             return
-        self.send("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+        self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         if not self.send_notifications:
@@ -1833,7 +1853,7 @@ class ServerSource(FileTransferHandler):
             notifylog("client %s is suspended, notification not sent", self)
             return False
         if self.hello_sent:
-            self.send("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
         return True
 
     def notify_close(self, nid):
@@ -1847,11 +1867,11 @@ class ServerSource(FileTransferHandler):
 
     def send_webcam_ack(self, device, frame, *args):
         if self.hello_sent:
-            self.send("webcam-ack", device, frame, *args)
+            self.send_async("webcam-ack", device, frame, *args)
 
     def send_webcam_stop(self, device, message):
         if self.hello_sent:
-            self.send("webcam-stop", device, message)
+            self.send_async("webcam-stop", device, message)
 
 
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
@@ -1972,7 +1992,7 @@ class ServerSource(FileTransferHandler):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send("ping", now_ms)
+        self.send_async("ping", now_ms)
         timeout = 60
         def check_echo_timeout():
             if self.last_ping_echoed_time<now_ms and not self.is_closed():
@@ -1992,7 +2012,7 @@ class ServerSource(FileTransferHandler):
             cl = int(1000.0*cl)
         else:
             cl = -1
-        self.send("ping_echo", time_to_echo, l1, l2, l3, cl)
+        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
         self.timeout_add(500, self.ping)
 
@@ -2019,7 +2039,7 @@ class ServerSource(FileTransferHandler):
 
     def show_desktop(self, show):
         if self.show_desktop_allowed and self.hello_sent:
-            self.send("show-desktop", show)
+            self.send_async("show-desktop", show)
 
     def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
         if not self.can_send_window(window) or not self.window_initiate_moveresize:
@@ -2087,7 +2107,7 @@ class ServerSource(FileTransferHandler):
         metadata = {}
         for propname in list(window.get_property_names()):
             metadata.update(self._make_metadata(window, propname))
-        self.send("new-tray", wid, w, h, metadata)
+        self.send_async("new-tray", wid, w, h, metadata)
 
     def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
         if not self.can_send_window(window):
@@ -2105,7 +2125,7 @@ class ServerSource(FileTransferHandler):
                 metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
             metadata.update(v)
         log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
-        self.send(ptype, wid, x, y, w, h, metadata, client_properties or {})
+        self.send_async(ptype, wid, x, y, w, h, metadata, client_properties or {})
         if send_raw_icon:
             self.send_window_icon(wid, window)
 
@@ -2155,7 +2175,7 @@ class ServerSource(FileTransferHandler):
     def raise_window(self, wid, window):
         if not self.can_send_window(window):
             return
-        self.send("raise-window", wid)
+        self.send_async("raise-window", wid)
 
     def remove_window(self, wid, window):
         """ The given window is gone, ensure we free all the related resources """
@@ -2294,7 +2314,7 @@ class ServerSource(FileTransferHandler):
         self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_work_queue.qsize()))
         self.encode_work_queue.put(fn_and_args)
 
-    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None):
+    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None):
         """
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
@@ -2303,7 +2323,7 @@ class ServerSource(FileTransferHandler):
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
             self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in list(self.packet_queue) if x[1]==wid)))
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb))
+        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb))
         p = self.protocol
         if p:
             p.source_has_more()

@@ -233,7 +233,17 @@ class XpraClientBase(FileTransferHandler):
 
     def setup_connection(self, conn):
         netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
-        self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+        if conn.socktype=="udp":
+            from xpra.net.udp_protocol import UDPClientProtocol
+            self._protocol = UDPClientProtocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+            #use a random uuid:
+            import random
+            self._protocol.uuid = random.randint(0, 2**64-1)
+            self.set_packet_handlers(self._packet_handlers, {
+                "udp-control"   : self._process_udp_control,
+                })
+        else:
+            self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol.large_packets.append("keymap-changed")
         self._protocol.large_packets.append("server-settings")
         self._protocol.large_packets.append("logging")
@@ -253,6 +263,10 @@ class XpraClientBase(FileTransferHandler):
             proc, name, command = process
             getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, self._protocol)
+
+    def _process_udp_control(self, packet):
+        #send it back to the protocol object:
+        self._protocol.process_control(*packet[1:])
 
 
     def remove_packet_handlers(self, *keys):
@@ -440,19 +454,22 @@ class XpraClientBase(FileTransferHandler):
             p.source_has_more()
 
     def next_packet(self):
+        netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s", len(self._priority_packets), len(self._ordinary_packets), bool(self._mouse_position))
+        synchronous = True
         if self._priority_packets:
             packet = self._priority_packets.pop(0)
         elif self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
         elif self._mouse_position is not None:
             packet = self._mouse_position
+            synchronous = False
             self._mouse_position = None
         else:
             packet = None
         has_more = packet is not None and \
                 (bool(self._priority_packets) or bool(self._ordinary_packets) \
                  or self._mouse_position is not None)
-        return packet, None, None, has_more
+        return packet, None, None, None, synchronous, has_more
 
 
     def cleanup(self):
@@ -815,6 +832,7 @@ class XpraClientBase(FileTransferHandler):
         if not p or not p.enable_encoder_from_caps(c):
             return False
         p.enable_compressor_from_caps(c)
+        p.accept()
         return True
 
     def parse_encryption_capabilities(self):

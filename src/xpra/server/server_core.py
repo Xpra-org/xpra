@@ -151,9 +151,12 @@ class ServerCore(object):
         #networking bits:
         self._socket_info = []
         self._potential_protocols = []
+        self._udp_listeners = []
+        self._udp_protocols = {}
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
-        self._ssl_wrap_socket = None
+        self._ssl_wrap_server_socket = None
+        self._ssl_wrap_client_socket = None
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
@@ -285,7 +288,7 @@ class ServerCore(object):
             self.auth_classes["named-pipes"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
-        for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock"):
+        for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock", "udp"):
             opts_value = getattr(opts, "%s_auth" % x)
             self.auth_classes[x] = self.get_auth_module(x, opts_value, opts)
         authlog("init_auth(..) auth=%s", self.auth_classes)
@@ -377,6 +380,7 @@ class ServerCore(object):
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
             "disconnect":                           self._process_disconnect,
+            "udp-control":                          self._process_udp_control,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
@@ -532,11 +536,17 @@ class ServerCore(object):
         self.do_cleanup()
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
+        self.cleanup_udp_listeners()
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
         sleep(0.1)
 
+
+    def cleanup_udp_listeners(self):
+        for udpl in self._udp_listeners:
+            udpl.close()
+        self._udp_listeners = []
 
     def cleanup_all_protocols(self, reason):
         protocols = self.get_all_protocols()
@@ -563,6 +573,11 @@ class ServerCore(object):
             #named pipe listener uses a thread:
             sock.new_connection_cb = self._new_connection
             sock.start()
+        elif socktype=="udp":
+            #socket_info = self.socket_info.get(sock)
+            from xpra.net.udp_protocol import UDPListener
+            udpl = UDPListener(sock, self.process_udp_packet)
+            self._udp_listeners.append(udpl)
         else:
             from xpra.gtk_common.gobject_compat import import_glib
             glib = import_glib()
@@ -979,7 +994,8 @@ class ServerCore(object):
 
     def verify_connection_accepted(self, protocol):
         if self.is_timedout(protocol):
-            log.error("connection timedout: %s", protocol)
+            info = getattr(protocol, "_conn", protocol)
+            log.error("connection timedout: %s", info)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def send_disconnect(self, proto, *reasons):
@@ -1034,6 +1050,10 @@ class ServerCore(object):
             if not proto._closed:
                 self._log_disconnect(proto, "Connection lost")
             self._potential_protocols.remove(proto)
+        #remove from UDP protocol map:
+        uuid = getattr(proto, "uuid", None)
+        if uuid and uuid in self._udp_protocols:
+            del self._udp_protocols[uuid]
 
     def _process_gibberish(self, proto, packet):
         (_, message, data) = packet
@@ -1239,6 +1259,7 @@ class ServerCore(object):
             self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto, _packet, c, _auth_caps):
+        proto.accept()
         ctr = c.strget("connect_test_request")
         if ctr:
             response = {"connect_test_response" : ctr}
@@ -1462,3 +1483,33 @@ class ServerCore(object):
     def handle_rfb_connection(self, conn):
         log.error("Error: RFB protocol is not supported by this server")
         conn.close()
+
+
+    def _process_udp_control(self, proto, packet):
+        proto.process_control(*packet[1:])
+
+    def process_udp_packet(self, udp_listener, uuid, seqno, synchronous, chunk, chunks, data, bfrom):
+        #log.info("process_udp_packet%s", (udp_listener, uuid, seqno, synchronous, chunk, chunks, len(data), bfrom))
+        protocol = self._udp_protocols.get(uuid)
+        if not protocol:
+            from xpra.net.udp_protocol import UDPServerProtocol, UDPSocketConnection
+            def udp_protocol_class(conn):
+                protocol = UDPServerProtocol(self, conn, self.process_packet)
+                protocol.uuid = uuid
+                protocol.large_packets.append("info-response")
+                protocol.receive_aliases.update(self._aliases)
+                return protocol
+            socktype = "udp"
+            host, port = bfrom
+            sock = udp_listener._socket
+            sockname = sock.getsockname()
+            conn = UDPSocketConnection(sock, sockname, (host, port), (host, port), socktype)
+            conn.timeout = SOCKET_TIMEOUT
+            protocol = self.do_make_protocol(socktype, conn, udp_protocol_class)
+            self._udp_protocols[uuid] = protocol
+        else:
+            #update remote address in case the client is roaming:
+            conn = protocol._conn
+            if conn:
+                conn.remote = bfrom
+        protocol.process_udp_data(uuid, seqno, synchronous, chunk, chunks, data, bfrom)

@@ -44,7 +44,7 @@ def add_cleanup(f):
     _cleanups.append(f)
 
 
-def deadly_signal(signum, frame):
+def deadly_signal(signum, _frame):
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
     run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
@@ -357,12 +357,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
-    from xpra.server.socket_util import parse_bind_tcp, parse_bind_vsock
-    bind_tcp = parse_bind_tcp(opts.bind_tcp)
-    bind_ssl = parse_bind_tcp(opts.bind_ssl)
-    bind_ws = parse_bind_tcp(opts.bind_ws)
-    bind_wss = parse_bind_tcp(opts.bind_wss)
-    bind_rfb = parse_bind_tcp(opts.bind_rfb)
+    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock
+    bind_tcp = parse_bind_ip(opts.bind_tcp)
+    bind_udp = parse_bind_ip(opts.bind_udp)
+    bind_ssl = parse_bind_ip(opts.bind_ssl)
+    bind_ws  = parse_bind_ip(opts.bind_ws)
+    bind_wss = parse_bind_ip(opts.bind_wss)
+    bind_rfb = parse_bind_ip(opts.bind_rfb)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")
@@ -589,6 +590,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
+    from xpra.server.socket_util import setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_local_sockets
     def add_mdns(socktype, host, port):
         recs = mdns_recs.setdefault(socktype.lower(), [])
         rec = (host, port)
@@ -598,11 +600,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         socket = setup_tcp_socket(host, iport, socktype)
         sockets.append(socket)
         add_mdns(socktype, host, iport)
-
+    def add_udp_socket(socktype, host, iport):
+        socket = setup_udp_socket(host, iport, socktype)
+        sockets.append(socket)
+        add_mdns(socktype, host, iport)
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    from xpra.server.socket_util import setup_tcp_socket, setup_vsock_socket, setup_local_sockets
     netlog("setting up SSL sockets: %s", bind_ssl)
     for host, iport in bind_ssl:
         add_tcp_socket("SSL", host, iport)
@@ -615,6 +619,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         add_tcp_socket("tcp", host, iport)
         if tcp_ssl:
             add_mdns("ssl", host, iport)
+    netlog("setting up UDP sockets: %s", bind_udp)
+    for host, iport in bind_udp:
+        add_udp_socket("udp", host, iport)
     netlog("setting up http / ws (websockets): %s", bind_ws)
     for host, iport in bind_ws:
         add_tcp_socket("ws", host, iport)

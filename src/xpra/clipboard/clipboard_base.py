@@ -236,7 +236,7 @@ class ClipboardProtocolHelperBase(object):
         synchronous_client = len(packet)>=11 and bool(packet[10])
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
-    def _get_clipboard_from_remote_handler(self, proxy, selection, target):
+    def _get_clipboard_from_remote_handler(self, _proxy, selection, target):
         if must_discard(target):
             log("invalid target '%s'", target)
             return None

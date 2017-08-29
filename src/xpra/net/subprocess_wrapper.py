@@ -428,7 +428,7 @@ class subprocess_caller(object):
             item = self.send_queue.get(False)
         except:
             item = None
-        return (item, None, None, self.send_queue.qsize()>0)
+        return (item, None, None, None, False, self.send_queue.qsize()>0)
 
     def send(self, *packet_data):
         self.send_queue.put(packet_data)

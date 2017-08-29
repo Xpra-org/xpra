@@ -277,6 +277,11 @@ class SocketConnection(Connection):
             i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
+        #meaningless for udp:
+        try:
+            s.settimeout(0)
+        except:
+            pass
         #this is more proper but would break the proxy server:
         #s.shutdown(socket.SHUT_RDWR)
         s.close()
@@ -305,14 +310,20 @@ class SocketConnection(Connection):
         s = self._socket
         if not s:
             return None
-        return {
-                #"class"         : str(type(s)),
-                "fileno"        : s.fileno(),
-                "timeout"       : int(1000*(s.gettimeout() or 0)),
+        info = {
                 "family"        : FAMILY_STR.get(s.family, s.family),
                 "proto"         : s.proto,
                 "type"          : PROTOCOL_STR.get(s.type, s.type),
                 }
+        try:
+            info["timeout"] = int(1000*(s.gettimeout() or 0))
+        except:
+            pass
+        try:
+            info["fileno"] = s.fileno()
+        except:
+            pass
+        return info
 
 try:
     #this wrapper class allows us to override the normal ssl.Socket

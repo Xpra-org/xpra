@@ -1426,6 +1426,13 @@ class WindowVideoSource(WindowSource):
         return {}
 
 
+    def get_fail_cb(self, packet):
+        coding = packet[6]
+        if coding in self.common_video_encodings:
+            return None
+        return WindowSource.get_fail_cb(self, packet)
+
+
     def make_draw_packet(self, x, y, w, h, coding, data, outstride, client_options={}, options={}):
         #overriden so we can invalidate the scroll data:
         #log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)

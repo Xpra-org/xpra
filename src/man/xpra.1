@@ -63,6 +63,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
@@ -196,6 +197,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
+[\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
@@ -437,9 +439,11 @@ the unix domain sockets (see \fIbind\fP, \fIsocket\-dir\fP and
 \fIsocket\-dirs\fP).
 
 If the xpra server was given the \fB\-\-bind\-tcp\fP, \fB\-\-bind\-ssl\fP
+\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP,
 \fB\-\-bind\-ws\fP, \fB\-\-bind\-wss\fP or \fB\-\-bind\-vsock\fP option
 when started then you can also connect
-to it using a display of the form \fBtcp:HOST:PORT\fP, \fBssl:HOST:PORT\fP,
+to it using a display of the form \fBtcp:HOST:PORT\fP,
+\fBudp:HOST:PORT\fP, \fBssl:HOST:PORT\fP,
 \fBws:HOST:PORT\fP, \fBwss:HOST:PORT\fP or \fBvsock:HOST:PORT\fP.
 (Notice that \fBssh:\fP takes an optional \fIdisplay\fP number,
 while those take a required \fIport\fP number.)
@@ -748,6 +752,24 @@ if the \fBhtml\fP switch is enabled.
 TCP sockets may also be upgraded to SSL sockets if the
 \fBssl\fP switch is enabled.
 .TP
+\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP
+Create a UDP socket for each \fB\-\-bind\-udp\fP option specified.
+If the host portion is omitted, then 127.0.0.1 (localhost) will be
+used.  If you wish to accept connections on all interfaces, pass
+0.0.0.0 for the host portion.
+
+Using this switch without using the \fIudp\-auth\fP option is not recommended,
+and is a major security risk (especially when passing 0.0.0.0)!
+Anyone at all may connect to this port and access your session.
+UDP sessions are trivial to hijack for anyone able to sniff
+even just a single packet, it should only be used in very specific
+use-cases, and never over unsecured networks.
+
+TCP sockets may also process HTTP / Websocket connections
+if the \fBhtml\fP switch is enabled.
+TCP sockets may also be upgraded to SSL sockets if the
+\fBssl\fP switch is enabled.
+.TP
 \fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP
 Create an HTTP / Websocket listener.
 See \fBbind\-tcp\fP for host restrictions,
@@ -851,6 +873,10 @@ automatically (either \fBpam\fP or \fBwin32\fP)
 \fB\-\-tcp\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind\-tcp\fP switch).
+.TP
+\fB\-\-udp\-auth\fP=\fIMODULE\fP
+Just like the \fBtcp\-auth\fP switch, except this one only applies
+to UDP sockets (sockets defined using the \fBbind\-udp\fP switch).
 .TP
 \fB\-\-ws\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
