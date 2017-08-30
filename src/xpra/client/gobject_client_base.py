@@ -188,6 +188,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         self.screenshot_filename = screenshot_filename
         CommandConnectClient.__init__(self, conn, opts)
         self.hello_extra["screenshot_request"] = True
+        self.hello_extra["request"] = "screenshot"
 
     def timeout(self, *_args):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the screenshot")
@@ -215,6 +216,7 @@ class InfoXpraClient(CommandConnectClient):
     def __init__(self, *args):
         CommandConnectClient.__init__(self, *args)
         self.hello_extra["info_request"] = True
+        self.hello_extra["request"] = "info"
         if FLATTEN_INFO!=1:
             self.hello_extra["info-namespace"] = True
 
@@ -254,6 +256,7 @@ class ConnectTestXpraClient(CommandConnectClient):
         self.value = get_hex_uuid()
         self.hello_extra.update({
             "connect_test_request"      : self.value,
+            "request"                   : "connect_test",
             #tells proxy servers we don't want to connect to the real / new instance:
             "connect"                   : False,
             #older servers don't know about connect-test,
@@ -293,6 +296,7 @@ class MonitorXpraClient(SendCommandConnectClient):
         SendCommandConnectClient.__init__(self, *args)
         for x in ("wants_features", "wants_events", "event_request"):
             self.hello_extra[x] = True
+        self.hello_extra["request"] = "event"
 
     def timeout(self, *args):
         pass
@@ -322,6 +326,7 @@ class VersionXpraClient(HelloRequestClient):
     def hello_request(self):
         return {
             "version_request"       : True,
+            "request"               : "version",
             "full-version-request"  : True,
             }
 
@@ -364,6 +369,7 @@ class ControlXpraClient(CommandConnectClient):
         capabilities = GObjectXpraClient.make_hello(self)
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
         capabilities["command_request"] = self.command
+        capabilities["request"] = "command"
         return capabilities
 
 
@@ -423,6 +429,7 @@ class PrintClient(SendCommandConnectClient):
         capabilities = SendCommandConnectClient.make_hello(self)
         capabilities["wants_features"] = True   #so we know if printing is supported or not
         capabilities["print_request"] = True    #marker to skip full setup
+        capabilities["request"] = "print"
         return capabilities
 
 
@@ -433,7 +440,10 @@ class ExitXpraClient(HelloRequestClient):
     """
 
     def hello_request(self):
-        return {"exit_request" : True}
+        return {
+            "exit_request"  : True,
+            "request"       : "exit",
+            }
 
     def do_command(self):
         self.idle_add(self.send, "exit-server")
@@ -443,7 +453,10 @@ class StopXpraClient(HelloRequestClient):
     """ stop a server """
 
     def hello_request(self):
-        return {"stop_request"  : True}
+        return {
+            "stop_request"  : True,
+            "request"       : "stop",
+            }
 
     def do_command(self):
         if not self.can_shutdown_server:
@@ -461,7 +474,10 @@ class DetachXpraClient(HelloRequestClient):
     """ run the detach subcommand """
 
     def hello_request(self):
-        return {"detach_request" : True}
+        return {
+            "detach_request"    : True,
+            "request"           : "detach",
+            }
 
     def do_command(self):
         self.idle_add(self.send, "disconnect", DONE, "detaching")

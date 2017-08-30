@@ -1138,15 +1138,21 @@ class ServerBase(ServerCore):
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)
             return
-        detach_request  = c.boolget("detach_request", False)
-        stop_request    = c.boolget("stop_request", False)
-        exit_request    = c.boolget("exit_request", False)
-        event_request   = c.boolget("event_request", False)
-        print_request   = c.boolget("print_request", False)
+        #added in 2.2:
+        generic_request = c.strget("request")
+        def is_req(mode):
+            return generic_request==mode or c.boolget("%s_request" % mode, False)
+        detach_request  = is_req("detach")
+        stop_request    = is_req("stop_request")
+        exit_request    = is_req("exit_request")
+        event_request   = is_req("event_request")
+        print_request   = is_req("print_request")
         is_request = detach_request or stop_request or exit_request or event_request or print_request
         if not is_request:
             #"normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
+        else:
+            log("handling request %s", generic_request)
         self.server_event("handshake-complete")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
