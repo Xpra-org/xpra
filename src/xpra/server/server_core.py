@@ -1002,7 +1002,7 @@ class ServerCore(object):
         netlog("send_disconnect(%s, %s)", proto, reasons)
         if proto._closed:
             return
-        proto.send_disconnect(*reasons)
+        proto.send_disconnect(reasons)
         self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto):
