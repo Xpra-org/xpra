@@ -104,7 +104,7 @@ def get_packet_encoding_caps():
 
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ["bencode", "rencode", "yaml"]
+ALL_ENCODERS = ["rencode", "bencode", "yaml"]
 
 #order for performance:
 PERFORMANCE_ORDER = ["rencode", "bencode", "yaml"]
