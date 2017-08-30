@@ -8,28 +8,33 @@
 #runs all the files in "unit/" that end in "test.py"
 
 import sys
+import os.path
+import subprocess
 
 
 def main():
-    import os.path
-    import subprocess
-    if len(sys.argv)==2:
-        p = os.path.abspath(sys.argv[1])
+    paths = []
+    #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
+    unit_dir = os.path.abspath(os.path.dirname(__file__))
+    if len(sys.argv)>1:
+        for x in sys.argv[1:]:
+            paths.append(os.path.abspath(x))
     else:
-        p = os.path.abspath(os.path.dirname(__file__))
-    #ie: p=~/Xpra/trunk/src/tests/unit
-    root = os.path.dirname(p)
-    #ie: d=~/Xpra/trunk/src/tests
-    sys.path.append(root)
+        paths.append(unit_dir)
+    #ie: unittests_dir = "/path/to/Xpra/trunk/src/unittests"
+    unittests_dir = os.path.dirname(unit_dir)
+    sys.path.append(unittests_dir)
     #now look for tests to run
     def write(msg):
         sys.stdout.write("%s\n" % msg)
         sys.stdout.flush()
     def run_file(p):
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
-        assert p.startswith(root) and p.endswith("test.py")
+        if not (p.startswith(unittests_dir) and p.endswith("test.py")):
+            write("invalid file skipped: %s" % p)
+            return 0
         #ie: "unit.version_util_test"
-        name = p[len(root)+1:-3].replace(os.path.sep, ".")
+        name = p[len(unittests_dir)+1:-3].replace(os.path.sep, ".")
         write("running %s\n" % name)
         cmd = ["python%s" % sys.version_info[0], p]
         try:
@@ -55,8 +60,15 @@ def main():
             if v !=0:
                 return v
         return 0
-    write("running all the tests in %s" % p)
-    return add_recursive(p)
+    write("************************************************************")
+    write("running all the tests in %s" % paths)
+    for x in paths:
+        if os.path.isdir(x):
+            r = add_recursive(x)
+            if r!=0:
+                return r
+        else:
+            run_file(x)
 
 if __name__ == '__main__':
     v = main()

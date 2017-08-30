@@ -19,5 +19,5 @@ export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
 export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
-python2 ./unit/run.py
+python2 ./unit/run.py "$@"
 popd
