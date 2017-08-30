@@ -977,7 +977,7 @@ class WindowSource(object):
         if speed<=0:
             #make a copy to work on (and discard "info")
             speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
-            info, target_speed = get_target_speed(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_speed, speed_data)
+            info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_speed, speed_data)
             speed_data.append((monotonic_time(), target_speed))
             speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
             speed = min(99, speed)
@@ -1013,7 +1013,7 @@ class WindowSource(object):
             return
         quality = self._fixed_quality
         if quality<=0:
-            info, quality = get_target_quality(self.wid, self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality, self._fixed_min_speed)
+            info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality, self._fixed_min_speed)
             #make a copy to work on (and discard "info")
             ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
             ves_copy.append((monotonic_time(), quality))

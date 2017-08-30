@@ -63,12 +63,12 @@ class GTKStatusIconTray(TrayBase):
             self.click_cb(button, 0, time)
 
 
-    def hide(self, *args):
+    def hide(self, *_args):
         log("%s.set_visible(False)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(False)
 
-    def show(self, *args):
+    def show(self, *_args):
         log("%s.set_visible(True)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(True)

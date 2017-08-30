@@ -30,11 +30,11 @@ class AnimatedColorWindow(gtk.Window):
         self.show_all()
         gLib.timeout_add(50, self.repaint)
 
-    def do_expose_event(self, *args):
+    def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)
 
-    def on_key_press(self, *args):
+    def on_key_press(self, *_args):
         self.increase = not self.increase
 
     def repaint(self):
@@ -82,7 +82,9 @@ class AnimatedColorWindow(gtk.Window):
 
 def main():
     import signal
-    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
     AnimatedColorWindow()
     gtk.main()
 

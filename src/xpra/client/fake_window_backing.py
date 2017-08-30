@@ -21,7 +21,7 @@ class FakeBacking(object):
 
     HAS_ALPHA = True
 
-    def __init__(self, wid, *args):
+    def __init__(self, wid, *_args):
         self.wid = wid
         self.fake_delay = FAKE_BACKING_DELAY
         self._video_encoder, self._video_encoder_lock, self._video_encoder_speed, self._video_encoder_quality = None, None, [], []

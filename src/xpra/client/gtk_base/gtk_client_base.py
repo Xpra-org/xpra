@@ -178,7 +178,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.file_size_dialog.connect("response", self.close_file_size_warning)
         self.file_size_dialog.show()
 
-    def close_file_size_warning(self, *args):
+    def close_file_size_warning(self, *_args):
         fsd = self.file_size_dialog
         if fsd:
             self.file_size_dialog = None
@@ -236,7 +236,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.send_file(filename, "", data, filesize=filesize, openit=openit)
 
 
-    def show_about(self, *args):
+    def show_about(self, *_args):
         from xpra.gtk_common.about import about
         about()
 
@@ -257,7 +257,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info.set_args(*args)
         self.session_info.show_all()
 
-    def show_bug_report(self, *args):
+    def show_bug_report(self, *_args):
         self.send_info_request()
         if self.bug_report:
             self.bug_report.show()

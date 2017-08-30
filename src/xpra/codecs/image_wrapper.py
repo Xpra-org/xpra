@@ -123,15 +123,15 @@ class ImageWrapper(object):
         assert not self.freed
         self.pixels = pixels
 
-    def allocate_buffer(self, buf_len, free_existing=1):
+    def allocate_buffer(self, _buf_len, _free_existing=1):
         assert not self.freed
         #only defined for XImage wrappers:
         return 0
 
-    def may_restride(self, *args):
+    def may_restride(self, *_args):
         return self.restride()
 
-    def restride(self, *args):
+    def restride(self, *_args):
         assert not self.freed
         #not supported by the generic image wrapper:
         return False

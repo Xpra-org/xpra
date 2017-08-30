@@ -141,7 +141,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
             #if we are (down)scaling, we should prefer lossy pixel formats:
             v = LOSSY_PIXEL_FORMATS.get(enc_in_format, 1)
             qscore *= (v/2)
-        enc_width, enc_height = get_encoder_dimensions(csc_spec, encoder_spec, csc_width, csc_height, scaling)
+        enc_width, enc_height = get_encoder_dimensions(encoder_spec, csc_width, csc_height, scaling)
     else:
         #not using csc at all!
         ecsc_score = 100
@@ -172,7 +172,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
              qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
-def get_encoder_dimensions(csc_spec, encoder_spec, width, height, scaling=(1,1)):
+def get_encoder_dimensions(encoder_spec, width, height, scaling=(1,1)):
     """
         Given a csc and encoder specs and dimensions, we calculate
         the dimensions that we would use as output.

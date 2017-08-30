@@ -259,7 +259,7 @@ class GTKTrayMenuBase(object):
         self.menu_icon_size = get_icon_size()
         menu = gtk.Menu()
         menu.set_title(self.client.session_name or "Xpra")
-        def set_menu_title(*args):
+        def set_menu_title(*_args):
             #set the real name when available:
             m = self.menu
             if m:
@@ -298,12 +298,12 @@ class GTKTrayMenuBase(object):
         self.close_menu()
         close_about()
 
-    def close_menu(self, *args):
+    def close_menu(self, *_args):
         if self.menu_shown:
             self.menu.popdown()
             self.menu_shown = False
 
-    def menu_deactivated(self, *args):
+    def menu_deactivated(self, *_args):
         self.menu_shown = False
 
     def activate(self, button=1, time=0):
@@ -322,7 +322,7 @@ class GTKTrayMenuBase(object):
         """ Same as menuitem() but this one will be disabled until we complete the server handshake """
         mi = self.menuitem(*args, **kwargs)
         set_sensitive(mi, False)
-        def enable_menuitem(*args):
+        def enable_menuitem(*_args):
             set_sensitive(mi, True)
         self.client.after_handshake(enable_menuitem)
         return mi
@@ -367,14 +367,14 @@ class GTKTrayMenuBase(object):
         title = "Session Info"
         if self.client.session_name and self.client.session_name!="Xpra session":
             title = "Info: %s"  % self.client.session_name
-        def show_session_info_cb(*args):
+        def show_session_info_cb(*_args):
             #we define a generic callback to remove the arguments
             #(which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
         return  self.handshake_menuitem(title, "statistics.png", None, show_session_info_cb)
 
     def make_bugreportmenuitem(self):
-        def show_bug_report_cb(*args):
+        def show_bug_report_cb(*_args):
             self.show_bug_report()
         return  self.handshake_menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
 
@@ -752,7 +752,7 @@ class GTKTrayMenuBase(object):
     def make_qualitymenuitem(self):
         self.quality = self.menuitem("Quality", "slider.png", "Picture quality", None)
         set_sensitive(self.quality, False)
-        def may_enable_qualitymenu(*args):
+        def may_enable_qualitymenu(*_args):
             self.quality.set_submenu(self.make_qualitysubmenu())
             self.set_qualitymenu()
         self.client.after_handshake(may_enable_qualitymenu)
@@ -780,7 +780,7 @@ class GTKTrayMenuBase(object):
         self.client.send_min_quality()
         self.client.send_quality()
 
-    def set_qualitymenu(self, *args):
+    def set_qualitymenu(self, *_args):
         if self.quality:
             can_use = not self.client.mmap_enabled and (self.client.encoding in self.client.server_encodings_with_quality or self.client.encoding=="auto")
             set_sensitive(self.quality, can_use)
@@ -801,7 +801,7 @@ class GTKTrayMenuBase(object):
     def make_speedmenuitem(self):
         self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size", None)
         set_sensitive(self.speed, False)
-        def may_enable_speedmenu(*args):
+        def may_enable_speedmenu(*_args):
             self.speed.set_submenu(self.make_speedsubmenu())
             self.set_speedmenu()
         self.client.after_handshake(may_enable_speedmenu)
@@ -829,7 +829,7 @@ class GTKTrayMenuBase(object):
         self.client.send_speed()
 
 
-    def set_speedmenu(self, *args):
+    def set_speedmenu(self, *_args):
         if self.speed:
             can_use = not self.client.mmap_enabled and (self.client.encoding in self.client.server_encodings_with_speed or self.client.encoding=="auto")
             set_sensitive(self.speed, can_use)
@@ -861,9 +861,9 @@ class GTKTrayMenuBase(object):
     def make_speakermenuitem(self):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward sound output from the server")
         set_sensitive(speaker, False)
-        def is_speaker_on(*args):
+        def is_speaker_on(*_args):
             return self.client.speaker_enabled
-        def speaker_state(*args):
+        def speaker_state(*_args):
             if not self.client.speaker_allowed:
                 set_sensitive(speaker, False)
                 speaker.set_tooltip_text("Speaker forwarding has been disabled")
@@ -886,9 +886,9 @@ class GTKTrayMenuBase(object):
     def make_microphonemenuitem(self):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward sound input to the server", None)
         set_sensitive(microphone, False)
-        def is_microphone_on(*args):
+        def is_microphone_on(*_args):
             return self.client.microphone_enabled
-        def microphone_state(*args):
+        def microphone_state(*_args):
             if not self.client.microphone_allowed:
                 set_sensitive(microphone, False)
                 microphone.set_tooltip_text("Microphone forwarding has been disabled")
@@ -961,7 +961,7 @@ class GTKTrayMenuBase(object):
             c.set_draw_as_radio(True)
             c.set_active(get_active_device_no()==device_no)
             c.device_no = device_no
-            def activate_cb(item, *args):
+            def activate_cb(item, *_args):
                 webcamlog("activate_cb(%s, %s) ignore_events=%s", item, menu, menu.ignore_events)
                 if not menu.ignore_events:
                     try:
@@ -1130,7 +1130,7 @@ class GTKTrayMenuBase(object):
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
         keyboard_helper = self.client.keyboard_helper
-        def set_layout_enabled(*args):
+        def set_layout_enabled(*_args):
             if full_layout_list and (keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query):
                 #we have detected a layout
                 #so no need to show the user the huge layout list
@@ -1153,13 +1153,13 @@ class GTKTrayMenuBase(object):
         return windows_menu_item
 
     def make_refreshmenuitem(self):
-        def force_refresh(*args):
+        def force_refresh(*_args):
             log("force refresh")
             self.client.send_refresh_all()
         return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
 
     def make_raisewindowsmenuitem(self):
-        def raise_windows(*args):
+        def raise_windows(*_args):
             for win in self.client._window_to_id.keys():
                 if not win.is_OR():
                     win.deiconify()
@@ -1167,7 +1167,7 @@ class GTKTrayMenuBase(object):
         return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
 
     def make_minimizewindowsmenuitem(self):
-        def minimize_windows(*args):
+        def minimize_windows(*_args):
             for win in self.client._window_to_id.keys():
                 if not win.is_OR():
                     win.iconify()
@@ -1211,7 +1211,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_shutdownmenuitem(self):
-        def ask_shutdown_confirm(*args):
+        def ask_shutdown_confirm(*_args):
             dialog = gtk.MessageDialog (None, 0, MESSAGE_QUESTION,
                                     BUTTONS_NONE,
                                     "Shutting down this session may cause data loss,\nare you sure you want to proceed?")
@@ -1232,7 +1232,7 @@ class GTKTrayMenuBase(object):
         return self.shutdown
 
     def make_disconnectmenuitem(self):
-        def menu_quit(*args):
+        def menu_quit(*_args):
             self.client.disconnect_and_quit(EXIT_OK, CLIENT_EXIT)
         return self.handshake_menuitem("Disconnect", "quit.png", None, menu_quit)
 

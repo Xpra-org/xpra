@@ -99,7 +99,7 @@ class GlobalPerformanceStatistics(object):
             self.min_server_ping_latency = min([x for _,x in data])
             self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
 
-    def get_factors(self, target_latency, pixel_count):
+    def get_factors(self, pixel_count):
         factors = []
         if len(self.client_latency)>0:
             #client latency: (we want to keep client latency as low as can be)

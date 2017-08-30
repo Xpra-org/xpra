@@ -36,9 +36,9 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
 
     #for each indicator: (description, factor, weight)
-    factors = statistics.get_factors(low_limit, batch.delay)
+    factors = statistics.get_factors()
     statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
-    factors += global_statistics.get_factors(statistics.target_latency, low_limit)
+    factors += global_statistics.get_factors(low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
     factors.append(queue_inspect("damage-packet-queue-pixels", time_values, div=low_limit, smoothing=sqrt))
@@ -104,7 +104,7 @@ def update_batch_delay(batch, factors):
     batch.last_updated = now
     batch.factors = valid_factors
 
-def get_target_speed(wid, window_dimensions, batch, global_statistics, statistics, min_speed, speed_data):
+def get_target_speed(window_dimensions, batch, global_statistics, statistics, min_speed, speed_data):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # encoding speed:
@@ -195,7 +195,7 @@ def get_target_speed(wid, window_dimensions, batch, global_statistics, statistic
     return info, target_speed
 
 
-def get_target_quality(wid, window_dimensions, batch, global_statistics, statistics, min_quality, min_speed):
+def get_target_quality(window_dimensions, batch, global_statistics, statistics, min_quality, min_speed):
     info = {
         "min_quality"   : min_quality,
         "min_speed"     : min_speed,

@@ -143,7 +143,7 @@ if OPENGL_DEBUG:
         from OpenGL.GL.GREMEDY.frame_terminator import glInitFrameTerminatorGREMEDY, glFrameTerminatorGREMEDY
         from OpenGL.GL import GLDEBUGPROC #@UnresolvedImport
         def py_gl_debug_callback(source, error_type, error_id, severity, length, message, param):
-            log.error("src %x type %x id %x severity %x length %d message %s", source, error_type, error_id, severity, length, message)
+            log.error("src %x type %x id %x severity %x length %d message %s, param=%s", source, error_type, error_id, severity, length, message, param)
         gl_debug_callback = GLDEBUGPROC(py_gl_debug_callback)
     except ImportError:
         # This is normal- GREMEDY_string_marker is only available with OpenGL debuggers

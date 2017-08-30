@@ -30,17 +30,17 @@ class ColorGradientWindow(gtk.Window):
         self.connect("key_press_event", self.on_key_press)
         self.show_all()
 
-    def configure_event(self, *args):
+    def configure_event(self, *_args):
         self.queue_draw()
 
-    def on_key_press(self, widget, key_event):
+    def on_key_press(self, _widget, key_event):
         if key_event.string == "-":
             self.bpc = ((self.bpc-2) % 16)+1
         else:
             self.bpc = (self.bpc%16)+1
         self.queue_draw()
 
-    def do_expose_event(self, *args):
+    def do_expose_event(self, *_args):
         #print("do_expose_event")
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)
@@ -115,7 +115,9 @@ class ColorGradientWindow(gtk.Window):
 
 def main():
     import signal
-    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
     ColorGradientWindow()
     gtk.main()
 

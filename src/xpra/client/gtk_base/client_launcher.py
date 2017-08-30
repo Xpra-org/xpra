@@ -184,7 +184,7 @@ class ApplicationWindow:
         icon_pixbuf = self.get_icon("bugs.png")
         self.bug_tool = None
         if icon_pixbuf:
-            def bug(*args):
+            def bug(*_args):
                 if self.bug_tool==None:
                     from xpra.client.gtk_base.bug_report import BugReport
                     self.bug_tool = BugReport()
@@ -196,7 +196,7 @@ class ApplicationWindow:
         icon_pixbuf = self.get_icon("mdns.png")
         self.mdns_gui = None
         if icon_pixbuf and self.has_mdns():
-            def mdns(*args):
+            def mdns(*_args):
                 if self.mdns_gui==None:
                     from xpra.client.gtk_base.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions()
@@ -391,7 +391,7 @@ class ApplicationWindow:
             self.button.set_image(scaled_image(connect_icon, 24))
         hbox.pack_start(self.button)
 
-        def accel_close(*args):
+        def accel_close(*_args):
             gtk.main_quit()
         add_close_accel(self.window, accel_close)
         vbox.show_all()
@@ -445,7 +445,7 @@ class ApplicationWindow:
             return pixbuf_new_from_file(icon_filename)
         return None
 
-    def mode_changed(self, *args):
+    def mode_changed(self, *_args):
         mode = self.mode_combo.get_active_text().lower()
         ssh = mode=="ssh"
         if ssh:
@@ -488,7 +488,7 @@ class ApplicationWindow:
         else:
             self.nostrict_host_check.hide()
 
-    def get_selected_encoding(self, *args):
+    def get_selected_encoding(self, *_args):
         if not self.encoding_combo:
             return ""
         index = get_active_item_index(self.encoding_combo)
@@ -505,7 +505,7 @@ class ApplicationWindow:
             self.quality_combo.hide()
             self.quality_label.hide()
 
-    def encoding_options_toggled(self, *args):
+    def encoding_options_toggled(self, *_args):
         if not self.encoding_box:
             return
         show_opts = self.encoding_options_check.get_active()
@@ -532,7 +532,7 @@ class ApplicationWindow:
     def set_sensitive(self, s):
         glib.idle_add(self.window.set_sensitive, s)
 
-    def connect_clicked(self, *args):
+    def connect_clicked(self, *_args):
         self.update_options_from_gui()
         self.do_connect()
 
@@ -686,7 +686,7 @@ class ApplicationWindow:
         #override exit code:
         warn_and_quit_save = self.client.warn_and_quit
         quit_save = self.client.quit
-        def do_quit(*args):
+        def do_quit(*_args):
             self.client.warn_and_quit = warn_and_quit_save
             self.client.quit = quit_save
             self.client.cleanup()
@@ -738,10 +738,10 @@ class ApplicationWindow:
             self.handle_exception(e)
 
 
-    def password_ok(self, *args):
+    def password_ok(self, *_args):
         self.password_entry.modify_text(STATE_NORMAL, black)
 
-    def password_warning(self, *args):
+    def password_warning(self, *_args):
         self.password_entry.modify_text(STATE_NORMAL, red)
         self.password_entry.grab_focus()
 
@@ -805,7 +805,7 @@ class ApplicationWindow:
         self.port_entry.set_text(get_port(self.config.port))
         self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
-    def destroy(self, *args):
+    def destroy(self, *_args):
         w = self.window
         if w:
             self.window = None
@@ -849,7 +849,7 @@ class ApplicationWindow:
         file_filter.add_pattern("*.xpra")
         choose_file(self.window, title, action, action_button, callback, file_filter)
 
-    def save_clicked(self, *args):
+    def save_clicked(self, *_args):
         self.update_options_from_gui()
         def do_save(filename):
             #make sure the file extension is .xpra
@@ -858,7 +858,7 @@ class ApplicationWindow:
             save_config(filename, self.config, self.config_keys, extras_types=LAUNCHER_OPTION_TYPES)
         self.choose_session_file("Save session settings to file", FILE_CHOOSER_ACTION_SAVE, gtk.STOCK_SAVE, do_save)
 
-    def load_clicked(self, *args):
+    def load_clicked(self, *_args):
         def do_load(filename):
             self.update_options_from_file(filename)
             self.update_gui_from_config()
@@ -871,7 +871,7 @@ def exception_dialog(title):
     md = gtk.MessageDialog(None, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
-    def close_dialog(*args):
+    def close_dialog(*_args):
         md.destroy()
         gtk.main_quit()
     md.connect("response", close_dialog)
@@ -910,7 +910,7 @@ def do_main():
 
     try:
         app = ApplicationWindow()
-        def app_signal(signum, frame):
+        def app_signal(signum, _frame):
             print("")
             log("got signal %s" % SIGNAMES.get(signum, signum))
             def show_signal():

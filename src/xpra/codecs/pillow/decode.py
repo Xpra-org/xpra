@@ -39,7 +39,7 @@ def get_info():
             "encodings"     : get_encodings(),
             }
 
-def selftest(full=False):
+def selftest(_full=False):
     global ENCODINGS
     import binascii
     from xpra.os_util import BytesIOClass

@@ -30,7 +30,7 @@ def main():
         app = BugReport()
         app.close = app.quit
         app.init(True)
-        def app_signal(signum, frame):
+        def app_signal(signum, _frame):
             print("")
             log.info("got signal %s", SIGNAMES.get(signum, signum))
             app.quit()

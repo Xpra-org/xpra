@@ -259,7 +259,7 @@ class Popup(gtk.Window):
         self.set_opacity(opacity)
         return True
 
-    def on_hover(self, window, event, hover):
+    def on_hover(self, _window, _event, hover):
         """Starts/Stops the notification timer on a mouse in/out event"""
         self.hover = hover
 

@@ -67,7 +67,7 @@ class ClipboardInstance(object):
     def clear_label(self, *_args):
         self.value_label.set_text("")
 
-    def get_targets_callback(self, c, targets, *_args):
+    def get_targets_callback(self, _c, targets, *_args):
         self.log("got targets: %s" % str(targets))
         if hasattr(targets, "name"):
             self.log("target is atom: %s" % targets.name())
@@ -93,7 +93,7 @@ class ClipboardInstance(object):
     def do_get_targets(self, *_args):
         self.clipboard.request_targets(self.get_targets_callback, None)
 
-    def get_target_changed(self, cb):
+    def get_target_changed(self, _cb):
         target = self.get_targets.get_active_text()
         self.get_target_btn.set_sensitive(bool(target))
 
@@ -105,7 +105,7 @@ class ClipboardInstance(object):
             return val[:24]+".."
         return val
 
-    def selection_value_callback(self, cb, selection_data, *_args):
+    def selection_value_callback(self, _cb, selection_data, *_args):
         #print("selection_value_callback(%s, %s, %s)" % (cb, selection_data, args))
         try:
             if selection_data.data is None:
@@ -129,11 +129,11 @@ class ClipboardInstance(object):
         self.log("Requesting %s" % target)
         self.clipboard.request_contents(target, self.selection_value_callback, None)
 
-    def selection_clear_cb(self, clipboard, data):
+    def selection_clear_cb(self, _clipboard, _data):
         #print("selection_clear_cb(%s, %s)", clipboard, data)
         self.log("Selection has been cleared")
 
-    def selection_get_callback(self, clipboard, selectiondata, info, *_args):
+    def selection_get_callback(self, _clipboard, selectiondata, _info, *_args):
         #print("selection_get_callback(%s, %s, %s, %s) targets=%s" % (clipboard, selectiondata, info, args, selectiondata.get_targets()))
         value = self.value_entry.get_text()
         self.log("Answering selection request with value: '%s'" % self.ellipsis(value))
@@ -144,7 +144,7 @@ class ClipboardInstance(object):
         self.log("Target set to %s" % target)
         self.clipboard.set_with_data([(target, 0, 0)], self.selection_get_callback, self.selection_clear_cb)
 
-    def string_value_callback(self, cb, value, *_args):
+    def string_value_callback(self, _cb, value, *_args):
         if value is None:
             value = ""
         assert type(value)==str, "value is not a string!"
@@ -158,7 +158,7 @@ class ClipboardInstance(object):
     def do_set_string(self, *_args):
         self.clipboard.set_text(self.ellipsis(self.value_entry.get_text()))
 
-    def owner_changed(self, cb, event):
+    def owner_changed(self, _cb, event):
         r = {}
         if not is_gtk3():
             r = {gtk.gdk.OWNER_CHANGE_CLOSE : "close",

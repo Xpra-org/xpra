@@ -52,7 +52,7 @@ class DBUS_Notifier(NotifierBase):
         log("notification reply: %s", args)
         return False
 
-    def cbError(self, dbus_error, *args):
+    def cbError(self, dbus_error, *_args):
         try:
             if type(dbus_error)==dbus.exceptions.DBusException:
                 message = dbus_error.get_dbus_message()

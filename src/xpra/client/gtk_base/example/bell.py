@@ -23,7 +23,7 @@ class BellWindow(gtk.Window):
         self.add(btn)
         self.show_all()
 
-    def bell(self, *args):
+    def bell(self, *_args):
         from xpra.platform.gui import system_bell
         system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
 

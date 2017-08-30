@@ -210,7 +210,7 @@ class BugReport(object):
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
 
-        def accel_close(*args):
+        def accel_close(*_args):
             self.close()
         add_close_accel(self.window, accel_close)
         vbox.show_all()
@@ -299,14 +299,14 @@ class BugReport(object):
             time.sleep(STEP_DELAY)
         return data
 
-    def copy_clicked(self, *args):
+    def copy_clicked(self, *_args):
         data = self.get_text_data()
         text = os.linesep.join("%s: %s%s%s%s" % (title, tooltip, os.linesep, v, os.linesep) for (title,tooltip,dtype,v) in data if dtype=="txt")
         clipboard = gtk.clipboard_get(gdk.SELECTION_CLIPBOARD)
         clipboard.set_text(text)
         log.info("%s characters copied to clipboard", len(text))
 
-    def save_clicked(self, *args):
+    def save_clicked(self, *_args):
         file_filter = gtk.FileFilter()
         file_filter.set_name("ZIP")
         file_filter.add_pattern("*.zip")

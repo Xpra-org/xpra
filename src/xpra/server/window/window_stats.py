@@ -100,7 +100,7 @@ class WindowPerformanceStatistics(object):
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self, pixel_count, delay):
+    def get_factors(self):
         factors = []
         #ratio of "in" and "out" latency indicates network bottleneck:
         #(the difference between the two is the time it takes to send)

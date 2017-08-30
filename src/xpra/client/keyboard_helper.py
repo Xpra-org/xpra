@@ -270,7 +270,7 @@ class KeyboardHelper(object):
             def send_key_repeat():
                 modifiers = self.get_current_modifiers()
                 self.send_now("key-repeat", wid, keyname, keyval, keycode, modifiers)
-            def continue_key_repeat(*args):
+            def continue_key_repeat(*_args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and continue, otherwise stop
                 log("continue_key_repeat for %s / %s", keyname, keycode)
@@ -280,7 +280,7 @@ class KeyboardHelper(object):
                 else:
                     del self.keys_pressed[key]
                     return  False
-            def start_key_repeat(*args):
+            def start_key_repeat(*_args):
                 #if the key is still pressed (redundant check?)
                 #confirm it and start repeat:
                 log("start_key_repeat for %s / %s", keyname, keycode)

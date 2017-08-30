@@ -1138,9 +1138,9 @@ def do_parse_cmdline(cmdline, defaults):
     return options, args
 
 def validate_encryption(opts):
-    do_validate_encryption(opts.auth, opts.tcp_auth, opts.encryption, opts.tcp_encryption, opts.password_file, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
+    do_validate_encryption(opts.auth, opts.tcp_auth, opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
-def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, password_file, encryption_keyfile, tcp_encryption_keyfile):
+def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
     if not encryption and not tcp_encryption:
         #don't bother initializing anything
         return
@@ -1472,9 +1472,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "list":
             return run_list(error_cb, options, args)
         elif mode == "list-mdns" and supports_mdns:
-            return run_list_mdns(error_cb, options, args)
+            return run_list_mdns(error_cb, args)
         elif mode == "mdns-gui" and supports_mdns:
-            return run_mdns_gui(error_cb, options, args)
+            return run_mdns_gui(error_cb)
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
@@ -2139,7 +2139,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     Connection.__init__(self, target, socktype)
                     self._socket = ws
 
-                def peek(self, n):
+                def peek(self, _n):
                     return None
 
                 def untilConcludes(self, *args):
@@ -2905,7 +2905,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
 def run_stopexit(mode, error_cb, opts, extra_args):
     no_gtk()
 
-    def show_final_state(exit_code, display_desc):
+    def show_final_state(display_desc):
         #this is for local sockets only!
         display = display_desc["display"]
         sockdir = display_desc.get("socket_dir", "")
@@ -2957,7 +2957,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             app.cleanup()
     if e==0:
         if display_desc["local"] and display_desc.get("display"):
-            show_final_state(app.exit_code, display_desc)
+            show_final_state(display_desc)
         else:
             print("Sent shutdown command")
     return  e
@@ -2975,7 +2975,7 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
             sys.stdout.write(" (delete failed: %s)" % e)
     sys.stdout.write("\n")
 
-def run_mdns_gui(error_cb, opts, extra_args):
+def run_mdns_gui(error_cb):
     from xpra.net.mdns import get_listener_class
     listener = get_listener_class()
     if not listener:
@@ -2983,7 +2983,7 @@ def run_mdns_gui(error_cb, opts, extra_args):
     from xpra.client.gtk_base.mdns_gui import main
     main()
 
-def run_list_mdns(error_cb, opts, extra_args):
+def run_list_mdns(error_cb, extra_args):
     no_gtk()
     if len(extra_args)<=1:
         try:

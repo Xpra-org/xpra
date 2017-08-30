@@ -92,7 +92,7 @@ class StartNewCommand(object):
         btn("Run", "Run this command", self.run_command, "forward.png")
         btn("Cancel", "", self.close, "quit.png")
 
-        def accel_close(*args):
+        def accel_close(*_args):
             self.close()
         add_close_accel(self.window, accel_close)
         vbox.show_all()
@@ -138,7 +138,7 @@ class StartNewCommand(object):
         return None
 
 
-    def run_command(self, *args):
+    def run_command(self, *_args):
         self.hide()
         command = self.entry.get_text()
         if self.run_callback:
@@ -159,7 +159,7 @@ def main():
 
         app = StartNewCommand()
         app.close = app.quit
-        def app_signal(signum, frame):
+        def app_signal(signum, _frame):
             print("")
             log.info("got signal %s", SIGNAMES.get(signum, signum))
             app.quit()

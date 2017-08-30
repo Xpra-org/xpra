@@ -186,7 +186,7 @@ class mdns_sessions(gtk.Window):
         if len(recs)==1:
             #single record, single uri:
             uri = self.get_uri(None, *recs[0])
-            def clicked(*args):
+            def clicked(*_args):
                 password = self.password_entry.get_text()
                 uri = self.get_uri(password, *recs[0])
                 self.attach(uri)
@@ -213,7 +213,7 @@ class mdns_sessions(gtk.Window):
             uri = self.get_uri(None, *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
-        def connect(*args):
+        def connect(*_args):
             uri = uri_menu.get_active_text()
             rec = d[uri]
             password = self.password_entry.get_text()

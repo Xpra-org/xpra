@@ -24,7 +24,7 @@ class GLContext(object):
         self.gldrawable = self.widget.get_gl_drawable()
         assert self.gldrawable.gl_begin(self.glcontext)
         return self.gldrawable
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *_args):
         self.gldrawable.gl_end()
 
 
@@ -70,7 +70,7 @@ class ColorTest(object):
         txt = "Clipped to %i bits per channel" % self.bpc
         self.label.set_text(txt)
 
-    def on_key_press(self, widget, key_event):
+    def on_key_press(self, _widget, key_event):
         if key_event.string == "-":
             self.bpc = ((self.bpc-2) % 16)+1
         else:
@@ -79,12 +79,12 @@ class ColorTest(object):
         self.win.queue_draw()
         self.on_expose_event(self.glarea, None)
 
-    def on_configure_event(self, widget, event):
+    def on_configure_event(self, widget, _event):
         with GLContext(widget):
             glViewport(0, 0, widget.allocation.width, widget.allocation.height)
         return True
 
-    def on_expose_event(self, widget, event=None):
+    def on_expose_event(self, widget, _event=None):
         with GLContext(widget) as gldrawable:
             self.paint_blocks()
 
@@ -108,7 +108,7 @@ class ColorTest(object):
             assert 0<=v<=M
             iv = int(v) & mask
             return max(0, float(iv)/M)
-        def paint_block(R=M, G=M, B=M, label=""):
+        def paint_block(R=M, G=M, B=M):
             y = 1.0-float(self.index)/(blocks/2.0)
             bw = 2.0/w
             bh = 2.0/blocks
@@ -122,13 +122,13 @@ class ColorTest(object):
                 x = -1+float(i)/(w//2)
                 glRectf(x, y, x+bw, y+bh)
         self.index = 1
-        paint_block(M, 0, 0, "R")
-        paint_block(0, M-1, 0, "G")
-        paint_block(0, 0, M-2, "B")
-        paint_block(0, M-3, M-3, "C")
-        paint_block(M-4, 0, M-4, "M")
-        paint_block(M-5, M-5, 0, "Y")
-        paint_block(0, 0, 0, "K")
+        paint_block(M, 0, 0)
+        paint_block(0, M-1, 0)
+        paint_block(0, 0, M-2)
+        paint_block(0, M-3, M-3)
+        paint_block(M-4, 0, M-4)
+        paint_block(M-5, M-5, 0)
+        paint_block(0, 0, 0)
         #Black Shade Blocks:
         paint_block(M, M, M)
         paint_block(M//2, M//2, M//2)

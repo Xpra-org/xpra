@@ -284,9 +284,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
-        def focus_in(*args):
+        def focus_in(*_args):
             focuslog("focus-in-event for wid=%s", self._id)
-        def focus_out(*args):
+        def focus_out(*_args):
             focuslog("focus-out-event for wid=%s", self._id)
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)

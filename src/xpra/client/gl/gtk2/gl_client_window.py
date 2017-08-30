@@ -105,7 +105,7 @@ class GLClientWindow(GTK2WindowBase):
         GTK2WindowBase.freeze(self)
 
 
-    def toggle_debug(self, *args):
+    def toggle_debug(self, *_args):
         b = self._backing
         if not b:
             return

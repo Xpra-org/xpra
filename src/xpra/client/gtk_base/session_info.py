@@ -430,7 +430,7 @@ class SessionInfo(gtk.Window):
         self.add(self.tab_box)
         if not is_gtk3():
             self.set_geometry_hints(self.tab_box)
-        def window_deleted(*args):
+        def window_deleted(*_args):
             self.is_closed = True
         self.connect('delete_event', window_deleted)
         self.show_tab(self.tabs[0][2])
@@ -462,7 +462,7 @@ class SessionInfo(gtk.Window):
 
     def add_tab(self, icon_filename, title, populate_cb, contents):
         icon = self.get_pixbuf(icon_filename)
-        def show_tab(*args):
+        def show_tab(*_args):
             self.show_tab(contents)
         button = imagebutton(title, icon, clicked_callback=show_tab)
         button.connect("clicked", show_tab)
@@ -539,7 +539,7 @@ class SessionInfo(gtk.Window):
             icon = self.get_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
 
-    def populate_sound_stats(self, *args):
+    def populate_sound_stats(self, *_args):
         #runs every 100ms
         if self.is_closed:
             return False
@@ -555,7 +555,7 @@ class SessionInfo(gtk.Window):
                 self.sound_out_queue_max.append(intlookup("queue.max"))
         return not self.is_closed
 
-    def populate(self, *args):
+    def populate(self, *_args):
         if self.is_closed or not self.connection:
             return False
         self.client.send_ping()
@@ -638,7 +638,7 @@ class SessionInfo(gtk.Window):
         self.avg_decoding_latency = deque(maxlen=N_SAMPLES+4)
         self.avg_total = deque(maxlen=N_SAMPLES+4)
 
-    def populate_tab(self, *args):
+    def populate_tab(self, *_args):
         if self.is_closed:
             return False
         #now re-populate the tab we are seeing:
@@ -1017,7 +1017,7 @@ class SessionInfo(gtk.Window):
         return window_encoder_stats
 
 
-    def populate_graphs(self, *args):
+    def populate_graphs(self, *_args):
         self.client.send_info_request()
         box = self.tab_box
         _, h = get_preferred_size(box)

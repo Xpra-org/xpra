@@ -95,7 +95,7 @@ else:
         def __enter__(self):
             assert self.gldrawable.gl_begin(self.glcontext)
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, *_args):
             self.gldrawable.gl_end()
 
         def __repr__(self):

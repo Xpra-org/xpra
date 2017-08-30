@@ -60,7 +60,7 @@ class Example(gtk.Window):
         self.darea.queue_draw()
         return True
 
-    def expose(self, widget, cr):
+    def expose(self, widget, _cr):
         cr = widget.window.cairo_create()
         cr.set_line_width(3)
         cr.set_line_cap(cairo.LINE_CAP_ROUND)

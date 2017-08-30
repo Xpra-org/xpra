@@ -752,7 +752,7 @@ def get_display_info():
                         gdk.SOURCE_ERASER       : "ERASER",
                         gdk.SOURCE_CURSOR       : "CURSOR",
                         }
-            def notrans(v, d):
+            def notrans(v, _d):
                 return v
             MOD_STR = {
                         gdk.SHIFT_MASK          : "SHIFT",
@@ -773,7 +773,7 @@ def get_display_info():
                        }
             def modtrans(mod):
                 return [v for k,v in MOD_STR.items() if k&mod]
-            def keys_trans(l, d):
+            def keys_trans(l, _d):
                 #GdkModifierType can be converted to an int
                 return [(k,modtrans(v)) for (k,v) in l]
             for name, trans in {"axes"          : AXES_STR.get,

@@ -116,11 +116,14 @@ for arg in list(sys.argv):
         print("using PKG_CONFIG_PATH=%s" % (os.environ["PKG_CONFIG_PATH"], ))
         sys.argv.remove(arg)
 
-def pkg_config_ok(*args, **kwargs):
+def no_pkgconfig(*_pkgs_options, **_ekw):
+    return {}
+
+def pkg_config_ok(*args):
     cmd = [PKG_CONFIG]  + [str(x) for x in args]
     return get_status_output(cmd)[0]==0
 
-def pkg_config_version(req_version, pkgname, **kwargs):
+def pkg_config_version(req_version, pkgname):
     cmd = [PKG_CONFIG, "--modversion", pkgname]
     r, out, _ = get_status_output(cmd)
     if r!=0 or not out:
@@ -907,8 +910,7 @@ def build_xpra_conf(install_dir):
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     #clean and sdist don't actually use cython,
     #so skip this (and avoid errors)
-    def pkgconfig(*pkgs_options, **ekw):
-        return {}
+    pkgconfig = no_pkgconfig
     #always include everything in this case:
     add_packages("xpra")
     #ensure we remove the files we generate:
@@ -1549,8 +1551,7 @@ else:
     #> python2.7 setup.py build -b build-2.7 install --no-compile --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
     #otherwise we use the flags to skip pkgconfig
     if ("--no-compile" in sys.argv or "--skip-build" in sys.argv) and not ("build" in sys.argv and "install" in sys.argv):
-        def pkgconfig(*pkgs_options, **ekw):
-            return {}
+        pkgconfig = no_pkgconfig
 
     if OSX and "py2app" in sys.argv:
         import py2app    #@UnresolvedImport

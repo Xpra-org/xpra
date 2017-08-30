@@ -38,7 +38,7 @@ class TransparentColorWindow(gtk.Window):
         self.connect("destroy", gtk.main_quit)
         self.show_all()
 
-    def do_expose_event(self, *args):
+    def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)
 
@@ -85,7 +85,9 @@ class TransparentColorWindow(gtk.Window):
 
 def main():
     import signal
-    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
     TransparentColorWindow()
     gtk.main()
 
