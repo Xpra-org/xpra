@@ -1260,12 +1260,15 @@ class ServerCore(object):
 
     def hello_oked(self, proto, _packet, c, _auth_caps):
         proto.accept()
-        ctr = c.strget("connect_test_request")
-        if ctr:
+        generic_request = c.strget("request")
+        def is_req(mode):
+            return generic_request==mode or c.boolget("%s_request" % mode)
+        if is_req("connect_test"):
+            ctr = c.strget("connect_test_request")
             response = {"connect_test_response" : ctr}
             proto.send_now(("hello", response))
             return
-        if c.boolget("info_request", False):
+        if is_req("info"):
             flatten = not c.boolget("info-namespace", False)
             self.send_hello_info(proto, flatten)
             return True

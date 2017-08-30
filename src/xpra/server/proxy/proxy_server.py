@@ -154,10 +154,13 @@ class ProxyServer(ServerCore):
             #already handled in superclass
             return
         self.accept_client(proto, c)
-        if any(c.boolget("%s_request" % x) for x in ("screenshot", "event", "print", "exit")):
+        generic_request = c.strget("request")
+        def is_req(mode):
+            return generic_request==mode or c.boolget("%s_request" % mode)
+        if any(is_req(x) for x in ("screenshot", "event", "print", "exit")):
             self.send_disconnect(proto, "invalid request")
             return
-        if c.boolget("stop_request"):
+        if is_req("stop"):
             self._requests.add(proto)
             #send a hello back and the client should then send its "shutdown-server" packet
             capabilities = self.make_hello()

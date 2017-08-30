@@ -343,14 +343,17 @@ class ProxyInstanceProcess(Process):
             if caps.boolget("challenge"):
                 self.send_disconnect(proto, AUTHENTICATION_ERROR, "this socket does not use authentication")
                 return
-            if caps.get("info_request", False):
+            generic_request = caps.strget("request")
+            def is_req(mode):
+                return generic_request==mode or caps.boolget("%s_request" % mode)
+            if is_req("info"):
                 proto.send_now(("hello", self.get_proxy_info(proto)))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
                 return
-            elif caps.get("stop_request", False):
+            elif is_req("stop"):
                 self.stop("socket request", None)
                 return
-            elif caps.get("version_request", False):
+            elif is_req("version"):
                 version = XPRA_VERSION
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
