@@ -35,7 +35,7 @@ class loopback_connection(Connection):
         Connection.__init__(self, *args)
         self.queue = Queue()
 
-    def read(self, n):
+    def read(self, _n):
         self.may_abort("read")
         #FIXME: we don't handle n...
         return self.queue.get(True)
@@ -49,7 +49,7 @@ class loopback_connection(Connection):
         self.queue.put(None)
         Connection.close(self)
 
-    def may_abort(self, action):
+    def may_abort(self, _action):
         assert self.active
 
 def loopback_protocol(process_packet_cb, get_packet_cb):
@@ -96,7 +96,7 @@ class SubprocessWrapperTest(unittest.TestCase):
             lp.stop_protocol()
             lp.stop_process()
             glib.idle_add(mainloop.quit)
-        def end(*args):
+        def end(*_args):
             stop()
         lp.connect("end", end)
         self.timeout = False
@@ -131,7 +131,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
-        def loop_stop(*args):
+        def loop_stop(*_args):
             lc.stop()
             glib.idle_add(mainloop.quit)
         def timeout_error():
