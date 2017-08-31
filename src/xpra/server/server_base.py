@@ -406,7 +406,7 @@ class ServerBase(ServerCore):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         #verify that we can talk to the socket:
-        auth_class = self.auth_class.get("unix-domain")
+        auth_class = self.auth_classes.get("unix-domain")
         if printing and auth_class:
             try:
                 #this should be the name of the auth module:
