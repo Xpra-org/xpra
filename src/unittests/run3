@@ -10,7 +10,7 @@ SRC_DIR=`dirname $UNITTESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/install/python3"
 pushd $SRC_DIR
-python3 ./setup.py install --home=$INSTALL_ROOT --without-html5
+python3 ./setup.py install --home=$INSTALL_ROOT
 popd
 
 export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
