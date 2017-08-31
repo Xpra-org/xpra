@@ -2129,11 +2129,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             if envbool("XPRA_WEBSOCKET_DEBUG"):
                 websocket.enableTrace(True)
             url = "%s://%s/" % (dtype, host)
-            try:
-                ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"], socket=sock)
-            except (IndexError, ValueError) as e:
-                raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
             from xpra.net.bytestreams import Connection, log as connlog
+            subprotocols = ["binary", "base64"]
+            try:
+                ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=subprotocols, socket=sock)
+            except (IndexError, ValueError) as e:
+                connlog("websocket.create_connection%s", (url, SOCKET_TIMEOUT, subprotocols, sock), exc_info=True)
+                raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
             class WebSocketClientConnection(Connection):
                 def __init__(self, ws, target, socktype):
                     Connection.__init__(self, target, socktype)
