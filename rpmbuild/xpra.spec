@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.7
+%define version 1.0.8
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -601,6 +601,19 @@ fi
 
 
 %changelog
+* Thu Aug 31 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
+- fix Fedora 26 builds: must disable buggy systemd-run
+- fix sound output with pulseaudio systems (was invalid sink)
+- fix socket check for printer forwarding support
+- fix bashism in service init file
+- fix SetDPI dbus handler
+- fix iconification loop with some window managers (ie: ratpoison)
+- fix clipboard regression introduced in 1.0.7
+- fix handling of unusual HTTP configurations
+- allow a longer server startup timeout delay (HTML5 client)
+- more helpful error message if jQuery is missing (HTML5 client)
+- add missing entries to man page
+
 * Mon Aug 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
 - fix potential symlink attacks when running the proxy server as root

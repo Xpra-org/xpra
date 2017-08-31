@@ -1,3 +1,18 @@
+v1.0.8 (2017-08-31)
+======================
+	-- fix Fedora 26 builds: must disable buggy systemd-run
+	-- fix sound output with pulseaudio systems (was invalid sink)
+	-- fix socket check for printer forwarding support
+	-- fix bashism in service init file
+	-- fix SetDPI dbus handler
+	-- fix iconification loop with some window managers (ie: ratpoison)
+	-- fix clipboard regression introduced in 1.0.7
+	-- fix handling of unusual HTTP configurations
+	-- allow a longer server startup timeout delay (HTML5 client)
+	-- more helpful error message if jQuery is missing (HTML5 client)
+	-- add missing entries to man page
+
+
 v1.0.7 (2017-08-14)
 ======================
 	-- fix authentication with unencrypted xor mode
