@@ -2131,7 +2131,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             url = "%s://%s/" % (dtype, host)
             try:
                 ws = websocket.create_connection(url, SOCKET_TIMEOUT, subprotocols=["binary", "base64"], socket=sock)
-            except ValueError as e:
+            except (IndexError, ValueError) as e:
                 raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
             from xpra.net.bytestreams import Connection, log as connlog
             class WebSocketClientConnection(Connection):
