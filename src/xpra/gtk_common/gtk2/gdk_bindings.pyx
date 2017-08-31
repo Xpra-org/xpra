@@ -145,7 +145,7 @@ def sanitize_gtkselectiondata(obj):
     log("get_gtkselectiondata(%s) type=%s", obj, type(obj))
     cdef GtkSelectionData * selectiondata = <GtkSelectionData *> pyg_boxed_get(obj)
     if selectiondata==NULL:
-        return
+        return False
     log("selectiondata: selection=%#x, target=%#x, type=%#x, format=%#x, length=%#x, data=%#x",
         <uintptr_t> selectiondata.selection, <uintptr_t> selectiondata.target, <uintptr_t> selectiondata.type, selectiondata.format, selectiondata.length, <uintptr_t> selectiondata.data)
     cdef GdkAtom gdkatom
