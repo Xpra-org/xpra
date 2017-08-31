@@ -10,7 +10,7 @@ import unittest
 import tempfile
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX, PYTHON2
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST
+from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
 
@@ -57,20 +57,27 @@ class ServerSocketsTest(ServerTestUtil):
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp/127.0.0.1:%i/" % port, EXIT_OK)
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
 
-	def test_ssl_socket(self):
+	def test_ws_socket(self):
+		port = get_free_tcp_port()
+		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
+
+
+	def test_ssl(self):
 		server = None
 		display_no = self.find_free_display_no()
 		display = ":%s" % display_no
 		tcp_port = get_free_tcp_port()
+		ws_port = get_free_tcp_port()
+		wss_port = get_free_tcp_port()
 		ssl_port = get_free_tcp_port()
 		try:
 			tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
 			certfile = os.path.join(tmpdir, "self.pem")
 			openssl_command = [
-								"openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
-								"-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
-    							"-keyout", certfile, "-out", certfile,
-    							]
+				"openssl", "req", "-new", "-newkey", "rsa:4096", "-days", "2", "-nodes", "-x509",
+				"-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+				"-keyout", certfile, "-out", certfile,
+				]
 			openssl = self.run_command(openssl_command)
 			assert pollwait(openssl, 10)==0, "openssl certificate generation failed"
 			cert_data = load_binary_file(certfile)
@@ -80,10 +87,14 @@ class ServerSocketsTest(ServerTestUtil):
 				log.warn("SSL test skipped, cannot run '%s'", b" ".join(openssl_command))
 				return
 			server_args = [
-							"--bind-tcp=0.0.0.0:%i" % tcp_port,
-							"--bind-ssl=0.0.0.0:%i" % ssl_port,
-							"--ssl=on",
-							"--ssl-cert=%s" % certfile]
+				"--bind-tcp=0.0.0.0:%i" % tcp_port,
+				"--bind-ws=0.0.0.0:%i" % ws_port,
+				"--bind-wss=0.0.0.0:%i" % wss_port,
+				"--bind-ssl=0.0.0.0:%i" % ssl_port,
+				"--ssl=on",
+				"--html=on",
+				"--ssl-cert=%s" % certfile,
+				]
 
 			log("starting test ssl server on %s", display)
 			server = self.start_server(display, *server_args)
@@ -104,11 +115,18 @@ class ServerSocketsTest(ServerTestUtil):
 			noverify = "--ssl-server-verify-mode=none"
 			#connect to ssl socket:
 			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
-			#tcp socket should upgrade:
+			#tcp socket should upgrade to ssl:
 			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+			#tcp socket should upgrade to ws and ssl:
+			test_connect("wss/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+			#ws socket should upgrade to ssl:
+			test_connect("wss/127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
+			
 			#self signed cert should fail without noverify:
-			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_CONNECTION_LOST)
-			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_CONNECTION_LOST)
+			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
+			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)
+			test_connect("wss/127.0.0.1:%i/" % ws_port, EXIT_SSL_FAILURE)
+			test_connect("wss/127.0.0.1:%i/" % wss_port, EXIT_SSL_FAILURE)
 
 		finally:
 			shutil.rmtree(tmpdir)

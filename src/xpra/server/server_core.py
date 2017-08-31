@@ -28,7 +28,7 @@ timeoutlog = Logger("timeout")
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException, parse_bool, python_platform
+from xpra.scripts.config import InitException, parse_bool, python_platform, FALSE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
@@ -755,7 +755,7 @@ class ServerCore(object):
 
         elif socktype=="ws":
             if peek_data:
-                if self.ssl_mode in ("auto", ) and peek_data[0] in ("\x16", 0x16):
+                if (self.ssl_mode not in FALSE_OPTIONS) and peek_data[0] in ("\x16", 0x16):
                     if not self._ssl_wrap_socket:
                         netlog.warn("Warning: cannot upgrade to SSL socket")
                         return None
