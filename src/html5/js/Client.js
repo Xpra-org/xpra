@@ -54,7 +54,7 @@ function XpraClient(container) {
 	this.insecure = false;
 	this.authentication_key = null;
 	// hello
-	this.HELLO_TIMEOUT = 2000;
+	this.HELLO_TIMEOUT = 10000;
 	this.hello_timer = null;
 	// ping
 	this.PING_TIMEOUT = 60000;
