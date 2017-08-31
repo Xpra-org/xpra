@@ -653,7 +653,7 @@ class ServerCore(object):
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
         """
-        def conn_err(msg="invalid packet format, not an xpra client?"):
+        def conn_err(network_protocol, msg="invalid packet format, not an xpra client?"):
             #not an xpra client
             netlog.error("Error: %s connection failed:", socktype)
             if conn.remote:
@@ -663,7 +663,35 @@ class ServerCore(object):
             netlog.error(" %s", msg)
             try:
                 sock.settimeout(1)
-                conn.write("disconnect: connection failed, %s?\n" % msg)
+                #default to plain text:
+                packet_data = "disconnect: connection failed, %s?\n" % msg
+                if network_protocol=="xpra":
+                    #try to respond using xpra protocol as a one off:
+                    try:
+                        from xpra.net.packet_encoding import get_enabled_encoders, get_encoder
+                        from xpra.net.header import pack_header
+                        ee = get_enabled_encoders()
+                        if ee:
+                            e = get_encoder(ee[0])
+                            data, flags = e(["disconnect", "invalid protocol for this port"])
+                            packet_data = pack_header(flags, 0, 0, len(data))+data
+                    except ImportError as e:
+                        pass
+                    else:
+                        pass
+                elif network_protocol=="HTTP":
+                    #HTTP 400 error:
+                    packet_data = """<head>
+<title>Error response</title>
+</head>
+<body>
+<h1>Error response</h1>
+<p>Error code 400.
+<p>Message: this port does not support HTTP requests.
+<p>Error code explanation: 400 = Bad request syntax or unsupported method.
+</body>
+"""                    
+                conn.write(packet_data)
                 def close_connection():
                     try:
                         conn.close()
@@ -682,7 +710,7 @@ class ServerCore(object):
         peek_data, line1 = self.peek_connection(conn)
 
         def ssl_wrap():
-            ssl_sock = self._ssl_wrap_socket(sock)
+            ssl_sock = self._ssl_wrap_server_socket(sock)
             netlog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
@@ -701,10 +729,13 @@ class ServerCore(object):
                 elif line1.find("HTTP/")>0:
                     packet_type = "HTTP"
                 if packet_type:
-                    conn_err("packet looks like a plain %s packet" % packet_type)
+                    conn_err(packet_type, "packet looks like a plain %s packet" % packet_type)
                     return
             #always start by wrapping with SSL:
+            assert self._ssl_wrap_server_socket
             ssl_conn = ssl_wrap()
+            if not ssl_conn:
+                return
             http = False
             if socktype=="wss" or self.ssl_mode=="www":
                 http = True
@@ -726,10 +757,13 @@ class ServerCore(object):
         elif socktype=="ws":
             if peek_data:
                 if self.ssl_mode in ("auto", ) and peek_data[0] in ("\x16", 0x16):
+                    if not self._ssl_wrap_server_socket:
+                        netlog.warn("Warning: cannot upgrade to SSL socket")
+                        return None
                     netlog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
-                    conn_err("packet looks like a plain xpra packet")
+                    conn_err("xpra", "packet looks like a plain xpra packet")
                     return
             self.start_http_socket(conn, False, peek_data)
             return
@@ -738,7 +772,7 @@ class ServerCore(object):
             self.handle_rfb_connection(conn)
             return
 
-        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
+        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_server_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
@@ -747,13 +781,13 @@ class ServerCore(object):
                     return
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
-                conn_err(str(e))
+                conn_err(None, str(e))
                 return
 
         if peek_data and (socktype=="rfb" or (peek_data[0] not in ("P", ord("P")))):
-            msg = self.guess_header_protocol(peek_data)
-            conn_err("invalid packet header, %s" % msg)
-            return True
+            network_protocol, msg = self.guess_header_protocol(peek_data)
+            conn_err(network_protocol, "invalid packet header, %s" % msg)
+            return
 
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
@@ -808,10 +842,10 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
+        if self._ssl_wrap_server_socket and peek_data[0] in (chr(0x16), 0x16):
             socktype = "SSL"
             sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
-            sock = self._ssl_wrap_socket(sock)
+            sock = self._ssl_wrap_server_socket(sock)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
                 netlog("ignoring SSL EOF error")
@@ -849,7 +883,8 @@ class ServerCore(object):
     def invalid_header(self, proto, data, msg=""):
         netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_server_socket))
-        err = "invalid packet format, %s" % self.guess_header_protocol(data)
+        _network_protocol, info = self.guess_header_protocol(data)
+        err = "invalid packet format, %s" % info
         proto.gibberish(err, data)
 
     def guess_header_protocol(self, v):
@@ -858,10 +893,10 @@ class ServerCore(object):
         except:
             c = int(v[0])
         if c==0x16:
-            return "SSL packet?"
+            return "SSL", "SSL packet?"
         elif len(v)>=3 and v.split(" ")[0] in ("GET", "POST"):
-            return "HTTP %s request" % v.split(" ")[0]
-        return "character %#x, not an xpra client?" % c
+            return "HTTP", "HTTP %s request" % v.split(" ")[0]
+        return None, "character %#x, not an xpra client?" % c
 
 
     def get_http_scripts(self):
@@ -872,7 +907,9 @@ class ServerCore(object):
 
     def start_http_socket(self, conn, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
-        line1 = peek_data.splitlines()[0]
+        line1 = b""
+        if peek_data:
+            line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
         if line1.startswith("GET ") or line1.startswith("POST "):
             parts = line1.split(" ")
