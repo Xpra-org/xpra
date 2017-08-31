@@ -38,7 +38,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, POSIX, PYTHON3
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
@@ -382,7 +382,7 @@ class ServerBase(ServerCore):
 
     def init_printing(self):
         printing = self.file_transfer.printing
-        if not printing:
+        if not printing or WIN32:
             return
         try:
             from xpra.platform import pycups_printing
@@ -406,13 +406,14 @@ class ServerBase(ServerCore):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         #verify that we can talk to the socket:
-        if printing and self.auth_class:
+        auth_class = self.auth_class.get("unix-domain")
+        if printing and auth_class:
             try:
                 #this should be the name of the auth module:
-                auth_name = self.auth_class[0]
+                auth_name = auth_class[0]
             except:
-                auth_name = str(self.auth_class)
-            if auth_name!="none":
+                auth_name = str(auth_class)
+            if auth_name not in ("none", "file"):
                 log.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
                 printing = False
         #update file transfer attributes since printing nay have been disabled here
@@ -1549,14 +1550,16 @@ class ServerBase(ServerCore):
             clientlog.log(level, prefix+x)
 
     def _process_printers(self, proto, packet):
-        if not self.file_transfer.printing:
-            log.error("Error: received printer definitions but this server does not support printing")
+        if not self.file_transfer.printing or WIN32:
+            log.error("Error: received printer definitions data")
+            log.error(" but this server does not support printer forwarding")
             return
         ss = self._server_sources.get(proto)
         if ss is None:
             return
         printers = packet[1]
-        ss.set_printers(printers, self.password_file, self.auth_class, self.encryption, self.encryption_keyfile)
+        auth_class = self.auth_class.get("unix-domain")
+        ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
 
     #########################################
