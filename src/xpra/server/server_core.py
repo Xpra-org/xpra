@@ -155,8 +155,7 @@ class ServerCore(object):
         self._udp_protocols = {}
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
-        self._ssl_wrap_server_socket = None
-        self._ssl_wrap_client_socket = None
+        self._ssl_wrap_socket = None
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
@@ -710,7 +709,7 @@ class ServerCore(object):
         peek_data, line1 = self.peek_connection(conn)
 
         def ssl_wrap():
-            ssl_sock = self._ssl_wrap_server_socket(sock)
+            ssl_sock = self._ssl_wrap_socket(sock)
             netlog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
@@ -732,7 +731,7 @@ class ServerCore(object):
                     conn_err(packet_type, "packet looks like a plain %s packet" % packet_type)
                     return
             #always start by wrapping with SSL:
-            assert self._ssl_wrap_server_socket
+            assert self._ssl_wrap_socket
             ssl_conn = ssl_wrap()
             if not ssl_conn:
                 return
@@ -757,7 +756,7 @@ class ServerCore(object):
         elif socktype=="ws":
             if peek_data:
                 if self.ssl_mode in ("auto", ) and peek_data[0] in ("\x16", 0x16):
-                    if not self._ssl_wrap_server_socket:
+                    if not self._ssl_wrap_socket:
                         netlog.warn("Warning: cannot upgrade to SSL socket")
                         return None
                     netlog("ws socket receiving ssl, upgrading")
@@ -772,7 +771,7 @@ class ServerCore(object):
             self.handle_rfb_connection(conn)
             return
 
-        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_server_socket):
+        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
@@ -842,10 +841,10 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        if self._ssl_wrap_server_socket and peek_data[0] in (chr(0x16), 0x16):
+        if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
             socktype = "SSL"
             sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
-            sock = self._ssl_wrap_server_socket(sock)
+            sock = self._ssl_wrap_socket(sock)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
                 netlog("ignoring SSL EOF error")
@@ -882,7 +881,7 @@ class ServerCore(object):
 
     def invalid_header(self, proto, data, msg=""):
         netlog("invalid_header(%s, %s bytes: '%s', %s) input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
-               proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_server_socket))
+               proto, len(data or ""), msg, repr_ellipsized(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         _network_protocol, info = self.guess_header_protocol(data)
         err = "invalid packet format, %s" % info
         proto.gibberish(err, data)
