@@ -1528,6 +1528,31 @@ def is_local(host):
 
 def parse_display_name(error_cb, opts, display_name):
     desc = {"display_name" : display_name}
+    #split the display name on ":" or "/"
+    scpos = display_name.find(":")
+    slpos = display_name.find("/")
+    if scpos<0 and slpos<0:
+        error_cb("unknown format for display name: %s" % display_name)
+    if scpos<0:
+        pos = slpos
+    elif slpos<0:
+        pos = scpos
+    else:
+        pos = min(scpos, slpos)
+    protocol = display_name[:pos]
+    #the separator between the protocol and the rest can be ":", "/" or "://"
+    #but the separator value we use thereafter can only be ":" or "/"
+    #because we want strings like ssl://host:port/DISPLAY to be parsed into ["ssl", "host:port", "DISPLAY"]
+    psep = ""
+    while display_name[pos] in (":", "/"):
+        psep += display_name[pos]
+        pos +=1
+    if psep not in (":", "/", "://"):
+        error_cb("unknown format for protocol separator '%s' in display name: %s" % (psep, display_name))
+    afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
+    separator = psep[-1]                    #ie: "/"
+    parts = afterproto.split(separator)     #ie: "host:port", "DISPLAY"
+    
     def parse_host_string(host, default_port=DEFAULT_PORT):
         """
             Parses [username[:password]@]host[:port]
@@ -1609,24 +1634,22 @@ def parse_display_name(error_cb, opts, display_name):
         opts.display = display
         desc["display_as_args"] = [display]
 
-    if display_name.lower().startswith("ssh:") or display_name.lower().startswith("ssh/"):
-        separator = display_name[3] # ":" or "/"
+    if protocol=="ssh":
         desc.update({
                 "type"             : "ssh",
                 "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
                  })
-        parts = display_name.split(separator)
         desc["display"] = None
         desc["display_as_args"] = []
-        if len(parts)>2:
+        if len(parts)>1:
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
-            host = separator.join(parts[1:-1])
+            host = separator.join(parts[0:-1])
             if parts[-1]:
                 parse_remote_display(parts[-1])
         else:
             #ssh:HOST or ssh/HOST
-            host = parts[1]
+            host = parts[0]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = shlex.split(opts.ssh)
         desc["ssh"] = ssh
@@ -1672,7 +1695,7 @@ def parse_display_name(error_cb, opts, display_name):
                 warn("Error: failed to read the password file '%s':\n", opts.password_file)
                 warn(" %s\n", e)
         return desc
-    elif display_name.startswith("socket:"):
+    elif protocol=="socket":
         #use the socketfile specified:
         sockfile = display_name[len("socket:"):]
         desc.update({
@@ -1695,31 +1718,23 @@ def parse_display_name(error_cb, opts, display_name):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif (
-        display_name.startswith("tcp:") or display_name.startswith("tcp/") or \
-        display_name.startswith("ssl:") or display_name.startswith("ssl/") or \
-        display_name.startswith("udp:") or display_name.startswith("udp/")
-        ):
-        ctype = display_name[:3]                #ie: "ssl" or "tcp"
-        separator = display_name[len(ctype)]    # ":" or "/"
+    elif protocol in ("tcp", "ssl", "udp"):
         desc.update({
-                     "type"     : ctype,
+                     "type"     : protocol,
                      })
-        parts = display_name.split(separator)
-        if len(parts) not in (2, 3, 4):
+        if len(parts) not in (1, 2, 3):
             error_cb("invalid %s connection string, use %s/[username[:password]@]host[:port][/display] or %s:[username[:password]@]host[:port]" % (ctype * 3))
         #display (optional):
-        if separator=="/" and len(parts)==3:
+        if separator=="/" and len(parts)==2:
             parse_remote_display(parts[-1])
             parts = parts[:-1]
-        host = ":".join(parts[1:])
+        host = ":".join(parts)
         username, password, host, port = parse_host_string(host)
         assert port>0, "no port specified in %s" % host
         return desc
-    elif display_name.startswith("vsock:") or display_name.startswith("vsock/"):
+    elif protocol=="vsock":
         #use the vsock specified:
-        vsock_str = display_name[len("vsock:"):]
-        cid, iport = parse_vsock(vsock_str)
+        cid, iport = parse_vsock(afterproto)
         desc.update({
                 "type"          : "vsock",
                 "local"         : False,
@@ -1728,18 +1743,13 @@ def parse_display_name(error_cb, opts, display_name):
                 })
         opts.display = display_name
         return desc
-    elif display_name.startswith("ws:") or display_name.startswith("wss:") or display_name.startswith("ws/") or display_name.startswith("wss/"):
-        if display_name.startswith("wss"):
-            separator = display_name[3] # ":" or "/"
-        else:
-            assert display_name.startswith("ws")
-            separator = display_name[2] # ":" or "/"
+    elif protocol in ("ws", "wss"):
         try:
             import websocket
             assert websocket
         except ImportError as e:
             raise InitException("the websocket client module cannot be loaded: %s" % e)
-        ws_proto, host = display_name.split(separator, 1)
+        host = afterproto
         if host.find("?")>=0:
             host, _ = host.split("?", 1)
         if host.find("/")>=0:
@@ -1749,7 +1759,7 @@ def parse_display_name(error_cb, opts, display_name):
         username, password, host, port = parse_host_string(host)
         parse_remote_display(extra)
         desc.update({
-                "type"          : ws_proto,     #"ws" or "wss"
+                "type"          : protocol,     #"ws" or "wss"
                 "host"          : host,
                 "port"          : port,
                 })
