@@ -81,6 +81,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
 [\fB\-\-rfb\-auth\fP=\fIMODULE\fP]
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
+[\fB\-\-min\-port\fP=\fIPORT\fP]
 [\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
 [\fB\-\-ssl\-key\fP=\fIKEYFILE\fP]
 [\fB\-\-ssl\-cert\fP=\fCERTFILE\fP]
@@ -215,6 +216,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
 [\fB\-\-rfb\-auth\fP=\fIMODULE\fP]
 [\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
+[\fB\-\-min\-port\fP=\fIPORT\fP]
 [\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP]
 [\fB\-\-ssl\-key\fP=\fIKEYFILE\fP]
 [\fB\-\-ssl\-cert\fP=\fCERTFILE\fP]
@@ -909,6 +911,12 @@ Authentication module to use for the \fBbind\-rfb\fP sockets.
 \fB\-\-vsock\-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).
+.TP
+\fB\-\-min\-port\fP=\fIPORT\fP
+The minimum port number allowed when creating UDP and TCP sockets.
+You can use a lower value to allow unprivileged users to bind to
+privileged ports when starting sessions via the system wide proxy server.
+The default value is 1024 which is the standard value for privileged ports.
 .TP
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.

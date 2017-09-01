@@ -30,6 +30,13 @@ bind = %(bind)s
 
 
 ########################################################################
+# port number constraints:
+# when starting as root for another user via the uid and gid options,
+# which port numbers are allowed
+min-port = 1024
+
+
+########################################################################
 # TCP:
 
 # To listen on TCP sockets:

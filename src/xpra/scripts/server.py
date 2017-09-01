@@ -591,16 +591,21 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
     from xpra.server.socket_util import setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_local_sockets
+    min_port = int(opts.min_port)
     def add_mdns(socktype, host, port):
         recs = mdns_recs.setdefault(socktype.lower(), [])
         rec = (host, port)
         if rec not in recs:
             recs.append(rec)
     def add_tcp_socket(socktype, host, iport):
+        if iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         socket = setup_tcp_socket(host, iport, socktype)
         sockets.append(socket)
         add_mdns(socktype, host, iport)
     def add_udp_socket(socktype, host, iport):
+        if iport<min_port:
+            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         socket = setup_udp_socket(host, iport, socktype)
         sockets.append(socket)
         add_mdns(socktype, host, iport)

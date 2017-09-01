@@ -533,6 +533,7 @@ OPTION_TYPES = {
                     "pixel-depth"       : int,
                     "uid"               : int,
                     "gid"               : int,
+                    "min-port"          : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -621,7 +622,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir"]
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir", "min-port"]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
@@ -890,6 +891,7 @@ def get_defaults():
                     "pixel-depth"       : 0,
                     "uid"               : getuid(),
                     "gid"               : getgid(),
+                    "min-port"          : 1024,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "start-via-proxy"   : None,

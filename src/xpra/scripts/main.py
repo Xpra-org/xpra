@@ -1001,6 +1001,9 @@ def do_parse_cmdline(cmdline, defaults):
                          help="The authentication module to use for vsock sockets (default: '%default')")
     else:
         ignore({"vsock-auth" : defaults.vsock_auth})
+    group.add_option("--min-port", action="store",
+                      dest="min_port", default=defaults.min_port,
+                      help="The minimum port number allowed when creating UDP or TCP sockets (default: '%default')")
     ignore({"password"           : defaults.password})
     if POSIX:
         group.add_option("--mmap-group", action="store_true",
