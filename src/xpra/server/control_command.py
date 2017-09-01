@@ -76,7 +76,7 @@ class FixedMessageCommand(ControlCommand):
         super(FixedMessageCommand, self).__init__(name, help_text)
         self.message = message
 
-    def run(self, *args):
+    def run(self, *_args):
         return self.message
 
 

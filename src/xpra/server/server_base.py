@@ -576,7 +576,7 @@ class ServerBase(ServerCore):
     def init_sound_options(self, opts):
         self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
         self.supports_microphone = sound_option(opts.microphone) in ("on", "off")
-        def sound_option_or_all(*args):
+        def sound_option_or_all(*_args):
             return []
         if self.supports_speaker or self.supports_microphone:
             try:
@@ -1406,7 +1406,7 @@ class ServerBase(ServerCore):
         pass        #may be overriden in subclasses (ie: x11 server)
 
 
-    def get_keyboard_config(self, props):
+    def get_keyboard_config(self, _props):
         return None
 
     def set_keyboard_repeat(self, key_repeat):
@@ -1415,7 +1415,7 @@ class ServerBase(ServerCore):
     def set_keymap(self, ss, force=False):
         pass
 
-    def get_transient_for(self, window):
+    def get_transient_for(self, _window):
         return  None
 
     def send_initial_windows(self, ss, sharing=False):
@@ -1566,7 +1566,7 @@ class ServerBase(ServerCore):
     # Control Commands
     #########################################
 
-    def _process_command_request(self, proto, packet):
+    def _process_command_request(self, _proto, packet):
         """ client sent a command request through its normal channel """
         assert len(packet)>=2, "invalid command request packet (too small!)"
         #packet[0] = "control"
@@ -1633,7 +1633,7 @@ class ServerBase(ServerCore):
         return "%s set to %s" % (feature, state)
 
 
-    def _control_get_sources(self, client_uuids_str, attr=None):
+    def _control_get_sources(self, client_uuids_str, _attr=None):
         #find the client uuid specified as a string:
         if client_uuids_str=="UI":
             sources = [ss for ss in self._server_sources.values() if ss.ui_client]
@@ -1847,7 +1847,7 @@ class ServerBase(ServerCore):
             ws.refresh(window, {})
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
 
-    def control_command_clipboard_direction(self, direction, *args):
+    def control_command_clipboard_direction(self, direction, *_args):
         ch = self._clipboard_helper
         assert self.supports_clipboard and ch
         direction = direction.lower()
@@ -1983,7 +1983,7 @@ class ServerBase(ServerCore):
             return
         ss._process_send_file_chunk(packet)
 
-    def _process_print(self, proto, packet):
+    def _process_print(self, _proto, packet):
         #ie: from the xpraforwarder we call this command:
         #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
         assert self.file_transfer.printing
@@ -2106,7 +2106,7 @@ class ServerBase(ServerCore):
             log.info("processed info request from %s in %ims", proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, self._id_to_window.keys())
 
-    def get_ui_info(self, proto, wids=None, *args):
+    def get_ui_info(self, _proto, wids=None, *_args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -2121,7 +2121,7 @@ class ServerBase(ServerCore):
         return get_thread_info(proto, list(self._server_sources.keys()))
 
 
-    def get_info(self, proto=None, client_uuids=None, wids=None, *args):
+    def get_info(self, proto=None, client_uuids=None, wids=None, *_args):
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
@@ -2421,7 +2421,7 @@ class ServerBase(ServerCore):
             ss.notify_close(int(nid))
 
 
-    def _keys_changed(self, *args):
+    def _keys_changed(self, *_args):
         if not self.keymap_changing:
             for ss in self._server_sources.values():
                 ss.keys_changed()
@@ -2430,7 +2430,7 @@ class ServerBase(ServerCore):
         pass
 
 
-    def _focus(self, server_source, wid, modifiers):
+    def _focus(self, _server_source, wid, modifiers):
         focuslog("_focus(%s,%s)", wid, modifiers)
 
     def get_focus(self):
@@ -2627,7 +2627,7 @@ class ServerBase(ServerCore):
             rpclog.error("Error: cannot call %s handler %s:", rpc_type, handler, exc_info=True)
             ss.rpc_reply(rpc_type, rpcid, False, str(e))
 
-    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *extra):
+    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):
         assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
         def native(args):
             return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
@@ -2680,7 +2680,7 @@ class ServerBase(ServerCore):
         if ss:
             ss.process_ping(time_to_echo)
 
-    def _process_screenshot(self, proto, packet):
+    def _process_screenshot(self, proto, _packet):
         packet = self.make_screenshot_packet()
         ss = self._server_sources.get(proto)
         if packet and ss:

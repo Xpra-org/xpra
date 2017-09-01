@@ -45,10 +45,10 @@ class KeyboardConfigBase(object):
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         pass
 
-    def get_keycode(self, client_keycode, keyname, modifiers):
+    def get_keycode(self, _client_keycode, _keyname, _modifiers):
         log("%s does not implement get_keycode!", type(self))
         return -1
 
-    def is_modifier(self, keycode):
+    def is_modifier(self, _keycode):
         #should be overriden in subclass
         return False
