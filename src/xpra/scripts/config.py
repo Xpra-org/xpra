@@ -584,6 +584,7 @@ def get_default_key_shortcuts():
     return [shortcut for e,shortcut in [
                (True,   "Control+Menu:toggle_keyboard_grab"),
                (True,   "Shift+Menu:toggle_pointer_grab"),
+               (True,   "Shift+F11:toggle_fullscreen"),
                (True,   "Meta+Shift+F1:show_menu"),
                (True,   "Meta+Shift+F2:show_start_new_command"),
                (True,   "Meta+Shift+F3:show_bug_report"),
