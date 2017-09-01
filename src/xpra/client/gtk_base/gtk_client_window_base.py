@@ -161,7 +161,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._frozen = False
         self.moveresize_timer = None
         self.moveresize_event = None
-        self.OR_offset = None
+        self.window_offset = None   #actual vs reported coordinates
         #add platform hooks
         self.on_realize_cb = {}
         self.connect_after("realize", self.on_realize)
@@ -298,10 +298,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 #make sure OR windows are mapped on screen
                 if self._client._current_screen_sizes:
                     w, h = self._size
-                    self.OR_offset = self.calculate_OR_offset(x, y, w, h)
-                    if self.OR_offset:
-                        x += self.OR_offset[0]
-                        y += self.OR_offset[1]
+                    self.window_offset = self.calculate_window_offset(x, y, w, h)
+                    if self.window_offset:
+                        x += self.window_offset[0]
+                        y += self.window_offset[1]
             if not self.is_OR() and self.get_decorated():
                 #try to adjust for window frame size if we can figure it out:
                 #Note: we cannot just call self.get_window_frame_size() here because
@@ -321,7 +321,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.move(x, y)
         self.set_default_size(*self._size)
 
-    def calculate_OR_offset(self, wx, wy, ww, wh):
+    def calculate_window_offset(self, wx, wy, ww, wh):
         ss = self._client._current_screen_sizes
         if not ss:
             return None
@@ -370,7 +370,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         elif wy+wh>y+h:
             dy = (y+h) - (wy+wh)
         assert dx!=0 or dy!=0
-        geomlog("calculate_OR_offset%s=%s", (wx, wy, ww, wh), (dx, dy))
+        geomlog("calculate_window_offset%s=%s", (wx, wy, ww, wh), (dx, dy))
         return dx, dy
 
     def when_realized(self, identifier, callback, *args):
@@ -1223,18 +1223,33 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.new_backing(self._client.cx(ww), self._client.cy(wh))
 
     def resize(self, w, h, resize_counter=0):
-        log("resize(%s, %s, %s)", w, h, resize_counter)
+        ww, wh = self.get_size()
+        geomlog("resize(%s, %s, %s) current size=%s, fullscreen=%s", w, h, resize_counter, (ww, wh), self._fullscreen)
         self._resize_counter = resize_counter
-        gtk.Window.resize(self, w, h)
+        if (w, h)==(ww, wh):
+            return
+        if not self._fullscreen and not self._maximized:
+            gtk.Window.resize(self, w, h)
+        else:
+            #align in the middle:
+            ox = (ww-w)//2
+            oy = (wh-h)//2
+            geomlog("using window offset values %i,%i", ox, oy)
+            #some backings use top,left values,
+            #(opengl uses left and botton since the viewport starts at the bottom)
+            self._backing.offsets = ox, oy, ox, oy
+            #adjust pointer coordinates:
+            self.window_offset = ox, oy
+            self.queue_draw(0, 0, ww, wh)
         self._set_backing_size(w, h)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
         w = max(1, w)
         h = max(1, h)
-        if self.OR_offset:
-            x += self.OR_offset[0]
-            y += self.OR_offset[1]
+        if self.window_offset:
+            x += self.window_offset[0]
+            y += self.window_offset[1]
             #TODO: check this doesn't move it off-screen!
         self._resize_counter = resize_counter
         window = self.get_window()
@@ -1310,9 +1325,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def _pointer(self, x, y):
-        if self.OR_offset:
-            x -= self.OR_offset[0]
-            y -= self.OR_offset[1]
+        if self.window_offset:
+            x -= self.window_offset[0]
+            y -= self.window_offset[1]
         return self._client.cp(x, y)
 
     def _get_pointer(self, event):
@@ -1324,7 +1339,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
         v = pointer, modifiers, buttons
-        mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, OR_offset=%s)", event, v, event.x_root, event.y_root, self.OR_offset)
+        mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)", event, v, event.x_root, event.y_root, self.window_offset)
         return v
 
     def _event_buttons(self, event):
