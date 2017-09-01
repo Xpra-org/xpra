@@ -215,10 +215,8 @@ class ProxyServer(ServerCore):
             username = get_username_for_uid(uid)
             groups = get_groups(username)
             if "xpra" not in groups:
-                log.error("Error: user '%s' (uid=%i) is not in the xpra group", username, uid)
-                log.error(" it belongs to: %s", csv(groups) or None)
-                disconnect(PERMISSION_ERROR, "user missing 'xpra' group membership")
-                return
+                log("user '%s' (uid=%i) is not in the xpra group", username, uid)
+                log(" it belongs to: %s", csv(groups) or None)
         #ensure we don't loop back to the proxy:
         proxy_virtual_display = os.environ.get("DISPLAY")
         if proxy_virtual_display in displays:
