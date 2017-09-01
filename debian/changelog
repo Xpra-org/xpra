@@ -7,11 +7,14 @@ xpra (1.0.8-1) UNRELEASED; urgency=low
   * fix iconification loop with some window managers (ie: ratpoison)
   * fix clipboard regression introduced in 1.0.7
   * fix handling of unusual HTTP configurations
+  * don't require proxy instance users to be members of any groups
+  * handle mismatch between window geometry and its contents
   * allow a longer server startup timeout delay (HTML5 client)
   * more helpful error message if jQuery is missing (HTML5 client)
   * add missing entries to man page
+  * add Shift+F11 shortcut to toggle windows fullscreen state
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 31 Aug 2017 23:39:23 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 Sep 2017 16:23:46 +0700
 
 xpra (1.0.7-1) UNRELEASED; urgency=low
   * fix authentication with unencrypted xor mode

@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Thu Aug 31 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
+* Fri Sep 01 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
 - fix Fedora 26 builds: must disable buggy systemd-run
 - fix sound output with pulseaudio systems (was invalid sink)
 - fix socket check for printer forwarding support
@@ -610,9 +610,12 @@ fi
 - fix iconification loop with some window managers (ie: ratpoison)
 - fix clipboard regression introduced in 1.0.7
 - fix handling of unusual HTTP configurations
+- don't require proxy instance users to be members of any groups
+- handle mismatch between window geometry and its contents
 - allow a longer server startup timeout delay (HTML5 client)
 - more helpful error message if jQuery is missing (HTML5 client)
 - add missing entries to man page
+- add Shift+F11 shortcut to toggle windows fullscreen state
 
 * Mon Aug 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.7-1
 - fix authentication with unencrypted xor mode
