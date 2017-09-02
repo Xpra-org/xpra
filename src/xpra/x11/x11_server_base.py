@@ -36,6 +36,19 @@ class UInputPointerDevice(object):
         self.device = device
         self.device_path = device_path
         self.wheel_delta = 0
+        #the first event always goes MIA:
+        #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
+        #so synthesize a dummy one now:
+        try:
+            with xsync:
+                from xpra.x11.bindings.xi2_bindings import X11XI2Bindings
+                xi2 = X11XI2Bindings()
+                v = xi2.get_xi_version()
+                log("XInput version %s", ".".join(str(x) for x in v))
+                if v<=(2, 2):
+                    self.wheel_motion(4, 1)
+        except:
+            log.warn("cannot query XInput protocol version", exc_info=True)
 
     def __repr__(self):
         return "UInput device %s" % self.device_path
