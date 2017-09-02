@@ -601,7 +601,7 @@ fi
 
 
 %changelog
-* Fri Sep 01 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
+* Sun Sep 03 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
 - fix Fedora 26 builds: must disable buggy systemd-run
 - fix sound output with pulseaudio systems (was invalid sink)
 - fix socket check for printer forwarding support
@@ -610,6 +610,7 @@ fi
 - fix iconification loop with some window managers (ie: ratpoison)
 - fix clipboard regression introduced in 1.0.7
 - fix handling of unusual HTTP configurations
+- fix server start failures on pulseaudio permissions errors
 - don't require proxy instance users to be members of any groups
 - handle mismatch between window geometry and its contents
 - allow a longer server startup timeout delay (HTML5 client)
