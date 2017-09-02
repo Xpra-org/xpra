@@ -349,6 +349,7 @@ class ServerSource(FileTransferHandler):
         self.last_user_event = monotonic_time()
         self.last_ping_echoed_time = 0
 
+        self.clipboard_progress_timer = None
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
 
         self.init_vars()
@@ -483,6 +484,7 @@ class ServerSource(FileTransferHandler):
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
+        self.cancel_clipboard_progress_timer()
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
@@ -1724,19 +1726,26 @@ class ServerSource(FileTransferHandler):
             return
         self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
 
+    def cancel_clipboard_progress_timer(self):
+        cpt = self.clipboard_progress_timer
+        if cpt:
+            self.clipboard_progress_timer = None
+            self.source_remove(cpt)
+
     def send_clipboard_progress(self, count):
-        if not self.clipboard_notifications or not self.hello_sent:
+        if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
             return
         #always set "pending" to the latest value:
         self.clipboard_notifications_pending = count
         #but send the latest value via a timer to tame toggle storms:
         def may_send_progress_update():
+            self.clipboard_progress_timer = None
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
                 clipboardlog("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
                 self.send("clipboard-pending-requests", self.clipboard_notifications_current)
         delay = (count==0)*100
-        self.timeout_add(delay, may_send_progress_update)
+        self.clipboard_progress_timer = self.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet):
         if not self.clipboard_enabled or self.suspended or not self.hello_sent:
