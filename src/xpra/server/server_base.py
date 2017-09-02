@@ -534,7 +534,13 @@ class ServerBase(ServerCore):
             self.pulseaudio_proc = None
         import subprocess
         env = self.get_child_env()
-        self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, close_fds=True)
+        try:
+            self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, close_fds=True)
+        except Exception as e:
+            soundlog("Popen(%s)", cmd, exc_info=True)
+            soundlog.error("Error: failed to start pulseaudio:")
+            soundlog.error(" %s", e)
+            return
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
