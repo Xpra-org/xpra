@@ -2357,7 +2357,7 @@ class ServerBase(ServerCore):
             httplog.warn("Warning: no client matching uuid '%s'", uuid)
             return err()
         state = {}
-        def new_buffer(sound_source, data, metadata, packet_metadata=[]):
+        def new_buffer(_sound_source, data, _metadata, packet_metadata=[]):
             if not state.get("started"):
                 httplog.warn("buffer received but stream is not started yet")
                 err()
@@ -2377,7 +2377,7 @@ class ServerBase(ServerCore):
                 httplog.warn(" %s", e)
                 source.stop_sending_sound()
                 return
-        def new_stream(sound_source, codec):
+        def new_stream(_sound_source, codec):
             httplog("new_stream: %s", codec)
             state["started"] = True
             state["buffers"] = 0
