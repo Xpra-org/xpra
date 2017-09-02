@@ -4,6 +4,7 @@ usr/lib/sysusers.d/xpra.conf
 usr/bin/xpra
 usr/bin/xpra_launcher
 usr/bin/xpra_browser
+usr/bin/udev_product_version
 usr/lib/cups/backend/xpraforwarder
 usr/share/applications/xpra-launcher.desktop
 usr/share/applications/xpra-browser.desktop

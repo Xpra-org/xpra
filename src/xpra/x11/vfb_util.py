@@ -23,21 +23,11 @@ DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFA
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
-XORG_DEVICE_OPTIONS = {
-    "pointer"   : """
-    MatchIsPointer "True"
-    Driver "libinput"
-    Option "AccelProfile" "flat"
-""",
-    "keyboard"  : 'MatchIsKeyboard "True"',
-    }
-
-
-def create_xorg_device_configs(xorg_conf_dir, devices, uid, gid):
+def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     from xpra.log import Logger
     log = Logger("server", "x11")
     cleanups = []
-    if not devices:
+    if not device_uuid:
         return cleanups
 
     def makedir(dirname):
@@ -62,40 +52,34 @@ def create_xorg_device_configs(xorg_conf_dir, devices, uid, gid):
     for d in dirs:
         makedir(d)
 
-    #create individual device files:
+    #create individual device files,
+    #only pointer for now:
     i = 0
-    for dev_type, devdef in devices.items():
-        #ie:
-        #name = "pointer"
-        #devdef = {"uinput" : uninput.Device, "device" : "/dev/input20" }
-        match_type = XORG_DEVICE_OPTIONS.get(dev_type)
-        uinput = devdef.get("uinput")
-        device = devdef.get("device")
-        name = devdef.get("name")
-        if match_type and uinput and device and name:
-            conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
-            with open(conf_file, "wb") as f:
-                f.write("""
-Section "InputClass"
+    dev_type = "pointer"
+    name = "Xpra Virtual Pointer %s" % device_uuid
+    conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
+    with open(conf_file, "wb") as f:
+        f.write(b"""Section "InputClass"
     Identifier "xpra-virtual-%s"
     MatchProduct "%s"
-    MatchDevicePath "%s"
+    MatchUSBID "ffff:ffff"
+    MatchIsPointer "True"
+    Driver "libinput"
+    Option "AccelProfile" "flat"
     Option "Ignore" "False"
-%s
 EndSection
-""" % (dev_type, name, device, match_type))
-                os.fchown(f.fileno(), uid, gid)
-                #Option "AccelerationProfile" "-1"
-                #Option "AccelerationScheme" "none"
-                #Option "AccelSpeed" "-1"
-            def cleanup_conf_file():
-                log("cleanup_conf_file: %s", conf_file)
-                os.unlink(conf_file) 
-            cleanups.insert(0, cleanup_conf_file)
+""" % (dev_type, name))
+        os.fchown(f.fileno(), uid, gid)
+        #Option "AccelerationProfile" "-1"
+        #Option "AccelerationScheme" "none"
+        #Option "AccelSpeed" "-1"
+    def cleanup_conf_file():
+        log("cleanup_conf_file: %s", conf_file)
+        os.unlink(conf_file) 
+    cleanups.insert(0, cleanup_conf_file)
     return cleanups
 
-
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, devices={}):
+def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if not xvfb_str:
@@ -128,16 +112,11 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             "PID"               : os.getpid(),
             "HOME"              : HOME,
             "DISPLAY"           : display_name,
-            "XDG_RUNTIME_DIR"   : os.environ.get("XDG_RUNTIME_DIR", _get_runtime_dir()),
-            "XPRA_LOG_DIR"      : os.environ.get("XPRA_LOG_DIR"),
             }
     def pathexpand(s):
         return shellsub(s, subs)
-
-    #create uinput device definition files:
-    #(we are assuming that Xorg is configured to use this path..)
-    xorg_conf_dir = pathexpand(get_Xdummy_confdir())
-    cleanups = create_xorg_device_configs(xorg_conf_dir, devices, uid, gid)
+    subs["XDG_RUNTIME_DIR"] = pathexpand(os.environ.get("XDG_RUNTIME_DIR", _get_runtime_dir()))
+    subs["XPRA_LOG_DIR"] = pathexpand(os.environ.get("XPRA_LOG_DIR"))
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
@@ -172,7 +151,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
 
-    if devices:
+    if uinput_uuid:
+        #use uinput:
         #identify -config xorg.conf argument and replace it with the uinput one:
         try:
             config_argindex = xvfb_cmd.index("-config")
@@ -184,6 +164,10 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
             if os.path.exists(xorg_conf):
                 xvfb_cmd[config_argindex+1] = xorg_conf
+        #create uinput device definition files:
+        #(we have to assume that Xorg is configured to use this path..)
+        xorg_conf_dir = pathexpand(get_Xdummy_confdir())
+        cleanups = create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
     xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:

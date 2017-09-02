@@ -1425,7 +1425,7 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser"]
+    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/udev_product_version"]
     add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))

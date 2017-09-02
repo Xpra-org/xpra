@@ -573,6 +573,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 
 %files common-server
+%{_bindir}/udev_product_version
 %{_prefix}/lib/systemd/system/xpra.service
 %{_prefix}/lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder

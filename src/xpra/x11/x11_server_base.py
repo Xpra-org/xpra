@@ -178,6 +178,7 @@ class X11ServerBase(X11ServerCore):
         X11ServerCore.last_client_exited(self)
 
     def init_virtual_devices(self, devices):
+        #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
         if pointer:
@@ -186,19 +187,23 @@ class X11ServerBase(X11ServerCore):
             #name = pointer.get("name")
             device_path = pointer.get("device")
             if uinput_device:
+                xtest = XTestPointerDevice()
+                ox, oy = 100, 100
+                xtest.move_pointer(0, ox, oy)
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
-                nx, ny = 100, 100
+                nx, ny = 200, 200
                 self.pointer_device.move_pointer(0, nx, ny)
                 def verify_uinput_moved():
                     pos = None  #@UnusedVariable
                     with xswallow:
                         pos = X11Keyboard.query_pointer()
                         mouselog("X11Keyboard.query_pointer=%s", pos)
-                    if pos!=(nx, ny):
+                    if pos==(ox, oy):
                         mouselog.warn("Warning: %s failed verification", self.pointer_device)
+                        mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
                         mouselog.warn(" usign XTest fallback")
-                        self.pointer_device = XTestPointerDevice()
-                self.timeout_add(100, verify_uinput_moved)
+                        self.pointer_device = xtest
+                self.timeout_add(1000, verify_uinput_moved)
         try:
             mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:

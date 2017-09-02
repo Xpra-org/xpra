@@ -295,13 +295,26 @@ def get_uinput_device_path(device):
         log.error(" %", e)
     return None
 
-def create_uinput_pointer_device(uid, gid):
+def has_uinput():
+    from xpra.log import Logger
+    log = Logger("server")
+    try:
+        import uinput
+        assert uinput
+    except (ImportError, NameError) as e:
+        log.info("cannot access python uinput module:")
+        log.info(" %s", e)
+        return False
+    else:
+        return True
+
+def create_uinput_pointer_device(uuid, uid):
     from xpra.log import Logger
     log = Logger("server")
     try:
         import uinput
     except (ImportError, NameError) as e:
-        log.error("Error: cannot create uinput devices:")
+        log.error("Error: cannot access python uinput module:")
         log.error(" %s", e)
         return None
     events = (
@@ -320,38 +333,33 @@ def create_uinput_pointer_device(uid, gid):
         )
     BUS_USB = 0x03
     #BUS_VIRTUAL = 0x06
-    name = "Xpra Virtual Pointer"
+    VENDOR = 0xffff
+    PRODUCT = 0x1000
+    #our udev_product_version script will use the version attribute to set
+    #the udev OWNER value
+    VERSION = uid
+    name = "Xpra Virtual Pointer %s" % uuid
     try:
-        uinput_pointer = uinput.Device(events, name=name, bustype=BUS_USB, vendor=0, product=0, version=0)
+        uinput_pointer = uinput.Device(events, name=name, bustype=BUS_USB, vendor=VENDOR, product=PRODUCT, version=VERSION)
     except OSError as e:
-        log.error("Error: cannot open uinput,")
-        log.error(" make sure that the kernel module is loaded")
-        log.error(" and that the /dev/uinput device exists:")
-        log.error(" %s", e)
+        log("uinput.Device creation failed", exc_info=True)
+        if os.getuid()==0:
+            #running as root, this should work!
+            log.error("Error: cannot open uinput,")
+            log.error(" make sure that the kernel module is loaded")
+            log.error(" and that the /dev/uinput device exists:")
+            log.error(" %s", e)
+        else:
+            log.info("cannot access uinput: %s", e)
         return None
     dev_path = get_uinput_device_path(uinput_pointer)
     if not dev_path:
         uinput_pointer.destroy()
         return None
-    try:
-        #log("chown%s", (dev_path, uid, gid))
-        os.lchown(dev_path, uid, gid)
-        #udev rules change the device ownership
-        #FIXME: fix udev or use inotify? (racy)
-        import time
-        time.sleep(1)
-        log("chown%s", (dev_path, uid, gid))
-        os.lchown(dev_path, uid, gid)
-        #os.lchown("/dev/input/mouse2", uid, gid)
-    except OSError as e:
-        log.error("Error: failed to change ownership of '%s':", name)
-        log.error(" at %s:", dev_path)
-        log.error(" %s", e)
-        return None
     return name, uinput_pointer, dev_path
 
-def create_uinput_devices(uid, gid):
-    d = create_uinput_pointer_device(uid, gid)
+def create_uinput_devices(uinput_uuid, uid):
+    d = create_uinput_pointer_device(uinput_uuid, uid)
     if not d:
         return {}
     name, uinput_pointer, dev_path = d
@@ -363,5 +371,5 @@ def create_uinput_devices(uid, gid):
             }
         }
 
-def create_input_devices(uid, gid=-1):
-    return create_uinput_devices(uid, gid)
+def create_input_devices(uinput_uuid, uid):
+    return create_uinput_devices(uinput_uuid, uid)

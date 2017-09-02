@@ -91,6 +91,12 @@ def save_dbus_pid(pid):
 def get_dbus_pid():
     return _get_int("_XPRA_DBUS_PID")
 
+def save_uinput_id(uuid):
+    _save_str("_XPRA_UINPUT_ID", uuid)
+
+#def get_uinput_id():
+#    return _get_str("_XPRA_UINPUT_ID")
+
 def get_dbus_env():
     env = {}
     for n,load in (
@@ -156,6 +162,25 @@ def display_name_check(display_name):
             warn(" You should probably use a higher display number just to avoid any confusion (and also this warning message).")
     except:
         pass
+
+def close_gtk_display():
+    # Close our display(s) first, so the server dying won't kill us.
+    # (if gtk has been loaded)
+    gtk_mod = sys.modules.get("gtk")
+    if gtk_mod:
+        for d in gtk_mod.gdk.display_manager_get().list_displays():
+            d.close()
+
+def kill_xvfb(xvfb_pid):
+    if xvfb_pid:
+        from xpra.log import Logger
+        log = Logger("server")
+        log.info("killing xvfb with pid %s", xvfb_pid)
+        try:
+            os.kill(xvfb_pid, signal.SIGTERM)
+        except OSError as e:
+            log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
+            log.info(" %s", e)
 
 
 def print_DE_warnings(desktop_display, pulseaudio, notifications, dbus_launch):
@@ -348,6 +373,7 @@ def show_encoding_help(opts):
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
+    from xpra.os_util import strtobytes
     try:
         cwd = os.getcwd()
     except:
@@ -675,20 +701,21 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     os.environ.update(protected_env)
     log("env=%s", os.environ)
 
-    #create devices for vfb if needed:
-    devices = {}
-    if start_vfb and opts.input_devices.lower()=="uinput":
-        devices = create_input_devices(uid)
-
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
     xvfb = None
     xvfb_pid = None
+    uinput_uuid = None
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
         from xpra.x11.vfb_util import start_Xvfb
-        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, devices)
+        from xpra.server.server_util import has_uinput
+        uinput_uuid = None
+        if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
+            from xpra.os_util import get_rand_chars
+            uinput_uuid = get_rand_chars(8)
+        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)
         xvfb_pid = xvfb.pid
@@ -698,6 +725,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ.update(protected_env)
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
+
     if POSIX and not OSX and displayfd>0:
         from xpra.platform.displayfd import write_displayfd
         try:
@@ -713,23 +741,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except:
             pass
 
-    close_display = None
     if not proxying:
         def close_display():
-            # Close our display(s) first, so the server dying won't kill us.
-            # (if gtk has been loaded)
-            gtk_mod = sys.modules.get("gtk")
-            if gtk_mod:
-                for d in gtk_mod.gdk.display_manager_get().list_displays():
-                    d.close()
-            if xvfb_pid:
-                log.info("killing xvfb with pid %s", xvfb_pid)
-                try:
-                    os.kill(xvfb_pid, signal.SIGTERM)
-                except OSError as e:
-                    log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
-                    log.info(" %s", e)
+            close_gtk_display()
+            kill_xvfb(xvfb_pid)
         add_cleanup(close_display)
+    else:
+        close_display = None
 
     if opts.daemon:
         def noerr(fn, *args):
@@ -758,6 +776,25 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #xvfb problem: exit now
             return  1
 
+    #create devices for vfb if needed:
+    devices = {}
+    if not start_vfb and not proxying and not shadowing:
+        #try to find the existing uinput uuid:
+        #use a subprocess to avoid polluting our current process
+        #with X11 connections before we get a chance to change uid
+        from xpra.os_util import get_status_output
+        cmd = ["xprop", "-display", display_name, "-root", "_XPRA_UINPUT_ID"]
+        try:
+            code, out, err = get_status_output(cmd)
+        except Exception as e:
+            log("failed to get existing uinput id: %s", e)
+        else:
+            log("Popen(%s)=%s", cmd, (code, out, err))
+            if code==0 and out.find("=")>0:
+                uinput_uuid = strtobytes(out.split("=", 1)[1])
+    if uinput_uuid:
+        devices = create_input_devices(uinput_uuid, uid)
+
     if ROOT and (uid!=0 or gid!=0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
         setuidgid(uid, gid)
@@ -784,7 +821,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.vfb_util import verify_display_ready
             if not verify_display_ready(xvfb, display_name, shadowing):
                 return 1
-            from xpra.x11.gtk2.gdk_display_util import verify_gdk_display
+            from xpra.x11.gtk2.gdk_display_util import verify_gdk_display       #@Reimport
             display = verify_gdk_display(display_name)
             if not display:
                 return 1
@@ -833,6 +870,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             save_xvfb_pid(xvfb_pid)
 
         if POSIX:
+            save_uinput_id(uinput_uuid or "")
             dbus_pid = -1
             dbus_env = {}
             if clobber:
@@ -904,7 +942,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     #publish mdns records:
     if opts.mdns:
-        from xpra.os_util import strtobytes
         from xpra.platform.info import get_username
         from xpra.server.socket_util import mdns_publish
         mdns_info = {
