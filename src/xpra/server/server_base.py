@@ -713,7 +713,7 @@ class ServerBase(ServerCore):
     def load_existing_windows(self):
         pass
 
-    def is_shown(self, window):
+    def is_shown(self, _window):
         return True
 
     def init_packet_handlers(self):
@@ -3131,7 +3131,7 @@ class ServerBase(ServerCore):
             self._idle_refresh_all_windows(proto)
 
 
-    def get_window_position(self, window):
+    def get_window_position(self, _window):
         #where the window is actually mapped on the server screen:
         return None
 
