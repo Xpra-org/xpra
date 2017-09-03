@@ -55,6 +55,9 @@ def do_get_icon_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
+def do_get_mmap_dir():
+    return _get_xpra_runtime_dir() or os.getenv("TMPDIR", "/tmp")
+
 def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []

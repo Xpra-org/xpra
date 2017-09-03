@@ -80,6 +80,11 @@ def do_get_download_dir():
         return "~"
     return d
 
+def get_mmap_dir():
+    return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
+def do_get_mmap_dir():
+    return os.getenv("TMPDIR", "/tmp")
+
 def get_script_bin_dirs():
     return envaslist_or_delegate("XPRA_SCRIPT_BIN_DIRS", do_get_script_bin_dirs)
 def do_get_script_bin_dirs():
@@ -251,6 +256,7 @@ platform_import(globals(), "paths", False,
                 "do_get_socket_dirs",
                 "do_get_default_log_dirs",
                 "do_get_download_dir",
+                "do_get_mmap_dir",
                 "do_get_script_bin_dirs")
 
 def get_info():

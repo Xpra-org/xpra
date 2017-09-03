@@ -6,7 +6,7 @@
 import os
 import ctypes
 from xpra.util import roundup
-from xpra.os_util import memoryview_to_bytes, WIN32, POSIX
+from xpra.os_util import memoryview_to_bytes, shellsub, WIN32, POSIX
 from xpra.simple_stats import to_std_unit
 from xpra.log import Logger
 log = Logger("mmap")
@@ -66,9 +66,17 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                         raise
             else:
                 import tempfile
-                mmap_dir = os.getenv("TMPDIR", "/tmp")
-                if not os.path.exists(mmap_dir):
-                    raise Exception("TMPDIR %s does not exist!" % mmap_dir)
+                from xpra.platform.paths import get_mmap_dir
+                mmap_dir = get_mmap_dir()
+                subs = os.environ.copy()
+                subs.update({
+                    "UID"               : os.getuid(),
+                    "GID"               : os.getgid(),
+                    "PID"               : os.getpid(),
+                    })
+                mmap_dir = shellsub(mmap_dir, subs)
+                if not mmap_dir or not os.path.exists(mmap_dir):
+                    raise Exception("mmap directory %s does not exist!" % mmap_dir)
                 #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
                 #that the file is readable and writable only by the creating user ID
                 try:

@@ -7,6 +7,8 @@
 import os
 import socket
 
+from xpra.os_util import shellsub
+
 SOCKET_HOSTNAME = os.environ.get("XPRA_SOCKET_HOSTNAME", socket.gethostname())
 PREFIX = "%s-" % (SOCKET_HOSTNAME,)
 
@@ -21,10 +23,13 @@ def osexpand(s, actual_username="", uid=0, gid=0):
         s = "~%s/%s" % (actual_username, s[2:])
     v = os.path.expandvars(os.path.expanduser(s))
     if os.name=="posix":
-        v = v.replace("$UID", str(uid or os.geteuid()))
-        v = v.replace("$GID", str(gid or os.getegid()))
+        v = shellsub(v, {
+            "UID"   : uid or os.geteuid(),
+            "GID"   : gid or os.getegid(),
+            })
     if len(actual_username)>0:
-        for k in ("USERNAME", "USER"):
-            v = v.replace("$%s" % k, actual_username)
-            v = v.replace("${%s}" % k, actual_username)
+        v = shellsub(v, {
+            "USERNAME"  : actual_username,
+            "USER"      : actual_username,
+            })
     return v
