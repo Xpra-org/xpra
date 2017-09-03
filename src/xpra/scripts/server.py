@@ -714,7 +714,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         uinput_uuid = None
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
             from xpra.os_util import get_rand_chars
-            uinput_uuid = get_rand_chars(8)
+            uinput_uuid = get_rand_chars(12)
         xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)
