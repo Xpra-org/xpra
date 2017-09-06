@@ -148,7 +148,7 @@ def setup_udp_socket(host, iport, socktype="udp"):
     return socktype, udp_socket, (host, iport)
 
 
-def parse_bind_ip(bind_ip):
+def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
     ip_sockets = set()
     if bind_ip:
         for spec in bind_ip:
@@ -158,7 +158,7 @@ def parse_bind_ip(bind_ip):
             if host == "":
                 host = "127.0.0.1"
             if not port:
-                iport = DEFAULT_PORT
+                iport = default_port
             else:
                 try:
                     iport = int(port)

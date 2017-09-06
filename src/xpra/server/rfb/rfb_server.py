@@ -29,7 +29,8 @@ class RFBServer(object):
             x11_keycodes = X11Keyboard.get_keycode_mappings()
             for keycode, keysyms in x11_keycodes.items():
                 for keysym in keysyms:
-                    self.x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
+                    if keysym:
+                        self.x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
             log("x11_keycodes_for_keysym=%s", self.x11_keycodes_for_keysym)
 
 
@@ -110,10 +111,16 @@ class RFBServer(object):
             self.rfb_buttons = buttons
 
     def _process_rfb_KeyEvent(self, _proto, packet):
-        pressed, _, _, key = packet[1:5]
+        pressed, p1, p2, key = packet[1:5]
         wid = self._get_rfb_desktop_wid()
         keyval = 0
-        name = RFB_KEYNAMES.get(key) or chr(key)
+        name = RFB_KEYNAMES.get(key)
+        if not name:
+            if 0<key<255:
+                name = chr(key)
+            else:
+                log.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
+                return
         keycode = 0
         keycodes = self.x11_keycodes_for_keysym.get(name, 0)
         log("keycodes(%s)=%s", name, keycodes)

@@ -389,7 +389,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     bind_ssl = parse_bind_ip(opts.bind_ssl)
     bind_ws  = parse_bind_ip(opts.bind_ws)
     bind_wss = parse_bind_ip(opts.bind_wss)
-    bind_rfb = parse_bind_ip(opts.bind_rfb)
+    bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     assert mode in ("start", "start-desktop", "upgrade", "shadow", "proxy")

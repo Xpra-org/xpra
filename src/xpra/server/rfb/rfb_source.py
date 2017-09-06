@@ -57,6 +57,7 @@ class RFBSource(object):
     def damage(self, _wid, window, x, y, w, h, _options=None):
         from xpra.net.protocol import PACKET_JOIN_SIZE
         img = window.get_image(x, y, w, h)
+        window.acknowledge_changes()
         log("damage: %s", img)
         fbupdate = struct.pack("!BBH", 0, 0, 1)
         encoding = 0    #Raw
