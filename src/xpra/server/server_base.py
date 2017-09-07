@@ -362,7 +362,8 @@ class ServerBase(ServerCore):
         nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
         printlog("local sockets we can use for printing: %s", nontcpsockets)
         if not nontcpsockets and self.file_transfer.printing:
-            log.warn("Warning: no local sockets defined, cannot enable printing")
+            log.warn("Warning: no local sockets defined,")
+            log.warn(" printer forwarding")
             self.file_transfer.printing = False
 
 
@@ -398,7 +399,8 @@ class ServerBase(ServerCore):
             if printing:
                 printlog.info("printer forwarding enabled using %s", " and ".join([x.replace("application/", "") for x in printer_definitions.keys()]))
             else:
-                printlog.warn("Warning: no printer definitions found, cannot enable printing")
+                printlog.warn("Warning: no printer definitions found,")
+                printlog.warn(" cannot enable printer forwarding")
         except ImportError as e:
             printlog("printing module is not installed: %s", e)
             printing = False
