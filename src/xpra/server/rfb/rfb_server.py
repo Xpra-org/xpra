@@ -113,7 +113,7 @@ class RFBServer(object):
                 mask = 2**button
                 if buttons & mask != self.rfb_buttons & mask:
                     pressed = bool(buttons & mask)
-                    self.button_action(1+button, pressed, -1)
+                    self.button_action((x, y), 1+button, pressed, -1)
             self.rfb_buttons = buttons
 
     def _process_rfb_KeyEvent(self, _proto, packet):

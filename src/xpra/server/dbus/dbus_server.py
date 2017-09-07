@@ -172,7 +172,7 @@ class DBUS_Server(dbus.service.Object):
     def MouseClick(self, button, pressed):
         self.log(".MouseClick%s", (button, pressed))
         device_id = -1
-        self.server.button_action(ni(button), nb(pressed), device_id)
+        self.server.button_action(None, ni(button), nb(pressed), device_id)
 
 
     @dbus.service.method(INTERFACE, in_signature='iiii')

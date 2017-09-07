@@ -154,6 +154,9 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
         pointer = self._process_mouse_common(proto, wid, pointer)
+        self.button_action(pointer, button, pressed, -1, *args)
+
+    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well
