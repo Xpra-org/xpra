@@ -105,7 +105,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
         for x, y, w, h in rlist:
-            self._damage(self.root_window_model, x, y, w, h)
+            self._damage(self.root_window_model, int(x), int(y), int(w), int(h))
 
     def start_refresh(self):
         #don't use the timer, get damage notifications:
