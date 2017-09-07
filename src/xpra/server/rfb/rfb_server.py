@@ -6,7 +6,7 @@
 
 
 from xpra.util import nonl, csv
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, OSX
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
@@ -23,7 +23,7 @@ class RFBServer(object):
     def init(self):
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
-        if POSIX:
+        if POSIX and not OSX:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
             self.X11Keyboard = X11KeyboardBindings()
 
