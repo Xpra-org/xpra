@@ -128,13 +128,24 @@ class ImageWrapper(object):
         #only defined for XImage wrappers:
         return 0
 
-    def may_restride(self, *_args):
-        return self.restride()
+    def may_restride(self):
+        return self.restride(self.width*self.get_bytesperpixel())
 
-    def restride(self, *_args):
+    def restride(self, rowstride):
         assert not self.freed
-        #not supported by the generic image wrapper:
-        return False
+        if self.planes>0:
+            #not supported yet for planar images
+            return False
+        pixels = self.pixels
+        oldstride = self.rowstride
+        pos = 0
+        lines = []
+        for _ in range(self.height):
+            lines.append(memoryview_to_bytes(pixels[pos:pos+rowstride]))
+            pos += oldstride
+        self.rowstride = rowstride
+        self.pixels = b"".join(lines)
+        return True
 
     def freeze(self):
         assert not self.freed
