@@ -23,10 +23,11 @@ class RFBServer(object):
     def init(self):
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
+        self.X11Keyboard = None
         if POSIX:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-            X11Keyboard = X11KeyboardBindings()
-            x11_keycodes = X11Keyboard.get_keycode_mappings()
+            self.X11Keyboard = X11KeyboardBindings()
+            x11_keycodes = self.X11Keyboard.get_keycode_mappings()
             for keycode, keysyms in x11_keycodes.items():
                 for keysym in keysyms:
                     if keysym:
@@ -118,9 +119,11 @@ class RFBServer(object):
         if not name:
             if 0<key<255:
                 name = chr(key)
-            else:
-                log.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
-                return
+            elif self.X11Keyboard:
+                name = self.X11Keyboard.keysym_str(key)
+        if not name:
+            log.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
+            return
         keycode = 0
         keycodes = self.x11_keycodes_for_keysym.get(name, 0)
         log("keycodes(%s)=%s", name, keycodes)

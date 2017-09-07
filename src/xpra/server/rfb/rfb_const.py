@@ -323,6 +323,6 @@ RFB_KEYNAMES = {
     0x1008ff27  : "XF86Forward",
     0x1008ff18  : "XF86HomePage",
     }
-    
+
 for i in range(1, 13):
     RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i
