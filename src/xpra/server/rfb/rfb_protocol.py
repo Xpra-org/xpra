@@ -6,7 +6,6 @@
 import struct
 from socket import error as socket_error
 import binascii
-from threading import Lock
 
 
 from xpra.log import Logger
@@ -41,7 +40,7 @@ class RFBProtocol(object):
         self._process_packet_cb = process_packet_cb
         self._get_rfb_pixelformat = get_rfb_pixelformat
         self.session_name = session_name
-        self._write_queue = Queue(1)
+        self._write_queue = Queue(2)
         self._buffer = b""
         self._challenge = None
         self.share = False
@@ -53,13 +52,12 @@ class RFBProtocol(object):
         self._protocol_version = ()
         self._closed = False
         self._packet_parser = self._parse_protocol_handshake
-        self._write_lock = Lock()
         self._write_thread = None
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
 
 
     def send_protocol_handshake(self):
-        self.raw_write(b"RFB 003.008\n")
+        self.send(b"RFB 003.008\n")
 
     def _parse_invalid(self, packet):
         return len(packet)
@@ -223,23 +221,16 @@ class RFBProtocol(object):
 
 
     def send(self, packet):
+        log("send(%i bytes: %s..)", len(packet), binascii.hexlify(packet[:16]))
         if self._closed:
             log("connection is closed already, not sending packet")
             return
-        log("send(%i bytes: %s..)", len(packet), binascii.hexlify(packet[:16]))
-        with self._write_lock:
-            if self._closed:
-                return
-            self.raw_write(packet)
+        if self._write_thread is None:
+            self.start_write_thread()
+        self._write_queue.put(packet)
 
     def start_write_thread(self):
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
-
-    def raw_write(self, contents):
-        """ Warning: this bypasses the compression and packet encoder! """
-        if self._write_thread is None:
-            self.start_write_thread()
-        self._write_queue.put(contents)
 
     def _io_thread_loop(self, name, callback):
         try:
