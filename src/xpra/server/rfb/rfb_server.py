@@ -97,6 +97,11 @@ class RFBServer(object):
         self._server_sources[proto] = source
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
+        #ugly weak dependency,
+        #shadow servers need to be told to start the refresh timer:
+        start_refresh = getattr(self, "start_refresh", None)
+        if start_refresh:
+            start_refresh()
 
     def _process_rfb_PointerEvent(self, _proto, packet):
         buttons, x, y = packet[1:4]
