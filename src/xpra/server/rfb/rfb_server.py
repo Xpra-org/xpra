@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.util import nonl, csv
+from xpra.util import nonl, csv, typedict
 from xpra.os_util import POSIX, OSX
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
@@ -87,7 +87,7 @@ class RFBServer(object):
         if server_exit:
             return
         source = RFBSource(proto, self._get_rfb_desktop_model(), proto.share)
-        source.keyboard_config = self.get_keyboard_config({})
+        source.keyboard_config = self.get_keyboard_config(typedict())
         self._server_sources[proto] = source
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
