@@ -23,16 +23,9 @@ class RFBServer(object):
     def init(self):
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
-        self.X11Keyboard = None
         if POSIX:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
             self.X11Keyboard = X11KeyboardBindings()
-            x11_keycodes = self.X11Keyboard.get_keycode_mappings()
-            for keycode, keysyms in x11_keycodes.items():
-                for keysym in keysyms:
-                    if keysym:
-                        self.x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
-            log("x11_keycodes_for_keysym=%s", self.x11_keycodes_for_keysym)
 
 
     def _get_rfb_desktop_model(self):
@@ -94,6 +87,7 @@ class RFBServer(object):
         if server_exit:
             return
         source = RFBSource(proto, self._get_rfb_desktop_model(), proto.share)
+        source.keyboard_config = self.get_keyboard_config({})
         self._server_sources[proto] = source
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
@@ -116,26 +110,27 @@ class RFBServer(object):
                     self.button_action((x, y), 1+button, pressed, -1)
             self.rfb_buttons = buttons
 
-    def _process_rfb_KeyEvent(self, _proto, packet):
+    def _process_rfb_KeyEvent(self, proto, packet):
+        source = self._server_sources.get(proto)
+        if not source:
+            return
         pressed, p1, p2, key = packet[1:5]
         wid = self._get_rfb_desktop_wid()
-        keyval = 0
-        name = RFB_KEYNAMES.get(key)
-        if not name:
+        keyname = RFB_KEYNAMES.get(key)
+        if not keyname:
             if 0<key<255:
-                name = chr(key)
+                keyname = chr(key)
             elif self.X11Keyboard:
-                name = self.X11Keyboard.keysym_str(key)
-        if not name:
+                keyname = self.X11Keyboard.keysym_str(key)
+        if not keyname:
             log.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
             return
-        keycode = 0
-        keycodes = self.x11_keycodes_for_keysym.get(name, 0)
-        log("keycodes(%s)=%s", name, keycodes)
-        if keycodes:
-            keycode = keycodes[0]
-            modifiers = []
-            self._handle_key(wid, bool(pressed), name, keyval, keycode, modifiers)
+        modifiers = []
+        keyval = 0
+        keycode = source.keyboard_config.get_keycode(0, keyname, modifiers)
+        log("rfb keycode(%s)=%s", keyname, keycode)
+        if keycode:
+            self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers)
 
     def _process_rfb_SetEncodings(self, _proto, packet):
         n, encodings = packet[2:4]
