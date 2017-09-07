@@ -288,6 +288,10 @@ class ShadowServer(GTKShadowServerBase):
                                  win32con.WM_INPUTLANGCHANGE    : "WM_INPUTLANGCHANGE",
                                  win32con.WM_WININICHANGE       : "WM_WININICHANGE",
                                  })
+        #non-blocking server sockets (TCP and named pipes):
+        from xpra.net.bytestreams import CONTINUE_ERRNO
+        import errno
+        CONTINUE_ERRNO[errno.WSAEWOULDBLOCK] = "WSAEWOULDBLOCK"     #@UndefinedVariable
 
     def init(self, opts):
         self.pixel_depth = int(opts.pixel_depth) or 32
