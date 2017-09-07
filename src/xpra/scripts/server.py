@@ -816,7 +816,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     display = None
     if not proxying:
         no_gtk()
-        if POSIX and (starting or starting_desktop or shadowing):
+        if POSIX and not OSX and (starting or starting_desktop or shadowing):
             #check that we can access the X11 display:
             from xpra.x11.vfb_util import verify_display_ready
             if not verify_display_ready(xvfb, display_name, shadowing):
