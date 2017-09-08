@@ -658,9 +658,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         add_tcp_socket("ws", host, iport)
         if tcp_ssl:
             add_mdns("wss", host, iport)
-    netlog("setting up rfb sockets: %s", bind_rfb)
-    for host, iport in bind_rfb:
-        add_tcp_socket("rfb", host, iport)
+    if bind_rfb and (proxying or starting):
+        log.warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
+    else:
+        netlog("setting up rfb sockets: %s", bind_rfb)
+        for host, iport in bind_rfb:
+            add_tcp_socket("rfb", host, iport)
     netlog("setting up vsock sockets: %s", bind_vsock)
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
@@ -709,7 +712,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth)
-        from xpra.x11.vfb_util import start_Xvfb
+        from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process
         from xpra.server.server_util import has_uinput
         uinput_uuid = None
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
@@ -725,6 +728,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         os.environ.update(protected_env)
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
+
+        def check_xvfb():
+            return check_xvfb_process(xvfb)
+    else:
+        def check_xvfb():
+            return True
 
     if POSIX and not OSX and displayfd>0:
         from xpra.platform.displayfd import write_displayfd
@@ -770,11 +779,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     del stdout
     del stderr
 
-    if start_vfb:
-        from xpra.x11.vfb_util import check_xvfb_process
-        if not check_xvfb_process(xvfb):
-            #xvfb problem: exit now
-            return  1
+    if not check_xvfb():
+        #xvfb problem: exit now
+        return  1
 
     #create devices for vfb if needed:
     devices = {}
@@ -860,11 +867,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app = ProxyServer()
         server_type_info = "proxy"
     else:
+        if not check_xvfb():
+            return  1
         assert starting or starting_desktop or upgrading
         from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
         #(now we can access the X11 server)
 
+        #make sure the pid we save is the real one:
+        if not check_xvfb():
+            return  1
         if xvfb_pid is not None:
             #save the new pid (we should have one):
             save_xvfb_pid(xvfb_pid)
