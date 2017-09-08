@@ -22,7 +22,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, nvenc_loaded, get_cards
+from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, get_cards
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -2702,6 +2702,7 @@ cdef class Encoder:
         log("success, encoder context=%#x (%s context%s in use)", <uintptr_t> self.context, context_counter, engs(context_counter))
 
 
+_init_message = False
 def init_module():
     log("nvenc.init_module()")
     #TODO: this should be a build time check:
@@ -2850,9 +2851,11 @@ def init_module():
             raise Exception("the license %s specified may be invalid" % (["key", "keys"][len(failed_keys)>1]))
         else:
             raise Exception("you may need to provide a license key")
-    if ENCODINGS:
-        log("NVENC v%i successfully initialized: %s", NVENCAPI_MAJOR_VERSION, csv(ENCODINGS))
-        nvenc_loaded()
+    global _init_message
+    if ENCODINGS and not _init_message:
+        log.info("NVENC v%i successfully initialized with codecs: %s", NVENCAPI_MAJOR_VERSION, csv(ENCODINGS))
+        _init_message = True
+
 
 def cleanup_module():
     log("nvenc.cleanup_module()")
