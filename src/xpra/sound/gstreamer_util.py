@@ -131,7 +131,7 @@ ENCODER_NEEDS_AUDIOCONVERT = ("flacenc", "wavpackenc")
 #if this is lightweight enough, maybe we should include it unconditionally?
 SOURCE_NEEDS_AUDIOCONVERT = ("directsoundsrc", "osxaudiosrc", "autoaudiosrc")
 
-ENCODER_CANNOT_USE_CUTTER = ("opusenc", "vorbisenc")
+ENCODER_CANNOT_USE_CUTTER = ("opusenc", "vorbisenc", "wavpackenc", "avenc_aac")
 
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
