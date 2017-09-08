@@ -181,12 +181,14 @@ class X11ServerBase(X11ServerCore):
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
+        self.input_devices = "xtest"
         if pointer:
             mouselog("init_virtual_devices(%s) got pointer=%s", devices, pointer)
             uinput_device = pointer.get("uinput")
             #name = pointer.get("name")
             device_path = pointer.get("device")
             if uinput_device:
+                self.input_devices = "uinput"
                 xtest = XTestPointerDevice()
                 ox, oy = 100, 100
                 xtest.move_pointer(0, ox, oy)
@@ -203,6 +205,7 @@ class X11ServerBase(X11ServerCore):
                         mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
                         mouselog.warn(" usign XTest fallback")
                         self.pointer_device = xtest
+                        self.input_devices = "xtest"
                 self.timeout_add(1000, verify_uinput_moved)
         try:
             mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))

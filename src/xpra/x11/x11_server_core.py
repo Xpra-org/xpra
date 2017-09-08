@@ -222,8 +222,8 @@ class X11ServerCore(GTKServerBase):
         self._authenticated_ui_packet_handlers["wheel-motion"] = self._process_wheel_motion
 
 
-    def init_virtual_devices(self, devices):
-        pass
+    def init_virtual_devices(self, _devices):
+        self.input_devices = "xtest"
 
 
     def get_server_source_class(self):

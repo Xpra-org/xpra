@@ -265,7 +265,6 @@ class ServerBase(ServerCore):
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.webcam_option = opts.webcam
         self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
-        self.input_devices = opts.input_devices or "auto"
 
         #sound:
         self.pulseaudio = opts.pulseaudio
