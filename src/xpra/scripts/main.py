@@ -2309,6 +2309,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     wrap_socket = context.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
+        tcp_socket.setblocking(True)
         from xpra.log import Logger
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
