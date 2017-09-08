@@ -1550,6 +1550,12 @@ def parse_display_name(error_cb, opts, display_name):
     while display_name[pos] in (":", "/"):
         psep += display_name[pos]
         pos +=1
+    if protocol=="socket":
+        #socket paths may start with a slash!
+        #in which case the slash is part of the path, not the seperator!
+        if psep==":/" or psep==":///":
+            psep = psep[:-1]
+            pos -= 1
     if psep not in (":", "/", "://"):
         error_cb("unknown format for protocol separator '%s' in display name: %s" % (psep, display_name))
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
