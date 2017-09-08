@@ -2317,7 +2317,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
-            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" (tcp_socket, e))
+            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e))
         if not server_side:
             try:
                 ssl_sock.do_handshake(True)
