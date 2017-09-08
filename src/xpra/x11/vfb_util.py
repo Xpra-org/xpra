@@ -26,6 +26,7 @@ assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     from xpra.log import Logger
     log = Logger("server", "x11")
+    log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     cleanups = []
     if not device_uuid:
         return cleanups
@@ -41,7 +42,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
             except Exception as e:
                 log("failed to cleanup %s: %s", dirname, e)
         cleanups.insert(0, cleanup_dir)
-    
+
     #create conf dir if needed:
     d = xorg_conf_dir
     dirs = []
@@ -88,6 +89,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     from xpra.platform.xposix.paths import _get_runtime_dir
     from xpra.log import Logger
     log = Logger("server", "x11")
+    log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
 
     # We need to set up a new server environment
     xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
