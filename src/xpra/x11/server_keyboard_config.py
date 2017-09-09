@@ -190,14 +190,26 @@ class KeyboardConfig(KeyboardConfigBase):
             self.modifier_client_keycodes = {}
             self.xkbmap_mod_nuisance = set()
             for modifier, keys in server_mappings.items():
-                client_keycodes = []
-                for keycode,keyname in keys:
-                    client_keycode = reverse_trans.get(keycode, keycode)
-                    if client_keycode:
-                        client_keycodes.append((client_keycode, keyname))
-                    if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
+                #ie: modifier=mod3, keys=[(115, 'Super_L'), (116, 'Super_R'), (127, 'Super_L')]
+                #if self.is_native_keymap:
+                #    client_keycodes = keys
+                client_keydefs = []
+                for keycode,keysym in keys:
+                    #ie: keycode=115, keysym=Super_L
+                    client_def = reverse_trans.get(keycode, (0, keysym))
+                    #ie: client_def = (99, Super_L)
+                    #ie: client_def = Super_L
+                    #ie: client_def = (0, Super_L)
+                    if type(client_def) in (list, tuple):
+                        #ie: client_def = (99, Super_L)
+                        client_keydefs.append(client_def)
+                    elif client_def==keysym:
+                        #ie: client_def = Super_L
+                        client_keydefs.append((keycode, keysym))
+                    #record nuisacnde modifiers:
+                    if keysym in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.xkbmap_mod_nuisance.add(modifier)
-                self.modifier_client_keycodes[modifier] = client_keycodes
+                self.modifier_client_keycodes[modifier] = client_keydefs
             log("compute_client_modifier_keycodes() mappings=%s", self.modifier_client_keycodes)
             log("compute_client_modifier_keycodes() mod nuisance=%s", self.xkbmap_mod_nuisance)
         except Exception as e:
