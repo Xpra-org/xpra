@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.gtk_common.gtk_util import META_MASK
+from xpra.gtk_common.gtk_util import META_MASK, CONTROL_MASK
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
@@ -18,6 +18,8 @@ KEYS_TRANSLATION_OPTIONS = {
                     "Control_R"     : ["Alt_R", "Meta_R"],
                     "Meta_L"        : ["Control_L", "Control_R"],
                     "Meta_R"        : ["Control_R", "Control_L"],
+                    "Alt_L"         : ["Control_L", "Control_R"],
+                    "Alt_R"         : ["Control_R", "Control_L"],
                     }
 
 #data extracted from:
@@ -155,21 +157,18 @@ class Keyboard(KeyboardBase):
 
     def mask_to_names(self, mask):
         names = KeyboardBase.mask_to_names(self, mask)
+        log("mask_to_names names=%s, meta mod=%s, control mod=%s, num lock mod=%s, num lock state=%s",
+            names, self.meta_modifier, self.control_modifier, self.num_lock_modifier, self.num_lock_state)
         if self.swap_keys and self.meta_modifier is not None and self.control_modifier is not None:
-            meta_on = bool(mask & META_MASK)
-            meta_set = self.meta_modifier in names
-            control_set = self.control_modifier in names
-            log("mask_to_names names=%s, meta_on=%s, meta_set=%s, control_set=%s", names, meta_on, meta_set, control_set)
-            if meta_on and not control_set:
-                log("mask_to_names swapping meta for control: %s for %s", self.meta_modifier, self.control_modifier)
+            #clear both:
+            for x in (self.control_modifier, self.meta_modifier):
+                if x in names:
+                    names.remove(x)
+            #re-add as needed:
+            if mask & META_MASK:
                 names.append(self.control_modifier)
-                if meta_set:
-                    names.remove(self.meta_modifier)
-            elif control_set and not meta_on:
-                log("mask_to_names swapping control for meta: %s for %s", self.control_modifier, self.meta_modifier)
-                names.remove(self.control_modifier)
-                if not meta_set:
-                    names.append(self.meta_modifier)
+            if mask & CONTROL_MASK:
+                names.append(self.meta_modifier)
         #deal with numlock:
         if self.num_lock_modifier is not None:
             if self.num_lock_state and self.num_lock_modifier not in names:
