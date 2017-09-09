@@ -12,15 +12,22 @@ from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
 NUM_LOCK_KEYCODE = 71           #HARDCODED!
 #a key and the keys we want to translate it into when swapping keys
-#(a list so we can hopefully find a good match)
+#(a list so we can hopefully find a good match, best options come first)
 KEYS_TRANSLATION_OPTIONS = {
-                    "Control_L"     : ["Alt_L", "Meta_L"],
-                    "Control_R"     : ["Alt_R", "Meta_R"],
-                    "Meta_L"        : ["Control_L", "Control_R"],
-                    "Meta_R"        : ["Control_R", "Control_L"],
-                    "Alt_L"         : ["Control_L", "Control_R"],
-                    "Alt_R"         : ["Control_R", "Control_L"],
-                    }
+    #try to swap with "Meta" first, fallback to "Alt":
+    "Control_L"     : ["Meta_L", "Meta_R", "Alt_L", "Alt_R"],
+    "Control_R"     : ["Meta_R", "Meta_L", "Alt_R", "Alt_L"],
+    #"Meta" always swapped with "Control"
+    "Meta_L"        : ["Control_L", "Control_R"],
+    "Meta_R"        : ["Control_R", "Control_L"],
+    #"Alt" to "Super" (or "Hyper") so we can distinguish it from "Meta":
+    "Alt_L"         : ["Super_L", "Super_R", "Hyper_L", "Hyper_R"],
+    "Alt_R"         : ["Super_R", "Super_L", "Hyper_R", "Hyper_L"],
+    }
+#keys we always want to swap,
+#irrespective of the swap-keys option:
+ALWAYS_SWAP = ["Alt_L", "Alt_R"]
+
 
 #data extracted from:
 #https://support.apple.com/en-us/HT201794
@@ -123,19 +130,20 @@ class Keyboard(KeyboardBase):
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
         log("set_modifier_mappings(%s) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:
-        for orig_keysym in KEYS_TRANSLATION_OPTIONS.keys():
-            new_def = self.find_translation(orig_keysym)
+        for orig_keysym, keysyms in KEYS_TRANSLATION_OPTIONS.items():
+            new_def = self.find_translation(keysyms)
             if new_def is not None:
                 self.key_translations[orig_keysym] = new_def
         log("set_modifier_mappings(..) swap keys translations=%s", self.key_translations)
 
-    def find_translation(self, orig_keysym):
+    def find_translation(self, keysyms):
+        log("find_translation(%s)", keysyms)
         new_def = None
         #ie: keysyms : ["Meta_L", "Alt_L"]
-        keysyms = KEYS_TRANSLATION_OPTIONS.get(orig_keysym)
         for keysym in keysyms:
             #ie: "Alt_L":
             keycodes_defs = self.modifier_keycodes.get(keysym)
+            log("modifier_keycodes(%s)=%s", keysym, keycodes_defs)
             if not keycodes_defs:
                 #keysym not found
                 continue
@@ -145,13 +153,25 @@ class Keyboard(KeyboardBase):
                     #no keycode found, but better than nothing:
                     new_def = 0, keycode_def    #ie: (0, 'Alt_L')
                     continue
+                #an int alone is the keycode:
+                if type(keycode_def)==int:
+                    if keycode_def>0:
+                        #exact match, use it:
+                        return keycode_def, keysym
+                    new_def = 0, keysym
+                    continue
+                #below is for compatibility with older servers,
+                #(we may be able to remove some of this code already)
                 #look for a tuple of (keycode, keysym):
-                if type(keycode_def) not in (list, tuple):
+                if type(keycode_def) not in (list, tuple) or len(keycode_def)!=2:
                     continue
                 if type(keycode_def[0])!=int or type(keycode_def[1])!=str:
                     continue
-                #found one, use that:
-                return keycode_def           #(55, 'Alt_L')
+                if keycode_def[0]==0:
+                    new_def = keycode_def
+                    continue
+                #found a valid keycode, use this one:
+                return keycode_def              #ie: (55, 'Alt_L')
         return new_def
 
 
@@ -179,7 +199,7 @@ class Keyboard(KeyboardBase):
         return names
 
     def process_key_event(self, send_key_action_cb, wid, key_event):
-        if self.swap_keys:
+        if self.swap_keys or key_event.keyname in ALWAYS_SWAP:
             trans = self.key_translations.get(key_event.keyname)
             if trans:
                 log("swap keys: translating key '%s' to %s", key_event, trans)
