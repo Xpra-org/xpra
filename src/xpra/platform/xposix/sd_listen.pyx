@@ -51,13 +51,17 @@ def get_sd_listen_sockets():
     return sockets
 
 def get_sd_listen_socket(int fd):
+    #re-wrapping the socket gives us a more proper socket object,
+    #so we can then wrap it with ssl
+    def wrapsock(fdsock):
+        return socket.socket(_sock=fdsock)
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:
         sock = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
         sockpath = sock.getsockname()
         return "unix-domain", sock, sockpath
     for family in (socket.AF_INET, socket.AF_INET6):
         if sd_is_socket_inet(fd, family, socket.SOCK_STREAM, 1, 0)>0:
-            sock = socket.fromfd(fd, family, socket.SOCK_STREAM)
+            sock = wrapsock(socket.fromfd(fd, family, socket.SOCK_STREAM))
             host, port = sock.getsockname()[:2]
             return "tcp", sock, (host, port)
     #TODO: handle vsock

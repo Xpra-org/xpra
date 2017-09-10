@@ -9,7 +9,8 @@ Requires=xpra.socket
 Type=simple
 EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
-    --tcp-auth=${TCP_AUTH} --ssl-cert=/etc/xpra/ssl-cert.pem \
+    --tcp-auth=${TCP_AUTH} \
+    --ssl-cert=/etc/xpra/ssl-cert.pem --ssl=on \
     --bind=none --auth=${AUTH} --socket-dirs=/run/xpra --socket-permissions=666 \
     --log-dir=/var/log --pidfile=/run/xpra.pid --debug=${DEBUG}
 #rely on SIGKILL which returns 128+15=143
