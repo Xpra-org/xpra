@@ -150,7 +150,7 @@ shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
 rfb_ENABLED = server_ENABLED
 service_ENABLED = LINUX and server_ENABLED
-sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
+sd_listen_ENABLED = POSIX and pkg_config_version("230", "libsystemd")
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 
@@ -1462,7 +1462,7 @@ else:
                 root_prefix = root_prefix[:-4]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
             build_xpra_conf(root_prefix)
 
-            def copytodir(src, dst_dir, chmod=0o644):
+            def copytodir(src, dst_dir, dst_name=None, chmod=0o644):
                 #convert absolute paths:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
@@ -1472,7 +1472,7 @@ else:
                 self.mkpath(dst_dir)
                 #generate the target filename:
                 filename = os.path.basename(src)
-                dst_file = os.path.join(dst_dir, filename)
+                dst_file = os.path.join(dst_dir, dst_name or filename)
                 #copy it
                 print("copying %s -> %s (%s)" % (src, dst_dir, oct(chmod)))
                 shutil.copyfile(src, dst_file)
@@ -1507,7 +1507,10 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
-                    copytodir("service/xpra.service", systemd_dir)
+                    if sd_listen_ENABLED:
+                        copytodir("service/xpra.service", systemd_dir)
+                    else:
+                        copytodir("service/xpra-nosocketactivation.service", systemd_dir, dst_name="xpra.service")
                 else:
                     copytodir("service/xpra", "/etc/init.d")
                 if os.path.exists("/etc/sysconfig"):

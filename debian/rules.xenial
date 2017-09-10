@@ -1,0 +1,44 @@
+#!/usr/bin/make -f
+
+#per-distro build options (builtbot will uncomment the right one):
+#xenial:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#yakkety:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#zesty:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#stretch:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+
+BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
+
+%:
+	dh $@ --with python2 --with systemd
+
+override_dh_auto_build:
+	dh_auto_build -- $(BUILDOPTS)
+
+override_dh_installchangelogs:
+	dh_installchangelogs NEWS
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l /usr/lib/xpra -Xfbc_capture
+
+override_dh_auto_install:
+	dh_auto_install --destdir=$(CURDIR)/debian/tmp -- $(BUILDOPTS)
+
+override_dh_systemd_enable:
+	dh_systemd_enable xpra.service
+
+override_dh_systemd_start:
+	dh_systemd_start xpra.service
+
+## gracefully handle stripping if -dbg packages are (un-)commented in debian/control
+override_dh_strip:
+	[ -d "$(CURDIR)/debian/xpra-dbg" ] \
+        && dh_strip -pxpra --dbg-package=xpra-dbg \
+        || dh_strip -pxpra
+
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
+
+# Ubuntu messes up the cups backend permissions, fix it:
+override_dh_fixperms:
+	dh_fixperms
+	chmod 700 debian/xpra/usr/lib/cups/backend/xpraforwarder

@@ -2,15 +2,14 @@
 Description=Xpra System Server
 Wants=avahi-daemon.socket
 Documentation=https://xpra.org/trac/wiki/Service man:xpra
-After=network.target xpra.socket
-Requires=xpra.socket
+After=network.target
 
 [Service]
 Type=simple
 EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
-    --tcp-auth=${TCP_AUTH} --ssl-cert=/etc/xpra/ssl-cert.pem \
-    --bind=none --auth=${AUTH} --socket-dirs=/run/xpra --socket-permissions=666 \
+    --bind-tcp=0.0.0.0:14500 --tcp-auth=${TCP_AUTH} --ssl-cert=/etc/xpra/ssl-cert.pem \
+    --bind=/run/xpra/system --auth=${AUTH} --socket-dirs=/run/xpra --socket-permissions=666 \
     --log-dir=/var/log --pidfile=/run/xpra.pid --debug=${DEBUG}
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
