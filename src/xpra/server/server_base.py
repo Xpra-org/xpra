@@ -743,6 +743,7 @@ class ServerBase(ServerCore):
             "webcam-start":                         self._process_webcam_start,
             "webcam-stop":                          self._process_webcam_stop,
             "webcam-frame":                         self._process_webcam_frame,
+            "connection-data":                      self._process_connection_data,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1462,6 +1463,7 @@ class ServerBase(ServerCore):
                 "av-sync",
                 "auto-video-encoding",
                 "window-filters",
+                "connection-data",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
@@ -3302,7 +3304,14 @@ class ServerBase(ServerCore):
             ss.send_webcam_stop(device, str(e))
             self.stop_virtual_webcam()
 
-    def _process_input_devices(self, ss, packet):
+
+    def _process_connection_data(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.update_connection_data(packet[1])
+
+
+    def _process_input_devices(self, _proto, packet):
         self.input_devices_format = packet[1]
         self.input_devices_data = packet[2]
         from xpra.util import print_nested_dict

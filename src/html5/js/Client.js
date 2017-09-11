@@ -127,6 +127,8 @@ XpraClient.prototype.init_state = function(container) {
     this.server_screen_sizes = [];
     this.server_is_desktop = false;
 
+    this.server_connection_data = false;
+
 	// a list of our windows
 	this.id_to_window = {};
 	this.ui_events = 0;
@@ -885,6 +887,7 @@ XpraClient.prototype._send_ping = function() {
 	}, wait);
 }
 
+
 XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	// make the base hello
 	this._make_hello_base();
@@ -963,6 +966,12 @@ XpraClient.prototype._make_hello_base = function() {
 		"bencode"					: true,
 		"yaml"						: false,
 	});
+	var ci = Utilities.getConnectionInfo();
+	if (ci) {
+		this._update_capabilities({
+			"connection-data"	: ci,
+		})
+	}
 	var LZ4 = require('lz4');
 	if(LZ4) {
 		this._update_capabilities({
@@ -1513,6 +1522,15 @@ XpraClient.prototype._process_startup_complete = function(packet, ctx) {
 	ctx.log("startup complete");
 }
 
+XpraClient.prototype._connection_change = function(e) {
+	var ci = Utilities.getConnectionInfo();
+	console.log("connection status - change event=", e, ", connection info=", ci, "tell server:", this.server_connection_data);
+	if (ci && this.server_connection_data) {
+		this.send(["connection-data", ci]);
+	}
+}
+
+
 XpraClient.prototype._process_hello = function(packet, ctx) {
 	//show("process_hello("+packet+")");
 	// clear hello timer
@@ -1662,6 +1680,12 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		};
 		ctx.send(["printers", printers]);
 	}
+	ctx.server_connection_data = hello["connection-data"];
+	if (navigator.connection) {
+		navigator.connection.onchange = ctx._connection_change;
+		ctx._connection_change();
+	}
+
 	// start sending our own pings
 	ctx._send_ping();
 	ctx.ping_timer = setInterval(function () {

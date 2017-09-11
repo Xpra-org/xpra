@@ -30,6 +30,7 @@ dbuslog = Logger("dbus")
 statslog = Logger("stats")
 notifylog = Logger("notify")
 clipboardlog = Logger("clipboard")
+netlog = Logger("network")
 
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -402,6 +403,7 @@ class ServerSource(FileTransferHandler):
         self.client_wm_name = None
         self.client_session_type = None
         self.client_session_type_full = None
+        self.client_connection_data = {}
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -821,6 +823,7 @@ class ServerSource(FileTransferHandler):
             msg = version_compat_check(proxy_version)
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
+        self.update_connection_data(c.dictget("connection-data"))
 
         #keyboard is now injected into this class, default to undefined:
         self.keyboard_config = None
@@ -1439,6 +1442,11 @@ class ServerSource(FileTransferHandler):
             p.source_has_more()
 
 
+    #client tells us about network connection status:
+    def update_connection_data(self, data):
+        netlog("update_connection_data(%s)", data)
+        self.client_connection_data = data
+
 #
 # Functions used by the server to request something
 # (window events, stats, user requests, etc)
@@ -1554,6 +1562,8 @@ class ServerSource(FileTransferHandler):
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
                 }
+        if self.client_connection_data:
+            info["connection-data"] = self.client_connection_data
         if self.desktop_size_unscaled:
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
 

@@ -386,6 +386,30 @@ var Utilities = {
 			}
 		}
 		return headers;
+	},
+
+	getConnectionInfo : function() {
+		var c = navigator.connection;
+		if (!c) {
+			return {};
+		}
+		var i = {};
+		if (c.type) {
+			i["type"] = c.type;
+		}
+		if (c.effectiveType) {
+			i["effective-type"] = c.effectiveType;
+		}
+		if (!isNaN(c.downlink) && c.downlink>0) {
+			i["downlink"] = Math.round(c.downlink*1000*1000);
+		}
+		if (!isNaN(c.downlinkMax) && c.downlinkMax>0) {
+			i["downlink.max"] = Math.round(c.downlinkMax*1000*1000);
+		}
+		if (!isNaN(c.rtt) && c.rtt>0) {
+			i["rtt"] = c.rtt;
+		}
+		return i;
 	}
 };
 
