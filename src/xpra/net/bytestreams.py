@@ -320,7 +320,18 @@ class SocketConnection(Connection):
         except:
             pass
         try:
-            info["fileno"] = s.fileno()
+            fd = s.fileno()
+            info["fileno"] = fd
+            from xpra.platform.netdev_query import get_interface_speed
+            #ie: self.local = ("192.168.1.7", "14500")
+            if self.local and len(self.local)==2:
+                from xpra.net.net_util import get_interface
+                iface = get_interface(self.local[0])
+                #ie: iface = "eth0"
+                if iface and iface!="lo":
+                    s = get_interface_speed(fd, iface)
+                    if s>0:
+                        info["speed"] = s
         except:
             pass
         return info

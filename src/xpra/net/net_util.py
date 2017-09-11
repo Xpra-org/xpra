@@ -21,7 +21,7 @@ try:
     netifaces_version = netifaces.version        #@UndefinedVariable
 except:
     has_netifaces = False
-    log.warn("python netifaces package is missing")
+    log.warn("Warning: the python netifaces package is missing")
 iface_ipmasks = {}
 bind_IPs = None
 
@@ -36,8 +36,28 @@ def get_free_tcp_port():
 
 def get_interfaces():
     if not has_netifaces:
-        return    []
-    return netifaces.interfaces()            #@UndefinedVariable
+        return []
+    return netifaces.interfaces()           #@UndefinedVariable
+
+def get_interfaces_addresses():
+    d = {}
+    for iface in get_interfaces():
+        d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable
+    return d
+
+def get_interface(address):
+    for iface, idefs in get_interfaces_addresses().items():
+        #ie: {
+        #    17: [{'broadcast': u'ff:ff:ff:ff:ff:ff', 'addr': u'00:e0:4c:68:46:a6'}],
+        #    2: [{'broadcast': u'192.168.1.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.1.7'}],
+        #    10: [{'netmask': u'ffff:ffff:ffff:ffff::/64', 'addr': u'fe80::6c45:655:c59e:92a1%eth0'}]
+        #}
+        for _itype, defs in idefs.items():
+            #ie: itype=2, defs=[{'broadcast': u'192.168.1.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.1.7'}]
+            for props in defs:
+                if props.get("addr")==address:
+                    return iface
+    return None
 
 def get_gateways():
     if not has_netifaces:

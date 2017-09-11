@@ -380,6 +380,12 @@ class XpraClientBase(FileTransferHandler):
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
+        #get socket speed if we have it:
+        pinfo = self._protocol.get_info()
+        netlog("protocol info=%s", pinfo)
+        socket_speed = pinfo.get("socket", {}).get("speed")
+        if socket_speed:
+            capabilities["connection-data"] = {"speed" : socket_speed}
 
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS

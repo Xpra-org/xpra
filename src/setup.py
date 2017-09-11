@@ -168,6 +168,7 @@ html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
+netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
@@ -218,7 +219,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
             "csc_libyuv",
-            "bencode", "cython_bencode", "vsock", "mdns",
+            "bencode", "cython_bencode", "vsock", "netdev", "mdns",
             "clipboard",
             "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
             "gtk_x11", "service",
@@ -2124,6 +2125,12 @@ if cython_bencode_ENABLED:
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig))
+
+if netdev_ENABLED:
+    netdev_pkgconfig = pkgconfig()
+    cython_add(Extension("xpra.platform.xposix.netdev_query",
+                ["xpra/platform/xposix/netdev_query.pyx"],
+                **netdev_pkgconfig))
 
 if vsock_ENABLED:
     vsock_pkgconfig = pkgconfig()
