@@ -564,24 +564,30 @@ class ServerCore(object):
 
 
     def add_listen_socket(self, socktype, sock):
-        netlog("add_listen_socket(%s, %s)", socktype, sock)
-        #ugly that we have different ways of starting sockets,
-        #TODO: abstract this into the socket class
-        self.socket_types[sock] = socktype
-        if socktype=="named-pipe":
-            #named pipe listener uses a thread:
-            sock.new_connection_cb = self._new_connection
-            sock.start()
-        elif socktype=="udp":
-            #socket_info = self.socket_info.get(sock)
-            from xpra.net.udp_protocol import UDPListener
-            udpl = UDPListener(sock, self.process_udp_packet)
-            self._udp_listeners.append(udpl)
-        else:
-            from xpra.gtk_common.gobject_compat import import_glib
-            glib = import_glib()
-            sock.listen(5)
-            glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
+        info = self.socket_info.get(sock)
+        netlog("add_listen_socket(%s, %s) info=%s", socktype, sock, info)
+        try:
+            #ugly that we have different ways of starting sockets,
+            #TODO: abstract this into the socket class
+            self.socket_types[sock] = socktype
+            if socktype=="named-pipe":
+                #named pipe listener uses a thread:
+                sock.new_connection_cb = self._new_connection
+                sock.start()
+            elif socktype=="udp":
+                #socket_info = self.socket_info.get(sock)
+                from xpra.net.udp_protocol import UDPListener
+                udpl = UDPListener(sock, self.process_udp_packet)
+                self._udp_listeners.append(udpl)
+            else:
+                from xpra.gtk_common.gobject_compat import import_glib
+                glib = import_glib()
+                sock.listen(5)
+                glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
+        except Exception as e:
+            netlog("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
+            netlog.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
+            netlog.error(" %s", e)
 
 
     def _new_connection(self, listener, *args):

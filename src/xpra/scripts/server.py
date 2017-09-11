@@ -599,10 +599,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     ssl_opt = opts.ssl.lower()
     if ssl_opt in TRUE_OPTIONS or bind_ssl or bind_wss:
         need_ssl = True
-    if opts.bind_tcp:
+    if opts.bind_tcp or opts.bind_ws:
         if ssl_opt=="auto" and opts.ssl_cert:
             need_ssl = True
-        elif ssl_opt=="tcp":
+        elif ssl_opt=="tcp" and opts.bind_tcp:
             need_ssl = True
         elif ssl_opt=="www":
             need_ssl = True
@@ -616,25 +616,35 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             cpaths = csv("'%s'" % x for x in (opts.ssl_cert, opts.ssl_key) if x)
             raise InitException("cannot create SSL socket, check your certificate paths (%s): %s" % (cpaths, e))
 
-    from xpra.server.socket_util import setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_local_sockets
+    from xpra.server.socket_util import setup_tcp_socket, setup_udp_socket, setup_vsock_socket, setup_local_sockets, has_dual_stack
     min_port = int(opts.min_port)
+    def hosts(host_str):
+        if host_str=="*":
+            if has_dual_stack():
+                #IPv6 will also listen for IPv4:
+                return ["::"]
+            #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
+            return ["0.0.0.0", "::"]
+        return [host_str]
     def add_mdns(socktype, host, port):
         recs = mdns_recs.setdefault(socktype.lower(), [])
         rec = (host, port)
         if rec not in recs:
             recs.append(rec)
-    def add_tcp_socket(socktype, host, iport):
+    def add_tcp_socket(socktype, host_str, iport):
         if iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        socket = setup_tcp_socket(host, iport, socktype)
-        sockets.append(socket)
-        add_mdns(socktype, host, iport)
-    def add_udp_socket(socktype, host, iport):
+        for host in hosts(host_str):
+            socket = setup_tcp_socket(host, iport, socktype)
+            sockets.append(socket)
+            add_mdns(socktype, host, iport)
+    def add_udp_socket(socktype, host_str, iport):
         if iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        socket = setup_udp_socket(host, iport, socktype)
-        sockets.append(socket)
-        add_mdns(socktype, host, iport)
+        for host in hosts(host_str):
+            socket = setup_udp_socket(host, iport, socktype)
+            sockets.append(socket)
+            add_mdns(socktype, host, iport)
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)

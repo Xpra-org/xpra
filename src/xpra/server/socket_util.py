@@ -84,6 +84,27 @@ def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="60
                 pass
     return listener, cleanup_socket
 
+def has_dual_stack():
+    """
+        Return True if kernel allows creating a socket which is able to
+        listen for both IPv4 and IPv6 connections.
+        If *sock* is provided the check is made against it.
+    """
+    try:
+        socket.AF_INET6
+        socket.IPPROTO_IPV6
+        socket.IPV6_V6ONLY
+    except AttributeError:
+        return False
+    try:
+        import contextlib
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        with contextlib.closing(sock):
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+            return True
+    except socket.error:
+        return False
+
 def create_tcp_socket(host, iport):
     from xpra.net.bytestreams import TCP_NODELAY
     if host.find(":")<0:
