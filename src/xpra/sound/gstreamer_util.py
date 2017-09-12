@@ -134,6 +134,8 @@ CUTTER_NEEDS_RESAMPLE = ("opusenc", )
 #those don't work anyway:
 CUTTER_NEEDS_CONVERT = ("vorbisenc", "wavpackenc", "avenc_aac")
 ENCODER_CANNOT_USE_CUTTER = ("vorbisenc", "wavpackenc", "avenc_aac")
+CODEC_CANNOT_USE_CUTTER = ("opus+mka", "opus+ogg")
+
 
 #options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
@@ -198,7 +200,7 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [MP3, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS, FLAC_OGG, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, OPUS, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4]
+CODEC_ORDER = [OPUS, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS, MP3, FLAC_OGG, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4]
 
 
 gst = None
