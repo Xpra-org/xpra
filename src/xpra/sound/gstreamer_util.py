@@ -134,7 +134,6 @@ CUTTER_NEEDS_RESAMPLE = ("opusenc", )
 #those don't work anyway:
 CUTTER_NEEDS_CONVERT = ("vorbisenc", "wavpackenc", "avenc_aac")
 ENCODER_CANNOT_USE_CUTTER = ("vorbisenc", "wavpackenc", "avenc_aac")
-CODEC_CANNOT_USE_CUTTER = ("opus+mka", "opus+ogg")
 
 
 #options we use to tune for low latency:
