@@ -45,7 +45,7 @@ def get_queue_time(default_value=450, prefix=""):
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 def force_enabled(codec_name):
-    return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper(), "0")=="1"
+    return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), "0")=="1"
 
 
 NAME_TO_SRC_PLUGIN = {
@@ -88,11 +88,10 @@ NAME_TO_INFO_PLUGIN = {
 #and will populate the ones that are actually available into the "CODECS" dict
 CODEC_OPTIONS = [
         (VORBIS_MKA , "vorbisenc",      "webmmux",      "vorbisdec",                    "matroskademux"),
-        #those two fail silently - no idea why:
-        #(VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
-        #(VORBIS     , "vorbisenc",      None,           "vorbisparse ! vorbisdec",      None),
+        #those two used to fail silently (older versions of gstreamer?)
+        (VORBIS_OGG , "vorbisenc",      "oggmux",       "vorbisparse ! vorbisdec",      "oggdemux"),
+        (VORBIS     , "vorbisenc",      None,           "vorbisparse ! vorbisdec",      None),
         (FLAC       , "flacenc",        None,           "flacparse ! flacdec",          None),
-        #this only works in gstreamer 0.10 and is filtered out during initialization:
         (FLAC_OGG   , "flacenc",        "oggmux",       "flacparse ! flacdec",          "oggdemux"),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mad",         None),
         (MP3        , "lamemp3enc",     None,           "mpegaudioparse ! mpg123audiodec", None),
@@ -196,7 +195,7 @@ ENCODER_LATENCY = {
         SPEEX       : 0,
        }
 
-CODEC_ORDER = [MP3, OPUS_OGG, VORBIS_MKA, FLAC_OGG, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, OPUS, VORBIS, FLAC_OGG, OPUS_MKA, FLAC, MP3_MPEG4]
+CODEC_ORDER = [MP3, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS, FLAC_OGG, AAC_MPEG4, WAV_LZ4, WAV_LZO, WAV, WAVPACK, SPEEX_OGG, OPUS, VORBIS, OPUS_MKA, FLAC, MP3_MPEG4]
 
 
 gst = None
@@ -418,14 +417,8 @@ def validate_encoding(elements):
     if force_enabled(encoding):
         log.info("sound codec %s force enabled", encoding)
         return True
-    elif len([x for x in elements if x and (x.find("matroska")>=0)])>0 and get_gst_version()<(1, ):
-        #outdated versions of gstreamer cause problems with the gdp and matroskademux muxers,
-        #the receiver may not be able to process the data
-        #and we have no way of knowing what version they have at this point, so just disable those:
-        log("avoiding %s with gdp muxer - gstreamer version %s is too old", encoding, get_gst_version())
-        return False
-    elif WIN32 and encoding in (SPEEX_OGG, ):
-        log("skipping %s on win32", encoding)
+    elif encoding in (VORBIS_OGG, VORBIS) and get_gst_version()<(1, 12):
+        log("skipping %s - not sure which GStreamer versions support it", encoding)
         return False
     elif encoding.startswith(OPUS):
         if encoding==OPUS_MKA and get_gst_version()<(1, 8):
