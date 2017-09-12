@@ -96,7 +96,7 @@ class SoundSink(SoundPipeline):
         self.level_lock = Lock()
         pipeline_els = []
         appsrc_el = ["appsrc",
-                     "do-timestamp=1",
+                     #"do-timestamp=1",
                      "name=src",
                      "emit-signals=0",
                      "block=0",
