@@ -155,6 +155,7 @@ class ServerCore(object):
         self._udp_protocols = {}
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
+        self._rfb_upgrade = 0
         self._ssl_wrap_socket = None
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
@@ -777,7 +778,7 @@ class ServerCore(object):
             self.handle_rfb_connection(conn)
             return
 
-        elif socktype=="tcp" and peek_data and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
+        elif socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
@@ -796,7 +797,19 @@ class ServerCore(object):
 
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
-        self.make_protocol(socktype, conn)
+        proto = self.make_protocol(socktype, conn)
+        if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
+            def may_upgrade_to_rfb():
+                netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
+                if conn.input_bytecount==0:
+                    proto.steal_connection()
+                    self._potential_protocols.remove(proto)
+                    proto.wait_for_io_threads_exit(1)
+                    conn.set_active(True)
+                    self.handle_rfb_connection(conn)
+                return False
+            self.timeout_add(self._rfb_upgrade*1000, may_upgrade_to_rfb)
+        return proto
 
 
     def make_protocol(self, socktype, conn):

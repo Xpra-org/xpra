@@ -33,6 +33,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def init(self, opts):
         GTKServerBase.init(self, opts)
+        ShadowServerBase.init(self, opts)
         self.tray = opts.tray
         self.tray_icon = opts.tray_icon
         if self.tray:

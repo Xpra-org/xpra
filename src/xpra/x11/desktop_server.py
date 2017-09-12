@@ -286,6 +286,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def init(self, opts):
         X11ServerBase.init(self, opts)
         RFBServer.init(self)
+        self._rfb_upgrade = int(opts.rfb_upgrade)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)

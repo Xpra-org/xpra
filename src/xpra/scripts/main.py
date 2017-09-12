@@ -960,7 +960,10 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Directory to place/look for the socket files in. Default: '%s'." % default_socket_dir_str)
     group.add_option("--system-proxy-socket", action="store",
                       dest="system_proxy_socket", default=defaults.system_proxy_socket,
-                      help="The socket path to use to contact the system-wide proxy serevr. Default: '%default'.")
+                      help="The socket path to use to contact the system-wide proxy server. Default: '%default'.")
+    group.add_option("--rfb-upgrade", action="store",
+                      dest="rfb_upgrade", default=defaults.rfb_upgrade,
+                      help="Upgrade TCP sockets to send a RFB handshake after this delay (in seconds). Default: '%default'.")
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for (you can also use \"all\" or \"help\", default: '%default')")

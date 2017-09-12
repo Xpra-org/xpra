@@ -105,6 +105,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
+[\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP]
 [\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
 [\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
 [\fB\-\-attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
@@ -237,6 +238,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mmap\-group\fP]
 [\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
 [\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
+[\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP]
 .HP
 \fBxpra\fP \fBproxy\fP [\fI:DISPLAY\fP]
 .HP
@@ -1029,8 +1031,8 @@ TCP servers, usually a web server.
 xpra clients will connect as usual, but any client that does not
 speak the xpra protocol will be forwarded to the alternative
 server.
-
 .TP
+
 \fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
 Respond to HTTP requests on the TCP port(s).
 This requires \fBwebsockify\fP to be installed and at least one
@@ -1039,8 +1041,16 @@ The \fBauto\fP mode will enable support if all the components
 are available.
 By default the server will provide access to the HTML5 client.
 You can also specify your own web root path as argument.
-
 .TP
+
+\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP
+Allows RFB clients (ie: VNC) to connect to a plain TCP socket.
+If no data is received after \fIDELAY\fP seconds, the server
+will send a RFB handshake.
+This option is only applicable to servers started in
+\fIstart-desktop\fP or \fIshadow\fP modes.
+.TP
+
 \fB\-\-video\-encoders\fP=\fIENCODERS\fP
 Specifies the video encoders to try to load.
 By default, all of them are loaded, but one may want to specify

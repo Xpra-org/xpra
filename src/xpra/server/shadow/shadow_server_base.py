@@ -32,6 +32,9 @@ class ShadowServerBase(RFBServer):
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
         RFBServer.init(self)
 
+    def init(self, opts):
+        self._rfb_upgrade = int(opts.rfb_upgrade)
+
     def cleanup(self):
         self.stop_refresh()
         rwm = self.root_window_model

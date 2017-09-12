@@ -90,3 +90,9 @@ ssl = auto
 #html = yes
 #html = /var/www/htdocs/
 html = auto
+
+
+########################################################################
+# RFB upgrades
+# Allows RFB clients (ie: VNC) to connect to a plain TCP socket
+rfb-upgrade = 5
