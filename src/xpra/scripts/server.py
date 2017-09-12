@@ -626,11 +626,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             #no dual stack, so we have to listen on both IPv4 and IPv6 explicitly:
             return ["0.0.0.0", "::"]
         return [host_str]
-    def add_mdns(socktype, host, port):
+    def add_mdns(socktype, host_str, port):
         recs = mdns_recs.setdefault(socktype.lower(), [])
-        rec = (host, port)
-        if rec not in recs:
-            recs.append(rec)
+        for host in hosts(host_str):
+            rec = (host, port)
+            if rec not in recs:
+                recs.append(rec)
     def add_tcp_socket(socktype, host_str, iport):
         if iport<min_port:
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
