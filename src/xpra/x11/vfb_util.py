@@ -170,6 +170,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         #(we have to assume that Xorg is configured to use this path..)
         xorg_conf_dir = pathexpand(get_Xdummy_confdir())
         cleanups = create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
+    else:
+        cleanups = []
 
     xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
