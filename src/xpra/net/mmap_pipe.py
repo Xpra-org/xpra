@@ -75,6 +75,8 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                     "PID"               : os.getpid(),
                     })
                 mmap_dir = shellsub(mmap_dir, subs)
+                if mmap_dir and not os.path.exists(mmap_dir):
+                    os.mkdir(mmap_dir, 0o700)
                 if not mmap_dir or not os.path.exists(mmap_dir):
                     raise Exception("mmap directory %s does not exist!" % mmap_dir)
                 #create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
