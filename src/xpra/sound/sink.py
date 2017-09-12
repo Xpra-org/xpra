@@ -111,7 +111,6 @@ class SoundSink(SoundPipeline):
             pipeline_els.append(decoder_str)
         pipeline_els.append("audioconvert")
         pipeline_els.append("audioresample")
-        pipeline_els.append("volume name=volume volume=0")
         if QUEUE_TIME>0:
             pipeline_els.append(" ".join(["queue",
                                           "name=queue",
@@ -120,6 +119,7 @@ class SoundSink(SoundPipeline):
                                           "max-size-bytes=0",
                                           "max-size-time=%s" % QUEUE_TIME,
                                           "leaky=%s" % QUEUE_LEAK]))
+        pipeline_els.append("volume name=volume volume=0")
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         #anything older than this may cause problems (ie: centos 6.x)
         #because the attributes may not exist
