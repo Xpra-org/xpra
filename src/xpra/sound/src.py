@@ -12,7 +12,7 @@ from xpra.util import csv, envint, envbool, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, has_plugins, \
-                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
+                                MP3, CODEC_ORDER, MUXER_DEFAULT_OPTIONS, ENCODER_NEEDS_AUDIOCONVERT, SOURCE_NEEDS_AUDIOCONVERT, ENCODER_CANNOT_USE_CUTTER, CUTTER_NEEDS_CONVERT, CUTTER_NEEDS_RESAMPLE, MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM
 from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
@@ -108,6 +108,10 @@ class SoundSource(SoundPipeline):
             pipeline_els += ["audioconvert"]
         if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER:
             pipeline_els.append("cutter threshold=%.4f leaky=false name=cutter" % CUTTER_THRESHOLD)
+            if encoder in CUTTER_NEEDS_CONVERT:
+                pipeline_els.append("audioconvert")
+            if encoder in CUTTER_NEEDS_RESAMPLE:
+                pipeline_els.append("audioresample")
         pipeline_els.append("volume name=volume volume=%s" % volume)
         if encoder:
             encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
