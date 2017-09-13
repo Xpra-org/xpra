@@ -134,6 +134,7 @@ def choose_digest(options):
 
 def get_hexdigest(digest, password, salt):
     assert digest and password and salt
+    salt = memoryview_to_bytes(salt)
     if digest=="des":
         from xpra.net.d3des import generate_response
         password = password.ljust(8, "\x00")[:8]
@@ -150,7 +151,6 @@ def get_hexdigest(digest, password, salt):
         return None
         #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
     password = strtobytes(password)
-    salt = memoryview_to_bytes(salt)
     v = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
     return v
 
