@@ -53,6 +53,12 @@ make
 %install
 %configure
 %make_install LIBDIR=%{_libdir} PREFIX=/usr INSTALL="install -p"
+#fix symlink not installed as a symlink:
+rm %{buildroot}/usr/bin/lz4c
+ln -sf lz4 %{buildroot}/usr/bin/lz4c
+#fix man page installed in the wrong dir:
+mkdir %{buildroot}/usr/share/man/man1
+mv %{buildroot}/usr/share/man/*lz4* %{buildroot}/usr/share/man/man1/
 chmod -x %{buildroot}%{_includedir}/*.h
 
 
@@ -66,8 +72,7 @@ chmod -x %{buildroot}%{_includedir}/*.h
 %{_bindir}/lz4c
 %{_bindir}/lz4cat
 %{_bindir}/unlz4
-%{_mandir}/man1/lz4*
-%{_mandir}/man1/unlz4*
+%{_mandir}/man1/*lz4*
 %{_libdir}/liblz4.so.1*
 
 
