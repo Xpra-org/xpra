@@ -1,7 +1,7 @@
 %global _hardened_build 1
 
 Name:           lz4
-Version:        1.7.5
+Version:        1.8.0
 Release:        1%{?dist}
 Summary:        Extremely fast compression algorithm
 
@@ -84,7 +84,10 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
-* Mon Jan 16 2017 Antoine Martin <antoine@devloop.org.uk> - 1.7.5.1
+* Thu Sep 14 2017 Antoine Martin <antoine@devloop.org.uk> - 1.8.0-1
+- new upstream release
+
+* Mon Jan 16 2017 Antoine Martin <antoine@devloop.org.uk> - 1.7.5-1
 - new upstream release
 
 * Wed Nov 23 2016 Antoine Martin <antoine@devloop.org.uk> - 1.7.4-2
