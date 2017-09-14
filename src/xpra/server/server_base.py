@@ -1547,7 +1547,7 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         printers = packet[1]
-        auth_class = self.auth_class.get("unix-domain")
+        auth_class = self.auth_classes.get("unix-domain")
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
 
