@@ -17,3 +17,4 @@ etc/xpra/*.conf
 etc/xpra/conf.d/*conf
 etc/pam.d/xpra
 etc/default/xpra
+etc/dbus-1/system.d/xpra.conf

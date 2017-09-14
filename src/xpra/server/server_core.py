@@ -24,6 +24,7 @@ proxylog = Logger("proxy")
 commandlog = Logger("command")
 authlog = Logger("auth")
 timeoutlog = Logger("timeout")
+dbuslog = Logger("dbus")
 
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.main import _socket_connect, full_version_str
@@ -169,6 +170,8 @@ class ServerCore(object):
         self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
         self._socket_dir = None
+        self.dbus_control = False
+        self.dbus_server = None
         self.unix_socket_paths = []
 
         self.session_name = ""
@@ -218,9 +221,37 @@ class ServerCore(object):
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
         self.ssl_mode = opts.ssl
+        self.dbus_control = opts.dbus_control
 
+    def init_components(self, opts):
         self.init_html_proxy(opts)
         self.init_auth(opts)
+        self.init_dbus_server()
+
+
+    def init_dbus_server(self):
+        dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
+        if not self.dbus_control:
+            return
+        try:
+            from xpra.server.dbus.dbus_common import dbus_exception_wrap
+            self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
+        except Exception as e:
+            log("init_dbus_server()", exc_info=True)
+            log.error("Error: cannot load dbus server:")
+            log.error(" %s", e)
+            self.dbus_server = None
+
+    def cleanup_dbus_server(self):
+        ds = self.dbus_server
+        if ds:
+            ds.cleanup()
+            self.dbus_server = None
+
+
+    def make_dbus_server(self):
+        dbuslog("make_dbus_server() no dbus server for %s", self)
+        return None
 
 
     def init_uuid(self):
@@ -537,6 +568,7 @@ class ServerCore(object):
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
         self.cleanup_udp_listeners()
+        self.cleanup_dbus_server()
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush

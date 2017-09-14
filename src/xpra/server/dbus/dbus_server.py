@@ -7,15 +7,13 @@
 from collections import namedtuple
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
+from xpra.server.dbus.dbus_server_base import DBUS_Server_Base, INTERFACE, BUS_NAME
 from xpra.util import parse_scaling_value, from0to100
 import dbus.service
 
 from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
 log = Logger("dbus", "server")
 
-BUS_NAME = "org.xpra.Server"
-INTERFACE = "org.xpra.Server"
-PATH = "/org/xpra/Server"
 
 Rectangle = namedtuple("Workarea", "x,y,width,height")
 
@@ -34,75 +32,20 @@ def stoms(v):
     return int(v*1000.0)
 
 
-class DBUS_Server(dbus.service.Object):
+class DBUS_Server(DBUS_Server_Base):
 
     def __init__(self, server=None, extra=""):
-        self.server = server
-        session_bus = init_session_bus()
+        bus = init_session_bus()
         name = BUS_NAME
-        path = PATH
         if extra:
             name += extra.replace(".", "_").replace(":", "_")
-        bus_name = dbus.service.BusName(name, session_bus)
-        dbus.service.Object.__init__(self, bus_name, path)
-        self.log("(%s)", server)
-        self._properties = {
-                            "idle-timeout"          : ("idle_timeout",          ni),
-                            "server-idle-timeout"   : ("server_idle_timeout",   ni),
-                            "name"                  : ("session_name",          ns),
-                            "sharing"               : ("sharing",               nb),
-                            }
-
-    def cleanup(self):
-        try:
-            log("calling %s", self.remove_from_connection)
-            self.remove_from_connection()
-        except Exception as e:
-            log.error("Error removing the DBUS server:")
-            log.error(" %s", e)
-
-
-    def log(self, fmt, *args):
-        log("%s"+fmt, INTERFACE, *args)
-
-
-    @dbus.service.signal(INTERFACE, signature='sas')
-    def Event(self, event, args):
-        self.log(".Event(%s, %s)", event, args);
-
-
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')
-    def Get(self, property_name):
-        conv = self._properties.get(property_name)
-        if conv is None:
-            raise dbus.exceptions.DBusException("invalid property")
-        server_property_name, _ = conv
-        v = getattr(self.server, server_property_name)
-        self.log(".Get(%s)=%s", property_name, v)
-        return v
-
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
-    def GetAll(self, interface_name):
-        if interface_name==INTERFACE:
-            v = dict((x, self.Get(x)) for x in self._properties.keys())
-        else:
-            v = {}
-        self.log(".GetAll(%s)=%s", interface_name, v)
-        return v
-
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ssv')
-    def Set(self, interface_name, property_name, new_value):
-        self.log(".Set(%s, %s, %s)", interface_name, property_name, new_value)
-        conv = self._properties.get(property_name)
-        if conv is None:
-            raise dbus.exceptions.DBusException("invalid property")
-        server_property_name, validator = conv
-        assert hasattr(self.server, server_property_name)
-        setattr(self.server, server_property_name, validator(new_value))
-
-    @dbus.service.signal(dbus.PROPERTIES_IFACE, signature='sa{sv}as')
-    def PropertiesChanged(self, interface_name, changed_properties, invalidated_properties):
-        pass
+        DBUS_Server_Base.__init__(self, bus, server, name)
+        self._properties.update({
+            "idle-timeout"          : ("idle_timeout",          ni),
+            "server-idle-timeout"   : ("server_idle_timeout",   ni),
+            "name"                  : ("session_name",          ns),
+            "sharing"               : ("sharing",               nb),
+            })
 
 
     @dbus.service.method(INTERFACE, in_signature='i')

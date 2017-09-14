@@ -1,7 +1,7 @@
 policy_module(xpra_socketactivation, 2.1)
 
 require {
-	class dbus { send_msg };
+	class dbus { acquire_svc send_msg };
 
 	type kernel_t;
 	type devlog_t;
@@ -106,7 +106,10 @@ allow xpra_t ldconfig_exec_t:file { execute execute_no_trans getattr open read }
 #dbus / mdns:
 allow xpra_t avahi_t:dbus send_msg;
 allow avahi_t xpra_t:dbus send_msg;
-allow xpra_t system_dbusd_t:dbus send_msg;
+#the system-wide proxy runs a system bus service:
+allow xpra_t system_dbusd_t:dbus {acquire_svc send_msg};
+allow unconfined_t xpra_t:dbus send_msg;
+allow xpra_t unconfined_t:dbus send_msg;
 
 allow xpra_t system_dbusd_var_run_t:sock_file write;
 allow xpra_t var_run_t:dir { add_name write };

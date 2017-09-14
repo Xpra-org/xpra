@@ -81,8 +81,11 @@ class ProxyServer(ServerCore):
         get_platform_info()
         self.child_reaper = getChildReaper()
 
-    def init_components(self, opts):
-        pass
+
+    def make_dbus_server(self):
+        from xpra.server.proxy.proxy_dbus_server import Proxy_DBUS_Server
+        return Proxy_DBUS_Server(self)
+
 
     def init_packet_handlers(self):
         ServerCore.init_packet_handlers(self)
@@ -470,13 +473,11 @@ class ProxyServer(ServerCore):
         info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         #only show more info if we have authenticated
         #as the user running the proxy server process:
-        pa = proto.authenticator
-        if pa:
-            sessions = pa.get_sessions()
+        if proto and proto.authenticator:
+            sessions = proto.authenticator.get_sessions()
             if sessions:
                 uid, gid = sessions[:2]
                 if not POSIX or (uid==os.getuid() and gid==os.getgid()):
-                    info.update(ServerCore.get_info(self, proto))
                     self.reap()
                     i = 0
                     for p,v in self.processes.items():

@@ -1518,6 +1518,8 @@ else:
                     copytodir("etc/sysconfig/xpra", "/etc/default")
             if sd_listen_ENABLED:
                 copytodir("service/xpra.socket", systemd_dir)
+            if dbus_ENABLED and proxy_ENABLED:
+                copytodir("dbus/xpra.conf", "/etc/dbus-1/system.d")
 
 
     # add build_conf to build step

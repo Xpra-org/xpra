@@ -573,6 +573,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
 
 %files common-server
+%{_sysconfdir}/dbus-1/system.d/xpra.conf
 %{_bindir}/udev_product_version
 %{_prefix}/lib/systemd/system/xpra.service
 %{_prefix}/lib/systemd/system/xpra.socket
@@ -729,6 +730,8 @@ else
 fi
 udevadm control --reload-rules && udevadm trigger || :
 %endif
+#reload dbus to get our new policy:
+sudo systemctl reload dbus
 
 %post common-client
 /usr/bin/update-mime-database &> /dev/null || :

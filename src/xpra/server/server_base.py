@@ -115,8 +115,6 @@ class ServerBase(ServerCore):
         self.clipboard_direction = "both"
         self.supports_dbus_proxy = False
         self.dbus_helper = None
-        self.dbus_control = False
-        self.dbus_server = None
         self.lpadmin = ""
         self.lpinfo = ""
         self.add_printer_options = []
@@ -256,7 +254,6 @@ class ServerBase(ServerCore):
         self.lpinfo = opts.lpinfo
         self.add_printer_options = opts.add_printer_options
         self.av_sync = opts.av_sync
-        self.dbus_control = opts.dbus_control
         #server-side printer handling is only for posix via pycups for now:
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
@@ -278,6 +275,7 @@ class ServerBase(ServerCore):
 
     def init_components(self, opts):
         log("starting component init")
+        ServerCore.init_components(self, opts)
         self.init_webcam()
         self.init_clipboard()
         self.init_keyboard()
@@ -285,7 +283,6 @@ class ServerBase(ServerCore):
         self.init_sound_options(opts)
         self.init_notification_forwarder()
         self.init_dbus_helper()
-        self.init_dbus_server()
 
         if opts.system_tray:
             self.add_system_tray()
@@ -695,19 +692,6 @@ class ServerBase(ServerCore):
             self.dbus_helper = None
             self.supports_dbus_proxy = False
 
-    def init_dbus_server(self):
-        dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
-        if not self.dbus_control:
-            return
-        try:
-            from xpra.server.dbus.dbus_common import dbus_exception_wrap
-            self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
-        except Exception as e:
-            log("init_dbus_server()", exc_info=True)
-            log.error("Error: cannot load dbus server:")
-            log.error(" %s", e)
-            self.dbus_server = None
-
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server
@@ -990,10 +974,6 @@ class ServerBase(ServerCore):
         reaper_cleanup()
         self.cleanup_pulseaudio()
         self.stop_virtual_webcam()
-        ds = self.dbus_server
-        if ds:
-            ds.cleanup()
-            self.dbus_server = None
 
 
     def _process_exit_server(self, _proto, _packet):
