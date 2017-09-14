@@ -26,6 +26,7 @@ SOURCE_QUEUE_TIME = get_queue_time(50, "SOURCE_")
 BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
 LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
+LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 try:
     CUTTER_THRESHOLD = float(os.environ.get("XPRA_CUTTER_THRESHOLD", "0.02"))
@@ -213,7 +214,11 @@ class SoundSource(SoundPipeline):
             elif above is True:
                 self.max_timestamp = 0
                 self.min_timestamp = ts
-            gstlog("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s", above, self.min_timestamp, self.max_timestamp)
+            if LOG_CUTTER:
+                l = gstlog.info
+            else:
+                l = gstlog
+            l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s", above, self.min_timestamp, self.max_timestamp)
 
 
     def on_new_preroll(self, appsink):
