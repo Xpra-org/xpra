@@ -30,7 +30,10 @@ class DotXpra(object):
     UNKNOWN = UNKNOWN
 
     def get_server_state(self, sockpath, timeout=5):
-        return self.UNKNOWN
+        full_path = PIPE_PATH+sockpath
+        if os.path.exists(full_path):
+            return self.LIVE
+        return self.DEAD
 
 
     #this is imported by winswitch, so we can't change the method signature
