@@ -383,6 +383,7 @@ class subprocess_caller(object):
     def get_env(self):
         env = exec_env()
         env["XPRA_LOG_PREFIX"] = "%s " % self.description
+        env["XPRA_FIX_UNICODE_OUT"] = "0"
         return env
 
     def cleanup(self):
