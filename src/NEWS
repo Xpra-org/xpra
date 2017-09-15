@@ -1,6 +1,20 @@
-v2.2 (2017-07-26)
+v2.2 (2017-09-15)
 ======================
-	-- TODO
+	-- support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
+	-- UDP transport (experimental)
+	-- TCP sockets can be upgrade to Websockets and / or SSL, RFB
+	-- multiple bind options for all socket types supported: tcp, ssl, ws, wss, udp, rfb
+	-- "xpra sessions" browser tool for both mDNS and local sessions
+	-- uinput virtual pointer device for supporting fine grained scrolling
+	-- connection strings support regular URI format
+	-- rencode is now used by default for the initial packet
+	-- skip sending silence when no audio is being played
+	-- better modifier key support on Mac OS
+	-- displayfd command line option
+	-- cosmetic system tray menu layout change
+	-- dbus service for the system wide proxy server (stub)
+	-- move mmap file to $XDG_RUNTIME_DIR (where applicable)
+	-- detect network performance characteristics
 
 
 v2.1 (2017-07-24)
