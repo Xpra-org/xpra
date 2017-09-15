@@ -52,6 +52,7 @@ class ProxyServer(ServerCore):
         ServerCore.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
+        self.session_type = "proxy"
         self.main_loop = None
         #proxy servers may have to connect to remote servers,
         #or even start them, so allow more time before timing out:

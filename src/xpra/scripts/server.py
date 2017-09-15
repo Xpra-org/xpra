@@ -872,11 +872,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if shadowing:
         from xpra.platform.shadow_server import ShadowServer
         app = ShadowServer()
-        server_type_info = "shadow"
     elif proxying:
         from xpra.server.proxy.proxy_server import ProxyServer
         app = ProxyServer()
-        server_type_info = "proxy"
     else:
         if not check_xvfb():
             return  1

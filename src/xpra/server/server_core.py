@@ -146,6 +146,7 @@ class ServerCore(object):
         self._when_ready = []
         self.child_reaper = None
         self.original_desktop_display = None
+        self.session_type = "unknown"
 
         self._closing = False
         self._upgrading = False
@@ -1509,6 +1510,7 @@ class ServerCore(object):
         si = get_server_info()
         si.update({
                    "mode"              : self.get_server_mode(),
+                   "session-type"      : self.session_type,
                    "type"              : "Python",
                    "python"            : {"version" : python_platform.python_version()},
                    "start_time"        : int(self.start_time),

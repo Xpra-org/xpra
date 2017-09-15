@@ -81,7 +81,6 @@ class ServerBase(ServerCore):
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
 
-        self.session_type = "unknown"
         self.supports_mmap = False
         self.mmap_filename = None
         self.min_mmap_size = 64*1024*1024
@@ -2148,7 +2147,6 @@ class ServerBase(ServerCore):
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
-        info.setdefault("server", {})["session-type"] = self.session_type
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
