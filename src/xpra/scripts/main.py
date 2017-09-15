@@ -290,6 +290,7 @@ def do_parse_cmdline(cmdline, defaults):
                         "\t%prog version [DISPLAY]\n"
                         "\t%prog showconfig\n"
                         "\t%prog list\n"
+                        "\t%prog sessions\n"
                         "\t%prog stop [DISPLAY]\n"
                         "\t%prog exit [DISPLAY]\n"
                       ]
@@ -1220,7 +1221,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "list-mdns", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
@@ -1480,7 +1481,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode == "list-mdns" and supports_mdns:
             return run_list_mdns(error_cb, args)
         elif mode == "mdns-gui" and supports_mdns:
-            return run_mdns_gui(error_cb)
+            return run_mdns_gui(error_cb, options)
+        elif mode == "sessions":
+            return run_sessions_gui(error_cb, options)
         elif mode in ("_proxy", "_proxy_start", "_proxy_start_desktop", "_shadow_start") and (supports_server or supports_shadow):
             nox()
             return run_proxy(error_cb, options, script_file, args, mode, defaults)
@@ -1564,6 +1567,7 @@ def parse_display_name(error_cb, opts, display_name):
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
     separator = psep[-1]                    #ie: "/"
     parts = afterproto.split(separator)     #ie: "host:port", "DISPLAY"
+    print("protocol=%s, separator=%s, afterproto=%s, parts=%s" % (protocol, separator, afterproto, parts))
     
     def parse_host_string(host, default_port=DEFAULT_PORT):
         """
@@ -1709,7 +1713,7 @@ def parse_display_name(error_cb, opts, display_name):
         return desc
     elif protocol=="socket":
         #use the socketfile specified:
-        sockfile = display_name[len("socket:"):]
+        sockfile = afterproto
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
@@ -3000,13 +3004,20 @@ def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
             sys.stdout.write(" (delete failed: %s)" % e)
     sys.stdout.write("\n")
 
-def run_mdns_gui(error_cb):
+def run_sessions_gui(error_cb, options):
+    mdns = supports_mdns and options.mdns
+    if mdns:
+        return run_mdns_gui(error_cb, options)
+    from xpra.client.gtk_base import sessions_gui
+    sessions_gui.main(options)
+
+def run_mdns_gui(error_cb, options):
     from xpra.net.mdns import get_listener_class
     listener = get_listener_class()
     if not listener:
         error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
-    from xpra.client.gtk_base.mdns_gui import main
-    main()
+    from xpra.client.gtk_base import mdns_gui
+    mdns_gui.main(options)
 
 def run_list_mdns(error_cb, extra_args):
     no_gtk()
