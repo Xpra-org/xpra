@@ -53,6 +53,9 @@ if frozen:
     addsyspath('bin\\library.zip')
     os.environ['GI_TYPELIB_PATH'] = jedir('lib\\girepository-1.0')
 
+#don't know why this breaks with Python 3 yet...
+FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", not REDIRECT_OUTPUT and PYTHON2)
+
 
 def is_wine():
     try:
@@ -91,7 +94,9 @@ def fix_unicode_out():
     # So be paranoid about catching errors and reporting them to original_stderr,
     # so that we can at least see them.
     def _complain(message):
-        print >>original_stderr, message if isinstance(message, str) else repr(message)
+        if not isinstance(message, str):
+            message = repr(message)
+        original_stderr.write("%s\n" % message)
 
     # Work around <http://bugs.python.org/issue6058>.
     codecs.register(lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
@@ -169,8 +174,9 @@ def fix_unicode_out():
                         try:
                             self._stream.flush()
                         except Exception as e:
-                            _complain("%s.flush: %r from %r" % (self.name, e, self._stream))
-                            raise
+                            if not self.closed:
+                                _complain("%s.flush: %r from %r" % (self.name, e, self._stream))
+                                raise
 
                 def write(self, text):
                     try:
@@ -195,16 +201,18 @@ def fix_unicode_out():
                                     break
                                 text = text[n.value:]
                     except Exception as e:
-                        _complain("%s.write: %r" % (self.name, e))
-                        raise
+                        if not self.closed:
+                            _complain("%s.write: %r" % (self.name, e))
+                            raise
 
                 def writelines(self, lines):
                     try:
                         for line in lines:
                             self.write(line)
                     except Exception as e:
-                        _complain("%s.writelines: %r" % (self.name, e))
-                        raise
+                        if not self.closed:
+                            _complain("%s.writelines: %r" % (self.name, e))
+                            raise
 
             if real_stdout:
                 sys.stdout = UnicodeOutput(hStdout, None, STDOUT_FILENO, '<Unicode console stdout>')
@@ -272,11 +280,9 @@ def set_wait_for_input():
                 print("error accessing console: %s" % e)
 
 def do_init():
+    if FIX_UNICODE_OUT:
+        fix_unicode_out()
     if not REDIRECT_OUTPUT:
-        FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", True)
-        if PYTHON2 and FIX_UNICODE_OUT:
-            #don't know why this breaks with Python 3 yet...
-            fix_unicode_out()
         #figure out if we want to wait for input at the end:
         set_wait_for_input()
         return
