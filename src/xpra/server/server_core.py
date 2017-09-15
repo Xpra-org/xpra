@@ -631,7 +631,7 @@ class ServerCore(object):
             start a thread to dispatch it to the correct handler.
         """
         if self._closing:
-            netlog.warn("ignoring new connection during shutdown")
+            netlog("ignoring new connection during shutdown")
             return False
         socktype = self.socket_types.get(listener)
         socket_info = self.socket_info.get(listener)
