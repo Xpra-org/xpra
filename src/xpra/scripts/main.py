@@ -155,7 +155,7 @@ def fixup_defaults(defaults):
 def main(script_file, cmdline):
     from xpra.platform import clean as platform_clean, command_error, command_info, get_main_fallback
     if len(cmdline)==1:
-        fm = get_main_fallback()
+        fm = get_main_fallback(cmdline[0])
         if fm:
             return fm()
 

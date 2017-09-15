@@ -114,7 +114,7 @@ def get_application_name():
     return _appname
 
 
-def get_main_fallback():
+def get_main_fallback(_cmd):
     #this is used on some platforms (win32),
     #when the user tries to run "xpra" without arguments
     #returns the function to run as fallback (or None)

@@ -318,12 +318,15 @@ def command_error(message):
     _show_message(message, MB_ICONEXCLAMATION | MB_SYSTEMMODAL)
 
 
-def get_main_fallback():
+def get_main_fallback(cmd):
     set_wait_for_input()
     global _wait_for_input
     if _wait_for_input:
         #something will be shown in a console,
         #so don't bother showing anything else
+        return None
+    if cmd.find("Xpra_Audio.exe")>=0:
+        #don't show the launcher when trying to use this command
         return None
     #try the launcher (better than nothing!)
     try:
