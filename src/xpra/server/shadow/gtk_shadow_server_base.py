@@ -23,6 +23,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         from xpra.gtk_common.gtk_util import get_default_root_window
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
+        self.session_type = "shadow"
         self.pointer_position_timer = None
         #for managing the systray
         self.tray_menu = None

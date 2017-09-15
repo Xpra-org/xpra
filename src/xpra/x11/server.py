@@ -183,6 +183,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._tray = None
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
+        self.session_type = "seamless"
 
     def init(self, opts):
         self.wm_name = opts.wm_name

@@ -282,6 +282,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def __init__(self):
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
+        self.session_type = "desktop"
 
     def init(self, opts):
         X11ServerBase.init(self, opts)
