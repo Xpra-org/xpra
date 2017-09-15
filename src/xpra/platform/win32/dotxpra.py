@@ -32,7 +32,10 @@ class DotXpra(object):
     INACCESSIBLE = INACCESSIBLE
 
     def get_server_state(self, sockpath, timeout=5):
-        return self.UNKNOWN
+        full_path = PIPE_PATH+sockpath
+        if os.path.exists(full_path):
+            return self.LIVE
+        return self.DEAD
 
     def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
         return self.get_all_namedpipes().values()
