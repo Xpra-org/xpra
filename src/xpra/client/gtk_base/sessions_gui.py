@@ -320,4 +320,6 @@ def main(opts):
 
 
 if __name__ == "__main__":
-    main()
+    from xpra.scripts.config import make_defaults_struct
+    opts = make_defaults_struct()
+    main(opts)
