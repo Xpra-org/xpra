@@ -359,7 +359,7 @@ class ServerBase(ServerCore):
         printlog("local sockets we can use for printing: %s", nontcpsockets)
         if not nontcpsockets and self.file_transfer.printing:
             log.warn("Warning: no local sockets defined,")
-            log.warn(" printer forwarding")
+            log.warn(" disabling printer forwarding")
             self.file_transfer.printing = False
 
 
