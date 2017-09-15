@@ -317,7 +317,7 @@ class ServerCore(object):
     def init_auth(self, opts):
         auth = self.get_auth_module("local-auth", opts.auth, opts)
         if WIN32:
-            self.auth_classes["named-pipes"] = auth
+            self.auth_classes["named-pipe"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
         for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock", "udp"):
