@@ -575,7 +575,7 @@ class XpraClientBase(FileTransferHandler):
             warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "server requested an unsupported digest: %s" % digest, "invalid digest")
             return
         if digest:
-            authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
+            authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), binascii.hexlify(challenge_response))
         self.password_sent = True
         self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)
