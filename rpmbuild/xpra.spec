@@ -310,6 +310,9 @@ Requires: gtk3-immodule-xim
 Requires: xorg-x11-server-utils
 Requires: xorg-x11-drv-dummy
 Requires: %{requires_xorg}
+%if ! 0%{?suse_version}
+Requires: mesa-dri-drivers
+%endif
 Requires: %{libvpx}
 %if 0%{?fedora}
 Requires: libwebp
