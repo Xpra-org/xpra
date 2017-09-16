@@ -828,6 +828,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 if decoder_lock:
                     decoder_lock.release()
         opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
+        self.reinit_window_icons()
 
 
     def get_group_leader(self, wid, metadata, override_redirect):

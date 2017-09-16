@@ -146,6 +146,10 @@ class ClientWindowBase(ClientWidgetBase):
     def send(self, *args):
         self._client.send(*args)
 
+    def reset_icon(self):
+        current_icon = self._current_icon
+        if current_icon:
+            self.update_icon(*current_icon)
 
     def update_icon(self, width, height, coding, data):
         raise Exception("override me!")
@@ -224,9 +228,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_icon_name(icon_title)
             #the DE may have reset the icon now,
             #force it to use the one we really want:
-            current_icon = self._current_icon
-            if current_icon:
-                self.update_icon(*current_icon)
+            self.reset_icon()
 
         if b"size-constraints" in metadata:
             self.size_constraints = typedict(metadata.dictget("size-constraints"))
