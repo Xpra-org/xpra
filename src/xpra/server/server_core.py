@@ -1213,8 +1213,8 @@ class ServerCore(object):
             return False
 
         def auth_failed(msg):
-            authlog.error("Error: authentication failed")
-            authlog.error(" %s", msg)
+            authlog.warn("Warning: authentication failed")
+            authlog.warn(" %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
         #authenticator:
