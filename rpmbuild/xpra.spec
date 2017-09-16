@@ -189,6 +189,9 @@ Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
 Requires: %{requires_xorg}
+%if ! 0%{?suse_version}
+%{Recommends}: mesa-dri-drivers
+%endif
 BuildRequires: systemd-devel
 %if 0%{?with_selinux}
 BuildRequires: checkpolicy, selinux-policy-devel
