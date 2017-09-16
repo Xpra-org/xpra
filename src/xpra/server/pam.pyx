@@ -248,7 +248,7 @@ cdef class pam_session(object):
         log("pam_authenticate: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             log.warn("Warning: pam authentication failed: %s", PAM_ERR_STR.get(r, r))
-            log.error(" %s", pam_strerror(self.pam_handle, r))
+            log.warn(" %s", pam_strerror(self.pam_handle, r))
             return False
         return True
 
