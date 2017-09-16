@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, local_version
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, strtobytes, bytestostr, memoryview_to_bytes
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
