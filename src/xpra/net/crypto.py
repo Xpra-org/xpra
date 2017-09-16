@@ -132,7 +132,7 @@ def choose_digest(options):
         return "des"
     raise Exception("no known digest options found in '%s'" % csv(options))
 
-def get_hexdigest(digest, password, salt):
+def gendigest(digest, password, salt):
     assert digest and password and salt
     salt = memoryview_to_bytes(salt)
     password = strtobytes(password)
@@ -144,8 +144,7 @@ def get_hexdigest(digest, password, salt):
         return binascii.hexlify(v)
     elif digest=="xor":
         salt = salt.ljust(16, "\x00")[:len(password)]
-        v = memoryview_to_bytes(xor(password, salt))
-        return binascii.hexlify(v)
+        return memoryview_to_bytes(xor(password, salt))
     digestmod = get_digest_module(digest)
     if not digestmod:
         log("invalid digest module '%s': %s", digest)
@@ -157,7 +156,7 @@ def get_hexdigest(digest, password, salt):
 def verify_digest(digest, password, salt, challenge_response):
     if not password or not salt or not challenge_response:
         return False
-    verify = get_hexdigest(digest, password, salt)
+    verify = gendigest(digest, password, salt)
     if not hmac.compare_digest(verify, challenge_response):
         log("expected '%s' but got '%s'", verify, challenge_response)
         return False

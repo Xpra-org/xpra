@@ -660,7 +660,7 @@ class ProxyInstanceProcess(Process):
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="challenge":
-            from xpra.net.crypto import get_salt, get_hexdigest
+            from xpra.net.crypto import get_salt, gendigest
             #client may have already responded to the challenge,
             #so we have to handle authentication from this end
             salt = packet[1]
@@ -673,7 +673,7 @@ class ProxyInstanceProcess(Process):
                 return
             password = strtobytes(password)
             salt = memoryview_to_bytes(salt)
-            challenge_response = get_hexdigest(digest, password, salt)
+            challenge_response = gendigest(digest, password, salt)
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
             return

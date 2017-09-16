@@ -25,7 +25,7 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
-from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, get_hexdigest, \
+from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, gendigest, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
@@ -578,6 +578,7 @@ class XpraClientBase(FileTransferHandler):
         client_salt = get_salt(len(server_salt))
         #TODO: use some key stretching algorigthm? (meh)
         salt = xor(server_salt, client_salt)
+        authlog("combined salt(%s, %s)=%s", binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
 
         #don't send XORed password unencrypted:
         if digest==b"xor":
@@ -589,12 +590,12 @@ class XpraClientBase(FileTransferHandler):
             elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return
-        challenge_response = get_hexdigest(digest, password, salt)
+        challenge_response = gendigest(digest, password, salt)
         if not challenge_response:
             log("invalid digest module '%s': %s", digest)
             warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
             return
-        authlog("%s(%s, %s)=%s", digest, binascii.hexlify(password), binascii.hexlify(salt), challenge_response)
+        authlog("%s(%s, %s)=%s", digest, repr(password), binascii.hexlify(salt), binascii.hexlify(challenge_response))
         self.password_sent = True
         self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)

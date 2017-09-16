@@ -77,10 +77,11 @@ class SysAuthenticator(object):
             salt = self.salt
         else:
             salt = xor(self.salt, client_salt)
+            log("combined salt(%s, %s)=%s", binascii.hexlify(self.salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
         self.salt = None
         password = xor(challenge_response, salt)
         #warning: enabling logging here would log the actual system password!
-        #log("authenticate(%s) password=%s", challenge_response, password)
+        #log("authenticate(%s) password=%s", binascii.hexlify(challenge_response), password)
         #verify login:
         try :
             ret = self.check(password)
