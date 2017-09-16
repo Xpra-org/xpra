@@ -18,6 +18,8 @@
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
 
+%define update_firewall 1
+
 %define py2prefix python
 %define no_xdg_runtime_dir 1
 %if 0%{?fedora}>=24
@@ -524,6 +526,7 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem" 2> /dev/null
 	umask $umask
 fi
+%if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
@@ -535,6 +538,7 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
+%endif
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
@@ -568,6 +572,7 @@ if [ $1 -ge 1 ] ; then
         /bin/systemctl try-restart xpra.service >/dev/null 2>&1 || :
 fi
 %endif
+%if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
@@ -579,6 +584,7 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
+%endif
 /usr/bin/update-mime-database &> /dev/null || :
 /usr/bin/update-desktop-database &> /dev/null || :
 if [ $1 -eq 0 ] ; then
