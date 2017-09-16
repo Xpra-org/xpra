@@ -86,7 +86,8 @@ def can_retry(e):
 
         abort = ABORT.get(code, code)
         if abort is not None:
-            log("can_retry: %s, args=%s, code=%s, abort=%s", type(e), e.args, code, abort)
+            errno = getattr(e, "errno", None)
+            log("can_retry: %s, args=%s, errno=%s, code=%s, abort=%s", type(e), e.args, errno, code, abort)
             raise ConnectionClosedException(e)
     return False
 
@@ -393,9 +394,9 @@ class SSLSocketConnection(SocketConnection):
             reason = getattr(e, "reason", None)
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
                 return False
-            #log.info("can_retry(%s) %s", e, type(e))
-            #for x in ('args', 'errno', 'filename', 'library', 'message', 'reason', 'strerror'):
-            #    log.info("%s=%s", x, getattr(e, x, None))
+        message = getattr(e, "message", None)
+        if message in ("The read operation timed out", "The write operation timed out"):
+            return True
         return SocketConnection.can_retry(self, e)
 
     def enable_peek(self):
