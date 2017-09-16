@@ -616,6 +616,7 @@ fi
 - fix sound subprocess exit warnings on MS Windows
 - fix spurious key events for numlock on Mac OS
 - fix Mac OS shadow servers
+- add mesa-dri-drivers dependency to RPM packages for OpenGL support
 - add support for Volta GPUs with NVENC
 - make it easier to disable firewall scripts in RPM builds
 
