@@ -1567,7 +1567,6 @@ def parse_display_name(error_cb, opts, display_name):
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
     separator = psep[-1]                    #ie: "/"
     parts = afterproto.split(separator)     #ie: "host:port", "DISPLAY"
-    print("protocol=%s, separator=%s, afterproto=%s, parts=%s" % (protocol, separator, afterproto, parts))
     
     def parse_host_string(host, default_port=DEFAULT_PORT):
         """
