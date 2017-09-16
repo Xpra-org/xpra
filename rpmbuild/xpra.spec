@@ -18,6 +18,8 @@
 %define CFLAGS -O2 -fno-strict-aliasing
 %endif
 
+%define update_firewall 1
+
 #CentOS doesn't have those and will overrides the macro with "Requires" for both:
 %define Suggests Suggests
 %define Recommends Recommends
@@ -692,6 +694,7 @@ if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
 		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem" 2> /dev/null
 	umask $umask
 fi
+%if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
@@ -706,6 +709,7 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
+%endif
 /bin/chmod 700 /usr/lib/cups/backend/xpraforwarder
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
@@ -749,6 +753,7 @@ fi
 
 %postun common-server
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
+%if 0%{update_firewall}
 if [ $1 -eq 0 ]; then
 	ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 	if [ ! -z "${ZONE}" ]; then
@@ -762,6 +767,7 @@ if [ $1 -eq 0 ]; then
 		set -e
 	fi
 fi
+%endif
 %if 0%{?with_selinux}
 if [ $1 -eq 0 ] ; then
 	semanage port -d -p tcp 14500
