@@ -43,6 +43,7 @@ class DOCINFO(Structure):
 LPDOCINFO = POINTER(DOCINFO)
 StartDocA = gdi32.StartDocA
 StartDocA.argtypes = [HDC, LPDOCINFO]
+StartDocA.restype = int
 EndDoc = gdi32.EndDoc
 EndDoc.argtypes = [HDC]
 EndDoc.restype = int

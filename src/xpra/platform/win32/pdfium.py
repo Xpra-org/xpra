@@ -122,11 +122,11 @@ def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 		log("FPDF_GetPageCount(%s)=%s", doc, count)
 		docinfo = DOCINFO()
 		docinfo.lpszDocName = LPCSTR("%s\0" % title)
-		r = StartDocA(hdc, pointer(docinfo))
-		if r<0:
-			log.error("Error: StartDocA failed: %i", r)
-			return r
-		log("StartDocA()=%i" % r)
+		jobid = StartDocA(hdc, pointer(docinfo))
+		if jobid<0:
+			log.error("Error: StartDocA failed: %i", jobid)
+			return jobid
+		log("StartDocA()=%i", jobid)
 		try:
 			for i in range(count):
 				page = FPDF_LoadPage(doc, i)
@@ -140,7 +140,7 @@ def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 			EndDoc(hdc)
 	finally:
 		FPDF_DestroyLibrary()
-	return 0
+	return jobid
 
 def print_pdf(printer_name, title, pdf_data):
 	with GDIPrinterContext(printer_name) as hdc:
@@ -167,7 +167,10 @@ def main():
 	else:
 		title = os.path.basename(filename)
 
-	return print_pdf(printer_name, title, pdf_data)
+	jobid = print_pdf(printer_name, title, pdf_data)
+	if jobid<0:
+		return jobid
+	return 0
 
 
 if __name__ == "__main__":
