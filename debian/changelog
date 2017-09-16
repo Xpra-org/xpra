@@ -1,3 +1,14 @@
+xpra (1.0.9-1) UNRELEASED; urgency=low
+  * fix window icons going back to default on window re-initialization
+  * fix stop command on MS Windows servers via named-pipe connections
+  * fix sound subprocess exit warnings on MS Windows
+  * fix spurious key events for numlock on Mac OS
+  * fix Mac OS shadow servers
+  * add support for Volta GPUs with NVENC
+  * make it easier to disable firewall scripts in RPM builds
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 16 Sep 2017 15:30:52 +0700
+
 xpra (1.0.8-1) UNRELEASED; urgency=low
   * fix Fedora 26 builds: must disable buggy systemd-run
   * fix sound output with pulseaudio systems (was invalid sink)

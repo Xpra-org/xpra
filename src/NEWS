@@ -1,3 +1,14 @@
+v1.0.9 (2017-09-16)
+======================
+	-- fix window icons going back to default on window re-initialization
+	-- fix stop command on MS Windows servers via named-pipe connections
+	-- fix sound subprocess exit warnings on MS Windows
+	-- fix spurious key events for numlock on Mac OS
+	-- fix Mac OS shadow servers
+	-- add support for Volta GPUs with NVENC
+	-- make it easier to disable firewall scripts in RPM builds
+
+
 v1.0.8 (2017-09-03)
 ======================
 	-- fix Fedora 26 builds: must disable buggy systemd-run

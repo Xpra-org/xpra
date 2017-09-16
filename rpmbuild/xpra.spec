@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.8
+%define version 1.0.9
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -607,6 +607,15 @@ fi
 
 
 %changelog
+* Sat Sep 16 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+- fix window icons going back to default on window re-initialization
+- fix stop command on MS Windows servers via named-pipe connections
+- fix sound subprocess exit warnings on MS Windows
+- fix spurious key events for numlock on Mac OS
+- fix Mac OS shadow servers
+- add support for Volta GPUs with NVENC
+- make it easier to disable firewall scripts in RPM builds
+
 * Sun Sep 03 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
 - fix Fedora 26 builds: must disable buggy systemd-run
 - fix sound output with pulseaudio systems (was invalid sink)
