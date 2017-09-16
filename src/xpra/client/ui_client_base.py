@@ -3281,7 +3281,6 @@ class UIXpraClient(XpraClientBase):
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) window=%s", wid, w, h, pixel_format, len(data), window)
         if window:
             window.update_icon(w, h, pixel_format, data)
-            window._current_icon = (w, h, pixel_format, data)
 
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
