@@ -784,6 +784,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 bw, bh = window._backing.size
             except:
                 bw, bh = ww, wh
+            icon = window._current_icon
             client_properties = window._client_properties
             metadata = window._metadata
             override_redirect = window._override_redirect
@@ -824,6 +825,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     backing._video_decoder = video_decoder
                     backing._csc_decoder = csc_decoder
                     backing._decoder_lock = decoder_lock
+                window._current_icon = icon
             finally:
                 if decoder_lock:
                     decoder_lock.release()
