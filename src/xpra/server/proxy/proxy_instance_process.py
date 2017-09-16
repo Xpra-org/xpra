@@ -8,6 +8,7 @@ import socket
 import os
 import signal
 from threading import Timer
+from weakref import WeakValueDictionary
 from time import sleep
 
 from xpra.log import Logger
@@ -25,7 +26,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, AtomicInteger, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
@@ -104,6 +105,8 @@ class ProxyInstanceProcess(Process):
         self.control_socket_path = None
         self.potential_protocols = []
         self.max_connections = MAX_CONCURRENT_CONNECTIONS
+        self.timer_id = AtomicInteger()
+        self.timers = WeakValueDictionary()
 
     def server_message_queue(self):
         while True:
@@ -129,22 +132,37 @@ class ProxyInstanceProcess(Process):
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(SIGNAMES.get(signum, signum))
 
+    def source_remove(self, tid):
+        try:
+            self.timers[tid].cancel()
+            del self.timers[tid]
+        except:
+            pass
+
     def idle_add(self, fn, *args, **kwargs):
-        #we emulate gobject's idle_add using a simple queue
-        self.main_queue.put((fn, args, kwargs))
+        return self.do_timeout_add(0, fn, *args, **kwargs)
 
     def timeout_add(self, timeout, fn, *args, **kwargs):
-        #emulate gobject's timeout_add using idle add and a Timer
-        #using custom functions to cancel() the timer when needed
-        def idle_exec():
+        return self.do_timeout_add(timeout, fn, *args, **kwargs)
+
+    def do_timeout_add(self, timeout, fn, *args, **kwargs):
+        #emulate gobject's timeout_add using Timers
+        tid = self.timer_id.increase()
+        def call_fn():
+            try:
+                del self.timers[tid]
+            except:
+                pass
             v = fn(*args, **kwargs)
             if bool(v):
-                self.timeout_add(timeout, fn, *args, **kwargs)
-            return False
+                self.do_timeout_add(timeout, fn, *args, **kwargs)
         def timer_exec():
-            #just run via idle_add:
-            self.idle_add(idle_exec)
-        Timer(timeout/1000.0, timer_exec).start()
+            #add to run queue:
+            self.main_queue.put((call_fn, [], {}))
+        t = Timer(timeout/1000.0, timer_exec)
+        self.timers[tid] = t
+        t.start()
+        return tid
 
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
