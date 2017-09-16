@@ -36,7 +36,7 @@ from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
-from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, \
+from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choose_digest, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
@@ -1281,10 +1281,10 @@ class ServerCore(object):
                         authlog.warn("Warning: authentication module '%s' does not require any credentials", proto.authenticator)
                         authlog.warn(" but the client %s supplied them", proto)
                         #fake challenge so the client will send the real hello:
-                        salt, digest = get_salt(), "hmac"
+                        salt, digest = get_salt(), choose_digest(digest_modes)
                     else:
                         salt, digest = challenge
-                        authlog("get_challenge(%s)= %s, %s", digest_modes, salt, nonl(challenge))
+                        authlog("get_challenge(%s)= %s, %s", digest_modes, binascii.hexlify(salt), digest)
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                         authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
                     if digest not in digest_modes:
