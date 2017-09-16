@@ -1403,6 +1403,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
 
     def update_icon(self, width, height, coding, data):
+        self._current_icon = (width, height, coding, data)
         coding = bytestostr(coding)
         iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         if PYTHON3 and WIN32:

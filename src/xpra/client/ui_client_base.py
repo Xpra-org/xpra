@@ -689,6 +689,7 @@ class UIXpraClient(XpraClientBase):
             #with opengl, the buffers sometimes contain garbage after resuming,
             #this should create new backing buffers:
             self.reinit_windows()
+        self.reinit_window_icons()
 
 
     def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
@@ -988,6 +989,7 @@ class UIXpraClient(XpraClientBase):
         if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
             screenlog.info("screen size change: will reinit the windows")
             self.reinit_windows()
+            self.reinit_window_icons()
 
 
     def update_screen_size(self):
@@ -1111,6 +1113,7 @@ class UIXpraClient(XpraClientBase):
                 minx, miny = self.max_window_size
             return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
         self.reinit_windows(new_size_fn)
+        self.reinit_window_icons()
         self.emit("scaling-changed")
 
 
@@ -2817,6 +2820,13 @@ class UIXpraClient(XpraClientBase):
         for window in self._id_to_window.values():
             window.deiconify()
 
+
+    def reinit_window_icons(self):
+        #make sure the window icons are the ones we want:
+        for window in self._id_to_window.values():
+            reset_icon = getattr(window, "reset_icon", None)
+            if reset_icon:
+                reset_icon()
 
     def reinit_windows(self, new_size_fn=None):
         def fake_send(*args):
