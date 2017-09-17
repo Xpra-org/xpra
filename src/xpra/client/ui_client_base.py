@@ -1402,14 +1402,19 @@ class UIXpraClient(XpraClientBase):
                 title = metadata.get("title", "")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
+                close = None
                 if matching_title_close:
-                    log.info("window-close event on %s window, disconnecting", title)
-                    self.quit(0)
-                    return True
-                if class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
-                    log.info("window-close event on %s window, disconnecting", class_instance[0])
-                    self.quit(0)
-                    return True
+                    close = "window-close event on %s window" % title
+                elif class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
+                    close = "window-close event on %s window" % class_instance[0]
+                if close:
+                    #honour this close request if there are no other windows:
+                    if len(self._id_to_window)==1:
+                        log.info("%s, disconnecting", close)
+                        self.quit(0)
+                        return True
+                    else:
+                        log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
             #default to forward:
             self.send("close-window", wid)
         else:
