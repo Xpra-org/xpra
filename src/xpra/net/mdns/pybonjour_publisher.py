@@ -52,7 +52,7 @@ class BonjourPublishers:
             iface_index = get_interface_index(host)
             log("iface_index(%s)=%s", host, iface_index)
             td = text_dict
-            if SHOW_INTERFACE and if_indextoname:
+            if iface_index is not None and SHOW_INTERFACE and if_indextoname:
                 td = text_dict.copy()
                 td["iface"] = if_indextoname(iface_index)
             txt = pybonjour.TXTRecord(td)

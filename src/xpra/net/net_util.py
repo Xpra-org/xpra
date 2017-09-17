@@ -114,6 +114,8 @@ def get_iface(ip):
 	log("get_iface(%s)", ip)
 	if not ip:
 		return	None
+	if ip.find("%")>=0:
+		return ip.split("%", 1)[1]
 	if ip.find(":")>=0:
 		#ipv6?
 		return None
@@ -220,6 +222,15 @@ def get_net_sys_config():
 							subdict = subdict.setdefault(sub, {})
 						for sub in ("ip", "tcp", "ipfrag", "icmp", "igmp"):
 							if name.startswith("%s_" % sub):
+else:
+	def if_nametoindex(iface):
+		#IPv6 addresses give us the interface as a string:
+		#fe80:....%11, so try to convert "11" into 11
+		try:
+			return int(iface)
+		except:
+			return None
+
 								name = name[len(sub)+1:]
 								subdict = subdict.setdefault(sub, {})
 								break
