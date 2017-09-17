@@ -649,22 +649,22 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    netlog("setting up SSL sockets: %s", bind_ssl)
+    netlog("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
         add_tcp_socket("SSL", host, iport)
-    netlog("setting up https / wss (secure websockets): %s", bind_wss)
+    netlog("setting up https / wss (secure websockets): %s", csv(bind_wss))
     for host, iport in bind_wss:
         add_tcp_socket("wss", host, iport)
     tcp_ssl = ssl_opt in TRUE_OPTIONS or (ssl_opt=="auto" and opts.ssl_cert)
-    netlog("setting up TCP sockets: %s", bind_tcp)
+    netlog("setting up TCP sockets: %s", csv(bind_tcp))
     for host, iport in bind_tcp:
         add_tcp_socket("tcp", host, iport)
         if tcp_ssl:
             add_mdns("ssl", host, iport)
-    netlog("setting up UDP sockets: %s", bind_udp)
+    netlog("setting up UDP sockets: %s", csv(bind_udp))
     for host, iport in bind_udp:
         add_udp_socket("udp", host, iport)
-    netlog("setting up http / ws (websockets): %s", bind_ws)
+    netlog("setting up http / ws (websockets): %s", csv(bind_ws))
     for host, iport in bind_ws:
         add_tcp_socket("ws", host, iport)
         if tcp_ssl:
@@ -672,10 +672,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if bind_rfb and (proxying or starting):
         log.warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
     else:
-        netlog("setting up rfb sockets: %s", bind_rfb)
+        netlog("setting up rfb sockets: %s", csv(bind_rfb))
         for host, iport in bind_rfb:
             add_tcp_socket("rfb", host, iport)
-    netlog("setting up vsock sockets: %s", bind_vsock)
+    netlog("setting up vsock sockets: %s", csv(bind_vsock))
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
