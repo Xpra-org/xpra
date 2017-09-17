@@ -202,6 +202,15 @@ if not sys.platform.startswith("win"):
 		def if_indextoname(index):
 			s = create_string_buffer('\000' * 256)
 			return _libc.if_indextoname(c_uint(index), s)
+else:
+	def if_nametoindex(iface):
+		#IPv6 addresses give us the interface as a string:
+		#fe80:....%11, so try to convert "11" into 11
+		try:
+			return int(iface)
+		except:
+			return None
+
 
 net_sys_config = None
 def get_net_sys_config():
@@ -222,15 +231,6 @@ def get_net_sys_config():
 							subdict = subdict.setdefault(sub, {})
 						for sub in ("ip", "tcp", "ipfrag", "icmp", "igmp"):
 							if name.startswith("%s_" % sub):
-else:
-	def if_nametoindex(iface):
-		#IPv6 addresses give us the interface as a string:
-		#fe80:....%11, so try to convert "11" into 11
-		try:
-			return int(iface)
-		except:
-			return None
-
 								name = name[len(sub)+1:]
 								subdict = subdict.setdefault(sub, {})
 								break
