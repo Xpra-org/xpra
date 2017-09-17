@@ -97,7 +97,7 @@ def _dump_recursion_info():
 class NestedMainLoop(object):
     _stack = []
 
-    def __str(self):
+    def __repr__(self):
         return  "NestedMainLoop(%#x)" % id(self)
 
     @classmethod
