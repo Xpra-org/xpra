@@ -113,6 +113,7 @@ def do_get_bind_IPs():
             log.error(" %s", iface, e)
         iface_ipmasks[iface] = if_ipmasks
     log("do_get_bind_IPs()=%s", ips)
+    log("iface_ipmasks=%s", iface_ipmasks)
     return ips
 
 def do_get_bind_ifacemask(iface):
@@ -136,6 +137,8 @@ def get_iface(ip):
     log("get_iface(%s)", ip)
     if not ip:
         return None
+    if ip.find("%")>=0:
+        return ip.split("%", 1)[1]
     if ip.find(":")>=0:
         #ipv6?
         return None
