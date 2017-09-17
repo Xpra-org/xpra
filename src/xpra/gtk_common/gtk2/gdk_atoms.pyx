@@ -5,24 +5,15 @@
 # later version. See the file COPYING for details.
 
 # cython code for manipulating GdkAtoms
-# split from bindings.pyx as this needs to be built on win32 too
-# and win32 does not have all the X11 stuff
 
 #cython: wraparound=False
 from __future__ import absolute_import
 
 import gobject
-import gtk
-import gtk.gdk
+from gtk import gdk
 
 from libc.stdint cimport uintptr_t
 
-from xpra.log import Logger
-log = Logger("gtk")
-
-###################################
-# Headers, python magic
-###################################
 # Serious black magic happens here (I owe these guys beers):
 cdef extern from "pygobject.h":
     void pygobject_init(int req_major, int req_minor, int req_micro)
@@ -34,21 +25,15 @@ init_pygtk()
 # Now all the macros in those header files will work.
 
 cdef extern from "Python.h":
-    int PyObject_AsReadBuffer(object obj,
-                              void ** buffer,
-                              Py_ssize_t * buffer_len) except -1
+    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
-###################################
-# GObject
-###################################
-cdef extern from "gtk-2.0/gdk/gdktypes.h":
+cdef extern from "pygtk/pygtk.h":
     ctypedef unsigned long GdkAtom
-    GdkAtom GDK_NONE
-
-cdef extern from "pygtk-2.0/pygtk/pygtk.h":
-    # FIXME: this should have stricter type checking
     GdkAtom PyGdkAtom_Get(object)
     object PyGdkAtom_New(GdkAtom)
+
+cdef extern from "gdk/gdktypes.h":
+    GdkAtom GDK_NONE
 
 
 def gdk_atom_objects_from_gdk_atom_array(atom_string):
@@ -61,7 +46,6 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     # what they mean.
     cdef const GdkAtom * array = <GdkAtom*> NULL
     cdef Py_ssize_t array_len_bytes = 0
-    cdef long gdk_atom_value = 0
     assert PyObject_AsReadBuffer(atom_string, <const void**> &array, &array_len_bytes)==0
     array_len = array_len_bytes / sizeof(GdkAtom)
     objects = []
@@ -72,9 +56,10 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
         objects.append(gdk_atom)
     return objects
 
-def gdk_atom_array_from_gdk_atom_objects(gdk_atom_objects):
+def gdk_atom_array_from_atoms(atoms):
     cdef GdkAtom c_gdk_atom
-    cdef unsigned long gdk_atom_value
+    cdef uintptr_t gdk_atom_value
+    gdk_atom_objects = [gdk.atom_intern(a, False) for a in atoms]
     atom_array = []
     for atom_object in gdk_atom_objects:
         c_gdk_atom = PyGdkAtom_Get(atom_object)

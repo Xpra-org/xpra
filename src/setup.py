@@ -172,7 +172,7 @@ netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
-clipboard_ENABLED       = DEFAULT and not PYTHON3
+clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None          #None means auto-detect
 Xdummy_wrapper_ENABLED  = None          #None means auto-detect
 if WIN32 or OSX:
@@ -918,6 +918,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/monotonic_time.c",
                    "xpra/gtk_common/gtk2/gdk_atoms.c",
                    "xpra/gtk_common/gtk2/gdk_bindings.c",
+                   "xpra/gtk_common/gtk3/gdk_atoms.c",
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
@@ -1843,10 +1844,16 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
-    cython_add(Extension("xpra.gtk_common.gtk2.gdk_atoms",
-                ["xpra/gtk_common/gtk2/gdk_atoms.pyx"],
-                **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
-                ))
+    if PYTHON3:
+        cython_add(Extension("xpra.gtk_common.gtk3.gdk_atoms",
+                             ["xpra/gtk_common/gtk3/gdk_atoms.pyx"],
+                             **pkgconfig("gtk+-3.0")
+                             ))
+    else:
+        cython_add(Extension("xpra.gtk_common.gtk2.gdk_atoms",
+                             ["xpra/gtk_common/gtk2/gdk_atoms.pyx"],
+                             **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                             ))
 
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
 if client_ENABLED or server_ENABLED:

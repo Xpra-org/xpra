@@ -131,7 +131,7 @@ class GTKStatusIconTray(TrayBase):
             self.tray_widget.set_blinking(on)
 
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options={}):
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.set_icon_from_pixbuf(tray_icon)
 
@@ -150,8 +150,7 @@ class GTKStatusIconTray(TrayBase):
             if tw!=th:
                 #paste the scaled icon in the middle of the rectangle:
                 minsize = min(tw, th)
-                new_icon = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, tw, th)
-                new_icon.fill(0)
+                new_icon = get_pixbuf_from_data("\0"*tw*th*4, True, tw, th, tw*4)
                 scaled_w, scaled_h = minsize, minsize
                 if tw==24 and th==64:
                     #special case for the gnome-shell dimensions - stretch height..

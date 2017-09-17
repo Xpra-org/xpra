@@ -6,20 +6,26 @@
 
 import struct
 
-from xpra.gtk_common.gtk2.gdk_atoms import (
-                gdk_atom_objects_from_gdk_atom_array,   #@UnresolvedImport
-                gdk_atom_array_from_gdk_atom_objects    #@UnresolvedImport
-                )
-
-from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, log
+from xpra.gtk_common.gobject_compat import is_gtk3
+from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, _filter_targets, log
 
 try:
-    from xpra.gtk_common.gtk2.gdk_bindings import sanitize_gtkselectiondata
-    from xpra.clipboard import clipboard_base
-    clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
+    if is_gtk3():
+        from xpra.gtk_common.gtk3 import gdk_atoms  #@UnresolvedImport, @UnusedImport
+    else:
+        from xpra.gtk_common.gtk2 import gdk_atoms  #@UnresolvedImport, @Reimport
 except ImportError as e:
-    log.error("Error: sanitize_gtkselectiondata not found:")
+    log.error("Error: gdk atoms library not found:")
     log.error(" %s", e)
+    gdk_atoms = None
+if not is_gtk3():
+    try:
+        from xpra.gtk_common.gtk2.gdk_bindings import sanitize_gtkselectiondata
+        from xpra.clipboard import clipboard_base
+        clipboard_base.sanitize_gtkselectiondata = sanitize_gtkselectiondata
+    except ImportError as e:
+        log.error("Error: sanitize_gtkselectiondata not found:")
+        log.error(" %s", e)
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
@@ -32,27 +38,22 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
 
 
     def _do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data):
-        if dataformat == 32 and datatype in ("ATOM", "ATOM_PAIR"):
-            log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s:%s) using gdk atom code", target, datatype, dataformat, type(data), len(data), list(data))
+        if dataformat==32 and datatype in (b"ATOM", b"ATOM_PAIR") and gdk_atoms:
             # Convert to strings and send that. Bizarrely, the atoms are
             # not actual X atoms, but an array of GdkAtom's reinterpreted
             # as a byte buffer.
-            atoms = gdk_atom_objects_from_gdk_atom_array(data)
+            atoms = gdk_atoms.gdk_atom_objects_from_gdk_atom_array(data)
             log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s", target, datatype, dataformat, type(data), len(data), list(atoms))
             atom_names = [str(atom) for atom in atoms]
-            log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atom_names=%s", target, datatype, dataformat, type(data), len(data), atom_names)
-            if target=="TARGETS":
-                atom_names = self._filter_targets(atom_names)
+            if target==b"TARGETS":
+                atom_names = _filter_targets(atom_names)
             return "atoms", atom_names
         return ClipboardProtocolHelperBase._do_munge_raw_selection_to_wire(self, target, datatype, dataformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data):
-        log("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s:%s)", encoding, datatype, dataformat, type(data), len(data or ""), list(data or ""))
-        if encoding == "atoms":
-            import gtk.gdk
-            gdk_atoms = [gtk.gdk.atom_intern(a) for a in data]
-            atom_array = gdk_atom_array_from_gdk_atom_objects(gdk_atoms)
+        if encoding==b"atoms" and gdk_atoms:
+            atom_array = gdk_atoms.gdk_atom_array_from_atoms(data)
             bdata = struct.pack("@" + "L" * len(atom_array), *atom_array)
-            log("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), gdk_atoms, atom_array, list(bdata))
+            log("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), data, atom_array, list(bdata))
             return bdata
         return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data)

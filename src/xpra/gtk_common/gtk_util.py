@@ -7,7 +7,7 @@
 import os.path
 import array
 from xpra.util import iround
-from xpra.os_util import strtobytes, WIN32
+from xpra.os_util import strtobytes, bytestostr, WIN32
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_pixbufloader, import_pango, import_cairo, import_gobject, import_pixbuf, is_gtk3
 gtk     = import_gtk()
 gdk     = import_gdk()
@@ -89,7 +89,7 @@ if is_gtk3():
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         data = array.array('B', strtobytes(rgb_data))
         return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
-                                         True, 8, w, h, rowstride,
+                                         has_alpha, 8, w, h, rowstride,
                                          None, None)
 
     def get_preferred_size(widget):
@@ -248,9 +248,36 @@ if is_gtk3():
     CLIPBOARD_SELECTION = {}
     #gtk2: uses strings:
     for x in ("PRIMARY", "SECONDARY", "CLIPBOARD"):
-        CLIPBOARD_SELECTION[x] = getattr(gdk, "SELECTION_%s" % x)
+        CLIPBOARD_SELECTION[x] = getattr(gdk, "SELECTION_%s" % bytestostr(x))
     def GetClipboard(selection):
         return Clipboard.get(CLIPBOARD_SELECTION[selection])
+    def clipboard_request_contents(clipboard, target, unpack):
+        target_atom = gdk.Atom.intern(bytestostr(target), False)
+        clipboard.request_contents(target_atom, unpack)
+
+    def selection_owner_set(widget, selection, time=0):
+        selection_atom = gdk.Atom.intern(bytestostr(selection), False)
+        return gtk.selection_owner_set(widget, selection_atom, time)
+    def selection_add_target(widget, selection, target, info=0):
+        selection_atom = gdk.Atom.intern(bytestostr(selection), False)
+        target_atom = gdk.Atom.intern(bytestostr(target), False)
+        gtk.selection_add_target(widget, selection_atom, target_atom, info)
+    def selectiondata_get_selection(selectiondata):
+        return selectiondata.get_selection().name()
+    def selectiondata_get_target(selectiondata):
+        return selectiondata.get_target().name()
+    def selectiondata_get_data_type(selectiondata):
+        return selectiondata.get_data_type()
+    def selectiondata_get_format(selectiondata):
+        return selectiondata.get_format()
+    def selectiondata_get_data(selectiondata):
+        return selectiondata.get_data()
+    def selectiondata_set(selectiondata, dtype, dformat, data):
+        type_atom = gdk.Atom.intern(bytestostr(dtype), False)
+        return selectiondata.set(type_atom, dformat, data)
+
+    def atom_intern(atom_name, only_if_exits=False):
+        return gdk.Atom.intern(bytestostr(atom_name), only_if_exits)
 
     #copied from pygtkcompat - I wished I had found this earlier..
     orig_pack_end = gtk.Box.pack_end
@@ -413,6 +440,28 @@ else:
 
     def GetClipboard(selection):
         return gtk.Clipboard(selection=selection)
+    def clipboard_request_contents(clipboard, target, unpack):
+        clipboard.request_contents(target, unpack)
+    
+    def selection_owner_set(widget, selection, time=0):
+        return widget.selection_owner_set(selection, time)
+    def selection_add_target(widget, selection, target, info=0):
+        widget.selection_add_target(selection, target, info)
+    def selectiondata_get_selection(selectiondata):
+        return selectiondata.selection
+    def selectiondata_get_target(selectiondata):
+        return selectiondata.target
+    def selectiondata_get_data_type(selectiondata):
+        return selectiondata.type
+    def selectiondata_get_format(selectiondata):
+        return selectiondata.format
+    def selectiondata_get_data(selectiondata):
+        return selectiondata.data
+    def selectiondata_set(selectiondata, dtype, dformat, data):
+        return selectiondata.set(dtype, dformat, data)
+
+    def atom_intern(atom_name, only_if_exits=False):
+        return gdk.atom_intern(atom_name, only_if_exits)
 
     gdk_window_process_all_updates = gdk.window_process_all_updates
     def gtk_main():
@@ -675,7 +724,7 @@ def get_screen_info(display, screen):
         pass
     return info
 
-def get_monitor_info(display, screen, i):
+def get_monitor_info(_display, screen, i):
     info = {}
     geom = screen.get_monitor_geometry(i)
     for x in ("x", "y", "width", "height"):

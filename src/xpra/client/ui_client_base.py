@@ -829,7 +829,21 @@ class UIXpraClient(XpraClientBase):
         return []
 
     def make_clipboard_helper(self):
-        raise Exception("override me!")
+        """
+            Try the various clipboard classes until we find one
+            that loads ok. (some platforms have more options than others)
+        """
+        clipboard_options = self.get_clipboard_helper_classes()
+        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
+        for helperclass in clipboard_options:
+            try:
+                return self.setup_clipboard_helper(helperclass)
+            except ImportError as e:
+                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
+                clipboardlog.error(" %s", e)
+            except:
+                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
+        return None
 
 
     def make_notifier(self):
@@ -1849,16 +1863,21 @@ class UIXpraClient(XpraClientBase):
             if self.client_clipboard_direction=="disabled":
                 pass
             elif self.server_clipboard_direction=="disabled":
-                log.warn("Warning: server clipboard synchronization is currently disabled")
+                clipboardlog.warn("Warning: server clipboard synchronization is currently disabled")
                 self.client_clipboard_direction = "disabled"
             elif self.client_clipboard_direction=="both":
-                log.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
+                clipboardlog.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
                 self.client_clipboard_direction = self.server_clipboard_direction
             else:
-                log.warn("Warning: incompatible clipboard direction settings")
-                log.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
+                clipboardlog.warn("Warning: incompatible clipboard direction settings")
+                clipboardlog.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_supports_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
+        clipboardlog("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
+                     self.server_supports_clipboard, self.server_clipboard_direction, self.server_supports_clipboard_enable_selections)
+        clipboardlog("client clipboard: supported=%s, direction=%s",
+                     self.client_supports_clipboard, self.client_clipboard_direction)
+
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
@@ -1948,6 +1967,7 @@ class UIXpraClient(XpraClientBase):
         if self.clipboard_enabled:
             self.clipboard_helper = self.make_clipboard_helper()
             self.clipboard_enabled = self.clipboard_helper is not None
+            clipboardlog("clipboard helper=%s", self.clipboard_helper)
             if self.clipboard_enabled and self.server_supports_clipboard_enable_selections:
                 #tell the server about which selections we really want to sync with
                 #(could have been translated, or limited if the client only has one, etc)

@@ -63,8 +63,6 @@ class XpraClient(GTKXpraClient):
         tmhc.append(GTK3TrayMenu)
         return tmhc
 
-    def make_clipboard_helper(self):
-        return None
 
     def set_windows_cursor(self, windows, cursor_data):
         #avoid buggy win32 version:

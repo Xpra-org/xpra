@@ -7,7 +7,6 @@
 
 import gobject
 gobject.threads_init()
-import gtk
 from gtk import gdk
 
 
@@ -15,11 +14,9 @@ from xpra.gtk_common.gtk_util import gtk_main, color_parse
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.client.window_border import WindowBorder
-from xpra.net.compression import Compressible
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
-clipboardlog = Logger("gtk", "client", "clipboard")
 grablog = Logger("gtk", "client", "grab")
 
 from xpra.client.gtk2.border_client_window import BorderClientWindow
@@ -31,17 +28,10 @@ class XpraClient(GTKXpraClient):
         GTKXpraClient.__init__(self)
         self.UI_watcher = None
         self.border = None
-        self.local_clipboard_requests = 0
-        self.remote_clipboard_requests = 0
-        #only used with the translated clipboard class:
-        self.local_clipboard = ""
-        self.remote_clipboard = ""
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
         self.ClientWindowClass = BorderClientWindow
-        self.remote_clipboard = opts.remote_clipboard
-        self.local_clipboard = opts.local_clipboard
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add)
@@ -149,139 +139,6 @@ class XpraClient(GTKXpraClient):
         tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
         tmhc.append(GTK2TrayMenu)
         return tmhc
-
-
-    def process_clipboard_packet(self, packet):
-        clipboardlog("process_clipboard_packet(%s) level=%s", packet, gtk.main_level())
-        #check for clipboard loops:
-        from xpra.clipboard.clipboard_base import nesting_check
-        if not nesting_check():
-            self.clipboard_enabled = False
-            self.emit("clipboard-toggled")
-            return
-        self.idle_add(self.clipboard_helper.process_clipboard_packet, packet)
-
-
-    def get_clipboard_helper_classes(self):
-        from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
-        ct = self.client_clipboard_type
-        if ct and ct.lower() in FALSE_OPTIONS:
-            return []
-        from xpra.platform.features import CLIPBOARD_NATIVE_CLASS
-        from xpra.scripts.main import CLIPBOARD_CLASS
-        #first add the platform specific one, (may be None):
-        clipboard_options = []
-        if CLIPBOARD_CLASS:
-            clipboard_options.append(CLIPBOARD_CLASS)
-        if CLIPBOARD_NATIVE_CLASS:
-            clipboard_options.append(CLIPBOARD_NATIVE_CLASS)
-        clipboard_options.append("xpra.clipboard.gdk_clipboard.GDKClipboardProtocolHelper")
-        clipboard_options.append("xpra.clipboard.clipboard_base.DefaultClipboardProtocolHelper")
-        clipboard_options.append("xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper")
-        clipboardlog("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
-        if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
-            #try to match the string specified:
-            filtered = [x for x in clipboard_options if x.lower().find(self.client_clipboard_type)>=0]
-            if len(filtered)==0:
-                clipboardlog.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
-                clipboardlog.warn(" clipboard synchronization is disabled")
-                return []
-            clipboardlog(" found %i clipboard types matching '%s'", len(filtered), self.client_clipboard_type)
-            clipboard_options = filtered
-        #now try to load them:
-        clipboardlog("get_clipboard_helper_classes() options=%s", clipboard_options)
-        loadable = []
-        for co in clipboard_options:
-            try:
-                parts = co.split(".")
-                mod = ".".join(parts[:-1])
-                module = __import__(mod, {}, {}, [parts[-1]])
-                helperclass = getattr(module, parts[-1])
-                loadable.append(helperclass)
-            except ImportError as e:
-                clipboardlog("cannot load %s: %s", co, e)
-                continue
-        clipboardlog("get_clipboard_helper_classes()=%s", loadable)
-        return loadable
-
-    def make_clipboard_helper(self):
-        """
-            Try the various clipboard classes until we find one
-            that loads ok. (some platforms have more options than others)
-        """
-        clipboard_options = self.get_clipboard_helper_classes()
-        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
-        for helperclass in clipboard_options:
-            try:
-                return self.setup_clipboard_helper(helperclass)
-            except ImportError as e:
-                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
-                clipboardlog.error(" %s", e)
-            except:
-                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
-        return None
-
-    def setup_clipboard_helper(self, helperClass):
-        clipboardlog("setup_clipboard_helper(%s)", helperClass)
-        #first add the platform specific one, (may be None):
-        from xpra.platform.features import CLIPBOARDS
-        kwargs= {
-                 "clipboards.local"     : CLIPBOARDS,                   #all the local clipboards supported
-                 "clipboards.remote"    : self.server_clipboards,       #all the remote clipboards supported
-                 "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
-                 "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
-                 }
-        #only allow translation overrides if we have a way of telling the server about them:
-        if self.server_supports_clipboard_enable_selections:
-            kwargs.update({
-                 "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
-                 "clipboard.remote"     : self.remote_clipboard})       #the remote clipboard we want to we sync to (with the translated clipboard only)
-        clipboardlog("setup_clipboard_helper() kwargs=%s", kwargs)
-        def clipboard_send(*parts):
-            if not self.clipboard_enabled:
-                clipboardlog("clipboard is disabled, not sending clipboard packet")
-                return
-            #handle clipboard compression if needed:
-            packet = list(parts)
-            for i in range(len(packet)):
-                v = packet[i]
-                if type(v)==Compressible:
-                    #register the compressor which will fire in protocol.encode:
-                    def compress_clipboard():
-                        clipboardlog("compress_clipboard() compressing %s", v)
-                        return self.compressed_wrapper(v.datatype, v.data)
-                    v.compress = compress_clipboard
-            self.send_now(*packet)
-        def clipboard_progress(local_requests, remote_requests):
-            clipboardlog("clipboard_progress(%s, %s)", local_requests, remote_requests)
-            if local_requests is not None:
-                self.local_clipboard_requests = local_requests
-            if remote_requests is not None:
-                self.remote_clipboard_requests = remote_requests
-            n = self.local_clipboard_requests+self.remote_clipboard_requests
-            self.clipboard_notify(n)
-        def register_clipboard_toggled(*_args):
-            def clipboard_toggled(*_args):
-                #reset tray icon:
-                self.local_clipboard_requests = 0
-                self.remote_clipboard_requests = 0
-                self.clipboard_notify(0)
-            self.connect("clipboard-toggled", clipboard_toggled)
-        self.after_handshake(register_clipboard_toggled)
-        return helperClass(clipboard_send, clipboard_progress, **kwargs)
-
-    def clipboard_notify(self, n):
-        if not self.tray:
-            return
-        clipboardlog("clipboard_notify(%s)", n)
-        if n>0 and self.clipboard_enabled:
-            self.tray.set_icon("clipboard")
-            self.tray.set_tooltip("%s clipboard requests in progress" % n)
-            self.tray.set_blinking(True)
-        else:
-            self.tray.set_icon(None)    #None means back to default icon
-            self.tray.set_tooltip(self.get_tray_title())
-            self.tray.set_blinking(False)
 
 
     def make_hello(self):
