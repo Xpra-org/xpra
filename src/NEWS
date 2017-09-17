@@ -1,10 +1,14 @@
-v1.0.9 (2017-09-16)
+v1.0.9 (2017-09-17)
 ======================
 	-- fix window icons going back to default on window re-initialization
 	-- fix stop command on MS Windows servers via named-pipe connections
 	-- fix sound subprocess exit warnings on MS Windows
 	-- fix spurious key events for numlock on Mac OS
+	-- fix mDNS and IPv6 platform bugs (MS Windows and Mac OS)
+	-- fix unicode warnings on MS Windows
+	-- fix typo hiding pretty debug logging
 	-- fix Mac OS shadow servers
+	-- choose the strongest digest first
 	-- add mesa-dri-drivers dependency to RPM packages for OpenGL support
 	-- add support for Volta GPUs with NVENC
 	-- make it easier to disable firewall scripts in RPM builds
