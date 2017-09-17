@@ -85,7 +85,9 @@ class AvahiPublishers:
                         fqdn = socket.getfqdn(host)
                         log("getfqdn(%s)=%s", host, fqdn)
                     if fqdn.find(".")<0:
-                        log.warn("Warning: cannot find a fully qualified domain name for '%s'", host)
+                        if fqdn:
+                            fqdn += ".local"
+                        log("cannot find a fully qualified domain name for '%s', using: %s", host, fqdn)
                 except:
                     pass
             self.publishers.append(AvahiPublisher(bus, service_name, port, service_type, domain="", host=fqdn, text=txt, interface=iface_index))
