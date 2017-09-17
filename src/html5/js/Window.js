@@ -1203,14 +1203,12 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			var color = DEFAULT_BOX_COLORS[coding] || "white";
 			paint_box(color, x, y, width, height);
 		}
-		me.may_paint_now();
 	}
 
 	function paint_error(e) {
 		me.error("error painting", coding, e);
 		me.paint_pending = 0;
 		decode_callback(me.client, ""+e);
-		me.may_paint_now();
 	}
 
 	try {
@@ -1264,9 +1262,11 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					me.offscreen_canvas_ctx.drawImage(j, x, y);
 					painted();
 				}
+				me.may_paint_now();
 			};
 			j.onerror = function () {
 				paint_error("failed to load into image tag");
+				me.may_paint_now();
 			}
 			j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
 		}
@@ -1313,9 +1313,9 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				this._push_video_buffers();
 				//try to throttle input:
 				var delay = Math.max(10, 50*(this.video_buffers.length-25));
-				var me = this;
 				setTimeout(function() {
 					painted();
+					me.may_paint_now();
 				}, delay);
 				//this._debug("video queue: ", this.video_buffers.length);
 			}
