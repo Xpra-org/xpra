@@ -42,7 +42,7 @@ class DBUS_Notifier(NotifierBase):
         self.may_retry = True
         try:
             self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
-            self.dbusnotify.Notify("Xpra", 0, app_icon, summary, body, [], [], expire_timeout,
+            self.dbusnotify.Notify(app_name or "Xpra", 0, app_icon, summary, body, [], [], expire_timeout,
                  reply_handler = self.cbReply,
                  error_handler = self.cbError)
         except:
