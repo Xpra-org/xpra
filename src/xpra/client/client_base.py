@@ -340,7 +340,6 @@ class XpraClientBase(FileTransferHandler):
             self.quit(EXIT_INTERNAL_ERROR)
             return
         if challenge_response:
-            assert self.has_password(), "got a password challenge response but we don't have a password! (malicious or broken server?)"
             hello["challenge_response"] = challenge_response
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
@@ -551,14 +550,14 @@ class XpraClientBase(FileTransferHandler):
 
     def _process_challenge(self, packet):
         authlog("processing challenge: %s", packet[1:])
+        password = self.load_password()
+        self.send_challenge_reply(packet, password)
+
+    def send_challenge_reply(self, packet, password):
         def warn_server_and_exit(code, message, server_message="authentication failed"):
             authlog.error("Error: authentication failed:")
             authlog.error(" %s", message)
             self.disconnect_and_quit(code, server_message)
-        if not self.has_password():
-            warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "this server requires authentication, please provide a password", "no password available")
-            return
-        password = self.load_password()
         if not password:
             warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
             return

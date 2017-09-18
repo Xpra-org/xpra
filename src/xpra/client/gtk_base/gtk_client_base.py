@@ -7,7 +7,7 @@
 
 import os
 import weakref
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 gobject = import_gobject()
 gtk = import_gtk()
@@ -30,6 +30,7 @@ from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEF
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
+from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -47,6 +48,7 @@ missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
+PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -154,6 +156,56 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.start_new_command.destroy()
             self.start_new_command = None
         UIXpraClient.cleanup(self)
+
+
+    def _process_challenge(self, packet):
+        password = self.load_password()
+        if password:
+            self.send_challenge_reply(packet, password)
+            return
+        if not PASSWORD_PROMPT:
+            self.quit(EXIT_PASSWORD_REQUIRED)
+            return
+        dialog = gtk.Dialog("Server Authentication",
+               None,
+               gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+               (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,
+                gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+        def add(widget, padding=0):
+            a = gtk.Alignment(0.5, 0.5, 1, 1)
+            a.add(widget)
+            a.set_padding(padding, padding, padding, padding)
+            dialog.vbox.pack_start(a)
+        def handle_response(dialog, response):
+            password = password_input.get_text()
+            dialog.hide()
+            dialog.destroy()
+            if response!=gtk.RESPONSE_ACCEPT or not password:
+                self.quit(EXIT_PASSWORD_REQUIRED)
+                return
+            self.send_challenge_reply(packet, password)
+        pango = import_pango()
+        title = gtk.Label("Server Authentication")
+        title.modify_font(pango.FontDescription("sans 14"))
+        add(title, 16)
+        text = "Please enter the password"
+        try:
+            from xpra.net.bytestreams import pretty_socket
+            conn = self._protocol._conn
+            text += " for %s server %s" % (conn.socktype, pretty_socket(conn.remote))
+        except:
+            pass
+        add(gtk.Label(text), 10)
+        def password_activate(*_args):
+            handle_response(dialog, gtk.RESPONSE_ACCEPT)
+        password_input = gtk.Entry(max=255)
+        password_input.set_width_chars(32)
+        password_input.set_visibility(gtk.FALSE)
+        password_input.connect("activate", password_activate)
+        add(password_input, 10)
+        dialog.vbox.show_all()
+        dialog.connect("response", handle_response)
+        dialog.show()
 
 
     def show_start_new_command(self, *args):
