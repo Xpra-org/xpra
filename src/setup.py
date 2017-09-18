@@ -27,8 +27,6 @@ if sys.version[0]=='3' and sys.version<'3.4':
 import ssl
 assert ssl.SSLContext, "xpra requires a Python version with ssl.SSLContext support"
 
-from hashlib import md5
-
 print(" ".join(sys.argv))
 
 #*******************************************************************************
@@ -463,21 +461,6 @@ def add_data_files(target_dir, files):
     assert type(files) in (list, tuple)
     data_files.append((target_dir, files))
 
-
-def check_md5sums(md5sums):
-    print("Verifying md5sums:")
-    for filename, md5sum in md5sums.items():
-        if not os.path.exists(filename) or not os.path.isfile(filename):
-            sys.exit("ERROR: file %s is missing or not a file!" % filename)
-        sys.stdout.write("* %s: " % str(filename).ljust(52))
-        with open(filename, mode='rb') as f:
-            data = f.read()
-        m = md5()
-        m.update(data)
-        digest = m.hexdigest()
-        assert digest==md5sum, "md5 digest for file %s does not match, expected %s but found %s" % (filename, md5sum, digest)
-        sys.stdout.write("OK\n")
-        sys.stdout.flush()
 
 #for pretty printing of options:
 def print_option(prefix, k, v):
