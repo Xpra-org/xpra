@@ -113,6 +113,9 @@ def create_tcp_socket(host, iport):
     else:
         assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
+        from xpra.log import Logger
+        log = Logger("network")
+        log("socket.getaddrinfo(%s, %s, AF_INET6, SOCK_STREAM, 0, SOL_TCP)=%s", host, iport, res)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
