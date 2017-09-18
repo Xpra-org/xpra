@@ -105,11 +105,11 @@ class SysAuthenticator(object):
         self.salt = None
         password = self.get_password()
         if not password:
-            log.error("Error: %s authentication failed", self)
-            log.error(" no password defined for '%s'", self.username)
+            log.warn("Warning: %s authentication failed", self)
+            log.warn(" no password defined for '%s'", self.username)
             return False
         if not verify_digest(self.digest, password, salt, challenge_response):
-            log.error("Error: hmac password challenge for '%s' does not match", self.username)
+            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
             return False
         return True
 

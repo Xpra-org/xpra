@@ -28,11 +28,11 @@ class Authenticator(FileAuthenticatorBase):
         self.salt = None
         password = self.get_password()
         if not password:
-            log.error("Error: authentication failed")
-            log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
+            log.warn("Warning: authentication failed")
+            log.warn(" no password for '%s' in '%s'", self.username, self.password_filename)
             return False
         if not verify_digest(self.digest, password, salt, challenge_response):
-            log.error("Error: hmac password challenge for '%s' does not match", self.username)
+            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
             return False
         return True
 

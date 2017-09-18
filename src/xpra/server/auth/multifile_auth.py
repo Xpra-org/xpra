@@ -139,14 +139,14 @@ class Authenticator(FileAuthenticatorBase):
         self.salt = None
         entry = self.get_auth_info()
         if entry is None:
-            log.error("Error: authentication failed")
-            log.error(" no password for '%s' in '%s'", self.username, self.password_filename)
+            log.warn("Warning: authentication failed")
+            log.warn(" no password for '%s' in '%s'", self.username, self.password_filename)
             return None
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
         log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)))
         if not verify_digest(self.digest, fpassword, salt, challenge_response):
-            log.error("Error: hmac password challenge for '%s' does not match", self.username)
+            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
             return False
         self.sessions = uid, gid, displays, env_options, session_options
         return True
