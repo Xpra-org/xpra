@@ -3,11 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.client.notifications.notifier_base import NotifierBase, log
 #beware: this import has side-effects:
 import dbus.glib
 assert dbus.glib
 import dbus.exceptions
+
+NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
 
 
 def DBUS_Notifier_factory():
@@ -41,8 +44,12 @@ class DBUS_Notifier(NotifierBase):
             return
         self.may_retry = True
         try:
+            try:
+                app_str = NOTIFICATION_APP_NAME % app_name
+            except:
+                app_str = app_name or "Xpra"
             self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
-            self.dbusnotify.Notify(app_name or "Xpra", 0, app_icon, summary, body, [], [], expire_timeout,
+            self.dbusnotify.Notify(app_str, 0, app_icon, summary, body, [], [], expire_timeout,
                  reply_handler = self.cbReply,
                  error_handler = self.cbError)
         except:
