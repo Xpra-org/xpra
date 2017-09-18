@@ -643,13 +643,16 @@ class Delegate(NSObject):
                 log.error("Error in %s callback %s", name, callback, exc_info=True)
 
 
+def disable_focus_workaround():
+    NSApp.activateIgnoringOtherApps_(False)
+def enable_focus_workaround():
+    NSApp.activateIgnoringOtherApps_(True)
+
 class ClientExtras(object):
     def __init__(self, client, opts):
         if OSX_FOCUS_WORKAROUND:
-            def disable_focus_workaround(*_args):
-                NSApp.activateIgnoringOtherApps_(False)
-            def enable_focus_workaround(*_args):
-                NSApp.activateIgnoringOtherApps_(True)
+            def first_ui_received():
+                enable_focus_workaround()
                 client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
             client.connect("first-ui-received", enable_focus_workaround)
         swap_keys = opts and opts.swap_keys

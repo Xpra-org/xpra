@@ -177,6 +177,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
         def handle_response(dialog, response):
+            if OSX:
+                from xpra.platform.darwin.gui import disable_focus_workaround
+                disable_focus_workaround()
             password = password_input.get_text()
             dialog.hide()
             dialog.destroy()
@@ -205,6 +208,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         add(password_input, 10)
         dialog.vbox.show_all()
         dialog.connect("response", handle_response)
+        if OSX:
+            from xpra.platform.darwin.gui import enable_focus_workaround
+            enable_focus_workaround()
         dialog.show()
 
 
