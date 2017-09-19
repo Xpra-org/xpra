@@ -7,20 +7,17 @@
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 
-from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
+from xpra.client.gl.gtkgl_window_backing_base import GTKGLWindowBackingBase
 from gi.repository import GdkGLExt  #@UnresolvedImport
 
 
 """
 This is the gtk3 GObject Introspection version.
 """
-class GLPixmapBacking(GLWindowBackingBase):
-
-    def init_backing(self):
-        GLWindowBackingBase.init_backing(self)
+class GLPixmapBacking(GTKGLWindowBackingBase):
 
     def __repr__(self):
-        return "gtk3."+GLWindowBackingBase.__repr__(self)
+        return "gtk3."+GTKGLWindowBackingBase.__repr__(self)
 
     def get_gl_drawable(self):
         window = self._backing.get_window()

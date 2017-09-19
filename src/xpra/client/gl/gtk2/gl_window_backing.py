@@ -12,20 +12,20 @@ assert gtkgl is not None
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 
-from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
+from xpra.client.gl.gtkgl_window_backing_base import GTKGLWindowBackingBase
 
 
 """
 This is the gtk2 pygtkglext version.
 """
-class GLPixmapBacking(GLWindowBackingBase):
+class GLPixmapBacking(GTKGLWindowBackingBase):
 
     def init_backing(self):
-        GLWindowBackingBase.init_backing(self)
+        GTKGLWindowBackingBase.init_backing(self)
         self._backing.connect("expose_event", self.gl_expose_event)
 
     def __repr__(self):
-        return "gtk2."+GLWindowBackingBase.__repr__(self)
+        return "gtk2."+GTKGLWindowBackingBase.__repr__(self)
 
     def get_gl_drawable(self):
         return gtkgl.widget_get_gl_drawable(self._backing)

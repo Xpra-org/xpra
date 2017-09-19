@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time, OSX, POSIX
+from xpra.os_util import monotonic_time
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -32,16 +32,12 @@ if SAVE_BUFFERS:
     import numpy
     from PIL import Image, ImageOps
 
-from xpra.gtk_common.gtk_util import is_realized
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.spinner import cv
 from xpra.client.window_backing_base import WindowBackingBase
-from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
-from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, is_pyopengl_memoryview_safe
+from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -236,7 +232,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         WindowBackingBase.__init__(self, wid, window_alpha and GL_ALPHA_SUPPORTED)
 
-        self.idle_add = import_glib().idle_add
         self.init_gl_config(window_alpha)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
@@ -245,51 +240,17 @@ class GLWindowBackingBase(WindowBackingBase):
         self._backing.show()
 
     def init_gl_config(self, window_alpha):
-        #setup gl config:
-        alpha = GL_ALPHA_SUPPORTED and window_alpha
-        display_mode = get_DISPLAY_MODE(want_alpha=alpha)
-        self.glconfig = Config_new_by_mode(display_mode)
-        if self.glconfig is None and CAN_DOUBLE_BUFFER:
-            log("trying to toggle double-buffering")
-            display_mode &= ~MODE_DOUBLE
-            self.glconfig = Config_new_by_mode(display_mode)
-        if not self.glconfig:
-            raise Exception("cannot setup an OpenGL context")
+        raise NotImplementedError()
 
     def init_backing(self):
-        self._backing = GLDrawingArea(self.glconfig)
-        #must be overriden in subclasses to setup self._backing
-        assert self._backing
-        log("init_backing() backing=%s, alpha_enabled=%s", self._backing, self._alpha_enabled)
-        if self._alpha_enabled:
-            assert GL_ALPHA_SUPPORTED, "BUG: cannot enable alpha if GL backing does not support it!"
-            screen = self._backing.get_screen()
-            rgba = screen.get_rgba_colormap()
-            display = screen.get_display()
-            if not display.supports_composite() and not OSX:
-                log.warn("display %s does not support compositing, transparency disabled", display.get_name())
-                self._alpha_enabled = False
-            elif rgba:
-                log("%s.__init__() using rgba colormap %s", self, rgba)
-                self._backing.set_colormap(rgba)
-            else:
-                log.warn("Warning: failed to enable transparency, no RGBA colormap")
-                self._alpha_enabled = False
-        self._backing.set_events(self._backing.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
+        raise NotImplementedError()
+
+    def gl_context(self):
+        raise NotImplementedError()
+
 
     def get_bit_depth(self, pixel_depth=0):
-        gl_depth = self.glconfig.get_depth()
-        log("get_bit_depth() glconfig depth=%i, HIGH_BIT_DEPTH=%s, requested pixel depth=%i", gl_depth, HIGH_BIT_DEPTH, pixel_depth)
-        bit_depth = 24
-        if HIGH_BIT_DEPTH:
-            if pixel_depth==0:
-                #auto detect
-                if POSIX and gl_depth>=24:
-                    bit_depth = gl_depth
-            elif pixel_depth>0:
-                bit_depth = pixel_depth
-        log("get_bit_depth()=%i", bit_depth)
-        return bit_depth
+        return pixel_depth or 24
 
     def init_formats(self):
         self.RGB_MODES = list(GLWindowBackingBase.RGB_MODES)
@@ -417,26 +378,6 @@ class GLWindowBackingBase(WindowBackingBase):
             else:
                 log("%s shader initialized", name)
 
-    def gl_context(self):
-        b = self._backing
-        if not b:
-            log("cannot get an OpenGL context: no backing defined")
-            return None
-        if not is_realized(b):
-            log.error("Error: OpenGL backing %s is not realized", b)
-            return None
-        w, h = self.size
-        if w<=0 or h<=0:
-            log.error("Error: invalid OpenGL backing size: %ix%i", w, h)
-            return None
-        try:
-            context = GLContextManager(b)
-        except Exception as e:
-            log.error("Error: %s", e)
-            return None
-        log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
-        return context
-
     def gl_init(self):
         #must be called within a context!
         #performs init if needed
@@ -522,6 +463,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self._backing = None
             b.destroy()
         self.glconfig = None
+
 
     def paint_scroll(self, scroll_data, options, callbacks):
         flush = options.intget("flush", 0)
