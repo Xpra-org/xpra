@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time, PYTHON3
+from xpra.os_util import monotonic_time, strtobytes
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -837,17 +837,16 @@ class GLWindowBackingBase(WindowBackingBase):
                 #not safe, make a copy :(
                 return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
-        elif t in (str, buffer_type) and zerocopy_upload and not PYTHON3:
+        elif t in (bytes, buffer_type) and zerocopy_upload:
             #we can zerocopy if we wrap it:
             return "zerocopy:buffer-as-memoryview", memoryview(img_data)
-        elif t!=str:
+        elif t==bytes:
+            return "copy:bytes", img_data
+        else:
             if hasattr(img_data, "raw"):
                 return "zerocopy:mmap", img_data.raw
             #everything else.. copy to bytes (aka str):
-            return "copy:str(%s)" % t, str(img_data)
-        else:
-            #str already
-            return "copy:str", img_data
+            return "copy:bytes(%s)" % t, strtobytes(img_data)
 
     def set_alignment(self, width, rowstride, pixel_format):
         bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4

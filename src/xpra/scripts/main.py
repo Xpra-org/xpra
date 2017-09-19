@@ -2667,7 +2667,7 @@ def no_gtk():
 
 def run_glcheck(opts):
     from xpra.util import pver
-    from xpra.client.gl.gl_check import check_support
+    from xpra.client.gl.gtk_base.gtkgl_check import check_support
     try:
         props = check_support(force_enable=opts.opengl)
     except Exception as e:
