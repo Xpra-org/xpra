@@ -12,7 +12,6 @@ from xpra.os_util import monotonic_time
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
-fpslog = Logger("opengl", "fps")
 
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
@@ -247,6 +246,12 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_context(self):
         raise NotImplementedError()
 
+    def gl_show(self, rect_count):
+        raise NotImplementedError()
+
+    def is_double_buffered(self):
+        raise NotImplementedError()
+
 
     def get_bit_depth(self, pixel_depth=0):
         return pixel_depth or 24
@@ -453,7 +458,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if b:
             self._backing = None
             b.destroy()
-        self.glconfig = None
 
 
     def paint_scroll(self, scroll_data, options, callbacks):
@@ -568,7 +572,7 @@ class GLWindowBackingBase(WindowBackingBase):
         bw, bh = self.size
         ww, wh = self.render_size
         rect_count = len(self.pending_fbo_paint)
-        if self.glconfig.is_double_buffered() or bw!=ww or bh!=wh:
+        if self.is_double_buffered() or bw!=ww or bh!=wh:
             #refresh the whole window:
             rectangles = ((0, 0, bw, bh), )
         else:
@@ -636,6 +640,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.draw_border()
 
         # Show the backbuffer on screen
+        glFlush()
         self.gl_show(rect_count)
         self.gl_frame_terminator()
 
@@ -802,23 +807,6 @@ class GLWindowBackingBase(WindowBackingBase):
         if not cursor_data:
             return
         self.cursor_data = cursor_data
-
-
-    def gl_show(self, rect_count):
-        start = monotonic_time()
-        if self.glconfig.is_double_buffered():
-            # Show the backbuffer on screen
-            log("%s.gl_show() swapping buffers now", self)
-            gldrawable = self.get_gl_drawable()
-            gldrawable.swap_buffers()
-        else:
-            #just ensure stuff gets painted:
-            log("%s.gl_show() flushing", self)
-            glFlush()
-        end = monotonic_time()
-        flush_elapsed = end-self.last_flush
-        self.last_flush = end
-        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
 
 
     def paint_box(self, encoding, is_delta, x, y, w, h):

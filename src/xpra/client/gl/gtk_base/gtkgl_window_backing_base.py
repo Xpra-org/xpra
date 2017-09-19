@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, monotonic_time
 from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("opengl")
+fpslog = Logger("opengl", "fps")
 
 HIGH_BIT_DEPTH = envbool("XPRA_HIGH_BIT_DEPTH", True)
 FORCE_HIGH_BIT_DEPTH = envbool("XPRA_FORCE_HIGH_BIT_DEPTH", False)
@@ -41,6 +42,10 @@ class GTKGLWindowBackingBase(GLWindowBackingBase):
             self.glconfig = Config_new_by_mode(display_mode)
         if not self.glconfig:
             raise Exception("cannot setup an OpenGL context")
+
+    def is_double_buffered(self):
+        return self.glconfig.is_double_buffered()
+
 
     def init_backing(self):
         self._backing = GLDrawingArea(self.glconfig)
@@ -96,3 +101,22 @@ class GTKGLWindowBackingBase(GLWindowBackingBase):
             return None
         log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
         return context
+
+    def gl_show(self, rect_count):
+        start = monotonic_time()
+        if self.glconfig.is_double_buffered():
+            # Show the backbuffer on screen
+            log("%s.gl_show() swapping buffers now", self)
+            gldrawable = self.get_gl_drawable()
+            gldrawable.swap_buffers()
+        else:
+            #glFlush was enough
+            pass
+        end = monotonic_time()
+        flush_elapsed = end-self.last_flush
+        self.last_flush = end
+        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
+
+    def close(self):
+        GLWindowBackingBase.close(self)
+        self.glconfig = None
