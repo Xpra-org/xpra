@@ -8,10 +8,11 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, PYTHON3
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
+fpslog = Logger("opengl", "fps")
 
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
@@ -246,7 +247,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_context(self):
         raise NotImplementedError()
 
-    def gl_show(self, rect_count):
+    def do_gl_show(self, rect_count):
         raise NotImplementedError()
 
     def is_double_buffered(self):
@@ -836,7 +837,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 #not safe, make a copy :(
                 return "copy:memoryview.tobytes", img_data.tobytes()
             return "zerocopy:memoryview", img_data
-        elif t in (str, buffer_type) and zerocopy_upload:
+        elif t in (str, buffer_type) and zerocopy_upload and not PYTHON3:
             #we can zerocopy if we wrap it:
             return "zerocopy:buffer-as-memoryview", memoryview(img_data)
         elif t!=str:
@@ -1061,3 +1062,12 @@ class GLWindowBackingBase(WindowBackingBase):
             # Reset state to our default (YUV painting)
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
         glActiveTexture(GL_TEXTURE0)
+
+
+    def gl_show(self, rect_count):
+        start = monotonic_time()
+        self.do_gl_show(rect_count)
+        end = monotonic_time()
+        flush_elapsed = end-self.last_flush
+        self.last_flush = end
+        fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
