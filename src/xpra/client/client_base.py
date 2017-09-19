@@ -559,7 +559,10 @@ class XpraClientBase(FileTransferHandler):
             authlog.error(" %s", message)
             self.disconnect_and_quit(code, server_message)
         if not password:
-            warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
+            if self.password_file:
+                warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
+            else:
+                warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
             return
         server_salt = packet[1]
         if self.encryption:
