@@ -4,15 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo, import_glib
 gdk             = import_gdk()
 gobject         = import_gobject()
 cairo           = import_cairo()
 PixbufLoader    = import_pixbufloader()
+glib            = import_glib()
 
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.gtk_common.paint_colors import get_paint_box_color
-from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.window_backing_base import WindowBackingBase
+from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.codecs.loader import get_codec
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
 
@@ -28,7 +30,13 @@ for x in (f for f in dir(cairo) if f.startswith("FORMAT_")):
 """
 Superclass for gtk2 and gtk3 cairo implementations.
 """
-class CairoBackingBase(GTKWindowBacking):
+class CairoBackingBase(WindowBackingBase):
+
+    HAS_ALPHA = GTK_ALPHA_SUPPORTED
+
+    def __init__(self, wid, window_alpha, _pixel_depth=0):
+        WindowBackingBase.__init__(self, wid, window_alpha and GTK_ALPHA_SUPPORTED)
+        self.idle_add = glib.idle_add
 
     def init(self, ww, wh, w, h):
         self.size = w, h

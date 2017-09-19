@@ -4,10 +4,11 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.client_widget_base import ClientWidgetBase
+from xpra.client.window_backing_base import WindowBackingBase
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
 log = Logger("tray")
 
-from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
 
 
 class ClientTray(ClientWidgetBase):
@@ -171,7 +172,7 @@ class ClientTray(ClientWidgetBase):
         return "ClientTray(%s)" % self._id
 
 
-class TrayBacking(GTKWindowBacking):
+class TrayBacking(WindowBackingBase):
     """
         This backing only stores the rgb pixels so
         we can use them with the real widget.
@@ -182,9 +183,10 @@ class TrayBacking(GTKWindowBacking):
     RGB_MODES = ["RGBA", "RGBX"]
     HAS_ALPHA = True
 
-    def __init__(self, wid, w, h, has_alpha, data=None):
+    def __init__(self, wid, _w, _h, _has_alpha, data=None):
         self.data = data
-        GTKWindowBacking.__init__(self, wid, True)
+        WindowBackingBase.__init__(self, wid, True)
+        self.idle_add = import_glib().idle_add
         self._backing = object()    #pretend we have a backing structure
 
     def get_encoding_properties(self):

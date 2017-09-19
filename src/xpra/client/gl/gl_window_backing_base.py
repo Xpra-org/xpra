@@ -33,12 +33,13 @@ if SAVE_BUFFERS:
     from PIL import Image, ImageOps
 
 from xpra.gtk_common.gtk_util import is_realized
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.spinner import cv
-from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.gl.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
 from xpra.client.gl.gl_check import get_DISPLAY_MODE, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, is_pyopengl_memoryview_safe
 from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
@@ -207,7 +208,7 @@ textured quad when requested, that is: after each YUV or RGB painting operation,
 The use of a intermediate framebuffer object is the only way to guarantee that the client keeps an always fully up-to-date
 window image, which is critical because of backbuffer content losses upon buffer swaps or offscreen window movement.
 """
-class GLWindowBackingBase(GTKWindowBacking):
+class GLWindowBackingBase(WindowBackingBase):
 
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
@@ -233,7 +234,9 @@ class GLWindowBackingBase(GTKWindowBacking):
         self.pending_fbo_paint = []
         self.last_flush = monotonic_time()
 
-        GTKWindowBacking.__init__(self, wid, window_alpha)
+        WindowBackingBase.__init__(self, wid, window_alpha and GL_ALPHA_SUPPORTED)
+
+        self.idle_add = import_glib().idle_add
         self.init_gl_config(window_alpha)
         self.init_backing()
         self.bit_depth = self.get_bit_depth(pixel_depth)
@@ -319,7 +322,7 @@ class GLWindowBackingBase(GTKWindowBacking):
         log("init_formats() texture pixel format=%s, internal format=%s, rgb modes=%s", ["GL_RGB", "GL_RGBA"][self._alpha_enabled], INTERNAL_FORMAT_TO_STR.get(self.internal_format), self.RGB_MODES)
 
     def get_encoding_properties(self):
-        props = GTKWindowBacking.get_encoding_properties(self)
+        props = WindowBackingBase.get_encoding_properties(self)
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
         props["encoding.bit-depth"] = self.bit_depth

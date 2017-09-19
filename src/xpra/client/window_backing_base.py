@@ -67,7 +67,7 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
 
 """
 Generic superclass for all Backing code,
-see CairoBacking and GTKWindowBacking for actual implementations
+see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
 """
 class WindowBackingBase(object):
     def __init__(self, wid, window_alpha):

@@ -5,13 +5,15 @@
 # later version. See the file COPYING for details.
 
 from gtk import gdk
+import glib
 
 from xpra.log import Logger
 log = Logger("paint")
 
 from xpra.util import envbool
-from xpra.client.gtk_base.gtk_window_backing_base import GTKWindowBacking
+from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.codecs.loader import has_codec
 
 USE_PIL = envbool("XPRA_USE_PIL", True)
@@ -22,7 +24,13 @@ This is the gtk2 version.
 (works much better than gtk3!)
 Superclass for PixmapBacking and GLBacking
 """
-class GTK2WindowBacking(GTKWindowBacking):
+class GTK2WindowBacking(WindowBackingBase):
+
+    HAS_ALPHA = GTK_ALPHA_SUPPORTED
+
+    def __init__(self, wid, window_alpha, _pixel_depth=0):
+        WindowBackingBase.__init__(self, wid, window_alpha and GTK_ALPHA_SUPPORTED)
+        self.idle_add = glib.idle_add
 
     def init(self, *args):
         raise Exception("override me!")
@@ -31,7 +39,7 @@ class GTK2WindowBacking(GTKWindowBacking):
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         if USE_PIL and has_codec("dec_pillow"):
-            return GTKWindowBacking.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
+            return WindowBackingBase.paint_image(self, coding, img_data, x, y, width, height, options, callbacks)
         #gdk needs UI thread:
         self.idle_add(self.paint_pixbuf_gdk, coding, img_data, x, y, width, height, options, callbacks)
         return  False
