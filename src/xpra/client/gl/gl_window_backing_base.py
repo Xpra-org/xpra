@@ -350,17 +350,9 @@ class GLWindowBackingBase(WindowBackingBase):
         assert self.offscreen_fbo is None
         assert self.shaders is None
         self.textures = glGenTextures(N_TEXTURES)
-        self.offscreen_fbo = self._gen_fbo()
-        self.tmp_fbo = self._gen_fbo()
+        self.offscreen_fbo = glGenFramebuffers(1)
+        self.tmp_fbo = glGenFramebuffers(1)
         log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s", self, self.textures, self.offscreen_fbo, self.tmp_fbo)
-
-    def _gen_fbo(self):
-        if hasattr(glGenFramebuffers, "pyConverters") and len(glGenFramebuffers.pyConverters)==1:
-            #single argument syntax:
-            return glGenFramebuffers(1)
-        fbo = c_uint(1)
-        glGenFramebuffers(1, fbo)
-        return fbo
 
     def gl_init_shaders(self):
         assert self.shaders is None
