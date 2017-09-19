@@ -110,7 +110,7 @@ class BugReport(object):
             if self.opengl_info:
                 return self.opengl_info
             try:
-                from xpra.client.gl.gl_check import check_support
+                from xpra.client.gl.gtk_base.gtkgl_check import check_support
                 return check_support(force_enable=True)
             except Exception as e:
                 return {"error" : str(e)}

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ assert gtkgl is not None
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 
-from xpra.client.gl.gtkgl_window_backing_base import GTKGLWindowBackingBase
+from xpra.client.gl.gtk_base.gtkgl_window_backing_base import GTKGLWindowBackingBase
 
 
 """

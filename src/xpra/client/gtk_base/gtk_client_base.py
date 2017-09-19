@@ -739,8 +739,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            __import__("xpra.client.gl.gtk_compat", {}, {}, [])
-            gl_check = __import__("xpra.client.gl.gl_check", {}, {}, ["check_support"])
+            __import__("xpra.client.gl.gtk_base.gtk_compat", {}, {}, [])
+            gl_check = __import__("xpra.client.gl.gtk_base.gtkgl_check", {}, {}, ["check_support"])
             opengllog("init_opengl: gl_check=%s", gl_check)
             self.opengl_props = gl_check.check_support(force_enable=(enable_opengl is True))
             opengllog("init_opengl: found props %s", self.opengl_props)

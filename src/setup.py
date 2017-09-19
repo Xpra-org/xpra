@@ -1313,7 +1313,7 @@ if WIN32:
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
-            add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
+            add_console_exe("xpra/client/gl/gtk_base/gtkgl_check.py", "opengl.ico",       "OpenGL_check")
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
@@ -1819,9 +1819,9 @@ if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 #we can't just include "xpra.client.gl" because cx_freeze then do the wrong thing
 #and tries to include both gtk3 and gtk2, and fails hard..
-for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base", "gtk_compat"):
+for x in ("gl_check", "gl_colorspace_conversions", "gl_window_backing_base"):
     toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl.%s" % x)
-toggle_packages(client_ENABLED and opengl_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gl.gtkgl_window_backing_base")
+toggle_packages(client_ENABLED and opengl_ENABLED and (gtk2_ENABLED or gtk3_ENABLED), "xpra.client.gl.gtk_base")
 
 
 toggle_modules(sound_ENABLED, "xpra.sound")
