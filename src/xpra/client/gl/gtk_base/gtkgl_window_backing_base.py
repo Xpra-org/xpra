@@ -21,7 +21,7 @@ glib = import_glib()
 
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
-from xpra.client.gl.gtk_base.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GLContextManager, GLDrawingArea
+from xpra.client.gl.gtk_base.gtk_compat import Config_new_by_mode, MODE_DOUBLE, GtkGLExtContext, GLDrawingArea
 from xpra.client.gl.gtk_base.gtkgl_check import get_DISPLAY_MODE
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 
@@ -29,7 +29,7 @@ from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 class GTKGLWindowBackingBase(GLWindowBackingBase):
 
     def idle_add(self, *args, **kwargs):
-        import_glib().idle_add(*args, **kwargs)
+        glib.idle_add(*args, **kwargs)
 
     def init_gl_config(self, window_alpha):
         #setup gl config:
@@ -95,7 +95,7 @@ class GTKGLWindowBackingBase(GLWindowBackingBase):
             log.error("Error: invalid OpenGL backing size: %ix%i", w, h)
             return None
         try:
-            context = GLContextManager(b)
+            context = GtkGLExtContext(b)
         except Exception as e:
             log.error("Error: %s", e)
             return None

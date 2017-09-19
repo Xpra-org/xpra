@@ -39,7 +39,7 @@ if is_gtk3():
             log("no configuration for mode: %s", e)
         return None
 
-    class GLContextManager(object):
+    class GtkGLExtContext(object):
 
         def __init__(self, widget):
             self.widget = widget
@@ -52,7 +52,7 @@ if is_gtk3():
             #GtkGLExt.widget_end_gl(self.widget, False)
             pass
         def __repr__(self):
-            return "gtk3.GLContextManager(%s)" % self.widget
+            return "gtk3.GtkGLExtContext(%s)" % self.widget
 
 else:
     import gtk
@@ -83,7 +83,7 @@ else:
                  "gdkgl"        : v(gdkgl.query_version())
                  }
 
-    class GLContextManager(object):
+    class GtkGLExtContext(object):
 
         def __init__(self, widget):
             self.widget = widget
@@ -99,7 +99,7 @@ else:
             self.gldrawable.gl_end()
 
         def __repr__(self):
-            return "gtk2.GLContextManager(%s)" % self.widget
+            return "gtk2.GtkGLExtContext(%s)" % self.widget
 
 def GLDrawingArea(glconfig):
     assert glconfig, "missing GLConfig"

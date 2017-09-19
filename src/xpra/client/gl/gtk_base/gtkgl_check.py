@@ -140,8 +140,8 @@ def check_functions(*functions):
 
 #sanity checks: OpenGL version and fragment program support:
 def check_GL_support(widget, force_enable=False):
-    from xpra.client.gl.gtk_base.gtk_compat import GLContextManager
-    with GLContextManager(widget):
+    from xpra.client.gl.gtk_base.gtk_compat import GtkGLExtContext
+    with GtkGLExtContext(widget):
         return check_PyOpenGL_support(force_enable)
 
 def check_support(force_enable=False, check_colormap=False):
