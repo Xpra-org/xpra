@@ -34,7 +34,7 @@ if SAVE_BUFFERS:
 
 from xpra.gtk_common.gtk_util import is_realized
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.gtk_common.paint_colors import get_paint_box_color
+from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.gtk_common.gtk_util import POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK

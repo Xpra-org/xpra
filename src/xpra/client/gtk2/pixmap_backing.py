@@ -13,7 +13,7 @@ log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.gtk_common.paint_colors import get_paint_box_color
+from xpra.client.paint_colors import get_paint_box_color
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.util import csv, envbool
 

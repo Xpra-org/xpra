@@ -12,7 +12,7 @@ PixbufLoader    = import_pixbufloader()
 glib            = import_glib()
 
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
-from xpra.gtk_common.paint_colors import get_paint_box_color
+from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.codecs.loader import get_codec
