@@ -265,7 +265,7 @@ def main(force_enable=False):
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
-            from xpra.client.gl.gtk_compat import log as clog
+            from xpra.client.gl.gtk_base.gtk_compat import log as clog
             clog.enable_debug()
         #replace ImportError with a log message:
         global gl_check_error

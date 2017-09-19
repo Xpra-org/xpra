@@ -75,7 +75,6 @@ from OpenGL.GL.ARB.fragment_program import GL_FRAGMENT_PROGRAM_ARB
 from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, \
     glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer
 
-from ctypes import c_uint
 
 PIXEL_FORMAT_TO_CONSTANT = {
     "r210"  : GL_BGRA,
