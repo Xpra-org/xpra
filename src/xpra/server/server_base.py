@@ -516,9 +516,9 @@ class ServerBase(ServerCore):
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
             soundlog.warn(" pulseaudio is limited to a single instance per user account,")
-            soundlog.warn(" and one may be running already for user '%s'", get_username())
-            soundlog.warn(" to avoid this warning, either fix the pulseaudio command line")
-            soundlog.warn(" or use the 'pulseaudio=no' option")
+            soundlog.warn(" and one may be running already for user '%s'.", get_username())
+            soundlog.warn(" To avoid this warning, either fix the pulseaudio command line")
+            soundlog.warn(" or use the 'pulseaudio=no' option.")
         def pulseaudio_ended(proc):
             soundlog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s", proc, self.pulseaudio_proc, proc.returncode, self._closing)
             if self.pulseaudio_proc is None or self._closing:
