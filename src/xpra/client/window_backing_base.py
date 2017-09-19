@@ -70,13 +70,12 @@ Generic superclass for all Backing code,
 see CairoBacking and GTKWindowBacking for actual implementations
 """
 class WindowBackingBase(object):
-    def __init__(self, wid, window_alpha, idle_add):
+    def __init__(self, wid, window_alpha):
         load_csc_options()
         load_video_decoders()
         self.wid = wid
         self.size = 0, 0
         self.offsets = 0, 0, 0, 0       #top,left,bottom,right
-        self.idle_add = idle_add
         self._alpha_enabled = window_alpha
         self._backing = None
         self._delta_pixel_data = [None for _ in range(DELTA_BUCKETS)]
@@ -96,6 +95,9 @@ class WindowBackingBase(object):
         self.mmap = None
         self.mmap_enabled = False
         self.jpeg_decoder = get_codec("dec_jpeg")
+
+    def idle_add(self, *_args, **_kwargs):
+        raise NotImplementedError()
 
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area

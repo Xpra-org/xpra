@@ -6,9 +6,8 @@
 
 
 #pygtk3 vs pygtk2 (sigh)
-from xpra.gtk_common.gobject_compat import import_glib, import_cairo
+from xpra.gtk_common.gobject_compat import import_glib
 glib = import_glib()
-cairo   = import_cairo()
 
 from xpra.util import envbool
 from xpra.os_util import WIN32
@@ -31,5 +30,8 @@ class GTKWindowBacking(WindowBackingBase):
 
     HAS_ALPHA = GTK_ALPHA_SUPPORTED
 
-    def __init__(self, wid, window_alpha, pixel_depth=0):
-        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA, glib.idle_add)
+    def __init__(self, wid, window_alpha, _pixel_depth=0):
+        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
+
+    def idle_add(self, *args, **kwargs):
+        glib.idle_add(*args, **kwargs)
