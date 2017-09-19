@@ -867,7 +867,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return "copy:str(%s)" % t, str(img_data)
         else:
             #str already
-            return  "copy:str", img_data
+            return "copy:str", img_data
 
     def set_alignment(self, width, rowstride, pixel_format):
         bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4

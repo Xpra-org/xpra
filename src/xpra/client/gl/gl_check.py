@@ -28,19 +28,12 @@ BLACKLIST = {
              "vendor"    : ["VMware, Inc."]
              }
 
-from xpra.os_util import getUbuntuVersion
-uv = getUbuntuVersion()
-if uv and uv<[15]:
-    #Ubuntu 14.x drivers are just too old
-    GREYLIST.setdefault("vendor", []).append("X.Org")
-if False:
-    #for testing:
-    GREYLIST["vendor"].append("NVIDIA Corporation")
-    WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
-
-    if OSX:
-        #frequent crashes on osx with GT 650M: (see ticket #808)
-        GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
+#for testing:
+#GREYLIST["vendor"].append("NVIDIA Corporation")
+#WHITELIST["renderer"] = ["GeForce GTX 760/PCIe/SSE2"]
+#frequent crashes on OSX with GT 650M: (see ticket #808)
+#if OSX:
+#    GREYLIST.setdefault("vendor", []).append("NVIDIA Corporation")
 
 
 #alpha requires gtk3 or *nix only for gtk2:
