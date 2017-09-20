@@ -57,19 +57,14 @@ def init():
     assert Cipher and algorithms and modes and hashes
     ENCRYPTION_CIPHERS[:] = ["AES"]
 
-def ci(v):
-    try:
-        return v.name
-    except:
-        return str(v)
-
 def get_info():
     global backend
     import cryptography
     return {"backend"                       : "python-cryptography",
-            "backends"                      : [ci(x) for x in getattr(backend, "_backends", [])],
-            "python-cryptography"           : {""           : True,
-                                               "version"    : cryptography.__version__}
+            "python-cryptography"           : {
+                ""          : True,
+                "version"   : cryptography.__version__,
+                }
             }
 
 def get_key(password, key_salt, block_size, iterations):
