@@ -71,8 +71,8 @@
   <autotools id="python" autogenargs="--enable-shared"
 	     autogen-sh="configure" supports-non-srcdir-builds="no">
     <branch repo="python"
-	    module="2.7.13/Python-2.7.13.tar.xz" version="2.7.13"
-	    hash="sha256:35d543986882f78261f97787fd3e06274bfa6df29fac9b4a94f73930ff98f731">
+	    module="2.7.14/Python-2.7.14.tar.xz" version="2.7.14"
+	    hash="sha256:71ffb26e09e78650e424929b2b457b9c912ac216576e6bd9e7d204ed03296a66">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-test_grammar.py-typo.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-linkflags.patch" strip="1"/>"/>
     </branch>
