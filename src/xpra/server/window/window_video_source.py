@@ -1613,7 +1613,7 @@ class WindowVideoSource(WindowSource):
             t = monotonic_time()
             tstr = time.strftime("%H-%M-%S", time.localtime(t))
             filename = "./W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
-            videolog("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
+            videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
         #don't download the pixels if we have a GPU buffer,
