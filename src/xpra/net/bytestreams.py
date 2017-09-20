@@ -388,6 +388,7 @@ except Exception as e:
 
 
 class SSLSocketConnection(SocketConnection):
+    SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
 
     def can_retry(self, e):
         if getattr(e, "library", None)=="SSL":
@@ -395,7 +396,10 @@ class SSLSocketConnection(SocketConnection):
             if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
                 return False
         message = getattr(e, "message", None)
-        if message in ("The read operation timed out", "The write operation timed out"):
+        if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
+            return True
+        code = getattr(e, "code", None)
+        if code in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
             return True
         return SocketConnection.can_retry(self, e)
 
