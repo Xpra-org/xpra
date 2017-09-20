@@ -632,7 +632,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -n python3-xpra
 %{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers
-#%{python3_sitearch}/xpra/clipboard
+%{python3_sitearch}/xpra/clipboard
 %{python3_sitearch}/xpra/codecs
 %{python3_sitearch}/xpra/dbus
 %{python3_sitearch}/xpra/gtk_common
