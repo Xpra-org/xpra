@@ -436,12 +436,11 @@
         </after>
   </distutils>
 
-  <!-- newer versions of cffi create problems when packaging python-cryptography, see #1404 -->
   <distutils id="cffi">
 	<branch repo="pypi.python.org"
-		module="/packages/c7/bb/2e1ba0ef25477929b44040800a880f02b42efb757e06a9d8899591582ba4/cffi-1.5.2.tar.gz"
-		hash="sha256:da9bde99872e46f7bb5cff40a9b1cc08406765efafb583c704de108b6cb821dd"
-		version="1.5.2"/>
+		module="/packages/4e/32/4070bdf32812c89eb635c80880a5caa2e0189aa7999994c265577e5154f3/cffi-1.11.0.tar.gz"
+		hash="sha256:5f4ff33371c6969b39b293d9771ee91e81d26f9129be093ca1b7be357fcefd15"
+		version="1.11"/>
 	<dependencies>
 		<dep package="pycparser"/>
 	</dependencies>
@@ -494,9 +493,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/81/fb/97d649657687d483753880cf663cf78015e1b8fb495d565feb49f1d56a24/cryptography-1.8.2.tar.gz"
-		hash="sha256:8e88ebac371a388024dab3ccf393bf3c1790d21bc3c299d5a6f9f83fb823beda"
-		version="1.8.2"/>
+		module="/packages/9c/1a/0fc8cffb04582f9ffca61b15b0681cf2e8588438e55f61403eb9880bd8e0/cryptography-2.0.3.tar.gz"
+		hash="sha256:d04bb2425086c3fe86f7bc48915290b13e798497839fbb18ab7f6dffcf98cc3a"
+		version="2.0.3"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
