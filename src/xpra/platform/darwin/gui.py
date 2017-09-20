@@ -651,7 +651,7 @@ def enable_focus_workaround():
 class ClientExtras(object):
     def __init__(self, client, opts):
         if OSX_FOCUS_WORKAROUND:
-            def first_ui_received():
+            def first_ui_received(*_args):
                 enable_focus_workaround()
                 client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
             client.connect("first-ui-received", first_ui_received)
