@@ -5,4 +5,4 @@ exe_name=$(basename $0)
 full_path=$(cd "$(dirname "$0")"; pwd -P)
 PYTHON="$full_path/PythonExecWrapper"
 
-exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.client.gl.gl_check import main;sys.exit(main())" "$@"
+exec "$PYTHON" "$exe_name" -c "import sys;sys.argv[0]=\"$full_path/$exe_name\";from xpra.client.gl.gtk_base.gtkgl_check import main;sys.exit(main())" "$@"
