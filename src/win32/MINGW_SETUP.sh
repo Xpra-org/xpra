@@ -48,10 +48,6 @@ for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenG
     easy_install-3.6 -U -Z $x
 done
 
-#problems with versions newer than 1.8.x:
-easy_install-2.7 -U -Z cryptography==1.8.1
-easy_install-3.6 -U -Z cryptography==1.8.1
-
 #this would install cx_Freeze 5.x - which is broken in many ways,
 #$PACMAN --noconfirm -S ${XPKG}python2-cx_Freeze
 #$PACMAN --noconfirm -S ${XPKG}python3-cx_Freeze
