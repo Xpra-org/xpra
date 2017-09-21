@@ -672,16 +672,21 @@ class ServerCore(object):
         start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, address, socktype, peername, socket_info))
         return True
 
-    def peek_connection(self, conn):
+    def peek_connection(self, conn, timeout=1):
         PEEK_SIZE = 8192
-        try:
-            peek_data = conn.peek(PEEK_SIZE)
-            line1 = peek_data.splitlines()[0]
-        except:
-            line1 = b""
-            peek_data = ""
+        start = monotonic_time()
+        peek_data = b""
+        while not peek_data and monotonic_time()-start<timeout:
+            try:
+                peek_data = conn.peek(PEEK_SIZE)
+            except:
+                pass
+            import time
+            time.sleep(timeout/4.0)
+        line1 = b""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
         if peek_data:
+            line1 = peek_data.splitlines()[0]
             netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
             netlog("socket peek hex=%s", binascii.hexlify(peek_data))
             netlog("socket peek line1=%s", repr_ellipsized(line1))
@@ -746,7 +751,11 @@ class ServerCore(object):
         netlog("handle_new_connection%s sockname=%s, target=%s", (conn, sock, address, socktype, peername, socket_info), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
-        peek_data, line1 = self.peek_connection(conn)
+        poll_timeout = 1
+        if socktype=="rfb":
+            #rfb does not send any data, waits for a server packet
+            poll_timeout = 0
+        peek_data, line1 = self.peek_connection(conn, poll_timeout)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(sock)
