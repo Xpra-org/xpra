@@ -13,11 +13,6 @@ from xpra.client.gl.gtk3.gl_window_backing import GLPixmapBacking
 
 class GLClientWindow(ClientWindow):
 
-    def __init__(self, *args):
-        log("GLClientWindow(..)")
-        ClientWindow.__init__(self, *args)
-
-
     def get_backing_class(self):
         return GLPixmapBacking
 
@@ -81,7 +76,9 @@ class GLClientWindow(ClientWindow):
         if self.border:
             self.border.toggle()
             if b:
-                b.present_fbo(0, 0, *self._size)
+                with b.gl_context():
+                    b.gl_init()
+                    b.present_fbo(0, 0, *b.size)
         log("magic_key%s border=%s, backing=%s", args, self.border, b)
 
 #gobject.type_register(GLClientWindow)

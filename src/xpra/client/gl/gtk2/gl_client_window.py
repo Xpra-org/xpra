@@ -119,7 +119,9 @@ class GLClientWindow(GTK2WindowBase):
         if self.border:
             self.border.toggle()
             if b:
-                b.present_fbo(0, 0, *self._size)
+                with b.gl_context():
+                    b.gl_init()
+                    b.present_fbo(0, 0, *b.size)
                 self.queue_draw(0, 0, *self._size)
         log("magic_key%s border=%s, backing=%s", args, self.border, b)
 
