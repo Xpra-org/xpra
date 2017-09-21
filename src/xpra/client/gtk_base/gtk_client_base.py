@@ -159,6 +159,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def _process_challenge(self, packet):
+        if not self.validate_challenge_packet(packet):
+            return
         password = self.load_password()
         if password:
             self.send_challenge_reply(packet, password)

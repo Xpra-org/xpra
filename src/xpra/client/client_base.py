@@ -553,6 +553,8 @@ class XpraClientBase(FileTransferHandler):
 
     def _process_challenge(self, packet):
         authlog("processing challenge: %s", packet[1:])
+        if not self.validate_challenge_packet(packet):
+            return
         password = self.load_password()
         if not password:
             try:
@@ -562,6 +564,25 @@ class XpraClientBase(FileTransferHandler):
             except Exception:
                 authlog("password request failure", exc_info=True)
         self.send_challenge_reply(packet, password)
+
+    def auth_error(self, code, message, server_message="authentication failed"):
+        authlog.error("Error: authentication failed:")
+        authlog.error(" %s", message)
+        self.disconnect_and_quit(code, server_message)
+
+    def validate_challenge_packet(self, packet):
+        digest = packet[3]
+        #don't send XORed password unencrypted:
+        if digest==b"xor":
+            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
+            local = self.display_desc.get("local", False)
+            authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
+            if local and ALLOW_LOCALHOST_PASSWORDS:
+                return True
+            elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
+                self.auth_error(EXIT_ENCRYPTION, "server requested '%s' digest, cowardly refusing to use it without encryption" % digest, "invalid digest")
+                return False
+        return True
 
     def get_challenge_prompt(self):
         text = "Please enter the password"
@@ -574,15 +595,11 @@ class XpraClientBase(FileTransferHandler):
         return text
 
     def send_challenge_reply(self, packet, password):
-        def warn_server_and_exit(code, message, server_message="authentication failed"):
-            authlog.error("Error: authentication failed:")
-            authlog.error(" %s", message)
-            self.disconnect_and_quit(code, server_message)
         if not password:
             if self.password_file:
-                warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
+                self.auth_error(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
             else:
-                warn_server_and_exit(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
+                self.auth_error(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
             return
         server_salt = packet[1]
         if self.encryption:
@@ -590,7 +607,7 @@ class XpraClientBase(FileTransferHandler):
             server_cipher = typedict(packet[2])
             key = self.get_encryption_key()
             if key is None:
-                warn_server_and_exit(EXIT_ENCRYPTION, "the server does not use any encryption", "client requires encryption")
+                self.auth_error(EXIT_ENCRYPTION, "the server does not use any encryption", "client requires encryption")
                 return
             if not self.set_server_encryption(server_cipher, key):
                 return
@@ -602,20 +619,10 @@ class XpraClientBase(FileTransferHandler):
         salt = xor(server_salt, client_salt)
         authlog("combined salt(%s, %s)=%s", binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
 
-        #don't send XORed password unencrypted:
-        if digest==b"xor":
-            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
-            local = self.display_desc.get("local", False)
-            authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
-            if local and ALLOW_LOCALHOST_PASSWORDS:
-                pass
-            elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
-                warn_server_and_exit(EXIT_ENCRYPTION, "server requested digest %s, cowardly refusing to use it without encryption" % digest, "invalid digest")
-                return
         challenge_response = gendigest(digest, password, salt)
         if not challenge_response:
             log("invalid digest module '%s': %s", digest)
-            warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
+            self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % digest, "invalid digest")
             return
         authlog("%s(%s, %s)=%s", digest, repr(password), binascii.hexlify(salt), binascii.hexlify(challenge_response))
         self.password_sent = True
