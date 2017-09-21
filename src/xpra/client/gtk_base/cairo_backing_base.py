@@ -81,7 +81,7 @@ class CairoBackingBase(WindowBackingBase):
     def close(self):
         if self._backing:
             self._backing.finish()
-        GTKWindowBacking.close(self)
+        WindowBackingBase.close(self)
 
 
     def cairo_paint_pixbuf(self, pixbuf, x, y, options):
