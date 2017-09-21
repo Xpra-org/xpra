@@ -16,6 +16,7 @@ APP_DIR="./image/Xpra.app"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="./image/Xpra-Client.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
+	DO_TESTS="0"
 fi
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"

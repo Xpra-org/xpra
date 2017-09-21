@@ -27,6 +27,7 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 CLIENT_ONLY="0"
 if [ "$1" == "CLIENT" ]; then
 	CLIENT_ONLY="1"
+	DO_TESTS="0"
 	DO_SERVICE="0"
 	shift
 fi
