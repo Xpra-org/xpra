@@ -51,6 +51,7 @@ ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
+PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 
 
 class XpraClientBase(FileTransferHandler):
@@ -557,13 +558,9 @@ class XpraClientBase(FileTransferHandler):
             return
         password = self.load_password()
         if not password:
-            try:
-                if sys.stdin.isatty():
-                    import getpass
-                    password = getpass.getpass("%s :" % self.get_challenge_prompt())
-            except Exception:
-                authlog("password request failure", exc_info=True)
-        self.send_challenge_reply(packet, password)
+            self.quit(EXIT_PASSWORD_REQUIRED)
+        else:
+            self.send_challenge_reply(packet, password)
 
     def auth_error(self, code, message, server_message="authentication failed"):
         authlog.error("Error: authentication failed:")
@@ -665,11 +662,19 @@ class XpraClientBase(FileTransferHandler):
     def load_password(self):
         if self.password:
             return self.password
-        if not self.password_file:
-            return os.environ.get('XPRA_PASSWORD')
-        filename = os.path.expanduser(self.password_file)
-        password = load_binary_file(filename)
-        netlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
+        password = os.environ.get('XPRA_PASSWORD')
+        if self.password_file:
+            filename = os.path.expanduser(self.password_file)
+            password = load_binary_file(filename)
+            authlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
+        if not password and PASSWORD_PROMPT:
+            try:
+                if sys.stdin.isatty():
+                    import getpass
+                    authlog("stdin isatty, using password prompt")
+                    password = getpass.getpass("%s :" % self.get_challenge_prompt())
+            except Exception:
+                authlog("password request failure", exc_info=True)
         return password
 
     def _process_hello(self, packet):

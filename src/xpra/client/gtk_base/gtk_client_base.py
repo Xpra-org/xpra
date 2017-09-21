@@ -39,6 +39,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
+from xpra.client.client_base import PASSWORD_PROMPT
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
@@ -48,7 +49,6 @@ missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
-PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
