@@ -554,7 +554,24 @@ class XpraClientBase(FileTransferHandler):
     def _process_challenge(self, packet):
         authlog("processing challenge: %s", packet[1:])
         password = self.load_password()
+        if not password:
+            try:
+                if sys.stdin.isatty():
+                    import getpass
+                    password = getpass.getpass("%s :" % self.get_challenge_prompt())
+            except Exception:
+                authlog("password request failure", exc_info=True)
         self.send_challenge_reply(packet, password)
+
+    def get_challenge_prompt(self):
+        text = "Please enter the password"
+        try:
+            from xpra.net.bytestreams import pretty_socket
+            conn = self._protocol._conn
+            text += " for %s server %s" % (conn.socktype, pretty_socket(conn.remote))
+        except:
+            pass
+        return text
 
     def send_challenge_reply(self, packet, password):
         def warn_server_and_exit(code, message, server_message="authentication failed"):

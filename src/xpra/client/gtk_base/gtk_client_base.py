@@ -191,14 +191,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         title = gtk.Label("Server Authentication")
         title.modify_font(pango.FontDescription("sans 14"))
         add(title, 16)
-        text = "Please enter the password"
-        try:
-            from xpra.net.bytestreams import pretty_socket
-            conn = self._protocol._conn
-            text += " for %s server %s" % (conn.socktype, pretty_socket(conn.remote))
-        except:
-            pass
-        add(gtk.Label(text), 10)
+        add(gtk.Label(self.get_challenge_prompt()), 10)
         def password_activate(*_args):
             handle_response(dialog, gtk.RESPONSE_ACCEPT)
         password_input = gtk.Entry(max=255)
