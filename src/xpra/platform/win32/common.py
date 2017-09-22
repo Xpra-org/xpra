@@ -171,6 +171,21 @@ DeleteDC.argtypes = [HDC]
 CreateDCA = gdi32.CreateDCA
 CreateDCA.restype = HDC
 CreateDCA.argtypes = [LPCSTR, LPCSTR, LPCSTR, DEVMODE]
+ChoosePixelFormat = gdi32.ChoosePixelFormat
+ChoosePixelFormat.argtypes= [HDC, c_void_p]
+ChoosePixelFormat.restype = int
+SetPixelFormat = gdi32.SetPixelFormat
+SetPixelFormat.argtypes= [HDC, c_int, c_void_p]
+SetPixelFormat.restype = BOOL
+SwapBuffers = gdi32.SwapBuffers
+SwapBuffers.argtypes = [HDC]
+SwapBuffers.restype = BOOL
+BeginPaint = user32.BeginPaint
+BeginPaint.argtypes = [HWND, c_void_p]
+BeginPaint.restype = HDC
+EndPaint = user32.EndPaint
+EndPaint.argtypes = [HWND, c_void_p]
+EndPaint.restype = HDC
 
 #wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
