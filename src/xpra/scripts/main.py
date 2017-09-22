@@ -27,7 +27,7 @@ from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_fo
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
-    make_defaults_struct, parse_bool, print_bool, print_number, validate_config, has_sound_support, name_to_field
+    make_defaults_struct, parse_bool, print_number, validate_config, has_sound_support, name_to_field
 
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -794,7 +794,7 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("opengl")
     group.add_option("--opengl", action="store", metavar="yes|no|auto|backend",
                       dest="opengl", default=defaults.opengl,
-                      help="Use OpenGL accelerated rendering. Default: %s." % print_bool("opengl", defaults.opengl))
+                      help="Use OpenGL accelerated rendering. Default: %s." % defaults.opengl)
     legacy_bool_parse("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                       dest="windows", default=defaults.windows,
