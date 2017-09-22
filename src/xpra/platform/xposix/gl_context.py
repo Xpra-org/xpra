@@ -27,6 +27,7 @@ def c_attrs(props):
 
 def get_xdisplay():
     ptr = get_display_ptr()
+    assert ptr, "no X11 display registered"
     from OpenGL.raw.GLX._types import struct__XDisplay
     from ctypes import cast, POINTER
     return cast(ptr, POINTER(struct__XDisplay))
@@ -81,7 +82,7 @@ class GLXContext(object):
         minor = c_int()
         assert GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor))
         log("found GLX version %i.%i", major.value, minor.value)
-        self.props["GLX"] = (major, minor)
+        self.props["GLX"] = (major.value, minor.value)
         self.bit_depth = getconfig(GLX.GLX_RED_SIZE) + getconfig(GLX.GLX_GREEN_SIZE) + getconfig(GLX.GLX_BLUE_SIZE)
         self.props["depth"] = self.bit_depth
         self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
@@ -140,3 +141,16 @@ class GLXContext(object):
         return "GLXContext"
 
 GLContext = GLXContext
+
+
+def check_support():
+    from xpra.os_util import PYTHON3
+    ptr = get_display_ptr()
+    if not ptr:
+        if PYTHON3:
+            from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source        #@UnresolvedImport, @UnusedImport
+        else:
+            from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source        #@UnresolvedImport, @Reimport
+        init_gdk_display_source()
+
+    return GLContext().check_support()
