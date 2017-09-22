@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat
+from xpra.os_util import WIN32, OSX, POSIX, is_CentOS, is_RedHat
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -697,32 +697,36 @@ del tmp
 
 
 def get_default_key_shortcuts():
+    if POSIX:
+        mods = "Control+Shift"
+    else:
+        mods = "Meta+Shift"
     return [shortcut for e,shortcut in [
                (True,   "Control+Menu:toggle_keyboard_grab"),
                (True,   "Shift+Menu:toggle_pointer_grab"),
                (True,   "Shift+F11:toggle_fullscreen"),
-               (True,   "Meta+Shift+F1:show_menu"),
-               (True,   "Meta+Shift+F2:show_start_new_command"),
-               (True,   "Meta+Shift+F3:show_bug_report"),
-               (True,   "Meta+Shift+F4:quit"),
-               (True,   "Meta+Shift+F5:increase_quality"),
-               (True,   "Meta+Shift+F6:decrease_quality"),
-               (True,   "Meta+Shift+F7:increase_speed"),
-               (True,   "Meta+Shift+F8:decrease_speed"),
-               (True,   "Meta+Shift+F10:magic_key"),
-               (True,   "Meta+Shift+F11:show_session_info"),
-               (True,   "Meta+Shift+F12:toggle_debug"),
-               (True,   "Meta+Shift+plus:scaleup"),
-               (OSX,    "Meta+Shift+plusminus:scaleup"),
-               (True,   "Meta+Shift+minus:scaledown"),
-               (True,   "Meta+Shift+underscore:scaledown"),
-               (OSX,    "Meta+Shift+emdash:scaledown"),
-               (True,   "Meta+Shift+KP_Add:scaleup"),
-               (True,   "Meta+Shift+KP_Subtract:scaledown"),
-               (True,   "Meta+Shift+KP_Multiply:scalereset"),
-               (True,   "Meta+Shift+bar:scalereset"),
-               (True,   "Meta+Shift+question:scalingoff"),
-               (OSX,    "Meta+Shift+degree:scalereset")]
+               (True,   mods+"+F1:show_menu"),
+               (True,   mods+"+F2:show_start_new_command"),
+               (True,   mods+"+F3:show_bug_report"),
+               (True,   mods+"+F4:quit"),
+               (True,   mods+"+F5:increase_quality"),
+               (True,   mods+"+F6:decrease_quality"),
+               (True,   mods+"+F7:increase_speed"),
+               (True,   mods+"+F8:decrease_speed"),
+               (True,   mods+"+F10:magic_key"),
+               (True,   mods+"+F11:show_session_info"),
+               (True,   mods+"+F12:toggle_debug"),
+               (True,   mods+"+plus:scaleup"),
+               (OSX,    mods+"+plusminus:scaleup"),
+               (True,   mods+"+minus:scaledown"),
+               (True,   mods+"+underscore:scaledown"),
+               (OSX,    mods+"+emdash:scaledown"),
+               (True,   mods+"+KP_Add:scaleup"),
+               (True,   mods+"+KP_Subtract:scaledown"),
+               (True,   mods+"+KP_Multiply:scalereset"),
+               (True,   mods+"+bar:scalereset"),
+               (True,   mods+"+question:scalingoff"),
+               (OSX,    mods+"+degree:scalereset")]
                  if e]
 
 def get_default_systemd_run():
