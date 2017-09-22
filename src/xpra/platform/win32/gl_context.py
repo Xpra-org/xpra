@@ -131,7 +131,7 @@ class WGLContext(object):
 
     def get_paint_context(self, gdk_window):
         assert gdk_window
-        return WGLWindowContext(gdk_window.hwnd)
+        return WGLWindowContext(gdk_window.handle)
 
     def destroy(self):
         self.context = None
