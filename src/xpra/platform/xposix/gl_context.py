@@ -54,7 +54,7 @@ class GLXWindowContext(object):
         GLX.glXSwapBuffers(self.xdisplay, self.xid)
 
     def __repr__(self):
-        return "gtk3.GLXWindowContext(%#x)" % self.xid
+        return "GLXWindowContext(%#x)" % self.xid
 
 
 class GLXContext(object):
