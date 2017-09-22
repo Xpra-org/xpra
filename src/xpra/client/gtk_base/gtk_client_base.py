@@ -743,6 +743,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             else:
                 backends = enable_opengl.split(",")
             opengllog("init_opengl: backend options: %s", backends)
+            gl_client_window_module = None
             for impl in backends:
                 opengllog("attempting to load %s OpenGL backend", impl)
                 GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.%sgl_client_window" % (gtk_version(), impl)
@@ -751,7 +752,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     gl_client_window_module = __import__(GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow", "check_support"])
                 except ImportError as e:
                     opengllog("cannot import %s", GL_CLIENT_WINDOW_MODULE, exc_info=True)
-                    opengllog.warn("Warning: cannot import %s module", impl)
+                    opengllog.warn("Warning: cannot import %s OpenGL module", impl)
                     opengllog.warn(" %s", e)
                     continue
                 opengllog("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
@@ -760,6 +761,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 opengllog("check_support(%s)=%s", force_enable, self.opengl_props)
                 if self.opengl_props:
                     break
+            if not gl_client_window_module:
+                opengllog.warn("Warning: no OpenGL backends found")
+                self.client_supports_opengl = False
+                self.opengl_props["info"] = "disabled: no supported backends - tried: %s" % backends
+                return
             opengllog("init_opengl: found props %s", self.opengl_props)
             self.GLClientWindowClass = gl_client_window_module.GLClientWindow
             self.client_supports_opengl = True
