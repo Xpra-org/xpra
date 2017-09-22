@@ -27,6 +27,8 @@ def want_gtk3(v):
     assert (_is_gtk3 is None or _is_gtk3==v), "cannot set gtk3=%s, already set to %s" % (v, _is_gtk3)
     _is_gtk3 = v
 
+def gtk_version():
+    return 2+int(is_gtk3())
 
 def _try_import(import_method_gtk3, import_method_gtk2):
     global _is_gtk3

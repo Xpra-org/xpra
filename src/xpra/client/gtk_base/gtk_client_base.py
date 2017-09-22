@@ -7,7 +7,7 @@
 
 import os
 import weakref
-from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gdk, import_pango, gtk_version, is_gtk3
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 gobject = import_gobject()
 gtk = import_gtk()
@@ -27,10 +27,11 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEFAULT_METADATA_SUPPORTED
-from xpra.os_util import bytestostr, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
@@ -696,7 +697,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def init_opengl(self, enable_opengl):
         opengllog("init_opengl(%s)", enable_opengl)
         #enable_opengl can be True, False or None (auto-detect)
-        if enable_opengl is False:
+        enable_opengl = (enable_opengl or "").lower()
+        if enable_opengl in FALSE_OPTIONS:
             self.opengl_props["info"] = "disabled by configuration"
             return
         from xpra.scripts.config import OpenGL_safety_check
@@ -720,29 +722,46 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.opengl_props["info"] = str(e)
 
         if warnings:
-            if enable_opengl is True:
-                opengllog.warn("OpenGL safety warning (enabled at your own risk):")
-                for warning in warnings:
-                    opengllog.warn(" %s", warning)
-                self.opengl_props["info"] = "forced enabled despite: %s" % (", ".join(warnings))
-            else:
+            if enable_opengl in ("", "auto"):
                 opengllog.warn("OpenGL disabled:", warning)
                 for warning in warnings:
                     opengllog.warn(" %s", warning)
                 self.opengl_props["info"] = "disabled: %s" % (", ".join(warnings))
                 return
+            opengllog.warn("OpenGL safety warning (enabled at your own risk):")
+            for warning in warnings:
+                opengllog.warn(" %s", warning)
+            self.opengl_props["info"] = "forced enabled despite: %s" % (", ".join(warnings))
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            __import__("xpra.client.gl.gtk_base.gtk_compat", {}, {}, [])
-            gl_check = __import__("xpra.client.gl.gtk_base.gtkgl_check", {}, {}, ["check_support"])
-            opengllog("init_opengl: gl_check=%s", gl_check)
-            self.opengl_props = gl_check.check_support(force_enable=(enable_opengl is True))
+            if enable_opengl in ("", "auto"):
+                if PYTHON3:
+                    backends = "native", "gtk"
+                else:
+                    backends = "gtk", "native"
+            else:
+                backends = enable_opengl.split(",")
+            opengllog("init_opengl: backend options: %s", backends)
+            for impl in backends:
+                opengllog("attempting to load %s OpenGL backend", impl)
+                GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.%sgl_client_window" % (gtk_version(), impl)
+                opengllog("importing %s", GL_CLIENT_WINDOW_MODULE)
+                try:
+                    gl_client_window_module = __import__(GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow", "check_support"])
+                except ImportError as e:
+                    opengllog("cannot import %s", GL_CLIENT_WINDOW_MODULE, exc_info=True)
+                    opengllog.warn("Warning: cannot import %s module", impl)
+                    opengllog.warn(" %s", e)
+                    continue
+                opengllog("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
+                force_enable = enable_opengl is True
+                self.opengl_props = gl_client_window_module.check_support(force_enable)
+                opengllog("check_support(%s)=%s", force_enable, self.opengl_props)
+                if self.opengl_props:
+                    break
             opengllog("init_opengl: found props %s", self.opengl_props)
-            GTK_GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.gl_client_window" % (2+int(is_gtk3()))
-            opengllog("init_opengl: trying to load GL client window module '%s'", GTK_GL_CLIENT_WINDOW_MODULE)
-            gl_client_window = __import__(GTK_GL_CLIENT_WINDOW_MODULE, {}, {}, ["GLClientWindow"])
-            self.GLClientWindowClass = gl_client_window.GLClientWindow
+            self.GLClientWindowClass = gl_client_window_module.GLClientWindow
             self.client_supports_opengl = True
             #only enable opengl by default if force-enabled or if safe to do so:
             self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
@@ -997,7 +1016,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def get_clipboard_helper_classes(self):
-        from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []

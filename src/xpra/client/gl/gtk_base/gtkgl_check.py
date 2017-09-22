@@ -7,19 +7,13 @@
 
 import sys
 
-from xpra.client.gl.gl_check import check_PyOpenGL_support, GL_ALPHA_SUPPORTED, gl_check_error
+from xpra.client.gl.gl_check import check_PyOpenGL_support, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, DOUBLE_BUFFERED, gl_check_error
 
 from xpra.util import envbool
-from xpra.os_util import WIN32, PYTHON3
 from xpra.log import Logger
 log = Logger("opengl")
 
 
-#not working with gtk3 yet?
-CAN_DOUBLE_BUFFER = not PYTHON3
-#needed on win32?:
-DEFAULT_DOUBLE_BUFFERED = WIN32 or CAN_DOUBLE_BUFFER
-DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", DEFAULT_DOUBLE_BUFFERED)
 TEST_GTKGL_RENDERING = envbool("XPRA_TEST_GTKGL_RENDERING", 1)
 
 from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR

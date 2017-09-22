@@ -4,6 +4,7 @@
 # OpenGL accelerated rendering:
 #opengl = yes
 #opengl = no
+#opengl = gtk, native
 opengl = auto
 
 # Client window title:
