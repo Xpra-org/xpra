@@ -10,6 +10,8 @@
 # (we can't just pass pointers around easily with Python/Cython)
 from __future__ import absolute_import
 
+from libc.stdint cimport uintptr_t
+
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
@@ -20,6 +22,9 @@ display_name = ""
 
 cdef Display* get_display():
     return display
+
+def get_display_ptr():
+    return int(<uintptr_t> display)
 
 cdef int set_display(Display *d) except 1:
     global display
