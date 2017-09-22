@@ -11,7 +11,7 @@ from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk_common.gobject_compat import get_xid
 from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
-from ctypes import c_int, byref
+from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 
 
@@ -29,7 +29,6 @@ def get_xdisplay():
     ptr = get_display_ptr()
     assert ptr, "no X11 display registered"
     from OpenGL.raw.GLX._types import struct__XDisplay
-    from ctypes import cast, POINTER
     return cast(ptr, POINTER(struct__XDisplay))
     
 
@@ -48,6 +47,10 @@ class GLXWindowContext(object):
 
     def __exit__(self, *_args):
         self.valid = False
+        if self.context:
+            context_type = type(self.context)
+            null_context = cast(0, context_type)
+            GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
 
     def swap_buffers(self):
         assert self.valid
