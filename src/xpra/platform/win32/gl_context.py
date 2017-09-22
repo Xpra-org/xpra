@@ -16,6 +16,7 @@ class WGLWindowContext(object):
 
     def __init__(self, hwnd):
         bpc = 8
+        self.valid = False
         self.hwnd = hwnd
         self.ps = None
         self.hdc = GetDC(hwnd)
@@ -48,8 +49,10 @@ class WGLWindowContext(object):
         pfd.dwDamageMask = 0
         pf = ChoosePixelFormat(self.hdc, byref(pfd))
         log("ChoosePixelFormat for window %#x and %i bpc: %#x", hwnd, bpc, pf)
-        SetPixelFormat(self.hdc, pf, byref(pfd))
+        if not SetPixelFormat(self.hdc, pf, byref(pfd)):
+            raise Exception("SetPixelFormat failed")
         self.context = wglCreateContext(self.hdc)
+        assert self.context, "wglCreateContext failed"
         log("wglCreateContext(%#x)=%#x", self.hdc, self.context)
 
     def __enter__(self):
@@ -60,12 +63,14 @@ class WGLWindowContext(object):
         #warning: we replace the hdc here..
         self.hdc = BeginPaint(self.hwnd, byref(self.ps))
         assert self.hdc, "BeginPaint: no display device context"
+        log("BeginPaint hdc=%#x", self.hdc)
         self.valid = True
 
     def __exit__(self, *_args):
         assert self.valid and self.context
         self.valid = False
         EndPaint(self.hwnd, byref(self.ps))
+        wglMakeCurrent(0, 0)
         if not wglDeleteContext(self.context):
             raise Exception("wglDeleteContext failed for context %#x" % self.context)
         self.context = None
