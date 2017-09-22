@@ -792,7 +792,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
     legacy_bool_parse("opengl")
-    group.add_option("--opengl", action="store", metavar="yes|no|auto",
+    group.add_option("--opengl", action="store", metavar="yes|no|auto|backend",
                       dest="opengl", default=defaults.opengl,
                       help="Use OpenGL accelerated rendering. Default: %s." % print_bool("opengl", defaults.opengl))
     legacy_bool_parse("windows")
@@ -1140,8 +1140,6 @@ def do_parse_cmdline(cmdline, defaults):
         options.encryption = "AES"
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
         options.tcp_encryption = "AES"
-    #ensure opengl is either True, False or None
-    options.opengl = parse_bool("opengl", options.opengl)
     return options, args
 
 def validate_encryption(opts):

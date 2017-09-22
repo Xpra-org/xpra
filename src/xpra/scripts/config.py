@@ -197,11 +197,11 @@ def OpenGL_safety_check():
             return "VirtualBox is present (VBoxMiniRdrDN)"
     return None
 
-OPENGL_DEFAULT = None       #will auto-detect by probing
+OPENGL_DEFAULT = "auto"       #will auto-detect by probing
 def get_opengl_default():
     global OPENGL_DEFAULT
     if OpenGL_safety_check() is not None:
-        OPENGL_DEFAULT = False
+        OPENGL_DEFAULT = "no"
     return OPENGL_DEFAULT
 
 
@@ -431,6 +431,7 @@ OPTIONS_VALIDATION = {}
 OPTION_TYPES = {
                     #string options:
                     "encoding"          : str,
+                    "opengl"            : str,
                     "title"             : str,
                     "username"          : str,
                     "password"          : str,
@@ -564,7 +565,6 @@ OPTION_TYPES = {
                     "exit-ssh"          : bool,
                     "dbus-control"      : bool,
                     "av-sync"           : bool,
-                    "opengl"            : bool,
                     "mdns"              : bool,
                     "file-transfer"     : bool,
                     "printing"          : bool,
