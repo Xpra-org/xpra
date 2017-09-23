@@ -11,20 +11,88 @@ from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.platform.win32.common import GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, GetDesktopWindow
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
 
+DOUBLE_BUFFERED = True
+
 
 class WGLWindowContext(object):
 
-    def __init__(self, hwnd):
-        bpc = 8
-        self.pixel_format_props = {}
-        self.valid = False
+    def __init__(self, hwnd, hdc, context):
         self.hwnd = hwnd
+        self.hdc = hdc
+        self.context = context
         self.ps = None
+        self.paint_hdc = None
+
+    def __enter__(self):
+        log("wglMakeCurrent(%#x, %#x)", self.hdc, self.context)
+        r = wglMakeCurrent(self.hdc, self.context)
+        if not r:
+            raise Exception("wglMakeCurrent failed")
+        self.ps = PAINTSTRUCT()
+        self.paint_hdc = BeginPaint(self.hwnd, byref(self.ps))
+        assert self.paint_hdc, "BeginPaint: no display device context"
+        log("BeginPaint hdc=%#x", self.paint_hdc)
+        return self
+
+    def __exit__(self, *_args):
+        assert self.context
+        log("EndPaint")
+        EndPaint(self.hwnd, byref(self.ps))
+        wglMakeCurrent(0, 0)
+        self.paint_hdc = None
+        self.ps = None
+
+    def swap_buffers(self):
+        assert self.paint_hdc
+        log("swap_buffers: calling SwapBuffers(%#x)", self.paint_hdc)
+        SwapBuffers(self.paint_hdc)
+
+    def __repr__(self):
+        return "WGLWindowContext(%#x)" % self.hwnd
+
+
+class WGLContext(object):
+
+    def __init__(self):
+        self.hwnd = 0
+        self.hdc = 0
+        self.context = 0
+        self.pixel_format_props = {}
+
+    def check_support(self, force_enable=False):
+        return {"safe" : True}
+        #hwnd = GetDesktopWindow()
+        #with WGLWindowContext(hwnd) as glwc:
+        #    return glwc.check_support(force_enable)
+
+    def get_bit_depth(self):
+        return 0
+
+    def is_double_buffered(self):
+        return DOUBLE_BUFFERED  #self.pixel_format_props.get("double-buffered", False)
+
+    def get_paint_context(self, gdk_window):
+        hwnd = gdk_window.handle
+        if self.hwnd!=hwnd:
+            #(this shouldn't happen)
+            #just make sure we don't keep using a context for a different handle:
+            self.destroy()
+        if not self.context:
+            self.context = self.create_wgl_context(hwnd)
+        return WGLWindowContext(hwnd, self.hdc, self.context)
+
+    def create_wgl_context(self, hwnd):
+        bpc = 8
+        self.hwnd = hwnd
+        self.pixel_format_props = {}
         self.hdc = GetDC(hwnd)
+        flags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DEPTH_DONTCARE
+        if DOUBLE_BUFFERED:
+            flags |= PFD_DOUBLEBUFFER 
         pfd = PIXELFORMATDESCRIPTOR()
         pfd.nsize = sizeof(PIXELFORMATDESCRIPTOR)
-        pfd.nVersion=1
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_DEPTH_DONTCARE
+        pfd.nVersion = 1
+        pfd.dwFlags = flags
         pfd.iPixelType = PFD_TYPE_RGBA
         pfd.cColorBits = bpc*3
         pfd.cRedBits = bpc
@@ -73,70 +141,23 @@ class WGLWindowContext(object):
             "stencil-size"      : pfd.cStencilBits,
             "aux-buffers"       : pfd.cAuxBuffers,
             "visible-mask"      : pfd.dwVisibleMask,
+            "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER) 
             })
         log("DescribePixelFormat: %s", self.pixel_format_props)
-        self.context = wglCreateContext(self.hdc)
-        assert self.context, "wglCreateContext failed"
-        log("wglCreateContext(%#x)=%#x", self.hdc, self.context)
-
-    def check_support(self, force_enable=False):
-        props = self.pixel_format_props.copy()
-        props.update(check_PyOpenGL_support(force_enable))
-        return props
-
-    def __enter__(self):
-        r = wglMakeCurrent(self.hdc, self.context)
-        if not r:
-            raise Exception("wglMakeCurrent failed")
-        self.ps = PAINTSTRUCT()
-        #warning: we replace the hdc here..
-        self.hdc = BeginPaint(self.hwnd, byref(self.ps))
-        assert self.hdc, "BeginPaint: no display device context"
-        log("BeginPaint hdc=%#x", self.hdc)
-        self.valid = True
-        return self
-
-    def __exit__(self, *_args):
-        assert self.valid and self.context
-        self.valid = False
-        EndPaint(self.hwnd, byref(self.ps))
-        wglMakeCurrent(0, 0)
-        if not wglDeleteContext(self.context):
-            raise Exception("wglDeleteContext failed for context %#x" % self.context)
-        self.context = None
-
-    def swap_buffers(self):
-        assert self.valid
-        SwapBuffers(self.hdc)
-
-    def __repr__(self):
-        return "WGLWindowContext(%#x)" % self.hwnd
-
-
-class WGLContext(object):
-
-    def __init__(self):
-        pass
-
-    def check_support(self, force_enable=False):
-        hwnd = GetDesktopWindow()
-        with WGLWindowContext(hwnd) as glwc:
-            return glwc.check_support(force_enable)
-
-    def get_bit_depth(self):
-        return 0
-
-    def is_double_buffered(self):
-        return True
-
-    def get_paint_context(self, gdk_window):
-        assert gdk_window
-        return WGLWindowContext(gdk_window.handle)
+        context = wglCreateContext(self.hdc)
+        assert context, "wglCreateContext failed"
+        log("wglCreateContext(%#x)=%#x", self.hdc, context)
+        return context
 
     def destroy(self):
-        self.context = None
+        c = self.context
+        if c:
+            self.context = 0
+            if not wglDeleteContext(c):
+                raise Exception("wglDeleteContext failed for context %#x" % c)
+        self.hwnd = 0
 
     def __repr__(self):
-        return "WGLContext"
+        return "WGLContext(%#x)" % self.context
 
 GLContext = WGLContext

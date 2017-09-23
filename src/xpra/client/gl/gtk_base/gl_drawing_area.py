@@ -48,6 +48,8 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def gl_context(self):
         gdk_window = self._backing.get_window()
+        if not self._backing:
+            return None
         assert gdk_window
         self.window_context = self.context.get_paint_context(gdk_window)
         return self.window_context
