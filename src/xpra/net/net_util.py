@@ -356,8 +356,12 @@ def get_network_caps():
     from xpra.net.crypto import get_digests, get_crypto_caps
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
     from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
+    digests = get_digests()
+    #"hmac" is the legacy name, "xor" and "des" should not be used for salt:
+    salt_digests = [x for x in digests if x not in ("hmac", "xor", "des")]
     caps = {
-                "digest"                : get_digests(),
+                "digest"                : digests,
+                "salt-digest"           : salt_digests,
                 "compressors"           : get_enabled_compressors(),
                 "encoders"              : get_enabled_encoders(),
                 "mmap"                  : MMAP_SUPPORTED,

@@ -52,6 +52,7 @@ DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
+LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 
 
 class XpraClientBase(FileTransferHandler):
@@ -579,6 +580,14 @@ class XpraClientBase(FileTransferHandler):
             elif not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
                 self.auth_error(EXIT_ENCRYPTION, "server requested '%s' digest, cowardly refusing to use it without encryption" % digest, "invalid digest")
                 return False
+        salt_digest = "xor"
+        if len(packet)>=5:
+            salt_digest = packet[4]
+        if salt_digest in ("xor", "des"):
+            if not LEGACY_SALT_DIGEST:
+                self.auth_error(EXIT_INCOMPATIBLE_VERSION, "server uses legacy salt digest '%s'" % salt_digest)
+                return False
+            log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
         return True
 
     def get_challenge_prompt(self):
@@ -612,9 +621,11 @@ class XpraClientBase(FileTransferHandler):
         #they also tell us which digest to use:
         digest = packet[3]
         client_salt = get_salt(len(server_salt))
-        #TODO: use some key stretching algorigthm? (meh)
-        salt = xor(server_salt, client_salt)
-        authlog("combined salt(%s, %s)=%s", binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
+        salt_digest = "xor"
+        if len(packet)>=5:
+            salt_digest = packet[4]
+        salt = gendigest(salt_digest, client_salt, server_salt)
+        authlog("combined %s salt(%s, %s)=%s", salt_digest, binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
 
         challenge_response = gendigest(digest, password, salt)
         if not challenge_response:
