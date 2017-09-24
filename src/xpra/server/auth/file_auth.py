@@ -7,7 +7,6 @@
 
 from xpra.net.crypto import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
-from xpra.util import xor
 
 
 #will be called when we init the module
@@ -20,12 +19,7 @@ class Authenticator(FileAuthenticatorBase):
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
-        #ensure this salt does not get re-used:
-        if client_salt is None:
-            salt = self.salt
-        else:
-            salt = xor(self.salt, client_salt)
-        self.salt = None
+        salt = self.get_response_salt(client_salt)
         password = self.get_password()
         if not password:
             log.warn("Warning: authentication failed")

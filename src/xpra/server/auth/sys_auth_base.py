@@ -69,16 +69,22 @@ class SysAuthenticator(object):
         #this will call check(password)
         return self.authenticate_check(challenge_response, client_salt)
 
+
+    def get_response_salt(self, client_salt=None):
+        server_salt = self.salt
+        #clear it to make sure it does not get re-used:
+        self.salt = None
+        if client_salt is None:
+            return server_salt
+        salt = xor(server_salt, client_salt)
+        log("combined salt(%s, %s)=%s", binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
+        return salt
+
     def authenticate_check(self, challenge_response, client_salt=None):
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
-        if client_salt is None:
-            salt = self.salt
-        else:
-            salt = xor(self.salt, client_salt)
-            log("combined salt(%s, %s)=%s", binascii.hexlify(self.salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
-        self.salt = None
+        salt = self.get_response_salt(client_salt)
         password = xor(challenge_response, salt)
         #warning: enabling logging here would log the actual system password!
         #log("authenticate(%s) password=%s", binascii.hexlify(challenge_response), password)
