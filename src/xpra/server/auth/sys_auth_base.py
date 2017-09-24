@@ -7,6 +7,7 @@ import binascii
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
+from collections import deque
 from xpra.net.crypto import get_salt, choose_digest, verify_digest
 from xpra.os_util import strtobytes
 from xpra.log import Logger
@@ -22,6 +23,8 @@ def init(opts):
 
 
 class SysAuthenticator(object):
+    USED_SALT = deque(maxlen=1024*1024)
+
     def __init__(self, username, **kwargs):
         self.username = username
         self.salt = None
@@ -72,12 +75,15 @@ class SysAuthenticator(object):
 
     def get_response_salt(self, client_salt=None):
         server_salt = self.salt
-        #clear it to make sure it does not get re-used:
+        #make sure it does not get re-used:
         self.salt = None
         if client_salt is None:
             return server_salt
         salt = xor(server_salt, client_salt)
+        if salt in SysAuthenticator.USED_SALT:
+            raise Exception("danger: an attempt was made to re-use the same computed salt")
         log("combined salt(%s, %s)=%s", binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
+        SysAuthenticator.USED_SALT.append(salt)
         return salt
 
     def authenticate_check(self, challenge_response, client_salt=None):
