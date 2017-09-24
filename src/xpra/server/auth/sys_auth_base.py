@@ -6,7 +6,7 @@
 import binascii
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import xor, envbool
+from xpra.util import xor
 from collections import deque
 from xpra.net.crypto import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import strtobytes
