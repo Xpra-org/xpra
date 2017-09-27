@@ -19,10 +19,16 @@ from xpra.os_util import LINUX, monotonic_time, memoryview_to_bytes
 from xpra.util import envint, repr_ellipsized
 from xpra.make_thread import start_thread
 from xpra.net.protocol import Protocol, READ_BUFFER_SIZE
-from xpra.net.bytestreams import SocketConnection
+from xpra.net.bytestreams import SocketConnection, can_retry
 
 DROP_PCT = envint("XPRA_UDP_DROP_PCT", 0)
 DROP_FIRST = envint("XPRA_UDP_DROP_FIRST", 0)
+MIN_MTU = envint("XPRA_UDP_MIN_MTU", 576)
+MAX_MTU = envint("XPRA_UDP_MAX_MTU", 65536)
+assert MAX_MTU>MIN_MTU
+
+def clamp_mtu(mtu):
+    return max(MIN_MTU, min(MAX_MTU, mtu))
 
 
 #UUID, seqno, synchronous, chunk, chunks
@@ -61,7 +67,13 @@ class UDPListener(object):
         log.info("udp read thread loop starting")
         try:
             while not self._closed:
-                buf, bfrom = self._socket.recvfrom(READ_BUFFER_SIZE)
+                try:
+                    buf, bfrom = self._socket.recvfrom(READ_BUFFER_SIZE)
+                except Exception as e:
+                    log("_read_thread_loop() buffer=%s, from=%s", repr_ellipsized(buf), bfrom, exc_info=True)
+                    if can_retry(e):
+                        continue
+                    raise
                 if not buf:
                     log("read thread: eof")
                     break
@@ -216,7 +228,7 @@ class UDPProtocol(Protocol):
         if not con:
             return
         if mtu and self.mtu==0:
-            self.mtu = mtu
+            self.mtu = clamp_mtu(mtu)
         self.asynchronous_send_enabled = remote_async_receive
         #first, we can free all the packets that have been processed by the other end:
         #(resend cache and fail callback)
@@ -432,8 +444,8 @@ class UDPProtocol(Protocol):
                 return self.write_buf(seqno, buf, fail_cb, synchronous)
             except MTUExceeded as e:
                 log.warn("%s: %s", e, self.mtu)
-                if self.mtu>576:
-                    self.mtu //= 2
+                if self.mtu>MIN_MTU:
+                    self.mtu = clamp_mtu(self.mtu//2)
                 raise
 
     def write_buf(self, seqno, data, fail_cb, synchronous):
@@ -442,7 +454,7 @@ class UDPProtocol(Protocol):
             return 0
         #TODO: bump to 1280 for IPv6
         #mtu = max(576, self.mtu)
-        mtu = max(1280, self.mtu)
+        mtu = self.mtu or MIN_MTU
         l = len(data)
         maxpayload = mtu-_header_size
         chunks = l // maxpayload
@@ -475,7 +487,13 @@ class UDPProtocol(Protocol):
 
     def get_info(self, alias_info=True):
         i = Protocol.get_info(self, alias_info)
-        i["mtu"] = self.mtu
+        i.update({
+            "mtu"   : {
+                ""      : clamp_mtu(self.mtu),
+                "min"   : MIN_MTU,
+                "max"   : MAX_MTU,
+                },
+            })
         return i
 
 
@@ -496,7 +514,7 @@ class UDPClientProtocol(UDPProtocol):
             con = self._conn
             if con:
                 try:
-                    self.mtu = min(32767, con._socket.getsockopt(socket.IPPROTO_IP, IP_MTU))
+                    self.mtu = clamp_mtu(con._socket.getsockopt(socket.IPPROTO_IP, IP_MTU))
                     #log("mtu=%s", self.mtu)
                 except IOError as e:
                     pass
