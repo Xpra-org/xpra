@@ -20,6 +20,9 @@ BUNDLE_OPENGL=${BUNDLE_OPENGL:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
+PYTHON=${PYTHON:python2}
+
+
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
@@ -60,18 +63,21 @@ fi
 
 #record in source tree:
 rm xpra/src_info.py xpra/build_info.py >& /dev/null
-python2 add_build_info.py >& /dev/null
+${PYTHON} add_build_info.py >& /dev/null
 if [ "$?" != "0" ]; then
 	echo "ERROR: recording build info"
 	exit 1
 fi
 
 #figure out the full xpra version:
-VERSION=`python2.7.exe -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
-NUMREVISION=`python2.7.exe -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION).rstrip('M'))"`
-ZERO_PADDED_VERSION=`python2.7.exe -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:3]))'`".${NUMREVISION}"
-LOCAL_MODIFICATIONS=`python2.7.exe -c "from xpra.src_info import LOCAL_MODIFICATIONS;import sys;sys.stdout.write(str(LOCAL_MODIFICATIONS))"`
+PYTHON_VERSION=`${PYTHON} --version | awk '{print $2}'`
+PYTHON_MAJOR_VERSION=`${PYTHON} -c 'import sys;print(sys.version_info[0])'`
+echo "Python${PYTHON_MAJOR_VERSION} version ${PYTHON_VERSION}"
+VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
+REVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
+NUMREVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION).rstrip('M'))"`
+ZERO_PADDED_VERSION=`${PYTHON} -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:3]))'`".${NUMREVISION}"
+LOCAL_MODIFICATIONS=`${PYTHON} -c "from xpra.src_info import LOCAL_MODIFICATIONS;import sys;sys.stdout.write(str(LOCAL_MODIFICATIONS))"`
 FULL_VERSION=${VERSION}-r${REVISION}
 if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 	FULL_VERSION="${FULL_VERSION}M"
@@ -166,9 +172,9 @@ if [ "${DO_CUDA}" == "1" ]; then
 	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" ARGB_to_YUV444 || exit 1
 fi
 
-echo "* Building Python 2.7 Cython modules"
-BUILD_LOG="win32/Python2.7-build.log"
-python2.7.exe ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& ${BUILD_LOG}
+echo "* Building Python ${PYTHON_MAJOR_VERSION} Cython modules"
+BUILD_LOG="win32/Python${PYTHON_MAJOR_VERSION}-build.log"
+${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& ${BUILD_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${BUILD_LOG}:"
 	tail -n 20 "${BUILD_LOG}"
@@ -187,12 +193,12 @@ if [ "${DO_TESTS}" == "1" ]; then
 fi
 
 # For building Python 3.x Sound sub-app (broken because of cx_Freeze bugs)
-#echo "* Building Python 3.4 Cython modules (see win32/Python2.7-build.log)"
-#python2.7.exe ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& win32/Python2.7-build.log
+#echo "* Building Python 3.4 Cython modules (see win32/Python${PYTHON_MAJOR_VERSION}-build.log)"
+#${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& win32/Python${PYTHON_MAJOR_VERSION}-build.log
 
 echo "* Generating installation directory"
 CX_FREEZE_LOG="win32/cx_freeze-install.log"
-python2.7.exe ./setup.py install_exe ${BUILD_OPTIONS} --install=${DIST} >& ${CX_FREEZE_LOG}
+${PYTHON} ./setup.py install_exe ${BUILD_OPTIONS} --install=${DIST} >& ${CX_FREEZE_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${CX_FREEZE_LOG}:"
 	tail -n 20 "${CX_FREEZE_LOG}"
@@ -209,8 +215,13 @@ if [ "${BUNDLE_OPENGL}" == "1" ]; then
 		pushd "${DIST}" >& /dev/null
 		zip -qmor "library.zip" OpenGL
 		popd >& /dev/null
-		#python2.7.exe win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
+		#${PYTHON} win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
 	fi
+fi
+
+if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+	#cx freeze workarounds
+	
 fi
 
 echo "* Generating gdk pixbuf loaders.cache"
