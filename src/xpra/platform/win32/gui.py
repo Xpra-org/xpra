@@ -1167,9 +1167,13 @@ def main():
             log.info("suspend event")
         def resume():
             log.info("resume event")
-        FakeClient = namedtuple("FakeClient", "_focused,keyboard_grabbed,window_with_grab,suspend,resume,keyboard_helper")
-        fake_client = FakeClient(_focused=False, keyboard_grabbed=False, window_with_grab=None,
-                                 suspend=suspend, resume=resume, keyboard_helper=None)
+        fake_client = AdHocStruct()
+        fake_client._focused = False
+        fake_client.keyboard_grabbed = False
+        fake_client.window_with_grab = None
+        fake_client.suspend = suspend
+        fake_client.resume = resume
+        fake_client.keyboard_helper = None
         def signal_quit(*_args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit
