@@ -12,7 +12,7 @@ import uuid
 import hmac
 from xpra.util import xor
 from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32, OSX, POSIX
-from xpra.net.crypto import get_digests, get_digest_module
+from xpra.net.crypto import get_digests, get_digest_module, gendigest
 
 
 def temp_filename(prefix=""):
@@ -195,8 +195,10 @@ class TestAuth(unittest.TestCase):
 					assert mac in get_digests()
 					assert mac!="xor"
 					password = strtobytes(password)
-					client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
-					auth_salt = strtobytes(xor(salt, client_salt))
+					client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)[:len(salt)]
+					salt_digest = a.choose_salt_digest(get_digests())
+					assert salt_digest
+					auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
 					if muck==0:
 						digestmod = get_digest_module(mac)
 						verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
