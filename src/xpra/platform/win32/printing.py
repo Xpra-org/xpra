@@ -11,6 +11,7 @@ import os
 import subprocess
 from xpra.platform.win32 import constants as win32con
 from xpra.util import csv, envint
+from xpra.os_util import bytestostr
 
 
 #allows us to skip some printers we don't want to export
@@ -165,7 +166,7 @@ def get_printers():
                 #strip duplicated and empty strings from the description:
                 desc_els = []
                 [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
-                info = {"printer-info"            : ",".join(desc_els),
+                info = {"printer-info"            : bytestostr(",".join(desc_els)),
                         "type"                    : penum}
                 if comment:
                     info["printer-make-and-model"] = comment

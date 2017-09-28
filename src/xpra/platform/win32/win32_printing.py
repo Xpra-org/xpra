@@ -9,8 +9,8 @@ log = Logger("printing", "win32")
 
 from xpra.platform.win32.common import CreateDCA, DeleteDC, gdi32
 
-from ctypes import cdll, WinDLL, c_void_p, Structure, cast, c_char, c_int, pointer
-from ctypes.wintypes import POINTER, HDC, HANDLE, BOOL, BYTE, LPCSTR, DWORD, WORD
+from ctypes import cdll, WinDLL, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER
+from ctypes.wintypes import HDC, HANDLE, BOOL, BYTE, LPCSTR, DWORD, WORD
 
 CHAR = BYTE
 LPHANDLE = PHANDLE = POINTER(HANDLE)

@@ -93,7 +93,8 @@ print("Xpra version %s" % XPRA_VERSION)
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-from xpra.os_util import get_status_output, is_Ubuntu, is_Debian, is_Raspbian, getUbuntuVersion
+from xpra.os_util import get_status_output, is_Ubuntu, is_Debian, is_Raspbian, getUbuntuVersion,\
+    PYTHON3
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
@@ -1226,6 +1227,15 @@ if WIN32:
             external_includes += ["multiprocessing", "setproctitle"]
 
         external_includes += ["encodings"]
+        if PYTHON3:
+            external_includes += ["io", "codecs", "abc", "_weakrefset"]
+            #hopefully, cx_Freeze will fix this horror:
+            #(we shouldn't have to deal with DLL dependencies)
+            import site
+            lib_python = os.path.dirname(site.getsitepackages()[0])
+            lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
+            add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
+            add_data_files('', glob.glob("%s/encodings" % lib_python))
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
@@ -1242,6 +1252,7 @@ if WIN32:
                             "compressed"        : True,
                             "create_shared_zip" : zip_ENABLED,
                             })
+
         setup_options["options"] = {"build_exe" : cx_freeze_options}
         executables = []
         setup_options["executables"] = executables

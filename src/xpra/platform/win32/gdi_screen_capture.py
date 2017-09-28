@@ -12,7 +12,7 @@ from xpra.log import Logger
 from xpra.util import envbool, roundup
 log = Logger("shadow", "win32")
 
-from xpra.os_util import StringIOClass
+from xpra.os_util import BytesIOClass
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_virtualscreenmetrics
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -166,7 +166,7 @@ class GDICapture(object):
         log("get_image BitBlt took %ims", (bitblt_time-select_time)*1000)
         rowstride = roundup(width*self.bit_depth//8, 2)
         buf_size = rowstride*height
-        pixels = ctypes.create_string_buffer("", buf_size)
+        pixels = ctypes.create_string_buffer(b"", buf_size)
         log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.addressof(pixels))
         r = GetBitmapBits(self.bitmap, buf_size, ctypes.byref(pixels))
         if r==0:
@@ -213,7 +213,7 @@ class GDICapture(object):
         assert image.get_width()==w and image.get_height()==h
         assert image.get_pixel_format()=="BGRX"
         img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", "BGRX", 0, 1)
-        out = StringIOClass()
+        out = BytesIOClass()
         img.save(out, format="PNG")
         screenshot = (img.width, img.height, "png", img.width*3, out.getvalue())
         out.close()

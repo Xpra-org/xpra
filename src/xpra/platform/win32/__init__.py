@@ -288,7 +288,7 @@ def do_init():
         return
     from xpra.platform import get_prgname
     LOG_FILENAME = (get_prgname() or "Xpra")+".log"
-    from paths import _get_data_dir
+    from xpra.platform.win32.paths import _get_data_dir
     d = _get_data_dir()
     log_file = os.path.join(d, LOG_FILENAME)
     sys.stdout = open(log_file, "a")
