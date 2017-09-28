@@ -219,11 +219,6 @@ if [ "${BUNDLE_OPENGL}" == "1" ]; then
 	fi
 fi
 
-if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	#cx freeze workarounds
-	
-fi
-
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 
