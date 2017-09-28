@@ -7,7 +7,6 @@
 import os
 import sys
 import struct
-import binascii
 
 from xpra.log import Logger
 log = Logger("posix")
@@ -18,7 +17,7 @@ traylog = Logger("posix", "tray")
 menulog = Logger("posix", "menu")
 mouselog = Logger("posix", "mouse")
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
 from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
 
@@ -36,10 +35,6 @@ RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
-
-
-def hexstr(v):
-    return binascii.hexlify(strtobytes(v))
 
 
 def get_native_system_tray_classes():

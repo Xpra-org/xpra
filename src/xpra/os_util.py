@@ -11,6 +11,7 @@ import sys
 import signal
 import uuid
 import time
+import binascii
 
 #hide some ugly python3 compat:
 try:
@@ -77,6 +78,10 @@ else:
         if type(x)==bytes:
             return x.decode("latin1")
         return str(x)
+
+def hexstr(v):
+    return binascii.hexlify(strtobytes(v))
+
 
 def memoryview_to_bytes(v):
     if type(v)==bytes:

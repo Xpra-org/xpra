@@ -7,10 +7,9 @@
 # username|password|uid|gid|displays|env_options|session_options
 
 import os
-import binascii
 
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
-from xpra.os_util import strtobytes, POSIX
+from xpra.os_util import strtobytes, hexstr, POSIX
 from xpra.util import parse_simple_dict
 from xpra.net.crypto import verify_digest
 
@@ -140,7 +139,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
-        log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s", challenge_response, fpassword, binascii.hexlify(strtobytes(salt)))
+        log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s", challenge_response, fpassword, hexstr(salt))
         if not verify_digest(self.digest, fpassword, salt, challenge_response):
             log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
             return False

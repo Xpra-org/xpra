@@ -11,7 +11,7 @@ import binascii
 
 from xpra.util import envint, envbool, csv, xor
 from xpra.log import Logger
-from xpra.os_util import strtobytes, memoryview_to_bytes
+from xpra.os_util import strtobytes, memoryview_to_bytes, hexstr
 
 log = Logger("network", "crypto")
 
@@ -84,7 +84,7 @@ def validate_backend(try_backend):
     log("validate_backend(%s) decryptor=%s", try_backend, dec)
     assert dec is not None, "backend %s failed to generate a decryptor" % enc
     ev = enc.encrypt(message)
-    evs = binascii.hexlify(strtobytes(ev))
+    evs = hexstr(ev)
     log("validate_backend(%s) encrypted(%s)=%s", try_backend, message, evs)
     dv = dec.decrypt(ev)
     log("validate_backend(%s) decrypted(%s)=%s", try_backend, evs, dv)
