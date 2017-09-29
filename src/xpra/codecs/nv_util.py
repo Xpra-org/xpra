@@ -9,7 +9,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
 from xpra.util import pver, print_nested_dict, engs, envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 
 
 MAX_TESTED = 384
@@ -111,9 +111,9 @@ def identify_cards():
                         pass
                     return i
                 for prop, fn_name, args, conv in (
-                       ("name",                     "nvmlDeviceGetName",                    (),     str),
-                       ("serial",                   "nvmlDeviceGetSerial",                  (),     str),
-                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     str),
+                       ("name",                     "nvmlDeviceGetName",                    (),     strtobytes),
+                       ("serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
+                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
                        ("pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
                        ("memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
                        ("pcie-link-generation-max", "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
@@ -129,7 +129,7 @@ def identify_cards():
                        ("fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
                        ("temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
                        ("power-state",              "nvmlDeviceGetPowerState",              (),     int),
-                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     str),
+                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
                        ):
                     try:
                         fn = getattr(pynvml, fn_name)
