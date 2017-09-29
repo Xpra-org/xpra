@@ -735,7 +735,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            if enable_opengl in ("", "auto"):
+            if enable_opengl in ("", "auto") or enable_opengl in TRUE_OPTIONS:
                 if PYTHON3:
                     backends = "native", "gtk"
                 else:
