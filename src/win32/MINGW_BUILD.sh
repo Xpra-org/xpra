@@ -213,11 +213,16 @@ fi
 
 if [ "${BUNDLE_OPENGL}" == "1" ]; then
 	if [ -e "${DIST}/OpenGL" ]; then
-		echo "* Adding PyOpenGL to library.zip"
-		pushd "${DIST}" >& /dev/null
-		zip -qmor "library.zip" OpenGL
-		popd >& /dev/null
-		#${PYTHON} win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
+		if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+			echo "* Adding PyOpenGL to lib dir"
+			mv "OpenGL" "lib/"
+		else
+			echo "* Adding PyOpenGL to library.zip"
+			pushd "${DIST}" >& /dev/null
+			zip -qmor "library.zip" OpenGL
+			popd >& /dev/null
+			#${PYTHON} win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
+		fi
 	fi
 fi
 
