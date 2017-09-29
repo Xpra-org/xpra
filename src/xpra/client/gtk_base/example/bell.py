@@ -7,8 +7,10 @@
 from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
 from xpra.gtk_common.gtk_util import WIN_POS_CENTER
-from xpra.x11.gtk_x11.gdk_display_source import init_display_source
-init_display_source()
+from xpra.os_util import POSIX
+if POSIX:
+    from xpra.x11.gtk_x11.gdk_display_source import init_display_source
+    init_display_source()
 
 
 class BellWindow(gtk.Window):
