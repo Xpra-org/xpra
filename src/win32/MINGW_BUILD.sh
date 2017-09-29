@@ -21,8 +21,6 @@ BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 
 PYTHON=${PYTHON:-python2}
-echo "PYTHON='${PYTHON}'"
-
 
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
@@ -88,14 +86,17 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	EXTRA_VERSION="-Client"
 	DO_CUDA="0"
 fi
-BUILD_TYPE=""
 echo
 echo -n "Xpra${EXTRA_VERSION} ${FULL_VERSION}"
 if [ "${MSYSTEM_CARCH}" == "i686" ]; then
+	BUILD_TYPE=""
 	DO_CUDA="0"
 else
 	BUILD_TYPE="-${MSYSTEM_CARCH}"
 	echo " (64-bit)"
+fi
+if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+	BUILD_TYPE="-Python3${BUILD_TYPE}"
 fi
 echo
 echo
