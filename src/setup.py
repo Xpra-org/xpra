@@ -1182,7 +1182,7 @@ if WIN32:
             if opengl_ENABLED:
                 add_gi("GdkGLExt-3.0", "GtkGLExt-3.0", "GL-1.0")
             add_DLLs('visual', 'curl', 'soup', 'openjpeg')
-        if gtk3_ENABLED or server_ENABLED:
+        if server_ENABLED and not PYTHON3:
             add_DLLs('sqlite3')
 
         if gtk2_ENABLED:
