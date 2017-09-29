@@ -7,6 +7,7 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 from ctypes import sizeof, byref
+from xpra.os_util import PYTHON2
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.platform.win32.common import GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, GetDesktopWindow
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
@@ -72,7 +73,20 @@ class WGLContext(object):
         return DOUBLE_BUFFERED  #self.pixel_format_props.get("double-buffered", False)
 
     def get_paint_context(self, gdk_window):
-        hwnd = gdk_window.handle
+        if PYTHON2:
+            hwnd = gdk_window.handle
+        else:
+            from ctypes import CDLL, pythonapi, c_void_p, py_object
+            gdkdll = CDLL("libgdk-3-0.dll")
+            log("gdkdll=%s", gdkdll)
+            PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
+            PyCapsule_GetPointer.restype = c_void_p
+            PyCapsule_GetPointer.argtypes = [py_object]
+            log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
+            gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
+            log("gpointer=%s", gpointer)
+            hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
+            log("hwnd=%s", hwnd)
         if self.hwnd!=hwnd:
             #(this shouldn't happen)
             #just make sure we don't keep using a context for a different handle:
