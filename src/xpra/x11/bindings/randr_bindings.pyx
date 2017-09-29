@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 
 
+from libc.stdint cimport uintptr_t
 ctypedef unsigned long CARD32
 
 cdef extern from "X11/X.h":
@@ -47,6 +48,11 @@ cdef extern from "X11/extensions/randr.h":
     cdef unsigned int RR_Rotate_0
 
 cdef extern from "X11/extensions/Xrandr.h":
+    ctypedef XID RRMode
+    ctypedef XID RROutput
+    ctypedef XID RRCrtc
+    ctypedef unsigned long XRRModeFlags
+
     Bool XRRQueryExtension(Display *, int *, int *)
     Status XRRQueryVersion(Display *, int * major, int * minor)
     ctypedef struct XRRScreenSize:
@@ -54,6 +60,30 @@ cdef extern from "X11/extensions/Xrandr.h":
         int mwidth, mheight
     XRRScreenSize *XRRSizes(Display *dpy, int screen, int *nsizes)
     void XRRSetScreenSize(Display *dpy, Window w, int width, int height, int mmWidth, int mmHeight)
+    ctypedef struct XRRModeInfo:
+        RRMode              id
+        unsigned int        width
+        unsigned int        height
+        unsigned long       dotClock
+        unsigned int        hSyncStart
+        unsigned int        hSyncEnd
+        unsigned int        hTotal
+        unsigned int        hSkew
+        unsigned int        vSyncStart
+        unsigned int        vSyncEnd
+        unsigned int        vTotal
+        char                *name
+        unsigned int        nameLength
+        XRRModeFlags        modeFlags
+    ctypedef struct XRRScreenResources:
+        Time        timestamp
+        Time        configTimestamp
+        int         ncrtc
+        RRCrtc      *crtcs
+        int         noutput
+        RROutput    *outputs
+        int         nmode
+        XRRModeInfo *modes
 
     ctypedef unsigned short SizeID
     ctypedef struct XRRScreenConfiguration:
@@ -68,6 +98,13 @@ cdef extern from "X11/extensions/Xrandr.h":
     SizeID XRRConfigCurrentConfiguration(XRRScreenConfiguration *config, Rotation *rotation)
 
     void XRRFreeScreenConfigInfo(XRRScreenConfiguration *)
+    XRRScreenResources *XRRGetScreenResourcesCurrent(Display *dpy, Window window)
+    void XRRFreeScreenResources(XRRScreenResources *resources)
+
+    XRRModeInfo *XRRAllocModeInfo(char *name, int nameLength)
+    RRMode XRRCreateMode(Display *dpy, Window window, XRRModeInfo *modeInfo)
+    void XRRAddOutputMode(Display *dpy, RROutput output, RRMode mode)
+    void XRRFreeModeInfo(XRRModeInfo *modeInfo)
 
     int XScreenCount(Display *display)
     int XDisplayWidthMM(Display *display, int screen_number)
@@ -240,3 +277,107 @@ cdef class _RandRBindings(_X11CoreBindings):
 
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)
+
+
+    def add_screen_size(self, unsigned int w, unsigned int h):
+        log("add_screen_size(%i, %i)", w, h)
+        cdef Window window
+        cdef XRRModeInfo *new_mode
+        cdef XRRScreenResources *rsc
+        cdef RRMode mode
+        cdef RROutput output
+        
+        #monitor settings as set in xorg.conf...
+        cdef unsigned int maxPixelClock = 230*1000*1000         #230MHz
+        cdef unsigned int minHSync = 10*1000                    #10KHz
+        cdef unsigned int maxHSync = 300*1000                   #300KHz
+        cdef unsigned int minVSync = 10                         #10Hz
+        cdef unsigned int maxVSync = 300                        #30Hz
+        cdef double idealVSync = 50.0
+        cdef double timeHFront = 0.07           #0.074219; 0.075; Width of the black border on right edge of the screen
+        cdef double timeHSync = 0.1             #0.107422; 0.1125; Sync pulse duration
+        cdef double timeHBack = 0.15            #0.183594; 0.1875; Width of the black border on left edge of the screen
+        cdef double timeVBack = 0.06            #0.031901; 0.055664; // Adjust this to move picture up/down
+        cdef double yFactor = 1                 #no interlace (0.5) or doublescan (2)
+
+        from xpra.util import roundup
+        w = roundup(w, 4)
+        name = "%sx%s" % (w, h)
+        new_mode = XRRAllocModeInfo(name, len(name))
+        try:
+            window = XDefaultRootWindow(self.display)
+    
+            xFront = int(w * timeHFront)
+            xSync = int(w * timeHSync)
+            xBack = int(w * timeHBack)
+            xTotal = w + xFront + xSync + xBack
+            yFront = 1
+            ySync = 3
+            yBack = int(h * timeVBack)
+            yTotal = h + yFront + ySync + yBack
+    
+            modeMaxClock = maxPixelClock
+            if (maxHSync * xTotal)<maxPixelClock:
+                modeMaxClock = maxHSync * xTotal
+            tmp = maxVSync * xTotal * yTotal * yFactor
+            if tmp<modeMaxClock:
+                modeMaxClock = tmp
+            modeMinClock = minHSync * xTotal
+            # Monitor minVSync too low? => increase mode minimum pixel clock
+            tmp = minVSync * xTotal * yTotal * yFactor
+            if tmp > modeMinClock:
+                modeMinClock = tmp
+            # If minimum clock > maximum clock, the mode is impossible...
+            if modeMinClock > modeMaxClock:
+                log.warn("Warning: cannot add mode %s", name)
+                log.warn(" no suitable clocks could be found")
+                return None
+    
+            idealClock = idealVSync * xTotal * yTotal * yFactor
+            clock = idealClock;
+            if clock < modeMinClock:
+                clock = modeMinClock
+            elif clock > modeMaxClock:
+                clock = modeMaxClock
+            
+            log("Modeline %sx%s %s %s %s %s %s %s %s %s %s", w, h, clock/1000/1000,
+                            w, w+xFront, w+xFront+xSync, xTotal,
+                            h, h+yFront, h+yFront+ySync, yTotal)
+            new_mode.width = w
+            new_mode.height = h
+            new_mode.dotClock = long(clock)
+            new_mode.hSyncStart = int(w+xFront)
+            new_mode.hSyncEnd = int(w+xFront+xSync)
+            new_mode.hTotal = int(xTotal)
+            new_mode.hSkew = 0
+            new_mode.vSyncStart = int(h+yFront)
+            new_mode.vSyncEnd = int(h+yFront+ySync)
+            new_mode.vTotal = int(yTotal)
+            new_mode.modeFlags = 0
+            mode = XRRCreateMode(self.display, window, new_mode)
+            log("XRRCreateMode returned %#x" % mode)
+            if mode<=0:
+                return None
+            #now add it to the output:
+            try:
+                rsc = XRRGetScreenResourcesCurrent(self.display, window)
+                log("screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
+                if rsc.noutput!=1:
+                    log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)
+                    return None
+                output = rsc.outputs[0]
+                log("adding mode %#x to output %#x", mode, output)
+                XRRAddOutputMode(self.display, output, mode)
+            finally:
+                XRRFreeScreenResources(rsc)
+        finally:
+            XRRFreeModeInfo(new_mode)
+        return w, h
+
+    def xrr_set_screen_size(self, w, h, xdpi, ydpi):
+        #and now use it:
+        cdef Window window = XDefaultRootWindow(self.display)
+        wmm = int(w*25.4/xdpi + 0.5)
+        hmm = int(h*25.4/ydpi + 0.5)
+        log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
+        XRRSetScreenSize(self.display, window, w, h, wmm, hmm)

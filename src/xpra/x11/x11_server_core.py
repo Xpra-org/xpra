@@ -94,6 +94,8 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         self.randr = opts.resize_display
+        self.randr_initial_sizes = []
+        self.randr_added_sizes = []
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
         self.x11_init()
@@ -117,11 +119,9 @@ class X11ServerCore(GTKServerBase):
 
     def init_randr(self):
         self.randr = RandR.has_randr()
-        if self.randr and len(RandR.get_screen_sizes())<=1:
-            #disable randr when we are dealing with a Xvfb
-            #with only one resolution available
-            #since we don't support adding them on the fly yet
-            self.randr = False
+        log("randr=%s", self.randr)
+        self.randr_initial_sizes = RandR.get_screen_sizes()
+        log("initial screen sizes=%s", self.randr_initial_sizes)
         if self.randr:
             display = gdk.display_get_default()
             i=0
@@ -326,7 +326,12 @@ class X11ServerCore(GTKServerBase):
             with xsync:
                 sizes = RandR.get_screen_sizes()
                 if self.randr and len(sizes)>=0:
-                    sinfo["randr"] = {"options" : list(reversed(sorted(sizes)))}
+                    sinfo["randr"] = {
+                        ""          : True,
+                        "options"   : list(reversed(sorted(sizes))),
+                        "initial"   : self.randr_initial_sizes,
+                        "added"     : self.randr_added_sizes,
+                        }
         except:
             pass
         return info
@@ -475,6 +480,23 @@ class X11ServerCore(GTKServerBase):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
 
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
+        #ugly hackish way of detecting Xvfb with randr,
+        #assume that it has only one resolution pre-defined:
+        if len(self.randr_initial_sizes)==1:
+            try:
+                with xsync:
+                    v = RandR.add_screen_size(desired_w, desired_h)
+                    if v:
+                        self.randr_added_sizes.append(v)
+                        #we have to wait a little bit
+                        #to make sure that everything sees the new resolution
+                        #(ideally this method would be split in two and this would be a callback)
+                        import time
+                        time.sleep(0.5)
+                        return v
+            except Exception as e:
+                screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
+                screenlog.warn(" %s", e)
         #try to find the best screen size to resize to:
         new_size = None
         closest = {}
@@ -574,16 +596,28 @@ class X11ServerCore(GTKServerBase):
                     tw, th = temp[k]
                     screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
-            screenlog("calling RandR.set_screen_size(%s, %s)", w, h)
+            screenlog("randr_added_sizes=%s", self.randr_added_sizes)
+            with xsync:
+                RandR.get_screen_size()
+            #Xdummy with randr 1.2:
+            screenlog("using XRRSetScreenConfigAndRate with %ix%i", w, h)
             with xsync:
                 RandR.set_screen_size(w, h)
+            if (w, h) in self.randr_added_sizes:
+                #Xvfb with randr > 1.2: the resolution has been added
+                #we can use XRRSetScreenSize:
+                try:
+                    with xsync:
+                        RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi, self.ydpi or self.dpi)
+                except Exception:
+                    screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
             root_w, root_h = RandR.get_screen_size()
             screenlog("RandR.get_screen_size()=%s,%s", root_w, root_h)
             screenlog("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
             if root_w!=w or root_h!=h:
-                screenlog.error("odd, failed to set the new resolution, "
-                                "tried to set it to %sx%s and ended up with %sx%s", w, h, root_w, root_h)
+                screenlog.warn("Warning: tried to set resolution to %ix%i", w, h)
+                screenlog.warn(" and ended up with %ix%i", root_w, root_h)
             else:
                 msg = "server virtual display now set to %sx%s" % (root_w, root_h)
                 if desired_w!=root_w or desired_h!=root_h:
