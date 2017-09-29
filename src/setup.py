@@ -1173,7 +1173,7 @@ if WIN32:
             add_gi("Atk-1.0",
                    "fontconfig-2.0", "freetype2-2.0",
                    "GDesktopEnums-3.0", "Soup-2.4",
-                   "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0"
+                   "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
                    "HarfBuzz-0.0",
                    "Libproxy-1.0", "libxml2-2.0",
                    "cairo-1.0", "Pango-1.0", "PangoCairo-1.0", "PangoFT2-1.0",
