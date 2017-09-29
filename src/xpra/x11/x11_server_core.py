@@ -482,7 +482,7 @@ class X11ServerCore(GTKServerBase):
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
         #ugly hackish way of detecting Xvfb with randr,
         #assume that it has only one resolution pre-defined:
-        if len(self.randr_initial_sizes)==1:
+        if len(self.randr_initial_sizes)==1 and (desired_w, desired_h) not in self.randr_added_sizes:
             try:
                 with xsync:
                     v = RandR.add_screen_size(desired_w, desired_h)
