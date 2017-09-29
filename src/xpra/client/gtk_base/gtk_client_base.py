@@ -723,7 +723,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
         if warnings:
             if enable_opengl in ("", "auto"):
-                opengllog.warn("OpenGL disabled:", warning)
+                opengllog.warn("OpenGL disabled:")
                 for warning in warnings:
                     opengllog.warn(" %s", warning)
                 self.opengl_props["info"] = "disabled: %s" % (", ".join(warnings))
