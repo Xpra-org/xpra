@@ -1383,7 +1383,7 @@ if WIN32:
     if webcam_ENABLED:
         external_includes.append("cv2")
 
-    if opengl_ENABLED:
+    if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
         external_includes.append("numpy")
     else:
