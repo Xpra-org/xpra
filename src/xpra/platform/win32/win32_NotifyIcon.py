@@ -12,7 +12,7 @@ from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
 from xpra.util import csv, XPRA_APP_ID
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
                                         GetSystemMetrics,
@@ -263,7 +263,7 @@ class win32NotifyIcon(object):
 
     def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        window_name = (self.title+" StatusIcon Window").decode()
+        window_name = bytestostr(self.title+" StatusIcon Window")
         self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
             0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
             0, 0, NIwc.hInstance, None)
