@@ -32,6 +32,7 @@ from xpra.gtk_common.error import XError, xswallow, xsync, trap
 from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
+from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.os_util import StringIOClass, monotonic_time
 from xpra.net.compression import Compressed
 
@@ -94,8 +95,7 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         self.randr = opts.resize_display
-        self.randr_initial_sizes = []
-        self.randr_added_sizes = []
+        self.randr_exact_size = False
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
         self.x11_init()
@@ -120,8 +120,18 @@ class X11ServerCore(GTKServerBase):
     def init_randr(self):
         self.randr = RandR.has_randr()
         log("randr=%s", self.randr)
-        self.randr_initial_sizes = RandR.get_screen_sizes()
-        log("initial screen sizes=%s", self.randr_initial_sizes)
+        #check the property first,
+        #because we may be inheriting this display,
+        #in which case the screen sizes list may be longer than 1
+        self.randr_exact_size = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)==1
+        if not self.randr_exact_size:
+            #ugly hackish way of detecting Xvfb with randr,
+            #assume that it has only one resolution pre-defined:
+            sizes = RandR.get_screen_sizes()
+            if len(sizes)==1:
+                self.randr_exact_size = True
+                prop_set(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
+        log("randr exact size=%s", self.randr_exact_size)
         if self.randr:
             display = gdk.display_get_default()
             i=0
@@ -270,6 +280,7 @@ class X11ServerCore(GTKServerBase):
         if source.wants_features:
             capabilities.update({
                     "resize_screen"             : self.randr,
+                    "resize_exact"              : self.randr_exact_size,
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
                     "wheel.precise"             : self.pointer_device.has_precise_wheel(),
@@ -329,8 +340,7 @@ class X11ServerCore(GTKServerBase):
                     sinfo["randr"] = {
                         ""          : True,
                         "options"   : list(reversed(sorted(sizes))),
-                        "initial"   : self.randr_initial_sizes,
-                        "added"     : self.randr_added_sizes,
+                        "exact"     : self.randr_exact_size,
                         }
         except:
             pass
@@ -480,14 +490,14 @@ class X11ServerCore(GTKServerBase):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
 
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
-        #ugly hackish way of detecting Xvfb with randr,
-        #assume that it has only one resolution pre-defined:
-        if len(self.randr_initial_sizes)==1 and (desired_w, desired_h) not in self.randr_added_sizes:
+        screen_sizes = RandR.get_screen_sizes()
+        if (desired_w, desired_h) in screen_sizes:
+            return desired_w, desired_h
+        if self.randr_exact_size:
             try:
                 with xsync:
                     v = RandR.add_screen_size(desired_w, desired_h)
                     if v:
-                        self.randr_added_sizes.append(v)
                         #we have to wait a little bit
                         #to make sure that everything sees the new resolution
                         #(ideally this method would be split in two and this would be a callback)
@@ -517,12 +527,12 @@ class X11ServerCore(GTKServerBase):
                 screenlog.warn(" using %sx%s instead", *new_size)
             else:
                 root_w, root_h = self.root_window.get_size()
-                return  root_w, root_h
+                return root_w, root_h
         screenlog("best %s resolution for client(%sx%s) is: %s", ["smaller", "bigger"][bigger], desired_w, desired_h, new_size)
         w, h = new_size
         return w, h
 
-    def set_screen_size(self, desired_w, desired_h):
+    def set_screen_size(self, desired_w, desired_h, bigger=True):
         screenlog("set_screen_size%s", (desired_w, desired_h))
         root_w, root_h = self.root_window.get_size()
         if not self.randr:
@@ -560,7 +570,7 @@ class X11ServerCore(GTKServerBase):
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
-        w, h = self.get_best_screen_size(desired_w, desired_h)
+        w, h = self.get_best_screen_size(desired_w, desired_h, bigger)
 
         #fakeXinerama:
         ui_clients = [s for s in self._server_sources.values() if s.ui_client]
@@ -596,14 +606,13 @@ class X11ServerCore(GTKServerBase):
                     tw, th = temp[k]
                     screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
                     RandR.set_screen_size(tw, th)
-            screenlog("randr_added_sizes=%s", self.randr_added_sizes)
             with xsync:
                 RandR.get_screen_size()
             #Xdummy with randr 1.2:
             screenlog("using XRRSetScreenConfigAndRate with %ix%i", w, h)
             with xsync:
                 RandR.set_screen_size(w, h)
-            if (w, h) in self.randr_added_sizes:
+            if self.randr_exact_size:
                 #Xvfb with randr > 1.2: the resolution has been added
                 #we can use XRRSetScreenSize:
                 try:

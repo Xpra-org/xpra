@@ -124,6 +124,7 @@ XpraClient.prototype.init_state = function(container) {
     this.dQ_interval_id = null;
     this.process_interval = 4;
 
+    this.server_resize_exact = false;
     this.server_screen_sizes = [];
     this.server_is_desktop = false;
 
@@ -1663,6 +1664,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
     if (ctx.server_is_desktop) {
     	jQuery("body").addClass("desktop");
     }
+    ctx.server_resize_exact = hello["resize_exact"] || false;
     ctx.server_screen_sizes = hello["screen-sizes"] || [];
     console.log("server screen sizes:", ctx.server_screen_sizes)
 

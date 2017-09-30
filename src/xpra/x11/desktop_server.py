@@ -9,7 +9,7 @@ import gtk.gdk
 import gobject
 import socket
 
-from xpra.util import updict, log_screen_sizes, envbool
+from xpra.util import updict, log_screen_sizes
 from xpra.os_util import get_generic_os_name
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
@@ -49,8 +49,6 @@ iconlog = Logger("icon")
 
 glib = import_glib()
 
-FORCE_SCREEN_MISMATCH = envbool("XPRA_FORCE_SCREEN_MISMATCH", False)
-
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
     __gsignals__ = {}
@@ -84,14 +82,13 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     _property_names         = ["xid", "client-machine", "window-type", "shadow", "size-hints", "class-instance", "focused", "title", "depth", "icon"]
     _dynamic_property_names = ["size-hints", "title", "icon"]
 
-    def __init__(self, root):
+    def __init__(self, root, resize_exact=False):
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
         self.update_icon()
-        self.resize_timer = None
-        self.resize_value = None
+        self.resize_exact = resize_exact
 
     def __repr__(self):
         return "DesktopModel(%#x)" % (self.client_window.xid)
@@ -114,10 +111,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         if rpw:
             self.root_prop_watcher = None
             rpw.cleanup()
-        rt = self.resize_timer
-        if rt:
-            self.resize_timer = None
-            glib.source_remove(rt)
 
     def root_prop_changed(self, watcher, prop):
         iconlog("root_prop_changed(%s, %s)", watcher, prop)
@@ -177,59 +170,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         else:
             return gobject.GObject.get_property(self, prop)
 
-    def resize(self, w, h):
-        geomlog("resize(%i, %i)", w, h)
-        if not RandR.has_randr():
-            geomlog.error("Error: cannot honour resize request,")
-            geomlog.error(" not RandR support on display")
-            return
-        #FIXME: small race if the user resizes with randr,
-        #at the same time as he resizes the window..
-        self.resize_value = (w, h)
-        if not self.resize_timer:
-            self.resize_timer = glib.timeout_add(250, self.do_resize)
-
-    def do_resize(self):
-        self.resize_timer = None
-        try:
-            w, h = self.resize_value
-            with xsync:
-                screen_sizes = RandR.get_screen_sizes()
-                #hack: force mistmatch
-                if FORCE_SCREEN_MISMATCH:
-                    screen_sizes = [(sw,sh) for sw,sh in screen_sizes if (sw!=w and sh!=h)]
-                geomlog("screen sizes=%s", screen_sizes)
-                if (w,h) not in screen_sizes:
-                    geomlog.warn("Warning: invalid screen size %ix%i", w, h)
-                    #find the nearest:
-                    distances = {}
-                    lower_distances = {}        #for sizes lower than requested
-                    for sw, sh in screen_sizes:
-                        distance = abs(sw*sh - w*h)
-                        distances.setdefault(distance, []).append((sw, sh))
-                        if sw<=w and sh<=h:
-                            lower_distances.setdefault(distance, []).append((sw, sh))
-                    geomlog("lower distances=%s", distances)
-                    if lower_distances:
-                        nearest = lower_distances[sorted(lower_distances.keys())[0]]
-                    else:
-                        geomlog("distances=%s", distances)
-                        nearest = distances[sorted(distances.keys())[0]]
-                    geomlog("nearest matches: %s", nearest)
-                    w, h = nearest[0]
-                    geomlog.warn(" using %ix%i instead", w, h)
-                    if RandR.get_screen_size()==(w,h):
-                        #this is already the resolution we have,
-                        #but the client has other ideas,
-                        #so tell the client we ain't budging:
-                        self.emit("resized")
-                        return
-                RandR.set_screen_size(w, h)
-        except Exception as e:
-            geomlog("resize(%i, %i)", w, h, exc_info=True)
-            geomlog.error("Error: failed to resize desktop display to %ix%i:", w, h)
-            geomlog.error(" %s", e)
-
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
         screenlog("screen size changed: new size %ix%i", w, h)
@@ -242,16 +182,21 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         w, h = screen.get_width(), screen.get_height()
         screenlog("screen dimensions: %ix%i", w, h)
         if RandR.has_randr():
-            #TODO: get all of this from randr:
-            #screen_sizes = RandR.get_screen_sizes()
-            size_hints = {
-                "maximum-size"  : (8192, 4096),
-                "minimum-size"  : (640, 640),
-                "base-size"     : (640, 640),
-                "increment"     : (128, 128),
-                "minimum-aspect-ratio"  : (1, 3),
-                "maximum-aspect-ratio"  : (3, 1),
-                }
+            if self.resize_exact:
+                #assume resize_excact is enabled
+                #no size restrictions
+                size_hints = {}
+            else:
+                #TODO: get all of this from randr:
+                #screen_sizes = RandR.get_screen_sizes()
+                size_hints = {
+                    "maximum-size"  : (8192, 4096),
+                    "minimum-size"  : (640, 640),
+                    "base-size"     : (640, 640),
+                    "increment"     : (128, 128),
+                    "minimum-aspect-ratio"  : (1, 3),
+                    "maximum-aspect-ratio"  : (3, 1),
+                    }
         else:
             size = w, h
             size_hints = {
@@ -283,6 +228,8 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
         self.session_type = "desktop"
+        self.resize_timer = None
+        self.resize_value = None
 
     def init(self, opts):
         X11ServerBase.init(self, opts)
@@ -303,6 +250,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         X11Keyboard.selectBellNotification(True)
 
     def do_cleanup(self):
+        self.cancel_resize_timer()
         X11ServerBase.do_cleanup(self)
         remove_catchall_receiver("xpra-motion-event", self)
         cleanup_x11_filter()
@@ -347,6 +295,43 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             return root_w, root_h
         return self.set_screen_size(w, h)
 
+    def cancel_resize_timer(self):
+        rt = self.resize_timer
+        if rt:
+            self.resize_timer = None
+            glib.source_remove(rt)
+
+    def resize(self, w, h):
+        geomlog("resize(%i, %i)", w, h)
+        if not RandR.has_randr():
+            geomlog.error("Error: cannot honour resize request,")
+            geomlog.error(" no RandR support on this display")
+            return
+        #FIXME: small race if the user resizes with randr,
+        #at the same time as he resizes the window..
+        self.resize_value = (w, h)
+        if not self.resize_timer:
+            self.resize_timer = glib.timeout_add(250, self.do_resize)
+
+    def do_resize(self):
+        self.resize_timer = None
+        rw, rh = self.resize_value
+        try:
+            with xsync:
+                ow, oh = RandR.get_screen_size()
+            w, h = self.set_screen_size(rw, rh)
+            if (ow, oh) == (w, h):
+                #this is already the resolution we have,
+                #but the client has other ideas,
+                #so tell the client we ain't budging:
+                for win in self._window_to_id.keys():
+                    win.emit("resized")
+        except Exception as e:
+            geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
+            geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
+            geomlog.error(" %s", e)
+
+
     def set_desktop_geometry_attributes(self, w, h):
         #geometry is not synced with the client's for desktop servers
         pass
@@ -380,7 +365,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         for n in range(screens):
             screen = display.get_screen(n)
             root = screen.get_root_window()
-            model = DesktopModel(root)
+            model = DesktopModel(root, self.randr_exact_size)
             model.setup()
             windowlog("adding root window model %s", model)
             X11ServerBase._add_new_window_common(self, model)
@@ -498,7 +483,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         if not skip_geometry:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            window.resize(w, h)
+            self.resize(w, h)
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
