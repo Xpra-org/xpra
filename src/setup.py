@@ -2235,10 +2235,11 @@ if nvenc7_ENABLED:
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.0\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v7.5\\bin",
                          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v8.0\\bin",
+                         "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v9.0\\bin",
                          ] + path_options
     else:
         nvcc_exe = "nvcc"
-        for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", "-8.0", ""):
+        for v in ("-5.5", "-6.0", "-6.5", "-7.0", "-7.5", "-8.0", "-9.0", ""):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     if not WIN32:
