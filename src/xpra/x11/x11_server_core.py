@@ -166,7 +166,7 @@ class X11ServerCore(GTKServerBase):
             if proc.returncode==0:
                 #parse output:
                 for line in out.splitlines():
-                    parts = line.split("=")
+                    parts = line.split(b"=")
                     if len(parts)!=2:
                         continue
                     k = parts[0].strip()
@@ -175,6 +175,7 @@ class X11ServerCore(GTKServerBase):
             else:
                 self.opengl_props["error"] = str(err).strip("\n\r")
         except Exception as e:
+            gllog("query_opengl()", exc_info=True)
             gllog.warn("Warning: failed to query OpenGL properties")
             gllog.warn(" %s", e)
             self.opengl_props["error"] = str(e)

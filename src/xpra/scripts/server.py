@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -166,9 +166,9 @@ def display_name_check(display_name):
 def close_gtk_display():
     # Close our display(s) first, so the server dying won't kill us.
     # (if gtk has been loaded)
-    gtk_mod = sys.modules.get("gtk")
-    if gtk_mod:
-        for d in gtk_mod.gdk.display_manager_get().list_displays():
+    gdk_mod = sys.modules.get("gdk")
+    if gdk_mod:
+        for d in gdk_mod.display_manager_get().list_displays():
             d.close()
 
 def kill_xvfb(xvfb_pid):
@@ -839,12 +839,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.vfb_util import verify_display_ready
             if not verify_display_ready(xvfb, display_name, shadowing):
                 return 1
-            from xpra.x11.gtk2.gdk_display_util import verify_gdk_display       #@Reimport
-            display = verify_gdk_display(display_name)
-            if not display:
-                return 1
-            import gtk          #@Reimport
-            assert gtk
+            if not PYTHON3:
+                from xpra.x11.gtk2.gdk_display_util import verify_gdk_display       #@Reimport
+                display = verify_gdk_display(display_name)
+                if not display:
+                    return 1
+                import gtk          #@Reimport
+                assert gtk
         #on win32, this ensures that we get the correct screen size to shadow:
         from xpra.platform.gui import init as gui_init
         gui_init()
