@@ -1,5 +1,6 @@
-v1.0.9 (2017-09-17)
+v1.0.9 (2017-10-01)
 ======================
+	-- fix authentication weakness in client salt handling
 	-- fix window icons going back to default on window re-initialization
 	-- fix stop command on MS Windows servers via named-pipe connections
 	-- fix sound subprocess exit warnings on MS Windows
@@ -8,6 +9,8 @@ v1.0.9 (2017-09-17)
 	-- fix unicode warnings on MS Windows
 	-- fix typo hiding pretty debug logging
 	-- fix Mac OS shadow servers
+	-- fix application name shown in notifications (X11)
+	-- support CUDA 9
 	-- choose the strongest digest first
 	-- add mesa-dri-drivers dependency to RPM packages for OpenGL support
 	-- add support for Volta GPUs with NVENC

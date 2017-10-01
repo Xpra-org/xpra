@@ -1,4 +1,5 @@
 xpra (1.0.9-1) UNRELEASED; urgency=low
+  * fix authentication weakness in client salt handling
   * fix window icons going back to default on window re-initialization
   * fix stop command on MS Windows servers via named-pipe connections
   * fix sound subprocess exit warnings on MS Windows
@@ -7,12 +8,14 @@ xpra (1.0.9-1) UNRELEASED; urgency=low
   * fix mDNS and IPv6 platform bugs (MS Windows and Mac OS)
   * fix unicode warnings on MS Windows
   * fix typo hiding pretty debug logging
+  * fix application name shown in notifications (X11)
+  * support CUDA 9
   * choose the strongest digest first
   * add mesa-dri-drivers dependency to RPM packages for OpenGL support
   * add support for Volta GPUs with NVENC
   * make it easier to disable firewall scripts in RPM builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 17 Sep 2017 22:25:36 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 01 Oct 2017 16:27:59 +0700
 
 xpra (1.0.8-1) UNRELEASED; urgency=low
   * fix Fedora 26 builds: must disable buggy systemd-run

@@ -610,7 +610,8 @@ fi
 
 
 %changelog
-* Sun Sep 17 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Sun Oct 01 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+- fix authentication weakness in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
 - fix sound subprocess exit warnings on MS Windows
@@ -619,6 +620,8 @@ fi
 - fix mDNS and IPv6 platform bugs (MS Windows and Mac OS)
 - fix unicode warnings on MS Windows
 - fix typo hiding pretty debug logging
+- fix application name shown in notifications (X11)
+- support CUDA 9
 - choose the strongest digest first
 - add mesa-dri-drivers dependency to RPM packages for OpenGL support
 - add support for Volta GPUs with NVENC
