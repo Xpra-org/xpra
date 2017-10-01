@@ -6,6 +6,7 @@
 
 import os
 from xpra.util import envint, envbool
+from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("network", "crypto")
 
@@ -84,7 +85,6 @@ def crypto_backend_init():
 
 def validate_backend(try_backend):
     import binascii
-    from xpra.os_util import strtobytes
     try_backend.init()
     message = b"some message1234"
     password = "this is our secret"
@@ -107,6 +107,22 @@ def validate_backend(try_backend):
     log("validate_backend(%s) decrypted(%s)=%s", try_backend, evs, dv)
     assert dv==message
     log("validate_backend(%s) passed", try_backend)
+
+
+def gendigest(digest, password, salt):
+    assert digest and password and salt
+    salt = memoryview_to_bytes(salt)
+    password = strtobytes(password)
+    if digest=="xor":
+        salt = salt.ljust(16, "\x00")[:len(password)]
+        return memoryview_to_bytes(xor(password, salt))
+    digestmod = get_digest_module(digest)
+    if not digestmod:
+        log("invalid digest module '%s': %s", digest)
+        return None
+        #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
+    v = hmac.HMAC(strtobytes(password), strtobytes(salt), digestmod=digestmod).hexdigest()
+    return v
 
 
 def pad(padding, size):

@@ -13,6 +13,7 @@ import hmac
 import hashlib
 from xpra.util import xor
 from xpra.os_util import strtobytes, bytestostr
+from xpra.net.crypto import get_digest_module, gendigest
 
 try:
 	from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, env_auth, password_auth
@@ -116,8 +117,10 @@ class TestAuth(unittest.TestCase):
 			salt, mac = a.get_challenge()
 			assert salt
 			assert mac=="hmac", "invalid mac: %s" % mac
-			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
-			auth_salt = strtobytes(xor(salt, client_salt))
+                        client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)[:len(salt)]
+			salt_digest = a.choose_salt_digest(get_digests())
+			assert salt_digest
+			auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
 			verify = hmac.HMAC(strtobytes(x), auth_salt, digestmod=hashlib.md5).hexdigest()
 			passed = a.authenticate(verify, client_salt)
 			assert passed == (x==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)

@@ -70,8 +70,12 @@ def get_network_caps():
         mmap = can_use_mmap()
     except:
         mmap = False
+    digests = get_digests()
+    #"hmac" is the legacy name, "xor" should not be used for salt:
+    salt_digests = [x for x in digests if x not in ("hmac", "xor")]
     caps = {
-                "digest"                : ("hmac", "xor"),
+                "digest"                : digests,
+                "salt-digest"           : salt_digests,
                 "compressors"           : compression.get_enabled_compressors(),
                 "encoders"              : packet_encoding.get_enabled_encoders(),
                 "mmap"                  : mmap,

@@ -49,6 +49,7 @@ main_thread = threading.current_thread()
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = float(os.environ.get("XPRA_SERVER_SOCKET_TIMEOUT", "0.1"))
+LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 
 
 def get_server_info():
@@ -932,7 +933,8 @@ class ServerCore(object):
                 auth_failed("authentication failed")
                 return False
 
-        digest_modes = c.get("digest", ("hmac", ))
+        digest_modes = c.strlistget("digest", ("hmac", ))
+        salt_digest_modes = c.strlistget("salt-digest", ("xor",))
         #client may have requested encryption:
         cipher = c.strget("cipher")
         cipher_iv = c.strget("cipher.iv")
@@ -969,7 +971,7 @@ class ServerCore(object):
         if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent, digest_modes)
+            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s, salt_digest_modes=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent, digest_modes, salt_digest_modes)
             #send challenge if this is not a response:
             if not challenge_response:
                 if proto.challenge_sent:
@@ -992,13 +994,20 @@ class ServerCore(object):
                     if digest not in digest_modes:
                         auth_failed("cannot proceed without %s digest support" % digest)
                         return False
+                    salt_digest = proto.authenticator.choose_salt_digest(salt_digest_modes)
+                    if salt_digest=="xor":
+                        if not LEGACY_SALT_DIGEST:
+                            auth_failed("insecure salt digest '%s' rejected" % salt_digest)
+                            return False
+                        log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
                 else:
                     authlog.warn("Warning: client expects a challenge but this connection is unauthenticated")
                     #fake challenge so the client will send the real hello:
                     salt = get_salt()
-                    digest = "hmac"
+                    digest = choose_digest(digest_modes)
+                    salt_digest = choose_digest(salt_digest_modes)
                 proto.challenge_sent = True
-                proto.send_now(("challenge", salt, auth_caps or "", digest))
+                proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest))
                 return False
 
             if not proto.authenticator.authenticate(challenge_response, client_salt):
