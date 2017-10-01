@@ -10,7 +10,7 @@ Name:		python-Cython
 Name:		python2-Cython
 %endif
 
-Version:	0.27
+Version:	0.27.1
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 
@@ -117,6 +117,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Oct 02 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27.1-1
+- new upstream release
+
 * Sat Sep 23 2017 Antoine Martin <antoine@devloop.org.uk> - 0.27-1
 - new upstream release
 
