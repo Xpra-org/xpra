@@ -6,8 +6,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-import binascii
-from xpra.os_util import strtobytes, monotonic_time
+from xpra.os_util import monotonic_time, hexstr
 from xpra.util import envbool
 
 from xpra.net.crypto import DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV
@@ -18,9 +17,6 @@ SHOW_PERF = envbool("XPRA_SHOW_PERF")
 def log(message):
     #print(message[:256])
     pass
-
-def hexstr(v):
-    return binascii.hexlify(strtobytes(v))
 
 
 class TestCrypto(unittest.TestCase):
