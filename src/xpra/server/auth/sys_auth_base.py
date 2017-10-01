@@ -3,13 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import binascii
-
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import xor
 from collections import deque
 from xpra.net.crypto import get_salt, choose_digest, verify_digest, gendigest
-from xpra.os_util import strtobytes, hexstr
+from xpra.os_util import hexstr
 from xpra.log import Logger
 log = Logger("auth")
 
@@ -112,13 +110,7 @@ class SysAuthenticator(object):
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
-        #ensure this salt does not get re-used:
-        if client_salt is None:
-            salt = self.salt
-        else:
-            salt = xor(self.salt, client_salt)
-            log("xoring salt: xor(%s, %s)=%s", self.salt, client_salt, binascii.hexlify(strtobytes(salt)))
-        self.salt = None
+        salt = self.get_response_salt(client_salt)
         password = self.get_password()
         if not password:
             log.warn("Warning: %s authentication failed", self)

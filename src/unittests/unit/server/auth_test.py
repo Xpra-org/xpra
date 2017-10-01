@@ -10,7 +10,6 @@ import unittest
 import tempfile
 import uuid
 import hmac
-from xpra.util import xor
 from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32, OSX, POSIX
 from xpra.net.crypto import get_digests, get_digest_module, gendigest
 
@@ -145,11 +144,12 @@ class TestAuth(unittest.TestCase):
 			assert salt
 			assert mac.startswith("hmac"), "invalid mac: %s" % mac
 			client_salt = strtobytes(uuid.uuid4().hex+uuid.uuid4().hex)
-			auth_salt = strtobytes(xor(salt, client_salt))
+			salt_digest = a.choose_salt_digest(get_digests())
+			auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
 			digestmod = get_digest_module(mac)
 			verify = hmac.HMAC(strtobytes(test_password), auth_salt, digestmod=digestmod).hexdigest()
 			passed = a.authenticate(verify, client_salt)
-			assert passed == (test_password==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][x==password], x, password)
+			assert passed == (test_password==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][test_password==password], test_password, password)
 			assert not a.authenticate(verify, client_salt), "should not be able to athenticate again with the same values"
 
 	def test_env(self):
