@@ -630,11 +630,12 @@ def get_screen_sizes(xscale=1, yscale=1):
 
 def get_screen_info(display, screen):
     info = {}
-    try:
-        w = screen.get_root_window()
-        info["root"] = w.get_geometry()
-    except:
-        pass
+    if not (is_gtk3() and WIN32):
+        try:
+            w = screen.get_root_window()
+            info["root"] = w.get_geometry()
+        except:
+            pass
     info["name"] = screen.make_display_name()
     for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
         fn = getattr(screen, "get_"+x)
@@ -748,7 +749,6 @@ def get_monitor_info(_display, screen, i):
 def get_display_info():
     display = display_get_default()
     info = {
-            "root"                  : get_default_root_window().get_geometry(),
             "root-size"             : get_root_size(),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
@@ -758,6 +758,8 @@ def get_display_info():
             "maximal_cursor_size"   : display.get_maximal_cursor_size(),
             "pointer_is_grabbed"    : display.pointer_is_grabbed(),
             }
+    if not (is_gtk3() and WIN32):
+        info["root"] = get_default_root_window().get_geometry()
     sinfo = info.setdefault("supports", {})
     for x in ("composite", "cursor_alpha", "cursor_color", "selection_notification", "clipboard_persistence", "shapes"):
         f = "supports_"+x
