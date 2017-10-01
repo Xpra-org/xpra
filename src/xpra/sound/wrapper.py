@@ -28,7 +28,10 @@ BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 
 
 def get_sound_wrapper_env():
-    env = {}
+    env = {
+        #no need to add our ssl hooks for the sound subprocess:
+        "XPRA_SSL_PEEK" : "0"
+        }
     if WIN32:
         #disable bencoder to skip warnings with the py3k Sound subapp
         env["XPRA_USE_BENCODER"] = "0"

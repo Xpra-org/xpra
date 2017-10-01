@@ -19,6 +19,7 @@ from xpra.os_util import WIN32, PYTHON2
 TCP_NODELAY = envbool("XPRA_TCP_NODELAY", True)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
+SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
 
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
@@ -337,54 +338,57 @@ class SocketConnection(Connection):
             pass
         return info
 
-try:
-    #this wrapper class allows us to override the normal ssl.Socket
-    #class so that we can fake peek() support by actually reading from the socket
-    #and caching the result.
-    class SSLSocket(socket._socketobject):
-    
-        def __init__(self, sock):
-            socket._socketobject.__init__(self, _sock=sock)
-            #patch recv:
-            self.saved_recv = getattr(self, "recv")
-            setattr(self, "recv", self._recv)
-            self.saved_makefile = getattr(self, "makefile")
-            setattr(self, "makefile", self._makefile)
-            self.peeked = b""
-    
-        def _recv(self, bufsize, flags=0):
-            #log("_recv(%s, %#x) peeked=%i bytes", bufsize, flags, len(self.peeked))
-            peek = flags & socket.MSG_PEEK
-            if self.peeked:
-                #we have peek data aleady
-                if bufsize<len(self.peeked):
-                    r = self.peeked[:bufsize]
-                else:
-                    r = self.peeked
-                if not peek:
-                    #remove what we return from peek buffer:
+
+SSLSocket = None
+if SSL_PEEK:
+    try:
+        #this wrapper class allows us to override the normal ssl.Socket
+        #class so that we can fake peek() support by actually reading from the socket
+        #and caching the result.
+        class SSLSocket(socket._socketobject):
+        
+            def __init__(self, sock):
+                socket._socketobject.__init__(self, _sock=sock)
+                #patch recv:
+                self.saved_recv = getattr(self, "recv")
+                setattr(self, "recv", self._recv)
+                self.saved_makefile = getattr(self, "makefile")
+                setattr(self, "makefile", self._makefile)
+                self.peeked = b""
+        
+            def _recv(self, bufsize, flags=0):
+                #log("_recv(%s, %#x) peeked=%i bytes", bufsize, flags, len(self.peeked))
+                peek = flags & socket.MSG_PEEK
+                if self.peeked:
+                    #we have peek data aleady
                     if bufsize<len(self.peeked):
-                        self.peeked = self.peeked[bufsize:]
+                        r = self.peeked[:bufsize]
                     else:
-                        self.peeked = b""
+                        r = self.peeked
+                    if not peek:
+                        #remove what we return from peek buffer:
+                        if bufsize<len(self.peeked):
+                            self.peeked = self.peeked[bufsize:]
+                        else:
+                            self.peeked = b""
+                    return r
+                r = self.saved_recv(bufsize, flags & (0xffffffff ^ socket.MSG_PEEK))
+                if peek:
+                    self.peeked = r
                 return r
-            r = self.saved_recv(bufsize, flags & (0xffffffff ^ socket.MSG_PEEK))
-            if peek:
-                self.peeked = r
-            return r
-    
-        def _makefile(self, mode='r', bufsize=-1):
-            from socket import _fileobject
-            fo = _fileobject(self, mode, bufsize)
-            return fo
-    
-        def __repr__(self):
-            return "SSLSocket(%s)" % self._sock
-except Exception as e:
-    log.warn("Warning: unable to override socket object")
-    log.warn(" SSL peek support will not be available")
-    log.warn(" %s", e)
-    SSLSocket = None
+        
+            def _makefile(self, mode='r', bufsize=-1):
+                from socket import _fileobject
+                fo = _fileobject(self, mode, bufsize)
+                return fo
+        
+            def __repr__(self):
+                return "SSLSocket(%s)" % self._sock
+
+    except Exception as e:
+        log.warn("Warning: unable to override socket object")
+        log.warn(" SSL peek support will not be available")
+        log.warn(" %s", e)
 
 
 class SSLSocketConnection(SocketConnection):
