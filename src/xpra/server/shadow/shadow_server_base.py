@@ -112,7 +112,7 @@ class ShadowServerBase(RFBServer):
         if not self.mapped:
             self.timer = None
             return False
-        w, h = self.root.get_size()
+        w, h = self.root.get_geometry()[2:4]
         self._damage(self.root_window_model, 0, 0, w, h)
         return True
 
@@ -154,8 +154,8 @@ class ShadowServerBase(RFBServer):
         self.keyboard_config = server_source.set_default_keymap()
 
     def load_existing_windows(self):
-        log("loading existing windows")
         self.root_window_model = self.makeRootWindowModel()
+        log("load_existing_windows() root window model=%s", self.root_window_model)
         self._add_new_window(self.root_window_model)
         w, h = self.root_window_model.get_dimensions()
         self.min_mmap_size = w*h*4*2        #at least big enough for 2 frames of BGRX pixel data
@@ -168,7 +168,7 @@ class ShadowServerBase(RFBServer):
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
             assert window == self.root_window_model, "expected window to be %s, but got %s" % (self.root_window_model, window)
-            w, h = self.root.get_size()
+            w, h = self.root.get_geometry()[2:4]
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
 
 

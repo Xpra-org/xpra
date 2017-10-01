@@ -72,7 +72,7 @@ class XpraClient(GTKXpraClient):
     def get_mouse_position(self):
         #with GTK3, we can get None values!
         p = self.get_root_window().get_pointer()
-        return self.sp(p[0] or 0, p[1] or 0)
+        return self.sp(p[1] or 0, p[2] or 0)
 
 
 GObject.type_register(XpraClient)

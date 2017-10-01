@@ -24,6 +24,7 @@ from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_defau
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import StringIOClass, monotonic_time
 from xpra.net.compression import Compressed
 
@@ -437,8 +438,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def get_max_screen_size(self):
-        from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
-        max_w, max_h = self.root_window.get_size()
+        max_w, max_h = self.root_window.get_geometry()[2:4]
         sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
@@ -774,7 +774,7 @@ class X11ServerCore(GTKServerBase):
             device_data = self.input_devices_data.get(deviceid)
             if device_data:
                 mouselog("process_mouse_common from device=%s", device_data.get("name"))
-        pos = self.root_window.get_pointer()[:2]
+        pos = self.root_window.get_pointer()[-3:-1]
         uuid = None
         if proto:
             ss = self._server_sources.get(proto)

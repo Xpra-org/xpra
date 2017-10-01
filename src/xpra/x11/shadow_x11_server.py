@@ -109,7 +109,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def get_geometry(self):
         #used by get_window_info only
-        return self.window.get_size()
+        return self.window.get_geometry()[2:4]
 
     def _screen_size_changed(self, screen):
         log("screen size changed: %s, closing current capture instance %s", screen, self.capture)
@@ -185,6 +185,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
 
     def makeRootWindowModel(self):
+        log("makeRootWindowModel() root=%s", self.root)
         return GTKX11RootWindowModel(self.root)
 
     def send_updated_screen_size(self):

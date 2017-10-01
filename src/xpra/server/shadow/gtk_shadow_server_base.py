@@ -11,6 +11,7 @@ traylog = Logger("tray")
 mouselog = Logger("mouse")
 
 from xpra.util import envint
+from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 
@@ -86,7 +87,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not wid:
             self.pointer_position_timer = None
             return False
-        x, y, _ = self.root.get_pointer()
+        x, y = self.root.get_pointer()[-3:-1]
         mouselog("poll_pointer_position() wid=%i, position=%s", wid, (x, y))
         if self.last_pointer_position!=(x, y):
             self.last_pointer_position = (x, y)
@@ -192,7 +193,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         traylog("tray_click_callback(%s, %s)", button, pressed)
         if pressed:
             self.close_tray_menu()
-        self.tray_menu.popup(None, None, None, button, time)
+        if is_gtk3():
+            self.tray_menu.popup(None, None, None, None, button, time)
+        else:
+            self.tray_menu.popup(None, None, None, button, time)
         self.tray_menu_shown = True
 
     def tray_exit_callback(self, *_args):

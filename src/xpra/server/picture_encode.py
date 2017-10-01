@@ -10,7 +10,7 @@ log = Logger("window", "encoding")
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
-from xpra.os_util import memoryview_to_bytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes, bytestostr, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
@@ -112,80 +112,80 @@ def argb_swap(image, rgb_formats, supports_transparency):
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
     rs = image.get_rowstride()
-    if pixel_format=="r210":
+    if pixel_format==b"r210":
         #r210 never contains any transparency at present
         #if supports_transparency and "RGBA" in rgb_formats:
         #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
         #    image.set_pixels(r210_to_rgba(pixels))
         #    image.set_pixel_format("RGBA")
         #    return True
-        if "RGB" in rgb_formats:
+        if b"RGB" in rgb_formats:
             log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(r210_to_rgb(pixels))
-            image.set_pixel_format("RGB")
+            image.set_pixel_format(b"RGB")
             image.set_rowstride(rs*3//4)
             return True
-        if "RGBX" in rgb_formats:
+        if b"RGBX" in rgb_formats:
             log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
             image.set_pixels(r210_to_rgbx(pixels))
-            image.set_pixel_format("RGBX")
+            image.set_pixel_format(b"RGBX")
             return True
-    elif pixel_format=="BGR565":
-        if "RGB" in rgb_formats:
+    elif pixel_format==b"BGR565":
+        if b"RGB" in rgb_formats:
             log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgr565_to_rgb(pixels))
-            image.set_pixel_format("RGB")
+            image.set_pixel_format(b"RGB")
             image.set_rowstride(rs*3//2)
             return True
-        if "RGBX" in rgb_formats:
+        if b"RGBX" in rgb_formats:
             log("argb_swap: bgr565_to_rgbx for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgr565_to_rgbx(pixels))
-            image.set_pixel_format("RGBX")
+            image.set_pixel_format(b"RGBX")
             image.set_rowstride(rs*2)
             return True
-    elif pixel_format in ("BGRX", "BGRA"):
-        if supports_transparency and "RGBA" in rgb_formats:
+    elif pixel_format in (b"BGRX", b"BGRA"):
+        if supports_transparency and b"RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
-            image.set_pixel_format("RGBA")
+            image.set_pixel_format(b"RGBA")
             return True
-        if "RGB" in rgb_formats:
+        if b"RGB" in rgb_formats:
             log("argb_swap: bgra_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgb(pixels))
-            image.set_pixel_format("RGB")
+            image.set_pixel_format(b"RGB")
             image.set_rowstride(rs*3//4)
             return True
-    elif pixel_format in ("XRGB", "ARGB"):
-        if supports_transparency and "RGBA" in rgb_formats:
+    elif pixel_format in (b"XRGB", b"ARGB"):
+        if supports_transparency and b"RGBA" in rgb_formats:
             log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
-            image.set_pixel_format("RGBA")
+            image.set_pixel_format(b"RGBA")
             return True
-        if "RGB" in rgb_formats:
+        if b"RGB" in rgb_formats:
             log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgb(pixels))
-            image.set_pixel_format("RGB")
+            image.set_pixel_format(b"RGB")
             image.set_rowstride(rs*3//4)
             return True
-    warn_encoding_once(pixel_format+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
+    warn_encoding_once(bytestostr(pixel_format)+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
     return False
 
 
 #source format  : [(PIL input format, output format), ..]
 PIL_conv = {
-             "XRGB"   : [("XRGB", "RGB")],
+             b"XRGB"   : [(b"XRGB", b"RGB")],
              #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             b"BGRX"   : [(b"BGRX", b"RGB"), (b"BGRX", b"RGBX")],
              #try with alpha first:
-             "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")],
+             b"BGRA"   : [(b"BGRA", b"RGBA"), (b"BGRX", b"RGB"), (b"BGRX", b"RGBX")],
              }
 #as above but for clients which cannot handle alpha:
 PIL_conv_noalpha = {
-             "XRGB"   : [("XRGB", "RGB")],
+             b"XRGB"   : [(b"XRGB", b"RGB")],
              #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
+             b"BGRX"   : [(b"BGRX", b"RGB"), (b"BGRX", b"RGBX")],
              #try with alpha first:
-             "BGRA"   : [("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")],
+             b"BGRA"   : [(b"BGRX", b"RGB"), (b"BGRA", b"RGBA"), (b"BGRX", b"RGBX")],
              }
 
 

@@ -18,7 +18,7 @@ from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
-from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
+from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.x11.gtk2.models.base import BaseWindowModel, constants
 from xpra.x11.gtk2.models.core import sanestr, gobject, xswallow, xsync
 from xpra.x11.gtk2.gdk_bindings import (

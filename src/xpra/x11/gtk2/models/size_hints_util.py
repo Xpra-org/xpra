@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
+from xpra.x11.common import MAX_WINDOW_SIZE
 MAX_ASPECT = 2**15-1
 
 from xpra.log import Logger

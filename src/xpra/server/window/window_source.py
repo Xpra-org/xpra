@@ -55,7 +55,7 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
-from xpra.os_util import StringIOClass, memoryview_to_bytes
+from xpra.os_util import BytesIOClass, memoryview_to_bytes
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import get_list_stats
@@ -80,15 +80,11 @@ class WindowSource(object):
     (also by 'send_window_icon' and clibpoard packets)
     """
 
-    @staticmethod
-    def staticinit(idle_add, timeout_add, source_remove):
-        WindowSource._encoding_warnings = set()
-        #scheduling stuff (gobject wrapped):
-        WindowSource.idle_add = idle_add
-        WindowSource.timeout_add = timeout_add
-        WindowSource.source_remove = source_remove
+    _encoding_warnings = set()
 
-    def __init__(self, queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
+    def __init__(self,
+                    idle_add, timeout_add, source_remove,
+                    queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
@@ -98,6 +94,9 @@ class WindowSource(object):
                     rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size):
+        self.idle_add = idle_add
+        self.timeout_add = timeout_add
+        self.source_remove = source_remove
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -595,7 +594,7 @@ class WindowSource(object):
                     h = icon_h
                 iconlog("scaling window icon down to %sx%s", w, h)
                 img = img.resize((w,h), PIL.Image.ANTIALIAS)
-            output = StringIOClass()
+            output = BytesIOClass()
             img.save(output, 'PNG')
             compressed_data = output.getvalue()
             output.close()

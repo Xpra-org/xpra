@@ -589,9 +589,9 @@ class ServerBase(ServerCore):
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"
                 def vinfo(k):
-                    val = self.sound_properties.get(k)
+                    val = self.sound_properties.listget(k)
                     assert val, "%s not found in sound properties" % k
-                    return ".".join(val[:3])
+                    return ".".join(bytestostr(x) for x in val[:3])
                 bits = self.sound_properties.intget(b"python.bits", 32)
                 log.info("GStreamer version %s for Python %s %i-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
             except Exception as e:
@@ -710,66 +710,66 @@ class ServerBase(ServerCore):
     def init_packet_handlers(self):
         ServerCore.init_packet_handlers(self)
         self._authenticated_packet_handlers = {
-            "set-clipboard-enabled":                self._process_clipboard_enabled_status,
-            "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
-            "damage-sequence":                      self._process_damage_sequence,
-            "ping":                                 self._process_ping,
-            "ping_echo":                            self._process_ping_echo,
-            "set-cursors":                          self._process_set_cursors,
-            "set-notify":                           self._process_set_notify,
-            "set-bell":                             self._process_set_bell,
-            "logging":                              self._process_logging,
-            "command_request":                      self._process_command_request,
-            "printers":                             self._process_printers,
-            "send-file":                            self._process_send_file,
-            "ack-file-chunk":                       self._process_ack_file_chunk,
-            "send-file-chunk":                      self._process_send_file_chunk,
-            "webcam-start":                         self._process_webcam_start,
-            "webcam-stop":                          self._process_webcam_stop,
-            "webcam-frame":                         self._process_webcam_frame,
-            "connection-data":                      self._process_connection_data,
+            b"set-clipboard-enabled":               self._process_clipboard_enabled_status,
+            b"set-keyboard-sync-enabled":           self._process_keyboard_sync_enabled_status,
+            b"damage-sequence":                     self._process_damage_sequence,
+            b"ping":                                self._process_ping,
+            b"ping_echo":                           self._process_ping_echo,
+            b"set-cursors":                         self._process_set_cursors,
+            b"set-notify":                          self._process_set_notify,
+            b"set-bell":                            self._process_set_bell,
+            b"logging":                             self._process_logging,
+            b"command_request":                     self._process_command_request,
+            b"printers":                            self._process_printers,
+            b"send-file":                           self._process_send_file,
+            b"ack-file-chunk":                      self._process_ack_file_chunk,
+            b"send-file-chunk":                     self._process_send_file_chunk,
+            b"webcam-start":                        self._process_webcam_start,
+            b"webcam-stop":                         self._process_webcam_stop,
+            b"webcam-frame":                        self._process_webcam_frame,
+            b"connection-data":                     self._process_connection_data,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
             #windows:
-            "map-window":                           self._process_map_window,
-            "unmap-window":                         self._process_unmap_window,
-            "configure-window":                     self._process_configure_window,
-            "close-window":                         self._process_close_window,
-            "focus":                                self._process_focus,
+            b"map-window":                          self._process_map_window,
+            b"unmap-window":                        self._process_unmap_window,
+            b"configure-window":                    self._process_configure_window,
+            b"close-window":                        self._process_close_window,
+            b"focus":                               self._process_focus,
             #keyboard:
-            "key-action":                           self._process_key_action,
-            "key-repeat":                           self._process_key_repeat,
-            "layout-changed":                       self._process_layout,
-            "keymap-changed":                       self._process_keymap,
+            b"key-action":                          self._process_key_action,
+            b"key-repeat":                          self._process_key_repeat,
+            b"layout-changed":                      self._process_layout,
+            b"keymap-changed":                      self._process_keymap,
             #mouse:
-            "button-action":                        self._process_button_action,
-            "pointer-position":                     self._process_pointer_position,
+            b"button-action":                       self._process_button_action,
+            b"pointer-position":                    self._process_pointer_position,
             #attributes / settings:
-            "server-settings":                      self._process_server_settings,
-            "quality":                              self._process_quality,
-            "min-quality":                          self._process_min_quality,
-            "speed":                                self._process_speed,
-            "min-speed":                            self._process_min_speed,
-            "set_deflate":                          self._process_set_deflate,
-            "desktop_size":                         self._process_desktop_size,
-            "encoding":                             self._process_encoding,
-            "suspend":                              self._process_suspend,
-            "resume":                               self._process_resume,
+            b"server-settings":                     self._process_server_settings,
+            b"quality":                             self._process_quality,
+            b"min-quality":                         self._process_min_quality,
+            b"speed":                               self._process_speed,
+            b"min-speed":                           self._process_min_speed,
+            b"set_deflate":                         self._process_set_deflate,
+            b"desktop_size":                        self._process_desktop_size,
+            b"encoding":                            self._process_encoding,
+            b"suspend":                             self._process_suspend,
+            b"resume":                              self._process_resume,
             #dbus:
-            "rpc":                                  self._process_rpc,
+            b"rpc":                                 self._process_rpc,
             #sound:
-            "sound-control":                        self._process_sound_control,
-            "sound-data":                           self._process_sound_data,
+            b"sound-control":                       self._process_sound_control,
+            b"sound-data":                          self._process_sound_data,
             #requests:
-            "shutdown-server":                      self._process_shutdown_server,
-            "exit-server":                          self._process_exit_server,
-            "buffer-refresh":                       self._process_buffer_refresh,
-            "screenshot":                           self._process_screenshot,
-            "info-request":                         self._process_info_request,
-            "start-command":                        self._process_start_command,
-            "print":                                self._process_print,
-            "input-devices":                        self._process_input_devices,
+            b"shutdown-server":                     self._process_shutdown_server,
+            b"exit-server":                         self._process_exit_server,
+            b"buffer-refresh":                      self._process_buffer_refresh,
+            b"screenshot":                          self._process_screenshot,
+            b"info-request":                        self._process_info_request,
+            b"start-command":                       self._process_start_command,
+            b"print":                               self._process_print,
+            b"input-devices":                       self._process_input_devices,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
@@ -1470,7 +1470,7 @@ class ServerBase(ServerCore):
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
-                 "rpc-types"                    : self.rpc_handlers.keys(),
+                 "rpc-types"                    : list(self.rpc_handlers.keys()),
                  "sharing"                      : self.sharing,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
@@ -1534,9 +1534,8 @@ class ServerBase(ServerCore):
         prefix = "client %i: " % ss.counter
         if isinstance(msg, (tuple, list)):
             msg = " ".join(str(x) for x in msg)
-        msg = msg.splitlines()
-        for x in msg:
-            clientlog.log(level, prefix+x)
+        for x in msg.splitlines():
+            clientlog.log(level, prefix+bytestostr(x))
 
     def _process_printers(self, proto, packet):
         if not self.file_transfer.printing or WIN32:
@@ -2120,7 +2119,7 @@ class ServerBase(ServerCore):
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
-            sources = self._server_sources.values()
+            sources = list(self._server_sources.values())
         if not wids:
             wids = self._id_to_window.keys()
         log("info-request: sources=%s, wids=%s", sources, wids)
@@ -2187,7 +2186,7 @@ class ServerBase(ServerCore):
                                    "command"    : self.pulseaudio_command,
                                    },
              "dbus_proxy"       : self.supports_dbus_proxy,
-             "rpc-types"        : self.rpc_handlers.keys(),
+             "rpc-types"        : list(self.rpc_handlers.keys()),
              "clipboard"        : self.supports_clipboard,
              "idle_timeout"     : self.idle_timeout,
              }
@@ -2201,7 +2200,7 @@ class ServerBase(ServerCore):
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
-             "with_speed"           : list(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
+             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
@@ -2214,7 +2213,7 @@ class ServerBase(ServerCore):
                                    "delay"      : self.key_repeat_delay,
                                    "interval"   : self.key_repeat_interval,
                                    },
-             "keys_pressed"     : self.keys_pressed.values(),
+             "keys_pressed"     : tuple(self.keys_pressed.values()),
              "modifiers"        : self.xkbmap_mod_meanings,
              }
         kc = self.keyboard_config
@@ -2772,7 +2771,7 @@ class ServerBase(ServerCore):
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
-                if not k.startswith("encoding"):
+                if not k.startswith(b"encoding"):
                     ncp[k] = v
             log("set_client_properties updating window %s with %s", wid, ncp)
             client_properties.update(ncp)
@@ -3323,8 +3322,8 @@ class ServerBase(ServerCore):
         try:
             handler = None
             packet_type = packet[0]
-            assert isinstance(packet_type, (str, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
-            if packet_type.startswith("clipboard-"):
+            assert isinstance(packet_type, (str, bytes, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
+            if packet_type[:10]==b"clipboard-":
                 handler = self.process_clipboard_packet
                 ss = self._server_sources.get(proto)
                 handler(ss, packet)

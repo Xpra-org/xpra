@@ -35,7 +35,6 @@ netlog = Logger("network")
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window.window_video_source import WindowVideoSource
-from xpra.server.window.window_source import WindowSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import get_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
@@ -44,7 +43,7 @@ from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, WIN32, POSIX
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -281,8 +280,6 @@ class ServerSource(FileTransferHandler):
         self.log_disconnect = log_disconnect
         self.dbus_control = dbus_control
         self.dbus_server = None
-        #pass it to window source:
-        WindowSource.staticinit(idle_add, timeout_add, source_remove)
         self.get_transient_for = get_transient_for
         self.get_focus = get_focus
         self.get_cursor_data_cb = get_cursor_data_cb
@@ -872,17 +869,17 @@ class ServerSource(FileTransferHandler):
                 self.encoding_options[ek] = c.boolget(k)
         #2: standardized encoding options:
         for k in c.keys():
-            if k.startswith("theme.") or  k.startswith("encoding.icons."):
-                self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c[k]
-            elif k.startswith("encoding."):
-                stripped_k = k[len("encoding."):]
-                if stripped_k in ("transparency",
-                                  "rgb_zlib", "rgb_lz4", "rgb_lzo",
-                                  "video_scaling"):
+            if k.startswith(b"theme.") or  k.startswith(b"encoding.icons."):
+                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c[k]
+            elif k.startswith(b"encoding."):
+                stripped_k = k[len(b"encoding."):]
+                if stripped_k in (b"transparency",
+                                  b"rgb_zlib", b"rgb_lz4", b"rgb_lzo",
+                                  b"video_scaling"):
                     v = c.boolget(k)
-                elif stripped_k in ("initial_quality", "initial_speed",
-                                    "min-quality", "quality",
-                                    "min-speed", "speed"):
+                elif stripped_k in (b"initial_quality", b"initial_speed",
+                                    b"min-quality", b"quality",
+                                    b"min-speed", b"speed"):
                     v = c.intget(k)
                 else:
                     v = c.get(k)
@@ -1552,7 +1549,6 @@ class ServerSource(FileTransferHandler):
                 "argv"              : self.argv,
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
-                "desktop_mode_size" : self.desktop_mode_size,
                 "desktops"          : self.desktops,
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
@@ -1562,6 +1558,8 @@ class ServerSource(FileTransferHandler):
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
                 }
+        if self.desktop_mode_size:
+            info["desktop_mode_size"] = self.desktop_mode_size
         if self.client_connection_data:
             info["connection-data"] = self.client_connection_data
         if self.desktop_size_unscaled:
@@ -1827,7 +1825,7 @@ class ServerSource(FileTransferHandler):
                 encoding = None
                 if pixels is not None:
                     #convert bytearray to string:
-                    cpixels = str(pixels)
+                    cpixels = strtobytes(pixels)
                     if "png" in self.cursor_encodings:
                         from xpra.codecs.loader import get_codec
                         PIL = get_codec("PIL")
@@ -1844,7 +1842,7 @@ class ServerSource(FileTransferHandler):
                         encoding = "raw"
                     cursor_data[7] = cpixels
                 cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-                args = list(cursor_data[:9]) + list(cursor_sizes)
+                args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
                 if self.cursor_encodings and encoding:
                     args = [encoding] + args
             else:
@@ -2273,7 +2271,9 @@ class ServerSource(FileTransferHandler):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
-            ws = WindowVideoSource(self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
+            ws = WindowVideoSource(
+                              self.idle_add, self.timeout_add, self.source_remove,
+                              self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.av_sync, self.av_sync_delay,

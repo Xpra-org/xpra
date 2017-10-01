@@ -411,9 +411,9 @@ class ServerCore(object):
     def init_packet_handlers(self):
         netlog("initializing packet handlers")
         self._default_packet_handlers = {
-            "hello":                                self._process_hello,
-            "disconnect":                           self._process_disconnect,
-            "udp-control":                          self._process_udp_control,
+            b"hello":                               self._process_hello,
+            b"disconnect":                          self._process_disconnect,
+            b"udp-control":                         self._process_udp_control,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
@@ -913,7 +913,7 @@ class ServerCore(object):
                 return False, None, None
             conn = SSLSocketConnection(sock, sockname, address, target, socktype)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
-            netlog("may_wrap_socket SSL: %s", conn)
+            netlog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
             if self.ssl_mode=="tcp":
                 http = False
             elif self.ssl_mode=="www":
@@ -921,15 +921,15 @@ class ServerCore(object):
             else:   #ie: auto
                 http = False
                 #use the header to guess:
-                if line1.find("HTTP/")>0 or peek_data.find("\x08http/1.1")>0:
+                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
                     http = True
                 else:
                     conn.enable_peek()
                     peek_data, line1 = self.peek_connection(conn)
-                    http = line1.find("HTTP/")>0
+                    http = line1.find(b"HTTP/")>0
             is_ssl = True
         else:
-            http = line1.find("HTTP/")>0
+            http = line1.find(b"HTTP/")>0
             is_ssl = False
         if http:
             self.start_http_socket(conn, is_ssl, peek_data)
@@ -972,7 +972,7 @@ class ServerCore(object):
         if peek_data:
             line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
-        if line1.startswith("GET ") or line1.startswith("POST "):
+        if line1.startswith(b"GET ") or line1.startswith(b"POST "):
             parts = line1.split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
             tname = "%s-request" % parts[0]

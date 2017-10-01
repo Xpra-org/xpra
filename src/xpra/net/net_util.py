@@ -319,9 +319,9 @@ def get_ssl_info():
     except ImportError as e:
         log("no ssl: %s", e)
         return {}
-    protocols = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("PROTOCOL_"))
-    ops = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("OP_"))
-    vers = dict((k,getattr(ssl, k)) for k in dir(ssl) if k.startswith("VERIFY_"))
+    protocols = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("PROTOCOL_"))
+    ops = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("OP_"))
+    vers = dict((k,int(getattr(ssl, k))) for k in dir(ssl) if k.startswith("VERIFY_"))
     info = {
             "protocols"    : protocols,
             "options"    : ops,

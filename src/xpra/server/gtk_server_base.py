@@ -21,7 +21,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_default_root_window, get_default_keymap
+from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_root_size, get_default_keymap
 
 glib = import_glib()
 glib.threads_init()
@@ -71,10 +71,11 @@ class GTKServerBase(ServerBase):
         capabilities = ServerBase.make_hello(self, source)
         if source.wants_display:
             display = display_get_default()
+            max_size = tuple(display.get_maximal_cursor_size())
             capabilities.update({
                 "display"               : display.get_name(),
                 "cursor.default_size"   : display.get_default_cursor_size(),
-                "cursor.max_size"       : display.get_maximal_cursor_size(),
+                "cursor.max_size"       : max_size,
                 })
         if source.wants_versions:
             capabilities.update(flatten_dict(get_gtk_version_info()))
@@ -100,10 +101,12 @@ class GTKServerBase(ServerBase):
         #(from UI thread)
         #now cursor size info:
         display = display_get_default()
-        pos = display.get_default_screen().get_root_window().get_pointer()[:2]
+        pos = display.get_default_screen().get_root_window().get_pointer()[-3:-1]
         cinfo = {"position" : pos}
-        for prop, size in {"default" : display.get_default_cursor_size(),
-                           "max"     : display.get_maximal_cursor_size()}.items():
+        for prop, size in {
+            "default" : display.get_default_cursor_size(),
+            "max"     : tuple(display.get_maximal_cursor_size()),
+            }.items():
             if size is None:
                 continue
             cinfo["%s_size" % prop] = size
@@ -120,14 +123,14 @@ class GTKServerBase(ServerBase):
         return info
 
     def get_root_window_size(self):
-        return get_default_root_window().get_size()
+        return get_root_size()
 
     def get_max_screen_size(self):
-        max_w, max_h = get_default_root_window().get_size()
+        max_w, max_h = get_root_size()
         return max_w, max_h
 
     def configure_best_screen_size(self):
-        root_w, root_h = get_default_root_window().get_size()
+        root_w, root_h = get_root_size()
         return root_w, root_h
 
     def calculate_workarea(self, maxw, maxh):

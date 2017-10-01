@@ -55,7 +55,7 @@ class RootWindowModel(object):
         pass
 
     def get_dimensions(self):
-        return self.window.get_size()
+        return self.window.get_geometry()[2:4]
 
     def get_image(self, x, y, width, height):
         raise NotImplementedError()
@@ -85,7 +85,7 @@ class RootWindowModel(object):
         elif prop=="opacity":
             return None
         elif prop=="size-hints":
-            size = self.window.get_size()
+            size = self.window.get_geometry()[2:4]
             return {"maximum-size"  : size,
                     "minimum-size"  : size,
                     "base-size" : size}
