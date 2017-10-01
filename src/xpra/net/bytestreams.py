@@ -346,7 +346,7 @@ if SSL_PEEK:
         #class so that we can fake peek() support by actually reading from the socket
         #and caching the result.
         class SSLSocket(socket._socketobject):
-        
+
             def __init__(self, sock):
                 socket._socketobject.__init__(self, _sock=sock)
                 #patch recv:
@@ -355,7 +355,7 @@ if SSL_PEEK:
                 self.saved_makefile = getattr(self, "makefile")
                 setattr(self, "makefile", self._makefile)
                 self.peeked = b""
-        
+
             def _recv(self, bufsize, flags=0):
                 #log("_recv(%s, %#x) peeked=%i bytes", bufsize, flags, len(self.peeked))
                 peek = flags & socket.MSG_PEEK
@@ -376,12 +376,12 @@ if SSL_PEEK:
                 if peek:
                     self.peeked = r
                 return r
-        
+
             def _makefile(self, mode='r', bufsize=-1):
                 from socket import _fileobject
                 fo = _fileobject(self, mode, bufsize)
                 return fo
-        
+
             def __repr__(self):
                 return "SSLSocket(%s)" % self._sock
 
