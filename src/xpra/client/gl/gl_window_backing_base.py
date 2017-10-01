@@ -931,9 +931,9 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks)
             return
         except GLError as e:
-            message = b"OpenGL %s paint failed: %r" % (rgb_format, e)
+            message = "OpenGL %s paint failed: %r" % (rgb_format, e)
         except Exception as e:
-            message = b"OpenGL %s paint error: %s" % (rgb_format, e)
+            message = "OpenGL %s paint error: %s" % (rgb_format, e)
         log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 
