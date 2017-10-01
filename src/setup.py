@@ -1229,14 +1229,14 @@ if WIN32:
 
         external_includes += ["encodings"]
         if PYTHON3:
-            external_includes += ["io", "codecs", "abc", "_weakrefset"]
             #hopefully, cx_Freeze will fix this horror:
             #(we shouldn't have to deal with DLL dependencies)
             import site
             lib_python = os.path.dirname(site.getsitepackages()[0])
             lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
             add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
-            add_data_files('', glob.glob("%s/encodings" % lib_python))
+            for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
+                add_data_files("", glob.glob("%s/%s*" % (lib_python, x)))
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
