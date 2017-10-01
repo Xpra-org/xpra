@@ -78,6 +78,43 @@ def force_flush_queue(q):
         pass
 
 
+def verify_packet(packet):
+    """ look for None values which may have caused the packet to fail encoding """
+    if type(packet)!=list:
+        return False
+    assert len(packet)>0, "invalid packet: %s" % packet
+    tree = ["'%s' packet" % packet[0]]
+    return do_verify_packet(tree, packet)
+
+def do_verify_packet(tree, packet):
+    def err(msg):
+        log.error("%s in %s", msg, "->".join(tree))
+    def new_tree(append):
+        nt = tree[:]
+        nt.append(append)
+        return nt
+    if packet is None:
+        err("None value")
+        return False
+    r = True
+    if type(packet) in (list, tuple):
+        for i, x in enumerate(packet):
+            if not do_verify_packet(new_tree("[%s]" % i), x):
+                r = False
+    elif type(packet)==dict:
+        for k,v in packet.items():
+            if not do_verify_packet(new_tree("key for value='%s'" % str(v)), k):
+                r = False
+            if not do_verify_packet(new_tree("value for key='%s'" % str(k)), v):
+                r = False
+    elif type(packet) in (int, bool, str, bytes):
+        pass
+    else:
+        err("unsupported type: %s" % type(packet))
+        r = False
+    return r
+
+
 class Protocol(object):
     """
         This class handles sending and receiving packets,
@@ -380,32 +417,6 @@ class Protocol(object):
         self._write_queue.put((items, start_cb, end_cb, fail_cb, synchronous))
 
 
-    def verify_packet(self, packet):
-        """ look for None values which may have caused the packet to fail encoding """
-        if type(packet)!=list:
-            return
-        assert len(packet)>0, "invalid packet: %s" % packet
-        tree = ["'%s' packet" % packet[0]]
-        self.do_verify_packet(tree, packet)
-
-    def do_verify_packet(self, tree, packet):
-        def err(msg):
-            log.error("%s in %s", msg, "->".join(tree))
-        def new_tree(append):
-            nt = tree[:]
-            nt.append(append)
-            return nt
-        if packet is None:
-            return err("None value")
-        if type(packet)==list:
-            for i, x in enumerate(packet):
-                self.do_verify_packet(new_tree("[%s]" % i), x)
-        elif type(packet)==dict:
-            for k,v in packet.items():
-                self.do_verify_packet(new_tree("key for value='%s'" % str(v)), k)
-                self.do_verify_packet(new_tree("value for key='%s'" % str(k)), v)
-
-
     def enable_default_encoder(self):
         opts = packet_encoding.get_enabled_encoders()
         assert len(opts)>0, "no packet encoders available!"
@@ -548,7 +559,7 @@ class Protocol(object):
             log.error("failed to encode packet: %s", packet, exc_info=True)
             #make the error a bit nicer to parse: undo aliases:
             packet[0] = packet_type
-            self.verify_packet(packet)
+            verify_packet(packet)
             raise
         if len(main_packet)>size_check and packet_in[0] not in self.large_packets:
             log.warn("found large packet (%s bytes): %s, argument types:%s, sizes: %s, packet head=%s",
