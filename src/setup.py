@@ -1347,7 +1347,8 @@ if WIN32:
         if example_ENABLED:
             add_gui_exe("xpra/client/gtk_base/example/colors.py",               "encoding.ico",     "Colors")
             add_gui_exe("xpra/client/gtk_base/example/colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
-            add_gui_exe("xpra/client/gtk_base/example/gl_colors_gradient.py",   "encoding.ico",     "OpenGL-Colors-Gradient")
+            if not PYTHON3:
+                add_gui_exe("xpra/client/gtk_base/example/gl_colors_gradient.py",   "encoding.ico",     "OpenGL-Colors-Gradient")
             add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
             add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
             add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
