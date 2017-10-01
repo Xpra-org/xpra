@@ -1913,7 +1913,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
                 break
     else:
         nvcc_exe = "nvcc"
-        for v in ("-7.5", "-8.0", "-9.0"):
+        for v in ("-7.5", "-8.0", "-9.0", ""):
             path_options += ["/usr/local/cuda%s/bin" % v, "/opt/cuda%s/bin" % v]
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     def which(cmd):
