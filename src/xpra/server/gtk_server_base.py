@@ -6,12 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gtk import gdk
-#most important with win32 servers:
-import glib
-glib.threads_init()
-import gobject
-gobject.threads_init()
 
 from xpra.log import Logger
 log = Logger("server", "gtk")
@@ -22,11 +16,18 @@ netlog = Logger("network")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time
+from xpra.gtk_common.gobject_compat import import_gdk, import_glib, import_gobject
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main
+from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_default_root_window, get_default_keymap
+
+glib = import_glib()
+glib.threads_init()
+gobject = import_gobject()
+gobject.threads_init()
+gdk = import_gdk()
 
 
 class GTKServerBase(ServerBase):
@@ -46,7 +47,8 @@ class GTKServerBase(ServerBase):
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
-        gdk.keymap_get_default().connect("keys-changed", self._keys_changed)
+        keymap = get_default_keymap()
+        keymap.connect("keys-changed", self._keys_changed)
 
     def signal_quit(self, signum, frame):
         gtk_main_quit_on_fatal_exceptions_disable()
@@ -68,7 +70,7 @@ class GTKServerBase(ServerBase):
     def make_hello(self, source):
         capabilities = ServerBase.make_hello(self, source)
         if source.wants_display:
-            display = gdk.display_get_default()
+            display = display_get_default()
             capabilities.update({
                 "display"               : display.get_name(),
                 "cursor.default_size"   : display.get_default_cursor_size(),
@@ -81,7 +83,7 @@ class GTKServerBase(ServerBase):
     def get_ui_info(self, proto, *args):
         info = ServerBase.get_ui_info(self, proto, *args)
         info.setdefault("server", {}).update({
-                                              "display"             : gdk.display_get_default().get_name(),
+                                              "display"             : display_get_default().get_name(),
                                               "root_window_size"    : self.get_root_window_size(),
                                               })
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
@@ -89,7 +91,7 @@ class GTKServerBase(ServerBase):
 
     def send_initial_cursors(self, ss, sharing=False):
         #cursors: get sizes and send:
-        display = gdk.display_get_default()
+        display = display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
@@ -97,7 +99,7 @@ class GTKServerBase(ServerBase):
     def get_ui_cursor_info(self):
         #(from UI thread)
         #now cursor size info:
-        display = gdk.display_get_default()
+        display = display_get_default()
         pos = display.get_default_screen().get_root_window().get_pointer()[:2]
         cinfo = {"position" : pos}
         for prop, size in {"default" : display.get_default_cursor_size(),
@@ -118,14 +120,14 @@ class GTKServerBase(ServerBase):
         return info
 
     def get_root_window_size(self):
-        return gdk.get_default_root_window().get_size()
+        return get_default_root_window().get_size()
 
     def get_max_screen_size(self):
-        max_w, max_h = gdk.get_default_root_window().get_size()
+        max_w, max_h = get_default_root_window().get_size()
         return max_w, max_h
 
     def configure_best_screen_size(self):
-        root_w, root_h = gdk.get_default_root_window().get_size()
+        root_w, root_h = get_default_root_window().get_size()
         return root_w, root_h
 
     def calculate_workarea(self, maxw, maxh):
@@ -166,7 +168,7 @@ class GTKServerBase(ServerBase):
 
     def _move_pointer(self, _wid, pos, *_args):
         x, y = pos
-        display = gdk.display_get_default()
+        display = display_get_default()
         display.warp_pointer(display.get_default_screen(), x, y)
 
     def do_process_button_action(self, *args):

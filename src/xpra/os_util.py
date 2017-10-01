@@ -530,7 +530,7 @@ def find_lib_ldconfig(libname):
             break
     import subprocess
     p = subprocess.Popen([ldconfig, "-p"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    data = p.communicate()[0]
+    data = bytestostr(p.communicate()[0])
 
     libpath = re.search(pattern, data, re.MULTILINE)
     if libpath:

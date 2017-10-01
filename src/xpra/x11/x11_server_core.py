@@ -8,17 +8,8 @@
 
 import os
 
-try:
-    from gtk import gdk
-except Exception as e:
-    from xpra.scripts.main import InitException
-    raise InitException(e)
-
-#ensure that we use gtk as display source:
-from xpra.gtk_common.gobject_compat import want_gtk3
-want_gtk3(False)
-from xpra.x11.gtk2 import gdk_display_source
-assert gdk_display_source
+from xpra.gtk_common.gobject_compat import import_gdk
+gdk = import_gdk()
 
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 RandR = RandRBindings()
@@ -29,7 +20,7 @@ X11Core = X11CoreBindings()
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 X11Window = X11WindowBindings()
 from xpra.gtk_common.error import XError, xswallow, xsync, trap
-from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -83,8 +74,8 @@ class X11ServerCore(GTKServerBase):
     """
 
     def __init__(self):
-        self.screen_number = gdk.display_get_default().get_default_screen().get_number()
-        self.root_window = gdk.get_default_root_window()
+        self.screen_number = display_get_default().get_default_screen().get_number()
+        self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
@@ -133,7 +124,7 @@ class X11ServerCore(GTKServerBase):
                 prop_set(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
         log("randr exact size=%s", self.randr_exact_size)
         if self.randr:
-            display = gdk.display_get_default()
+            display = display_get_default()
             i=0
             while i<display.get_n_screens():
                 screen = display.get_screen(i)
@@ -416,7 +407,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def get_cursor_sizes(self):
-        display = gdk.display_get_default()
+        display = display_get_default()
         return display.get_default_cursor_size(), display.get_maximal_cursor_size()
 
     def do_get_cursor_data(self):
@@ -728,7 +719,7 @@ class X11ServerCore(GTKServerBase):
         if not self.bell:
             return
         wid = 0
-        if event.window!=gdk.get_default_root_window() and event.window_model is not None:
+        if event.window!=get_default_root_window() and event.window_model is not None:
             try:
                 wid = self._window_to_id[event.window_model]
             except:
@@ -742,7 +733,7 @@ class X11ServerCore(GTKServerBase):
         #maybe this should be in all cases (it is in desktop_server):
         #model = self._id_to_window.get(wid)
         #return model.client_window.get_screen().get_number()
-        #return gdk.display_get_default().get_default_screen().get_number()
+        #return display_get_default().get_default_screen().get_number()
         #-1 uses the current screen
         return -1
 

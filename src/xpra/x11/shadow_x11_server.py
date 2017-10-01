@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 #ensures we only load GTK2:
-from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source        #@UnresolvedImport
-init_gdk_display_source()
+from xpra.x11.gtk_x11.gdk_display_source import init_display_source #@UnresolvedImport
+init_display_source()
 from xpra.x11.x11_server_core import X11ServerCore
 
 from xpra.os_util import monotonic_time
