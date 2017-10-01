@@ -1160,7 +1160,8 @@ if WIN32:
             add_dir('lib', ["gdk-pixbuf-2.0", "gtk-3.0",
                             "libvisual-0.4", "p11-kit", "pkcs11"])
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
-                              "icons", "p11-kit", "xml",
+                              "p11-kit", "xml",
+                              {"icons"  : ["hicolor"]},
                               {"locale" : ["en"]},
                               {"themes" : ["Default"]}
                              ])
