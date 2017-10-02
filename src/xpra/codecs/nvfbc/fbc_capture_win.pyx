@@ -779,6 +779,16 @@ class CUDAImageWrapper(ImageWrapper):
         self.may_download()
         return True
 
+
+    def may_restride(self):
+        #don't restride unless we have to
+        #(as we don't want to download the pixels)
+        return False
+
+    def restride(self, rowstride):
+        self.may_download()
+        return ImageWrapper.restride(self, rowstride)
+
     def get_gpu_buffer(self):
         return self.cuda_device_buffer
 
