@@ -1018,7 +1018,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
         log("running %s", app.run)
         r = app.run()
-        log("%s()=%s", app.run, e)
+        log("%s()=%s", app.run, r)
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         r = 0
