@@ -238,6 +238,8 @@ class Win32RootWindowModel(RootWindowModel):
             return shape
         return RootWindowModel.get_property(self, prop)
 
+    def get_dimensions(self):
+        return self.get_root_window_size()
 
     def get_root_window_size(self):
         w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
