@@ -8,7 +8,7 @@ import unittest
 from zlib import crc32
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, strtobytes
 try:
 	from xpra.server.window import motion
 	log = motion.log		#@UndefinedVariable
@@ -63,7 +63,7 @@ class TestMotion(unittest.TestCase):
 			t(a2, a1, M-S, S+N-M)
 
 	def test_calculate_distances(self):
-		array1 = [crc32(str(x)) for x in (1234, "abc", 99999)]
+		array1 = [crc32(strtobytes(x)) for x in (1234, b"abc", 99999)]
 		array2 = array1[:]
 		d = self.calculate_distances(array1, array2, 1)[0]
 		assert len(d)==1 and sum(d[0].values())==len(array1), "expected %i matches but got %s" % (len(array1), d[0])
