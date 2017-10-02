@@ -1148,7 +1148,6 @@ class ClientExtras(object):
 
 
 def main():
-    from collections import namedtuple
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
         if "-v" in sys.argv or "--verbose" in sys.argv:
