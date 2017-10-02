@@ -1189,7 +1189,8 @@ class ServerBase(ServerCore):
 
         self.accept_client(proto, c)
         #use blocking sockets from now on:
-        set_socket_timeout(proto._conn, None)
+        if not (PYTHON3 and WIN32):
+            set_socket_timeout(proto._conn, None)
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
