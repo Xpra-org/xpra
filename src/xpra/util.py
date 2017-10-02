@@ -213,16 +213,19 @@ class MutableInteger(object):
         return self.counter
 
     def __eq__(self, other):
-        try:
-            return self.counter==int(other)
-        except:
-            return -1
-
+        return self.counter==int(other)
+    def __ne__(self, other):
+        return self.counter!=int(other)
+    def __lt__(self, other):
+        return self.counter<int(other)
+    def __le__(self, other):
+        return self.counter<=int(other)
+    def __gt__(self, other):
+        return self.counter>int(other)
+    def __ge__(self, other):
+        return self.counter>=int(other)
     def __cmp__(self, other):
-        try:
-            return self.counter-int(other)
-        except:
-            return -1
+        return self.counter-int(other)
 
 
 class typedict(dict):
