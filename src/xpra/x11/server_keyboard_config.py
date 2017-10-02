@@ -435,6 +435,7 @@ class KeyboardConfig(KeyboardConfigBase):
             m = set()
             mm = self.xkbmap_mod_managed or ()
             for modifier in modifiers:
+                modifier = bytestostr(modifier)
                 if modifier in mm:
                     log("modifier is server managed: %s", modifier)
                     continue
