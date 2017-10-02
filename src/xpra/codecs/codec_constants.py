@@ -103,7 +103,7 @@ class _codec_spec(object):
 
 
     def get_instance_count(self):
-        return len(list(self.instances.keys()))
+        return len(self.instances)
 
     def to_dict(self):
         d = {}
@@ -115,7 +115,7 @@ class _codec_spec(object):
         #a cost multiplier that some encoder may want to override
         #1.0 means no change:
         mi = self.max_instances
-        ic = len(self.instances.keys())
+        ic = len(self.instances)
         if ic==0 or mi==0:
             return 1.0                      #no problem
         if ic>=mi:

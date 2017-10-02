@@ -1048,7 +1048,7 @@ class WindowVideoSource(WindowSource):
             #keep existing scores
             scorelog("get_video_pipeline_options%s using cached values from %ims ago", (encodings, width, height, src_format, force_refresh), 1000.0*(monotonic_time()-self.last_pipeline_time))
             return self.last_pipeline_scores
-        scorelog("get_video_pipeline_options%s last params=%s", (encodings, width, height, src_format, force_refresh), self.last_pipeline_params)
+        scorelog("get_video_pipeline_options%s last params=%s, full_csc_modes=%s", (encodings, width, height, src_format, force_refresh), self.last_pipeline_params, self.full_csc_modes)
 
         vh = self.video_helper
         if vh is None:
@@ -1076,7 +1076,7 @@ class WindowVideoSource(WindowSource):
         for encoding in encodings:
             #these are the CSC modes the client can handle for this encoding:
             #we must check that the output csc mode for each encoder is one of those
-            supported_csc_modes = self.full_csc_modes.get(encoding)
+            supported_csc_modes = self.full_csc_modes.get(strtobytes(encoding))
             if not supported_csc_modes:
                 scorelog("get_video_pipeline_options: no supported csc modes for %s", encoding)
                 continue
@@ -1094,7 +1094,7 @@ class WindowVideoSource(WindowSource):
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
                     #ensure that the output of the encoder can be processed by the client:
-                    matches = set(encoder_spec.output_colorspaces) & set(supported_csc_modes)
+                    matches = [x for x in encoder_spec.output_colorspaces if strtobytes(x) in supported_csc_modes]
                     if not matches:
                         scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                         continue

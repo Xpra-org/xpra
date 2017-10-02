@@ -381,7 +381,7 @@ def get_info():
         "version"   : get_version(),
         "max-size"  : (MAX_WIDTH, MAX_HEIGHT),
         "generation": generation.get(),
-        "formats"   : COLORSPACES.keys(),
+        "formats"   : tuple(COLORSPACES.keys()),
         }
 
 def get_encodings():
@@ -517,9 +517,9 @@ cdef class Encoder:
         if TUNE:
             return TUNE
         if self.source=="video":
-            return "film"
+            return b"film"
         #return "animation"
-        return "zerolatency"
+        return b"zerolatency"
 
     cdef init_encoder(self, options_dict={}):
         cdef x264_param_t param

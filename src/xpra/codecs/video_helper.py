@@ -232,13 +232,13 @@ class VideoHelper(object):
         log("VideoHelper.init() done")
 
     def get_encodings(self):
-        return self._video_encoder_specs.keys()
+        return tuple(self._video_encoder_specs.keys())
 
     def get_decodings(self):
-        return self._video_decoder_specs.keys()
+        return tuple(self._video_decoder_specs.keys())
 
     def get_csc_inputs(self):
-        return self._csc_encoder_specs.keys()
+        return tuple(self._csc_encoder_specs.keys())
 
 
     def get_encoder_specs(self, encoding):
