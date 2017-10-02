@@ -106,7 +106,7 @@ def identify_cards():
                         except:
                             pass
                     try:
-                        i["busId"] = str(pci.busId)
+                        i["busId"] = bytestostr(pci.busId)
                     except:
                         pass
                     return i
