@@ -1513,6 +1513,7 @@ cdef class Encoder:
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX"), "invalid source format %s" % src_format
+        assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
         self.width = width
         self.height = height
         self.speed = speed
@@ -2226,7 +2227,7 @@ cdef class Encoder:
         assert pixels is not None, "failed to get pixels from %s" % image
         #copy to input buffer:
         cdef object buf
-        if isinstance(pixels, bytearray):
+        if isinstance(pixels, (bytearray, bytes)):
             pixels = memoryview(pixels)
         if isinstance(pixels, memoryview):
             #copy memoryview to inputBuffer directly:
@@ -2243,11 +2244,9 @@ cdef class Encoder:
             copy_len = h*image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
             log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(target_buffer), len(target_buffer))
-            if PYTHON3 and isinstance(pixels, bytearray):
-                tmp = numpy.frombuffer(pixels, numpy.int8)
-                buf[:copy_len] = tmp[:copy_len]
-            else:
-                buf[:copy_len] = pixels[:copy_len]
+            #log("target: %s, %s, %s", buf.shape, buf.size, buf.dtype)
+            tmp = numpy.frombuffer(pixels, numpy.int8)
+            buf[:copy_len] = tmp[:copy_len]
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
             #before uploading to the device... this is probably costly!
