@@ -145,8 +145,8 @@ if "--minimal" in sys.argv:
     DEFAULT = False
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
-shadow_ENABLED = SHADOW_SUPPORTED and not (PYTHON3 and LINUX) and DEFAULT       #shadow servers use some GTK2 code..
-server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and not (PYTHON3 and LINUX) and DEFAULT
+shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
+server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
 rfb_ENABLED = server_ENABLED
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not is_Ubuntu() or getUbuntuVersion()>[16, 4])
@@ -301,9 +301,6 @@ if "clean" not in sys.argv:
     if clipboard_ENABLED and not server_ENABLED and not gtk2_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
         clipboard_ENABLED = False
-    if shadow_ENABLED and not server_ENABLED:
-        print("Warning: shadow requires server to be enabled!")
-        shadow_ENABLED = False
     if x11_ENABLED and WIN32:
         print("Warning: enabling x11 on MS Windows is unlikely to work!")
     if gtk_x11_ENABLED and not x11_ENABLED:
@@ -1649,12 +1646,12 @@ cython_add(Extension("xpra.buffers.membuf",
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
-toggle_packages(server_ENABLED or proxy_ENABLED or shadow_ENABLED, "xpra.server", "xpra.server.auth")
+toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
 toggle_packages(rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
-toggle_packages(server_ENABLED and shadow_ENABLED, "xpra.server.shadow")
-toggle_packages(server_ENABLED or (client_ENABLED and gtk2_ENABLED), "xpra.clipboard")
+toggle_packages(shadow_ENABLED, "xpra.server.shadow")
+toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
 
 #cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
@@ -1863,7 +1860,7 @@ if client_ENABLED or server_ENABLED:
                 ["xpra/codecs/xor/cyxor.pyx"],
                 **pkgconfig(optimize=3)))
 
-if server_ENABLED:
+if server_ENABLED or shadow_ENABLED:
     O3_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
