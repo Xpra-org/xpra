@@ -152,7 +152,7 @@ class ClipboardProtocolHelperBase(object):
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         log("enabling selections: %s", csv(selections))
         for selection, proxy in self._clipboard_proxies.items():
-            proxy.set_enabled(selection in selections)
+            proxy.set_enabled(strtobytes(selection) in selections)
 
     def set_greedy_client(self, greedy):
         for proxy in self._clipboard_proxies.values():
