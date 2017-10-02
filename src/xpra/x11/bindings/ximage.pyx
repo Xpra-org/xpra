@@ -11,6 +11,7 @@ import errno as pyerrno
 from libc.stdint cimport uint64_t, uintptr_t
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer
 from xpra.monotonic_time cimport monotonic_time
+from xpra.x11.bindings.display_source import get_display_name
 
 from xpra.log import Logger
 xshmlog = Logger("x11", "bindings", "ximage", "xshm")
@@ -881,7 +882,9 @@ cdef class _XImageBindings(_X11CoreBindings):
 
     def __cinit__(self):
         self.has_xshm = XShmQueryExtension(self.display)
-        log("XShmQueryExtension()=%s", bool(self.has_xshm))
+        xshmlog("XShmQueryExtension()=%s", bool(self.has_xshm))
+        if not self.has_xshm:
+            xshmlog.warn("Warning: no XShm support on display %s", get_display_name())
 
     def has_XShm(self):
         return self.has_xshm
