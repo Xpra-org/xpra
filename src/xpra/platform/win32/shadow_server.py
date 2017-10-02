@@ -301,7 +301,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def print_screen_info(self):
-        w, h = self.root.get_size()
+        w, h = self.root.get_geometry()[2:4]
         try:
             display = prettify_plug_name(self.root.get_screen().get_display().get_name())
         except:
