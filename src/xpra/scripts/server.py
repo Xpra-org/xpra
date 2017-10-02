@@ -1017,15 +1017,15 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             xvfb_pid = get_xvfb_pid()
 
         log("running %s", app.run)
-        e = app.run()
+        r = app.run()
         log("%s()=%s", app.run, e)
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
-        e = 0
+        r = 0
     except Exception as e:
         log.error("server error", exc_info=True)
-        e = -128
-    if e>0:
+        r = -128
+    if r>0:
         # Upgrading/exiting, so leave X and dbus servers running
         if close_display:
             _cleanups.remove(close_display)
@@ -1037,5 +1037,5 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         else:
             log.info("upgrading: not cleaning up Xvfb")
         log("cleanups=%s", _cleanups)
-        e = 0
+        r = 0
     return e
