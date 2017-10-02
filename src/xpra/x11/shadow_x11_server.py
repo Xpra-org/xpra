@@ -16,8 +16,6 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
-from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
-from xpra.codecs.image_wrapper import ImageWrapper
 XImage = XImageBindings()
 
 from xpra.log import Logger
