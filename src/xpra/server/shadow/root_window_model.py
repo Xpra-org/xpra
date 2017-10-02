@@ -85,7 +85,7 @@ class RootWindowModel(object):
         elif prop=="opacity":
             return None
         elif prop=="size-hints":
-            size = self.window.get_geometry()[2:4]
+            size = self.get_dimensions()
             return {"maximum-size"  : size,
                     "minimum-size"  : size,
                     "base-size" : size}

@@ -113,7 +113,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
             self.capture = None
             capture.clean()
 
-    def get_geometry(self):
+    def get_dimensions(self):
         #used by get_window_info only
         return self.window.get_geometry()[2:4]
 

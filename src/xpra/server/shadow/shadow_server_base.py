@@ -115,7 +115,7 @@ class ShadowServerBase(RFBServer):
         if not self.mapped:
             self.timer = None
             return False
-        w, h = self.root.get_geometry()[2:4]
+        w, h = self.root_window_model.get_dimensions()
         self._damage(self.root_window_model, 0, 0, w, h)
         return True
 

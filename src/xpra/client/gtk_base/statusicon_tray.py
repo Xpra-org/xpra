@@ -142,7 +142,7 @@ class GTKStatusIconTray(TrayBase):
     def set_icon_from_pixbuf(self, tray_icon):
         if not tray_icon or not self.tray_widget:
             return
-        tw, th = self.get_geometry()[2:]
+        tw, th = self.get_geometry()[2:4]
         w = tray_icon.get_width()
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
