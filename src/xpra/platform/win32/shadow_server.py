@@ -347,7 +347,7 @@ class ShadowServer(GTKShadowServerBase):
         self._update_modifiers(proto, wid, modifiers)
         pointer = self._process_mouse_common(proto, wid, pointer)
         self._server_sources.get(proto).user_event()
-        self.do_button_action(pointer, button, pressed, -1, *args)
+        self.button_action(pointer, button, pressed, -1, *args)
 
     def button_action(self, pointer, button, pressed, deviceid=-1, *args):
         event = BUTTON_EVENTS.get((button, pressed))
