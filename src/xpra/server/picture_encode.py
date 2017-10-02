@@ -29,14 +29,14 @@ def warn_encoding_once(key, message):
 
 
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
-    pixel_format = image.get_pixel_format()
+    pixel_format = strtobytes(image.get_pixel_format())
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s", (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
         log("rgb_encode reformatting because %s not in %s", pixel_format, rgb_formats)
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
-        pixel_format = image.get_pixel_format()
+        pixel_format = strtobytes(image.get_pixel_format())
         #switch encoding if necessary:
         if len(pixel_format)==4 and coding=="rgb24":
             coding = "rgb32"
