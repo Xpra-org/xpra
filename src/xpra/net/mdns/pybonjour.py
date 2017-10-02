@@ -58,6 +58,8 @@ import re
 import socket
 import sys
 
+if sys.version_info[0]==3:
+    unicode = str           #@ReservedAssignment
 
 
 ################################################################################
@@ -813,7 +815,7 @@ def _create_function_bindings():
         }
 
 
-    for name, (restype, errcheck, outparam, argtypes) in specs.iteritems():
+    for name, (restype, errcheck, outparam, argtypes) in specs.items():
         prototype = _CFunc(restype, *argtypes)
 
         paramflags = [1] * len(argtypes)
@@ -1951,7 +1953,7 @@ class TXTRecord(object):
         self._names = []
         self._items = {}
 
-        for name, value in items.iteritems():
+        for name, value in items.items():
             self[name] = value
 
     def __contains__(self, name):
