@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk.gdk
+from gtk import gdk
 
 from xpra.os_util import monotonic_time
 from xpra.log import Logger
@@ -36,10 +36,10 @@ def get_rgb_rawdata(pixmap, x, y, width, height):
     if not colormap:
         log.error("get_rgb_rawdata(..) no colormap for RGB pixbuf %sx%s", width, height)
         return None
-    pixbuf = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, False, 8, width, height)
+    pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, width, height)
     pixbuf.get_from_drawable(pixmap, colormap, x, y, 0, 0, width, height)
     log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms, visual depth=%s",
              int(1000*(monotonic_time()-start)), colormap.get_visual().depth)
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
-    return (x, y, width, height, raw_data, "RGB", 24, rowstride)
+    return (x, y, width, height, raw_data, "RGB", 24, rowstride, 3)
