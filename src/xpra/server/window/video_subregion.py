@@ -497,7 +497,7 @@ class VideoSubregion(object):
         #try harder still: try combining all the regions we haven't discarded
         #(flash player with firefox and youtube does stupid unnecessary repaints)
         if len(damage_count)>=2:
-            merged = merge_all(damage_count.keys())
+            merged = merge_all(tuple(damage_count.keys()))
             score = score_region("merged", merged)
             if score>=110:
                 return setnewregion(merged, "merged all regions, score=%s", score)
