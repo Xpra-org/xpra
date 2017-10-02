@@ -1319,7 +1319,7 @@ class WindowVideoSource(WindowSource):
         start = monotonic_time()
         if len(scores)==0:
             if not self.is_cancelled():
-                log.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
+                videolog.error("Error: no video pipeline options found for %s at %ix%i", src_format, width, height)
             return False
         videolog("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
