@@ -137,6 +137,7 @@ class ImageWrapper(object):
             #not supported yet for planar images
             return False
         pixels = self.pixels
+        assert pixels, "no pixel data to restride"
         oldstride = self.rowstride
         pos = 0
         lines = []
