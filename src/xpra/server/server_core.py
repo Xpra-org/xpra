@@ -480,8 +480,9 @@ class ServerCore(object):
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
-        self._closing = True
-        log.info("xpra is terminating.")
+        if not self._closing:
+            self._closing = True
+            log.info("xpra is terminating.")
         sys.stdout.flush()
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
