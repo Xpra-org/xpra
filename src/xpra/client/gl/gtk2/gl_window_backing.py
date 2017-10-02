@@ -30,19 +30,11 @@ class GLPixmapBacking(GTKGLWindowBackingBase):
     def get_gl_drawable(self):
         return gtkgl.widget_get_gl_drawable(self._backing)
 
-    def gl_expose_event(self, glarea=None, event=None):
+    def gl_expose_event(self, _glarea=None, event=None):
         if not self.paint_screen:
             return
-        context = self.gl_context()
+        rect = None
         if event and event.area:
             area = event.area
             rect = (area.x, area.y, area.width, area.height)
-        else:
-            w, h = self.size
-            rect = (0, 0, w, h)
-        log("%s.gl_expose_event(%s, %s) context=%s, area=%s", self, glarea, event, context, area)
-        if not context:
-            return
-        with context:
-            self.gl_init()
-            self.present_fbo(*rect)
+        self.gl_expose_rect(rect)

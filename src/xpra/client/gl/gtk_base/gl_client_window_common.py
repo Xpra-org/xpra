@@ -49,9 +49,8 @@ class GLClientWindowCommon(object):
         b = self._backing
         if not b:
             return
-        if b._backing and b.paint_screen:
-            event = DrawEvent(area=Rectangle(x=x, y=y, width=w, height=h))
-            b.gl_expose_event(b._backing, event)
+        rect = (x, y, w, h)
+        b.gl_expose_rect(rect)
 
     def do_expose_event(self, event):
         log("GL do_expose_event(%s)", event)

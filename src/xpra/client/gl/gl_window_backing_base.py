@@ -1068,3 +1068,17 @@ class GLWindowBackingBase(WindowBackingBase):
         flush_elapsed = end-self.last_flush
         self.last_flush = end
         fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)
+
+
+    def gl_expose_rect(self, rect=None):
+        if not self.paint_screen:
+            return
+        context = self.gl_context()
+        if not context:
+            return
+        if not rect:
+            w, h = self.size
+            rect = (0, 0, w, h)
+        with context:
+            self.gl_init()
+            self.present_fbo(*rect)
