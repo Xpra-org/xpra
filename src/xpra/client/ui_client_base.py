@@ -1269,7 +1269,7 @@ class UIXpraClient(XpraClientBase):
         button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
         if button>0:
             self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
-        log.info("wheel_delta%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
+        log("wheel_delta%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
