@@ -1093,7 +1093,7 @@ class ServerBase(ServerCore):
         server_exit = False
         share_count = 0
         disconnected = 0
-        for p,ss in self._server_sources.items():
+        for p,ss in tuple(self._server_sources.items()):
             if detach_request and p!=proto:
                 self.disconnect_client(p, DETACH_REQUEST)
                 disconnected += 1
