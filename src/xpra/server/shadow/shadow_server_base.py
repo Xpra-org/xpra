@@ -95,18 +95,21 @@ class ShadowServerBase(RFBServer):
         assert v>0 and v<10000
         self.refresh_delay = v
         if self.mapped:
-            if self.timer:
-                self.source_remove(self.timer)
-                self.timer = None
+            self.cancel_refresh_timer()
             self.start_refresh()
 
 
     def stop_refresh(self):
-        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.timer)
+        log("stop_refresh() mapped=%s", self.mapped)
         self.mapped = False
-        if self.timer:
-            self.source_remove(self.timer)
+        self.cancel_refresh_timer()
+
+    def cancel_refresh_timer(self):
+        t = self.timer
+        log("cancel_refresh_timer() timer=%s", t)
+        if t:
             self.timer = None
+            self.source_remove(t)
 
     def refresh(self):
         if not self.mapped:
