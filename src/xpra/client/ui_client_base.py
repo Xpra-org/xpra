@@ -2737,6 +2737,7 @@ class UIXpraClient(XpraClientBase):
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h = packet[1:6]
+        assert w>=0 and h>=0 and w<32768 and h<32768
         metadata = self.cook_metadata(True, packet[6])
         windowlog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
