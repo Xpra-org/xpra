@@ -16,6 +16,8 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
+from xpra.gtk_common.pixbuf_to_rgb import get_rgb_rawdata
+from xpra.codecs.image_wrapper import ImageWrapper
 XImage = XImageBindings()
 
 from xpra.log import Logger
@@ -37,11 +39,11 @@ if USE_NVFBC:
         USE_NVFBC = False
 
 
-
 class XImageCapture(object):
     def __init__(self, xwindow):
         self.xshm = None
         self.xwindow = xwindow
+        assert USE_XSHM and XImage.has_XShm(), "no XShm support"
 
     def clean(self):
         self.close_xshm()
@@ -57,18 +59,14 @@ class XImageCapture(object):
         try:
             start = monotonic_time()
             with xsync:
-                if USE_XSHM:
-                    log("X11 shadow get_image, xshm=%s", self.xshm)
-                    if self.xshm is None:
-                        self.xshm = XImage.get_XShmWrapper(self.xwindow)
-                        self.xshm.setup()
-                    if self.xshm:
-                        image = self.xshm.get_image(self.xwindow, x, y, width, height)
-                        #discard to ensure we will call XShmGetImage next time around
-                        self.xshm.discard()
-                        return image
-                #fallback to gtk capture:
-                return GTKRootWindowModel.get_image(self, x, y, width, height)
+                log("X11 shadow get_image, xshm=%s", self.xshm)
+                if self.xshm is None:
+                    self.xshm = XImage.get_XShmWrapper(self.xwindow)
+                    self.xshm.setup()
+                image = self.xshm.get_image(self.xwindow, x, y, width, height)
+                #discard to ensure we will call XShmGetImage next time around
+                self.xshm.discard()
+                return image
         except Exception as e:
             if getattr(e, "msg", None)=="BadMatch":
                 log("BadMatch - temporary error?", exc_info=True)
@@ -81,6 +79,16 @@ class XImageCapture(object):
         finally:
             end = monotonic_time()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
+
+class GTKImageCapture(object):
+    def __init__(self, root_window_model):
+        self.root_window_model = root_window_model
+
+    def clean(self):
+        pass
+
+    def get_image(self, x, y, width, height):
+        return GTKRootWindowModel.get_image(self.root_window_model, x, y, width, height)
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
@@ -131,8 +139,10 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
                     log("get_image() NvFBC test failed", exc_info=True)
                     log("not using %s: %s", self.capture, e)
                     self.capture = None
-            if not self.capture:
+            if not self.capture and XImage.has_XShm() and USE_XSHM:
                 self.capture = XImageCapture(get_xwindow(self.window))
+            if not self.capture:
+                self.capture = GTKImageCapture(self)
             log("shadow image capture=%s", self.capture)
         return image or self.capture.get_image(x, y, width, height)
 

@@ -143,6 +143,18 @@ class ImageWrapper(object):
         for _ in range(self.height):
             lines.append(memoryview_to_bytes(pixels[pos:pos+rowstride]))
             pos += oldstride
+        if self.height>0 and oldstride<rowstride:
+            #the last few lines may need padding if the new rowstride is bigger
+            #(usually just the last line)
+            #we do this here to avoid slowing down the main loop above
+            #as this should be a rarer case
+            for h in range(self.height):
+                i = -(1+h)
+                line = lines[i]
+                if len(line)<rowstride:
+                    lines[i] = line + b"\0"*(rowstride-len(line))
+                else:
+                    break
         self.rowstride = rowstride
         self.pixels = b"".join(lines)
         return True
