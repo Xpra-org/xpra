@@ -8,9 +8,9 @@
 #will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE = 2**15-1
 
+class Unmanageable(Exception):
+    pass
 
-from xpra.gtk_common.gobject_compat import import_gdk
-gdk = import_gdk()
 
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
@@ -19,6 +19,8 @@ class X11Event(object):
         self.name = name
 
     def __repr__(self):
+        from xpra.gtk_common.gobject_compat import import_gdk
+        gdk = import_gdk()
         d = {}
         for k,v in self.__dict__.items():
             if k=="name":

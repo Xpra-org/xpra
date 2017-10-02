@@ -19,8 +19,8 @@ from xpra.util import AdHocStruct, updict, rindex, envbool, envint
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
+from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
-from xpra.x11.gtk2 import Unmanageable
 from xpra.x11.gtk2.wm import Wm
 from xpra.x11.gtk2.tray import get_tray_window, SystemTray
 from xpra.x11.gtk2.window import OverrideRedirectWindowModel, SystemTrayWindowModel

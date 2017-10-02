@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.x11.gtk2 import Unmanageable
+from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.models.base import BaseWindowModel, gobject
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 

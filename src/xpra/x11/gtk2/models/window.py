@@ -16,7 +16,7 @@ from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-from xpra.x11.gtk2 import Unmanageable
+from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.models.size_hints_util import sanitize_size_hints
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.x11.gtk2.models.base import BaseWindowModel, constants

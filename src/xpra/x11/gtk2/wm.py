@@ -14,7 +14,7 @@ from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 
-from xpra.x11.gtk2 import Unmanageable
+from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.selection import ManagerSelection
 from xpra.x11.gtk2.world_window import WorldWindow
 from xpra.x11.gtk2.window import WindowModel, configure_bits
