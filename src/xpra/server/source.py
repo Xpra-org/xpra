@@ -43,7 +43,7 @@ from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed, Compressible
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, WIN32, POSIX
+from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, bytestostr, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -1034,7 +1034,7 @@ class ServerSource(FileTransferHandler):
                     loop_warning("speaker", self.uuid)
                     return None
             from xpra.sound.wrapper import start_sending_sound
-            plugins = self.sound_properties.get("plugins")
+            plugins = self.sound_properties.strlistget("plugins", [])
             ss = start_sending_sound(plugins, self.sound_source_plugin, None, codec, volume, True, [codec], self.pulseaudio_server, self.pulseaudio_id)
             self.sound_source = ss
             soundlog("start_sending_sound() sound source=%s", ss)
@@ -1170,6 +1170,7 @@ class ServerSource(FileTransferHandler):
 
     def sound_control(self, action, *args):
         assert self.hello_sent
+        action = bytestostr(action)
         soundlog("sound_control(%s, %s)", action, args)
         if action=="stop":
             if len(args)>0:
@@ -1188,7 +1189,7 @@ class ServerSource(FileTransferHandler):
         elif action in ("start", "fadein"):
             codec = None
             if len(args)>0:
-                codec = args[0]
+                codec = bytestostr(args[0])
             if action=="start":
                 volume = 1.0
             else:
@@ -1289,7 +1290,7 @@ class ServerSource(FileTransferHandler):
                 soundlog.error("failed to setup sound", exc_info=True)
                 return
         if packet_metadata:
-            if not self.sound_properties.get("bundle-metadata"):
+            if not self.sound_properties.boolget("bundle-metadata"):
                 for x in packet_metadata:
                     self.sound_sink.add_data(x)
                 packet_metadata = ()
