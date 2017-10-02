@@ -967,13 +967,14 @@ class ServerSource(FileTransferHandler):
         else:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
             if self.encoding=="auto":
-                elog.info(" automatic picture encoding enabled")
+                s = "automatic picture encoding enabled"
             else:
-                elog.info(" using %s as primary encoding", self.encoding)
+                s = "using %s as primary encoding" % self.encoding
             if others:
-                elog.info(" also available:")
+                elog.info(" %s, also available:", s)
                 elog.info("  %s", ", ".join(others))
             else:
+                elog.warn(" %s")
                 elog.warn("  no other encodings are available!")
 
     def parse_proxy_video(self):
