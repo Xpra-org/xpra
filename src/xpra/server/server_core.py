@@ -411,9 +411,9 @@ class ServerCore(object):
     def init_packet_handlers(self):
         netlog("initializing packet handlers")
         self._default_packet_handlers = {
-            b"hello":                               self._process_hello,
-            b"disconnect":                          self._process_disconnect,
-            b"udp-control":                         self._process_udp_control,
+            "hello":                                self._process_hello,
+            "disconnect":                           self._process_disconnect,
+            "udp-control":                          self._process_udp_control,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
