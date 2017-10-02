@@ -3322,9 +3322,9 @@ class ServerBase(ServerCore):
     def process_packet(self, proto, packet):
         try:
             handler = None
-            packet_type = packet[0]
+            packet_type = bytestostr(packet[0])
             assert isinstance(packet_type, (str, bytes, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
-            if packet_type[:10]==b"clipboard-":
+            if packet_type.startswith("clipboard-"):
                 handler = self.process_clipboard_packet
                 ss = self._server_sources.get(proto)
                 handler(ss, packet)
