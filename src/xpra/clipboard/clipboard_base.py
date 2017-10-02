@@ -404,7 +404,7 @@ class ClipboardProtocolHelperBase(object):
             return
         def got_contents(dtype, dformat, data):
             log("got_contents(%s, %s, %s:%s) data=0x%s..",
-                  dtype, dformat, type(data), len(data or ""), hexstr(data[:200]))
+                  dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
             if dtype is None or data is None:
                 no_contents()
                 return
