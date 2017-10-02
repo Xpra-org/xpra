@@ -19,7 +19,7 @@ from xpra.os_util import WIN32, PYTHON2
 TCP_NODELAY = envbool("XPRA_TCP_NODELAY", True)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
-SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
+SSL_PEEK = PYTHON2 and envbool("XPRA_SSL_PEEK", True)
 
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
@@ -386,6 +386,7 @@ if SSL_PEEK:
                 return "SSLSocket(%s)" % self._sock
 
     except Exception as e:
+        log("ssl peek", exc_info=True)
         log.warn("Warning: unable to override socket object")
         log.warn(" SSL peek support will not be available")
         log.warn(" %s", e)

@@ -33,7 +33,7 @@ from xpra.scripts.config import InitException, parse_bool, python_platform, FALS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX, PYTHON3
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choose_digest, \
@@ -838,7 +838,9 @@ class ServerCore(object):
             conn_err(network_protocol, "invalid packet header, %s" % msg)
             return
 
-        sock.settimeout(self._socket_timeout)
+        #not sure why python3 fails to set the timeout here:
+        if not PYTHON3 or socktype!="ssl":
+            sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn)
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:

@@ -16,7 +16,7 @@ netlog = Logger("network")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_gdk, import_glib, import_gobject
+from xpra.gtk_common.gobject_compat import import_gdk, import_glib, import_gobject, is_gtk3
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
@@ -135,7 +135,9 @@ class GTKServerBase(ServerBase):
 
     def calculate_workarea(self, maxw, maxh):
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
-        workarea = gdk.Rectangle(0, 0, maxw, maxh)
+        workarea = gdk.Rectangle()
+        workarea.width = maxw
+        workarea.height = maxh
         for ss in self._server_sources.values():
             screen_sizes = ss.screen_sizes
             screenlog("calculate_workarea() screen_sizes(%s)=%s", ss, screen_sizes)
@@ -148,15 +150,25 @@ class GTKServerBase(ServerBase):
                 #display: [':0.0', 2560, 1600, 677, 423, [['DFP2', 0, 0, 2560, 1600, 646, 406]], 0, 0, 2560, 1574]
                 if len(display)>=10:
                     work_x, work_y, work_w, work_h = display[6:10]
-                    display_workarea = gdk.Rectangle(work_x, work_y, work_w, work_h)
+                    display_workarea = gdk.Rectangle()
+                    display_workarea.x = work_x
+                    display_workarea.y = work_y
+                    display_workarea.width = work_w
+                    display_workarea.height = work_h
                     screenlog("calculate_workarea() found %s for display %s", display_workarea, display[0])
-                    workarea = workarea.intersect(display_workarea)
+                    if is_gtk3():
+                        success, workarea = workarea.intersect(display_workarea)
+                        assert success
+                    else:
+                        workarea = workarea.intersect(display_workarea)
         #sanity checks:
         screenlog("calculate_workarea(%s, %s) workarea=%s", maxw, maxh, workarea)
         if workarea.width==0 or workarea.height==0:
             screenlog.warn("Warning: failed to calculate a common workarea")
             screenlog.warn(" using the full display area: %ix%i", maxw, maxh)
-            workarea = gdk.Rectangle(0, 0, maxw, maxh)
+            workarea = gdk.Rectangle()
+            workarea.width = maxw
+            workarea.height = maxh
         self.set_workarea(workarea)
 
     def set_workarea(self, workarea):
