@@ -59,7 +59,8 @@ import socket
 import sys
 
 if sys.version_info[0]==3:
-    unicode = str           #@ReservedAssignment
+    unicode = str               #@ReservedAssignment
+    basestring = (str, bytes)   #@ReservedAssignment
 
 
 ################################################################################
@@ -860,6 +861,8 @@ _NO_DEFAULT = _NoDefault()
 def _string_to_length_and_void_p(string):
     if isinstance(string, TXTRecord):
         string = str(string)
+    if not isinstance(string, bytes):
+        string = string.encode("latin1")
     void_p = ctypes.cast(ctypes.c_char_p(string), ctypes.c_void_p)
     return len(string), void_p
 
