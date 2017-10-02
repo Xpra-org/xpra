@@ -6,8 +6,8 @@
 
 #@PydevCodeAnalysisIgnore
 
-from ctypes import POINTER, Structure, Union, c_void_p, c_int, c_ubyte
-from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT
+from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_int, c_ubyte
+from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT, BOOL
 
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 
@@ -101,3 +101,37 @@ class TOKEN_USER(Structure):
         ('SID',         c_void_p),
         ('ATTRIBUTES',  DWORD),
     ]
+
+
+kernel32 = WinDLL("kernel32", use_last_error=True)
+WaitForSingleObject = kernel32.WaitForSingleObject
+CreateEventA = kernel32.CreateEventA
+CreateEventA.restype = HANDLE
+ReadFile = kernel32.ReadFile
+WriteFile = kernel32.WriteFile
+CreateFileA = kernel32.CreateFileA
+WaitNamedPipeA = kernel32.WaitNamedPipeA
+SetNamedPipeHandleState = kernel32.SetNamedPipeHandleState
+GetOverlappedResult = kernel32.GetOverlappedResult
+CloseHandle = kernel32.CloseHandle
+CloseHandle.argtypes = [HANDLE]
+CloseHandle.restype = BOOL
+CreateNamedPipeA = kernel32.CreateNamedPipeA
+CreateNamedPipeA.restype = HANDLE
+ConnectNamedPipe = kernel32.ConnectNamedPipe
+ConnectNamedPipe.argtypes = [HANDLE, OVERLAPPED]
+ConnectNamedPipe.restype = BOOL
+DisconnectNamedPipe = kernel32.DisconnectNamedPipe
+DisconnectNamedPipe.argtypes = [HANDLE]
+DisconnectNamedPipe.restype = BOOL
+FlushFileBuffers = kernel32.FlushFileBuffers
+GetLastError = kernel32.GetLastError
+GetCurrentProcess = kernel32.GetCurrentProcess
+GetCurrentProcess.restype = HANDLE
+
+advapi32 = WinDLL("advapi32", use_last_error=True)
+InitializeSecurityDescriptor = advapi32.InitializeSecurityDescriptor
+SetSecurityDescriptorOwner = advapi32.SetSecurityDescriptorOwner
+SetSecurityDescriptorDacl = advapi32.SetSecurityDescriptorDacl
+OpenProcessToken = advapi32.OpenProcessToken
+GetTokenInformation = advapi32.GetTokenInformation

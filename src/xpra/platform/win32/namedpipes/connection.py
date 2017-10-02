@@ -7,29 +7,16 @@
 #@PydevCodeAnalysisIgnore
 
 import errno
-from ctypes import WinDLL, addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
+from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.namedpipes.common import OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE, ERROR_PIPE_BUSY, ERROR_PIPE_NOT_CONNECTED, INFINITE, ERROR_STR, ERROR_BROKEN_PIPE, ERROR_IO_PENDING
+from xpra.platform.win32.namedpipes.common import CreateEventA, CreateFileA, ReadFile, WriteFile, CloseHandle, DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA, GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult
 from xpra.platform.win32.constants import FILE_FLAG_OVERLAPPED, GENERIC_READ, GENERIC_WRITE, OPEN_EXISTING, PIPE_READMODE_BYTE
 
 from xpra.log import Logger
 log = Logger("network", "named-pipe", "win32")
-
-kernel32 = WinDLL("kernel32", use_last_error=True)
-CreateEventA = kernel32.CreateEventA
-CreateFileA = kernel32.CreateFileA
-ReadFile = kernel32.ReadFile
-WriteFile = kernel32.WriteFile
-CloseHandle = kernel32.CloseHandle
-DisconnectNamedPipe = kernel32.DisconnectNamedPipe
-FlushFileBuffers = kernel32.FlushFileBuffers
-WaitNamedPipeA = kernel32.WaitNamedPipeA
-GetLastError = kernel32.GetLastError
-SetNamedPipeHandleState = kernel32.SetNamedPipeHandleState
-WaitForSingleObject = kernel32.WaitForSingleObject
-GetOverlappedResult = kernel32.GetOverlappedResult
 
 BUFSIZE = 65536
 

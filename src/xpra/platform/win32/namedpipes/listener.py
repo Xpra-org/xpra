@@ -13,32 +13,13 @@ from threading import Thread
 from xpra.log import Logger
 from xpra.util import envbool
 from xpra.platform.win32.namedpipes.common import OVERLAPPED, INFINITE, WAIT_STR, SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER
+from xpra.platform.win32.namedpipes.common import CreateEventA, CreateNamedPipeA, ConnectNamedPipe, WaitForSingleObject, CloseHandle, GetLastError
+from xpra.platform.win32.namedpipes.common import SetSecurityDescriptorDacl, InitializeSecurityDescriptor, GetCurrentProcess, OpenProcessToken, GetTokenInformation, SetSecurityDescriptorOwner
 from xpra.platform.win32.constants import FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE, PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT
 log = Logger("network", "named-pipe", "win32")
 
 UNRESTRICTED = envbool("XPRA_NAMED_PIPE_UNRESTRICTED", False)
 
-kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-WaitForSingleObject = kernel32.WaitForSingleObject
-CreateEventA = kernel32.CreateEventA
-CreateEventA.restype = HANDLE
-ReadFile = kernel32.ReadFile
-WriteFile = kernel32.WriteFile
-CloseHandle = kernel32.CloseHandle
-CreateNamedPipeA = kernel32.CreateNamedPipeA
-CreateNamedPipeA.restype = HANDLE
-ConnectNamedPipe = kernel32.ConnectNamedPipe
-DisconnectNamedPipe = kernel32.DisconnectNamedPipe
-FlushFileBuffers = kernel32.FlushFileBuffers
-GetLastError = kernel32.GetLastError
-GetCurrentProcess = kernel32.GetCurrentProcess
-GetCurrentProcess.restype = HANDLE
-advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
-InitializeSecurityDescriptor = advapi32.InitializeSecurityDescriptor
-SetSecurityDescriptorOwner = advapi32.SetSecurityDescriptorOwner
-SetSecurityDescriptorDacl = advapi32.SetSecurityDescriptorDacl
-OpenProcessToken = advapi32.OpenProcessToken
-GetTokenInformation = advapi32.GetTokenInformation
 
 FILE_ALL_ACCESS = 0x1f01ff
 PIPE_ACCEPT_REMOTE_CLIENTS = 0
