@@ -19,7 +19,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict
-from xpra.os_util import monotonic_time, strtobytes, PYTHON3
+from xpra.os_util import monotonic_time, strtobytes, bytestostr, PYTHON3
 from xpra.log import Logger
 if PYTHON3:
     from functools import reduce
@@ -1396,7 +1396,7 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder = csce
         enc_start = monotonic_time()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = self.full_csc_modes.get(encoder_spec.encoding)
+        dst_formats = tuple(bytestostr(x) for x in self.full_csc_modes.get(strtobytes(encoder_spec.encoding)))
         ve = encoder_spec.make_instance()
         options = self.encoding_options.copy()
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
