@@ -19,8 +19,10 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, strtobytes, PYTHON3
 from xpra.log import Logger
+if PYTHON3:
+    from functools import reduce
 
 log = Logger("encoding")
 csclog = Logger("csc")
@@ -297,12 +299,12 @@ class WindowVideoSource(WindowSource):
 
     def update_encoding_selection(self, encoding=None, exclude=[], init=False):
         #override so we don't use encodings that don't have valid csc modes:
-        log("wvs.update_encoding_selection(%s, %s, %s)", encoding, exclude, init)
+        log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 exclude.append(x)
                 continue
-            csc_modes = self.full_csc_modes.get(x)
+            csc_modes = self.full_csc_modes.get(strtobytes(x))
             if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
                 if not init:

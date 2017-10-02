@@ -877,7 +877,7 @@ class WindowSource(object):
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         #make sure we don't account for those as they will get dropped
         #(generally before encoding - only one may still get encoded):
-        for sequence in self.statistics.encoding_pending.keys():
+        for sequence in list(self.statistics.encoding_pending.keys()):
             if self._damage_cancelled>=sequence:
                 try:
                     del self.statistics.encoding_pending[sequence]

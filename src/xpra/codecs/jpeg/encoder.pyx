@@ -12,6 +12,7 @@ log = Logger("encoder", "jpeg")
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, object_as_buffer
 from xpra.net.compression import Compressed
+from xpra.os_util import bytestostr
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
@@ -106,7 +107,7 @@ def encode(image, int quality=50, int speed=50, options={}):
     cdef const unsigned char* buf
     cdef Py_ssize_t buf_len
     pixels = image.get_pixels()
-    pfstr = image.get_pixel_format()
+    pfstr = bytestostr(image.get_pixel_format())
     assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
     assert buf_len>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
     pf = TJPF_VAL.get(pfstr)

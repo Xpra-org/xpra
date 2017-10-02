@@ -58,7 +58,7 @@ def gtk_main_quit_on_fatal_exceptions_enable():
             print("Shutting down main-loop")
             gtk_main_quit_really()
             return
-        if issubclass(etype, RuntimeError) and "recursion" in val.message:
+        if issubclass(etype, RuntimeError) and val.args and "recursion" in val.args[0]:
             # We weren't getting tracebacks from this -- maybe calling oldhook
             # was hitting the limit again or something? -- so try this
             # instead. (I don't know why print_exception wouldn't trigger the

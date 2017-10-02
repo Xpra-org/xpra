@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
 from xpra.util import envbool
-from xpra.os_util import BytesIOClass, memoryview_to_bytes, _buffer
+from xpra.os_util import BytesIOClass, memoryview_to_bytes, bytestostr, _buffer
 from xpra.net.compression import Compressed
 
 from PIL import Image, ImagePalette     #@UnresolvedImport
@@ -49,7 +49,7 @@ def get_info():
 
 def encode(coding, image, quality, speed, supports_transparency):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency))
-    pixel_format = image.get_pixel_format()
+    pixel_format = bytestostr(image.get_pixel_format())
     palette = None
     w = image.get_width()
     h = image.get_height()

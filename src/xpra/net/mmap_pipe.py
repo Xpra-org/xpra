@@ -201,12 +201,12 @@ def mmap_read(mmap_area, *descr_data):
         data_start.value = offset+length
         return arraytype.from_buffer(mmap_area, offset)
     #re-construct the buffer from discontiguous chunks:
-    data = ""
+    data = []
     for offset, length in descr_data:
         mmap_area.seek(offset)
-        data += mmap_area.read(length)
+        data.append(mmap_area.read(length))
         data_start.value = offset+length
-    return data
+    return b"".join(data)
 
 
 def mmap_write(mmap_area, mmap_size, data):
