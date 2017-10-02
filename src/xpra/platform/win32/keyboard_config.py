@@ -54,7 +54,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if not ignored_modifier_keynames:
                 return False
             for keyname in ignored_modifier_keynames:       #ie: ["Control_R"]
-                keycode = KEYCODES.get(keyname)             #ie: "Control_R" -> VK_RCONTROL
+                keycode = KEYCODES.get(keyname, 0)          #ie: "Control_R" -> VK_RCONTROL
                 if keycode>0:
                     key_mod = MOD_KEYS.get(keycode)         #ie: "control"
                     if key_mod==modifier:
