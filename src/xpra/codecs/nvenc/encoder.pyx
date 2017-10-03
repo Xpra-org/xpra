@@ -22,7 +22,7 @@ from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, 
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nv_util import get_nvidia_module_version, get_nvenc_license_keys, validate_driver_yuv444lossless, get_cards
+from xpra.codecs.nv_util import get_nvidia_module_version, get_license_keys, validate_driver_yuv444lossless, get_cards
 
 from xpra.log import Logger
 log = Logger("encoder", "nvenc")
@@ -33,7 +33,7 @@ from ctypes import cdll as loader, POINTER
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
 
-CLIENT_KEYS_STR = get_nvenc_license_keys(NVENCAPI_MAJOR_VERSION) + get_nvenc_license_keys()
+CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
 DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30

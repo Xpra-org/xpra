@@ -7,8 +7,8 @@
 import sys
 import os
 from xpra.log import Logger
-log = Logger("encoder", "nvenc")
-from xpra.util import pver, print_nested_dict, engs, envbool
+log = Logger("encoder", "util")
+from xpra.util import pver, print_nested_dict, engs, envbool, csv
 from xpra.os_util import bytestostr, strtobytes
 
 
@@ -205,18 +205,20 @@ def validate_driver_yuv444lossless():
     return True
 
 
-nvenc_license_keys = {}
-def get_nvenc_license_keys(nvenc_version=0):
-    global nvenc_license_keys
-    keys = nvenc_license_keys.get(nvenc_version)
+license_keys = {}
+def get_license_keys(version=0, basefilename="nvenc"):
+    global license_keys
+    filename = "%s%s.keys" % (basefilename, version or "")
+    keys = license_keys.get(filename)
     if keys is not None:
         return keys
-    env_keys = os.environ.get("XPRA_NVENC_CLIENT_KEY", "")
+    env_name = "XPRA_%s_CLIENT_KEY" % basefilename.upper()
+    env_keys = os.environ.get(env_name, "")
     if env_keys:
-        keys = [x.strip() for x in os.environ.get("XPRA_NVENC_CLIENT_KEY", "").split(",")]
-        log("using nvenc keys from environment variable XPRA_NVENC_CLIENT_KEY: %s", nvenc_license_keys)
+        keys = [x.strip() for x in env_keys.split(",")]
+        log("using %s keys from environment variable %s: %s", basefilename, env_name, csv(keys))
     else:
-        #try the license file
+        #try to load the license file
         keys = []
         try:
             #see read_xpra_defaults for an explanation of paths
@@ -225,12 +227,12 @@ def get_nvenc_license_keys(nvenc_version=0):
             for d in dirs:
                 if not d:
                     continue
-                keys_file = os.path.join(d, "nvenc%s.keys" % (nvenc_version or ""))
+                keys_file = os.path.join(d, filename)
                 keys_file = os.path.expanduser(keys_file)
                 if not os.path.exists(keys_file):
-                    log("get_nvenc_license_keys(%s) '%s' does not exist", nvenc_version, keys_file)
+                    log("get_license_keys(%s, %s) '%s' does not exist", basefilename, version, keys_file)
                     continue
-                log("loading nvenc%s keys from %s", nvenc_version, keys_file)
+                log("loading %s version %s keys from %s", basefilename, version, keys_file)
                 with open(keys_file, "rb") as f:
                     fkeys = []
                     for line in f:
@@ -245,10 +247,10 @@ def get_nvenc_license_keys(nvenc_version=0):
                         log("added key: %s", sline)
                     log("added %i key%s from %s", len(fkeys), engs(fkeys), keys_file)
                     keys += fkeys
-        except Exception as e:
-            log.error("error loading nvenc license keys: %s", e, exc_info=True)
-    nvenc_license_keys[nvenc_version] = keys
-    log("get_nvenc_license_keys(%s)=%s", nvenc_version, keys)
+        except Exception:
+            log.error("Error loading %s license keys", basefilename, exc_info=True)
+    license_keys[filename] = keys
+    log("get_nvenc_license_keys(%s)=%s", version, keys)
     return keys
 
 
@@ -264,7 +266,7 @@ def main():
             log.warn("Warning: this driver version is blacklisted")
         log.info("NVENC license keys:")
         for v in (0, 8):
-            keys = get_nvenc_license_keys(v)
+            keys = get_license_keys(v)
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
                 log.info("  %s", k)
