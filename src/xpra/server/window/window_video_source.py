@@ -1693,7 +1693,7 @@ class WindowVideoSource(WindowSource):
             videolog.error(" supported encoders: %s", ", ".join(encoder_types))
             videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
             if FORCE_CSC:
-                log.error(" forced csc mode: %s", FORCE_CSC_MODE)
+                videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
             return video_fallback()
         ve = self._video_encoder
         if not ve:
@@ -1713,19 +1713,19 @@ class WindowVideoSource(WindowSource):
         try:
             ret = ve.compress_image(csc_image, quality, speed, options)
         except Exception as e:
-            log("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
+            videolog("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
             if self.is_cancelled():
                 return None
-            log.error("Error: failed to encode %s video frame:", ve.get_type())
-            log.error(" %s", e)
-            log.error(" source: %s", csc_image)
-            log.error(" options:")
-            print_nested_dict(options, prefix="   ", print_fn=log.error)
-            log.error(" encoder:")
-            print_nested_dict(ve.get_info(), prefix="   ", print_fn=log.error)
+            videolog.error("Error: failed to encode %s video frame:", ve.get_type())
+            videolog.error(" %s", e)
+            videolog.error(" source: %s", csc_image)
+            videolog.error(" options:")
+            print_nested_dict(options, prefix="   ", print_fn=videolog.error)
+            videolog.error(" encoder:")
+            print_nested_dict(ve.get_info(), prefix="   ", print_fn=videolog.error)
             if csce:
-                log.error(" csc %s:", csce.get_type())
-                print_nested_dict(csce.get_info(), prefix="   ", print_fn=log.error)
+                videolog.error(" csc %s:", csce.get_type())
+                print_nested_dict(csce.get_info(), prefix="   ", print_fn=videolog.error)
             return None
         finally:
             if image!=csc_image:
