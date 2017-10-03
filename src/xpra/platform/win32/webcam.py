@@ -16,6 +16,10 @@ def get_all_video_devices(capture_only=True):
         return get_video_devices()
     except ImportError as e:
         log("get_all_video_devices(%s) cannot import webcam native support: %s", capture_only, e)
+    except Exception as e:
+        log("get_all_video_devices(%s)", capture_only, exc_info=True)
+        log.warn("Warning: failed to load native webcam support:")
+        log.warn(" %s", e)
     return {}
 
 def _device_change_callback(*args):
