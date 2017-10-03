@@ -959,8 +959,9 @@ class ServerCore(object):
             c = int(v[0])
         if c==0x16:
             return "SSL", "SSL packet?"
-        elif len(v)>=3 and v.split(" ")[0] in ("GET", "POST"):
-            return "HTTP", "HTTP %s request" % v.split(" ")[0]
+        s = bytestostr(v)
+        if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
+            return "HTTP", "HTTP %s request" % s.split(" ")[0]
         return None, "character %#x, not an xpra client?" % c
 
 
@@ -977,7 +978,7 @@ class ServerCore(object):
             line1 = peek_data.splitlines()[0]
         http_proto = "http"+["","s"][int(is_ssl)]
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
-            parts = line1.split(" ")
+            parts = bytestostr(line1).split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
             tname = "%s-request" % parts[0]
             req_info = "%s %s" % (http_proto, parts[0])
@@ -999,16 +1000,18 @@ class ServerCore(object):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
                 # we need this workaround for non-blocking sockets
-                from xpra.net.bytestreams import untilConcludes
-                saved_recv = sock.recv
-                saved_send = sock.send
-                #now we can have a "is_active" that belongs to the real connection object:
-                def recv(*args):
-                    return untilConcludes(wsc.is_active, wsc.can_retry, saved_recv, *args)
-                def send(*args):
-                    return untilConcludes(wsc.is_active, wsc.can_retry, saved_send, *args)
-                sock.recv = recv
-                sock.send = send
+                # TODO: python3 will need a different solution
+                if not PYTHON3:
+                    from xpra.net.bytestreams import untilConcludes
+                    saved_recv = sock.recv
+                    saved_send = sock.send
+                    #now we can have a "is_active" that belongs to the real connection object:
+                    def recv(*args):
+                        return untilConcludes(wsc.is_active, wsc.can_retry, saved_recv, *args)
+                    def send(*args):
+                        return untilConcludes(wsc.is_active, wsc.can_retry, saved_send, *args)
+                    sock.recv = recv
+                    sock.send = send
                 socktype = "ws%s" % ["","s"][int(is_ssl)]
                 self.make_protocol(socktype, wsc)
             scripts = self.get_http_scripts()

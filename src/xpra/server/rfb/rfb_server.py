@@ -29,14 +29,14 @@ class RFBServer(object):
 
 
     def _get_rfb_desktop_model(self):
-        models = self._window_to_id.keys()
+        models = tuple(self._window_to_id.keys())
         if len(models)!=1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None
         return models[0]
 
     def _get_rfb_desktop_wid(self):
-        ids = self._window_to_id.values()
+        ids = tuple(self._window_to_id.values())
         if len(ids)!=1:
             log.error("RFB can only handle a single desktop window, found %i", len(self._window_to_id))
             return None

@@ -6,7 +6,10 @@
 import os
 import zlib
 import posixpath
-import urllib
+try:
+    from urllib import unquote          #python2 @UnusedImport
+except:
+    from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
 
 from xpra.log import Logger
 log = Logger("network", "websocket")
@@ -49,7 +52,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         path = path.split('#',1)[0]
         # Don't forget explicit trailing slash when normalizing. Issue17324
         trailing_slash = path.rstrip().endswith('/')
-        path = posixpath.normpath(urllib.unquote(path))
+        path = posixpath.normpath(unquote(path))
         words = path.split('/')
         words = filter(None, words)
         path = self.web_root or "/usr/share/xpra/www"
@@ -87,7 +90,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         path = getattr(self, "path", "")
         if path.endswith("?echo-headers"):
             #ie: "en-GB,en-US;q=0.8,en;q=0.6"
-            accept = self.headers.getheader("Accept-Language")
+            accept = self.headers.get("Accept-Language")
             if accept:
                 self.send_header("Echo-Accept-Language", std(accept, extras="-,./:;="))
         if HTTP_NOCACHE:
@@ -102,7 +105,7 @@ class WSRequestHandler(WebSocketRequestHandler):
 
     def do_POST(self):
         try:
-            length = int(self.headers.getheader('content-length'))
+            length = int(self.headers.get('content-length'))
             data = self.rfile.read(length)
             log("POST data=%s (%i bytes)", data, length)
             self.handle_request()
