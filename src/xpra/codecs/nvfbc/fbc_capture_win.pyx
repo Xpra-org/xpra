@@ -472,12 +472,12 @@ def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
         if key:
             binkey = parse_nvfbc_hex_key(key)
             ckey = binkey
-            params.pPrivateData = <void*> ckey
-            params.dwPrivateDataSize = len(ckey)
+            create.pPrivateData = <void*> ckey
+            create.dwPrivateDataSize = len(ckey)
             log("create_context() key data=%#x, size=%i", <uintptr_t> ckey, len(ckey))
         res = NvFBC.NvFBC_CreateEx(cvp(<uintptr_t> &create))
-        log("create_context() NvFBC_CreateEx()=%i for key=%s", ret, key)
-        if ret==0:
+        log("create_context() NvFBC_CreateEx()=%i for key=%s", res, key)
+        if res==0:
             #success!
             break
     log("NvFBC_CreateEx(%#x)=%i", <uintptr_t> &create, res)
