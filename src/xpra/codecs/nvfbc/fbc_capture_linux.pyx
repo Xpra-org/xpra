@@ -723,7 +723,7 @@ def init_module():
     init_nvfbc_library()
 
 def cleanup_module():
-    log("nvenc.cleanup_module()")
+    log("nvfbc.cleanup_module()")
     unload_library()
 
 def selftest(full=False):
