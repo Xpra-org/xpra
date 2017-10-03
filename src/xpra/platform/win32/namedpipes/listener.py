@@ -12,8 +12,9 @@ from threading import Thread
 
 from xpra.log import Logger
 from xpra.util import envbool
+from xpra.platform.win32.common import CloseHandle
 from xpra.platform.win32.namedpipes.common import OVERLAPPED, INFINITE, WAIT_STR, SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER
-from xpra.platform.win32.namedpipes.common import CreateEventA, CreateNamedPipeA, ConnectNamedPipe, WaitForSingleObject, CloseHandle, GetLastError
+from xpra.platform.win32.namedpipes.common import CreateEventA, CreateNamedPipeA, ConnectNamedPipe, WaitForSingleObject, GetLastError
 from xpra.platform.win32.namedpipes.common import SetSecurityDescriptorDacl, InitializeSecurityDescriptor, GetCurrentProcess, OpenProcessToken, GetTokenInformation, SetSecurityDescriptorOwner
 from xpra.platform.win32.constants import FILE_FLAG_OVERLAPPED, PIPE_ACCESS_DUPLEX, PIPE_READMODE_BYTE, PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT
 log = Logger("network", "named-pipe", "win32")

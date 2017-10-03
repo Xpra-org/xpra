@@ -31,6 +31,9 @@ HeapAlloc.argtypes = [HANDLE, DWORD, c_size_t]
 GetProcessHeap = kernel32.GetProcessHeap
 GetProcessHeap.restype = HANDLE
 GetProcessHeap.argtypes = []
+CloseHandle = kernel32.CloseHandle
+CloseHandle.argtypes = [HANDLE]
+CloseHandle.restype = BOOL
 
 
 user32 = WinDLL("user32", use_last_error=True)
