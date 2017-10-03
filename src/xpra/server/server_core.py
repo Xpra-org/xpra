@@ -293,6 +293,7 @@ class ServerCore(object):
                 assert WebSocketConnection
                 self._html = True
             except ImportError as e:
+                log("importing WebSocketConnection", exc_info=True)
                 if self._html is None:  #auto mode
                     log.info("html server unavailable, cannot find websockify module")
                 else:
