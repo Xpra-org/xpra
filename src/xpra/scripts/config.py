@@ -98,6 +98,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
 
 def get_Xvfb_command():
     cmd = ["Xvfb",
+           "+extension", "GLX",
            "+extension", "Composite",
            "-screen", "0", "5760x2560x24+32",
            #better than leaving to vfb after a resize?

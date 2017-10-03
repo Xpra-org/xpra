@@ -27,7 +27,8 @@ sync-xvfb = 0
 
 # Virtual display command:
 # - Old Xvfb option (required on Ubuntu where Xorg is broken):
-# xvfb = Xvfb +extension Composite -nolisten tcp -noreset \
+# xvfb = Xvfb -nolisten tcp -noreset \
+#        +extension GLX +extension Composite \
 #        -auth $XAUTHORITY \
 #        -screen 0 5760x2560x24+32
 # - With Xorg 1.12 or newer and the dummy driver:
