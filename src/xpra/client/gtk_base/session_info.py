@@ -1,4 +1,4 @@
-# coding=utf8
+# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>

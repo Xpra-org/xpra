@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding=utf8
+# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # The code was taken from here:
 # http://zetcode.com/gfx/pycairo/transparency/
