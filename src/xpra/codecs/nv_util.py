@@ -205,6 +205,15 @@ def validate_driver_yuv444lossless():
     return True
 
 
+def parse_nvfbc_hex_key(s):
+    #ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
+    #ie: 0102030405060708090A0B0C0D0E0F10
+    #start by removing spaces and 0x:
+    hexstr = s.replace("0x", "").replace(",", "").replace(" ", "")
+    import binascii
+    return binascii.unhexlify(hexstr)
+
+
 license_keys = {}
 def get_license_keys(version=0, basefilename="nvenc"):
     global license_keys

@@ -11,9 +11,10 @@ import os
 import sys
 
 from xpra.os_util import WIN32
+from xpra.util import csv
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
-from xpra.codecs.nv_util import get_nvidia_module_version, get_cards
+from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
@@ -22,6 +23,8 @@ try:
     import numpy
     from pycuda import driver
     from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
+except ImportError:
+    raise
 except:
     log.error("Error: NvFBC requires CUDA", exc_info=True)
     CUDA_ERRORS_INFO = {}
@@ -32,6 +35,7 @@ from libc.stdint cimport uintptr_t, uint8_t, int64_t, uint32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
 
 DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
+CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 
 
 ctypedef unsigned long DWORD
@@ -384,9 +388,25 @@ cdef get_frame_grab_info(NVFBC_FRAME_GRAB_INFO *grab_info):
 cdef NVFBC_SESSION_HANDLE create_context() except 0xffffffff:
     cdef NVFBC_SESSION_HANDLE context = 0
     cdef NVFBC_CREATE_HANDLE_PARAMS params
-    memset(&params, 0, sizeof(NVFBC_CREATE_HANDLE_PARAMS))
-    params.dwVersion = NVFBC_CREATE_HANDLE_PARAMS_VER
-    cdef NVFBCSTATUS ret = function_list.nvFBCCreateHandle(&context, &params)
+    cdef NVFBCSTATUS ret = <NVFBCSTATUS> 0
+    cdef char* ckey
+    keys = CLIENT_KEYS_STRS or [None]
+    log("create_context() will try with keys: %s", csv(keys))
+    assert len(keys)>0
+    for key in keys:
+        memset(&params, 0, sizeof(NVFBC_CREATE_HANDLE_PARAMS))
+        params.dwVersion = NVFBC_CREATE_HANDLE_PARAMS_VER
+        if key:
+            binkey = parse_nvfbc_hex_key(key)
+            ckey = binkey
+            params.privateData = <void*> ckey
+            params.privateDataSize = len(ckey)
+            log("create_context() key data=%#x, size=%i", <uintptr_t> ckey, len(ckey))
+        ret = function_list.nvFBCCreateHandle(&context, &params)
+        log("create_context() NvFBCCreateHandle()=%i for key=%s", ret, key)
+        if ret==0:
+            #success!
+            break
     raiseNvFBC(context, ret, "NvFBCCreateHandle")
     log("NvFBCCreateHandle: handle=%#x", context)
     return context
@@ -556,6 +576,7 @@ cdef class NvFBC_CUDACapture:
 
     def init_context(self, int width=-1, int height=-1, pixel_format="XRGB"):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
+        assert select_device, "CUDA is missing"
         if pixel_format not in PIXEL_FORMAT_CONST:
             raise Exception("unsupported pixel format '%s'" % pixel_format)
         cdef NVFBC_BUFFER_FORMAT buffer_format = PIXEL_FORMAT_CONST[pixel_format]

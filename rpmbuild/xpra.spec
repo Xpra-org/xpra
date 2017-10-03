@@ -594,7 +594,7 @@ rm -rf $RPM_BUILD_ROOT
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
-%config(noreplace) %{_sysconfdir}/xpra/nvenc.keys
+%config(noreplace) %{_sysconfdir}/xpra/*.keys
 %endif
 %config %{_sysconfdir}/xpra/conf.d/50_server_network.conf
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf

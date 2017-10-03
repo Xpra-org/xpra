@@ -11,9 +11,10 @@ import os
 import sys
 
 from xpra.os_util import WIN32
+from xpra.util import csv
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
-from xpra.codecs.nv_util import get_nvidia_module_version, get_cards
+from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
@@ -35,6 +36,7 @@ from libc.stdint cimport uintptr_t, uint8_t, int64_t
 from xpra.monotonic_time cimport monotonic_time
 
 DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
+CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 
 
 ctypedef unsigned long DWORD
@@ -454,14 +456,30 @@ def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
     log("create_context(%i, %i)", width, height)
     check_status()
     cdef NvFBCCreateParams create
-    memset(&create, 0, sizeof(NvFBCCreateParams))
-    create.dwVersion = NVFBC_CREATE_PARAMS_VER
-    create.dwInterfaceType = interface_type
-    create.dwMaxDisplayWidth = width
-    create.dwMaxDisplayHeight = height
-    #create.pDevice = 0
-    create.dwInterfaceVersion = NVFBC_DLL_VERSION
-    cdef NVFBCRESULT res = NvFBC.NvFBC_CreateEx(cvp(<uintptr_t> &create))
+    cdef NVFBCRESULT res = <NVFBCRESULT> 0
+    cdef char* ckey
+    keys = CLIENT_KEYS_STRS or [None]
+    log("create_context() will try with keys: %s", csv(keys))
+    assert len(keys)>0
+    for key in keys:
+        memset(&create, 0, sizeof(NvFBCCreateParams))
+        create.dwVersion = NVFBC_CREATE_PARAMS_VER
+        create.dwInterfaceType = interface_type
+        create.dwMaxDisplayWidth = width
+        create.dwMaxDisplayHeight = height
+        #create.pDevice = 0
+        create.dwInterfaceVersion = NVFBC_DLL_VERSION
+        if key:
+            binkey = parse_nvfbc_hex_key(key)
+            ckey = binkey
+            params.pPrivateData = <void*> ckey
+            params.dwPrivateDataSize = len(ckey)
+            log("create_context() key data=%#x, size=%i", <uintptr_t> ckey, len(ckey))
+        res = NvFBC.NvFBC_CreateEx(cvp(<uintptr_t> &create))
+        log("create_context() NvFBC_CreateEx()=%i for key=%s", ret, key)
+        if ret==0:
+            #success!
+            break
     log("NvFBC_CreateEx(%#x)=%i", <uintptr_t> &create, res)
     raiseNvFBC(res, "NvFBC_CreateEx")
     info = {

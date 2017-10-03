@@ -1359,6 +1359,7 @@ if WIN32:
         build_xpra_conf(".")
         add_data_files('etc/xpra', glob.glob("etc/xpra/*conf"))
         add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
+        add_data_files('etc/xpra', glob.glob("etc/xpra/nvfbc*.keys"))
         add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
         #build minified html5 client in temporary build dir:
         if "clean" not in sys.argv and html5_ENABLED:
@@ -1490,8 +1491,12 @@ else:
                 etc_xpra_files = ["xorg.conf"]
                 if uinput_ENABLED:
                     etc_xpra_files.append("xorg-uinput.conf")
+                if nvenc_ENABLED or nvfbc_ENABLED:
+                    etc_xpra_files.append("cuda.conf")
                 if nvenc_ENABLED:
-                    etc_xpra_files += ["cuda.conf", "nvenc.keys"]
+                    etc_xpra_files.append("nvenc.keys")
+                if nvfbc_ENABLED:
+                    etc_xpra_files.append("nvfbc.keys")
                 for x in etc_xpra_files:
                     copytodir("etc/xpra/%s" % x, "/etc/xpra")
                 copytodir("etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
