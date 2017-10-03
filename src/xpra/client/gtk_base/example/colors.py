@@ -8,7 +8,7 @@ import cairo
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, is_gtk3
 gtk = import_gtk()
 gLib = import_glib()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 
 class AnimatedColorWindow(gtk.Window):
@@ -85,7 +85,8 @@ def main():
     def signal_handler(*_args):
         gtk.main_quit()
     signal.signal(signal.SIGINT, signal_handler)
-    AnimatedColorWindow()
+    w = AnimatedColorWindow()
+    add_close_accel(w, gtk.main_quit)
     gtk.main()
 
 

@@ -6,7 +6,7 @@
 
 from xpra.gtk_common.gobject_compat import import_gtk
 gtk = import_gtk()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
 from xpra.os_util import POSIX
 if POSIX:
     from xpra.x11.gtk_x11.gdk_display_source import init_display_source
@@ -24,6 +24,7 @@ class BellWindow(gtk.Window):
         btn.connect('clicked', self.bell)
         self.add(btn)
         self.show_all()
+        add_close_accel(self, gtk.main_quit)
 
     def bell(self, *_args):
         from xpra.platform.gui import system_bell

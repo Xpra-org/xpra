@@ -10,7 +10,7 @@ gtk = import_gtk()
 gLib = import_glib()
 pango = import_pango()
 pangocairo = import_pangocairo()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, add_close_accel
 
 FONT = "Serif 27"
 PATTERN = "%f"
@@ -152,8 +152,11 @@ class FontWindow(gtk.Window):
 
 def main():
     import signal
-    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
-    FontWindow()
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
+    w = FontWindow()
+    add_close_accel(w, gtk.main_quit)
     gtk.main()
 
 

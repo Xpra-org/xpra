@@ -7,7 +7,7 @@ import cairo
 
 from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
 gtk = import_gtk()
-from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK
+from xpra.gtk_common.gtk_util import WIN_POS_CENTER, KEY_PRESS_MASK, add_close_accel
 
 
 class TransparentWindow(gtk.Window):
@@ -38,7 +38,7 @@ class TransparentWindow(gtk.Window):
         self.connect("destroy", gtk.main_quit)
         self.show_all()
 
-    def do_expose_event(self, *args):
+    def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
         self.area_draw(self, cr)
 
@@ -64,8 +64,11 @@ class TransparentWindow(gtk.Window):
 
 def main():
     import signal
-    signal.signal(signal.SIGINT, lambda x,y : gtk.main_quit)
-    TransparentWindow()
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
+    w = TransparentWindow()
+    add_close_accel(w, gtk.main_quit)
     gtk.main()
 
 

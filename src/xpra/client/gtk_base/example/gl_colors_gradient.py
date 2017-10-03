@@ -10,6 +10,7 @@ import gtk
 from gtk import gtkgl
 from gtk import gdkgl
 
+from xpra.gtk_common.gtk_util import add_close_accel
 from OpenGL.GL import glClear, glClearColor, glViewport, \
     glColor3f, glFlush, glRectf, GL_COLOR_BUFFER_BIT
 
@@ -61,6 +62,7 @@ class ColorTest(object):
         self.glarea = glarea
         vbox.add(glarea)
         win.show_all()
+        add_close_accel(win, gtk.main_quit)
 
     def on_realize(self, widget):
         with GLContext(widget):
@@ -138,5 +140,9 @@ class ColorTest(object):
 
 
 if __name__ == '__main__':
+    import signal
+    def signal_handler(*_args):
+        gtk.main_quit()
+    signal.signal(signal.SIGINT, signal_handler)
     ColorTest()
     gtk.main()
