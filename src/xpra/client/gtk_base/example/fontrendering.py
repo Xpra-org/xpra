@@ -73,7 +73,7 @@ class FontWindow(gtk.Window):
         for y in range(2):
             for x in range(2):
                 cr.save()
-                antialias = list(ANTIALIAS.keys())[y*2+x]
+                antialias = tuple(ANTIALIAS.keys())[y*2+x]
                 label = ANTIALIAS[antialias]
                 self.paint_pattern(cr, x, y,     antialias, label, BLACK, WHITE)
                 self.paint_pattern(cr, x, y+2,   antialias, label, WHITE, BLACK)
@@ -99,7 +99,7 @@ class FontWindow(gtk.Window):
 
                     cr.save()
                     #paint antialias value:
-                    antialias = ANTIALIAS.keys()[y*2+x]
+                    antialias = tuple(ANTIALIAS.keys())[y*2+x]
                     v = paint_to_image(antialias)
                     none = paint_to_image()
                     #xor the buffers
