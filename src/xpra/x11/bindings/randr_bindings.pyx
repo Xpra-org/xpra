@@ -9,9 +9,15 @@ from __future__ import absolute_import
 
 import os
 import time
+from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
+from xpra.util import envint, csv
+
+
+MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
+assert MAX_NEW_MODES>=2
 
 
 from libc.stdint cimport uintptr_t
@@ -103,7 +109,9 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     XRRModeInfo *XRRAllocModeInfo(char *name, int nameLength)
     RRMode XRRCreateMode(Display *dpy, Window window, XRRModeInfo *modeInfo)
+    void XRRDestroyMode (Display *dpy, RRMode mode)
     void XRRAddOutputMode(Display *dpy, RROutput output, RRMode mode)
+    void XRRDeleteOutputMode(Display *dpy, RROutput output, RRMode mode)
     void XRRFreeModeInfo(XRRModeInfo *modeInfo)
 
     int XScreenCount(Display *display)
@@ -124,9 +132,11 @@ def RandRBindings():
 cdef class _RandRBindings(_X11CoreBindings):
 
     cdef int _has_randr
+    cdef object _added_modes
 
     def __init__(self):
         self._has_randr = self.check_randr()
+        self._added_modes = OrderedDict()
 
     def __repr__(self):
         return "RandRBindings(%s)" % self.display_name
@@ -278,6 +288,8 @@ cdef class _RandRBindings(_X11CoreBindings):
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)
 
+    def get_mode_name(self, unsigned int w, unsigned int h):
+        return "%sx%s" % (w, h)
 
     def add_screen_size(self, unsigned int w, unsigned int h):
         log("add_screen_size(%i, %i)", w, h)
@@ -302,7 +314,7 @@ cdef class _RandRBindings(_X11CoreBindings):
 
         from xpra.util import roundup
         w = roundup(w, 4)
-        name = "%sx%s" % (w, h)
+        name = self.get_mode_name(w, h)
         new_mode = XRRAllocModeInfo(name, len(name))
         try:
             window = XDefaultRootWindow(self.display)
@@ -358,21 +370,51 @@ cdef class _RandRBindings(_X11CoreBindings):
             log("XRRCreateMode returned %#x" % mode)
             if mode<=0:
                 return None
+            self._added_modes[name] = int(mode)
             #now add it to the output:
-            try:
-                rsc = XRRGetScreenResourcesCurrent(self.display, window)
-                log("screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
-                if rsc.noutput!=1:
-                    log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)
-                    return None
-                output = rsc.outputs[0]
+            output = self.get_current_output()
+            if output>0:
                 log("adding mode %#x to output %#x", mode, output)
                 XRRAddOutputMode(self.display, output, mode)
-            finally:
-                XRRFreeScreenResources(rsc)
         finally:
             XRRFreeModeInfo(new_mode)
+        if len(self._added_modes)>MAX_NEW_MODES:
+            log("too many new modes (%i), trying to remove the oldest entry", len(self._added_modes))
+            log("added modes=%s", csv(self._added_modes.items()))
+            try:
+                rname, mode = list(self._added_modes.items())[0]
+                self.remove_mode(mode)
+                del self._added_modes[rname]
+            except:
+                log("failed to remove older mode", exc_info=True)
         return w, h
+
+    def remove_screen_size(self, unsigned int w, unsigned int h):
+        #TODO: instead of keeping the mode ID,
+        #we should query the output and find the mode dynamically...
+        name = self.get_mode_name(w, h)
+        cdef RRMode mode = self._added_modes.get(name, 0)
+        if mode and self.remove_mode(mode):
+            del self._added_modes[name]
+
+    def remove_mode(self, RRMode mode):
+        cdef RROutput output = self.get_current_output()
+        log("remove_mode(%i) output=%i", mode, output)
+        if mode and output:
+            XRRDeleteOutputMode(self.display, output, mode)
+            XRRDestroyMode(self.display, mode)
+
+    cdef RROutput get_current_output(self):
+        cdef Window window = XDefaultRootWindow(self.display)
+        try:
+            rsc = XRRGetScreenResourcesCurrent(self.display, window)
+            log("get_current_output() screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
+            if rsc.noutput!=1:
+                log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)
+                return 0
+            return rsc.outputs[0]
+        finally:
+            XRRFreeScreenResources(rsc)
 
     def xrr_set_screen_size(self, w, h, xdpi, ydpi):
         #and now use it:
