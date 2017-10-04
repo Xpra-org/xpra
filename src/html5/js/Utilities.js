@@ -340,7 +340,7 @@ var Utilities = {
 
 	monotonicTime : function() {
 		if (performance) {
-			return performance.now()*1000.0;
+			return Math.round(performance.now()*1000.0);
 		}
 		return Date().now();
 	},
