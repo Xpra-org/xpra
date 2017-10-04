@@ -57,6 +57,10 @@ class RootWindowModel(object):
     def get_dimensions(self):
         return self.window.get_geometry()[2:4]
 
+    def get_geometry(self):
+        w, h = self.get_dimensions()
+        return (0, 0, w, h)
+
     def get_image(self, x, y, width, height):
         raise NotImplementedError()
 
