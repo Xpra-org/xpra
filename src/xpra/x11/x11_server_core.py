@@ -40,6 +40,7 @@ xinputlog = Logger("xinput")
 gllog = Logger("screen", "opengl")
 
 from xpra.util import iround, envbool
+from xpra.os_util import bytestostr
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.x11.server_keyboard_config import KeyboardConfig
@@ -169,8 +170,8 @@ class X11ServerCore(GTKServerBase):
                     parts = line.split(b"=")
                     if len(parts)!=2:
                         continue
-                    k = parts[0].strip()
-                    v = parts[1].strip()
+                    k = bytestostr(parts[0].strip())
+                    v = bytestostr(parts[1].strip())
                     self.opengl_props[k] = v
             else:
                 self.opengl_props["error"] = str(err).strip("\n\r")

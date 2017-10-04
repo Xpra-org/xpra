@@ -12,7 +12,7 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, ge
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
+from xpra.os_util import WIN32, OSX, POSIX, monotonic_time, bytestostr
 from xpra.util import typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
@@ -383,15 +383,15 @@ def query_sound():
     if proc.returncode!=0:
         return typedict()
     d = typedict()
-    for x in out.decode("utf8").splitlines():
-        kv = x.split("=", 1)
+    for x in out.splitlines():
+        kv = x.split(b"=", 1)
         if len(kv)==2:
             #ie: kv = ["decoders", "mp3,vorbis"]
             k,v = kv
             #fugly warning: all the other values are lists.. but this one is not:
-            if k!="python.bits":
-                v = [x.encode() for x in v.split(",")]
+            if k!=b"python.bits":
+                v = [bytestostr(x) for x in v.split(b",")]
             #d["decoders"] = ["mp3", "vorbis"]
-            d[k.encode()] = v
+            d[bytestostr(k)] = v
     log("query_sound()=%s", d)
     return d
