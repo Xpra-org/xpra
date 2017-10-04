@@ -396,11 +396,11 @@ class UIXpraClient(XpraClientBase):
                 self.sound_properties = query_sound()
                 assert self.sound_properties, "query did not return any data"
                 def vinfo(k):
-                    val = self.sound_properties.get(k)
+                    val = self.sound_properties.strlistget(k)
                     assert val, "%s not found in sound properties" % k
-                    return ".".join(bytestostr(x) for x in val[:3])
-                bits = self.sound_properties.intget(b"python.bits", 32)
-                log.info("GStreamer version %s for Python %s %s-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
+                    return ".".join(val[:3])
+                bits = self.sound_properties.intget("python.bits", 32)
+                log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
             except Exception as e:
                 soundlog("failed to query sound", exc_info=True)
                 soundlog.error("Error: failed to query sound subsystem:")

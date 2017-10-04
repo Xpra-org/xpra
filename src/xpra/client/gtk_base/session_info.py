@@ -209,9 +209,9 @@ class SessionInfo(gtk.Window):
             props = query_sound()
         except Exception as e:
             log("cannot load sound information: %s", e)
-            props = {}
-        gst_version = props.get(b"gst.version", "")
-        pygst_version = props.get(b"pygst.version", "")
+            props = typedict()
+        gst_version = props.strlistget("gst.version")
+        pygst_version = props.strlistget("pygst.version")
         tb.new_row("GStreamer", slabel(make_version_str(gst_version)), slabel(server_version_info("sound.gst.version")))
         tb.new_row("pygst", slabel(make_version_str(pygst_version)), slabel(server_version_info("sound.pygst.version")))
         tb.new_row("OpenGL", slabel(make_version_str(self.client.opengl_props.get("opengl", "n/a"))), slabel(server_version_info("opengl.opengl")))
