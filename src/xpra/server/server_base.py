@@ -2832,6 +2832,8 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        keyname = bytestostr(keyname)
+        modifiers = tuple(bytestostr(x) for x in modifiers)
         self.ui_driver = ss.uuid
         self.set_keyboard_layout_group(group)
         keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
@@ -2934,6 +2936,8 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss is None:
             return
+        keyname = bytestostr(keyname)
+        modifiers = tuple(bytestostr(x) for x in modifiers)
         keycode = ss.get_keycode(client_keycode, keyname, modifiers)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
         ss.make_keymask_match(modifiers)
