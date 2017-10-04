@@ -2650,7 +2650,7 @@ def guess_X11_display(dotxpra, uid=getuid(), gid=getgid()):
 
 
 def no_gtk():
-    gtk = sys.modules.get("gtk")
+    gtk = sys.modules.get("gtk") or sys.modules.get("gi.repository.Gtk")
     if gtk is None:
         #all good, not loaded
         return
