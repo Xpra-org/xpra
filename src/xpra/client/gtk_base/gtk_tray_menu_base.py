@@ -1001,7 +1001,7 @@ class GTKTrayMenuBase(object):
                 virt_devices = get_virtual_video_devices()
                 non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
                 for device_no,info in non_virtual.items():
-                    label = info.get("card", info.get("device", str(device_no)))
+                    label = bytestostr(info.get("card", info.get("device", str(device_no))))
                     item = deviceitem(label, start_webcam, device_no)
                     menu.append(item)
                 if len(non_virtual)==0:
@@ -1081,7 +1081,11 @@ class GTKTrayMenuBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout,layouts,variant,variants = self.client.keyboard_helper.get_layout_spec()
+        layout, layouts, variant, variants = self.client.keyboard_helper.get_layout_spec()
+        layout = bytestostr(layout)
+        layouts = tuple(bytestostr(x) for x in layouts)
+        variant = bytestostr(variant or b"")
+        variants = tuple(bytestostr(x) for x in variants)
         full_layout_list = False
         if len(layouts)>1:
             log("keyboard layouts: %s", u",".join(bytestostr(x) for x in layouts))

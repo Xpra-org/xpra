@@ -7,7 +7,7 @@
 # A tray implemented using gtk.StatusIcon
 
 import os
-from xpra.os_util import WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX, PYTHON3
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
 gtk = import_gtk()
@@ -147,10 +147,10 @@ class GTKStatusIconTray(TrayBase):
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
         if tw!=w or th!=h:
-            if tw!=th:
+            if tw!=th and not PYTHON3:
                 #paste the scaled icon in the middle of the rectangle:
                 minsize = min(tw, th)
-                new_icon = get_pixbuf_from_data("\0"*tw*th*4, True, tw, th, tw*4)
+                new_icon = get_pixbuf_from_data(b"\0"*tw*th*4, True, tw, th, tw*4)
                 scaled_w, scaled_h = minsize, minsize
                 if tw==24 and th==64:
                     #special case for the gnome-shell dimensions - stretch height..
