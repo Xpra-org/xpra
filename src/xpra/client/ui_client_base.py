@@ -1050,13 +1050,14 @@ class UIXpraClient(XpraClientBase):
         screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
         if self.dpi>0:
             #use command line value supplied, but scale it:
-            xdpi = self.cx(self.dpi)
-            ydpi = self.cy(self.dpi)
+            xdpi = ydpi = self.dpi
         else:
             #not supplied, use platform detection code:
-            xdpi = self.cx(get_xdpi())
-            ydpi = self.cy(get_ydpi())
-            screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
+            xdpi = self.get_xdpi()
+            ydpi = self.get_ydpi()
+        xdpi = self.cx(xdpi)
+        ydpi = self.cy(ydpi)
+        screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
         screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
         screenlog("update_screen_size()     new settings=%s", screen_settings)
         screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
@@ -1069,6 +1070,12 @@ class UIXpraClient(XpraClientBase):
         self._last_screen_settings = screen_settings
         #update the max packet size (may have gone up):
         self.set_max_packet_size()
+
+    def get_xdpi(self):
+        return get_xdpi()
+
+    def get_ydpi(self):
+        return get_ydpi()
 
 
     def scaleup(self):
@@ -1474,8 +1481,8 @@ class UIXpraClient(XpraClientBase):
         else:
             #not supplied, use platform detection code:
             #platforms may also provide per-axis dpi (later win32 versions do)
-            xdpi = get_xdpi()
-            ydpi = get_ydpi()
+            xdpi = self.get_xdpi()
+            ydpi = self.get_ydpi()
             screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
             if xdpi>0 and ydpi>0:
                 xdpi = self.cx(xdpi)

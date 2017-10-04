@@ -7,6 +7,7 @@ from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gtk                   #@UnresolvedImport
+from gi.repository import Gdk                   #@UnresolvedImport
 
 #this is an entry point, so do thread init early:
 #GObject.threads_init()
@@ -56,6 +57,18 @@ class XpraClient(GTKXpraClient):
         #we can now paint with alpha via pixbufs:
         cencs.append("rgb32")
         return cencs
+
+    def get_xdpi(self):
+        xdpi = GTKXpraClient.get_xdpi(self)
+        if xdpi>0:
+            return xdpi
+        return Gdk.Screen.get_default().get_resolution()
+
+    def get_ydpi(self):
+        ydpi = GTKXpraClient.get_ydpi(self)
+        if ydpi>0:
+            return ydpi
+        return Gdk.Screen.get_default().get_resolution()
 
 
     def get_tray_menu_helper_classes(self):
