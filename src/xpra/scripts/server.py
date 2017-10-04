@@ -1038,4 +1038,4 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.info("upgrading: not cleaning up Xvfb")
         log("cleanups=%s", _cleanups)
         r = 0
-    return e
+    return r
