@@ -26,6 +26,7 @@ avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 
 
+AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_THRESHOLD = envint("XPRA_AUTO_REFRESH_THRESHOLD", 100)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
 AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
@@ -1601,6 +1602,8 @@ class WindowSource(object):
         return region.width*region.height
 
     def can_refresh(self):
+        if not AUTO_REFRESH:
+            return False
         #safe to call from any thread (does not call X11):
         if not self.window.is_managed():
             #window is gone
