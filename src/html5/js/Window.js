@@ -1257,6 +1257,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				this.offscreen_canvas_ctx.putImageData(img, x, y);
 				painted();
 			}
+			me.may_paint_now();
 		}
 		else if (coding=="jpeg" || coding=="png") {
 			this._non_video_paint(coding);
@@ -1344,6 +1345,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				}
 			}
 			painted(true);
+			me.may_paint_now();
 		}
 		else {
 			paint_error("unsupported encoding");
