@@ -32,6 +32,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	//keep reference both the internal canvas and screen drawn canvas:
 	this.canvas = canvas_state;
 	this.canvas_ctx = this.canvas.getContext('2d');
+	this.canvas_ctx.imageSmoothingEnabled = false;
 	this.offscreen_canvas = null;
 	this.offscreen_canvas_ctx = null;
 	this.offscreen_canvas_mode = null;
@@ -208,6 +209,7 @@ XpraWindow.prototype._init_2d_canvas = function() {
 	this.offscreen_canvas = document.createElement("canvas");
 	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
+	this.offscreen_canvas_ctx.imageSmoothingEnabled = false;
 }
 
 XpraWindow.prototype._init_3d_canvas = function() {
@@ -1206,17 +1208,17 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 
 	function painted(skip_box) {
 		me.paint_pending = 0;
-		decode_callback(me.client);
 		if (me.debug && !skip_box) {
 			var color = DEFAULT_BOX_COLORS[coding] || "white";
 			paint_box(color, x, y, width, height);
 		}
+		decode_callback();
 	}
 
 	function paint_error(e) {
 		me.error("error painting", coding, e);
 		me.paint_pending = 0;
-		decode_callback(me.client, ""+e);
+		decode_callback(""+e);
 	}
 
 	try {

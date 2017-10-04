@@ -2020,7 +2020,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		win.paint(x, y,
 			width, height,
 			coding, data, packet_sequence, rowstride, options,
-			function (ctx, error) {
+			function (error) {
 				var flush = options["flush"] || 0;
 				if(flush==0) {
 					ctx.request_redraw(win);
