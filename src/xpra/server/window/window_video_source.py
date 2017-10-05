@@ -1554,9 +1554,9 @@ class WindowVideoSource(WindowSource):
             else:
                 order = PREFERED_ENCODING_ORDER
         fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
-        if self.image_depth==8:
+        if self.image_depth==8 and "png/P" in self.non_video_encodings:
             return "png/P"
-        elif self.image_depth==30:
+        elif self.image_depth==30 and "rgb32" in self.non_video_encodings:
             return "rgb32"
         elif self.image_depth not in (24, 32):
             #jpeg cannot handle other bit depths
