@@ -73,6 +73,7 @@ class WindowVideoSource(WindowSource):
         WindowSource.__init__(self, *args)
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
+        self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
 
@@ -209,7 +210,10 @@ class WindowVideoSource(WindowSource):
                                                  })
         einfo = {
                  "pipeline_param" : self.get_pipeline_info(),
-                 "scrolling"      : self.supports_scrolling,
+                 "scrolling"      : {
+                     "enabled"      : self.supports_scrolling,
+                     "min-percent"  : self.scroll_min_percent,
+                     }
                  }
         if self._last_pipeline_check>0:
             einfo["pipeline_last_check"] = int(1000*(monotonic_time()-self._last_pipeline_check))
@@ -322,6 +326,7 @@ class WindowVideoSource(WindowSource):
         #client may restrict csc modes for specific windows
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling) and not STRICT_MODE
+        self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         self.scaling_control = max(0, min(100, properties.intget("scaling.control", self.scaling_control)))
@@ -1656,7 +1661,7 @@ class WindowVideoSource(WindowSource):
                         image.restride(newstride)
                     bpp = image.get_bytesperpixel()
                     scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
-                    max_distance = min(1000, (100-SCROLL_MIN_PERCENT)*h//100)
+                    max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
                     scroll_data.calculate(max_distance)
                     #marker telling us not to invalidate the scroll data from here on:
                     options["scroll"] = True
@@ -1665,7 +1670,7 @@ class WindowVideoSource(WindowSource):
                     match_pct = int(100*count/h)
                     scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s", (end-start)*1000, match_pct, h, scroll)
                     #if enough scrolling is detected, use scroll encoding for this frame:
-                    if match_pct>=SCROLL_MIN_PERCENT:
+                    if match_pct>=self.scroll_min_percent:
                         return self.encode_scrolling(scroll_data, image, options)
                 except Exception:
                     scrolllog.error("Error during scrolling detection")
