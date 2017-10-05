@@ -1032,7 +1032,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if kill_dbus:
             _cleanups.remove(kill_dbus)
         from xpra.server.server_core import ServerCore
-        if e==ServerCore.EXITING_CODE:
+        if r==ServerCore.EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
         else:
             log.info("upgrading: not cleaning up Xvfb")
