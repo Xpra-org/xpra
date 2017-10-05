@@ -133,6 +133,8 @@ XpraClient.prototype.init_state = function(container) {
 	// a list of our windows
 	this.id_to_window = {};
 	this.ui_events = 0;
+	this.redraw_windows = [];
+	this.draw_pending = 0;
 	// basic window management
 	this.topwindow = null;
 	this.topindex = 0;
@@ -1026,11 +1028,13 @@ XpraClient.prototype._make_hello = function() {
 		"encodings.window-icon"		: ["png"],
 		"encodings.cursor"			: ["png"],
 		"encoding.generic"			: true,
+		"encoding.flush"			: true,
 		"encoding.transparency"		: true,
 		"encoding.client_options"	: true,
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
 		"encoding.color-gamut"		: Utilities.getColorGamut(),
+		"encoding.non-scroll"		: ["rgb32"],
 		//video stuff:
 		"encoding.video_scaling"	: true,
 		"encoding.full_csc_modes"	: {
@@ -1977,10 +1981,27 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
 
 XpraClient.prototype.request_redraw = function(win) {
 	// request that drawing to screen takes place at next available opportunity if possible
+	this._debug("request_redraw for", win);
+	win.swap_buffers();
 	if(window.requestAnimationFrame) {
-		window.requestAnimationFrame(function() {
-			win.draw();
-		});
+		if (!this.redraw_windows.includes(win)) {
+			this.redraw_windows.push(win);
+		}
+		// schedule a screen refresh if one is not already due:
+		if (this.draw_pending==0) {
+			var now = Utilities.monotonicTime();
+			this.draw_pending = now;
+			var me = this;
+			window.requestAnimationFrame(function() {
+				me._debug("animation frame:", me.redraw_windows.length, "windows to paint");
+				me.draw_pending = 0;
+				// draw all the windows in the list:
+				while (me.redraw_windows.length>0) {
+					var w = me.redraw_windows.shift();
+					w.draw();
+				}
+			});
+		}
 	} else {
 		// requestAnimationFrame is not available, draw immediately
 		win.draw();
@@ -2032,7 +2053,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 				else {
 					decode_time = Math.round(Utilities.monotonicTime() - start);
 				}
-				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time);
+				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time, ", flush=", flush);
 				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, error || "");
 			}
 		);

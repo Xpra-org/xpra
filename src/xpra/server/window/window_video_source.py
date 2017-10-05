@@ -91,6 +91,8 @@ class WindowVideoSource(WindowSource):
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
+        nse = self.encoding_options.strlistget("non-scroll", self.non_video_encodings)
+        self.non_scroll_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nse]
         self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
 
         #those two instances should only ever be modified or accessed from the encode thread:
@@ -125,6 +127,7 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = []
         self.common_video_encodings = []
         self.non_video_encodings = []
+        self.non_scroll_encodings = []
         self.edge_encoding = None
         self.start_video_frame = 0
         self.b_frame_flush_timer = None
@@ -200,6 +203,7 @@ class WindowVideoSource(WindowSource):
         addcinfo("encoder", self._video_encoder)
         info.setdefault("encodings", {}).update({
                                                  "non-video"    : self.non_video_encodings,
+                                                 "non-scroll"   : self.non_scroll_encodings,
                                                  "video"        : self.common_video_encodings,
                                                  "edge"         : self.edge_encoding or "",
                                                  })
@@ -329,8 +333,12 @@ class WindowVideoSource(WindowSource):
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except:
             self.edge_encoding = None
-        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
+        #non-scroll encodings default to the same list as non-video,
+        #but some clients may wish to use different settings:
+        nse = properties.strlistget("non-scroll", self.non_scroll_encodings)
+        self.non_scroll_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nse]
+        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, non_scroll_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.non_scroll_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         if self.common_video_encodings or self.supports_scrolling:
@@ -1507,7 +1515,7 @@ class WindowVideoSource(WindowSource):
             order = None
             if len(non_scroll)>=16:
                 order = FAST_ORDER
-            encoding = self.get_video_fallback_encoding(order)
+            encoding = self.get_scroll_fallback_encoding(order)
             client_options = options.copy()
             if encoding:
                 encode_fn = self._encoders[encoding]
@@ -1546,26 +1554,31 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         return None
 
-    def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
-        #find one that is not video:
+    def get_fallback_encoding(self, encodings, order):
         if order is None:
             if self._current_speed>=50:
                 order = FAST_ORDER
             else:
                 order = PREFERED_ENCODING_ORDER
-        fallback_encodings = [x for x in order if (x in self.non_video_encodings and x in self._encoders and x!="mmap")]
+        fallback_encodings = tuple(x for x in order if (x in encodings and x in self._encoders and x!="mmap"))
         if self.image_depth==8 and "png/P" in fallback_encodings:
             return "png/P"
         elif self.image_depth==30 and "rgb32" in fallback_encodings:
             return "rgb32"
         elif self.image_depth not in (24, 32):
             #jpeg cannot handle other bit depths
-            fallback_encodings = [x for x in fallback_encodings if x!="jpeg"]
+            fallback_encodings = tuple(x for x in fallback_encodings if x!="jpeg")
         if not fallback_encodings:
             if not self.is_cancelled():
                 log.warn("Warning: no non-video fallback encodings are available!")
             return None
         return fallback_encodings[0]
+
+    def get_scroll_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
+        return self.get_fallback_encoding(self.non_scroll_encodings, order)
+
+    def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
+        return self.get_fallback_encoding(self.non_video_encodings, order)
 
     def video_fallback(self, image, options, order=None):
         if self.image_depth==8:

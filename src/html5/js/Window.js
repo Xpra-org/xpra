@@ -35,7 +35,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.canvas_ctx.imageSmoothingEnabled = false;
 	this.offscreen_canvas = null;
 	this.offscreen_canvas_ctx = null;
-	this.offscreen_canvas_mode = null;
+	this.draw_canvas = null;
 	this._init_2d_canvas();
 	this.paint_queue = [];
 	this.paint_pending = 0;
@@ -205,19 +205,17 @@ XpraWindow.prototype._debug = function() {
 }
 
 XpraWindow.prototype._init_2d_canvas = function() {
-	this.offscreen_canvas_mode = '2d';
 	this.offscreen_canvas = document.createElement("canvas");
 	this.updateCanvasGeometry();
 	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('2d');
 	this.offscreen_canvas_ctx.imageSmoothingEnabled = false;
 }
 
-XpraWindow.prototype._init_3d_canvas = function() {
-	// if we couldn't init the 3d context, we should fall back gracefully!
-	this.offscreen_canvas_mode = '3d';
-	this.offscreen_canvas = document.createElement("canvas");
-	this.updateCanvasGeometry();
-	this.offscreen_canvas_ctx = this.offscreen_canvas.getContext('webgl');
+XpraWindow.prototype.swap_buffers = function() {
+	//the up to date canvas is what we'll draw on screen:
+	this.draw_canvas = this.offscreen_canvas;
+	this._init_2d_canvas();
+	this.offscreen_canvas_ctx.drawImage(this.draw_canvas, 0, 0);	
 }
 
 XpraWindow.prototype.set_spinner = function(state) {
@@ -968,7 +966,7 @@ XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data)
  */
 XpraWindow.prototype.draw = function() {
 	//pass the 'buffer' canvas directly to visible canvas context
-	this.canvas_ctx.drawImage(this.offscreen_canvas, 0, 0);
+	this.canvas_ctx.drawImage(this.draw_canvas, 0, 0);
 };
 
 XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
@@ -1190,9 +1188,6 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	this._debug("do_paint(", img_data.length, " bytes of ", ("zlib" in options?"zlib ":""), coding, " data ", width, "x", height, " at ", x, ",", y, ") focused=", this.focused);
 	var me = this;
 
-	if(this.offscreen_canvas_mode!='2d') {
-		this._init_2d_canvas();
-	}
 	var enc_width = width;
 	var enc_height = height;
 	var scaled_size = options["scaled_size"];
@@ -1259,11 +1254,10 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				this.offscreen_canvas_ctx.putImageData(img, x, y);
 				painted();
 			}
-			me.may_paint_now();
+			this.may_paint_now();
 		}
 		else if (coding=="jpeg" || coding=="png") {
 			this._non_video_paint(coding);
-			var img = this.offscreen_canvas_ctx.createImageData(width, height);
 			var j = new Image();
 			j.onload = function () {
 				if (j.width==0 || j.height==0) {
@@ -1335,19 +1329,20 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			this._non_video_paint(coding);
 			for(var i=0,j=img_data.length;i<j;++i) {
 				var scroll_data = img_data[i];
+				this._debug("scroll", i, ":", scroll_data);
 				var sx = scroll_data[0],
 					sy = scroll_data[1],
 					sw = scroll_data[2],
 					sh = scroll_data[3],
 					xdelta = scroll_data[4],
 					ydelta = scroll_data[5];
-				this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
+				this.offscreen_canvas_ctx.drawImage(this.draw_canvas, sx, sy, sw, sh, sx+xdelta, sy+ydelta, sw, sh);
 				if (this.debug) {
 					paint_box("brown", sx+xdelta, sy+ydelta, sw, sh);
 				}
 			}
 			painted(true);
-			me.may_paint_now();
+			this.may_paint_now();
 		}
 		else {
 			paint_error("unsupported encoding");

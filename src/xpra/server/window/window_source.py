@@ -387,6 +387,7 @@ class WindowSource(object):
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
+                "flush"                 : self.supports_flush,
                 "delta"                 : {""               : self.supports_delta,
                                            "buckets"        : self.delta_buckets,
                                            "bucket"         : buckets_info,
