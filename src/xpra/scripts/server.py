@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -373,7 +373,6 @@ def show_encoding_help(opts):
 
 
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
-    from xpra.os_util import strtobytes
     try:
         cwd = os.getcwd()
     except:
@@ -715,6 +714,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     os.environ.update(protected_env)
     log("env=%s", os.environ)
 
+    UINPUT_UUID_LEN = 12
+    UINPUT_UUID_MIN_LEN = 12
+    UINPUT_UUID_MAX_LEN = 32
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
     xvfb = None
@@ -728,7 +730,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         uinput_uuid = None
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
             from xpra.os_util import get_rand_chars
-            uinput_uuid = get_rand_chars(12)
+            uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
         xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)
@@ -800,7 +802,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #try to find the existing uinput uuid:
         #use a subprocess to avoid polluting our current process
         #with X11 connections before we get a chance to change uid
-        from xpra.os_util import get_status_output
         cmd = ["xprop", "-display", display_name, "-root", "_XPRA_UINPUT_ID"]
         try:
             code, out, err = get_status_output(cmd)
@@ -809,7 +810,16 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         else:
             log("Popen(%s)=%s", cmd, (code, out, err))
             if code==0 and out.find("=")>0:
-                uinput_uuid = strtobytes(out.split("=", 1)[1])
+                uinput_uuid = out.split("=", 1)[1]
+                log("raw uinput uuid=%s", uinput_uuid)
+                uinput_uuid = strtobytes(uinput_uuid.strip('\n\r"\\ '))
+                if uinput_uuid:
+                    if len(uinput_uuid)>UINPUT_UUID_MAX_LEN or len(uinput_uuid)<UINPUT_UUID_MIN_LEN:
+                        log.warn("Warning: ignoring invalid uinput id:")
+                        log.warn(" '%s'", uinput_uuid)
+                        uinput_uuid = None
+                    else:
+                        log.info("retrieved existing uinput id: %s", bytestostr(uinput_uuid))
     if uinput_uuid:
         devices = create_input_devices(uinput_uuid, uid)
 
