@@ -184,6 +184,10 @@ Group: Networking
 BuildArch: noarch
 Requires: xpra-common
 %{Recommends}: which, libfakeXinerama, gtk2-immodule-xim
+%if 0%{?fedora}
+#allows the server to use software opengl:
+%{Recommends}: mesa-libOSMesa
+%endif
 Requires(post): openssl
 Requires(post): systemd-units
 Requires(preun): systemd-units
