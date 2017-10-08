@@ -214,8 +214,9 @@ def _get_xsettings_dpi():
             if k in d:
                 value_type, value = d.get(k)
                 if value_type==XSettingsTypeInteger:
-                    screenlog("_get_xsettings_dpi() found %s=%s", k, value)
-                    return max(10, min(1000, value/div))
+                    actual_value = max(10, min(1000, value//div))
+                    screenlog("_get_xsettings_dpi() found %s=%s, div=%i, actual value=%i", k, value, div, actual_value)
+                    return actual_value
     return -1
 
 def _get_randr_dpi():
