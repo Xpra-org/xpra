@@ -187,16 +187,42 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 #no size restrictions
                 size_hints = {}
             else:
-                #TODO: get all of this from randr:
-                #screen_sizes = RandR.get_screen_sizes()
                 size_hints = {
                     "maximum-size"  : (8192, 4096),
-                    "minimum-size"  : (640, 640),
-                    "base-size"     : (640, 640),
-                    "increment"     : (128, 128),
                     "minimum-aspect-ratio"  : (1, 3),
                     "maximum-aspect-ratio"  : (3, 1),
                     }
+                try:
+                    with xsync:
+                        screen_sizes = RandR.get_screen_sizes()
+                except:
+                    screenlog("failed to query screen sizes", exc_info=True)
+                else:
+                    #find the best increment we can use:
+                    inc_hits = {}
+                    #we should also figure out what the potential increments are,
+                    #rather than hardcoding them here:
+                    INC_VALUES = (16, 32, 64, 128, 256)
+                    for inc in INC_VALUES:
+                        hits = 0
+                        for tsize in screen_sizes:
+                            tw, th = tsize
+                            if (tw+inc, th+inc) in screen_sizes:
+                                hits += 1
+                        inc_hits[inc] = hits
+                    screenlog("size increment hits: %s", inc_hits)
+                    max_hits = max(inc_hits.values())
+                    if max_hits>16:
+                        #find the first increment value matching the max hits
+                        for inc in INC_VALUES:
+                            if inc_hits[inc]==max_hits:
+                                break
+                        #TODO: also get these values from the screen sizes:
+                        size_hints.update({
+                            "base-size"     : (640, 640),
+                            "minimum-size"  : (640, 640),
+                            "increment"     : (128, 128),
+                            })
         else:
             size = w, h
             size_hints = {
@@ -204,6 +230,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 "minimum-size"  : size,
                 "base-size"     : size,
                 }
+        screenlog("size-hints=%s", size_hints)
         self._updateprop("size-hints", size_hints)
 
 
