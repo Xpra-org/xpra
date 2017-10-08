@@ -69,6 +69,8 @@ if PYTHON2:
         return str(x)
     def bytestostr(x):
         return str(x)
+    def hexstr(v):
+        return binascii.hexlify(str(v))
 else:
     def strtobytes(x):
         if type(x)==bytes:
@@ -78,9 +80,8 @@ else:
         if type(x)==bytes:
             return x.decode("latin1")
         return str(x)
-
-def hexstr(v):
-    return binascii.hexlify(strtobytes(v))
+    def hexstr(v):
+        return bytestostr(binascii.hexlify(strtobytes(v)))
 
 
 def memoryview_to_bytes(v):
