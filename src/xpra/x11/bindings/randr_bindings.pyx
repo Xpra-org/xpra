@@ -251,6 +251,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         cdef Rotation original_rotation
         cdef int num_sizes = 0                          #@DuplicatedSignature
         cdef SizeID size_id
+        cdef int width, height
         window = XDefaultRootWindow(self.display)
         cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
         try:
@@ -263,9 +264,12 @@ cdef class _RandRBindings(_X11CoreBindings):
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
             if size_id<0:
                 raise Exception("failed to get current configuration")
+            if size_id>=num_sizes:
+                raise Exception("invalid size ID")
 
             width = xrrs[size_id].width;
             height = xrrs[size_id].height;
+            assert width>0 and height>0, "invalid XRR size: %ix%i" % (width, height)
             return int(width), int(height)
         finally:
             if config!=NULL:
