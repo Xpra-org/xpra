@@ -1,4 +1,4 @@
-v1.0.9 (2017-10-01)
+v1.0.9 (2017-10-09)
 ======================
 	-- fix authentication weakness in client salt handling
 	-- fix window icons going back to default on window re-initialization
@@ -10,6 +10,9 @@ v1.0.9 (2017-10-01)
 	-- fix typo hiding pretty debug logging
 	-- fix Mac OS shadow servers
 	-- fix application name shown in notifications (X11)
+	-- fix webcam library issues causing client to fail to start
+	-- validate window dimensions early to prevent DoS
+	-- support newer versions of brotli
 	-- support CUDA 9
 	-- choose the strongest digest first
 	-- add mesa-dri-drivers dependency to RPM packages for OpenGL support
