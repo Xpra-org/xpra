@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
-from xpra.util import envint, csv
+from xpra.util import envint, csv, iround
 
 
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
@@ -419,7 +419,7 @@ cdef class _RandRBindings(_X11CoreBindings):
     def xrr_set_screen_size(self, w, h, xdpi, ydpi):
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
-        wmm = int(w*25.4/xdpi + 0.5)
-        hmm = int(h*25.4/ydpi + 0.5)
+        wmm = iround(w*25.4/xdpi)
+        hmm = iround(h*25.4/ydpi)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)
