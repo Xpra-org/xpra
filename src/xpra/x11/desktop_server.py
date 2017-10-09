@@ -515,7 +515,8 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         if not skip_geometry:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-            self.resize(w, h)
+            if oww!=w or owh!=h:
+                self.resize(w, h)
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
