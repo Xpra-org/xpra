@@ -32,8 +32,8 @@
 
 
 Name:           python2-pillow
-Version:        4.2.1
-Release:        2%{?snap}%{?dist}
+Version:        4.3.0
+Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -290,6 +290,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Mon Oct 09 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-1
+- new upstream release
+
 * Mon Jul 31 2017 Antoine Martin <antoine@devloop.org.uk> - 4.2.1-2
 - we should provide and obsolete "python2-imaging" as well as "python-imaging"
 

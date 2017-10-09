@@ -535,9 +535,9 @@
 
   <distutils id="python-pillow">
         <branch repo="pypi.python.org"
-	     module="/packages/55/aa/f7f983fb72710a9daa4b3374b7c160091d3f94f5c09221f9336ade9027f3/Pillow-4.2.1.tar.gz"
-         hash="sha256:c724f65870e545316f9e82e4c6d608ab5aa9dd82d5185e5b2e72119378740073"
-	     version="4.2.1"/>
+	     module="/packages/e0/82/ec499c78bfe4ecaa91c2f3000040451d187ed0a816d58b8543e29c48827f/Pillow-4.3.0.tar.gz"
+         hash="sha256:a97c715d44efd5b4aa8d739b8fad88b93ed79f1b33fc2822d5802043f3b1b527"
+	     version="4.3.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
