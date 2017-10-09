@@ -188,7 +188,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 size_hints = {}
             else:
                 size_hints = {
-                    "maximum-size"  : (8192, 4096),
                     "minimum-aspect-ratio"  : (1, 3),
                     "maximum-aspect-ratio"  : (3, 1),
                     }
@@ -198,6 +197,12 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 except:
                     screenlog("failed to query screen sizes", exc_info=True)
                 else:
+                    #find the maximum size supported:
+                    max_size = {}
+                    for tw, th in screen_sizes:
+                        max_size[tw*th] = (tw, th)
+                    max_pixels = reversed(sorted(max_size.keys()))[0]
+                    size_hints["maximum-size"] = max_size[max_pixels]
                     #find the best increment we can use:
                     inc_hits = {}
                     #we should also figure out what the potential increments are,
