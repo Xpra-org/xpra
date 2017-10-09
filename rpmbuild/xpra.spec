@@ -475,7 +475,6 @@ rm -rf build install
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
 	%{build_args} \
 	--without-html5 --without-printing --without-cuda_kernels
-%{__python3} setup.py build %{build_args}
 popd
 %endif
 
