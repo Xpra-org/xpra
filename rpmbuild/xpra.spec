@@ -380,7 +380,6 @@ CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
 	%{build_args} \
 	--pkg-config-path=%{_libdir}/xpra/pkgconfig \
 	--rpath=%{_libdir}/xpra
-%{__python3} setup.py build %{build_args}
 popd
 %endif
 
