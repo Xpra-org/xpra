@@ -516,7 +516,8 @@ class X11ServerCore(GTKServerBase):
         if not new_size:
             screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
             if len(closest)>0:
-                new_size = sorted(closest.items())[0]
+                min_dist = tuple(closest.keys())[0]
+                new_size = closest[min_dist]
                 screenlog.warn(" using %sx%s instead", *new_size)
             else:
                 root_w, root_h = self.root_window.get_size()
