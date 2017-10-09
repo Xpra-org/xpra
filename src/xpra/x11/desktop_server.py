@@ -201,7 +201,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                     max_size = {}
                     for tw, th in screen_sizes:
                         max_size[tw*th] = (tw, th)
-                    max_pixels = reversed(sorted(max_size.keys()))[0]
+                    max_pixels = sorted(max_size.keys())[-1]
                     size_hints["maximum-size"] = max_size[max_pixels]
                     #find the best increment we can use:
                     inc_hits = {}
