@@ -560,7 +560,11 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.scalereset()
 
     def magic_key(self, *args):
-        log.info("magic_key(%s) not handled in %s", args, type(self))
+        b = self.border
+        if b:
+            b.toggle()
+            log("magic_key%s border=%s", args, b)
+            self.queue_draw(0, 0, *self._size)
 
     def refresh_window(self, *args):
         log("refresh_window(%s) wid=%s", args, self._id)

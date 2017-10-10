@@ -21,7 +21,7 @@ class WindowBorder(object):
 
     def __repr__(self):
         def hex2(v):
-            b = max(0, min(255, v*256))
+            b = int(max(0, min(255, v*256)))
             if b<16:
                 return "0%X" % b
             return "%X" % b

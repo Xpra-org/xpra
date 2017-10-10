@@ -793,6 +793,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_border(self):
         bw, bh = self.size
         #double size since half the line will be off-screen
+        log("draw_border: %s", self.border)
         glLineWidth(self.border.size*2)
         glBegin(GL_LINE_LOOP)
         glColor4f(self.border.red, self.border.green, self.border.blue, self.border.alpha)

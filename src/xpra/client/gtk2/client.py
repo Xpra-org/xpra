@@ -10,10 +10,9 @@ gobject.threads_init()
 from gtk import gdk
 
 
-from xpra.gtk_common.gtk_util import gtk_main, color_parse
+from xpra.gtk_common.gtk_util import gtk_main
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
-from xpra.client.window_border import WindowBorder
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
@@ -27,7 +26,6 @@ class XpraClient(GTKXpraClient):
     def __init__(self):
         GTKXpraClient.__init__(self)
         self.UI_watcher = None
-        self.border = None
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
@@ -35,61 +33,6 @@ class XpraClient(GTKXpraClient):
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add)
-
-
-    def parse_border(self, border_str, extra_args):
-        enabled = not border_str.endswith(":off")
-        parts = [x.strip() for x in border_str.replace(":off", "").split(",")]
-        color_str = parts[0]
-        def border_help():
-            log.info(" border format: color[,size][:off]")
-            log.info("  eg: red,10")
-            log.info("  eg: ,5")
-            log.info("  eg: auto,5")
-            log.info("  eg: blue")
-        if color_str.lower() in ("none", "no", "off", "0"):
-            return
-        if color_str.lower()=="help":
-            border_help()
-            return
-        color_str = color_str.replace(":off", "")
-        if color_str=="auto" or color_str=="":
-            try:
-                try:
-                    from hashlib import md5
-                except ImportError:
-                    from md5 import md5
-                m = md5()
-                for x in extra_args:
-                    m.update(str(x))
-                color_str = "#%s" % m.hexdigest()[:6]
-                log("border color derived from %s: %s", extra_args, color_str)
-            except:
-                log.info("failed to derive border color from %s", extra_args, exc_info=True)
-                #fail: default to red
-                color_str = "red"
-        try:
-            color = color_parse(color_str)
-        except Exception as e:
-            log.warn("invalid border color specified: '%s' (%s)", color_str, e)
-            border_help()
-            color = color_parse("red")
-        alpha = 0.6
-        size = 4
-        if len(parts)==2:
-            size_str = parts[1]
-            try:
-                size = int(size_str)
-            except Exception as e:
-                log.warn("invalid size specified: %s (%s)", size_str, e)
-            if size<=0:
-                log("border size is %s, disabling it", size)
-                return
-            if size>=45:
-                log.warn("border size is too high: %s, clipping it", size)
-                size = 45
-        self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
-        log("parse_border(%s)=%s", border_str, self.border)
 
 
     def gtk_main(self):

@@ -12,24 +12,15 @@ from xpra.client.gtk2.client_window import ClientWindow
 
 class BorderClientWindow(ClientWindow):
     """
-    Adds a border around the window contents,
+    Adds support for painting the border around the window contents,
     the colour and size can be configured with the "--border=" command line option
     this can be toggled at runtime using the "magic_key" shortcut.
     """
 
     __gsignals__ = ClientWindow.__common_gsignals__
 
-    def setup_window(self, *args):
-        ClientWindow.setup_window(self, *args)
-
     def toggle_debug(self, *args):
         pass
-
-    def magic_key(self, *_args):
-        b = self.border
-        if b:
-            b.toggle()
-            self.queue_draw(0, 0, *self._size)
 
     def do_expose_event(self, event):
         ClientWindow.do_expose_event(self, event)

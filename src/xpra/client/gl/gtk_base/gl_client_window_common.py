@@ -86,4 +86,4 @@ class GLClientWindowCommon(object):
                     b.gl_init()
                     b.present_fbo(0, 0, *b.size)
                 self.queue_draw(0, 0, *self._size)
-        log("magic_key%s border=%s, backing=%s", args, self.border, b)
+        log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
