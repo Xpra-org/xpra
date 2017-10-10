@@ -5,21 +5,24 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.log import Logger
 log = Logger("keyboard")
 
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.util import nonl, csv, std, print_nested_dict
+from xpra.os_util import POSIX
 
 
 class KeyboardHelper(object):
 
-    def __init__(self, net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options):
+    def __init__(self, net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
         self.reset_state()
         self.send = net_send
         self.locked = False
         self.keyboard_sync = keyboard_sync
+        self.shortcut_modifiers = shortcut_modifiers
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
         #command line overrides:
         self.xkbmap_raw = raw
@@ -103,6 +106,37 @@ class KeyboardHelper(object):
             if pub_name.lower()=="control":
                 #alias "control" to "ctrl" as it is often used:
                 modifier_names["ctrl"] = mod_name
+        log.info("parse_shortcuts: modifier names=%s", modifier_names)
+
+        #figure out the default shortcut modifiers
+        #accept "," or "+" as delimiter:
+        shortcut_modifiers = self.shortcut_modifiers.lower().replace(",", "+").split("+")
+        def mod_defaults():
+            mods = ["meta", "shift"]
+            if POSIX:
+                #gnome intercepts too many of the Alt+Shift shortcuts,
+                #so use control with gnome:
+                if os.environ.get("XDG_CURRENT_DESKTOP")=="GNOME":
+                    mods = ["control", "shift"]
+            return mods
+        if shortcut_modifiers==["auto"]:
+            shortcut_modifiers = mod_defaults()
+        elif shortcut_modifiers==["none"]:
+            shortcut_modifiers = []
+        else:
+            r = []
+            for x in shortcut_modifiers:
+                x = x.lower()
+                if x not in modifier_names:
+                    log.warn("Warning: invalid shortcut modifier '%s'", x)
+                else:
+                    r.append(x)
+            if shortcut_modifiers and not r:
+                log.warn(" using defaults instead")
+                shortcut_modifiers = mod_defaults()
+            else:
+                shortcut_modifiers = r
+        log("shortcut modifiers=%s", shortcut_modifiers)
 
         for s in strs:
             #example for s: Control+F8:some_action()
@@ -143,11 +177,22 @@ class KeyboardHelper(object):
                 valid = True
                 #ie: ["Alt"]
                 for mod in keyspec[:len(keyspec)-1]:
+                    mod = mod.lower()
+                    if mod=="none":
+                        continue
+                    elif mod=="#":
+                        #this is the placeholder for the list of shortcut modifiers:
+                        for x in shortcut_modifiers:
+                            imod = modifier_names.get(x)
+                            if imod:
+                                modifiers.append(imod)
+                        continue
+                    #find the real modifier for this name:
                     #ie: "alt_l" -> "mod1"
-                    imod = modifier_names.get(mod.lower())
+                    imod = modifier_names.get(mod)
                     if not imod:
-                        log.error("Error: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
-                        log.error(" the modifiers must be one of: %s", csv(modifier_names.keys()))
+                        log.warn("Warning: invalid modifier '%s' in keyboard shortcut '%s'", mod, s)
+                        log.warn(" the modifiers must be one of: %s", csv(modifier_names.keys()))
                         valid = False
                         break
                     modifiers.append(imod)
@@ -156,7 +201,7 @@ class KeyboardHelper(object):
             #TODO: validate keyname
             keyname = keyspec[len(keyspec)-1]
             shortcuts.setdefault(keyname, []).append((modifiers, action, args))
-            log("shortcut(%s)=%s", keyname, (modifiers, action, args))
+            log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
         log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         print_nested_dict(shortcuts, print_fn=log)
         return  shortcuts

@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, POSIX, is_CentOS, is_RedHat
+from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -504,6 +504,7 @@ OPTION_TYPES = {
                     "webcam"            : str,
                     "mousewheel"        : str,
                     "input-devices"     : str,
+                    "shortcut-modifiers": str,
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
@@ -645,7 +646,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "quality", "min-quality", "speed", "min-speed",
                   "compression_level",
                   "dpi", "video-scaling", "auto-refresh-delay",
-                  "webcam", "mousewheel", "input-devices", "pings",
+                  "webcam", "mousewheel", "input-devices", "shortcut-modifiers", "pings",
                   "tray", "keyboard-sync", "cursors", "bell", "notifications",
                   "xsettings", "system-tray", "sharing",
                   "delay-tray", "windows", "readonly",
@@ -698,36 +699,32 @@ del tmp
 
 
 def get_default_key_shortcuts():
-    if POSIX:
-        mods = "Control+Shift"
-    else:
-        mods = "Meta+Shift"
     return [shortcut for e,shortcut in [
                (True,   "Control+Menu:toggle_keyboard_grab"),
                (True,   "Shift+Menu:toggle_pointer_grab"),
                (True,   "Shift+F11:toggle_fullscreen"),
-               (True,   mods+"+F1:show_menu"),
-               (True,   mods+"+F2:show_start_new_command"),
-               (True,   mods+"+F3:show_bug_report"),
-               (True,   mods+"+F4:quit"),
-               (True,   mods+"+F5:increase_quality"),
-               (True,   mods+"+F6:decrease_quality"),
-               (True,   mods+"+F7:increase_speed"),
-               (True,   mods+"+F8:decrease_speed"),
-               (True,   mods+"+F10:magic_key"),
-               (True,   mods+"+F11:show_session_info"),
-               (True,   mods+"+F12:toggle_debug"),
-               (True,   mods+"+plus:scaleup"),
-               (OSX,    mods+"+plusminus:scaleup"),
-               (True,   mods+"+minus:scaledown"),
-               (True,   mods+"+underscore:scaledown"),
-               (OSX,    mods+"+emdash:scaledown"),
-               (True,   mods+"+KP_Add:scaleup"),
-               (True,   mods+"+KP_Subtract:scaledown"),
-               (True,   mods+"+KP_Multiply:scalereset"),
-               (True,   mods+"+bar:scalereset"),
-               (True,   mods+"+question:scalingoff"),
-               (OSX,    mods+"+degree:scalereset")]
+               (True,   "#+F1:show_menu"),
+               (True,   "#+F2:show_start_new_command"),
+               (True,   "#+F3:show_bug_report"),
+               (True,   "#+F4:quit"),
+               (True,   "#+F5:increase_quality"),
+               (True,   "#+F6:decrease_quality"),
+               (True,   "#+F7:increase_speed"),
+               (True,   "#+F8:decrease_speed"),
+               (True,   "#+F10:magic_key"),
+               (True,   "#+F11:show_session_info"),
+               (True,   "#+F12:toggle_debug"),
+               (True,   "#+plus:scaleup"),
+               (OSX,    "#+plusminus:scaleup"),
+               (True,   "#+minus:scaledown"),
+               (True,   "#+underscore:scaledown"),
+               (OSX,    "#+emdash:scaledown"),
+               (True,   "#+KP_Add:scaleup"),
+               (True,   "#+KP_Subtract:scaledown"),
+               (True,   "#+KP_Multiply:scalereset"),
+               (True,   "#+bar:scalereset"),
+               (True,   "#+question:scalingoff"),
+               (OSX,    "#+degree:scalereset")]
                  if e]
 
 def get_default_systemd_run():
@@ -864,6 +861,7 @@ def get_defaults():
                     "webcam"            : ["auto", "no"][OSX],
                     "mousewheel"        : "on",
                     "input-devices"     : "auto",
+                    "shortcut-modifiers": "auto",
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",

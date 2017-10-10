@@ -152,6 +152,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speed\fP=\fISPEED\fP]
 [\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
 [\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
+[\fB\-\-shortcut\-modifiers\fP=\fIMODIFIERS\fP]
 [\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP]
 [\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
@@ -1273,16 +1274,24 @@ The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 0.25 seconds.
 This option is only relevant when using a lossy encoding.
 .TP
+\fB\-\-shortcut\-modifiers\fP=\fIMODIFIERS\fP
+Defines the default shorcut modifers required by the \fIkey\-shortcuts\fP,
+these modifiers can then be referred to as \fI#\fP.
+The default value is 'auto' which evaluates to \fIMeta+Shift\fP on most
+platforms.
+.TP
 \fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP
 Can be specified multiple times to add multiple key shortcuts.
 These keys will be caught by the client and trigger the action specified
-and the key presses will not be passed to the server.
+and the key presses will not be passed on to the server.
 
 The \fIKEY\fP specification may include keyboard modifiers in the form
-\fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP
+\fB[modifier\+]*key\fP, for example: \fIShift+F10\fP or \fIShift+Control+B\fP.
+You can refer to the \fIshorcut-modifers\fP option value using \fI#\fP,
+ie: \fI#+F1\fP.
 
 If no shortcuts are defined on the command line,
-the following default one will be used: \fIMeta+Shift+F4:quit\fP
+the following default one will be used: \fIMeta+Shift+F4:quit\fP.
 
 Some of the actions may allow arguments (ie: the \fIlog\fP action does),
 in which case they are specified in the usual programming style

@@ -861,6 +861,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tray-icon", action="store",
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
+    group.add_option("--shortcut-modifiers", action="store",
+                      dest="shortcut_modifiers", type="str", default=defaults.shortcut_modifiers,
+                      help="Default set of modifiers required by the key shortcuts. Default %default.")
     group.add_option("--key-shortcut", action="append",
                       dest="key_shortcut", type="str", default=list(defaults.key_shortcut or []),
                       help="Define key shortcuts that will trigger specific actions."

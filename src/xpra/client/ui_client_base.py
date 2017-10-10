@@ -472,7 +472,7 @@ class UIXpraClient(XpraClientBase):
                     return None
                 return v
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
-            self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.key_shortcut, opts.keyboard_raw, *overrides)
+            self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
 
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
