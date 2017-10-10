@@ -106,7 +106,7 @@ class KeyboardHelper(object):
             if pub_name.lower()=="control":
                 #alias "control" to "ctrl" as it is often used:
                 modifier_names["ctrl"] = mod_name
-        log.info("parse_shortcuts: modifier names=%s", modifier_names)
+        log("parse_shortcuts: modifier names=%s", modifier_names)
 
         #figure out the default shortcut modifiers
         #accept "," or "+" as delimiter:
