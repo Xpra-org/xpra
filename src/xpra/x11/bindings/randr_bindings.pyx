@@ -117,6 +117,8 @@ cdef extern from "X11/extensions/Xrandr.h":
     int XScreenCount(Display *display)
     int XDisplayWidthMM(Display *display, int screen_number)
     int XDisplayHeightMM(Display *display, int screen_number)
+    int XDisplayWidth(Display *display, int screen_number)
+    int XDisplayHeight(Display *display, int screen_number)
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
@@ -156,7 +158,7 @@ cdef class _RandRBindings(_X11CoreBindings):
     def has_randr(self):
         return bool(self._has_randr)
 
-    cdef _get_screen_sizes(self):
+    cdef _get_xrr_screen_sizes(self):
         cdef int num_sizes = 0
         cdef XRRScreenSize * xrrs
         cdef XRRScreenSize xrr
@@ -169,9 +171,9 @@ cdef class _RandRBindings(_X11CoreBindings):
             sizes.append((xrr.width, xrr.height))
         return sizes
 
-    def get_screen_sizes(self):
-        v = self._get_screen_sizes()
-        log("get_screen_sizes()=%s", v)
+    def get_xrr_screen_sizes(self):
+        v = self._get_xrr_screen_sizes()
+        log("get_xrr_screen_sizes()=%s", v)
         return v
 
     cdef _set_screen_size(self, width, height):
@@ -242,6 +244,16 @@ cdef class _RandRBindings(_X11CoreBindings):
             sizes.append((w, h))
         return sizes
 
+    def get_screen_sizes(self):
+        cdef unsigned int n = XScreenCount(self.display)
+        cdef unsigned int i, w, h
+        cdef object sizes = []
+        for i in range(n):
+            w = XDisplayWidth(self.display, i)
+            h = XDisplayHeight(self.display, i)
+            sizes.append((w, h))
+        return sizes
+
     def get_screen_size(self):
         return self._get_screen_size()
 
@@ -259,13 +271,17 @@ cdef class _RandRBindings(_X11CoreBindings):
             if config==NULL:
                 raise Exception("failed to get screen info")
             xrrs = XRRConfigSizes(config, &num_sizes)
+            if num_sizes==0:
+                #on Xwayland, we get no sizes...
+                #so fallback to DisplayWidth / DisplayHeight:
+                return XDisplayWidth(self.display, 0), XDisplayHeight(self.display, 0)
             if xrrs==NULL:
                 raise Exception("failed to get screen sizes")
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
             if size_id<0:
                 raise Exception("failed to get current configuration")
             if size_id>=num_sizes:
-                raise Exception("invalid size ID")
+                raise Exception("invalid XRR size ID %i (num sizes=%i)" % (size_id, num_sizes))
 
             width = xrrs[size_id].width;
             height = xrrs[size_id].height;

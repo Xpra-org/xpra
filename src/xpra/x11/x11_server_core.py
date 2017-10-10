@@ -112,29 +112,34 @@ class X11ServerCore(GTKServerBase):
 
     def init_randr(self):
         self.randr = RandR.has_randr()
-        log("randr=%s", self.randr)
+        screenlog("randr=%s", self.randr)
         #check the property first,
         #because we may be inheriting this display,
         #in which case the screen sizes list may be longer than 1
-        self.randr_exact_size = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)==1
+        eprop = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)
+        screenlog("_XPRA_RANDR_EXACT_SIZE=%s", eprop)
+        self.randr_exact_size = eprop==1
         if not self.randr_exact_size:
             #ugly hackish way of detecting Xvfb with randr,
             #assume that it has only one resolution pre-defined:
-            sizes = RandR.get_screen_sizes()
+            sizes = RandR.get_xrr_screen_sizes()
             if len(sizes)==1:
                 self.randr_exact_size = True
                 prop_set(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", 1)
-        log("randr exact size=%s", self.randr_exact_size)
-        if self.randr:
-            display = display_get_default()
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
-                screen.connect("size-changed", self._screen_size_changed)
-                i += 1
-            log("randr enabled: %s", self.randr)
-        else:
-            log.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
+            elif len(sizes)==0:
+                #xwayland?
+                self.randr = False
+                self.randr_exact_size = False
+        screenlog("randr=%s, exact size=%s", self.randr, self.randr_exact_size)
+        display = display_get_default()
+        i=0
+        while i<display.get_n_screens():
+            screen = display.get_screen(i)
+            screen.connect("size-changed", self._screen_size_changed)
+            i += 1
+        screenlog("randr enabled: %s", self.randr)
+        if not self.randr:
+            screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
 
     def init_cursor(self):
         #cursor:
@@ -279,8 +284,10 @@ class X11ServerCore(GTKServerBase):
                     "keyboard.fast-switching"   : True,
                     "wheel.precise"             : self.pointer_device.has_precise_wheel(),
                     })
-            if self.randr and len(RandR.get_screen_sizes())>1:
-                capabilities["screen-sizes"] = RandR.get_screen_sizes()
+            if self.randr:
+                sizes = RandR.get_xrr_screen_sizes()
+                if len(sizes)>1:
+                    capabilities["screen-sizes"] = sizes
             if self.default_cursor_data and source.wants_default_cursor:
                 capabilities["cursor.default"] = self.default_cursor_data
         return capabilities
@@ -329,7 +336,7 @@ class X11ServerCore(GTKServerBase):
         #randr:
         try:
             with xsync:
-                sizes = RandR.get_screen_sizes()
+                sizes = RandR.get_xrr_screen_sizes()
                 if self.randr and len(sizes)>=0:
                     sinfo["randr"] = {
                         ""          : True,
@@ -441,7 +448,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_max_screen_size(self):
         max_w, max_h = self.root_window.get_geometry()[2:4]
-        sizes = RandR.get_screen_sizes()
+        sizes = RandR.get_xrr_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
                 max_w = max(max_w, w)
@@ -483,7 +490,7 @@ class X11ServerCore(GTKServerBase):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
 
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
-        screen_sizes = RandR.get_screen_sizes()
+        screen_sizes = RandR.get_xrr_screen_sizes()
         if (desired_w, desired_h) in screen_sizes:
             return desired_w, desired_h
         if self.randr_exact_size:
@@ -500,10 +507,12 @@ class X11ServerCore(GTKServerBase):
             except Exception as e:
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
                 screenlog.warn(" %s", e)
+            #re-query:
+            screen_sizes = RandR.get_xrr_screen_sizes()
         #try to find the best screen size to resize to:
         new_size = None
         closest = {}
-        for w,h in RandR.get_screen_sizes():
+        for w,h in screen_sizes:
             if (w<desired_w)==bigger or (h<desired_h)==bigger:
                 distance = abs(w-desired_w)*abs(h-desired_h)
                 closest[distance] = (w, h)
@@ -588,7 +597,7 @@ class X11ServerCore(GTKServerBase):
                 #so we temporarily switch to another resolution to force
                 #the change! (ugly! but this works)
                 temp = {}
-                for tw,th in RandR.get_screen_sizes():
+                for tw,th in RandR.get_xrr_screen_sizes():
                     if tw!=w or th!=h:
                         #use the number of extra pixels as key:
                         #(so we can choose the closest resolution)
@@ -805,7 +814,7 @@ class X11ServerCore(GTKServerBase):
         self._process_mouse_common(proto, wid, pointer, deviceid)
         self.button_action(pointer, button, pressed, deviceid)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, _pointer, button, pressed, deviceid=-1, *args):
         device = self.pointer_device
         assert device, "pointer device %s not found" % deviceid
         try:

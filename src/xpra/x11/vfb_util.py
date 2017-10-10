@@ -248,7 +248,7 @@ def set_initial_resolution(desktop=False):
             l("Warning: no RandR support,")
             l(" default virtual display size unchanged")
             return
-        sizes = randr.get_screen_sizes()
+        sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
         log("RandR available, current size=%s, sizes available=%s", size, sizes)
         if res in sizes:
