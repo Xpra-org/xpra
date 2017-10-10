@@ -63,6 +63,11 @@ TRANSLATED_TARGETS = {
     "application/x-moz-nativehtml" : "UTF8_STRING"
     }
 
+sizeof_long = struct.calcsize('@L')
+assert sizeof_long in (4, 8), "struct.calcsize('@L')=%s" % sizeof_long
+sizeof_short = struct.calcsize('=H')
+assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
+
 
 MAX_NESTING = 20
 
@@ -337,14 +342,10 @@ class ClipboardProtocolHelperBase(object):
                 return None, None
             #important note: on 64 bits, format=32 means 8 bytes, not 4
             #that's just the way it is...
-            sizeof_long = struct.calcsize('@L')
-            assert sizeof_long in (4, 8), "struct.calcsize('@L')=%s" % sizeof_long
             binfmt = "@" + "L" * (len(data) // sizeof_long)
             ints = struct.unpack(binfmt, data)
             return b"integers", ints
         elif dformat == 16:
-            sizeof_short = struct.calcsize('=H')
-            assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
             binfmt = "=" + "H" * (len(data) // sizeof_short)
             ints = struct.unpack(binfmt, data)
             return b"integers", ints
