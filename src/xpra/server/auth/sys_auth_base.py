@@ -4,12 +4,14 @@
 # later version. See the file COPYING for details.
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import xor
+from xpra.util import xor, envint
 from collections import deque
 from xpra.net.crypto import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr
 from xpra.log import Logger
 log = Logger("auth")
+
+USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
 
 
 socket_dir = None
@@ -21,7 +23,7 @@ def init(opts):
 
 
 class SysAuthenticator(object):
-    USED_SALT = deque(maxlen=1024*1024)
+    USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
 
     def __init__(self, username, **kwargs):
         self.username = username
