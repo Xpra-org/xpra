@@ -63,7 +63,8 @@ class StartNewCommand(object):
         vbox.add(al)
 
         # Actual command:
-        self.entry = gtk.Entry(max=100)
+        self.entry = gtk.Entry()
+        self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
         vbox.add(self.entry)
