@@ -49,8 +49,6 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #zesty:         ,libturbojpeg
 #sid:         ,libturbojpeg0
 #stretch:         ,libturbojpeg0
-# ffmpeg based codecs:
-        ,ffmpeg-xpra
 # packet encoder:
         ,python-rencode
 # depend on lz4 for those that have it, lzo otherwise:
@@ -60,6 +58,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #yakkety:        ,python-appindicator
 #zesty:        ,python-appindicator
 Recommends:
+# ffmpeg based codecs:
+        ,ffmpeg-xpra
 # x264:
 #jessie:        ,libx264-142
 #stretch:        ,libx264-148
