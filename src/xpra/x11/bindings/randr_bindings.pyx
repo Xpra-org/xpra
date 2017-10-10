@@ -205,8 +205,10 @@ cdef class _RandRBindings(_X11CoreBindings):
             xrrs = XRRConfigSizes(config, &num_sizes)
             if xrrs==NULL:
                 raise Exception("failed to get screen sizes")
+            if num_sizes==0:
+                raise Exception("no screen sizes found")
             size_id = XRRConfigCurrentConfiguration(config, &original_rotation)
-            if size_id<0:
+            if size_id<0 or size_id>=num_sizes:
                 raise Exception("failed to get current configuration")
 
             width = xrrs[size_id].width;
