@@ -36,6 +36,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #xenial:        ,xvfb
 #yakkety:        ,xserver-xorg-video-dummy
 #zesty:        ,xserver-xorg-video-dummy
+#artful:        ,xserver-xorg-video-dummy
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -47,6 +48,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #xenial:         ,libturbojpeg
 #yakkety:         ,libturbojpeg
 #zesty:         ,libturbojpeg
+#artful:        ,libturbojpeg
 #sid:         ,libturbojpeg0
 #stretch:         ,libturbojpeg0
 # packet encoder:
@@ -66,6 +68,7 @@ Recommends:
 #xenial:        ,libx264-148
 #yakkety:        ,libx264-148
 #zesty:        ,libx264-148
+#artful:        ,libx264-148
 # for notifications forwarding and dbus server / proxying:
         ,python-dbus
 # for the proxy server:
