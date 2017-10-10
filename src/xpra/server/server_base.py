@@ -2064,8 +2064,11 @@ class ServerBase(ServerCore):
 
 
     def _process_start_command(self, proto, packet):
-        assert self.start_new_commands
         log("start new command: %s", packet)
+        if not self.start_new_commands:
+            log.warn("Warning: received start-command request,")
+            log.warn(" but the feature is currently disabled")
+            return
         name, command, ignore = packet[1:4]
         proc = self.start_child(name, command, ignore)
         if len(packet)>=5:
