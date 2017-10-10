@@ -1227,9 +1227,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         geomlog("resize(%s, %s, %s) current size=%s, fullscreen=%s", w, h, resize_counter, (ww, wh), self._fullscreen)
         self._resize_counter = resize_counter
         if (w, h)==(ww, wh):
+            self._backing.offsets = 0, 0, 0, 0
+            self.queue_draw(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
             gtk.Window.resize(self, w, h)
+            self._backing.offsets = 0, 0, 0, 0
         else:
             #align in the middle:
             ox = (ww-w)//2
@@ -1240,8 +1243,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._backing.offsets = ox, oy, ox, oy
             #adjust pointer coordinates:
             self.window_offset = ox, oy
-            self.queue_draw(0, 0, ww, wh)
         self._set_backing_size(w, h)
+        self.queue_draw(0, 0, ww, wh)
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
