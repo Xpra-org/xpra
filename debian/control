@@ -36,6 +36,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #stretch:        ,xserver-xorg-video-dummy
 #precise:        ,xvfb
 #trusty:        ,xvfb
+#artful:        ,xserver-xorg-video-dummy
 #xenial:        ,xvfb
 #yakkety:        ,xserver-xorg-video-dummy
 # for opengl support:
@@ -47,6 +48,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-pil
 # scrolling detection:
         ,python-xxhash
+#artful:        ,libturbojpeg
 # ffmpeg based codecs:
         ,ffmpeg-xpra
 # packet encoder:
@@ -66,6 +68,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #stretch:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #trusty:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #xenial:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
+#artful:        ,libx264-148
 #yakkety:        ,gstreamer1.0-pulseaudio,gstreamer1.0-alsa
 #trusty:        ,python-appindicator
 #xenial:        ,python-appindicator
