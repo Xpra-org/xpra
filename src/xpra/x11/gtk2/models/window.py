@@ -488,7 +488,9 @@ class WindowModel(BaseWindowModel):
             with xsync:
                 self.resize_corral_window(event.x, event.y, event.width, event.height, event.border_width)
         except XError as e:
-            geomlog.warn("failed to resize corral window: %s", e)
+            geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
+            geomlog.warn("Warning: failed to resize corral window %#x", self.corral_window.xid)
+            geomlog.warn(" %s", e)
 
     def resize_corral_window(self, x, y, w, h, border):
         #the client window may have been resized or moved (generally programmatically)
