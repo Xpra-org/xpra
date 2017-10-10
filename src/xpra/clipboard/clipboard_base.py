@@ -406,7 +406,7 @@ class ClipboardProtocolHelperBase(object):
         def got_contents(dtype, dformat, data):
             log("got_contents(%s, %s, %s:%s) data=0x%s..",
                   dtype, dformat, type(data), len(data or ""), hexstr((data or "")[:200]))
-            if dtype is None or data is None:
+            if dtype is None or data is None or (dformat==0 and data==b""):
                 no_contents()
                 return
             munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
