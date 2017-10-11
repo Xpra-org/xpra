@@ -27,7 +27,7 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEFAULT_METADATA_SUPPORTED
-from xpra.os_util import bytestostr, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, strtobytes, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -236,7 +236,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     from md5 import md5
                 m = md5()
                 for x in extra_args:
-                    m.update(str(x))
+                    m.update(strtobytes(x))
                 color_str = "#%s" % m.hexdigest()[:6]
                 log("border color derived from %s: %s", extra_args, color_str)
             except:
