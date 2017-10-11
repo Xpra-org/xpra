@@ -1041,7 +1041,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         else:
             #use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
-            ww, wh = self.get_window().get_size()
+            ww, wh = self.get_size()
             self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
 
     def initiate_moveresize_X11(self, x_root, y_root, direction, button, source_indication):
@@ -1070,6 +1070,41 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             log("%s.apply_transient_for(%s) window=%s", self, wid, window)
             if window:
                 self.set_transient_for(window)
+
+    def cairo_paint_border(self, context, clip_area=None):
+        log.info("cairo_paint_border(%s, %s)", context, clip_area)
+        b = self.border
+        if b is None or not b.shown:
+            return
+        s = b.size
+        ww, wh = self.get_size()
+        borders = []
+        #window is wide enough, add borders on the side:
+        borders.append((0, 0, s, wh))           #left
+        borders.append((ww-s, 0, s, wh))        #right
+        #window is tall enough, add borders on top and bottom:
+        borders.append((0, 0, ww, s))           #top
+        borders.append((0, wh-s, ww, s))        #bottom
+        for x, y, w, h in borders:
+            if w<=0 or h<=0:
+                continue
+            r = gdk.Rectangle()
+            r.x = x
+            r.y = y
+            r.width = w
+            r.height = h
+            rect = r
+            if clip_area:
+                rect = clip_area.intersect(r)
+            if rect.width==0 or rect.height==0:
+                continue
+            context.save()
+            context.rectangle(x, y, w, h)
+            context.clip()
+            context.set_source_rgba(self.border.red, self.border.green, self.border.blue, self.border.alpha)
+            context.fill()
+            context.paint()
+            context.restore()
 
 
     def paint_spinner(self, context, area):

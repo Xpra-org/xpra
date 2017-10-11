@@ -176,6 +176,7 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
         paintlog("do_draw(%s)", context)
         if self.get_mapped() and self._backing:
             self._backing.cairo_draw(context)
+        self.cairo_paint_border(context, None)
 
 
 GObject.type_register(ClientWindow)

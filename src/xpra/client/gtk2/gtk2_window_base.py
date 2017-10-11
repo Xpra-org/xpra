@@ -434,5 +434,6 @@ class GTK2WindowBase(GTKClientWindowBase):
         context.rectangle(event.area)
         context.clip()
         backing.cairo_draw(context)
+        self.cairo_paint_border(context, event.area)
         if not self._client.server_ok():
             self.paint_spinner(context, event.area)
