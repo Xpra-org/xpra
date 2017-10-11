@@ -155,6 +155,9 @@
 					//ignore
 				}
 
+				var progress_timer = null;
+				var progress_value = 0;
+				var progress_offset = 0;
 				// show connection progress:
 				function connection_progress(state, details, progress) {
 					console.log("connection_progress(", state, ", ", details, ", ", progress, ")");
@@ -164,9 +167,27 @@
 					else {
 						$('#progress').show();
 					}
-					$('#progress-bar').val(progress);
 					$('#progress-label').text(state || " ");
 					$('#progress-details').text(details || " ");
+					$('#progress-bar').val(progress);
+					progress_value = progress;
+					if (progress_timer) {
+						window.clearTimeout(progress_timer);
+						progress_timer = null;
+					}
+					if (progress<100) {
+						progress_move_offset();
+					}
+				}
+				// the offset is just to make the user feel better
+				// nothing changes, but we just show a slow progress
+				function progress_move_offset() {
+					progress_timer = null;
+					progress_offset++;
+					$('#progress-bar').val(progress_value + progress_offset);
+					if (progress_offset<9) {
+						progress_timer = window.setTimeout(progress_move_offset, (5+progress_offset)*progress_offset); 
+					}
 				}
 
 				// create the client
