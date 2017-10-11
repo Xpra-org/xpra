@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("gtk", "client")
 grablog = Logger("gtk", "client", "grab")
 
-from xpra.client.gtk2.border_client_window import BorderClientWindow
+from xpra.client.gtk2.client_window import ClientWindow
 
 
 class XpraClient(GTKXpraClient):
@@ -29,7 +29,7 @@ class XpraClient(GTKXpraClient):
 
     def init(self, opts):
         GTKXpraClient.init(self, opts)
-        self.ClientWindowClass = BorderClientWindow
+        self.ClientWindowClass = ClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add)

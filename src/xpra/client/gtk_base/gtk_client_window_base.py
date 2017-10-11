@@ -1072,7 +1072,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.set_transient_for(window)
 
     def cairo_paint_border(self, context, clip_area=None):
-        log.info("cairo_paint_border(%s, %s)", context, clip_area)
+        log("cairo_paint_border(%s, %s)", context, clip_area)
         b = self.border
         if b is None or not b.shown:
             return
