@@ -29,6 +29,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-chdir\fP=\fIDIR\fP]
 [\fB\-\-pidfile\fP=\fIFILENAME\fP]
 [\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP]
 [\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-use\-display\fP]
@@ -924,6 +925,11 @@ The default value is 1024 which is the standard value for privileged ports.
 .TP
 \fB\-\-mdns\fP=\fIyes\fP|\fIno\fP
 Enable or disable the publication of new sessions via mDNS.
+.TP
+\fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP
+Start the session within a dbus-launch context, you can specify
+the dbus launch command to use, or turn it off completely.
+Some features may not be available without a dbus context.
 .TP
 \fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP
 Allows the client to forward dbus calls to the server.
