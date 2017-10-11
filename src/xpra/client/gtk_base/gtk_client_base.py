@@ -147,6 +147,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def show_start_new_command(self, *args):
+        if not self.start_new_commands:
+            log.warn("Warning: cannot start new commands")
+            log.warn(" the feature is currently disabled on the server")
+            return
         log("show_start_new_command%s current start_new_command=%s, flag=%s", args, self.start_new_command, self.start_new_commands)
         if self.start_new_command is None:
             from xpra.client.gtk_base.start_new_command import getStartNewCommand
