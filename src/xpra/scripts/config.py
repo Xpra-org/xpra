@@ -1048,7 +1048,7 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
             continue
         vt = option_types.get(k)
         if vt is None:
-            warn("Warning: invalid optio2n: '%s'" % k)
+            warn("Warning: invalid option: '%s'" % k)
             continue
         if vt==str:
             if type(v)!=str:
