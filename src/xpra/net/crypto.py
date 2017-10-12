@@ -109,6 +109,38 @@ def validate_backend(try_backend):
     log("validate_backend(%s) passed", try_backend)
 
 
+def get_digests():
+    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+    return digests
+
+def get_digest_module(digest):
+    log("get_digest_module(%s)", digest)
+    if not digest or not digest.startswith("hmac"):
+        return None
+    try:
+        digest_module = digest.split("+")[1]        #ie: "hmac+sha512" -> "sha512"
+    except:
+        digest_module = "md5"
+    try:
+        return getattr(hashlib, digest_module)
+    except AttributeError:
+        return None
+
+def choose_digest(options):
+    assert len(options)>0, "no digest options"
+    log("choose_digest(%s)", options)
+    #prefer stronger hashes:
+    for h in ("sha512", "sha384", "sha256", "sha224", "sha1", "md5"):
+        hname = "hmac+%s" % h
+        if hname in options:
+            return hname
+    #legacy name for "hmac+md5":
+    if "hmac" in options:
+        return "hmac"
+    if "xor" in options:
+        return "xor"
+    raise Exception("no known digest options found in '%s'" % csv(options))
+
 def gendigest(digest, password, salt):
     assert digest and password and salt
     salt = memoryview_to_bytes(salt)
