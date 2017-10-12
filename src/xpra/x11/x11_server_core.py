@@ -536,7 +536,7 @@ class X11ServerCore(GTKServerBase):
         return w, h
 
     def set_screen_size(self, desired_w, desired_h, bigger=True):
-        screenlog("set_screen_size%s", (desired_w, desired_h))
+        screenlog("set_screen_size%s", (desired_w, desired_h, bigger))
         root_w, root_h = self.root_window.get_size()
         if not self.randr:
             return root_w,root_h

@@ -355,7 +355,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         try:
             with xsync:
                 ow, oh = RandR.get_screen_size()
-            w, h = self.set_screen_size(rw, rh)
+            w, h = self.set_screen_size(rw, rh, False)
             if (ow, oh) == (w, h):
                 #this is already the resolution we have,
                 #but the client has other ideas,
