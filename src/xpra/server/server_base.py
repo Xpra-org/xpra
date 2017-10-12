@@ -590,7 +590,7 @@ class ServerBase(ServerCore):
                 assert self.sound_properties, "query did not return any data"
                 def vinfo(k):
                     val = self.sound_properties.listget(k)
-                    assert val, "%s not found in sound properties" % k
+                    assert val, "%s not found in sound properties" % bytestostr(k)
                     return ".".join(bytestostr(x) for x in val[:3])
                 bits = self.sound_properties.intget(b"python.bits", 32)
                 log.info("GStreamer version %s for Python %s %i-bit", vinfo(b"gst.version"), vinfo(b"python.version"), bits)
@@ -1534,9 +1534,9 @@ class ServerBase(ServerCore):
         level, msg = packet[1:3]
         prefix = "client %i: " % ss.counter
         if isinstance(msg, (tuple, list)):
-            msg = " ".join(str(x) for x in msg)
-        for x in msg.splitlines():
-            clientlog.log(level, prefix+bytestostr(x))
+            msg = " ".join(bytestostr(x) for x in msg)
+        for x in bytestostr(msg).splitlines():
+            clientlog.log(level, prefix+x)
 
     def _process_printers(self, proto, packet):
         if not self.file_transfer.printing or WIN32:
