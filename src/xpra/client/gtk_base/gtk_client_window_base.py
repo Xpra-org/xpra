@@ -467,6 +467,13 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
+        if state_updates.get("maximized") is False or state_updates.get("fullscreen") is False:
+            #if we unfullscreen or unmaximize, re-calculate offsets if we have any:
+            if self.window_offset!=(0, 0):
+                w, h = self._backing.size
+                self.center_backing(w, h)
+                ww, wh = self.get_size()
+                self.queue_draw(0, 0, ww, wh)
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
         actual_updates = {}
@@ -1278,18 +1285,23 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self._fullscreen and not self._maximized:
             gtk.Window.resize(self, w, h)
             self._backing.offsets = 0, 0, 0, 0
+            self.window_offset = 0, 0
         else:
-            #align in the middle:
-            ox = (ww-w)//2
-            oy = (wh-h)//2
-            geomlog("using window offset values %i,%i", ox, oy)
-            #some backings use top,left values,
-            #(opengl uses left and botton since the viewport starts at the bottom)
-            self._backing.offsets = ox, oy, ox, oy
-            #adjust pointer coordinates:
-            self.window_offset = ox, oy
+            self.center_backing(w, h)
         self._set_backing_size(w, h)
         self.queue_draw(0, 0, ww, wh)
+
+    def center_backing(self, w, h):
+        ww, wh = self.get_size()
+        #align in the middle:
+        ox = (ww-w)//2
+        oy = (wh-h)//2
+        geomlog("using window offset values %i,%i", ox, oy)
+        #some backings use top,left values,
+        #(opengl uses left and botton since the viewport starts at the bottom)
+        self._backing.offsets = ox, oy, ox, oy
+        #adjust pointer coordinates:
+        self.window_offset = ox, oy
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))
