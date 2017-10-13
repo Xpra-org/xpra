@@ -1299,7 +1299,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         geomlog("using window offset values %i,%i", ox, oy)
         #some backings use top,left values,
         #(opengl uses left and botton since the viewport starts at the bottom)
-        self._backing.offsets = ox, oy, ox, oy
+        self._backing.offsets = ox, oy, ox+((ww-w)&0x1), oy+((wh-h)&0x1)
         #adjust pointer coordinates:
         self.window_offset = ox, oy
 
