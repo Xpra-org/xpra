@@ -1330,7 +1330,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 ):
                 if rw>0 and rh>0:
                     context.rectangle(rx, ry, rw, rh)
-                    context.fill()
+            context.fill()
             context.restore()
 
     def clip_to_backing(self, backing, context):
