@@ -433,6 +433,8 @@ class GTK2WindowBase(GTKClientWindowBase):
         context = self.window.cairo_create()
         context.rectangle(event.area)
         context.clip()
+        self.paint_backing_offset_border(backing, context)
+        self.clip_to_backing(backing, context)
         backing.cairo_draw(context)
         self.cairo_paint_border(context, event.area)
         if not self._client.server_ok():

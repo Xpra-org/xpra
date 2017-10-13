@@ -86,6 +86,19 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", True)
+PADDING_COLORS = 0, 0, 0
+PADDING_COLORS_STR = os.environ.get("XPRA_PADDING_COLORS")
+if PADDING_COLORS_STR:
+    try:
+        PADDING_COLORS = tuple(float(x.strip()) for x in PADDING_COLORS_STR.split(","))
+        assert len(PADDING_COLORS)==3, "you must specify 3 components"
+    except Exception as e:
+        log.error("Warning: invalid padding colors specified,")
+        log.error(" %s", e)
+        log.error(" using black")
+        PADDING_COLORS = 0, 0, 0
+del PADDING_COLORS_STR
+
 
 #window types we map to POPUP rather than TOPLEVEL
 POPUP_TYPE_HINTS = set((
@@ -1302,6 +1315,29 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._backing.offsets = ox, oy, ox+((ww-w)&0x1), oy+((wh-h)&0x1)
         #adjust pointer coordinates:
         self.window_offset = ox, oy
+
+    def paint_backing_offset_border(self, backing, context):
+        w,h = self.get_size()
+        left, top, right, bottom = backing.offsets
+        if left!=0 or top!=0 or right!=0 or bottom!=0:
+            context.save()
+            context.set_source_rgb(0, 0, 1)
+            for rx, ry, rw, rh in (
+                (0, 0, left, h),            #left hand side padding
+                (0, 0, w, top),             #top padding
+                (w-right, 0, right, h),     #RHS
+                (0, h-bottom, w, bottom),   #bottom
+                ):
+                if rw>0 and rh>0:
+                    context.rectangle(rx, ry, rw, rh)
+                    context.fill()
+            context.restore()
+
+    def clip_to_backing(self, backing, context):
+        w,h = self.get_size()
+        left, top, right, bottom = backing.offsets
+        context.rectangle(left, top, w-left-right, h-top-bottom)
+        context.clip()
 
     def move_resize(self, x, y, w, h, resize_counter=0):
         geomlog("window %i move_resize%s", self._id, (x, y, w, h, resize_counter))

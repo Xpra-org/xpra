@@ -174,7 +174,10 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
 
     def do_draw(self, context):
         paintlog("do_draw(%s)", context)
-        if self.get_mapped() and self._backing:
+        backing = self._backing
+        if self.get_mapped() and backing:
+            self.paint_backing_offset_border(backing, context)
+            self.clip_to_backing(backing, context)
             self._backing.cairo_draw(context)
         self.cairo_paint_border(context, None)
 
