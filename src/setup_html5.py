@@ -116,9 +116,25 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                     br_dst = "%s.br" % dst
                     if os.path.exists(br_dst):
                         os.unlink(br_dst)
-                    cmd = ["brotli", "-k", dst]
-                    get_status_output(cmd)
-                    if os.path.exists(br_dst):
+                    #find brotli on $PATH
+                    paths = os.environ.get("PATH", "").split(os.pathsep)
+                    if os.name=="posix":
+                        #not always present,
+                        #but brotli is often installed there (install from source):
+                        paths.append("/usr/local/bin")
+                    for x in paths:
+                        br = os.path.join(x, "brotli")
+                        cmd = [br, "-k", dst]
+                        if os.path.exists(br):
+                            break
+                    code, out, err = get_status_output(cmd)
+                    if code!=0:
+                        print("brotli error code=%i on %s" % (code, cmd))
+                        if out:
+                            print("stdout=%s" % out)
+                        if err:
+                            print("stderr=%s" % err)
+                    elif os.path.exists(br_dst):
                         os.chmod(br_dst, 0o644)
                     else:
                         print("Warning: brotli did not create '%s'" % br_dst)
