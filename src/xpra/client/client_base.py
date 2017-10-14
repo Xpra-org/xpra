@@ -8,7 +8,6 @@ import signal
 import os
 import sys
 import socket
-import binascii
 import string
 from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
@@ -618,20 +617,20 @@ class XpraClientBase(FileTransferHandler):
                 return
         #all server versions support a client salt,
         #they also tell us which digest to use:
-        digest = packet[3]
+        digest = bytestostr(packet[3])
         client_salt = get_salt(len(server_salt))
         salt_digest = "xor"
         if len(packet)>=5:
-            salt_digest = packet[4]
+            salt_digest = bytestostr(packet[4])
         salt = gendigest(salt_digest, client_salt, server_salt)
-        authlog("combined %s salt(%s, %s)=%s", salt_digest, binascii.hexlify(server_salt), binascii.hexlify(client_salt), binascii.hexlify(salt))
+        authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
 
         challenge_response = gendigest(digest, password, salt)
         if not challenge_response:
             log("invalid digest module '%s': %s", digest)
             self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % digest, "invalid digest")
             return
-        authlog("%s(%s, %s)=%s", digest, repr(password), binascii.hexlify(salt), binascii.hexlify(challenge_response))
+        authlog("%s(%s, %s)=%s", digest, repr(password), hexstr(salt), hexstr(challenge_response))
         self.password_sent = True
         self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)
