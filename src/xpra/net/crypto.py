@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import hashlib
 from xpra.util import envint, envbool
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.log import Logger
