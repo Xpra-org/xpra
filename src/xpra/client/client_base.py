@@ -567,9 +567,9 @@ class XpraClientBase(FileTransferHandler):
         self.disconnect_and_quit(code, server_message)
 
     def validate_challenge_packet(self, packet):
-        digest = packet[3]
+        digest = bytestostr(packet[3])
         #don't send XORed password unencrypted:
-        if digest==b"xor":
+        if digest=="xor":
             encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
             local = self.display_desc.get("local", False)
             authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
@@ -580,7 +580,7 @@ class XpraClientBase(FileTransferHandler):
                 return False
         salt_digest = "xor"
         if len(packet)>=5:
-            salt_digest = packet[4]
+            salt_digest = bytestostr(packet[4])
         if salt_digest in ("xor", "des"):
             if not LEGACY_SALT_DIGEST:
                 self.auth_error(EXIT_INCOMPATIBLE_VERSION, "server uses legacy salt digest '%s'" % salt_digest)
