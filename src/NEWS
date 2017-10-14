@@ -1,6 +1,6 @@
-v1.0.9 (2017-10-09)
+v1.0.9 (2017-10-14)
 ======================
-	-- fix authentication weakness in client salt handling
+	-- fix authentication weaknesses in client salt handling
 	-- fix window icons going back to default on window re-initialization
 	-- fix stop command on MS Windows servers via named-pipe connections
 	-- fix sound subprocess exit warnings on MS Windows
@@ -11,9 +11,15 @@ v1.0.9 (2017-10-09)
 	-- fix Mac OS shadow servers
 	-- fix application name shown in notifications (X11)
 	-- fix webcam library issues causing client to fail to start
+	-- fix handling of client connection failures
+	-- fix paint issues with padded windows (ie: desktop servers maximized)
+	-- fix out-of-bounds array access in RandR cython glue
+	-- fix RPM building python3 modules twice (and with wrong arguments)
+	-- don't show start command dialog if the server does not support it
 	-- validate window dimensions early to prevent DoS
 	-- support newer versions of brotli
-	-- support CUDA 9
+	-- support CUDA 9, prefer newer SDK versions
+	-- support Ubuntu Artful
 	-- choose the strongest digest first
 	-- add mesa-dri-drivers dependency to RPM packages for OpenGL support
 	-- add support for Volta GPUs with NVENC

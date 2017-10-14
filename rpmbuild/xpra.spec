@@ -609,8 +609,8 @@ fi
 
 
 %changelog
-* Mon Oct 09 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
-- fix authentication weakness in client salt handling
+* Sat Oct 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+- fix authentication weaknesses in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
 - fix sound subprocess exit warnings on MS Windows
@@ -621,13 +621,18 @@ fi
 - fix Mac OS shadow servers
 - fix application name shown in notifications (X11)
 - fix webcam library issues causing client to fail to start
+- fix handling of client connection failures
+- fix paint issues with padded windows (ie: desktop servers maximized)
+- fix out-of-bounds array access in RandR cython glue
+- fix RPM building python3 modules twice (and with wrong arguments)
+- don't show start command dialog if the server does not support it
 - validate window dimensions early to prevent DoS
 - support newer versions of brotli
-- support CUDA 9
+- support CUDA 9, prefer newer SDK versions
+- support Ubuntu Artful
 - choose the strongest digest first
 - add mesa-dri-drivers dependency to RPM packages for OpenGL support
 - add support for Volta GPUs with NVENC
-- make it easier to disable firewall scripts in RPM builds
 
 * Sun Sep 03 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.8-1
 - fix Fedora 26 builds: must disable buggy systemd-run
