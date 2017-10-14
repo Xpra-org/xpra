@@ -17,7 +17,7 @@ the conversions for plain python types is found in prop_conv.py
 import struct
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, unsupported, PROP_TYPES
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, try_import_GdkX11
 gtk = import_gtk()
 gdk = import_gdk()
 from xpra.gtk_common.gtk_util import get_xwindow
@@ -25,19 +25,26 @@ from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.log import Logger
 log = Logger("x11", "window")
 
-try:
+
+if is_gtk3():
+    gdkx11 = try_import_GdkX11()
+    def get_pywindow(disp_source, xid):
+        try:
+            disp = disp_source.get_display()
+        except:
+            disp = gdk.Display.get_default()
+        return gdkx11.foreign_new_for_display(disp, xid)
+    def get_xvisual(disp_source, xid):
+        try:
+            disp = disp_source.get_display()
+        except:
+            disp = gdk.Display.get_default()
+        return disp.get_default_screen().lookup_visual(xid)
+else:
     from xpra.x11.gtk2.gdk_bindings import (
                     get_pywindow,               #@UnresolvedImport
                     get_xvisual,                #@UnresolvedImport
                    )
-except ImportError as e:
-    #we should only ever be missing the gdk_bindings with GTK3 builds:
-    log("cannot import gdk bindings", exc_info=True)
-    if not is_gtk3():
-        raise
-    def missing_fn(*args):
-        raise NotImplementedError()
-    get_pywindow, get_xvisual = missing_fn, missing_fn
 
 from xpra.x11.bindings.window_bindings import (
                 X11WindowBindings,          #@UnresolvedImport
