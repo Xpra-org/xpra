@@ -5,13 +5,13 @@
 # later version. See the file COPYING for details.
 
 import threading
-import binascii
 
 from xpra.log import Logger
 log = Logger("proxy")
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool
+from xpra.os_util import hexstr
 
 SHOW_DATA = envbool("XPRA_PROXY_SHOW_DATA")
 PROXY_BUFFER_SIZE = envint("XPRA_PROXY_BUFFER_SIZE", 65536)
@@ -73,7 +73,7 @@ class XpraProxy(object):
                     return
                 if SHOW_DATA:
                     log("%s: %s bytes: %s", log_name, len(buf), repr_ellipsized(buf))
-                    log("%s:           %s", log_name, repr_ellipsized(binascii.hexlify(buf)))
+                    log("%s:           %s", log_name, repr_ellipsized(hexstr(buf)))
                 while buf and not self._closed:
                     log("%s: writing %s bytes", log_name, len(buf))
                     written = untilConcludes(self.is_active, noretry, to_conn.write, buf)

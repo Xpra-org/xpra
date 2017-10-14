@@ -7,7 +7,6 @@
 import os
 import hmac
 import hashlib
-import binascii
 
 from xpra.util import envint, envbool, csv, xor
 from xpra.log import Logger
@@ -75,7 +74,7 @@ def validate_backend(try_backend):
     iterations = DEFAULT_ITERATIONS
     block_size = DEFAULT_BLOCKSIZE
     key = try_backend.get_key(password, key_salt, block_size, iterations)
-    log("validate_backend(%s) key=%s", try_backend, binascii.hexlify(key))
+    log("validate_backend(%s) key=%s", try_backend, hexstr(key))
     assert key is not None, "backend %s failed to generate a key" % try_backend
     enc = try_backend.get_encryptor(key, DEFAULT_IV)
     log("validate_backend(%s) encryptor=%s", try_backend, enc)
@@ -141,7 +140,7 @@ def gendigest(digest, password, salt):
         password = password.ljust(8, "\x00")[:8]
         salt = salt.ljust(16, "\x00")[:16]
         v = generate_response(password, salt)
-        return binascii.hexlify(v)
+        return hexstr(v)
     elif digest=="xor":
         salt = salt.ljust(16, "\x00")[:len(password)]
         return memoryview_to_bytes(xor(password, salt))

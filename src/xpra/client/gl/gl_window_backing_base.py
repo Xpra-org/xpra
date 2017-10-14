@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import monotonic_time, strtobytes, hexstr
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -751,10 +751,9 @@ class GLWindowBackingBase(WindowBackingBase):
         height = cursor_data[4]
         pixels = cursor_data[8]
         if len(pixels)<width*4*height:
-            import binascii
             log.error("Error: invalid cursor pixel buffer for %ix%i", width, height)
             log.error(" expected %i bytes but got %i", width*height*4, len(pixels))
-            log.error(" %s", repr_ellipsized(binascii.hexlify(pixels)))
+            log.error(" %s", repr_ellipsized(hexstr(pixels)))
             return
         upload, pixel_data = self.pixels_for_upload(pixels)
         rgb_format = "BGRA"

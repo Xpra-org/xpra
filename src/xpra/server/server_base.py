@@ -2357,8 +2357,7 @@ class ServerBase(ServerCore):
                 return
             count = state.get("buffers", 0)
             httplog("new_buffer [%i] for %s sound stream: %i bytes", count, state.get("codec", "?"), len(data))
-            #import binascii
-            #httplog("buffer %i: %s", count, binascii.hexlify(data))
+            #httplog("buffer %i: %s", count, hexstr(data))
             state["buffers"] = count+1
             try:
                 for x in packet_metadata:

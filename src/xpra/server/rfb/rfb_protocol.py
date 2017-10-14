@@ -5,13 +5,11 @@
 
 import struct
 from socket import error as socket_error
-import binascii
-
 
 from xpra.log import Logger
 log = Logger("network", "protocol", "rfb")
 
-from xpra.os_util import Queue
+from xpra.os_util import Queue, hexstr
 from xpra.util import repr_ellipsized, envint, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
@@ -91,11 +89,11 @@ class RFBProtocol(object):
         return 12
 
     def _parse_security_handshake(self, packet):
-        log("parse_security_handshake(%s)", binascii.hexlify(packet))
+        log("parse_security_handshake(%s)", hexstr(packet))
         try:
             auth = struct.unpack("B", packet)[0]
         except:
-            self._internal_error(packet, "cannot parse security handshake response '%s'" % binascii.hexlify(packet))
+            self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
             return 0
         auth_str = RFBAuth.AUTH_STR.get(auth, auth)
         if auth==RFBAuth.VNC:
@@ -105,7 +103,7 @@ class RFBProtocol(object):
             challenge, digest = self._authenticator.get_challenge("des")
             assert digest=="des"
             self._challenge = challenge[:16]
-            log("sending RFB challenge value: %s", binascii.hexlify(self._challenge))
+            log("sending RFB challenge value: %s", hexstr(self._challenge))
             self.send(self._challenge)
             return 1
         if self._authenticator and self._authenticator.requires_challenge():
@@ -119,10 +117,10 @@ class RFBProtocol(object):
 
     def _parse_challenge(self, response):
         assert self._authenticator
-        log("parse_challenge(%s)", binascii.hexlify(response))
+        log("parse_challenge(%s)", hexstr(response))
         try:
             assert len(response)==16
-            hex_response = binascii.hexlify(response)
+            hex_response = hexstr(response)
             #log("padded password=%s", password)
             if self._authenticator.authenticate(hex_response):
                 log("challenge authentication succeeded")
@@ -132,7 +130,7 @@ class RFBProtocol(object):
             log.warn("Warning: authentication challenge response failure")
             log.warn(" password does not match")
         except Exception as e:
-            log("parse_challenge(%s)", binascii.hexlify(response), exc_info=True)
+            log("parse_challenge(%s)", hexstr(response), exc_info=True)
             log.error("Error: authentication challenge failure:")
             log.error(" %s", e)
         def fail_challenge():
@@ -221,7 +219,7 @@ class RFBProtocol(object):
 
 
     def send(self, packet):
-        log("send(%i bytes: %s..)", len(packet), binascii.hexlify(packet[:16]))
+        log("send(%i bytes: %s..)", len(packet), hexstr(packet[:16]))
         if self._closed:
             log("connection is closed already, not sending packet")
             return
@@ -329,7 +327,7 @@ class RFBProtocol(object):
 
     def invalid_header(self, _proto, data, msg="invalid packet header"):
         self._packet_parser = self._parse_invalid
-        err = "%s: '%s'" % (msg, binascii.hexlify(data[:8]))
+        err = "%s: '%s'" % (msg, hexstr(data[:8]))
         if len(data)>1:
             err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.invalid(err, data)

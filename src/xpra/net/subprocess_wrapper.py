@@ -7,7 +7,6 @@ import os
 import sys
 import signal
 import subprocess
-import binascii
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.util import repr_ellipsized, envint, envbool
@@ -15,7 +14,7 @@ from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException
 from xpra.net.protocol import Protocol
-from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, WIN32, POSIX
+from xpra.os_util import Queue, setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32, POSIX
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
 log = Logger("util")
@@ -221,7 +220,7 @@ class subprocess_callee(object):
 
     def send(self, *args):
         if HEXLIFY_PACKETS:
-            args = args[:1]+[binascii.hexlify(str(x)[:32]) for x in args[1:]]
+            args = args[:1]+[hexstr(str(x)[:32]) for x in args[1:]]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
         self.send_queue.put(args)
         p = self.protocol

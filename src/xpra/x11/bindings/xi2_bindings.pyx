@@ -9,13 +9,13 @@ from __future__ import absolute_import
 import os
 import time
 import struct
-import binascii
 import collections
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "xinput")
 
 from xpra.x11.common import X11Event
+from xpra.os_util import hexstr
 
 from libc.stdint cimport uintptr_t
 
@@ -666,7 +666,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         data = (<char *> prop)[:nbytes]
         XFree(prop)
         prop_type = self.XGetAtomName(xactual_type)
-        log("hex=%s (type=%s, nitems=%i, bytes per item=%i, actual format=%i)", binascii.hexlify(data), prop_type, nitems, bytes_per_item, actual_format)
+        log("hex=%s (type=%s, nitems=%i, bytes per item=%i, actual format=%i)", hexstr(data), prop_type, nitems, bytes_per_item, actual_format)
         fmt = None
         if prop_type=="INTEGER":
             fmt = {

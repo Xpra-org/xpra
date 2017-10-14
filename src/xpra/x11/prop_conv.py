@@ -10,14 +10,13 @@ Functions for converting to and from X11 properties.
     prop_decode
 """
 
-import binascii
 import struct
 import cairo
 
 from xpra.log import Logger
 log = Logger("x11", "window")
 
-from xpra.os_util import StringIOClass, PYTHON3
+from xpra.os_util import hexstr, StringIOClass, PYTHON3
 from xpra.codecs.argb.argb import premultiply_argb_in_place #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
@@ -88,7 +87,7 @@ class MotifWMHints(object):
         pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
             struct.unpack("=IIIiI", pdata)
-        log("MotifWMHints(%s)=%s", binascii.hexlify(data), self)
+        log("MotifWMHints(%s)=%s", hexstr(data), self)
 
     #found in mwmh.h:
     # "flags":

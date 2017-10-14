@@ -195,7 +195,7 @@ def encode(coding, image, quality, speed, supports_transparency):
 
 def selftest(full=False):
     global ENCODINGS
-    import binascii
+    from xpra.os_util import hexstr
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
     if full:
@@ -210,7 +210,7 @@ def selftest(full=False):
                         v = encode(encoding, img, q, s, alpha)
                         assert v, "encode output was empty!"
                         cdata = v[1].data
-                        log("encode(%s)=%s", (encoding, img, q, s, alpha), binascii.hexlify(cdata))
+                        log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))
         except Exception as e:
             log.warn("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
             log.warn(" %s", e, exc_info=True)

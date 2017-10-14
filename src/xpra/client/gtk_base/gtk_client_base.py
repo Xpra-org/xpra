@@ -26,8 +26,8 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, DEFAULT_METADATA_SUPPORTED
-from xpra.os_util import bytestostr, strtobytes, WIN32, OSX, POSIX, PYTHON3
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, DEFAULT_METADATA_SUPPORTED
+from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -667,10 +667,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
             return None
         if len(pixels)<w*h*4:
-            import binascii
             cursorlog.warn("Warning: not enough pixels provided in cursor data")
             cursorlog.warn(" %s needed and only %s bytes found:", w*h*4, len(pixels))
-            cursorlog.warn(" '%s')", binascii.hexlify(pixels)[:100])
+            cursorlog.warn(" '%s')", repr_ellipsized(hexstr(pixels)))
             return None
         pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
         x = max(0, min(xhot, w-1))

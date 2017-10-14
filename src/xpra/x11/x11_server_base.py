@@ -24,6 +24,7 @@ xinputlog = Logger("xinput")
 gllog = Logger("screen", "opengl")
 
 from xpra.util import envint
+from xpra.os_util import hexstr
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 
 MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
@@ -234,8 +235,7 @@ class X11ServerBase(X11ServerCore):
             screenlog("no icc data found in %s", icc)
             self.reset_icc_profile()
             return
-        import binascii
-        screenlog("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], binascii.hexlify(data or ""), len(data or ""))
+        screenlog("set_icc_profile() icc data for %s: %s (%i bytes)", ui_clients[0], hexstr(data or ""), len(data or ""))
         from xpra.x11.gtk_x11.prop import prop_set
         #each CARD32 contains just one 8-bit value - don't ask me why
         prop_set(self.root_window, "_ICC_PROFILE", ["u32"], [ord(x) for x in data])

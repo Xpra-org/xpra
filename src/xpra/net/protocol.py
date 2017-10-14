@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes
+from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes, hexstr
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -698,7 +698,7 @@ class Protocol(object):
         self.invalid_header(self, data, msg)
 
     def invalid_header(self, _proto, data, msg="invalid packet header"):
-        err = "%s: '%s'" % (msg, binascii.hexlify(data[:8]))
+        err = "%s: '%s'" % (msg, hexstr(data[:8]))
         if len(data)>1:
             err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
@@ -829,7 +829,7 @@ class Protocol(object):
                     if padding_size > 0:
                         def debug_str(s):
                             try:
-                                return binascii.hexlify(bytearray(s))
+                                return hexstr(bytearray(s))
                             except:
                                 return csv(list(str(s)))
                         # pad byte value is number of padding bytes added
@@ -890,7 +890,7 @@ class Protocol(object):
                     log.error(" %s", e)
                     if self._closed:
                         return
-                    log("failed to parse %s packet: %s", etype, binascii.hexlify(data[:128]))
+                    log("failed to parse %s packet: %s", etype, hexstr(data[:128]))
                     log(" %s", e)
                     log(" data: %s", repr_ellipsized(data))
                     log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
