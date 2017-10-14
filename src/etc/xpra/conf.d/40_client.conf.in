@@ -28,9 +28,6 @@ ssh = %(ssh_command)s
 #mousewheel=on
 mousewheel=%(mousewheel)s
 
-# Key Shortcuts:
-%(key_shortcuts)s
-
 # Border:
 #border=auto:off,5
 #border=auto,5

@@ -25,3 +25,14 @@ keyboard-sync = yes
 # Variant:
 # variant = ,dvorak
 # variant = altgr-intl
+
+
+# Default set of modifiers required by the key shortcuts:
+# (can be referred to as '#' in key-shortcuts)
+# shortcut-modifiers = Meta+Shift
+# shortcut-modifiers = Control+Shift
+# shortcut-modifiers = None
+shortcut-modifiers = auto
+
+# Key Shortcuts:
+%(key_shortcuts)s
