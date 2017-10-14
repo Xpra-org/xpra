@@ -618,10 +618,18 @@ class XpraClientBase(FileTransferHandler):
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = bytestostr(packet[3])
-        client_salt = get_salt(len(server_salt))
+        l = len(server_salt)
         salt_digest = "xor"
         if len(packet)>=5:
             salt_digest = bytestostr(packet[4])
+        if salt_digest=="xor":
+            #with xor, we have to match the size
+            assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
+            assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+        else:
+            #other digest, 32 random bytes is enough:
+            l = 32
+        client_salt = get_salt(l)
         salt = gendigest(salt_digest, client_salt, server_salt)
         authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
 
