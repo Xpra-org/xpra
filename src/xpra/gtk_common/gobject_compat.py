@@ -58,8 +58,10 @@ def try_import_GdkX11():
             import gi
             gi.require_version('GdkX11', '3.0')
             from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
+            return GdkX11
         except:
             pass
+    return None
 
 
 def get_xid(window):
