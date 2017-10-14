@@ -605,7 +605,7 @@ class XpraClientBase(FileTransferHandler):
             else:
                 self.auth_error(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
             return
-        server_salt = packet[1]
+        server_salt = bytestostr(packet[1])
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet[2])
