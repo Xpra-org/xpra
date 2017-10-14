@@ -6,7 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import binascii
 import os
 import sys
 import socket
@@ -33,7 +32,7 @@ from xpra.scripts.config import InitException, parse_bool, python_platform, FALS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, SIGNAMES, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, OSX, POSIX, PYTHON3
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choose_digest, \
@@ -691,7 +690,7 @@ class ServerCore(object):
         if peek_data:
             line1 = peek_data.splitlines()[0]
             netlog("socket peek=%s", repr_ellipsized(peek_data, limit=512))
-            netlog("socket peek hex=%s", binascii.hexlify(peek_data))
+            netlog("socket peek hex=%s", hexstr(peek_data))
             netlog("socket peek line1=%s", repr_ellipsized(line1))
         return peek_data, line1
 
@@ -1284,7 +1283,7 @@ class ServerCore(object):
         if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
             challenge_response = c.strget("challenge_response")
             client_salt = c.strget("challenge_client_salt")
-            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s, salt_digest_modes=%s", proto.authenticator, challenge_response, binascii.hexlify(client_salt or ""), proto.challenge_sent, digest_modes, salt_digest_modes)
+            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s, salt_digest_modes=%s", proto.authenticator, hexstr(challenge_response), hexstr(client_salt or ""), proto.challenge_sent, digest_modes, salt_digest_modes)
             #send challenge if this is not a response:
             if not challenge_response:
                 if proto.challenge_sent:
@@ -1302,7 +1301,7 @@ class ServerCore(object):
                         salt, digest = get_salt(), choose_digest(digest_modes)
                     else:
                         salt, digest = challenge
-                        authlog("get_challenge(%s)= %s, %s", digest_modes, binascii.hexlify(salt), digest)
+                        authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
                         authlog.info("Authentication required by %s authenticator module", proto.authenticator)
                         authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
                     if digest not in digest_modes:
