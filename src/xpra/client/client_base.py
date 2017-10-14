@@ -551,11 +551,19 @@ class XpraClientBase(FileTransferHandler):
                 return
         #all server versions support a client salt,
         #they also tell us which digest to use:
-        digest = packet[3]
-        client_salt = get_salt(len(salt))
+        digest = bytestostr(packet[3])
+        l = len(server_salt)
         salt_digest = "xor"
         if len(packet)>=5:
-            salt_digest = packet[4]
+            salt_digest = bytestostr(packet[4])
+        if salt_digest=="xor":
+            #with xor, we have to match the size
+            assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
+            assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+        else:
+            #other digest, 32 random bytes is enough:
+            l = 32
+        client_salt = get_salt(l)
         if salt_digest in ("xor", "des"):
             if not LEGACY_SALT_DIGEST:
                 warn_server_and_exit(EXIT_INCOMPATIBLE_VERSION, "server uses legacy salt digest '%s'" % salt_digest, "unsupported digest %s" % salt_digest)
