@@ -1729,9 +1729,11 @@ class UIXpraClient(XpraClientBase):
 
 
     def server_connection_established(self):
-        if XpraClientBase.server_connection_established(self):
-            #process the rest from the UI thread:
-            self.idle_add(self.process_ui_capabilities)
+        if not XpraClientBase.server_connection_established(self):
+            return False
+        #process the rest from the UI thread:
+        self.idle_add(self.process_ui_capabilities)
+        return True
 
 
     def parse_server_capabilities(self):
