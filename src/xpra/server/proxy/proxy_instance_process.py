@@ -25,7 +25,7 @@ from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, strtobytes, memoryview_to_bytes, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
+from xpra.os_util import Queue, SIGNAMES, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, AtomicInteger, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
@@ -49,6 +49,7 @@ PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
 PASSTHROUGH = envbool("XPRA_PROXY_PASSTHROUGH", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
+LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 
 
 def set_blocking(conn):
@@ -660,20 +661,38 @@ class ProxyInstanceProcess(Process):
             if packet[3]:
                 packet[3] = Compressed("file-chunk-data", packet[3])
         elif packet_type=="challenge":
-            from xpra.net.crypto import get_salt, gendigest
-            #client may have already responded to the challenge,
-            #so we have to handle authentication from this end
-            salt = packet[1]
-            digest = packet[3]
-            client_salt = get_salt(len(salt))
-            salt = xor_str(salt, client_salt)
             password = self.session_options.get("password")
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
-            password = strtobytes(password)
-            salt = memoryview_to_bytes(salt)
+            from xpra.net.crypto import get_salt, gendigest
+            #client may have already responded to the challenge,
+            #so we have to handle authentication from this end
+            server_salt = bytestostr(packet[1])
+            l = len(server_salt)
+            digest = bytestostr(packet[3])
+            salt_digest = "xor"
+            if len(packet)>=5:
+                salt_digest = bytestostr(packet[4])
+            if salt_digest in ("xor", "des"):
+                if not LEGACY_SALT_DIGEST:
+                    self.stop("server uses legacy salt digest '%s'" % salt_digest)
+                    return
+                log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
+            if salt_digest=="xor":
+                #with xor, we have to match the size
+                assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
+                assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+            else:
+                #other digest, 32 random bytes is enough:
+                l = 32
+            client_salt = get_salt(l)
+            salt = gendigest(salt_digest, client_salt, server_salt)
             challenge_response = gendigest(digest, password, salt)
+            if not challenge_response:
+                log("invalid digest module '%s': %s", digest)
+                self.stop("server requested '%s' digest but it is not supported" % digest)
+                return
             log.info("sending %s challenge response", digest)
             self.send_hello(challenge_response, client_salt)
             return
