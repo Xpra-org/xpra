@@ -3357,6 +3357,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def may_adjust_scaling(self):
+        log("may_adjust_scaling() server_is_desktop=%s, desktop_fullscreen=%s", self.server_is_desktop, self.desktop_fullscreen)
         if self.server_is_desktop and not self.desktop_fullscreen:
             #don't try to make it fit
             return
@@ -3381,13 +3382,11 @@ class UIXpraClient(XpraClientBase):
                 return int(str(v).rstrip("0").rstrip("."))
             except:
                 return v
-        if self.server_is_desktop:
-            self.xscale = mint(x)
-            self.yscale = mint(y)
-        else:
-            #use the same scale for both axis:
-            self.xscale = mint(max(x, y))
-            self.yscale = self.xscale
+        self.xscale = mint(x)
+        self.yscale = mint(y)
+        #to use the same scale for both axes:
+        #self.xscale = mint(max(x, y))
+        #self.yscale = self.xscale
         scalinglog.warn("Warning: adjusting scaling to accomodate server")
         scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
         scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
