@@ -792,7 +792,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
     legacy_bool_parse("opengl")
-    group.add_option("--opengl", action="store", metavar="yes|no|auto|backend",
+    group.add_option("--opengl", action="store", metavar="(yes|no|auto)[:backends]",
                       dest="opengl", default=defaults.opengl,
                       help="Use OpenGL accelerated rendering. Default: %s." % defaults.opengl)
     legacy_bool_parse("windows")

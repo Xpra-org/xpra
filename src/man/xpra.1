@@ -147,7 +147,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-delay\-tray\fP]
 [\fB\-\-encoding\fP=\fIENCODING\fP]
 [\fB\-\-video\-scaling\fP=\fIon\fP|\fIoff\fP|\fISCALING\fP]
-[\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP|\fIbackend\fP]
+[\fB\-\-opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]]
 [\fB\-\-quality\fP=\fIQUALITY\fP]
 [\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP]
 [\fB\-\-speed\fP=\fISPEED\fP]
@@ -1221,14 +1221,15 @@ uses authentication. See \fIauth\fP, \fItcp\-auth\fP, \fIssl\-auth\fP
 and \fIvsock\-auth\fP for details.
 Alternatively, you may use the \fP=\fIXPRA_PASSWORD\fP environment variable.
 .TP
-\fB\-\-opengl\fP=\fIyes\fP|\fIno\fP|\fIauto\fP|\fIbackend\fP
+\fB\-\-opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)[:\fIbackend\fP]
 Use OpenGL accelerated rendering on the client.
 The default is to detect if the graphics card and drivers are
 supported (\fIauto\fP mode), but one can also disable OpenGL (\fIno\fP)
 or force it enabled (\fIyes\fP).
-On some platforms, it is also possible to specify which backend
+On some platforms, it is also possible to specify which backends
 should be used, only \fIgtk\fP and \fInative\fP are currently
 supported and only on X11 platforms.
+ie: \fIopengl=yes:native\fP, or \fIopengl=auto:gtk,native\fP.
 .TP
 \fB\-\-webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|\fIDEVICEID\fP
 Enable or disable webcam forwarding.

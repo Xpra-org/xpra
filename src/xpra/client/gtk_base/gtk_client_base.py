@@ -757,8 +757,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def init_opengl(self, enable_opengl):
         opengllog("init_opengl(%s)", enable_opengl)
         #enable_opengl can be True, False or None (auto-detect)
+        #ie: "on:native,gtk", "auto", "no"
         enable_opengl = (enable_opengl or "").lower()
-        if enable_opengl in FALSE_OPTIONS:
+        parts = enable_opengl.split(":", 1)
+        enable_option = parts[0]            #ie: "on"
+        if len(parts)==2:
+            backends = parts[1].split(",")  #ie: "native", "gtk"
+        else:
+            if PYTHON3:
+                backends = "native", "gtk"
+            else:
+                backends = "gtk", "native"
+        if enable_option in FALSE_OPTIONS:
             self.opengl_props["info"] = "disabled by configuration"
             return
         from xpra.scripts.config import OpenGL_safety_check
@@ -782,7 +792,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.opengl_props["info"] = str(e)
 
         if warnings:
-            if enable_opengl in ("", "auto"):
+            if enable_option in ("", "auto"):
                 opengllog.warn("OpenGL disabled:")
                 for warning in warnings:
                     opengllog.warn(" %s", warning)
@@ -795,13 +805,6 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         try:
             opengllog("init_opengl: going to import xpra.client.gl")
             __import__("xpra.client.gl", {}, {}, [])
-            if enable_opengl in ("", "auto") or enable_opengl in TRUE_OPTIONS:
-                if PYTHON3:
-                    backends = "native", "gtk"
-                else:
-                    backends = "gtk", "native"
-            else:
-                backends = enable_opengl.split(",")
             opengllog("init_opengl: backend options: %s", backends)
             gl_client_window_module = None
             for impl in backends:
@@ -816,7 +819,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     opengllog.warn(" %s", e)
                     continue
                 opengllog("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
-                force_enable = enable_opengl is True
+                force_enable = enable_option in TRUE_OPTIONS
                 self.opengl_props = gl_client_window_module.check_support(force_enable)
                 opengllog("check_support(%s)=%s", force_enable, self.opengl_props)
                 if self.opengl_props:
