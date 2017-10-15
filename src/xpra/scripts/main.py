@@ -3009,7 +3009,7 @@ def run_sessions_gui(error_cb, options):
     if mdns:
         return run_mdns_gui(error_cb, options)
     from xpra.client.gtk_base import sessions_gui
-    sessions_gui.main(options)
+    sessions_gui.do_main(options)
 
 def run_mdns_gui(error_cb, options):
     from xpra.net.mdns import get_listener_class
@@ -3017,7 +3017,7 @@ def run_mdns_gui(error_cb, options):
     if not listener:
         error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.client.gtk_base import mdns_gui
-    mdns_gui.main(options)
+    mdns_gui.do_main(options)
 
 def run_list_mdns(error_cb, extra_args):
     no_gtk()

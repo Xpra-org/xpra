@@ -310,7 +310,7 @@ class SessionsGUI(gtk.Window):
         return None
 
 
-def main(opts):
+def do_main(opts):
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
@@ -318,8 +318,11 @@ def main(opts):
         SessionsGUI(opts)
         gtk_main()
 
-
-if __name__ == "__main__":
+def main():
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
-    main(opts)
+    do_main(opts)
+
+
+if __name__ == "__main__":
+    main()

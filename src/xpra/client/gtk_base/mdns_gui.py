@@ -49,7 +49,7 @@ class mdns_sessions(SessionsGUI):
         glib.idle_add(self.populate_table)
 
 
-def main(opts):
+def do_main(opts):
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
@@ -60,8 +60,11 @@ def main(opts):
         mdns_sessions(opts)
         gtk_main()
 
-
-if __name__ == "__main__":
+def main():
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
-    main(opts)
+    do_main(opts)
+
+
+if __name__ == "__main__":
+    main()
