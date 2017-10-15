@@ -1322,7 +1322,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         left, top, right, bottom = backing.offsets
         if left!=0 or top!=0 or right!=0 or bottom!=0:
             context.save()
-            context.set_source_rgb(0, 0, 1)
+            context.set_source_rgb(*PADDING_COLORS)
             for rx, ry, rw, rh in (
                 (0, 0, left, h),            #left hand side padding
                 (0, 0, w, top),             #top padding
