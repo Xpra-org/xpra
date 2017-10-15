@@ -482,10 +482,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def update_window_state(self, state_updates):
         if state_updates.get("maximized") is False or state_updates.get("fullscreen") is False:
             #if we unfullscreen or unmaximize, re-calculate offsets if we have any:
-            if self.window_offset!=(0, 0):
-                w, h = self._backing.size
+            w, h = self._backing.render_size
+            ww, wh = self.get_size()
+            log("update_window_state(%s) unmax / unfullscreen - window_offset=%s, backing render_size=%s, window size=%s", state_updates, self.window_offset, (w, h), (ww, wh))
+            if self._backing.offsets!=(0, 0, 0, 0):
                 self.center_backing(w, h)
-                ww, wh = self.get_size()
                 self.queue_draw(0, 0, ww, wh)
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
@@ -1300,7 +1301,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._backing.offsets = 0, 0, 0, 0
         else:
             self.center_backing(w, h)
-        geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
+        geomlog.info("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
         self.queue_draw(0, 0, ww, wh)
 
