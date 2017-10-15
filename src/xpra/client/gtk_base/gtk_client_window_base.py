@@ -1298,9 +1298,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not self._fullscreen and not self._maximized:
             gtk.Window.resize(self, w, h)
             self._backing.offsets = 0, 0, 0, 0
-            self.window_offset = 0, 0
         else:
             self.center_backing(w, h)
+        geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
         self.queue_draw(0, 0, ww, wh)
 
