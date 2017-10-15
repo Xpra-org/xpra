@@ -493,6 +493,15 @@ class FDChangeCaptureContext(object):
     def get_lost_fds(self):
         return sorted(list(set(self.enter_fds)-set(self.exit_fds)))
 
+class DummyContextManager(object):
+
+    def __enter__(self):
+        pass
+    def __exit__(self, *_args):
+        pass
+    def __repr__(self):
+        return "DummyContextManager"
+
 
 def disable_stdout_buffering():
     import gc

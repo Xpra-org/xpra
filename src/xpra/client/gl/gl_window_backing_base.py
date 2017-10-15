@@ -8,7 +8,7 @@ import os
 import struct
 import time, math
 
-from xpra.os_util import monotonic_time, strtobytes, hexstr
+from xpra.os_util import monotonic_time, strtobytes, hexstr, POSIX, DummyContextManager
 from xpra.util import envint, envbool, repr_ellipsized
 from xpra.log import Logger
 log = Logger("opengl", "paint")
@@ -162,6 +162,12 @@ except:
     #not defined in py3k..
     buffer_type = None
 
+
+if POSIX:
+    from xpra.gtk_common.error import xsync
+    paint_context_manager = xsync
+else:
+    paint_context_manager = DummyContextManager
 
 def set_texture_level(target=GL_TEXTURE_RECTANGLE_ARB):
     #only really needed with some drivers (NVidia)
@@ -561,7 +567,8 @@ class GLWindowBackingBase(WindowBackingBase):
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
             try:
-                self.do_present_fbo()
+                with paint_context_manager:
+                    self.do_present_fbo()
             except Exception as e:
                 log.error("Error presenting FBO:")
                 log.error(" %s", e)
