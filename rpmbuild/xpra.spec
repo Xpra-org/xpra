@@ -609,7 +609,7 @@ fi
 
 
 %changelog
-* Sat Oct 14 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Mon Oct 16 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
 - fix authentication weaknesses in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
@@ -625,6 +625,8 @@ fi
 - fix paint issues with padded windows (ie: desktop servers maximized)
 - fix out-of-bounds array access in RandR cython glue
 - fix RPM building python3 modules twice (and with wrong arguments)
+- fix X11 crashes with the OpenGL client and some buggy drivers
+- more reliable scaling value rounding
 - don't show start command dialog if the server does not support it
 - validate window dimensions early to prevent DoS
 - support newer versions of brotli
