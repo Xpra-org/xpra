@@ -8,6 +8,7 @@ import os
 import time, math
 
 from xpra.util import envint, envbool
+from xpra.os_util import DummyContextManager
 from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
@@ -174,6 +175,12 @@ except:
     #not defined in py3k..
     buffer_type = None
 
+
+if os.name=="posix":
+    from xpra.gtk_common.error import xsync
+    paint_context_manager = xsync
+else:
+    paint_context_manager = DummyContextManager
 
 def set_texture_level():
     #only really needed with some drivers (NVidia)
@@ -615,7 +622,8 @@ class GLWindowBackingBase(GTKWindowBacking):
             return
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
-            self.do_present_fbo()
+            with paint_context_manager:
+                self.do_present_fbo()
 
     def do_present_fbo(self):
         bw, bh = self.size

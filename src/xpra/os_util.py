@@ -339,6 +339,15 @@ class OSEnvContext(object):
     def __repr__(self):
         return "OSEnvContext"
 
+class DummyContextManager(object):
+
+    def __enter__(self):
+        pass
+    def __exit__(self, *_args):
+        pass
+    def __repr__(self):
+        return "DummyContextManager"
+
 
 def disable_stdout_buffering():
     import gc
