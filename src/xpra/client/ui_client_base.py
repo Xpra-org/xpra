@@ -3207,11 +3207,11 @@ class UIXpraClient(XpraClientBase):
         x = clamp(float(w)/max_w)
         y = clamp(float(h)/max_h)
         def mint(v):
-            #prefer int over float:
-            try:
-                return int(str(v).rstrip("0").rstrip("."))
-            except:
-                return v
+            #prefer int over float,
+            #and even tolerate a 0.1% difference to get it:
+            if iround(v)*1000==iround(v*1000):
+                return int(v)
+            return v
         if self.server_is_desktop:
             self.xscale = mint(x)
             self.yscale = mint(y)
