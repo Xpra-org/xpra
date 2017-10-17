@@ -51,11 +51,11 @@ class WindowAnim(object):
 def main():
     client = FakeGTKClient()
     try:
-        from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+        from xpra.client.gl.gtk2.nativegl_client_window import GLClientWindow
         window_class = GLClientWindow
     except:
-        from xpra.client.gtk2.border_client_window import BorderClientWindow
-        window_class = BorderClientWindow
+        from xpra.client.gtk2.client_window import ClientWindow
+        window_class = ClientWindow
     anim = WindowAnim(window_class, client)
     glib.timeout_add(100, anim.movearound)
     try:

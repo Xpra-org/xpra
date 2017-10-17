@@ -70,12 +70,12 @@ def main():
     W = 640
     H = 480
     try:
-        from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+        from xpra.client.gl.gtk2.nativegl_client_window import GLClientWindow
         window_class = GLClientWindow
     except Exception as e:
         print("no opengl window: %s" % e)
-        from xpra.client.gtk2.border_client_window import BorderClientWindow
-        window_class = BorderClientWindow
+        from xpra.client.gtk2.client_window import ClientWindow
+        window_class = ClientWindow
     client = FakeGTKClient()
     window = WindowAnim(window_class, client, 1)
     window.paint_png()

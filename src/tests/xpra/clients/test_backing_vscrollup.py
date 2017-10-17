@@ -84,12 +84,17 @@ def main():
     print("%i windows, delay=%ims, ydelta=%i" % (N, delay, ydelta))
     window_classes = []
     try:
-        from xpra.client.gtk2.border_client_window import BorderClientWindow
-        window_classes.append(BorderClientWindow)
+        from xpra.client.gtk2.client_window import ClientWindow
+        window_classes.append(ClientWindow)
     except:
         pass
     try:
-        from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+        from xpra.client.gl.gtk2.gtkgl_client_window import GLClientWindow 
+        window_classes.append(GLClientWindow)
+    except:
+        pass
+    try:
+        from xpra.client.gl.gtk2.nativegl_client_window import GLClientWindow   #@Reimport
         window_classes.append(GLClientWindow)
     except:
         pass

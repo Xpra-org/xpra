@@ -143,13 +143,13 @@ def main():
     H = 1200
     window_classes = []
     try:
-        from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+        from xpra.client.gl.gtk2.nativegl_client_window import GLClientWindow
         window_classes.append(GLClientWindow)
     except Exception as e:
         print("no opengl window: %s" % e)
     try:
-        from xpra.client.gtk2.border_client_window import BorderClientWindow
-        window_classes.append(BorderClientWindow)
+        from xpra.client.gtk2.client_window import ClientWindow
+        window_classes.append(ClientWindow)
     except Exception as e:
         print("no pixmap window: %s" % e)
     client = FakeGTKClient()
