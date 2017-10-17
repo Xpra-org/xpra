@@ -329,7 +329,7 @@ def conf_files(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
     #look for conf.d subdirectory:
     conf_d_dir = os.path.join(cdir, "conf.d")
     if os.path.exists(conf_d_dir) and os.path.isdir(conf_d_dir):
-        for f in os.listdir(conf_d_dir):
+        for f in sorted(os.listdir(conf_d_dir)):
             if f.endswith(".conf"):
                 conf_file = os.path.join(conf_d_dir, f)
                 if os.path.isfile(conf_file):
