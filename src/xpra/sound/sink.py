@@ -296,6 +296,10 @@ class SoundSink(SoundPipeline):
             #(causes overruns that drop packets and lower the buffer level)
             target_mst = max(50, int(target_mst - pct*lrange//100))
             mst = (cmst + target_mst)//2
+            if self.last_underrun and now-self.last_underrun<2 and mst<200:
+                #temporarily raise max level during underruns,
+                #so set_min_level has more room for manoeuver:
+                mst += max(0, 2+self.last_underrun-now)*75
             #cap it at 1 second:
             mst = min(mst, 1000)
             log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
