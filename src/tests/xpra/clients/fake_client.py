@@ -56,7 +56,6 @@ class FakeClient(FileTransferHandler):
         self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.encoding_defaults = {}
-        self.window_configure_pointer = True
         self.xscale = 1
         self.yscale = 1
         self.log_events = True
@@ -69,7 +68,7 @@ class FakeClient(FileTransferHandler):
     def connect(self, *args):
         pass
 
-    def get_image(self, *args):
+    def get_image(self, *_args):
         return None
 
     def get_encodings(self):
