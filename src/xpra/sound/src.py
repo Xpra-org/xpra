@@ -29,7 +29,7 @@ BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 try:
-    CUTTER_THRESHOLD = float(os.environ.get("XPRA_CUTTER_THRESHOLD", "0.02"))
+    CUTTER_THRESHOLD = float(os.environ.get("XPRA_CUTTER_THRESHOLD", "0.001"))
 except:
     CUTTER_THRESHOLD = 0
 
