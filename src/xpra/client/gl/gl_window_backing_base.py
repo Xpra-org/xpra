@@ -167,7 +167,7 @@ if POSIX:
     from xpra.gtk_common.error import xsync
     paint_context_manager = xsync
 else:
-    paint_context_manager = DummyContextManager
+    paint_context_manager = DummyContextManager()
 
 def set_texture_level(target=GL_TEXTURE_RECTANGLE_ARB):
     #only really needed with some drivers (NVidia)
