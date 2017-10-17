@@ -202,6 +202,7 @@ class SoundSink(SoundPipeline):
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
+        self.underruns += 1
         gstlog("queue_underrun%s", args)
         self.queue_state = "underrun"
         if now-self.last_underrun>2:
