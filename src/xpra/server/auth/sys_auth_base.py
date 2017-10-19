@@ -7,7 +7,7 @@ import hmac, hashlib, binascii
 
 from collections import deque
 from xpra.platform.dotxpra import DotXpra
-from xpra.net.crypto import get_salt, gendigest
+from xpra.net.crypto import get_salt, gendigest, choose_digest
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("auth")
