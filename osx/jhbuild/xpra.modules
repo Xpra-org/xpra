@@ -253,9 +253,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-	<branch module="/releases/ffmpeg-3.3.4.tar.bz2"
-		version="3.3.4"
-		hash="sha256:5ef5e9276c311c74ab2e9d301c2d7ee10e1f2cbd758c6f13d6cb9514dffbac7e"
+	<branch module="/releases/ffmpeg-3.4.tar.xz"
+		version="3.4"
+		hash="sha256:aeee06e4d8b18d852c61ebbfe5e1bb7014b1e118e8728c1c2115f91e51bffbef"
 		repo="ffmpeg.org"/>
 	<dependencies>
 		<dep package="x264"/>
@@ -493,9 +493,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/9c/1a/0fc8cffb04582f9ffca61b15b0681cf2e8588438e55f61403eb9880bd8e0/cryptography-2.0.3.tar.gz"
-		hash="sha256:d04bb2425086c3fe86f7bc48915290b13e798497839fbb18ab7f6dffcf98cc3a"
-		version="2.0.3"/>
+		module="/packages/9c/1a/0fc8cffb04582f9ffca61b15b0681cf2e8588438e55f61403eb9880bd8e0/cryptography-2.1.1.tar.gz"
+		hash="sha256:2699ed21e1f73dd1bdb7b0b22a517295de07809d535b23e200dd22166037fe6f"
+		version="2.1.1"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
