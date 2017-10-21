@@ -87,6 +87,10 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
+#we don't care about the examples,
+#and we can't turn them off using a build switch,
+#so just delete them
+rm -fr %{buildroot}/usr/share/ffmpeg/examples
 
 #%post -p /sbin/ldconfig
 #%postun -p /sbin/ldconfig
