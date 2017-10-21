@@ -493,7 +493,7 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/9c/1a/0fc8cffb04582f9ffca61b15b0681cf2e8588438e55f61403eb9880bd8e0/cryptography-2.1.1.tar.gz"
+		module="/packages/bf/da/6a9f49cc7a970380c8235b3adab0c08c7c3d4814876f7383b33e3882a577/cryptography-2.1.1.tar.gz"
 		hash="sha256:2699ed21e1f73dd1bdb7b0b22a517295de07809d535b23e200dd22166037fe6f"
 		version="2.1.1"/>
 	<dependencies>
