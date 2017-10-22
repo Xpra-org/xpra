@@ -140,6 +140,7 @@ class CommandConnectClient(GObjectXpraClient):
         log("server_capabilities: %s", self.server_capabilities)
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
+        return True
 
     def do_command(self):
         raise NotImplementedError()
@@ -155,7 +156,7 @@ class SendCommandConnectClient(CommandConnectClient):
     def server_connection_established(self):
         assert self.parse_encryption_capabilities(), "encryption failure"
         assert self.parse_network_capabilities(), "network capabilities failure"
-        CommandConnectClient.server_connection_established(self)
+        return CommandConnectClient.server_connection_established(self)
 
 
 class ScreenshotXpraClient(CommandConnectClient):
@@ -461,3 +462,4 @@ class DetachXpraClient(SendCommandConnectClient):
         self.idle_add(self.send, "disconnect", DONE, "detaching")
         #not exiting the client here,
         #the server should disconnect us with the response
+        return True
