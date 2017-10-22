@@ -90,7 +90,7 @@ cdef extern from "libavcodec/avcodec.h":
         int thread_type
         int flags
         int flags2
-        int refcounted_frames
+        #int refcounted_frames
 
     AVCodecID AV_CODEC_ID_H264
     AVCodecID AV_CODEC_ID_H265
@@ -362,7 +362,7 @@ cdef class Decoder:
             self.clean_decoder()
             return  False
 
-        self.codec_ctx.refcounted_frames = 1
+        #self.codec_ctx.refcounted_frames = 1
         self.codec_ctx.width = width
         self.codec_ctx.height = height
         self.codec_ctx.pix_fmt = self.pix_fmt
