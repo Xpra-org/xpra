@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat
+from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat, is_Fedora
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -733,6 +733,8 @@ def get_default_systemd_run():
     #don't use systemd-run on CentOS / RedHat
     #(it causes failures with "Failed to create bus connection: No such file or directory")
     if is_CentOS() or is_RedHat():
+        return "no"
+    if is_Fedora():
         return "no"
     #systemd-run was previously broken in Fedora 26:
     #https://github.com/systemd/systemd/issues/3388
