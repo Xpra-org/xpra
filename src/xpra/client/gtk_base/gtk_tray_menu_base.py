@@ -669,7 +669,7 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(set_encodingsmenuitem)
         return encodings
 
-    def make_encodingssubmenu(self, handshake_complete=True):
+    def make_encodingssubmenu(self):
         server_encodings = list(self.client.server_encodings)
         all_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
         encodings = [x for x in all_encodings if x not in self.client.server_encodings_problematic]

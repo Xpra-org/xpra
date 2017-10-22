@@ -2912,7 +2912,7 @@ class UIXpraClient(XpraClientBase):
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s", wid, override_redirect, packet[2:6], (x, y, ww, wh, bw, bh))
         self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
-    def cook_metadata(self, new_window, metadata):
+    def cook_metadata(self, _new_window, metadata):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:
@@ -3068,12 +3068,12 @@ class UIXpraClient(XpraClientBase):
         self.send_refresh_all()
 
 
-    def get_group_leader(self, wid, metadata, override_redirect):
+    def get_group_leader(self, _wid, _metadata, _override_redirect):
         #subclasses that wish to implement the feature may override this method
         return None
 
 
-    def get_client_window_classes(self, w, h, metadata, override_redirect):
+    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect):
         return [self.ClientWindowClass]
 
     def _process_new_window(self, packet):
