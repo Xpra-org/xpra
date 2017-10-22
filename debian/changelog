@@ -15,6 +15,8 @@ xpra (1.0.9-1) UNRELEASED; urgency=low
   * fix out-of-bounds array access in RandR cython glue
   * fix RPM building python3 modules twice (and with wrong arguments)
   * fix X11 crashes with the OpenGL client and some buggy drivers
+  * fix parsing order of configuration files
+  * fix compatibility with ffmpeg 3.4
   * more reliable scaling value rounding
   * don't show start command dialog if the server does not support it
   * validate window dimensions early to prevent DoS
@@ -26,7 +28,7 @@ xpra (1.0.9-1) UNRELEASED; urgency=low
   * add support for Volta GPUs with NVENC
   * make it easier to disable firewall scripts in RPM builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 16 Oct 2017 19:32:47 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 22 Oct 2017 15:50:18 +0700
 
 xpra (1.0.8-1) UNRELEASED; urgency=low
   * fix Fedora 26 builds: must disable buggy systemd-run

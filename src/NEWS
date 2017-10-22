@@ -1,4 +1,4 @@
-v1.0.9 (2017-10-16)
+v1.0.9 (2017-10-22)
 ======================
 	-- fix authentication weaknesses in client salt handling
 	-- fix window icons going back to default on window re-initialization
@@ -16,6 +16,8 @@ v1.0.9 (2017-10-16)
 	-- fix out-of-bounds array access in RandR cython glue
 	-- fix RPM building python3 modules twice (and with wrong arguments)
 	-- fix X11 crashes with the OpenGL client and some buggy drivers
+	-- fix parsing order of configuration files
+	-- fix compatibility with ffmpeg 3.4
 	-- more reliable scaling value rounding
 	-- don't show start command dialog if the server does not support it
 	-- validate window dimensions early to prevent DoS
