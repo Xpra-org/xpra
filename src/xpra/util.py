@@ -767,3 +767,9 @@ def envbool(name, d=False):
         return bool(int(os.environ.get(name, d)))
     except:
         return d
+
+def envfloat(name, d=0):
+    try:
+        return float(os.environ.get(name, d))
+    except:
+        return d

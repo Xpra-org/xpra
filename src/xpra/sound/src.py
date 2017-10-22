@@ -8,7 +8,7 @@ import os
 import sys
 
 from xpra.os_util import SIGNAMES, Queue, monotonic_time
-from xpra.util import csv, envint, envbool, AtomicInteger
+from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal, gobject
 from xpra.sound.gstreamer_util import get_source_plugins, plugin_str, get_encoder_elements, get_encoder_default_options, normv, get_encoders, get_queue_time, has_plugins, \
@@ -28,10 +28,7 @@ LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
-try:
-    CUTTER_THRESHOLD = float(os.environ.get("XPRA_CUTTER_THRESHOLD", "0.001"))
-except:
-    CUTTER_THRESHOLD = 0
+CUTTER_THRESHOLD = envfloat("XPRA_CUTTER_THRESHOLD", "0.001")
 
 generation = AtomicInteger()
 
