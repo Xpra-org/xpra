@@ -378,6 +378,7 @@ class WindowSource(object):
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
                 "av-sync"               : {
+                                           "enabled"    : self.av_sync,
                                            "current"    : self.av_sync_delay,
                                            "target"     : self.av_sync_delay_target
                                            },

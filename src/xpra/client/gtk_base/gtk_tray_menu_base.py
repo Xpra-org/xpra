@@ -29,7 +29,7 @@ from xpra.log import Logger
 log = Logger("menu")
 clipboardlog = Logger("menu", "clipboard")
 webcamlog = Logger("menu", "webcam")
-
+avsynclog = Logger("menu", "av-sync")
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
@@ -848,6 +848,7 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.append(self.make_speakermenuitem())
         menu.append(self.make_microphonemenuitem())
+        menu.append(self.make_avsyncmenuitem())
         audio_menu_item.show_all()
         return audio_menu_item
 
@@ -943,6 +944,46 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menu.show_all()
         return menu
+
+    def make_avsyncmenuitem(self):
+        sync = self.menuitem("Video Sync", "video.png", "Synchronize audio and video", None)
+        menu = gtk.Menu()
+        self.popup_menu_workaround(menu)
+        current_value = 0
+        if not self.client.av_sync:
+            current_value = None
+        def syncitem(label, delta=0):
+            c = CheckMenuItem(label)
+            c.set_draw_as_radio(True)
+            c.set_active(current_value==delta)
+            def activate_cb(item, *_args):
+                avsynclog("activate_cb(%s, %s) delta=%s", item, menu, delta)
+                if delta==0:
+                    self.client.av_sync = False
+                    self.client.send_sound_sync(0)
+                else:
+                    self.client.av_sync = True
+                    self.client.av_sync_delta = delta
+                    #the actual sync value will be calculated and sent
+                    #in client._process_sound_data
+            c.connect("toggled", activate_cb, menu)
+            return c
+        menu.append(syncitem("Off", None))
+        menu.append(gtk.SeparatorMenuItem())
+        menu.append(syncitem("-200", -200))
+        menu.append(syncitem("-100", -100))
+        menu.append(syncitem(" -50", -50))
+        menu.append(syncitem("Auto", 0))
+        menu.append(syncitem(" +50", 50))
+        menu.append(syncitem(" +100", 100))
+        menu.append(syncitem(" +200", 200))
+        sync.set_submenu(menu)
+        sync.show_all()
+        def set_avsyncmenu(*_args):
+            set_sensitive(sync, self.client.server_av_sync)
+        self.client.after_handshake(set_avsyncmenu)
+        return sync
+
 
     def make_webcammenuitem(self):
         webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)

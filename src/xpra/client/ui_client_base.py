@@ -212,6 +212,7 @@ class UIXpraClient(XpraClientBase):
         self.microphone_codecs = []
         self.microphone_device = None
         self.av_sync = False
+        self.av_sync_delta = AV_SYNC_DELTA
         #sound state:
         self.on_sink_ready = None
         self.sound_sink = None
@@ -2778,10 +2779,13 @@ class UIXpraClient(XpraClientBase):
             if self.queue_used_sent is None or abs(delta)>=80:
                 avsynclog("server sound sync: sending updated queue.used=%i (was %s)", queue_used, (self.queue_used_sent or "unset"))
                 self.queue_used_sent = queue_used
-                v = queue_used + AV_SYNC_DELTA
-                if AV_SYNC_DELTA:
-                    avsynclog(" adjusted value=%i with sync delta=%i", v, AV_SYNC_DELTA)
-                self.send("sound-control", "sync", v)
+                v = queue_used + self.av_sync_delta
+                if self.av_sync_delta:
+                    avsynclog(" adjusted value=%i with sync delta=%i", v, self.av_sync_delta)
+                self.send_sound_sync(v)
+
+    def send_sound_sync(self, v):
+        self.send("sound-control", "sync", v)
 
 
     def send_notify_enabled(self):
