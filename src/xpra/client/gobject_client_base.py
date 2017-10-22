@@ -139,6 +139,7 @@ class CommandConnectClient(GObjectXpraClient):
         log("server_capabilities: %s", self.server_capabilities)
         log("protocol state: %s", self._protocol.save_state())
         self.do_command()
+        return True
 
     def do_command(self):
         raise NotImplementedError()
@@ -154,7 +155,7 @@ class SendCommandConnectClient(CommandConnectClient):
     def server_connection_established(self):
         assert self.parse_encryption_capabilities(), "encryption failure"
         assert self.parse_network_capabilities(), "network capabilities failure"
-        CommandConnectClient.server_connection_established(self)
+        return CommandConnectClient.server_connection_established(self)
 
 
 class HelloRequestClient(SendCommandConnectClient):
@@ -526,6 +527,7 @@ class RequestStartClient(HelloRequestClient):
                 log("server_connection_established()", exc_info=True)
         if not self.exit_code:
             self.quit(0)
+        return True
 
     def __init__(self, conn, opts):
         HelloRequestClient.__init__(self, conn, opts)
