@@ -1721,8 +1721,12 @@ class WindowSource(object):
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         if self._damage_delayed is not None and self._damage_delayed_expired:
-            self.cancel_may_send_timer()
-            self.may_send_timer = self.idle_add(self._may_send_delayed)
+            def call_may_send_delayed():
+                self.cancel_may_send_timer()
+                self.may_send_delayed()
+            #this function is called from the network thread,
+            #call via idle_add to prevent race conditions:
+            self.idle_add(call_may_send_delayed)
         if not self._damage_delayed:
             self.soft_expired = 0
 
