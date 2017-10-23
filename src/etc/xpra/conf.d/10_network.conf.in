@@ -47,3 +47,14 @@ idle-timeout = 0
 # Server idle timeout in seconds:
 #server-idle-timeout = 600
 server-idle-timeout = 0
+
+# Bandwidth limit:
+#no limit:
+#bandwidth-limit = 0
+#1Mbps:
+#bandwidth-limit = 1000000
+#bandwidth-limit = 1000Kbps
+#bandwidth-limit = 1M
+#10Mbps:
+#bandwidth-limit = 10Mbps
+bandwidth-limit = 0

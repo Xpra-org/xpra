@@ -538,6 +538,7 @@ OPTION_TYPES = {
                     "gid"               : int,
                     "min-port"          : int,
                     "rfb-upgrade"       : int,
+                    "bandwidth-limit"   : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -625,7 +626,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade"]
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit"]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "dock-icon", "tray-icon", "window-icon",
@@ -687,7 +688,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "rfb-auth",
     "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-rfb",
-    "rfb-upgrade",
+    "rfb-upgrade", "bandwidth-limit",
     "start", "start-child",
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
@@ -894,6 +895,7 @@ def get_defaults():
                     "gid"               : getgid(),
                     "min-port"          : 1024,
                     "rfb-upgrade"       : 5,
+                    "bandwidth-limit"   : 0,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "start-via-proxy"   : None,

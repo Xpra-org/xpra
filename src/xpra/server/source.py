@@ -233,6 +233,7 @@ class ServerSource(FileTransferHandler):
                  window_filters,
                  file_transfer,
                  supports_mmap, mmap_filename,
+                 bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -249,6 +250,7 @@ class ServerSource(FileTransferHandler):
                  window_filters,
                  file_transfer,
                  supports_mmap, mmap_filename,
+                 bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
                  sound_properties,
@@ -293,6 +295,8 @@ class ServerSource(FileTransferHandler):
         self.mmap_client_token = None                   #the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
+        # network constraints:
+        self.server_bandwidth_limit = bandwidth_limit
         # mouse echo:
         self.mouse_show = False
         self.mouse_last_position = None
@@ -433,6 +437,7 @@ class ServerSource(FileTransferHandler):
         self.vrefresh = -1
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
+        self.bandwidth_limit = self.server_bandwidth_limit
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -490,20 +495,43 @@ class ServerSource(FileTransferHandler):
             self.idle_add(ds.cleanup)
 
 
+    def update_bandwidth_limits(self):
+        if self.bandwidth_limit<=0:
+            return
+        #figure out how to distribute the bandwidth amongst the windows,
+        #we use the window size,
+        #(we should actually use the number of bytes actually sent: framerate, compression, etc..)
+        window_weight = {}
+        for wid, ws in self.window_sources.items():
+            weight = 0
+            if not ws.suspended:
+                ww, wh = ws.window_dimensions
+                #try to reserve bandwidth for at least one screen update,
+                #and add the number of pixels damaged:
+                weight = ww*wh + ws.statistics.get_damage_pixels()
+            window_weight[wid] = weight
+        log("update_bandwidth_limits() window weights=%s", window_weight)
+        total_weight = sum(window_weight.values())
+        for wid, ws in self.window_sources.items():
+            weight = window_weight.get(wid)
+            if weight is not None:
+                ws.bandwidth_limit = max(1, self.bandwidth_limit*weight/total_weight)
+
     def recalculate_delays(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
             this runs in the worker thread.
         """
-        log("recalculate_delays()")
         if self.is_closed():
             return
+        self.update_bandwidth_limits()
         self.statistics.update_averages()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()
         maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
         fullscreen_wids = [wid for wid, source in sources if source is not None and source.fullscreen]
+        log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s", wids, focus, maximized_wids, fullscreen_wids)
         for wid in wids:
             #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
@@ -745,6 +773,12 @@ class ServerSource(FileTransferHandler):
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
+        bandwidth_limit = c.intget("bandwidth-limit", 0)
+        if self.server_bandwidth_limit<=0:
+            self.bandwidth_limit = bandwidth_limit
+        else:
+            self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
+        netlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -1559,6 +1593,7 @@ class ServerSource(FileTransferHandler):
                 "suspended"         : self.suspended,
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
+                "bandwidth-limit"   : self.bandwidth_limit,
                 }
         if self.desktop_mode_size:
             info["desktop_mode_size"] = self.desktop_mode_size
@@ -2273,8 +2308,10 @@ class ServerSource(FileTransferHandler):
         ws = self.window_sources.get(wid)
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
+            ww, wh = window.get_dimensions()
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
+                              ww, wh,
                               self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
@@ -2284,8 +2321,11 @@ class ServerSource(FileTransferHandler):
                               self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
-                              self.mmap, self.mmap_size)
+                              self.mmap, self.mmap_size, self.bandwidth_limit)
             self.window_sources[wid] = ws
+            if len(self.window_sources)>1:
+                #re-distribute bandwidth:
+                self.update_bandwidth_limits()
         return ws
 
     def damage(self, wid, window, x, y, w, h, options=None):

@@ -62,6 +62,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
 [\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
+[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
 [\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
@@ -175,6 +176,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
 [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 [\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
+[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
 [\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
 [\fB\-\-encryption\fP=\fICIPHER\fP]
 [\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
@@ -204,6 +206,7 @@ xpra \- viewer for remote, persistent X applications
 [\fB\-\-speaker\-codec\fP=\fICODEC\fP]
 [\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
 [\fB\-\-microphone\-codec\fP=\fICODEC\fP]
+[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
 [\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
 [\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
 [\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
@@ -704,6 +707,12 @@ This may be a security risk if you are using xpra to constrain
 what the clients can execute on the server.
 .TP
 
+\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP
+Restrict bandwidth usage to below the limit given.
+The client's value cannot raise the limit of the server.
+The value may be specified using standard units, ie:
+\fI1Mbps\fP or \fI500K\fP.
+.TP
 
 .SS Options for start, start-desktop, upgrade, proxy and shadow
 .TP

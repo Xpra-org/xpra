@@ -1206,6 +1206,7 @@ class ServerBase(ServerCore):
                           self.window_filters,
                           self.file_transfer,
                           self.supports_mmap, self.mmap_filename,
+                          self.bandwidth_limit,
                           self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,

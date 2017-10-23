@@ -1,9 +1,10 @@
-v2.2 (2017-09-30)
+v2.2 (2017-10-23)
 ======================
 	-- support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
 	-- UDP transport (experimental) with bind-udp and udp://host:port URLs
 	-- TCP sockets can be upgrade to Websockets and / or SSL, RFB
 	-- multiple bind options for all socket types supported: tcp, ssl, ws, wss, udp, rfb
+	-- bandwidth-limit option
 	-- "xpra sessions" browser tool for both mDNS and local sessions
 	-- support arbitrary resolutions with Xvfb (not with Xdummy yet)
 	-- new OpenGL backends, with support for GTK3 on most platforms

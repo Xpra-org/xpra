@@ -85,6 +85,7 @@ class WindowSource(object):
 
     def __init__(self,
                     idle_add, timeout_add, source_remove,
+                    ww, wh,
                     queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
@@ -94,7 +95,7 @@ class WindowSource(object):
                     encoding, encodings, core_encodings, window_icon_encodings, encoding_options, icons_encoding_options,
                     rgb_formats,
                     default_encoding_options,
-                    mmap, mmap_size):
+                    mmap, mmap_size, bandwidth_limit):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
@@ -160,7 +161,7 @@ class WindowSource(object):
         self.is_tray = window.is_tray()
         self.is_shadow = window.is_shadow()
         self.has_alpha = window.has_alpha()
-        self.window_dimensions = 0, 0
+        self.window_dimensions = ww, wh
         self.mapped_at = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
         self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
@@ -186,6 +187,8 @@ class WindowSource(object):
             self.max_small_regions = 10
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
+        self.bandwidth_limit = bandwidth_limit
+
         self.pixel_format = None                            #ie: BGRX
         try:
             self.image_depth = window.get_property("depth")
@@ -292,6 +295,7 @@ class WindowSource(object):
         self.scaling = None
         self.maximized = False
         #
+        self.bandwidth_limit = 0
         self.max_small_regions = 0
         self.max_bytes_percent = 0
         self.small_packet_cost = 0
@@ -377,6 +381,7 @@ class WindowSource(object):
         info.update({
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
+                "bandwidth-limit"       : self.bandwidth_limit,
                 "av-sync"               : {
                                            "enabled"    : self.av_sync,
                                            "current"    : self.av_sync_delay,
@@ -966,7 +971,7 @@ class WindowSource(object):
                     statslog("calculate_batch_delay for wid=%i, skipping - only %i bytes sent since the last update", self.wid, nbytes)
                     return
                 statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
-        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics)
+        calculate_batch_delay(self.wid, self.window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, self.is_OR, self.soft_expired, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit)
         self.statistics.last_recalculate = now
         self.update_av_sync_frame_delay()
 
@@ -1172,7 +1177,7 @@ class WindowSource(object):
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
     def must_batch(self, delay):
-        if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay:
+        if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
             return True
         try:
             t, _ = self.batch_config.last_delays[-5]
@@ -1273,7 +1278,7 @@ class WindowSource(object):
                     self.wid, packets_backlog, self.batch_config.delay, actual_delay)
             #this method will fire again from damage_packet_acked
             return
-        #if we're here, there is no packet backlog, but there may be damage acks pending.
+        #if we're here, there is no packet backlog, but there may be damage acks pending or a bandwidth limit to honour,
         #if there are acks pending, may_send_delayed() should be called again from damage_packet_acked,
         #if not, we must either process the region now or set a timer to check again later
         def check_again(delay=actual_delay/10.0):
@@ -1291,6 +1296,12 @@ class WindowSource(object):
             else:
                 self.do_send_delayed()
             return
+        if self.bandwidth_limit>0:
+            used = self.statistics.get_bits_encoded()
+            log("may_send_delayed() bandwidth limit=%i, used=%i : %i%%", self.bandwidth_limit, used, 100*used//self.bandwidth_limit)
+            if used>=self.bandwidth_limit:
+                check_again(50)
+                return
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         ww, wh = self.window_dimensions
         if pixels_encoding_backlog>=(ww*wh):

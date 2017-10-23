@@ -187,6 +187,7 @@ class ServerCore(object):
         self.exit_with_client = False
         self.server_idle_timeout = 0
         self.server_idle_timer = None
+        self.bandwidth_limit = 0
 
         self.init_uuid()
         self.init_control_commands()
@@ -208,6 +209,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_name("Xpra", self.session_name or "Xpra")
 
+        self.bandwidth_limit = opts.bandwidth_limit
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
         self.encryption = opts.encryption
@@ -1553,6 +1555,7 @@ class ServerCore(object):
                    "sockets"        : self.get_socket_info(),
                    "encryption"     : self.encryption or "",
                    "tcp-encryption" : self.tcp_encryption or "",
+                   "bandwidth-limit": self.bandwidth_limit,
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))

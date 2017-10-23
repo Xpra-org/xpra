@@ -26,7 +26,7 @@ def get_low_limit(mmap_enabled, window_dimensions):
     return low_limit
 
 
-def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, is_OR, soft_expired, batch, global_statistics, statistics):
+def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen, other_is_maximized, is_OR, soft_expired, batch, global_statistics, statistics, bandwidth_limit):
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -36,7 +36,7 @@ def calculate_batch_delay(wid, window_dimensions, has_focus, other_is_fullscreen
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
 
     #for each indicator: (description, factor, weight)
-    factors = statistics.get_factors()
+    factors = statistics.get_factors(bandwidth_limit)
     statistics.target_latency = statistics.get_target_client_latency(global_statistics.min_client_latency, global_statistics.avg_client_latency)
     factors += global_statistics.get_factors(low_limit)
     #damage pixels waiting in the packet queue: (extract data for our window id only)

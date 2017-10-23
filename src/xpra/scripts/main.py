@@ -206,9 +206,12 @@ def main(script_file, cmdline):
 
 
 def do_replace_option(cmdline, oldoption, newoption):
-    if oldoption in cmdline:
-        cmdline.remove(oldoption)
-        cmdline.append(newoption)
+    for i, x in enumerate(cmdline):
+        if x==oldoption:
+            cmdline[i] = newoption
+        elif newoption.find("=")<0 and x.startswith("%s=" % oldoption):
+            cmdline[i] = "%s=%s" % (newoption, x.split("=", 1)[1])
+
 def do_legacy_bool_parse(cmdline, optionname, newoptionname=None):
     #find --no-XYZ or --XYZ
     #and replace it with --XYZ=yes|no
@@ -617,10 +620,13 @@ def do_parse_cmdline(cmdline, defaults):
                 })
 
     group = optparse.OptionGroup(parser, "Server Controlled Features",
-                "These options can be used to turn certain features on or off, "
-                "they can be specified on the client or on the server, "
-                "but the client cannot enable them if they are disabled on the server.")
+                "These options be specified on the client or on the server, "
+                "but the server's settings will have precedence over the client's.")
     parser.add_option_group(group)
+    replace_option("--bwlimit", "--bandwidth-limit")
+    group.add_option("--bandwidth-limit", action="store",
+                      dest="bandwidth_limit", default=defaults.bandwidth_limit,
+                      help="Limit the bandwidth used. The value is specified in bits per second, use the value '0' to disable restrictions. Default: '%default'.")
     replace_option("--readwrite", "--readonly=no")
     replace_option("--readonly", "--readonly=yes")
     group.add_option("--readonly", action="store", metavar="yes|no",
@@ -1127,10 +1133,35 @@ def do_parse_cmdline(cmdline, defaults):
     #and may have "none" or "all" special values
     fixup_options(options, defaults)
 
+    #special case for bandwidth-limit, which can be specified using units:
+    try:
+        import re
+        v = options.bandwidth_limit
+        if not v:
+            options.bandwidth_limit = 0
+        else:
+            r = re.match('([0-9]*)(.*)', options.bandwidth_limit)
+            assert r
+            i = int(r.group(1))
+            unit = r.group(2).lower()
+            if unit.endswith("bps"):
+                unit = unit[:-3]
+            if unit=="b":
+                pass
+            elif unit=="k":
+                i *= 1000
+            elif unit=="m":
+                i *= 1000000
+            elif unit=="g":
+                i *= 1000000000
+            assert i>=250000, "value is too low"
+            options.bandwidth_limit = i
+    except Exception as e:
+        raise InitException("invalid bandwidth limit value '%s': %s" % (options.bandwidth_limit, e))
     try:
         options.dpi = int(options.dpi)
     except Exception as e:
-        raise InitException("invalid dpi: %s" % e)
+        raise InitException("invalid dpi value '%s': %s" % (options.dpi, e))
     if options.max_size:
         try:
             #split on "," or "x":

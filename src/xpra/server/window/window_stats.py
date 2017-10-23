@@ -100,7 +100,7 @@ class WindowPerformanceStatistics(object):
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
         self.max_latency = max(all_l)
 
-    def get_factors(self):
+    def get_factors(self, bandwidth_limit=0):
         factors = []
         #ratio of "in" and "out" latency indicates network bottleneck:
         #(the difference between the two is the time it takes to send)
@@ -152,6 +152,21 @@ class WindowPerformanceStatistics(object):
             info = {"elapsed"   : int(1000.0*elapsed),
                     "max_latency"   : int(1000.0*self.max_latency)}
             factors.append((metric, info, target, weight))
+        if bandwidth_limit>0:
+            #calculate how much bandwith we have used in the last second (in bps):
+            #encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
+            cutoff = monotonic_time()-1
+            used = sum(v[4] for v in self.encoding_stats if v[0]>cutoff) * 8
+            info = {
+                "bandwidth-limit"   : bandwidth_limit,
+                "bandwidth-used"    : used,
+                }
+            #aim for 10% below the limit:
+            target = used*110.0/100.0/bandwidth_limit
+            #if we are getting close to or above the limit,
+            #the certainty of this factor goes up:
+            weight = max(0, target-1)*(5+logp(target))
+            factors.append(("bandwidth-limit", info, target, weight))
         return factors
 
 
@@ -265,3 +280,11 @@ class WindowPerformanceStatistics(object):
             pixels += w*h
             count += 1
         return pixels, count
+
+    def get_bits_encoded(self, elapsed=1):
+        cutoff = monotonic_time()-elapsed
+        return sum(v[4] for v in self.encoding_stats if v[0]>cutoff) * 8
+
+    def get_damage_pixels(self, elapsed=1):
+        cutoff = monotonic_time()-elapsed
+        return sum(v[3]*v[4] for v in self.last_damage_events if v[0]>cutoff)
