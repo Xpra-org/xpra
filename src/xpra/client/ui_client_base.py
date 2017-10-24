@@ -191,7 +191,6 @@ class UIXpraClient(XpraClientBase):
         self.client_ping_latency = deque(maxlen=1000)
         self._server_ok = True
         self.last_ping_echoed_time = 0
-        self.bandwidth_limit = 0
 
         #webcam:
         self.webcam_option = ""
@@ -336,7 +335,6 @@ class UIXpraClient(XpraClientBase):
         self.title = opts.title
         self.session_name = opts.session_name
         self.auto_refresh_delay = opts.auto_refresh_delay
-        self.bandwidth_limit = opts.bandwidth_limit
         if opts.max_size:
             try:
                 self.max_window_size = [int(x.strip()) for x in opts.max_size.split("x", 1)]
@@ -1572,8 +1570,6 @@ class UIXpraClient(XpraClientBase):
             "sound.ogg-latency-fix"     : True,
             "av-sync"                   : self.av_sync,
             "av-sync.delay.default"     : 0,    #start at 0 and rely on sound-control packets to set the correct value
-            #network:
-            "bandwidth-limit"           : self.bandwidth_limit,
             })
         updict(capabilities, "window", {
             "raise"                     : True,

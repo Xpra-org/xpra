@@ -462,6 +462,7 @@ OPTION_TYPES = {
                     "remote-clipboard"  : str,
                     "local-clipboard"   : str,
                     "pulseaudio-command": str,
+                    "bandwidth-limit"   : str,
                     "tcp-encryption"    : str,
                     "tcp-encryption-keyfile": str,
                     "encryption"        : str,
@@ -538,7 +539,6 @@ OPTION_TYPES = {
                     "gid"               : int,
                     "min-port"          : int,
                     "rfb-upgrade"       : int,
-                    "bandwidth-limit"   : int,
                     #float options:
                     "auto-refresh-delay": float,
                     #boolean options:
@@ -826,6 +826,7 @@ def get_defaults():
                     "remote-clipboard"  : "CLIPBOARD",
                     "local-clipboard"   : "CLIPBOARD",
                     "pulseaudio-command": " ".join(DEFAULT_PULSEAUDIO_COMMAND),
+                    "bandwidth-limit"   : "auto",
                     "encryption"        : "",
                     "tcp-encryption"    : "",
                     "encryption-keyfile": "",
@@ -895,7 +896,6 @@ def get_defaults():
                     "gid"               : getgid(),
                     "min-port"          : 1024,
                     "rfb-upgrade"       : 5,
-                    "bandwidth-limit"   : 0,
                     "auto-refresh-delay": 0.15,
                     "daemon"            : CAN_DAEMONIZE,
                     "start-via-proxy"   : None,
@@ -1033,6 +1033,37 @@ def print_number(i, auto_value=0):
     if i==auto_value:
         return "auto"
     return str(i)
+
+def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
+    #special case for bandwidth-limit, which can be specified using units:
+    try:
+        v = str(v).lower().strip()
+        import re
+        if not v or v in FALSE_OPTIONS:
+            return 0
+        elif v=="auto":
+            return None
+        else:
+            r = re.match('([0-9]*)(.*)', v)
+            assert r
+            i = int(r.group(1))
+            unit = r.group(2).lower()
+            if unit.endswith(subunit):
+                unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
+            if unit=="b":
+                pass
+            elif unit=="k":
+                i *= 1000
+            elif unit=="m":
+                i *= 1000000
+            elif unit=="g":
+                i *= 1000000000
+            if min_value is not None:
+                assert i>=min_value, "value is too low"
+            return i
+    except Exception as e:
+        raise InitException("invalid value for %s '%s': %s" % (numtype, v, e))
+
 
 def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_validation={}):
     """

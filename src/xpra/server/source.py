@@ -496,7 +496,7 @@ class ServerSource(FileTransferHandler):
 
 
     def update_bandwidth_limits(self):
-        if self.bandwidth_limit<=0:
+        if self.bandwidth_limit<=0 or self.mmap_size>0:
             return
         #figure out how to distribute the bandwidth amongst the windows,
         #we use the window size,
@@ -874,6 +874,9 @@ class ServerSource(FileTransferHandler):
             log("windows/pixels forwarding is disabled for this client")
         else:
             self.parse_encoding_caps(c, min_mmap_size)
+        if self.mmap_size>0:
+            log("mmap enabled, ignoring bandwidth-limit")
+            self.bandwidth_limit = 0
         #window filters:
         try:
             for object_name, property_name, operator, value in c.listget("window-filters"):
@@ -2309,6 +2312,9 @@ class ServerSource(FileTransferHandler):
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
+            bandwidth_limit = self.bandwidth_limit
+            if self.mmap_size>0:
+                bandwidth_limit = 0
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
@@ -2321,7 +2327,7 @@ class ServerSource(FileTransferHandler):
                               self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
-                              self.mmap, self.mmap_size, self.bandwidth_limit)
+                              self.mmap, self.mmap_size, bandwidth_limit)
             self.window_sources[wid] = ws
             if len(self.window_sources)>1:
                 #re-distribute bandwidth:

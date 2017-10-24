@@ -57,4 +57,4 @@ server-idle-timeout = 0
 #bandwidth-limit = 1M
 #10Mbps:
 #bandwidth-limit = 10Mbps
-bandwidth-limit = 0
+bandwidth-limit = auto

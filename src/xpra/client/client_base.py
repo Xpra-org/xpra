@@ -19,7 +19,7 @@ filelog = Logger("file")
 netlog = Logger("network")
 authlog = Logger("auth")
 
-from xpra.scripts.config import InitExit
+from xpra.scripts.config import InitExit, parse_with_unit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, sanity_checks
@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr
-from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, disconnect_is_an_error, dump_all_frames
+from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, envint, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
@@ -52,6 +52,8 @@ DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
+AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 class XpraClientBase(FileTransferHandler):
@@ -92,6 +94,7 @@ class XpraClientBase(FileTransferHandler):
         self.password = None
         self.password_file = None
         self.password_sent = False
+        self.bandwidth_limit = 0
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
@@ -131,6 +134,7 @@ class XpraClientBase(FileTransferHandler):
         self.username = opts.username
         self.password = opts.password
         self.password_file = opts.password_file
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
         self.encryption = opts.encryption or opts.tcp_encryption
         if self.encryption:
             crypto_backend_init()
@@ -387,6 +391,16 @@ class XpraClientBase(FileTransferHandler):
         socket_speed = pinfo.get("socket", {}).get("speed")
         if socket_speed:
             capabilities["connection-data"] = {"speed" : socket_speed}
+        bandwidth_limit = self.bandwidth_limit
+        log("bandwidth-limit=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
+        if bandwidth_limit is None:
+            if socket_speed:
+                #auto: use 80% of socket speed if we have it:
+                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+            else:
+                bandwidth_limit = 0
+        if bandwidth_limit>0:
+            capabilities["bandwidth-limit"] = bandwidth_limit
 
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS

@@ -1133,31 +1133,6 @@ def do_parse_cmdline(cmdline, defaults):
     #and may have "none" or "all" special values
     fixup_options(options, defaults)
 
-    #special case for bandwidth-limit, which can be specified using units:
-    try:
-        import re
-        v = options.bandwidth_limit
-        if not v:
-            options.bandwidth_limit = 0
-        else:
-            r = re.match('([0-9]*)(.*)', options.bandwidth_limit)
-            assert r
-            i = int(r.group(1))
-            unit = r.group(2).lower()
-            if unit.endswith("bps"):
-                unit = unit[:-3]
-            if unit=="b":
-                pass
-            elif unit=="k":
-                i *= 1000
-            elif unit=="m":
-                i *= 1000000
-            elif unit=="g":
-                i *= 1000000000
-            assert i>=250000, "value is too low"
-            options.bandwidth_limit = i
-    except Exception as e:
-        raise InitException("invalid bandwidth limit value '%s': %s" % (options.bandwidth_limit, e))
     try:
         options.dpi = int(options.dpi)
     except Exception as e:

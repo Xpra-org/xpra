@@ -28,7 +28,7 @@ dbuslog = Logger("dbus")
 from xpra.version_util import XPRA_VERSION
 from xpra.scripts.main import _socket_connect, full_version_str
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.config import InitException, parse_bool, python_platform, FALSE_OPTIONS
+from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
@@ -209,7 +209,7 @@ class ServerCore(object):
         self.session_name = opts.session_name
         set_name("Xpra", self.session_name or "Xpra")
 
-        self.bandwidth_limit = opts.bandwidth_limit
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or opts.socket_dirs[0]
         self.encryption = opts.encryption
