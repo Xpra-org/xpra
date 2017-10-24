@@ -10,7 +10,6 @@
 
 import os
 from socket import error as socket_error
-import binascii
 from threading import Lock, Event
 
 
