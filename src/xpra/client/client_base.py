@@ -539,7 +539,7 @@ class XpraClientBase(FileTransferHandler):
         if not password:
             warn_server_and_exit(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
             return
-        salt = packet[1]
+        server_salt = packet[1]
         if self.encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet[2])
