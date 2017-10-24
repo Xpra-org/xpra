@@ -609,7 +609,7 @@ fi
 
 
 %changelog
-* Sun Oct 22 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Tue Oct 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
 - fix authentication weaknesses in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
@@ -628,6 +628,7 @@ fi
 - fix X11 crashes with the OpenGL client and some buggy drivers
 - fix parsing order of configuration files
 - fix compatibility with ffmpeg 3.4
+- fix timer warning race condition on window cleanup
 - more reliable scaling value rounding
 - don't show start command dialog if the server does not support it
 - validate window dimensions early to prevent DoS
