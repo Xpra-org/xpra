@@ -670,6 +670,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"uuid"						: Utilities.getHexUUID(),
 		"argv" 						: [window.location.href],
 		"digest" 					: ["hmac", "xor"],
+		"salt-digest"					: ["hmac", "xor"],
 		//compression bits:
 		"zlib"						: true,
 		"lzo"						: false,
@@ -1260,28 +1261,61 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 		}
 	}
 	var digest = packet[3];
-	var salt = packet[1];
+	var server_salt = packet[1];
 	var client_salt = null;
-	var challenge_response = null;
-	client_salt = Utilities.getSalt(salt.length);
-	salt = Utilities.xorString(salt, client_salt);
-	if (digest == "hmac") {
-		var hmac = forge.hmac.create();
-		hmac.start('md5', ctx.authentication_key);
-		hmac.update(salt);
-		challenge_response = hmac.digest().toHex();
-	} else if (digest == "xor") {
-		if((!ctx.ssl) && (!ctx.encryption) && (!ctx.insecure) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
-			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
-			return;
-		}
-		var trimmed_salt = salt.slice(0, ctx.authentication_key.length);
-		challenge_response = Utilities.xorString(trimmed_salt, ctx.authentication_key);
-	} else {
-		ctx.callback_close("server requested an unsupported digest " + digest);
+    var salt_digest = packet[4] || "xor";
+    var l = server_salt.length;
+    if (salt_digest=="xor") {
+    	//don't use xor over unencrypted connections unless explicitly allowed:
+    	if (digest == "xor") {
+    		if((!ctx.ssl) && (!ctx.encryption) && (!ctx.insecure) && (ctx.host!="localhost") && (ctx.host!="127.0.0.1")) {
+    			ctx.callback_close("server requested digest xor, cowardly refusing to use it without encryption with "+ctx.host);
+    			return;
+    		}
+    	}
+    	if (l<16 || l>256) {
+    		ctx.callback_close("invalid server salt length for xor digest:"+l);
+    		return;
+    	}
+    }
+    else {
+        //other digest, 32 random bytes is enough:
+    	l = 32;
+    }
+	client_salt = Utilities.getSalt(l);
+	console.log("challenge using salt digest", salt_digest);
+	var salt = ctx._gendigest(salt_digest, client_salt, server_salt);
+	if (!salt) {
+		this.callback_close("server requested an unsupported salt digest " + salt_digest);
 		return;
 	}
-	ctx._send_hello(challenge_response, client_salt);
+	console.log("challenge using digest", digest);
+	var challenge_response = ctx._gendigest(digest, ctx.authentication_key, salt);
+	if (challenge_response) {
+		ctx._send_hello(challenge_response, client_salt);
+	}
+	else {
+		this.callback_close("server requested an unsupported digest " + digest);
+	}
+}
+
+XpraClient.prototype._gendigest = function(digest, password, salt) {
+	if (digest.startsWith("hmac")) {
+		var hash="md5";
+		if (digest.indexOf("+")>0) {
+			hash = digest.split("+")[1];
+		}
+		console.log("hmac using hash", hash);
+		var hmac = forge.hmac.create();
+		hmac.start(hash, password);
+		hmac.update(salt);
+		return hmac.digest().toHex();
+	} else if (digest == "xor") {
+		var trimmed_salt = salt.slice(0, password.length);
+		return Utilities.xorString(trimmed_salt, password);
+	} else {
+		return null;
+	}
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
