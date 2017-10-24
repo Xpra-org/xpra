@@ -60,6 +60,8 @@ MAX_CONCURRENT_CONNECTIONS = 20
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
+AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 class ServerBase(ServerCore):
@@ -1196,6 +1198,15 @@ class ServerBase(ServerCore):
             self.disconnect_client(proto, reason, *args)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
+        bandwidth_limit = self.bandwidth_limit
+        if bandwidth_limit is None:
+            pinfo = proto.get_info()
+            socket_speed = pinfo.get("socket", {}).get("speed")
+            if socket_speed:
+                #auto: use 80% of socket speed if we have it:
+                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+            else:
+                bandwidth_limit = 0
         ServerSourceClass = self.get_server_source_class()
         ss = ServerSourceClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -1206,7 +1217,7 @@ class ServerBase(ServerCore):
                           self.window_filters,
                           self.file_transfer,
                           self.supports_mmap, self.mmap_filename,
-                          self.bandwidth_limit,
+                          bandwidth_limit,
                           self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
                           self.sound_properties,
