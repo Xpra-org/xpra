@@ -7,7 +7,7 @@
 import os
 import hmac
 import hashlib
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, xor
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.log import Logger
 log = Logger("network", "crypto")
