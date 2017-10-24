@@ -225,7 +225,7 @@ cdef extern from "libavcodec/avcodec.h":
         int thread_type
         int flags
         int flags2
-        int refcounted_frames
+        #int refcounted_frames
         int max_b_frames
         int has_b_frames
         int gop_size
@@ -894,7 +894,7 @@ cdef class Encoder(object):
         self.video_ctx.framerate.den = 25
         self.video_ctx.time_base.num = 1
         self.video_ctx.time_base.den = 25
-        self.video_ctx.refcounted_frames = 1
+        #self.video_ctx.refcounted_frames = 1
         self.video_ctx.max_b_frames = b_frames*1
         self.video_ctx.has_b_frames = b_frames
         self.video_ctx.delay = 0
