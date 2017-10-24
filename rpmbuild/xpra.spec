@@ -741,7 +741,7 @@ fi
 udevadm control --reload-rules && udevadm trigger || :
 %endif
 #reload dbus to get our new policy:
-sudo systemctl reload dbus
+systemctl reload dbus
 
 %post common-client
 /usr/bin/update-mime-database &> /dev/null || :
