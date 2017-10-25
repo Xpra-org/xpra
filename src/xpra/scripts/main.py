@@ -1870,7 +1870,7 @@ def single_display_match(dir_servers, error_cb):
     return sockdir, name, path
 
 
-def _socket_connect(sock, endpoint, description, dtype):
+def _socket_connect(sock, endpoint, description, dtype, info={}):
     from xpra.net.bytestreams import SocketConnection, pretty_socket
     try:
         sock.connect(endpoint)
@@ -1880,7 +1880,7 @@ def _socket_connect(sock, endpoint, description, dtype):
         log("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
         raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
-    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype)
+    return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype, info)
 
 def connect_or_fail(display_desc, opts):
     try:
@@ -2053,17 +2053,21 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             except Exception as e:
                 print("error trying to stop ssh tunnel process: %s" % e)
         from xpra.net.bytestreams import TwoFileConnection
+        info = {}
         target = "ssh/"
         username = display_desc.get("username")
         if username:
             target += "%s@" % username
-        target += display_desc.get("host")
+        host = display_desc.get("host")
+        info["host"] = host
+        target += host
         ssh_port = display_desc.get("ssh-port")
         if ssh_port:
+            info["port"] = ssh_port
             target += ":%i" % ssh_port
         display = display_desc.get("display")
         target += "/%s" % (display or "")
-        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype=dtype, close_cb=stop_tunnel)
+        conn = TwoFileConnection(child.stdin, child.stdout, abort_test, target=target, socktype=dtype, close_cb=stop_tunnel, info=info)
         conn.timeout = 0            #taken care of by abort_test
         conn.process = (child, "ssh", cmd)
 
@@ -2125,6 +2129,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
             family = socket.AF_INET
         host = display_desc["host"]
         port = display_desc["port"]
+        info = {
+            "host" : host,
+            "port" : port,
+            }
         try:
             addrinfo = socket.getaddrinfo(host, port, family)
         except Exception as e:
@@ -2143,7 +2151,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
-        conn = _socket_connect(sock, sockaddr, display_name, dtype)
+        conn = _socket_connect(sock, sockaddr, display_name, dtype, info)
         if dtype in ("ssl", "wss"):
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
@@ -2169,8 +2177,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 connlog("websocket.create_connection%s", (url, SOCKET_TIMEOUT, subprotocols, sock), exc_info=True)
                 raise InitException("websocket connection failed, not a websocket capable server port: %s" % e)
             class WebSocketClientConnection(Connection):
-                def __init__(self, ws, target, socktype):
-                    Connection.__init__(self, target, socktype)
+                def __init__(self, ws, target, socktype, info):
+                    Connection.__init__(self, target, socktype, info)
                     self._socket = ws
 
                 def peek(self, _n):
@@ -2215,7 +2223,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                                   "connected"       : ws.connected,
                                   })
                     return d
-            return WebSocketClientConnection(ws, "websocket", host)
+            return WebSocketClientConnection(ws, conn.target, {"ws" : "websocket", "wss" : "secure websocket"}.get(dtype, dtype), info)
     else:
         raise InitException("unsupported display type: %s" % dtype)
     return conn
@@ -2455,7 +2463,17 @@ def get_client_app(error_cb, opts, extra_args, mode):
         def handshake_complete(*_args):
             from xpra.log import Logger
             log = Logger()
-            log.info("Attached to %s (press Control-C to detach)\n", conn.target)
+            target = conn.target
+            info = conn.get_info()
+            host = info.get("host")
+            if host:
+                target = "%s" % host
+                port = info.get("port")
+                if port:
+                    target += ":%s" % port
+                target += " via %s" % conn.socktype
+            log.info("Attached to %s", target)
+            log.info(" (press Control-C to detach)\n")
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
         app.init_ui(opts, extra_args)

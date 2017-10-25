@@ -122,11 +122,12 @@ def pretty_socket(s):
 
 
 class Connection(object):
-    def __init__(self, target, socktype):
+    def __init__(self, target, socktype, info={}):
         if type(target)==tuple:
             target = ":".join([str(x) for x in target])
         self.target = target
         self.socktype = socktype
+        self.info = info
         self.input_bytecount = 0
         self.input_readcount = 0
         self.output_bytecount = 0
@@ -169,7 +170,8 @@ class Connection(object):
         return r
 
     def get_info(self):
-        return {
+        info = self.info.copy()
+        info.update({
                 "type"              : self.socktype or "",
                 "endpoint"          : self.target or "",
                 "active"            : self.active,
@@ -181,7 +183,8 @@ class Connection(object):
                                        "bytecount"      : self.output_bytecount,
                                        "writecount"     : self.output_writecount,
                                        },
-                }
+                })
+        return info
 
 
 # A simple, portable abstraction for a blocking, low-level
@@ -189,8 +192,8 @@ class Connection(object):
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None):
-        Connection.__init__(self, target, socktype)
+    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None, info={}):
+        Connection.__init__(self, target, socktype, info)
         self._writeable = writeable
         self._readable = readable
         self._read_fd = self._readable.fileno()
@@ -254,8 +257,8 @@ class TwoFileConnection(Connection):
 
 
 class SocketConnection(Connection):
-    def __init__(self, socket, local, remote, target, socktype):
-        Connection.__init__(self, target, socktype)
+    def __init__(self, socket, local, remote, target, socktype, info={}):
+        Connection.__init__(self, target, socktype, info)
         self._socket = socket
         self.local = local
         self.remote = remote
