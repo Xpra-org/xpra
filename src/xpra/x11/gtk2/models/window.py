@@ -595,10 +595,10 @@ class WindowModel(BaseWindowModel):
 
     def _handle_icon_title_change(self):
         icon_name = self.prop_get("_NET_WM_ICON_NAME", "utf8", True)
-        metalog("_NET_WM_ICON_NAME=%s", icon_name)
+        iconlog("_NET_WM_ICON_NAME=%s", icon_name)
         if icon_name is None:
             icon_name = self.prop_get("WM_ICON_NAME", "latin1", True)
-            metalog("WM_ICON_NAME=%s", icon_name)
+            iconlog("WM_ICON_NAME=%s", icon_name)
         self._updateprop("icon-title", sanestr(icon_name))
 
     def _handle_motif_wm_hints_change(self):
@@ -667,7 +667,7 @@ class WindowModel(BaseWindowModel):
         #then get the icon pixels on demand and cache them..
         self._internal_set_property("icon", surf)
         self._internal_set_property("icon-pixmap", pixmap)
-        iconlog("icon is now %r", surf)
+        iconlog("icon is now %r, pixmap=%s", surf, pixmap)
 
     _x11_property_handlers = dict(BaseWindowModel._x11_property_handlers)
     _x11_property_handlers.update({

@@ -20,6 +20,7 @@ workspacelog = Logger("workspace")
 keylog = Logger("keyboard")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
+iconlog = Logger("icon")
 
 
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
@@ -148,6 +149,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def reset_icon(self):
         current_icon = self._current_icon
+        iconlog("reset_icon() current icon=%s", current_icon)
         if current_icon:
             self.update_icon(*current_icon)
 
@@ -171,7 +173,6 @@ class ClientWindowBase(ClientWidgetBase):
         raise Exception("override me!")
 
 
-
     def is_OR(self):
         return self._override_redirect
 
@@ -193,6 +194,7 @@ class ClientWindowBase(ClientWidgetBase):
         #(and GTK doesn't set the "class-instance" once the window is realized)
         if b"class-instance" in metadata:
             self.set_class_instance(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
+            self.reset_icon()
 
         if b"title" in metadata:
             try:
