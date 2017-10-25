@@ -2977,7 +2977,13 @@ class UIXpraClient(XpraClientBase):
         if proc is None or proc.poll():
             from xpra.child_reaper import getChildReaper
             import subprocess
-            proc = subprocess.Popen("xpra_signal_listener", stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            try:
+                proc = subprocess.Popen("xpra_signal_listener", stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            except OSError as e:
+                log("assign_signal_watcher_pid(%s, %s)", wid, pid, exc_info=True)
+                log.error("Error: cannot execute signal listener")
+                log.error(" %s", e)
+                proc = None                    
             def signal_received(*args):
                 registered = proc in self._pid_to_signalwatcher.values()
                 log("signal_received(%s) for server pid=%s, exit code=%i, registered=%s", args, pid, proc.poll(), registered)
