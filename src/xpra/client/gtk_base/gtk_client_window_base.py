@@ -411,6 +411,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if HAS_X11_BINDINGS:
             #request frame extents if the window manager supports it
             self._client.request_frame_extents(self)
+            if self.watcher_pid:
+                log("using watcher pid=%i for wid=%i", self.watcher_pid, self._id)
+                prop_set(self.get_window(), "_NET_WM_PID", "u32", self.watcher_pid)
         if self.group_leader:
             self.get_window().set_group(self.group_leader)
 
@@ -418,6 +421,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         eventslog("on_unrealize(%s)", widget)
         remove_window_hooks(self)
 
+
+    def assign_signal_watcher_pid(self):
+        from xpra.child_reaper import getChildReaper
+        import subprocess
+        proc = subprocess.Popen("xpra_signal_listener", close_fds=True, preexec_fn=os.setsid)
+        def signal_received(*args):
+            log.info("signal_received(%s)", args)
+            #TODO: forward to server!
+        if proc and proc.poll() is None:
+            getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, ignore=True, forget=True, callback=signal_received)
+            pid = (10000+self._id) & 0xffff
+        log.info("using fake pid=%i for id=%i", pid, self._id)
+        prop_set(self.get_window(), "_NET_WM_PID", "u32", pid)
 
     def set_alpha(self):
         #try to enable alpha on this window if needed,

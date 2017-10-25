@@ -16,8 +16,9 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 class ClientWidgetBase(object):
 
-    def __init__(self, client, wid, has_alpha):
+    def __init__(self, client, watcher_pid, wid, has_alpha):
         self._id = wid
+        self.watcher_pid = watcher_pid
         #gobject-like scheduler:
         self.source_remove = client.source_remove
         self.idle_add = client.idle_add

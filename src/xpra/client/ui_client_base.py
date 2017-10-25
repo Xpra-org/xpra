@@ -314,6 +314,8 @@ class UIXpraClient(XpraClientBase):
         self.notifier = None
         self.in_remote_logging = False
         self.local_logging = None
+        self._pid_to_signalwatcher = {}
+        self._signalwatcher_to_ids = {}
 
         #state:
         self._focused = None
@@ -2937,6 +2939,7 @@ class UIXpraClient(XpraClientBase):
         #find a "transient-for" value using the pid to find a suitable window
         #if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
+        watcher_pid = self.assign_signal_watcher_pid(wid, pid)
         if override_redirect and pid>0 and metadata.intget("transient-for", 0)>0 is None and metadata.get("role")=="popup":
             tfor = None
             for twid, twin in self._id_to_window.items():
@@ -2954,7 +2957,7 @@ class UIXpraClient(XpraClientBase):
         windowlog("make_new_window(..) client_window_classes=%s, group_leader_window=%s", client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
+                window = cwc(self, group_leader_window, watcher_pid, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties, border, self.max_window_size, self.default_cursor_data, self.pixel_depth)
                 break
             except:
                 windowlog.warn("failed to instantiate %s", cwc, exc_info=True)
@@ -2966,6 +2969,28 @@ class UIXpraClient(XpraClientBase):
         self._window_to_id[window] = wid
         window.show()
         return window
+
+    def assign_signal_watcher_pid(self, wid, pid):
+        if not POSIX or not pid:
+            return 0
+        proc = self._pid_to_signalwatcher.get(pid)
+        if proc is None or proc.poll():
+            from xpra.child_reaper import getChildReaper
+            import subprocess
+            proc = subprocess.Popen("xpra_signal_listener", stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            def signal_received(*args):
+                registered = proc in self._pid_to_signalwatcher.values()
+                log("signal_received(%s) for server pid=%s, exit code=%i, registered=%s", args, pid, proc.poll(), registered)
+                #TODO: forward to server!
+            if proc and proc.poll() is None:
+                #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
+                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=signal_received)
+                log("using watcher pid=%i for server pid=%i", proc.pid, pid)
+                self._pid_to_signalwatcher[pid] = proc
+        if proc:
+            self._signalwatcher_to_ids.setdefault(proc, []).append(wid)
+            return proc.pid
+        return 0
 
 
     def freeze(self):
@@ -3353,6 +3378,21 @@ class UIXpraClient(XpraClientBase):
             log("destroying window %s which has grab, ungrabbing!", wid)
             self.window_ungrab()
             self._window_with_grab = None
+        #deal with signal watchers:
+        windowlog("looking for window %i in %s", wid, self._signalwatcher_to_ids)
+        for signalwatcher, wids in list(self._signalwatcher_to_ids.items()):
+            if wid in wids:
+                windowlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
+                wids.remove(wid)
+                if not wids:
+                    windowlog("last window, removing watcher %s", signalwatcher)
+                    del self._signalwatcher_to_ids[signalwatcher]
+                    signalwatcher.terminate()
+                    #now remove any pids that use this watcher:
+                    for pid, w in list(self._pid_to_signalwatcher.items()):
+                        if w==signalwatcher:
+                            del self._pid_to_signalwatcher[pid]
+
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
