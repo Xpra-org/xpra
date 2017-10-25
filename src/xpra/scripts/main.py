@@ -1858,7 +1858,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                                   "connected"       : ws.connected,
                                   })
                     return d
-            return WebSocketClientConnection(ws, "websocket", host)
+            return WebSocketClientConnection(ws, host, dtype)
     else:
         raise InitException("unsupported display type: %s" % dtype)
     return conn
