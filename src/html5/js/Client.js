@@ -59,6 +59,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.file_transfer = false;
 	this.keyboard_layout = null;
 	this.printing = false;
+	this.bandwidth_limit = 0;
 	this.reconnect = true;
 	this.reconnect_count = 5;
 	this.reconnect_in_progress = false;
@@ -970,6 +971,11 @@ XpraClient.prototype._make_hello_base = function() {
 		"bencode"					: true,
 		"yaml"						: false,
 	});
+	if (this.bandwidth_limit>0) {
+		this._update_capabilities({
+			"bandwidth-limit"	: this.bandwidth_limit,
+		})
+	}
 	var ci = Utilities.getConnectionInfo();
 	if (ci) {
 		this._update_capabilities({

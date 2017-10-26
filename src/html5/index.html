@@ -124,6 +124,7 @@
 				var sound = getboolparam("sound") || null;
 				var audio_codec = getparam("audio_codec") || null;
 				var encoding = getparam("encoding") || null;
+				var bandwidth_limit = getparam("bandwidth_limit") || 0;
 				var action = getparam("action") || "connect";
 				var submit = getboolparam("submit", true);
 				var server = getparam("server") || window.location.hostname;
@@ -199,6 +200,7 @@
 		    	client.clipboard_enabled = clipboard;
 		    	client.printing = printing;
 		    	client.file_transfer = file_transfer;
+		    	client.bandwidth_limit = bandwidth_limit;
 		    	client.steal = steal;
 		    	client.reconnect = reconnect;
 		    	client.swap_keys = swap_keys;
@@ -319,6 +321,7 @@
 				    				"server"			: server,
 				    				"port"				: port,
 				    				"encoding"			: encoding,
+				    				"bandwidth_limit"	: bandwidth_limit,
 				    				"keyboard_layout"	: keyboard_layout,
 				    				"action"			: action,
 				    				"sound"				: sound,

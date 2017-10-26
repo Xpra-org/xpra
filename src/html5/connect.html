@@ -88,6 +88,16 @@
 				<ul class="list-group">
 
 				  <li class="list-group-item">
+					<select id="bandwidth_limit">
+					  <option value="0">None</option>
+					  <option value="100000000">100Mbps</option>
+					  <option value="10000000">10Mbps</option>
+					  <option value="1000000">1Mbps</option>
+					</select>
+					Bandwith Constraint
+				  </li>
+
+				  <li class="list-group-item">
 					<select id="encoding">
 					  <option value="auto">Automatic</option>
 					  <option value="jpeg">JPEG</option>
@@ -311,7 +321,7 @@ function doConnect() {
 		}
 	}
 	add_prop("submit", true);
-	var val_props = ["server", "port", "username", "password", "encoding", "keyboard_layout", "audio_codec"];
+	var val_props = ["server", "port", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
 	for (var i = 0; i < val_props.length; i++) {
 		var prop = val_props[i];
 		var value = document.getElementById(prop).value;
@@ -416,6 +426,15 @@ $(document).ready(function() {
 
 	var encoding = getparam("encoding") || "auto";
 	document.getElementById('encoding').value = encoding;
+
+	var bandwidth_limit = getparam("bandwidth_limit");
+	if(bandwidth_limit==null) {
+		var ci = Utilities.getConnectionInfo();
+		if (ci) {
+			bandwidth_limit = ci["downlink"];
+		}
+	}
+	document.getElementById('bandwidth_limit').value = bandwidth_limit || 0;
 
 	var keyboard_layout = Utilities.getKeyboardLayout();
 	document.getElementById('keyboard_layout').value = keyboard_layout;
