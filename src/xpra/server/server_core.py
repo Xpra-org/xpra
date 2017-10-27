@@ -303,13 +303,12 @@ class ServerCore(object):
                     log.error(" the html server will not be available")
                 self._html = False
         #make sure we have the web root:
-        if self._html:
-            from xpra.platform.paths import get_resources_dir
-            self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
-            if not os.path.exists(self._www_dir):
-                log.error("Error: cannot find the html web root")
-                log.error(" '%s' does not exist", self._www_dir)
-                self._html = False
+        from xpra.platform.paths import get_resources_dir
+        self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
+        if not os.path.exists(self._www_dir) and self._html:
+            log.error("Error: cannot find the html web root")
+            log.error(" '%s' does not exist", self._www_dir)
+            self._html = False
         if self._html:
             log.info("serving html content from: %s", self._www_dir)
         if self._html and self._tcp_proxy:
