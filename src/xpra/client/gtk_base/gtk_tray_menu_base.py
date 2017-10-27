@@ -751,10 +751,6 @@ class GTKTrayMenuBase(object):
 
     def make_scalingmenuitem(self):
         self.scaling = self.menuitem("Scaling", "scaling.png", "Desktop Scaling")
-        def set_scalingmenuitem(*args):
-            log("set_scalingmenuitem%s", args)
-            set_sensitive(self.scaling, not self.client.mmap_enabled)
-        self.client.after_handshake(set_scalingmenuitem)
         scaling_submenu = self.make_scalingmenu()
         self.scaling.set_submenu(scaling_submenu)
         return self.scaling
