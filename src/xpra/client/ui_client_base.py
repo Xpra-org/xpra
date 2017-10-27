@@ -1949,6 +1949,7 @@ class UIXpraClient(XpraClientBase):
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
         self.server_av_sync = c.boolget("av-sync.enabled")
+        self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         e = c.strget("encoding")
         if e:
@@ -2263,6 +2264,10 @@ class UIXpraClient(XpraClientBase):
     def send_input_devices(self, fmt, input_devices):
         assert self.server_input_devices
         self.send("input-devices", fmt, input_devices)
+
+
+    def send_bandwidth_limit(self):
+        self.send("bandwidth-limit", self.bandwidth_limit)
 
 
     def start_sending_webcam(self):

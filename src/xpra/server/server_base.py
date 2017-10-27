@@ -36,7 +36,7 @@ httplog = Logger("http")
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
-from xpra.simple_stats import to_std_unit
+from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
@@ -730,6 +730,7 @@ class ServerBase(ServerCore):
             "webcam-stop":                          self._process_webcam_stop,
             "webcam-frame":                         self._process_webcam_frame,
             "connection-data":                      self._process_connection_data,
+            "bandwidth-limit":                      self._process_bandwidth_limit,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1198,15 +1199,7 @@ class ServerBase(ServerCore):
             self.disconnect_client(proto, reason, *args)
         def get_window_id(wid):
             return self._window_to_id.get(wid)
-        bandwidth_limit = self.bandwidth_limit
-        if bandwidth_limit is None:
-            pinfo = proto.get_info()
-            socket_speed = pinfo.get("socket", {}).get("speed")
-            if socket_speed:
-                #auto: use 80% of socket speed if we have it:
-                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
-            else:
-                bandwidth_limit = 0
+        bandwidth_limit = self.get_client_bandwidth_limit(proto)
         ServerSourceClass = self.get_server_source_class()
         ss = ServerSourceClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove,
@@ -1237,6 +1230,18 @@ class ServerBase(ServerCore):
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def get_client_bandwidth_limit(self, proto):
+        if self.bandwidth_limit is None:
+            #auto-detect:
+            pinfo = proto.get_info()
+            socket_speed = pinfo.get("socket", {}).get("speed")
+            if socket_speed:
+                #auto: use 80% of socket speed if we have it:
+                return socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+            else:
+                return 0
+        return self.bandwidth_limit
 
 
     def get_server_source_class(self):
@@ -1466,6 +1471,9 @@ class ServerBase(ServerCore):
         f["encoding"] = {
                          "generic" : True,
                          }
+        f["network"] = {
+                 "bandwidth-limit-change"       : True,
+                 }
         return f
 
     def make_hello(self, source):
@@ -3307,6 +3315,16 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss:
             ss.update_connection_data(packet[1])
+
+    def _process_bandwidth_limit(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        bandwidth_limit = packet[1]
+        if self.bandwidth_limit>0:
+            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
+        ss.bandwidth_limit = bandwidth_limit
+        netlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
 
 
     def _process_input_devices(self, _proto, packet):

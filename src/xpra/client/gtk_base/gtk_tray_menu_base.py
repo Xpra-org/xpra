@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
@@ -40,6 +41,13 @@ RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
+
+BANDWIDTH_MENU_OPTIONS = []
+for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
+    try:
+        BANDWIDTH_MENU_OPTIONS.append(int(x))
+    except ValueError:
+        log.warn("Warning: invalid bandwidth menu option '%s'", x)
 
 
 LOSSLESS = "Lossless"
@@ -645,6 +653,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         picture_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
+        menu.append(self.make_bandwidthlimitmenuitem())
         if self.client.windows_enabled and len(self.client.get_encodings())>1:
             menu.append(self.make_encodingsmenuitem())
         if self.client.can_scale:
@@ -653,6 +662,41 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_speedmenuitem())
         picture_menu_item.show_all()
         return picture_menu_item
+
+    def make_bandwidthlimitmenuitem(self):
+        bandwidth_limit_menu_item = self.menuitem("Bandwidth Limit", "bandwidth_limit.png")
+        menu = gtk.Menu()
+        self.popup_menu_workaround(menu)
+        initial_value = self.client.bandwidth_limit or 0
+        if initial_value>0:
+            initial_value //= 1000000
+        def bwitem(bwlimit=0):
+            if bwlimit>0:
+                label = "%iMbps" % bwlimit
+            else:
+                label = "None"
+            c = CheckMenuItem(label)
+            c.set_draw_as_radio(True)
+            c.set_active(initial_value==bwlimit)
+            def activate_cb(item, *args):
+                self.client.bandwidth_limit = bwlimit*1000*1000
+                self.client.send_bandwidth_limit()
+            c.connect("toggled", activate_cb)
+            return c
+        options = BANDWIDTH_MENU_OPTIONS
+        if initial_value and initial_value not in options:
+            options.append(initial_value)
+        menu.append(bwitem(0))
+        menu.append(gtk.SeparatorMenuItem())
+        for v in sorted(options):
+            menu.append(bwitem(v))
+        bandwidth_limit_menu_item.set_submenu(menu)
+        bandwidth_limit_menu_item.show_all()
+        def set_bwlimitmenu(*_args):
+            set_sensitive(bandwidth_limit_menu_item, self.client.server_bandwidth_limit_change)
+        self.client.after_handshake(set_bwlimitmenu)
+        return bandwidth_limit_menu_item
+        
 
     def make_encodingsmenuitem(self):
         encodings = self.menuitem("Encoding", "encoding.png", "Choose picture data encoding", None)
