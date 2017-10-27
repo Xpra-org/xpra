@@ -112,7 +112,8 @@ def validate_backend(try_backend):
 
 
 def get_digests():
-    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+    algos = getattr(hashlib, "algorithms_available", getattr(hashlib, "algorithms", ["md5", "sha1", "sha224", "sha256", "sha384", "sha512"]))
+    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(algos)))]
     return digests
 
 def get_digest_module(digest):
