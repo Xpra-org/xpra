@@ -1018,7 +1018,7 @@ class SessionInfo(gtk.Window):
 
 
     def populate_graphs(self, *_args):
-        self.client.send_info_request()
+        self.client.send_info_request("network", "damage", "state", "batch")
         box = self.tab_box
         _, h = get_preferred_size(box)
         _, bh = get_preferred_size(self.tab_button_box)

@@ -2104,11 +2104,21 @@ class ServerBase(ServerCore):
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
         ss = self._server_sources.get(proto)
-        if ss:
-            def info_callback(_proto, info):
-                assert proto==_proto
-                ss.send_info_response(info)
-            self.get_all_info(info_callback, proto, *packet[2:])
+        if not ss:
+            return
+        window_ids, categories = [], None
+        #if len(packet>=2):
+        #    uuid = packet[1]
+        if len(packet)>=3:
+            window_ids = packet[2]
+        if len(packet)>=4:
+            categories = packet[3]
+        def info_callback(_proto, info):
+            assert proto==_proto
+            if categories:
+                info = dict((k,v) for k,v in info.items() if k in categories)
+            ss.send_info_response(info)
+        self.get_all_info(info_callback, proto, window_ids)
 
     def send_hello_info(self, proto, flatten=True):
         start = monotonic_time()

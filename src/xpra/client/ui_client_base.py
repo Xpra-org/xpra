@@ -1819,10 +1819,10 @@ class UIXpraClient(XpraClientBase):
                 if any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
-    def send_info_request(self):
+    def send_info_request(self, *categories):
         if not self.info_request_pending:
             self.info_request_pending = True
-            self.send("info-request", [self.uuid], list(self._id_to_window.keys()))
+            self.send("info-request", [self.uuid], list(self._id_to_window.keys()), categories)
 
 
     def send_quality(self):
