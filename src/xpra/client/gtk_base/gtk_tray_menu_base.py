@@ -434,12 +434,12 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.readonly_menuitem, False)
         def set_readonly_menuitem(*args):
             log("set_readonly_menuitem%s enabled=%s", args, self.client.readonly)
-            self.bell_menuitem.set_active(self.client.readonly)
+            self.readonly_menuitem.set_active(self.client.readonly)
             set_sensitive(self.readonly_menuitem, not self.client.server_readonly)
             if not self.client.server_readonly:
-                self.bell_menuitem.set_tooltip_text("Disable all mouse and keyboard input")
+                self.readonly_menuitem.set_tooltip_text("Disable all mouse and keyboard input")
             else:
-                self.bell_menuitem.set_tooltip_text("Cannot disable readonly mode: the server has locked the session to read only")
+                self.readonly_menuitem.set_tooltip_text("Cannot disable readonly mode: the server has locked the session to read only")
         self.client.after_handshake(set_readonly_menuitem)
         return self.readonly_menuitem
 
