@@ -44,6 +44,7 @@ READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 #merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
 LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 4096)
+LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
 #inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
@@ -744,6 +745,7 @@ class Protocol(object):
             from the UI thread will need to use a callback (usually via 'idle_add')
         """
         read_buffer = None
+        packet_size = 0
         payload_size = -1
         padding_size = 0
         packet_index = 0
@@ -820,6 +822,7 @@ class Protocol(object):
                 else:
                     raw_string = read_buffer[:payload_size]
                     read_buffer = read_buffer[payload_size:]
+                packet_size += 8+payload_size
                 #decrypt if needed:
                 data = raw_string
                 if self.cipher_in and protocol_flags & FLAGS_CIPHER:
@@ -912,6 +915,9 @@ class Protocol(object):
                     packet_type = self.receive_aliases.get(packet_type)
                     packet[0] = packet_type
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0)+1
+                if LOG_RAW_PACKET_SIZE:
+                    log("%s: %i bytes", packet_type, packet_size)
+                packet_size = 0
 
                 self.input_packetcount += 1
                 log("processing packet %s", packet_type)
