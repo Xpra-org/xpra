@@ -1121,17 +1121,21 @@ class ServerBase(ServerCore):
                 disconnected += 1
             elif ui_client and ss.ui_client:
                 #check if existing sessions are willing to share:
-                if self.sharing is False:
+                if self.sharing is True:
+                    share_count += 1
+                elif self.sharing is False:
                     self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
                     disconnected += 1
-                elif not share:
-                    self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
-                    disconnected += 1
-                elif not ss.share:
-                    self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
-                    disconnected += 1
                 else:
-                    share_count += 1
+                    assert self.sharing is None
+                    if not share:
+                        self.disconnect_client(p, NEW_CLIENT, "the new client does not wish to share")
+                        disconnected += 1
+                    elif not ss.share:
+                        self.disconnect_client(p, NEW_CLIENT, "this client had not enabled sharing")
+                        disconnected += 1
+                    else:
+                        share_count += 1
 
         #don't accept this connection if we're going to exit-with-client:
         accepted = True
@@ -2312,10 +2316,10 @@ class ServerBase(ServerCore):
         up("keyboard",  self.get_keyboard_info())
         up("encodings", self.get_encoding_info())
         up("network", {
-            "sharing"                      : self.sharing is True,
-            "sharing-toggle"               : self.sharing is not False,
-            "lock"                         : self.lock is True,
-            "lock-toggle"                  : self.lock is not False,
+            "sharing"                      : self.sharing is not False,
+            "sharing-toggle"               : self.sharing is None,
+            "lock"                         : self.lock is not False,
+            "lock-toggle"                  : self.lock is None,
             })
         for k,v in codec_versions.items():
             info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
