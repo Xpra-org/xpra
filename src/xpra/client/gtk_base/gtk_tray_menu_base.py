@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -392,6 +392,7 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
+        menu.append(self.make_sharingmenuitem())
         menu.append(self.make_readonlymenuitem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())
@@ -403,7 +404,26 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_keyboardsyncmenuitem())
         features_menu_item.show_all()
         return features_menu_item
-        
+
+    def make_sharingmenuitem(self):
+        def sharing_toggled(*args):
+            v = self.sharing_menuitem.get_active()
+            self.client.client_supports_sharing = v
+            self.client.send_sharing_enabled()
+            log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
+        self.sharing_menuitem = self.checkitem("Sharing", sharing_toggled)
+        set_sensitive(self.sharing_menuitem, False)
+        def set_sharing_menuitem(*args):
+            log("set_sharing_menuitem%s server_supports_sharing_toggle=%s, server_supports_sharing=%s", args, self.client.server_supports_sharing_toggle, self.client.server_supports_sharing)
+            self.sharing_menuitem.set_active(self.client.client_supports_sharing and self.client.server_supports_sharing)
+            set_sensitive(self.sharing_menuitem, self.client.server_supports_sharing and self.client.server_supports_sharing_toggle)
+            if not self.client.server_supports_sharing:
+                self.bell_menuitem.set_tooltip_text("Sharing is disabled on the server")
+            elif not self.client.server_supports_sharing_toggle:
+                self.bell_menuitem.set_tooltip_text("Sharing cannot be changed on this server")
+        self.client.after_handshake(set_sharing_menuitem)
+        return self.sharing_menuitem
+
 
     def make_readonlymenuitem(self):
         def readonly_toggled(*args):

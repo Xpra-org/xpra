@@ -13,7 +13,10 @@ mmap-group = no
 socket-permissions = 600
 
 # Share session with other users:
-sharing = no
+#sharing = yes
+#sharing = no
+#leave it up to the client (defaults to no):
+sharing = auto
 
 # Compressors:
 #compressors = all

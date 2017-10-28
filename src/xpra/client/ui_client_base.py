@@ -438,7 +438,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
-        self.client_supports_sharing = opts.sharing
+        self.client_supports_sharing = opts.sharing is True
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
         self.input_devices = opts.input_devices
@@ -1870,6 +1870,7 @@ class UIXpraClient(XpraClientBase):
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_supports_notifications = c.boolget("notifications")
+        self.server_supports_sharing_toggle = c.boolget("sharing-toggle")
         self.notifications_enabled = self.client_supports_notifications
         self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
@@ -2267,7 +2268,12 @@ class UIXpraClient(XpraClientBase):
 
 
     def send_bandwidth_limit(self):
+        assert self.server_bandwidth_limit_change
         self.send("bandwidth-limit", self.bandwidth_limit)
+
+    def send_sharing_enabled(self):
+        assert self.server_supports_sharing and self.server_supports_sharing_toggle
+        self.send("sharing-toggle", self.client_supports_sharing)
 
 
     def start_sending_webcam(self):

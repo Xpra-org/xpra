@@ -100,7 +100,7 @@ class ServerBase(ServerCore):
         self.default_speed = -1
         self.default_min_speed = 0
         self.pulseaudio = False
-        self.sharing = False
+        self.sharing = True
         self.bell = False
         self.cursors = False
         self.default_dpi = 96
@@ -227,7 +227,7 @@ class ServerBase(ServerCore):
         self.default_speed = opts.speed
         self.default_min_speed = opts.min_speed
         self.pulseaudio = opts.pulseaudio
-        self.sharing = opts.sharing
+        self.sharing = opts.sharing is not False
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
@@ -731,6 +731,7 @@ class ServerBase(ServerCore):
             "webcam-frame":                         self._process_webcam_frame,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
+            "sharing-toggle":                       self._process_sharing_toggle,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1462,6 +1463,7 @@ class ServerBase(ServerCore):
                 "auto-video-encoding",
                 "window-filters",
                 "connection-data",
+                "sharing-toggle",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
@@ -1492,7 +1494,7 @@ class ServerBase(ServerCore):
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "rpc-types"                    : list(self.rpc_handlers.keys()),
-                 "sharing"                      : self.sharing,
+                 "sharing"                      : self.sharing is not False,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
@@ -3335,6 +3337,20 @@ class ServerBase(ServerCore):
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         ss.bandwidth_limit = bandwidth_limit
         netlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
+
+
+    def _process_sharing_toggle(self, proto, packet):
+        assert self.sharing
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        sharing = packet[1]
+        ss.share = sharing
+        if not sharing:
+            #disconnect other users:
+            for p,ss in tuple(self._server_sources.items()):
+                if p!=proto:
+                    self.disconnect_client(p, DETACH_REQUEST, "client %i no longer wishes to share the session" % ss.counter)
 
 
     def _process_input_devices(self, _proto, packet):

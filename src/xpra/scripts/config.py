@@ -919,7 +919,7 @@ def get_defaults():
                     "notifications"     : True,
                     "xsettings"         : not OSX and not WIN32,
                     "system-tray"       : True,
-                    "sharing"           : False,
+                    "sharing"           : None,
                     "delay-tray"        : False,
                     "windows"           : True,
                     "terminate-children": False,
@@ -1294,9 +1294,6 @@ def fixup_clipboard(options):
         warn(" specify 'to-server', 'to-client' or 'both'")
         options.clipboard_direction = "disabled"
 
-def fixup_bool(options):
-    options.sharing = parse_bool("sharing", options.sharing) or False
-
 def abs_paths(options):
     #convert to absolute paths before we daemonize
     for k in ("clipboard-filter-file",
@@ -1322,7 +1319,6 @@ def fixup_options(options, defaults={}):
     fixup_socketdirs(options, defaults)
     fixup_clipboard(options)
     fixup_keyboard(options)
-    fixup_bool(options)
     abs_paths(options)
     #remote-xpra is meant to be a list, but the user can specify a string using the command line,
     #in which case we replace all the default values with this single entry:

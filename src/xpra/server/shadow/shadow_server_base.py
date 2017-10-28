@@ -25,7 +25,7 @@ class ShadowServerBase(RFBServer):
         self.root_window_model = None
         self.mapped = False
         self.pulseaudio = False
-        self.sharing = False
+        self.sharing = True
         self.refresh_delay = REFRESH_DELAY
         self.timer = None
         DamageBatchConfig.ALWAYS = True             #always batch

@@ -688,7 +688,7 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
-                      help="Allow more than one client to connect to the same session. Default: %s." % enabled_str(defaults.sharing))
+                      help="Allow more than one client to connect to the same session. Default: %s." % enabled_or_auto(defaults.sharing))
     legacy_bool_parse("remote-logging")
     group.add_option("--remote-logging", action="store", metavar="yes|no|both",
                       dest="remote_logging", default=defaults.remote_logging,
