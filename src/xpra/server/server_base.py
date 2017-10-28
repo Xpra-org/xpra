@@ -100,7 +100,8 @@ class ServerBase(ServerCore):
         self.default_speed = -1
         self.default_min_speed = 0
         self.pulseaudio = False
-        self.sharing = True
+        self.sharing = None
+        self.lock = None
         self.bell = False
         self.cursors = False
         self.default_dpi = 96
@@ -227,7 +228,8 @@ class ServerBase(ServerCore):
         self.default_speed = opts.speed
         self.default_min_speed = opts.min_speed
         self.pulseaudio = opts.pulseaudio
-        self.sharing = opts.sharing is not False
+        self.sharing = opts.sharing
+        self.lock = opts.lock
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
@@ -732,6 +734,7 @@ class ServerBase(ServerCore):
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
+            "lock-toggle":                          self._process_lock_toggle,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1093,17 +1096,32 @@ class ServerBase(ServerCore):
         self.cleanup_protocol(proto)
 
 
-    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False):
-        server_exit = False
+    def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False, uuid=None):
         share_count = 0
         disconnected = 0
+        existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
+        is_existing_client = uuid and any(ss.uuid==uuid for ss in existing_sources)
+        log("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s", (proto, ui_client, detach_request, share, uuid), self.lock, self.sharing, existing_sources, is_existing_client)
+        #if other clients are connected, verify we can steal or share:
+        if existing_sources and not is_existing_client:
+            if self.sharing is True or (self.sharing is None and share and all(ss.share for ss in existing_sources)):
+                log("handle_sharing: sharing with %s", tuple(existing_sources))
+            elif self.lock is True:
+                self.disconnect_client(proto, SESSION_BUSY, "this session is locked")
+                return False, 0, 0
+            elif self.lock is not False and any(ss.lock for ss in existing_sources):
+                self.disconnect_client(proto, SESSION_BUSY, "a client has locked this session")
+                return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
             if detach_request and p!=proto:
                 self.disconnect_client(p, DETACH_REQUEST)
                 disconnected += 1
+            elif uuid and ss.uuid==uuid:
+                self.disconnect_client(p, NEW_CLIENT, "new connection from the same uuid")
+                disconnected += 1
             elif ui_client and ss.ui_client:
                 #check if existing sessions are willing to share:
-                if not self.sharing:
+                if self.sharing is False:
                     self.disconnect_client(p, NEW_CLIENT, "this session does not allow sharing")
                     disconnected += 1
                 elif not share:
@@ -1116,10 +1134,11 @@ class ServerBase(ServerCore):
                     share_count += 1
 
         #don't accept this connection if we're going to exit-with-client:
+        accepted = True
         if disconnected>0 and share_count==0 and self.exit_with_client:
             self.disconnect_client(proto, SERVER_EXIT, "last client has exited")
-            server_exit = True
-        return server_exit, share_count, disconnected
+            accepted = False
+        return accepted, share_count, disconnected
 
     def hello_oked(self, proto, packet, c, auth_caps):
         if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
@@ -1152,8 +1171,9 @@ class ServerBase(ServerCore):
         # (but only if this is going to be a UI session - control sessions can co-exist)
         ui_client = c.boolget("ui_client", True)
         share = c.boolget("share")
-        server_exit, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share)
-        if server_exit:
+        uuid = c.strget("uuid")
+        accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share, uuid)
+        if not accepted:
             return
 
         if detach_request:
@@ -1463,7 +1483,6 @@ class ServerBase(ServerCore):
                 "auto-video-encoding",
                 "window-filters",
                 "connection-data",
-                "sharing-toggle",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
@@ -1494,7 +1513,6 @@ class ServerBase(ServerCore):
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "rpc-types"                    : list(self.rpc_handlers.keys()),
-                 "sharing"                      : self.sharing is not False,
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
@@ -1505,6 +1523,10 @@ class ServerBase(ServerCore):
                  "input-devices"                : self.input_devices,
                  "client-shutdown"              : CLIENT_CAN_SHUTDOWN,
                  "window.states"                : [],   #subclasses set this as needed
+                 "sharing"                      : self.sharing is not False,
+                 "sharing-toggle"               : self.sharing is None,
+                 "lock"                         : self.lock is not False,
+                 "lock-toggle"                  : self.lock is None,
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
@@ -2216,7 +2238,7 @@ class ServerBase(ServerCore):
              "cursors"          : self.cursors,
              "bell"             : self.bell,
              "notifications"    : self.notifications_forwarder is not None,
-             "sharing"          : self.sharing,
+             "sharing"          : self.sharing is not False,
              "pulseaudio"       : {
                                    ""           : self.pulseaudio,
                                    "command"    : self.pulseaudio_command,
@@ -2289,6 +2311,12 @@ class ServerBase(ServerCore):
         up("clipboard", self.get_clipboard_info())
         up("keyboard",  self.get_keyboard_info())
         up("encodings", self.get_encoding_info())
+        up("network", {
+            "sharing"                      : self.sharing is True,
+            "sharing-toggle"               : self.sharing is not False,
+            "lock"                         : self.lock is True,
+            "lock-toggle"                  : self.lock is not False,
+            })
         for k,v in codec_versions.items():
             info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
         # csc and video encoders:
@@ -3340,17 +3368,24 @@ class ServerBase(ServerCore):
 
 
     def _process_sharing_toggle(self, proto, packet):
-        assert self.sharing
+        assert self.sharing is None
         ss = self._server_sources.get(proto)
         if not ss:
             return
-        sharing = packet[1]
+        sharing = bool(packet[1])
         ss.share = sharing
         if not sharing:
             #disconnect other users:
             for p,ss in tuple(self._server_sources.items()):
                 if p!=proto:
                     self.disconnect_client(p, DETACH_REQUEST, "client %i no longer wishes to share the session" % ss.counter)
+
+    def _process_lock_toggle(self, proto, packet):
+        assert self.lock is None
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.lock = bool(packet[1])
+            log("lock set to %s for client %i", ss.lock, ss.counter)
 
 
     def _process_input_devices(self, _proto, packet):

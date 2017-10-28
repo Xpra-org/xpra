@@ -271,7 +271,10 @@ class UIXpraClient(XpraClientBase):
         self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.server_is_desktop = False
-        self.server_supports_sharing = False
+        self.server_sharing = False
+        self.server_supports_sharing_toggle = False
+        self.server_lock = False
+        self.server_supports_lock_toggle = False
         self.server_supports_window_filters = False
         self.server_input_devices = None
         self.server_window_states = []
@@ -286,6 +289,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_bell = False
         self.client_supports_sharing = False
         self.client_supports_remote_logging = False
+        self.client_lock = False
         self.log_both = False
         self.notifications_enabled = False
         self.client_clipboard_direction = "both"
@@ -439,6 +443,7 @@ class UIXpraClient(XpraClientBase):
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing is True
+        self.client_lock = opts.lock is True
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
         self.input_devices = opts.input_devices
@@ -1551,6 +1556,7 @@ class UIXpraClient(XpraClientBase):
             "bell"                      : self.client_supports_bell,
             "vrefresh"                  : get_vrefresh(),
             "share"                     : self.client_supports_sharing,
+            "lock"                      : self.client_lock,
             "windows"                   : self.windows_enabled,
             "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
@@ -1870,7 +1876,10 @@ class UIXpraClient(XpraClientBase):
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_supports_notifications = c.boolget("notifications")
+        self.server_sharing = c.boolget("sharing")
         self.server_supports_sharing_toggle = c.boolget("sharing-toggle")
+        self.server_lock = c.boolget("lock")
+        self.server_supports_lock_toggle = c.boolget("lock-toggle")
         self.notifications_enabled = self.client_supports_notifications
         self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
@@ -2000,7 +2009,6 @@ class UIXpraClient(XpraClientBase):
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
         self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
-        self.server_supports_sharing = c.boolget("sharing")
         self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
@@ -2272,8 +2280,12 @@ class UIXpraClient(XpraClientBase):
         self.send("bandwidth-limit", self.bandwidth_limit)
 
     def send_sharing_enabled(self):
-        assert self.server_supports_sharing and self.server_supports_sharing_toggle
+        assert self.server_sharing and self.server_supports_sharing_toggle
         self.send("sharing-toggle", self.client_supports_sharing)
+
+    def send_lock_enabled(self):
+        assert self.server_supports_lock_toggle
+        self.send("lock-toggle", self.client_lock)
 
 
     def start_sending_webcam(self):

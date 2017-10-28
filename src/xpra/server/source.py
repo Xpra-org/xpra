@@ -421,6 +421,7 @@ class ServerSource(FileTransferHandler):
         self.clipboard_notifications_pending = 0
         self.clipboard_set_enabled = False
         self.share = False
+        self.lock = False
         self.desktop_size = None
         self.desktop_mode_size = None
         self.desktop_size_unscaled = None
@@ -764,6 +765,7 @@ class ServerSource(FileTransferHandler):
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         clipboardlog("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
         self.share = c.boolget("share")
+        self.lock = c.boolget("lock")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.control_commands = c.strlistget("control_commands")
@@ -1665,7 +1667,7 @@ class ServerSource(FileTransferHandler):
         info = {}
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
-        for prop in ("share", "randr_notify",
+        for prop in ("lock", "share", "randr_notify",
                      "clipboard_notifications", "system_tray",
                      "lz4", "lzo"):
             battr(prop, prop)

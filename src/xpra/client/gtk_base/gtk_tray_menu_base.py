@@ -393,6 +393,7 @@ class GTKTrayMenuBase(object):
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
         menu.append(self.make_sharingmenuitem())
+        menu.append(self.make_lockmenuitem())
         menu.append(self.make_readonlymenuitem())
         menu.append(self.make_bellmenuitem())
         menu.append(self.make_notificationsmenuitem())
@@ -409,21 +410,41 @@ class GTKTrayMenuBase(object):
         def sharing_toggled(*args):
             v = self.sharing_menuitem.get_active()
             self.client.client_supports_sharing = v
-            self.client.send_sharing_enabled()
+            if self.client.server_supports_sharing_toggle:
+                self.client.send_sharing_enabled()
             log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
         self.sharing_menuitem = self.checkitem("Sharing", sharing_toggled)
         set_sensitive(self.sharing_menuitem, False)
         def set_sharing_menuitem(*args):
-            log("set_sharing_menuitem%s server_supports_sharing_toggle=%s, server_supports_sharing=%s", args, self.client.server_supports_sharing_toggle, self.client.server_supports_sharing)
-            self.sharing_menuitem.set_active(self.client.client_supports_sharing and self.client.server_supports_sharing)
-            set_sensitive(self.sharing_menuitem, self.client.server_supports_sharing and self.client.server_supports_sharing_toggle)
-            if not self.client.server_supports_sharing:
-                self.bell_menuitem.set_tooltip_text("Sharing is disabled on the server")
+            log("set_sharing_menuitem%s client_supports_sharing=%s, server_supports_sharing_toggle=%s, server_sharing=%s", args, self.client.client_supports_sharing, self.client.server_supports_sharing_toggle, self.client.server_sharing)
+            self.sharing_menuitem.set_active(self.client.server_sharing and self.client.client_supports_sharing)
+            set_sensitive(self.sharing_menuitem, self.client.server_supports_sharing_toggle)
+            if not self.client.server_sharing:
+                self.sharing_menuitem.set_tooltip_text("Sharing is disabled on the server")
             elif not self.client.server_supports_sharing_toggle:
-                self.bell_menuitem.set_tooltip_text("Sharing cannot be changed on this server")
+                self.sharing_menuitem.set_tooltip_text("Sharing cannot be changed on this server")
         self.client.after_handshake(set_sharing_menuitem)
         return self.sharing_menuitem
 
+    def make_lockmenuitem(self):
+        def lock_toggled(*args):
+            v = self.lock_menuitem.get_active()
+            self.client.client_lock = v
+            if self.client.server_supports_lock_toggle:
+                self.client.send_lock_enabled()
+            log("lock_toggled(%s) lock=%s", args, self.client.client_lock)
+        self.lock_menuitem = self.checkitem("Lock", lock_toggled)
+        set_sensitive(self.lock_menuitem, False)
+        def set_lock_menuitem(*args):
+            log("set_lock_menuitem%s client_lock=%s, server_supports_lock_toggle=%s, server lock=%s", args, self.client.client_lock, self.client.server_supports_lock_toggle, self.client.server_lock)
+            self.lock_menuitem.set_active(self.client.server_lock and self.client.client_lock)
+            set_sensitive(self.lock_menuitem, self.client.server_supports_lock_toggle)
+            if not self.client.server_lock:
+                self.lock_menuitem.set_tooltip_text("Session locking is disabled on this server")
+            elif not self.client.server_supports_lock_toggle:
+                self.lock_menuitem.set_tooltip_text("Session locking cannot be toggled on this server")
+        self.client.after_handshake(set_lock_menuitem)
+        return self.lock_menuitem
 
     def make_readonlymenuitem(self):
         def readonly_toggled(*args):

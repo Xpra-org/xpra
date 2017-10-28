@@ -15,8 +15,16 @@ socket-permissions = 600
 # Share session with other users:
 #sharing = yes
 #sharing = no
-#leave it up to the client (defaults to no):
+# Leave it up to the client, where it defaults to no
+# and this setting can then be changed from the system tray menu:
 sharing = auto
+
+# Allow sessions to be locked:
+#lock = no
+#lock = yes
+# Leave it up to the client, where it defaults to no
+# and this setting can then be changed from the system tray menu:
+lock = auto
 
 # Compressors:
 #compressors = all

@@ -82,9 +82,9 @@ class RFBServer(object):
         #use blocking sockets from now on:
         from xpra.net.bytestreams import set_socket_timeout
         set_socket_timeout(proto._conn, None)
-        server_exit, share_count, disconnected = self.handle_sharing(proto, share=proto.share)
-        log("rfb handle sharing: server exit=%s, share count=%s, disconnected=%s", server_exit, share_count, disconnected)
-        if server_exit:
+        accepted, share_count, disconnected = self.handle_sharing(proto, share=proto.share)
+        log("rfb handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
+        if not accepted:
             return
         source = RFBSource(proto, self._get_rfb_desktop_model(), proto.share)
         source.keyboard_config = self.get_keyboard_config(typedict())

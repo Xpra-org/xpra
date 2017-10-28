@@ -217,6 +217,9 @@ def get_user_uuid():
         Try to generate a uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
+    uuid = os.environ.get("XPRA_USER_UUID")
+    if uuid:
+        return uuid
     import hashlib
     u = hashlib.sha1()
     def uupdate(ustr):
