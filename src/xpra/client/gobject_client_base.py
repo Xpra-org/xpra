@@ -12,12 +12,12 @@ from xpra.log import Logger
 log = Logger("gobject", "client")
 
 import sys
-from xpra.util import nonl, sorted_nicely, print_nested_dict, envbool, DONE
+from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, DONE
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
-FLATTEN_INFO = envbool("XPRA_FLATTEN_INFO", True)
+FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", True)
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
