@@ -44,7 +44,6 @@ class DBUS_Server(DBUS_Server_Base):
             "idle-timeout"          : ("idle_timeout",          ni),
             "server-idle-timeout"   : ("server_idle_timeout",   ni),
             "name"                  : ("session_name",          ns),
-            "sharing"               : ("sharing",               nb),
             })
 
 
@@ -179,9 +178,14 @@ class DBUS_Server(DBUS_Server_Base):
 
 
     @dbus.service.method(INTERFACE, in_signature='s')
-    def SetClipboardDirection(self, direction):
-        self.log(".SetClipboardDirection(%s)", direction)
-        self.server.control_command_clipboard_direction(ns(direction))
+    def SetLock(self, lock):
+        self.log(".SetLock(%s)", lock)
+        self.server.control_command_set_lock(lock)
+
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def SetSharing(self, sharing):
+        self.log(".SetSharing(%s)", sharing)
+        self.server.control_command_set_sharing(sharing)
 
 
     @dbus.service.method(INTERFACE, in_signature='ii')

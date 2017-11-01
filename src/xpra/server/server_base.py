@@ -833,6 +833,8 @@ class ServerBase(ServerCore):
             ArgsControlCommand("compression",           "sets the packet compressor",       min_args=1, max_args=1),
             ArgsControlCommand("encoder",               "sets the packet encoder",          min_args=1, max_args=1),
             ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
+            ArgsControlCommand("set-lock",              "modify the lock attribute",        min_args=1, max_args=1),
+            ArgsControlCommand("set-sharing",           "modify the sharing attribute",     min_args=1, max_args=1),
             #session and clients:
             ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
             ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
@@ -1945,6 +1947,16 @@ class ServerBase(ServerCore):
     def control_command_unlock_batch_delay(self, wid):
         for ws in self._control_windowsources_from_args(wid).keys():
             ws.unlock_batch_delay()
+
+    def control_command_set_lock(self, lock):
+        self.lock = parse_bool("lock", lock)
+        return "lock set to %s" % self.lock
+        #TODO: tell the clients about the change
+
+    def control_command_set_sharing(self, sharing):
+        self.sharing = parse_bool("sharing", sharing)
+        return "sharing set to %s" % self.sharing
+        #TODO: tell the clients about the change
 
 
     def control_command_key(self, keycode_str, press = True):

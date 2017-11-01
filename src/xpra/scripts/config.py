@@ -983,7 +983,7 @@ TRUE_OPTIONS = ["yes", "true", "1", "on", True]
 FALSE_OPTIONS = ["no", "false", "0", "off", False]
 def parse_bool(k, v):
     if type(v)==str:
-        v = v.lower()
+        v = v.lower().strip()
     if v in TRUE_OPTIONS:
         return True
     elif v in FALSE_OPTIONS:
