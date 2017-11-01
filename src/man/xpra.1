@@ -784,9 +784,19 @@ start multiple commands.
 Identical to \fB\-\-start\fP, except that the commands are taken into
 account by \fB\-\-exit\-with\-children\fP.
 .TP
-\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP
-Wait for the first client to connect before starting the \fB\-\-start\fP
-and \fB\-\-start\-child\fP commands.
+\fB\-\-start\-after\-connect\fP=\fICMD\fP
+Wait for the first client to connect before starting the command.
+.TP
+\fB\-\-start\-child\-after\-connect\fP=\fICMD\fP
+Wait for the first client to connect before starting the child command.
+See \fIstart\-child\fP.
+.TP
+\fB\-\-start\-on\-connect\fP=\fICMD\fP
+Execute this command every time a client connects.
+.TP
+\fB\-\-start\-child\-on\-connect\fP=\fICMD\fP
+Execute this child command every time a client connects.
+See \fIstart\-child\fP.
 .TP
 \fB\-\-exit\-with\-children\fP
 This option may only be used if \fB\-\-start\-child\fP is also
