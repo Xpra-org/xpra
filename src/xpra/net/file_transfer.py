@@ -22,6 +22,7 @@ from xpra.make_thread import start_thread
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 FILE_CHUNKS_SIZE = max(0, envint("XPRA_FILE_CHUNKS_SIZE", 65536))
 MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
+PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10*1000
 
 MIMETYPE_EXTS = {
@@ -339,12 +340,13 @@ class FileTransferHandler(FileTransferAttributes):
             if done:
                 delfile()
                 return False
-            if monotonic_time()-start>10*60:
-                printlog.warn("print job %s timed out", job)
+            if monotonic_time()-start>=PRINT_JOB_TIMEOUT:
+                printlog.warn("Warning: print job %s timed out", job)
                 delfile()
                 return False
             return True #try again..
         if check_printing_finished():
+            #check every 10 seconds:
             self.timeout_add(10000, check_printing_finished)
 
     def _open_file(self, filename):

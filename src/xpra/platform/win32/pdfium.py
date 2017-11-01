@@ -115,7 +115,7 @@ def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 		doc = FPDF_LoadMemDocument(cast(buf, c_void_p), len(pdf_data), None)
 		if not doc:
 			log.error("Error: FPDF_LoadMemDocument failed, error: %s", get_error())
-			return 1
+			return -1
 		log("FPDF_LoadMemDocument(..)=%s", doc)
 		count = FPDF_GetPageCount(doc)
 		log("FPDF_GetPageCount(%s)=%s", doc, count)
@@ -131,7 +131,7 @@ def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 				page = FPDF_LoadPage(doc, i)
 				if not page:
 					log.error("Error: FPDF_LoadPage failed for page %i, error: %s", i, get_error())
-					return 1
+					return -2
 				log("FPDF_LoadPage()=%s page %i loaded", page, i)
 				FPDF_RenderPage(hdc, page, x, y, w, h, rotate, flags)
 				log("FPDF_RenderPage page %i rendered", i)
@@ -146,7 +146,30 @@ def print_pdf(printer_name, title, pdf_data):
 		return do_print_pdf(hdc, title, pdf_data)
 
 
+EXIT = False
+JOBS_INFO = {}
+def watch_print_job_status():
+	global JOBS_INFO, EXIT
+	from xpra.log import Logger
+	log = Logger("printing", "win32")
+	log("wait_for_print_job_end()")
+	#log("wait_for_print_job_end(%i)", print_job_id)
+	from xpra.platform.win32.printer_notify import wait_for_print_job_info, job_status
+	while not EXIT:
+		info = wait_for_print_job_info(timeout=1.0)
+		if not info:
+			continue
+		log("wait_for_print_job_info()=%s", info)
+		for nd in info:
+			job_id, key, value = nd
+			if key=='job_status':
+				value = job_status(value)
+			log("job_id=%s, key=%s, value=%s", job_id, key, value)
+			JOBS_INFO.setdefault(job_id, {})[key] = value
+
+
 def main():
+	global JOBS_INFO, EXIT
 	if len(sys.argv) not in (2, 3, 4):
 		print("usage: %s /path/to/document.pdf [printer-name] [document-title]" % sys.argv[0])
 		return 1
@@ -165,9 +188,34 @@ def main():
 	else:
 		title = os.path.basename(filename)
 
-	jobid = print_pdf(printer_name, title, pdf_data)
-	if jobid<0:
-		return jobid
+	import time
+	from xpra.util import csv
+	from xpra.log import Logger
+	log = Logger("printing", "win32")
+
+	#start a new thread before submitting the document,
+	#because otherwise the job may complete before we can get its status
+	from threading import Thread
+	t = Thread(target=watch_print_job_status, name="watch print job status")
+	t.daemon = True
+	t.start()
+
+	job_id = print_pdf(printer_name, title, pdf_data)
+	if job_id<0:
+		return job_id
+	#wait for job to end:
+	job_status = None
+	while True:
+		job_info = JOBS_INFO.get(job_id, {})
+		log("job_info[%i]=%s", job_id, job_info)
+		v = job_info.get("job_status")
+		if v!=job_status:
+			log.info("print job status: %s", csv(v))
+			job_status = v
+			if "OFFLINE" in job_status or "DELETING" in job_status:
+				EXIT = True
+				break
+		time.sleep(1.0)
 	return 0
 
 
