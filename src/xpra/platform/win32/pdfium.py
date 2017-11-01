@@ -7,9 +7,6 @@
 import os
 import sys
 
-from xpra.log import Logger
-log = Logger("printing", "win32")
-
 from xpra.util import repr_ellipsized
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
@@ -22,7 +19,6 @@ try:
 	pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
 except WindowsError as e:		#@UndefinedVariable
 	raise ImportError("cannot load %s: %s" % (LIBPDFIUMDLL, e))
-log("pdfium=%s", pdfium)
 
 class FPDF_LIBRARY_CONFIG(Structure):
 	_fields_ = [
@@ -96,6 +92,9 @@ def get_error():
 
 def do_print_pdf(hdc, title="PDF Print Test", pdf_data=None):
 	assert pdf_data, "no pdf data"
+	from xpra.log import Logger
+	log = Logger("printing", "win32")
+	log("pdfium=%s", pdfium)
 	buf = c_char_p(pdf_data)
 	log("pdf data buffer: %s", repr_ellipsized(pdf_data))
 	log("FPDF_InitLibraryWithConfig=%s", FPDF_InitLibraryWithConfig)
@@ -158,7 +157,6 @@ def main():
 	if len(sys.argv)==2:
 		from xpra.platform.win32.printing import get_printers
 		printers = get_printers()
-		log("printers: %s", printers)
 		printer_name = printers.keys()[0]
 	if len(sys.argv) in (3, 4):
 		printer_name = sys.argv[2]
