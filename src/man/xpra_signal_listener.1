@@ -1,0 +1,30 @@
+.\" Man page for xpra signal listener
+.\"
+.\" Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+.\"
+.\" You may distribute under the terms of the GNU General Public
+.\" license, either version 2 or (at your option) any later version.
+.\" See the file COPYING for details.
+.\"
+.TH XPRA_SIGNAL_LISTENER 1
+.SH NAME
+xpra_signal_listener \- fake process utility used by xpra to receive signals
+.\" --------------------------------------------------------------------
+.SH SYNOPSIS
+.PD 0
+.HP \w'xpra_signal_listener\ 'u
+\fBxpra_signal_listener\fB
+.PD
+.\" --------------------------------------------------------------------
+.SH DESCRIPTION
+\fBxpra_signal_listener\fP is used by xpra to ensure that all the
+\fINET_WM_PID\fP of remote windows will have a valid corresponding
+\fINET_WM_PID\fP on the client windows.
+
+This process is just a placeholder that waits for a signal to exit.
+The exit code is the value of the signal plus 128.
+ie: on \fISIGINT\fP the exit code is 130.
+
+.\" --------------------------------------------------------------------
+.SH SEE ALSO
+\fBxpra\fP(1)
