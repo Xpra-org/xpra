@@ -172,7 +172,7 @@ def main():
 	global JOBS_INFO, EXIT
 	if len(sys.argv) not in (2, 3, 4):
 		print("usage: %s /path/to/document.pdf [printer-name] [document-title]" % sys.argv[0])
-		return 1
+		return -3
 	filename = sys.argv[1]
 	with open(filename, 'rb') as f:
 		pdf_data = f.read()
