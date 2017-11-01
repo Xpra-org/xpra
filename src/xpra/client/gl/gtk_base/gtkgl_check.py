@@ -198,51 +198,60 @@ def check_support(force_enable=False, check_colormap=False):
 
     if TEST_GTKGL_RENDERING:
         log("testing gtkgl rendering")
-        from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
-        gtk = import_gtk()
-        assert gdkgl.query_extension()
-        glext, w = None, None
+        from xpra.client.gl.gl_window_backing_base import paint_context_manager
         try:
-            #ugly code for win32 and others (virtualbox broken GL drivers)
-            #for getting a GL drawable and context: we must use a window...
-            #(which we do not even show on screen)
-            #
-            #here is the old simpler alternative which does not work on some platforms:
-            # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
-            # gldrawable = glext.set_gl_capability(glconfig)
-            # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
-            w = gtk.Window()
-            w.set_decorated(False)
-            vbox = gtk.VBox()
-            glarea = GLDrawingArea(glconfig)
-            glarea.set_size_request(32, 32)
-            vbox.add(glarea)
-            vbox.show_all()
-            w.add(vbox)
-            #we don't need to actually show the window!
-            #w.show_all()
-            glarea.realize()
-            gdk_window_process_all_updates()
+            with paint_context_manager:
+                from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
+                gtk = import_gtk()
+                assert gdkgl.query_extension()
+                glext, w = None, None
+                try:
+                    #ugly code for win32 and others (virtualbox broken GL drivers)
+                    #for getting a GL drawable and context: we must use a window...
+                    #(which we do not even show on screen)
+                    #
+                    #here is the old simpler alternative which does not work on some platforms:
+                    # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+                    # gldrawable = glext.set_gl_capability(glconfig)
+                    # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+                    w = gtk.Window()
+                    w.set_decorated(False)
+                    vbox = gtk.VBox()
+                    glarea = GLDrawingArea(glconfig)
+                    glarea.set_size_request(32, 32)
+                    vbox.add(glarea)
+                    vbox.show_all()
+                    w.add(vbox)
+                    #we don't need to actually show the window!
+                    #w.show_all()
+                    glarea.realize()
+                    gdk_window_process_all_updates()
 
-            gl_props = check_GL_support(glarea, force_enable)
+                    gl_props = check_GL_support(glarea, force_enable)
 
-            if check_colormap:
-                s = w.get_screen()
-                for x in ("rgb_visual", "rgba_visual", "system_visual"):
-                    try:
-                        visual = getattr(s, "get_%s" % x)()
-                        gl_props[x] = visual_to_str(visual)
-                    except:
-                        pass
-                #i = 0
-                #for v in s.list_visuals():
-                #    gl_props["visual[%s]" % i] = visual_to_str(v)
-                #    i += 1
-        finally:
-            if w:
-                w.destroy()
-            del glext, glconfig
-        props.update(gl_props)
+                    if check_colormap:
+                        s = w.get_screen()
+                        for x in ("rgb_visual", "rgba_visual", "system_visual"):
+                            try:
+                                visual = getattr(s, "get_%s" % x)()
+                                gl_props[x] = visual_to_str(visual)
+                            except:
+                                pass
+                        #i = 0
+                        #for v in s.list_visuals():
+                        #    gl_props["visual[%s]" % i] = visual_to_str(v)
+                        #    i += 1
+                finally:
+                    if w:
+                        w.destroy()
+                    del glext, glconfig
+        except Exception as e:
+            log("check_support failed", exc_info=True)
+            log.error("Error: gtkgl rendering failed its sanity checks:")
+            log.error(" %s", e)
+            return {}
+        else:
+            props.update(gl_props)
     else:
         log("gtkgl rendering test skipped")
     return props
