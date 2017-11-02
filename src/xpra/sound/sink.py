@@ -244,11 +244,13 @@ class SoundSink(SoundPipeline):
             return
         now = monotonic_time()
         elapsed = now-self.last_min_update
+        lrange = self.get_level_range()
+        underrun_elapsed = now-self.last_underrun
+        log("set_min_level() lrange=%i, elapsed=%i, underrun_elapsed=%i", lrange, elapsed, underrun_elapsed)
         if elapsed<1:
             #not more than once a second
             return
-        lrange = self.get_level_range()
-        if lrange==0:
+        if lrange==0 and underrun_elapsed>=2:
             #not enough data
             return
         if not self.level_lock.acquire(False):
@@ -260,13 +262,13 @@ class SoundSink(SoundPipeline):
                 pct = 100
             else:
                 #from 100% down to 0% in 2 seconds after underrun:
-                pct = max(0, int((self.last_underrun+2-now)*50))
+                pct = max(0, int((2-underrun_elapsed)*50))
             #cannot go higher than mst-50:
             mst = self.queue.get_property("max-size-time")
             mrange = max(lrange+100, 150)
             mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, mrange)//200)
             log("set_min_level pct=%2i, cmtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, lrange, UNDERRUN_MIN_LEVEL)
-            if cmtt!=mtt:
+            if abs(cmtt-mtt)>=10:
                 self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
                 log("set_min_level min-threshold-time=%s", mtt)
                 self.last_min_update = now
@@ -367,9 +369,8 @@ class SoundSink(SoundPipeline):
             self.do_add_data(x)
         if self.do_add_data(data, metadata):
             self.rec_queue_level(data)
-            if self.queue_state=="pushing":
-                self.set_min_level()
-                self.set_max_level()
+            self.set_min_level()
+            self.set_max_level()
         self.emit_info()
 
     def do_add_data(self, data, metadata=None):
