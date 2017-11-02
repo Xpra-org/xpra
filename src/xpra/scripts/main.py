@@ -1155,6 +1155,13 @@ def do_parse_cmdline(cmdline, defaults):
         options.tcp_encryption = "AES"
     return options, args
 
+def validated_encodings(encodings):
+    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    validated = [x for x in PREFERED_ENCODING_ORDER if x.lower() in encodings]
+    if not validated:
+        raise InitException("no valid encodings specified")
+    return validated
+
 def validate_encryption(opts):
     do_validate_encryption(opts.auth, opts.tcp_auth, opts.encryption, opts.tcp_encryption, opts.encryption_keyfile, opts.tcp_encryption_keyfile)
 
@@ -1388,6 +1395,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         if mode not in ("attach", "start", "start-desktop", "upgrade", "proxy", "shadow"):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
+
+    if mode in ("start", "start-desktop", "shadow", "attach", "request-start", "request-start-desktop", "request-shadow"):
+        options.encodings = validated_encodings(options.encodings)
 
     try:
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:

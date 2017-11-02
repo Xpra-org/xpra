@@ -830,7 +830,7 @@ class UIXpraClient(XpraClientBase):
             if encoding not in core_encodings:
                 core_encodings.append(encoding)
         #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x.lower() in self.allowed_encodings]
+        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
         return core_encodings
 
 
