@@ -28,7 +28,9 @@ LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
-CUTTER_THRESHOLD = envfloat("XPRA_CUTTER_THRESHOLD", "0.001")
+CUTTER_THRESHOLD = envfloat("XPRA_CUTTER_THRESHOLD", "0.0001")
+CUTTER_PRE_LENGTH = envint("XPRA_CUTTER_PRE_LENGTH", 100)
+CUTTER_RUN_LENGTH = envint("XPRA_CUTTER_RUN_LENGTH", 1000)
 
 generation = AtomicInteger()
 
@@ -105,7 +107,7 @@ class SoundSource(SoundPipeline):
         if encoder in ENCODER_NEEDS_AUDIOCONVERT or src_type in SOURCE_NEEDS_AUDIOCONVERT:
             pipeline_els += ["audioconvert"]
         if CUTTER_THRESHOLD>0 and encoder not in ENCODER_CANNOT_USE_CUTTER and not fmt:
-            pipeline_els.append("cutter threshold=%.4f leaky=false name=cutter" % CUTTER_THRESHOLD)
+            pipeline_els.append("cutter threshold=%.4f run-length=%i pre-length=%i leaky=false name=cutter" % (CUTTER_THRESHOLD, CUTTER_RUN_LENGTH*MS_TO_NS, CUTTER_PRE_LENGTH*MS_TO_NS))
             if encoder in CUTTER_NEEDS_CONVERT:
                 pipeline_els.append("audioconvert")
             if encoder in CUTTER_NEEDS_RESAMPLE:
