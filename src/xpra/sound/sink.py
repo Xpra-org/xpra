@@ -42,7 +42,7 @@ GRACE_PERIOD = envint("XPRA_SOUND_GRACE_PERIOD", 2000)
 #percentage: from 0 for no margin, to 200% which triples the buffer target
 MARGIN = max(0, min(200, envint("XPRA_SOUND_MARGIN", 50)))
 #how high we push up the min-level to prevent underruns:
-UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 50))
+UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 
 
 GST_FORMAT_BYTES = 2
@@ -91,6 +91,7 @@ class SoundSink(SoundPipeline):
         self.last_data = None
         self.last_underrun = 0
         self.last_overrun = 0
+        self.refill = True
         self.last_max_update = monotonic_time()
         self.last_min_update = monotonic_time()
         self.level_lock = Lock()
@@ -184,30 +185,36 @@ class SoundSink(SoundPipeline):
         return True
 
 
-    def queue_pushing(self, *args):
-        gstlog("queue_pushing%s", args)
+    def queue_pushing(self, *_args):
+        gstlog("queue_pushing")
+        self.queue_state = "pushing"
         self.emit_info()
         return True
 
-    def queue_running(self, *args):
-        gstlog("queue_running%s", args)
+    def queue_running(self, *_args):
+        gstlog("queue_running")
         self.queue_state = "running"
-        self.set_min_level()
-        self.set_max_level()
         self.emit_info()
         return True
 
-    def queue_underrun(self, *args):
+    def queue_underrun(self, *_args):
         now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring underrun during startup")
             return 1
         self.underruns += 1
-        gstlog("queue_underrun%s", args)
+        gstlog("queue_underrun")
         self.queue_state = "underrun"
-        if now-self.last_underrun>2:
-            self.last_underrun = now
-            self.set_min_level()
+        if now-self.last_underrun>5:
+            #only count underruns when we're back to no min time:
+            qmin = self.queue.get_property("min-threshold-time")//MS_TO_NS
+            clt = self.queue.get_property("current-level-time")//MS_TO_NS
+            gstlog("queue_underrun level=%3i, min=%3i", clt, qmin)
+            if qmin==0 and clt<10:
+                self.last_underrun = now
+                self.refill = True
+                self.set_max_level()
+                self.set_min_level()
         self.emit_info()
         return 1
 
@@ -221,18 +228,18 @@ class SoundSink(SoundPipeline):
             return maxl-minl
         return 0
 
-    def queue_overrun(self, *args):
+    def queue_overrun(self, *_args):
         now = monotonic_time()
         if self.queue_state=="starting" or 1000*(now-self.start_time)<GRACE_PERIOD:
             gstlog("ignoring overrun during startup")
             return 1
         clt = self.queue.get_property("current-level-time")//MS_TO_NS
-        log("queue_overrun%s level=%ims", args, clt)
+        log("queue_overrun level=%ims", clt)
         now = monotonic_time()
         #grace period of recording overruns:
         #(because when we record an overrun, we lower the max-time,
         # which causes more overruns!)
-        if self.last_overrun is None or now-self.last_overrun>2:
+        if now-self.last_overrun>2:
             self.last_overrun = now
             self.set_max_level()
             self.overrun_events.append(now)
@@ -245,33 +252,29 @@ class SoundSink(SoundPipeline):
         now = monotonic_time()
         elapsed = now-self.last_min_update
         lrange = self.get_level_range()
-        underrun_elapsed = now-self.last_underrun
-        log("set_min_level() lrange=%i, elapsed=%i, underrun_elapsed=%i", lrange, elapsed, underrun_elapsed)
+        log("set_min_level() lrange=%i, elapsed=%i", lrange, elapsed)
         if elapsed<1:
             #not more than once a second
             return
-        if lrange==0 and underrun_elapsed>=2:
-            #not enough data
+        if self.refill:
+            #need to have a gap between min and max,
+            #so we cannot go higher than mst-50:
+            mst = self.queue.get_property("max-size-time")//MS_TO_NS
+            mrange = max(lrange+100, UNDERRUN_MIN_LEVEL)
+            mtt = min(mst-50, mrange)
+            gstlog("set_min_level mtt=%3i, max-size-time=%3i, lrange=%s, mrange=%s (UNDERRUN_MIN_LEVEL=%s)", mtt, mst, lrange, mrange, UNDERRUN_MIN_LEVEL)
+        else:
+            mtt = 0
+        cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
+        if cmtt==mtt:
             return
         if not self.level_lock.acquire(False):
-            log("cannot get level lock for setting min-threshold-time")
+            gstlog("cannot get level lock for setting min-threshold-time")
             return
         try:
-            cmtt = self.queue.get_property("min-threshold-time")//MS_TO_NS
-            if self.queue_state=="underrun":
-                pct = 100
-            else:
-                #from 100% down to 0% in 2 seconds after underrun:
-                pct = max(0, int((2-underrun_elapsed)*50))
-            #cannot go higher than mst-50:
-            mst = self.queue.get_property("max-size-time")
-            mrange = max(lrange+100, 150)
-            mtt = min(mst-50, pct*max(UNDERRUN_MIN_LEVEL, mrange)//200)
-            log("set_min_level pct=%2i, cmtt=%3i, lrange=%s (UNDERRUN_MIN_LEVEL=%s)", pct, cmtt, lrange, UNDERRUN_MIN_LEVEL)
-            if abs(cmtt-mtt)>=10:
-                self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
-                log("set_min_level min-threshold-time=%s", mtt)
-                self.last_min_update = now
+            self.queue.set_property("min-threshold-time", mtt*MS_TO_NS)
+            gstlog("set_min_level min-threshold-time=%s", mtt)
+            self.last_min_update = now
         finally:
             self.level_lock.release()
 
@@ -283,34 +286,36 @@ class SoundSink(SoundPipeline):
         if elapsed<1:
             #not more than once a second
             return
+        lrange = self.get_level_range(mintime=0)
+        log("set_max_level lrange=%3i, elapsed=%is", lrange, int(elapsed))
+        cmst = self.queue.get_property("max-size-time")//MS_TO_NS
+        #overruns in the last minute:
+        olm = len([x for x in list(self.overrun_events) if now-x<60])
+        #increase target if we have more than 5 overruns in the last minute:
+        target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
+        #from 100% down to 0% in 2 seconds after underrun:
+        pct = max(0, int((self.last_overrun+2-now)*50))
+        #use this last_overrun percentage value to temporarily decrease the target
+        #(causes overruns that drop packets and lower the buffer level)
+        target_mst = max(50, int(target_mst - pct*lrange//100))
+        mst = (cmst + target_mst)//2
+        if self.refill:
+            #temporarily raise max level during underruns,
+            #so set_min_level has more room for manoeuver:
+            mst += int(5-(now-self.last_underrun))*(UNDERRUN_MIN_LEVEL//5)
+        #cap it at 1 second:
+        mst = min(mst, 1000)
+        log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
+        if abs(cmst-mst)<=max(50, lrange//2):
+            #not enough difference
+            return
         if not self.level_lock.acquire(False):
-            log("cannot get level lock for setting max-size-time")
+            gstlog("cannot get level lock for setting max-size-time")
             return
         try:
-            lrange = self.get_level_range(mintime=0)
-            log("set_max_level lrange=%3i, elapsed=%is", lrange, int(elapsed))
-            cmst = self.queue.get_property("max-size-time")//MS_TO_NS
-            #overruns in the last minute:
-            olm = len([x for x in list(self.overrun_events) if now-x<60])
-            #increase target if we have more than 5 overruns in the last minute:
-            target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
-            #from 100% down to 0% in 2 seconds after underrun:
-            pct = max(0, int((self.last_overrun+2-now)*50))
-            #use this last_overrun percentage value to temporarily decrease the target
-            #(causes overruns that drop packets and lower the buffer level)
-            target_mst = max(50, int(target_mst - pct*lrange//100))
-            mst = (cmst + target_mst)//2
-            if self.last_underrun and now-self.last_underrun<5 and mst<200:
-                #temporarily raise max level during underruns,
-                #so set_min_level has more room for manoeuver:
-                mst += int(5+self.last_underrun-now)*30
-            #cap it at 1 second:
-            mst = min(mst, 1000)
-            log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
-            if abs(cmst-mst)>=max(50, lrange//2):
-                self.queue.set_property("max-size-time", mst*MS_TO_NS)
-                log("set_max_level max-size-time=%s", mst)
-                self.last_max_update = now
+            self.queue.set_property("max-size-time", mst*MS_TO_NS)
+            log("set_max_level max-size-time=%s", mst)
+            self.last_max_update = now
         finally:
             self.level_lock.release()
 
@@ -369,8 +374,15 @@ class SoundSink(SoundPipeline):
             self.do_add_data(x)
         if self.do_add_data(data, metadata):
             self.rec_queue_level(data)
-            self.set_min_level()
             self.set_max_level()
+            self.set_min_level()
+            #drop back down quickly if the level has reached min:
+            if self.refill:
+                clt = self.queue.get_property("current-level-time")//MS_TO_NS
+                qmin = self.queue.get_property("min-threshold-time")//MS_TO_NS
+                gstlog("add_data: refill=%s, level=%i, min=%i", self.refill, clt, qmin)
+                if qmin>0 and clt>qmin:
+                    self.refill = False
         self.emit_info()
 
     def do_add_data(self, data, metadata=None):
@@ -395,10 +407,13 @@ class SoundSink(SoundPipeline):
         return False
 
     def rec_queue_level(self, data):
-        if self.queue:
-            clt = self.queue.get_property("current-level-time")//MS_TO_NS
-            log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
-            self.levels.append((monotonic_time(), clt))
+        q = self.queue
+        if not q:
+            return
+        clt = q.get_property("current-level-time")//MS_TO_NS
+        log("pushed %5i bytes, new buffer level: %3ims, queue state=%s", len(data), clt, self.queue_state)
+        now = monotonic_time()
+        self.levels.append((now, clt))
 
     def push_buffer(self, buf):
         #buf.size = size
