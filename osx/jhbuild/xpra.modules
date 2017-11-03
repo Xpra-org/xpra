@@ -522,7 +522,7 @@
 
   <distutils id="python-pyasn1">
 	<branch repo="pypi.python.org"
-		module="/packages/3c/a6/4d6c88aa1694a06f6671362cb3d0350f0d856edea4685c300785200d1cd9/pyasn1-0.3.7.tar.gz#md5=d58ecd0d9ff07218073c5acb12974254"
+		module="/packages/3c/a6/4d6c88aa1694a06f6671362cb3d0350f0d856edea4685c300785200d1cd9/pyasn1-0.3.7.tar.gz"
 		hash="sha256:187f2a66d617683f8e82d5c00033b7c8a0287e1da88a9d577aebec321cad4965"
 		version="0.3.7"/>
         <dependencies>
