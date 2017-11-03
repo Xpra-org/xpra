@@ -14,6 +14,8 @@
               href="http://downloads.webmproject.org/releases/"/>
   <repository name="webkit.org" type="tarball"
               href="http://www.webkitgtk.org/releases/"/>
+  <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
+  <repository type="tarball" name="zlib.net" default="yes" href="https://zlib.net/"/>
 
   <!-- Builds last version of WebKitGTK that supported GTK 2.x -->
   <metamodule id="meta-gtk-osx-webkit">
@@ -66,15 +68,15 @@
 
   <autotools id="libtasn1" supports-non-srcdir-builds="no"
              autogen-sh="configure">
-    <branch repo="ftp.gnu.org" version="4.4"
-            module="libtasn1/libtasn1-4.4.tar.gz"/>
+    <branch repo="ftp.gnu.org" version="4.12"
+            module="/libtasn1/libtasn1-4.12.tar.gz"/>
   </autotools>
 
   <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
              supports-non-srcdir-builds="no">
-    <branch repo="sourceforge" version="1.2.10"
-            module="libpng/zlib-1.2.10.tar.xz"
-            hash="sha256:9612bf086047078ce3a1c154fc9052113fc1a2a97234a059da17a6299bd4dd32"
+    <branch repo="zlib.net" version="1.2.11"
+            module="zlib-1.2.11.tar.gz"
+            hash="sha256:c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1"
             />
   </autotools>
 
@@ -112,7 +114,9 @@
   </autotools>
 
   <autotools id="libwebp" autogen-sh="configure">
-    <branch repo="webm" module="webp/libwebp-0.4.3.tar.gz" version="0.4.3"/>
+    <branch repo="github.com" module="/webmproject/libwebp/archive/v0.6.0.tar.gz" version="0.6.0"
+    	hash="sha256:e1bd8b81098b8094edba0f161baf89f9fb1492e3fca19cf1d28eff4b88518702"
+    />
   </autotools>
 
   <!-- This is WebKitGTK 1.x, for GTK 2.x.
