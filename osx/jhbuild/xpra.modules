@@ -16,8 +16,7 @@
   <repository type="tarball" name="gstreamer.freedesktop.org" href="http://gstreamer.freedesktop.org"/>
   <repository type="tarball" name="gmplib.org" href="http://gmplib.org/"/>
   <repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
-  <repository type="tarball" name="pypi.python.org" href="http://pypi.python.org"/>
-  <repository type="tarball" name="pypi.douban.com" href="http://pypi.douban.com/"/>
+  <repository type="tarball" name="pypi.python.org" href="https://pypi.python.org"/>
   <repository type="tarball" name="download.oracle.com" href="http://download.oracle.com"/>
   <repository type="tarball" name="www.eu.apache.org" href="http://www.eu.apache.org"/>
   <repository type="tarball" name="serf.googlecode.com" href="http://serf.googlecode.com"/>
