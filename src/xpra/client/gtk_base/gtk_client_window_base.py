@@ -1317,7 +1317,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._backing.offsets = 0, 0, 0, 0
         else:
             self.center_backing(w, h)
-        geomlog.info("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
+        geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
         self.queue_draw(0, 0, ww, wh)
 
