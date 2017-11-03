@@ -42,9 +42,9 @@
 
 
   <cmake id="brotli" autogen-sh="configure">
-	<branch module="/google/brotli/archive/v0.6.0.tar.gz"
-		version="0.6.0" checkoutdir="brotli-0.6.0"
-		hash="sha256:69cdbdf5709051dd086a2f020f5abf9e32519eafe0ad6be820c667c3a9c9ee0f"
+	<branch module="/google/brotli/archive/v1.0.1.tar.gz"
+		version="1.0.1" checkoutdir="brotli-1.0.1"
+		hash="sha256:6870f9c2c63ef58d7da36e5212a3e1358427572f6ac5a8b5a73a815cf3e0c4a6"
 		repo="github.com"/>
   </cmake>
 
@@ -56,9 +56,9 @@
   </autotools>
 
   <autotools id="nasm" autogenargs="" autogen-sh="configure">
-	<branch module="/pub/nasm/releasebuilds/2.12/nasm-2.12.tar.bz2"
-		version="2.12"
-		hash="md5:ff2a1d31444049ccdc1deeec1d868585"
+	<branch module="/pub/nasm/releasebuilds/2.13/nasm-2.13.tar.xz"
+		version="2.13"
+		hash="sha256:ba854c2f02f34f0d6a4611c05e8cb65d9fae8c2b21a4def7fba91a7d67ffde97"
 		repo="www.nasm.us">
     	<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
         </branch>
@@ -226,9 +226,9 @@
   </autotools>
 
   <autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
-	<branch module="/pub/x264/snapshots/x264-snapshot-20170704-2245-stable.tar.bz2"
+	<branch module="/pub/x264/snapshots/x264-snapshot-20171102-2245-stable.tar.bz2"
 		version="20170704-2245-stable"
-		hash="sha256:3c33c917b6d574fc23220fa05b2ab83f68446d59ec06b016664ee2a73b642121"
+		hash="sha256:27b812c0d007c8cbca3fe7a632888083e2d67bee8e7493fbc886e899fd94aef9"
 		repo="download.videolan.org"/>
 	<dependencies>
 		<dep package="yasm"/>
@@ -325,9 +325,9 @@
   </autotools>
 
   <autotools id="mpfr" autogen-sh="configure">
-	<branch module="/mpfr-3.1.5/mpfr-3.1.5.tar.xz"
-		hash="sha256:015fde82b3979fbe5f83501986d328331ba8ddf008c1ff3da3c238f49ca062bc"
-		version="3.1.5"
+	<branch module="/mpfr-3.1.6/mpfr-3.1.6.tar.xz"
+		hash="sha256:7a62ac1a04408614fccdc506e4844b10cf0ad2c2b1677097f8f35d3a1344a950"
+		version="3.1.6"
 		repo="www.mpfr.org">
 	</branch>
 	<dependencies>
@@ -360,9 +360,9 @@
   <!-- versions newer than this have problems packaging pyobjc -->
   <distutils id="setuptools">
 	<branch repo="pypi.python.org"
-		module="/packages/source/s/setuptools/setuptools-19.2.tar.gz"
-		hash="md5:78353b1f80375ca5e088f4b4627ffe03"
-		version="19.2"/>
+		module="https://pypi.python.org/packages/45/29/8814bf414e7cd1031e1a3c8a4169218376e284ea2553cc0822a6ea1c2d78/setuptools-36.6.0.zip"
+		hash="sha256:62074589522a798da243f47348f38020d55b6c945652e2f2c09d3a96299812b7"
+		version="36.6.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -399,9 +399,9 @@
 
   <distutils id="python-zeroconf">
 	<branch repo="pypi.python.org"
-		module="/packages/31/a3/cb195bd6f7f052e8ad48b1c04be2ca60012ecb3e6ed7104bf1e7a67d5ca4/zeroconf-0.19.0.tar.gz"
-		hash="sha256:8c58d649fb4fa2a850f93b2a2af2e44db9c6c4a41081c614e1040aec4a6d1177"
-		version="0.19.0"/>
+		module="/packages/bf/e3/acc6e2c2938428afa2450143fc4d3953ec60cb4d859db3a58f03d149ef04/zeroconf-0.19.1.tar.gz"
+		hash="sha256:434eab8da9525ae725d6842aae7e59d9ec6580bdc5ae84f3c225240bc6797f7a"
+		version="0.19.1"/>
         <dependencies>
                 <dep package="python-enum-compat"/>
         </dependencies>
@@ -424,10 +424,11 @@
   </distutils>
 
   <distutils id="pycparser">
-	<branch repo="pypi.python.org"
-		module="/packages/be/64/1bb257ffb17d01f4a38d7ce686809a736837ad4371bcc5c42ba7a715c3ac/pycparser-2.17.tar.gz"
-		hash="sha256:0aac31e917c24cb3357f5a4d5566f2cc91a19ca41862f6c3c22dc60a629673b6"
-		version="2.17"/>
+	<branch repo="github.com"
+		module="/eliben/pycparser/archive/release_v2.18.tar.gz"
+		checkoutdir="pycparser-release_v2.18"
+		hash="sha256:d5ead0f43ac5a8dd89e8475ada557037bbeb7ed709491861e84356ef17a3f8ac"
+		version="2.18"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -438,9 +439,9 @@
 
   <distutils id="cffi">
 	<branch repo="pypi.python.org"
-		module="/packages/4e/32/4070bdf32812c89eb635c80880a5caa2e0189aa7999994c265577e5154f3/cffi-1.11.0.tar.gz"
-		hash="sha256:5f4ff33371c6969b39b293d9771ee91e81d26f9129be093ca1b7be357fcefd15"
-		version="1.11"/>
+		module="/packages/c9/70/89b68b6600d479034276fed316e14b9107d50a62f5627da37fafe083fde3/cffi-1.11.2.tar.gz"
+		hash="sha256:ab87dd91c0c4073758d07334c1e5f712ce8fe48f007b86f8238773963ee700a6"
+		version="1.11.2"/>
 	<dependencies>
 		<dep package="pycparser"/>
 	</dependencies>
@@ -454,9 +455,9 @@
 
   <distutils id="six">
 	<branch repo="pypi.python.org"
-		module="/packages/source/s/six/six-1.10.0.tar.gz"
-		hash="md5:34eed507548117b2ab523ab14b2f8b55"
-		version="1.10.0"/>
+		module="/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz"
+		hash="sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
+		version="1.11.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -467,9 +468,9 @@
 
   <distutils id="pyparsing">
 	<branch repo="pypi.python.org"
-		module="/packages/6f/2c/47457771c02a8ff0f302b695e094ec309e30452232bd79198ee94fda689f/pyparsing-1.5.7.tar.gz"
-		hash="sha256:646e14f90b3689b005c19ac9b6b390c9a39bf976481849993e277d7380e6e79f"
-		version="1.5.7"/>
+		module="https://pypi.python.org/packages/3c/ec/a94f8cf7274ea60b5413df054f82a8980523efd712ec55a59e7c3357cf7c/pyparsing-2.2.0.tar.gz"
+		hash="sha256:0832bcf47acd283788593e7a0f542407bd9550a55a8a8435214a1960e04bcb04"
+		version="2.2.0"/>
 	<dependencies>
 		<dep package="python"/>
 	</dependencies>
@@ -493,9 +494,9 @@
 
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
-		module="/packages/bf/da/6a9f49cc7a970380c8235b3adab0c08c7c3d4814876f7383b33e3882a577/cryptography-2.1.1.tar.gz"
-		hash="sha256:2699ed21e1f73dd1bdb7b0b22a517295de07809d535b23e200dd22166037fe6f"
-		version="2.1.1"/>
+		module="/packages/f3/7c/ec4f94489719803cb14d35e9625d1f5a613b9c4b8d01ee52a4c77485e681/cryptography-2.1.3.tar.gz"
+		hash="sha256:68a26c353627163d74ee769d4749f2ee243866e9dac43c93bb33ebd8fbed1199"
+		version="2.1.3"/>
 	<dependencies>
 		<dep package="python"/>
 		<dep package="openssl"/>
@@ -522,9 +523,9 @@
 
   <distutils id="python-pyasn1">
 	<branch repo="pypi.python.org"
-		module="/packages/57/f7/c18a86169bb9995a69195177b23e736776b347fd92592da0c3cac9f1a724/pyasn1-0.2.2.tar.gz"
-		hash="sha256:6b42f96b942406712e0be5ea2bbbc57d8f30c7835a4904c9c195cc669736d435"
-		version="0.2.2"/>
+		module="/packages/3c/a6/4d6c88aa1694a06f6671362cb3d0350f0d856edea4685c300785200d1cd9/pyasn1-0.3.7.tar.gz#md5=d58ecd0d9ff07218073c5acb12974254"
+		hash="sha256:187f2a66d617683f8e82d5c00033b7c8a0287e1da88a9d577aebec321cad4965"
+		version="0.3.7"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -549,9 +550,9 @@
   <!-- py2app versions newer than this have regressions, see #1404 -->
   <distutils id="python-py2app">
 	<branch repo="pypi.python.org"
-		module="/packages/d0/07/a290a6323d684fd2b9271ec72e6a80bc7dc97e41eb1213b4414928e8dbf1/py2app-0.10.tar.gz"
-		hash="sha256:82b1dd75cfb6b917ad60b9937e800dc80229b61819ff459b7ed46ed177eeaa5e"
-		version="0.10"/>
+		module="/packages/65/ea/b8e5a4f41fd65e35c10b41ff68e776baeb07143983f484f1d9005a7ab36a/py2app-0.14.tar.gz"
+		hash="sha256:4dadf15d078a1748acba483c1abbb69a144a059e0c335a5e2a17b070d4cc938a"
+		version="0.14"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -575,10 +576,10 @@
 
   <distutils id="python-numpy">
         <branch repo="pypi.python.org"
-	        module="/packages/b7/9d/8209e555ea5eb8209855b6c9e60ea80119dab5eff5564330b35aa5dc4b2c/numpy-1.12.0.zip"
-                checkoutdir="numpy-1.12"
-	        version="1.12"
-	        hash="sha256:ff320ecfe41c6581c8981dce892fe6d7e69806459a899e294e4bf8229737b154"/>
+	        module="/packages/bf/2d/005e45738ab07a26e621c9c12dc97381f372e06678adf7dc3356a69b5960/numpy-1.13.3.zip"
+                checkoutdir="numpy-1.13.3"
+	        version="1.13.3"
+	        hash="sha256:36ee86d5adbabc4fa2643a073f93d5504bdfed37a149a3a49f4dde259f35a750"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -643,9 +644,9 @@
 
   <distutils id="python-setuptools-scm">
 	<branch repo="pypi.python.org"
-	        module="/packages/80/b7/31b6ae5fcb188e37f7e31abe75f9be90490a5456a72860fa6e643f8a3cbc/setuptools_scm-1.15.0.tar.gz"
-	        hash="sha256:daf12d05aa2155a46aa357453757ffdc47d87f839e62114f042bceac6a619e2f"
-	        version="1.15.0"/>
+	        module="/packages/03/6d/aafdd01edd227ee879b691455bf19895091872af7e48192bea1758c82032/setuptools_scm-1.15.6.tar.gz"
+	        hash="sha256:49ab4685589986a42da85706b3311a2f74f1af567d39fee6cb1e088d7a75fb5f"
+	        version="1.15.6"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -702,9 +703,9 @@
 
   <distutils id="python-modulegraph">
 	<branch repo="pypi.python.org"
-		module="/packages/a4/cf/b44dbc2aaa0e507fe1b518c95bf71aeb15830337010dd15cc15f6a1a8282/modulegraph-0.14.tar.gz"
-		hash="sha256:84998c1b6d1f0ebd2908dbfe5d2d76066b1e67480e98d925710b213fb002aea3"
-		version="0.14"/>
+		module="/packages/55/4e/67dff18461839a36fd60b2efdc40907f59578c93b9f89fd32024830a8000/modulegraph-0.15.tar.gz"
+		hash="sha256:732be924d772eed19073b8eeebd9c4cdc2f66ce711e39dd0ea486058fd2655a7"
+		version="0.15"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -715,9 +716,9 @@
 
   <distutils id="python-altgraph">
 	<branch repo="pypi.python.org"
-		module="/packages/e1/c7/46556db016104f2c7c195c26dd0a04fffa31ec14edc53fb31cef578d1db8/altgraph-0.13.tar.gz"
-		hash="sha256:8510e9d85598d718d1f94afa7a64696565d6c3cb139d72603d6f64339377be68"
-		version="0.13"/>
+		module="/packages/02/e8/e3e0bef46dc329afec0614d63e3c17fd799e41f8d235e8bd4c3b0175de91/altgraph-0.14.tar.gz"
+		hash="sha256:481bac8feb1716bb8e485e652ed94002cc11304abccb2911f8f4574fc9dc207b"
+		version="0.14"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -847,9 +848,9 @@
 
   <distutils id="python-idna">
 	<branch repo="pypi.python.org"
-		module="/packages/94/fe/efb1cb6f505e1a560b3d080ae6b9fddc11e7c542d694ce4635c49b1ccdcb/idna-2.2.tar.gz"
-		hash="sha256:0ac27740937d86850010e035c6a10a564158a5accddf1aa24df89b0309252426"
-		version="2.2"/>
+		module="/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
+		hash="sha256:2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
+		version="2.6"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -859,30 +860,30 @@
   </distutils>
 
   <autotools id="sqlite" autogenargs="" autogen-sh="configure">
-	<branch module="/2015/sqlite-autoconf-3080803.tar.gz"
-		hash="md5:51272e875879ee893e51070b07c33888"
-		version="3080803"
+	<branch module="/2017/sqlite-autoconf-3210000.tar.gz"
+		hash="sha256:d7dd516775005ad87a57f428b6f86afd206cb341722927f104d3f0cf65fbbbe3"
+		version="3210000"
 		repo="sqlite.org"/>
   </autotools>
 
   <autotools id="db" autogenargs="" autogen-sh="dist/configure">
-	<branch module="/berkeley-db/db-6.0.30.tar.gz"
-		hash="md5:ad28eb86ad3203b5422844db179c585b"
-		version="6.0.30"
+	<branch module="/berkeley-db/db-6.2.23.tar.gz"
+		hash="sha256:47612c8991aa9ac2f6be721267c8d3cdccf5ac83105df8e50809daea24e95dc7"
+		version="6.2.23"
 		repo="download.oracle.com"/>
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
-	<branch module="/dist/apr/apr-1.5.2.tar.bz2"
-		hash="md5:4e9769f3349fe11fc0a5e1b224c236aa"
-		version="1.5.2"
+	<branch module="/dist/apr/apr-1.5.3.tar.bz2"
+		hash="sha256:131f06d16d7aabd097fa992a33eec2b6af3962f93e6d570a9bd4d85e95993172"
+		version="1.5.3"
 		repo="www.eu.apache.org"/>
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-berkeley-db --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config" autogen-sh="configure">
-	<branch module="/dist/apr/apr-util-1.5.4.tar.bz2"
-		hash="md5:2202b18f269ad606d70e1864857ed93c"
-		version="1.5.4"
+	<branch module="/dist/apr/apr-util-1.6.1.tar.bz2"
+		hash="sha256:d3e12f7b6ad12687572a3a39475545a072608f4ba03a6ce8a3778f607dd0035b"
+		version="1.6.1"
 		repo="www.eu.apache.org"/>
         <dependencies>
                 <dep package="apr"/>
@@ -926,9 +927,9 @@
   </autotools>
 
   <autotools id="xpra-svn" autogenargs="--disable-keychain --disable-nls --enable-bdb6 --without-apxs --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config --with-apr-util=${JHBUILD_PREFIX}/bin/apu-1-config --with-serf=${JHBUILD_PREFIX}" autogen-sh="configure">
-    <branch module="/dist/subversion/subversion-1.9.5.tar.bz2"
-		hash="sha256:8a4fc68aff1d18dcb4dd9e460648d24d9e98657fbed496c582929c6b3ce555e5"
-		version="1.9.5"
+    <branch module="/dist/subversion/subversion-1.9.7.tar.bz2"
+		hash="sha256:c3b118333ce12e501d509e66bb0a47bcc34d053990acab45559431ac3e491623"
+		version="1.9.7"
 		repo="www.eu.apache.org"/>
      <dependencies>
       <dep package="apr-util"/>
