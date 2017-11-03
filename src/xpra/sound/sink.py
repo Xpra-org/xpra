@@ -302,10 +302,10 @@ class SoundSink(SoundPipeline):
         if self.refill:
             #temporarily raise max level during underruns,
             #so set_min_level has more room for manoeuver:
-            mst += int(5-(now-self.last_underrun))*(UNDERRUN_MIN_LEVEL//5)
+            mst += UNDERRUN_MIN_LEVEL
         #cap it at 1 second:
         mst = min(mst, 1000)
-        log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i", olm, MARGIN, pct, cmst)
+        log("set_max_level overrun count=%-2i, margin=%3i, pct=%2i, cmst=%3i, target=%3i, mst=%3i", olm, MARGIN, pct, cmst, target_mst, mst)
         if abs(cmst-mst)<=max(50, lrange//2):
             #not enough difference
             return
