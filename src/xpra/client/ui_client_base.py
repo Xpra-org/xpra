@@ -2657,6 +2657,9 @@ class UIXpraClient(XpraClientBase):
         #not shown in the UI, so don't bother with emitting a signal:
         #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
+        if self.exit_code is not None:
+            #exiting
+            return
         if sound_sink!=self.sound_sink:
             soundlog("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
             return
@@ -2664,6 +2667,9 @@ class UIXpraClient(XpraClientBase):
         soundlog.warn(" %s", str(error).replace("gst-resource-error-quark: ", ""))
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
+        if self.exit_code is not None:
+            #exiting
+            return
         if sound_sink!=self.sound_sink:
             soundlog("sound_process_stopped(%s, %s) not the current sink, ignoring it", sound_sink, args)
             return
@@ -2672,6 +2678,9 @@ class UIXpraClient(XpraClientBase):
 
     def sound_sink_exit(self, sound_sink, *args):
         log("sound_sink_exit(%s, %s) sound_sink=%s", sound_sink, args, self.sound_sink)
+        if self.exit_code is not None:
+            #exiting
+            return
         ss = self.sound_sink
         if sound_sink!=ss:
             soundlog("sound_sink_exit() not the current sink, ignoring it")
