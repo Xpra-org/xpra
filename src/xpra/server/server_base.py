@@ -1500,6 +1500,7 @@ class ServerBase(ServerCore):
                          }
         f["network"] = {
                  "bandwidth-limit-change"       : True,
+                 "bandwidth-limit"              : self.bandwidth_limit or 0,
                  }
         return f
 

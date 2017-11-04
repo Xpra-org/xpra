@@ -1046,23 +1046,23 @@ def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
         elif v=="auto":
             return None
         else:
-            r = re.match('([0-9]*)(.*)', v)
+            r = re.match('([0-9\.]*)(.*)', v)
             assert r
-            i = int(r.group(1))
+            f = float(r.group(1))
             unit = r.group(2).lower()
             if unit.endswith(subunit):
                 unit = unit[:-len(subunit)]     #ie: 10mbps -> 10m
             if unit=="b":
                 pass
             elif unit=="k":
-                i *= 1000
+                f *= 1000
             elif unit=="m":
-                i *= 1000000
+                f *= 1000000
             elif unit=="g":
-                i *= 1000000000
+                f *= 1000000000
             if min_value is not None:
-                assert i>=min_value, "value is too low"
-            return i
+                assert f>=min_value, "value is too low"
+            return int(f)
     except Exception as e:
         raise InitException("invalid value for %s '%s': %s" % (numtype, v, e))
 

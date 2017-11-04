@@ -177,6 +177,9 @@ class UIXpraClient(XpraClientBase):
         self.server_max_desktop_size = None
         self.server_display = None
         self.server_randr = False
+        self.server_av_sync = False
+        self.server_bandwidth_limit_change = False
+        self.server_bandwidth_limit = 0
         self.pixel_counter = deque(maxlen=1000)
         self.server_last_info = None
         self.info_request_pending = False
@@ -1959,6 +1962,8 @@ class UIXpraClient(XpraClientBase):
         log("server has randr: %s", self.server_randr)
         self.server_av_sync = c.boolget("av-sync.enabled")
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
+        self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
+        log.info("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         e = c.strget("encoding")
         if e:
