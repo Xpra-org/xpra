@@ -329,7 +329,10 @@ class Protocol(object):
         self.source_has_more()
 
     def source_has_more(self):
-        self._source_has_more.set()
+        shm = self._source_has_more
+        if not shm or self._closed:
+            return
+        shm.set()
         #start the format thread:
         if not self._write_format_thread and not self._closed:
             self._write_format_thread = make_thread(self._write_format_thread_loop, "format", daemon=True)
@@ -1067,6 +1070,9 @@ class Protocol(object):
         self._write_lock = None
         self._source_has_more = None
         self._conn = None       #should be redundant
+        def noop():
+            pass
+        self.source_has_more = noop
 
 
     def terminate_queue_threads(self):
