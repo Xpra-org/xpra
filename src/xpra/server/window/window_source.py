@@ -325,12 +325,19 @@ class WindowSource(object):
         self.statistics.reset()
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
+        #make sure we don't queue any more screen updates for encoding:
         self._damage_cancelled = float("inf")
+        #and only clear the encoders after clearing the encoding queue:
+        #(because mmap cannot be cancelled once queued for encoding)
+        def clear_encoders():
+            self._encoders = {}
+        self.call_in_encode_thread(False, clear_encoders)
         def window_signal_handlers_cleanup():
             log("window_signal_handlers_cleanup: will disconnect %s", self.window_signal_handlers)
             for sid in self.window_signal_handlers:
                 self.window.disconnect(sid)
             self.window_signal_handlers = []
+            self.window = None
         self.idle_add(window_signal_handlers_cleanup)
 
 
