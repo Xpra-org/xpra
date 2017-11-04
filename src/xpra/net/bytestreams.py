@@ -102,13 +102,12 @@ def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
         except Exception as e:
             retry = can_retry(e)
             log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
-            if retry:
-                if wait>0:
-                    time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
-                if wait<continue_wait:
-                    wait += 1
-                continue
-            raise
+            if not retry:
+                raise
+            if wait>0:
+                time.sleep(wait/1000.0)     #wait is in milliseconds, sleep takes seconds
+            if wait<continue_wait:
+                wait += 1
 
 
 def pretty_socket(s):
