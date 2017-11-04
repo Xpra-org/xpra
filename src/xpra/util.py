@@ -497,7 +497,7 @@ def dump_references(log, instances, exclude=[]):
                 log.info("[%s] in %s", i, type(r))
                 if inspect.isframe(r):
                     log.info("  frame info: %s", str(inspect.getframeinfo(r))[:1024])
-                elif type(r)==list:
+                elif type(r) in (list, tuple):
                     listref = gc.get_referrers(r)
                     log.info("  list: %s..  %s referrers: %s", str(r[:32])[:1024], len(listref), str(listref[:32])[:1024])
                 elif type(r)==dict:
