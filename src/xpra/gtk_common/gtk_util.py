@@ -473,39 +473,39 @@ else:
             finally:
                 gdk.threads_leave()
 
-    if WIN32:
+    mouse_in_tray_menu_counter = 0
+    mouse_in_tray_menu = False
+    OUTSIDE_TRAY_TIMEOUT = 500
+    def popup_menu_workaround(menu, close_cb):
+        """ MS Windows does not automatically close the popup menu when we click outside it
+            so we workaround it by using a timer and closing the menu when the mouse
+            has stayed outside it for more than OUTSIDE_TRAY_TIMEOUT (0.5s).
+            This code must be added to all the sub-menus of the popup menu too!
+        """
+        global mouse_in_tray_menu, mouse_in_tray_menu_counter
+        def enter_menu(*_args):
+            global mouse_in_tray_menu, mouse_in_tray_menu_counter
+            traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
+            mouse_in_tray_menu_counter += 1
+            mouse_in_tray_menu = True
+        def leave_menu(*_args):
+            global mouse_in_tray_menu, mouse_in_tray_menu_counter
+            traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
+            mouse_in_tray_menu_counter += 1
+            mouse_in_tray_menu = False
+            def check_menu_left(expected_counter):
+                if mouse_in_tray_menu:
+                    return    False
+                if expected_counter!=mouse_in_tray_menu_counter:
+                    return    False            #counter has changed
+                close_cb()
+            gobject.timeout_add(OUTSIDE_TRAY_TIMEOUT, check_menu_left, mouse_in_tray_menu_counter)
         mouse_in_tray_menu_counter = 0
         mouse_in_tray_menu = False
-        OUTSIDE_TRAY_TIMEOUT = 500
-        def popup_menu_workaround(menu, close_cb):
-            """ MS Windows does not automatically close the popup menu when we click outside it
-                so we workaround it by using a timer and closing the menu when the mouse
-                has stayed outside it for more than OUTSIDE_TRAY_TIMEOUT (0.5s).
-                This code must be added to all the sub-menus of the popup menu too!
-            """
-            global mouse_in_tray_menu, mouse_in_tray_menu_counter
-            def enter_menu(*_args):
-                global mouse_in_tray_menu, mouse_in_tray_menu_counter
-                traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
-                mouse_in_tray_menu_counter += 1
-                mouse_in_tray_menu = True
-            def leave_menu(*_args):
-                global mouse_in_tray_menu, mouse_in_tray_menu_counter
-                traylog("mouse_in_tray_menu=%s", mouse_in_tray_menu)
-                mouse_in_tray_menu_counter += 1
-                mouse_in_tray_menu = False
-                def check_menu_left(expected_counter):
-                    if mouse_in_tray_menu:
-                        return    False
-                    if expected_counter!=mouse_in_tray_menu_counter:
-                        return    False            #counter has changed
-                    close_cb()
-                gobject.timeout_add(OUTSIDE_TRAY_TIMEOUT, check_menu_left, mouse_in_tray_menu_counter)
-            mouse_in_tray_menu_counter = 0
-            mouse_in_tray_menu = False
-            traylog("popup_menu_workaround: adding events callbacks")
-            menu.connect("enter-notify-event", enter_menu)
-            menu.connect("leave-notify-event", leave_menu)
+        traylog("popup_menu_workaround: adding events callbacks")
+        menu.connect("enter-notify-event", enter_menu)
+        menu.connect("leave-notify-event", leave_menu)
+    if WIN32:
         def gtk_main():
             gtk.main()
 

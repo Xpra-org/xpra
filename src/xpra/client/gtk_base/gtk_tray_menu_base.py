@@ -736,7 +736,7 @@ class GTKTrayMenuBase(object):
                 set_sensitive(bandwidth_limit_menu_item, False)
             else:
                 initial_value = self.client.server_bandwidth_limit or self.client.bandwidth_limit or 0
-                log.info("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s", self.client.server_bandwidth_limit, self.client.bandwidth_limit, initial_value)
+                log("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s", self.client.server_bandwidth_limit, self.client.bandwidth_limit, initial_value)
 
                 options = BANDWIDTH_MENU_OPTIONS
                 if initial_value and initial_value not in options:

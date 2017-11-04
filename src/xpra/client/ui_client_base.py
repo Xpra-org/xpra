@@ -1963,7 +1963,7 @@ class UIXpraClient(XpraClientBase):
         self.server_av_sync = c.boolget("av-sync.enabled")
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
-        log.info("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
+        log("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         e = c.strget("encoding")
         if e:
