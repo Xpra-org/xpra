@@ -499,18 +499,27 @@ def dump_references(log, instances, exclude=[]):
                     log.info("  frame info: %s", str(inspect.getframeinfo(r))[:1024])
                 elif type(r) in (list, tuple):
                     listref = gc.get_referrers(r)
-                    log.info("  list: %s..  %s referrers: %s", str(r[:32])[:1024], len(listref), str(listref[:32])[:1024])
+                    lr = len(r)
+                    if lr<=128:
+                        log.info("  %i %s items: %s", lr, type(r), csv(repr_ellipsized(str(x)) for x in r))
+                    else:
+                        log.info("  %i %s items: %s..", lr, type(r), repr_ellipsized(csv(r)))
+                    ll = len(listref)
+                    if ll<128:
+                        log.info("  %i referrers: %s", ll, csv(repr_ellipsized(str(x)) for x in listref))
+                    else:
+                        log.info("  %i referrers: %s", ll, repr_ellipsized(csv(listref)))
                 elif type(r)==dict:
                     if len(r)>64:
-                        log.info("  %s items: %s", len(r), str(r)[:1024])
+                        log.info("  %s items: %s", len(r), repr_ellipsized(str(r)))
                         continue
                     for k,v in r.items():
                         if k is instance:
-                            log.info("  key with value=%s", v)
+                            log.info("  key with value=%s", repr_ellipsized(str(v)))
                         elif v is instance:
-                            log.info("  for key=%s", k)
+                            log.info("  for key=%s", repr_ellipsized(str(k)))
                 else:
-                    log.info("     %s", r)
+                    log.info("     %s", repr_ellipsized(str(r)))
     finally:
         del frame
 
