@@ -1061,6 +1061,13 @@ class Protocol(object):
         self._read_parser_thread = None
         self._write_format_thread = None
         self._process_packet_cb = None
+        self._process_read = None
+        self._read_queue_put = None
+        self._compress = None
+        self._write_lock = None
+        self._source_has_more = None
+        self._conn = None       #should be redundant
+
 
     def terminate_queue_threads(self):
         log("terminate_queue_threads()")
