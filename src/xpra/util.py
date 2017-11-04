@@ -475,13 +475,22 @@ def dump_all_frames():
 def dump_references(log, instances, exclude=[]):
     import gc
     import inspect
-    gc.collect()
     frame = inspect.currentframe()
+    exclude.append(instances)
+    exclude.append([frame])
+    exclude = [[frame],]
+    rexclude = exclude
+    np = sys.modules.get("numpy")
+    if np:
+        rexclude = []
+        skip_types = (np.ndarray, np.generic)
+        for v in exclude:
+            rexclude.append(tuple(x for x in v if not isinstance(x, skip_types)))
+    del exclude
+    gc.collect()
     try:
-        exclude.append(instances)
-        exclude.append([frame])
         for instance in instances:
-            referrers = [x for x in gc.get_referrers(instance) if (x not in exclude and len([y for y in exclude if x in y])==0)]
+            referrers = tuple(x for x in gc.get_referrers(instance) if not any(y for y in rexclude if x in y))
             log.info("referrers for %s: %s", instance, len(referrers))
             for i in range(len(referrers)):
                 r = referrers[i]
@@ -509,7 +518,6 @@ def detect_leaks(log, detailed=[]):
     import types
     from collections import defaultdict
     import gc
-    import inspect
     global before, after
     gc.enable()
     gc.set_debug(gc.DEBUG_LEAK)
@@ -538,19 +546,17 @@ def detect_leaks(log, detailed=[]):
         after = defaultdict(int)
         for delta in reversed(sorted(leaked.keys())):
             ltype = leaked[delta]
-            matches = [x for x in lobjs if type(x)==ltype and ltype not in ignore]
+            matches = tuple(x for x in lobjs if type(x)==ltype and ltype not in ignore)
             if len(matches)<32:
-                minfo = [str(x)[:32] for x in matches]
+                minfo = csv(str(x)[:32] for x in matches)
             else:
                 minfo = "%s matches" % len(matches)
             log.info("%8i : %s : %s", delta, ltype, minfo)
             if len(matches)<32 and ltype in detailed:
-                frame = inspect.currentframe()
-                exclude = [frame, matches, lobjs]
+                exclude = [lobjs]
                 try:
                     dump_references(log, matches, exclude=exclude)
                 finally:
-                    del frame
                     del exclude
             del matches
             del minfo
