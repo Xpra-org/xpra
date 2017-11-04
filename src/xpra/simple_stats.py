@@ -26,6 +26,8 @@ def std_unit_dec(v):
     unit, value = to_std_unit(v*10.0)
     if value>=100:
         return "%s%s" % (int(value//10), unit)
+    elif int(value)%10==0:
+        return "%s%s" % (int(value/10), unit)
     return "%s%s" % (int(value)/10.0, unit)
 
 

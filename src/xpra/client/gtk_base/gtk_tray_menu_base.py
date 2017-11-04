@@ -712,10 +712,12 @@ class GTKTrayMenuBase(object):
         menuitems = {}
 
         def bwitem(bwlimit=0):
-            if bwlimit>0:
-                label = "%sbps" % std_unit_dec(bwlimit)
-            else:
+            if bwlimit<=0:
                 label = "None"
+            elif bwlimit>=10*1000*1000:
+                label = "%iMbps" % (bwlimit//(1000*1000))
+            else:
+                label = "%sbps" % std_unit_dec(bwlimit)
             c = CheckMenuItem(label)
             c.set_draw_as_radio(True)
             c.set_active(False)
