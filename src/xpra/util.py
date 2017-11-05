@@ -489,35 +489,36 @@ def dump_references(log, instances, exclude=[]):
     del exclude
     gc.collect()
     try:
-        for instance in instances:
+        log.info("dump references for %i instances:", len(instances))
+        for j, instance in enumerate(instances):
             referrers = tuple(x for x in gc.get_referrers(instance) if not any(y for y in rexclude if x in y))
-            log.info("referrers for %s: %s", instance, len(referrers))
+            log.info("* %i : %s, type=%s, with %i referers", j, repr_ellipsized(str(instance)), type(instance), len(referrers))
             for i in range(len(referrers)):
                 r = referrers[i]
-                log.info("[%s] in %s", i, type(r))
+                log.info("  [%s] in %s", i, type(r))
                 if inspect.isframe(r):
-                    log.info("  frame info: %s", str(inspect.getframeinfo(r))[:1024])
+                    log.info("    frame info: %s", str(inspect.getframeinfo(r))[:1024])
                 elif type(r) in (list, tuple):
                     listref = gc.get_referrers(r)
                     lr = len(r)
                     if lr<=128:
-                        log.info("  %i %s items: %s", lr, type(r), csv(repr_ellipsized(str(x)) for x in r))
+                        log.info("    %i %s items: %s", lr, type(r), csv(repr_ellipsized(str(x)) for x in r))
                     else:
-                        log.info("  %i %s items: %s..", lr, type(r), repr_ellipsized(csv(r)))
+                        log.info("    %i %s items: %s..", lr, type(r), repr_ellipsized(csv(r)))
                     ll = len(listref)
                     if ll<128:
-                        log.info("  %i referrers: %s", ll, csv(repr_ellipsized(str(x)) for x in listref))
+                        log.info("    %i referrers: %s", ll, csv(repr_ellipsized(str(x)) for x in listref))
                     else:
-                        log.info("  %i referrers: %s", ll, repr_ellipsized(csv(listref)))
+                        log.info("    %i referrers: %s", ll, repr_ellipsized(csv(listref)))
                 elif type(r)==dict:
                     if len(r)>64:
-                        log.info("  %s items: %s", len(r), repr_ellipsized(str(r)))
+                        log.info("    %s items: %s", len(r), repr_ellipsized(str(r)))
                         continue
                     for k,v in r.items():
                         if k is instance:
-                            log.info("  key with value=%s", repr_ellipsized(str(v)))
+                            log.info("    key with value=%s", repr_ellipsized(str(v)))
                         elif v is instance:
-                            log.info("  for key=%s", repr_ellipsized(str(k)))
+                            log.info("    for key=%s", repr_ellipsized(str(k)))
                 else:
                     log.info("     %s", repr_ellipsized(str(r)))
     finally:
@@ -545,7 +546,7 @@ def detect_leaks(log, detailed=[]):
         for i in lobjs:
             if type(i) not in ignore:
                 after[type(i)] += 1
-        log.info("print_leaks:")
+        log.info("leaks: count : object")
         leaked = {}
         for k in after:
             delta = after[k]-before[k]
@@ -556,20 +557,32 @@ def detect_leaks(log, detailed=[]):
         for delta in reversed(sorted(leaked.keys())):
             ltype = leaked[delta]
             matches = tuple(x for x in lobjs if type(x)==ltype and ltype not in ignore)
-            if len(matches)<32:
+            if len(matches)<64:
                 minfo = csv(str(x)[:32] for x in matches)
             else:
-                minfo = "%s matches" % len(matches)
-            log.info("%8i : %s : %s", delta, ltype, minfo)
+                minfo = "%6i matches" % len(matches)
+            log.info("%8i : %32s : %s", delta, getattr(ltype, "__name__", ltype), minfo)
             if len(matches)<32 and ltype in detailed:
-                exclude = [lobjs]
                 try:
-                    dump_references(log, matches, exclude=exclude)
-                finally:
-                    del exclude
+                    import time
+                    import types
+                    import os.path
+                    import objgraph
+                    def not_locals(x):
+                        #return not x in (before, after, lobjs) and not isinstance(x, types.FrameType)
+                        return not x in (before, after, lobjs)
+                    for x in matches:
+                        filename = os.path.expanduser("~/Downloads/objgraph-%s-%i.png" % (type(x).__name__, time.time()))
+                        objgraph.show_backrefs(x, max_depth=5, filter=not_locals, too_many=32, filename=filename)
+                        log.info(" saved objgraph to %s", filename)
+                except ImportError:
+                    exclude = [lobjs]
+                    try:
+                        dump_references(log, matches, exclude=exclude)
+                    finally:
+                        del exclude
             del matches
             del minfo
-        del lobjs
         return True
     return print_leaks
 
