@@ -53,6 +53,31 @@ SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 
 
+HTTP_UNSUPORTED = """<head>
+<title>Error response</title>
+</head>
+<body>
+<h1>Error response</h1>
+<p>Error code 400.
+<p>Message: this port does not support HTTP requests.
+<p>Error code explanation: 400 = Bad request syntax or unsupported method.
+</body>
+"""
+
+def pack_one_packet(packet):
+    try:
+        from xpra.net.packet_encoding import get_enabled_encoders, get_encoder
+        from xpra.net.header import pack_header
+        ee = get_enabled_encoders()
+        if ee:
+            e = get_encoder(ee[0])
+            data, flags = e(packet)
+            return pack_header(flags, 0, 0, len(data))+data
+    except ImportError as e:
+        pass
+    return None
+
+
 #class used to distinguish internal errors
 #which should not be shown to the client,
 #from useful messages we do want to pass on
@@ -117,6 +142,7 @@ def get_thread_info(proto=None, protocols=[]):
             return str(x)
         frames = sys._current_frames()
         fi = info.setdefault("frame", {})
+        stack = None
         for i,frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
             #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
@@ -125,6 +151,7 @@ def get_thread_info(proto=None, protocols=[]):
                 sanestack.append(tuple([nn(x) for x in e]))
             fi[i] = {""         : thread_ident.get(frame_pair[0], "unknown"),
                      "stack"    : sanestack}
+        del frames, stack
     except Exception as e:
         log.error("failed to get frame info: %s", e)
     return info
@@ -687,8 +714,7 @@ class ServerCore(object):
                 peek_data = conn.peek(PEEK_SIZE)
             except:
                 pass
-            import time
-            time.sleep(timeout/4.0)
+            sleep(timeout/4.0)
         line1 = b""
         netlog("socket %s peek: got %i bytes", conn, len(peek_data))
         if peek_data:
@@ -698,58 +724,40 @@ class ServerCore(object):
             netlog("socket peek line1=%s", repr_ellipsized(line1))
         return peek_data, line1
 
+    def new_conn_err(self, conn, sock, socktype, socket_info, network_protocol, msg="invalid packet format, not an xpra client?"):
+        #not an xpra client
+        netlog.error("Error: %s connection failed:", socktype)
+        if conn.remote:
+            netlog.error(" packet from %s", pretty_socket(conn.remote))
+        if socket_info:
+            netlog.error(" received on %s", pretty_socket(socket_info))
+        netlog.error(" %s", msg)
+        try:
+            sock.settimeout(1)
+            #default to plain text:
+            packet_data = "disconnect: connection failed, %s?\n" % msg
+            if network_protocol=="xpra":
+                #try xpra packet format:
+                packet_data = pack_one_packet(["disconnect", "invalid protocol for this port"]) or packet_data
+            elif network_protocol=="HTTP":
+                #HTTP 400 error:
+                packet_data = HTTP_UNSUPORTED
+            conn.write(packet_data)
+            self.timeout_add(500, self.force_close_connection, conn)
+        except Exception as e:
+            netlog("error sending '%s': %s", nonl(msg), e)
+
+    def force_close_connection(self, conn):
+        try:
+            conn.close()
+        except:
+            log("close_connection()", exc_info=True)
+
     def handle_new_connection(self, conn, sock, address, socktype, peername, socket_info):
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
         """
-        def conn_err(network_protocol, msg="invalid packet format, not an xpra client?"):
-            #not an xpra client
-            netlog.error("Error: %s connection failed:", socktype)
-            if conn.remote:
-                netlog.error(" packet from %s", pretty_socket(conn.remote))
-            if socket_info:
-                netlog.error(" received on %s", pretty_socket(socket_info))
-            netlog.error(" %s", msg)
-            try:
-                sock.settimeout(1)
-                #default to plain text:
-                packet_data = "disconnect: connection failed, %s?\n" % msg
-                if network_protocol=="xpra":
-                    #try to respond using xpra protocol as a one off:
-                    try:
-                        from xpra.net.packet_encoding import get_enabled_encoders, get_encoder
-                        from xpra.net.header import pack_header
-                        ee = get_enabled_encoders()
-                        if ee:
-                            e = get_encoder(ee[0])
-                            data, flags = e(["disconnect", "invalid protocol for this port"])
-                            packet_data = pack_header(flags, 0, 0, len(data))+data
-                    except ImportError as e:
-                        pass
-                    else:
-                        pass
-                elif network_protocol=="HTTP":
-                    #HTTP 400 error:
-                    packet_data = """<head>
-<title>Error response</title>
-</head>
-<body>
-<h1>Error response</h1>
-<p>Error code 400.
-<p>Message: this port does not support HTTP requests.
-<p>Error code explanation: 400 = Bad request syntax or unsupported method.
-</body>
-"""                    
-                conn.write(packet_data)
-                def close_connection():
-                    try:
-                        conn.close()
-                    except:
-                        log("close_connection()", exc_info=True)
-                self.timeout_add(500, close_connection)
-            except Exception as e:
-                netlog("error sending '%s': %s", nonl(msg), e)
         sockname = sock.getsockname()
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
@@ -783,7 +791,7 @@ class ServerCore(object):
                 elif line1.find("HTTP/")>0:
                     packet_type = "HTTP"
                 if packet_type:
-                    conn_err(packet_type, "packet looks like a plain %s packet" % packet_type)
+                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type, "packet looks like a plain %s packet" % packet_type)
                     return
             #always start by wrapping with SSL:
             assert self._ssl_wrap_socket
@@ -817,7 +825,7 @@ class ServerCore(object):
                     netlog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
-                    conn_err("xpra", "packet looks like a plain xpra packet")
+                    self.new_conn_err(conn, sock, socktype, socket_info, "xpra", "packet looks like a plain xpra packet")
                     return
             self.start_http_socket(conn, False, peek_data)
             return
@@ -835,12 +843,12 @@ class ServerCore(object):
                     return
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
-                conn_err(None, str(e))
+                self.new_conn_err(conn, sock, socktype, socket_info, None, str(e))
                 return
 
         if peek_data and (socktype=="rfb" or (peek_data[0] not in ("P", ord("P")))):
             network_protocol, msg = self.guess_header_protocol(peek_data)
-            conn_err(network_protocol, "invalid packet header, %s" % msg)
+            self.new_conn_err(conn, sock, socktype, socket_info, network_protocol, "invalid packet header, %s" % msg)
             return
 
         #not sure why python3 fails to set the timeout here:
