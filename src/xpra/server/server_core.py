@@ -12,6 +12,7 @@ import socket
 import signal
 import threading
 import traceback
+from weakref import WeakKeyDictionary
 from time import sleep
 
 from xpra.log import Logger
@@ -100,7 +101,7 @@ def get_thread_info(proto=None, protocols=[]):
             pass
     #all non-info threads:
     anit = info.setdefault("thread", {})
-    for i, t in enumerate((x for x in threading.enumerate() if x not in info_threads)):
+    for i, t in enumerate(x for x in threading.enumerate() if x not in info_threads):
         anit[i] = t.getName()
     #platform specific bits:
     try:
@@ -113,7 +114,7 @@ def get_thread_info(proto=None, protocols=[]):
         def nn(x):
             if x is None:
                 return ""
-            return x
+            return str(x)
         frames = sys._current_frames()
         fi = info.setdefault("frame", {})
         for i,frame_pair in enumerate(frames.items()):
@@ -167,6 +168,8 @@ class ServerCore(object):
         self._reverse_aliases = {}
         self.socket_types = {}
         self.socket_info = {}
+        self.socket_verify_timer = WeakKeyDictionary()
+        self.socket_rfb_upgrade_timer = WeakKeyDictionary()
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
@@ -592,7 +595,7 @@ class ServerCore(object):
         return list(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason, force=False):
-        netlog("do_cleanup_all_protocols(%s, %s, %s)", protocols, reason, force)
+        netlog("cleanup_protocols(%s, %s, %s)", protocols, reason, force)
         for protocol in protocols:
             if force:
                 self.force_disconnect(protocol)
@@ -846,17 +849,31 @@ class ServerCore(object):
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn)
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
-            def may_upgrade_to_rfb():
-                netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
-                if conn.input_bytecount==0:
-                    proto.steal_connection()
-                    self._potential_protocols.remove(proto)
-                    proto.wait_for_io_threads_exit(1)
-                    conn.set_active(True)
-                    self.handle_rfb_connection(conn)
-                return False
-            self.timeout_add(self._rfb_upgrade*1000, may_upgrade_to_rfb)
-        return proto
+            t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
+            self.socket_rfb_upgrade_timer[proto] = t
+
+    def try_upgrade_to_rfb(self, proto):
+        if proto._closed:
+            return
+        self.cancel_upgrade_to_rfb_timer(proto)
+        conn = proto._conn
+        netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
+        if conn.input_bytecount==0:
+            proto.steal_connection()
+            self._potential_protocols.remove(proto)
+            proto.wait_for_io_threads_exit(1)
+            conn.set_active(True)
+            self.handle_rfb_connection(conn)
+        return False
+
+    def cancel_upgrade_to_rfb_timer(self, protocol):
+        t = self.socket_rfb_upgrade_timer.get(protocol)
+        if t:
+            self.source_remove(t)
+            try:
+                del self.socket_rfb_upgrade_timer[protocol]
+            except:
+                pass
 
 
     def make_protocol(self, socktype, conn):
@@ -888,7 +905,8 @@ class ServerCore(object):
         protocol.invalid_header = self.invalid_header
         authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
-        self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
+        t = self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
+        self.socket_verify_timer[protocol] = t
         return protocol
 
     def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b""):
@@ -1098,13 +1116,25 @@ class ServerCore(object):
         return v
 
     def verify_connection_accepted(self, protocol):
+        self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
             info = getattr(protocol, "_conn", protocol)
             log.error("connection timedout: %s", info)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
+    def cancel_verify_connection_accepted(self, protocol):
+        t = self.socket_verify_timer.get(protocol)
+        if t:
+            try:
+                del self.socket_verify_timer[protocol]
+            except:
+                pass
+            self.source_remove(t)
+
     def send_disconnect(self, proto, *reasons):
         netlog("send_disconnect(%s, %s)", proto, reasons)
+        self.cancel_verify_connection_accepted(proto)
+        self.cancel_upgrade_to_rfb_timer(proto)
         if proto._closed:
             return
         proto.send_disconnect(reasons)
@@ -1112,6 +1142,8 @@ class ServerCore(object):
 
     def force_disconnect(self, proto):
         netlog("force_disconnect(%s)", proto)
+        self.cancel_verify_connection_accepted(proto)
+        self.cancel_upgrade_to_rfb_timer(proto)
         proto.close()
 
     def disconnect_client(self, protocol, reason, *extra):
@@ -1130,6 +1162,8 @@ class ServerCore(object):
             proto_info = " %s" % protocol
         self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
         self._log_disconnect(protocol, " %s", i)
+        self.cancel_verify_connection_accepted(protocol)
+        self.cancel_upgrade_to_rfb_timer(protocol)
         protocol.send_disconnect(reasons)
 
 
@@ -1151,6 +1185,8 @@ class ServerCore(object):
 
     def _process_connection_lost(self, proto, packet):
         netlog("process_connection_lost(%s, %s)", proto, packet)
+        self.cancel_verify_connection_accepted(proto)
+        self.cancel_upgrade_to_rfb_timer(proto)
         if proto in self._potential_protocols:
             if not proto._closed:
                 self._log_disconnect(proto, "Connection lost")
@@ -1436,6 +1472,8 @@ class ServerCore(object):
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         self.reset_server_timeout(False)
+        self.cancel_verify_connection_accepted(proto)
+        self.cancel_upgrade_to_rfb_timer(proto)
 
     def reset_server_timeout(self, reschedule=True):
         timeoutlog("reset_server_timeout(%s) server_idle_timeout=%s, server_idle_timer=%s", reschedule, self.server_idle_timeout, self.server_idle_timer)
@@ -1500,18 +1538,19 @@ class ServerCore(object):
         ui_info = self.get_ui_info(proto, *args)
         end = monotonic_time()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
-        def in_thread(*args):
-            start = monotonic_time()
-            #this runs in a non-UI thread
-            try:
-                info = self.get_info(proto, *args)
-                merge_dicts(ui_info, info)
-            except Exception as e:
-                log.error("error during info collection: %s", e, exc_info=True)
-            end = monotonic_time()
-            log("get_all_info: non ui info collected in %ims", (end-start)*1000)
-            callback(proto, ui_info)
-        start_thread(in_thread, "Info", daemon=True)
+        start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
+
+    def _get_info_in_thread(self, callback, ui_info, proto, args):
+        start = monotonic_time()
+        #this runs in a non-UI thread
+        try:
+            info = self.get_info(proto, *args)
+            merge_dicts(ui_info, info)
+        except Exception as e:
+            log.error("error during info collection: %s", e, exc_info=True)
+        end = monotonic_time()
+        log("get_all_info: non ui info collected in %ims", (end-start)*1000)
+        callback(proto, ui_info)
 
     def get_ui_info(self, _proto, *_args):
         #this function is for info which MUST be collected from the UI thread
