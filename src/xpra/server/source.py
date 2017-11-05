@@ -494,6 +494,7 @@ class ServerSource(FileTransferHandler):
         if ds:
             self.dbus_server = None
             self.idle_add(ds.cleanup)
+        self.protocol = None
 
 
     def update_bandwidth_limits(self):
