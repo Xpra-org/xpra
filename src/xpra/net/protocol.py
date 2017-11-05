@@ -847,7 +847,8 @@ class Protocol(object):
                             cryptolog(" data does not end with %s padding bytes %s", self.cipher_in_padding, debug_str(padtext))
                             cryptolog(" but with %s (%s)", debug_str(actual_padding), type(data))
                             cryptolog(" decrypted data: %s", debug_str(data[:128]))
-                            return self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
+                            self._internal_error("%s encryption padding error - wrong key?" % self.cipher_in_name)
+                            return
                         data = data[:-padding_size]
                 #uncompress if needed:
                 if compression_level>0:
