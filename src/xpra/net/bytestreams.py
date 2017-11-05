@@ -102,6 +102,7 @@ def untilConcludes(is_active_cb, can_retry, f, *a, **kw):
         except Exception as e:
             retry = can_retry(e)
             log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s", is_active_cb, can_retry, f, a, kw, e, retry, exc_info=True)
+            e = None
             if not retry:
                 raise
             if wait>0:
