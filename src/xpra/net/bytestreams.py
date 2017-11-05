@@ -158,7 +158,7 @@ class Connection(object):
         """ wraps do_write with packet accounting """
         w = self.untilConcludes(*args)
         self.output_bytecount += w or 0
-        self.output_writecount += 1
+        self.output_writecount += int(w is not None)
         return w
 
     def _read(self, *args):
