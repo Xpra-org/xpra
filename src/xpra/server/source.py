@@ -62,6 +62,7 @@ ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
+PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -2064,7 +2065,7 @@ class ServerSource(FileTransferHandler):
     def process_ping(self, time_to_echo):
         l1,l2,l3 = 0,0,0
         cl = -1
-        if False:
+        if PING_DETAILS:
             #send back the load average:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()
@@ -2077,7 +2078,7 @@ class ServerSource(FileTransferHandler):
                 cl = int(1000.0*cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
-        #self.timeout_add(500, self.ping)
+        self.timeout_add(500, self.ping)
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
