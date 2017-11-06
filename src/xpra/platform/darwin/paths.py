@@ -1,16 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os.path
-from xpra.util import envbool
+from xpra.util import envbool, get_util_logger
 
 def debug(*msg):
     """ delay import of logger to prevent cycles """
-    from xpra.log import Logger
-    log = Logger("util")
-    log(*msg)
+    log = get_util_logger()
+    log.debug(*msg)
     return None
 
 
@@ -34,9 +33,7 @@ def do_get_resources_dir():
             if _gtkosx_warning_ is False:
                 _gtkosx_warning_ = True
                 #delayed import to prevent cycles:
-                from xpra.log import Logger
-                log = Logger("util")
-                log.error("ERROR: gtkosx_application module is missing - trying to continue anyway")
+                get_util_logger().error("ERROR: gtkosx_application module is missing - trying to continue anyway")
     else:
         debug("XPRA_SKIP_UI is set, not importing gtkosx_application")
     if rsc is None:

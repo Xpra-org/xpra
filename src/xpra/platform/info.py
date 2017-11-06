@@ -33,9 +33,8 @@ def get_posix_sys_info():
                     value = int(value)
                 minfo[var] = value
     except:
-        from xpra.log import Logger
-        log = Logger("posix")
-        log.error("error getting memory usage info", exc_info=True)
+        from xpra.os_util import get_util_logger
+        get_util_logger().error("Error getting memory usage info", exc_info=True)
     return info
 
 def get_sys_info():

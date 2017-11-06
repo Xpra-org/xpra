@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -98,6 +98,15 @@ SOURCE_INDICATION_STRING    = {
                                SOURCE_INDICATION_NORMAL     : "NORMAL",
                                SOURCE_INDICATION_PAGER      : "PAGER",
                                }
+
+
+util_logger = None
+def get_util_logger():
+    global util_logger
+    if not util_logger:
+        from xpra.log import Logger
+        util_logger = Logger("util")
+    return util_logger
 
 
 #convenience method based on the strings above:
@@ -231,9 +240,7 @@ class MutableInteger(object):
 class typedict(dict):
 
     def _warn(self, msg, *args, **kwargs):
-        from xpra.log import Logger
-        log = Logger("util")
-        log.warn(msg, *args, **kwargs)
+        get_util_logger().warn(msg, *args, **kwargs)
 
     def capsget(self, key, default=None):
         v = self.get(key)
@@ -355,9 +362,7 @@ def log_screen_sizes(root_w, root_h, sizes):
     try:
         do_log_screen_sizes(root_w, root_h, sizes)
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("screen")
-        log.warn("failed to parse screen size information: %s", e, exc_info=True)
+        get_util_logger().warn("failed to parse screen size information: %s", e, exc_info=True)
 
 def prettify_plug_name(s, default=""):
     if not s:
@@ -369,8 +374,7 @@ def prettify_plug_name(s, default=""):
     return s
 
 def do_log_screen_sizes(root_w, root_h, sizes):
-    from xpra.log import Logger
-    log = Logger("util")
+    log = get_util_logger()
     #old format, used by some clients (android):
     if type(sizes) not in (tuple, list):
         return
@@ -458,8 +462,7 @@ def dump_all_frames():
         frames = sys._current_frames()
     except:
         return
-    from xpra.log import Logger
-    log = Logger("util")
+    log = get_util_logger()
     log("found %s frames:", len(frames))
     for i,(fid,frame) in enumerate(frames.items()):
         try:
@@ -526,6 +529,7 @@ def dump_references(log, instances, exclude=[]):
 
 def detect_leaks(log, detailed=[]):
     import types
+    import inspect
     from collections import defaultdict
     import gc
     global before, after
@@ -556,13 +560,20 @@ def detect_leaks(log, detailed=[]):
             ltype = leaked[delta]
             matches = tuple(x for x in lobjs if type(x)==ltype and ltype not in ignore)
             minfo = "%6i matches" % len(matches)
-            if len(matches)<64:
-                minfo += ": %s" % csv(str(x)[:32] for x in matches)
+            if delta<64:
+                minfo += ": %s" % csv(repr_ellipsized(str(x)) for x in matches[-delta:])
             log.info("%8i : %32s : %s", delta, getattr(ltype, "__name__", ltype), minfo)
+            #if str(ltype)=="<type 'cell'>":
+            #    log.info("dumping last %i cells:", delta)
+            #    for i, x in enumerate(matches[-delta:]):
+            #        log.info("[%3i] %s: %s", i, repr_ellipsized(str(x)), repr_ellipsized(str(x.cell_contents), limit=500))
+            #elif ltype==types.FrameType:
+            #    log.info("dumping last %i frames:", delta)
+            #    for i, x in enumerate(matches[-delta:]):
+            #        log.info("[%3i] %s: %s", i, repr_ellipsized(str(x)), inspect.getframeinfo(x))
             if len(matches)<64 and ltype in detailed:
                 try:
                     import time
-                    import types
                     import os.path
                     import objgraph
                     def not_locals(x):
@@ -580,6 +591,7 @@ def detect_leaks(log, detailed=[]):
                         del exclude
         before = after
         after = defaultdict(int)
+        dump_all_frames()
         return True
     return print_leaks
 
@@ -641,8 +653,7 @@ def parse_simple_dict(s="", sep=","):
             k,v = s.split("=", 1)
             d[k] = v
         except Exception as e:
-            from xpra.log import Logger
-            log = Logger("util")
+            log = get_util_logger()
             log.warn("Warning: failed to parse dictionary option '%s':", s)
             log.warn(" %s", e)
     return d

@@ -10,6 +10,7 @@ import socket
 import errno
 import stat
 
+from xpra.os_util import get_util_logger
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
 
 
@@ -19,8 +20,7 @@ def norm_makepath(dirpath, name):
     return os.path.join(dirpath, PREFIX + name)
 
 def debug(msg, *args):
-    from xpra.log import Logger
-    log = Logger("network")
+    log = get_util_logger()
     log(msg, *args)
 
 

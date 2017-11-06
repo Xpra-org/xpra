@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -173,8 +173,7 @@ def close_gtk_display():
 
 def kill_xvfb(xvfb_pid):
     if xvfb_pid:
-        from xpra.log import Logger
-        log = Logger("server")
+        log = get_util_logger()
         log.info("killing xvfb with pid %s", xvfb_pid)
         try:
             os.kill(xvfb_pid, signal.SIGTERM)
@@ -188,8 +187,7 @@ def print_DE_warnings(desktop_display, pulseaudio, notifications, dbus_launch):
     if not de:
         return
     warnings = []
-    from xpra.log import Logger
-    log = Logger("server")
+    log = get_util_logger()
     if pulseaudio is not False:
         try:
             xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
@@ -382,7 +380,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
 
-    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock
+    from xpra.server.socket_util import parse_bind_ip, parse_bind_vsock, get_network_logger
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_udp = parse_bind_ip(opts.bind_udp)
     bind_ssl = parse_bind_ip(opts.bind_ssl)
@@ -587,9 +585,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if (starting or starting_desktop) and desktop_display:
         print_DE_warnings(desktop_display, opts.pulseaudio, opts.notifications, opts.dbus_launch)
 
-    from xpra.log import Logger
-    log = Logger("server")
-    netlog = Logger("network")
+    log = get_util_logger()
+    netlog = get_network_logger()
 
     mdns_recs = {}
     sockets = []

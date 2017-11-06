@@ -23,9 +23,17 @@ DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFA
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
 
 
+vfb_logger = None
+def _vfb_logger():
+    global vfb_logger
+    if not vfb_logger:
+        from xpra.log import Logger
+        vfb_logger = Logger("server", "x11")
+    return vfb_logger
+
+
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
-    from xpra.log import Logger
-    log = Logger("server", "x11")
+    log = _vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     cleanups = []
     if not device_uuid:
@@ -87,8 +95,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         raise InitException("the 'xvfb' command is not defined")
 
     from xpra.platform.xposix.paths import _get_runtime_dir
-    from xpra.log import Logger
-    log = Logger("server", "x11")
+    log = _vfb_logger()
     log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
 
     # We need to set up a new server environment
@@ -231,9 +238,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
 
 
 def set_initial_resolution(desktop=False):
-    from xpra.log import Logger
     try:
-        log = Logger("server")
+        log = _vfb_logger()
         log("set_initial_resolution")
         if desktop:
             res = DEFAULT_DESKTOP_VFB_RESOLUTION
@@ -278,8 +284,7 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb.poll() is None:
         #process is running
         return True
-    from xpra.log import Logger
-    log = Logger("server")
+    log = _vfb_logger()
     log.error("")
     log.error("%s command has terminated! xpra cannot continue", cmd)
     log.error(" if the display is already running, try a different one,")
@@ -294,16 +299,14 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     try:
         wait_for_x_server(strtobytes(display_name), 3) # 3s timeout
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("server")
+        log = _vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
         log.error("Error: failed to connect to display %s" % display_name)
         log.error(" %s", e)
         return False
     if shadowing_check and not check_xvfb_process(xvfb):
         #if we're here, there is an X11 server, but it isn't the one we started!
-        from xpra.log import Logger     #@Reimport
-        log = Logger("server")
+        log = _vfb_logger()
         log.error("There is an X11 server already running on display %s:" % display_name)
         log.error("You may want to use:")
         log.error("  'xpra upgrade %s' if an instance of xpra is still connected to it" % display_name)

@@ -84,6 +84,14 @@ else:
         return bytestostr(binascii.hexlify(strtobytes(v)))
 
 
+util_logger = None
+def get_util_logger():
+    global util_logger
+    if not util_logger:
+        from xpra.log import Logger
+        util_logger = Logger("util")
+    return util_logger
+
 def memoryview_to_bytes(v):
     if type(v)==bytes:
         return v
@@ -521,9 +529,7 @@ def setbinarymode(fd):
             import msvcrt
             msvcrt.setmode(fd, os.O_BINARY)         #@UndefinedVariable
         except:
-            from xpra.log import Logger
-            log = Logger("util")
-            log.error("setting stdin to binary mode failed", exc_info=True)
+            get_util_logger().error("setting stdin to binary mode failed", exc_info=True)
 
 def find_lib_ldconfig(libname):
     libname = re.escape(libname)
@@ -610,8 +616,7 @@ def get_ssh_port():
 def setuidgid(uid, gid):
     if not POSIX:
         return
-    from xpra.log import Logger
-    log = Logger("server")
+    log = get_util_logger()
     if os.getuid()!=uid or os.getgid()!=gid:
         #find the username for the given uid:
         from pwd import getpwuid
@@ -650,10 +655,9 @@ def setuidgid(uid, gid):
     log("new uid=%s, gid=%s", os.getuid(), os.getgid())
 
 def get_peercred(sock):
-    from xpra.log import Logger
-    log = Logger("network")
     if LINUX:
         SO_PEERCRED = 17
+        log = get_util_logger()
         try:
             import socket
             import struct
@@ -673,9 +677,8 @@ def get_peercred(sock):
 
 
 def main():
-    from xpra.log import Logger
-    log = Logger("util")
     sp = sys.platform
+    log = get_util_logger()
     log.info("platform_name(%s)=%s", sp, platform_name(sp, ""))
     if LINUX:
         log.info("linux_distribution=%s", get_linux_distribution())

@@ -27,8 +27,8 @@ def ival(key, default, minv=0, maxv=None):
         assert maxv is None or maxv>=iv, "value for %s is too high: %s (maximum is %s)" % (key, iv, maxv)
         return iv
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("util")
+        from xpra.os_util import get_util_logger
+        log = get_util_logger()
         log.warn("failed to parse value '%s' for %s: %s", v, key, e)
         return default
 

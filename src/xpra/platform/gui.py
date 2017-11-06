@@ -87,8 +87,6 @@ def get_display_icc_info():
     return {}
 
 def get_icc_info():
-    from xpra.log import Logger
-    log = Logger("platform")
     ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
     if ENV_ICC_DATA:
         import binascii
@@ -96,6 +94,8 @@ def get_icc_info():
                 "source"    : "environment-override",
                 "data"      : binascii.unhexlify(ENV_ICC_DATA),
                 }
+    from xpra.os_util import get_util_logger
+    log = get_util_logger()
     info = {}
     try:
         from PIL import ImageCms

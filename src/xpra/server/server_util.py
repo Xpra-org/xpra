@@ -6,7 +6,7 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid
+from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger
 from xpra.platform.dotxpra import osexpand, norm_makepath
 from xpra.scripts.config import InitException
 
@@ -102,8 +102,7 @@ def write_runner_shell_scripts(contents, overwrite=True):
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    from xpra.log import Logger
-    log = Logger("server")
+    log = get_util_logger()
     from xpra.platform.paths import get_script_bin_dirs
     for d in get_script_bin_dirs():
         scriptdir = osexpand(d)
@@ -221,8 +220,7 @@ def daemonize():
 
 
 def write_pidfile(pidfile, uid, gid):
-    from xpra.log import Logger
-    log = Logger("server")
+    log = get_util_logger()
     pidstr = str(os.getpid())
     try:
         with open(pidfile, "w") as f:
@@ -260,8 +258,7 @@ def write_pidfile(pidfile, uid, gid):
 
 
 def get_uinput_device_path(device):
-    from xpra.log import Logger
-    log = Logger("server", "mouse")
+    log = get_util_logger()
     try:
         log("get_uinput_device_path(%s)", device)
         fd = device._Device__uinput_fd
@@ -296,12 +293,11 @@ def get_uinput_device_path(device):
     return None
 
 def has_uinput():
-    from xpra.log import Logger
-    log = Logger("server")
     try:
         import uinput
         assert uinput
     except (ImportError, NameError) as e:
+        log = get_util_logger()
         log.info("cannot access python uinput module:")
         log.info(" %s", e)
         return False
@@ -309,8 +305,7 @@ def has_uinput():
         return True
 
 def create_uinput_pointer_device(uuid, uid):
-    from xpra.log import Logger
-    log = Logger("server")
+    log = get_util_logger()
     try:
         import uinput
     except (ImportError, NameError) as e:

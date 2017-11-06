@@ -21,8 +21,16 @@ def add_cleanup(f):
     server.add_cleanup(f)
 
 
+network_logger = None
+def get_network_logger():
+    global network_logger
+    if not network_logger:
+        from xpra.log import Logger
+        network_logger = Logger("network")
+    return network_logger
+
+
 def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="600"):
-    from xpra.log import Logger
     if mmap_group:
         #when using the mmap group option, use '660'
         umask = 0o117
@@ -61,14 +69,14 @@ def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="60
             try:
                 os.lchown(sockpath, -1, group_id)
             except Exception as e:
-                log = Logger("network")
+                log = get_network_logger()
                 log.warn("Warning: failed to set 'xpra' group ownership")
                 log.warn(" on socket '%s':", sockpath)
                 log.warn(" %s", e)
             #don't know why this doesn't work:
             #os.fchown(listener.fileno(), -1, group_id)
     def cleanup_socket():
-        log = Logger("network")
+        log = get_network_logger()
         try:
             cur_inode = os.stat(sockpath).st_ino
         except:
@@ -113,8 +121,7 @@ def create_tcp_socket(host, iport):
     else:
         assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
-        from xpra.log import Logger
-        log = Logger("network")
+        log = get_network_logger()
         log("socket.getaddrinfo(%s, %s, AF_INET6, SOCK_STREAM, 0, SOL_TCP)=%s", host, iport, res)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
@@ -124,8 +131,7 @@ def create_tcp_socket(host, iport):
     return listener
 
 def setup_tcp_socket(host, iport, socktype="tcp"):
-    from xpra.log import Logger
-    log = Logger("network")
+    log = get_network_logger()
     try:
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
@@ -154,8 +160,7 @@ def create_udp_socket(host, iport):
     return listener
 
 def setup_udp_socket(host, iport, socktype="udp"):
-    from xpra.log import Logger
-    log = Logger("network")
+    log = get_network_logger()
     try:
         udp_socket = create_udp_socket(host, iport)
     except Exception as e:
@@ -193,8 +198,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
     return ip_sockets
 
 def setup_vsock_socket(cid, iport):
-    from xpra.log import Logger
-    log = Logger("network")
+    log = get_network_logger()
     try:
         from xpra.net.vsock import bind_vsocket     #@UnresolvedImport
         vsock_socket = bind_vsocket(cid=cid, port=iport)
@@ -239,9 +243,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         raise InitException("at least one socket directory must be set to use unix domain sockets")
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     display_name = normalize_local_display_name(display_name)
-    from xpra.log import Logger
+    log = get_network_logger()
     defs = []
-    log = Logger("network")
     try:
         sockpaths = []
         log("setup_local_sockets: bind=%s", bind)
@@ -369,8 +372,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
     return defs
 
 def handle_socket_error(sockpath, e):
-    from xpra.log import Logger
-    log = Logger("network")
+    log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
         log.warn("Warning: cannot create socket '%s'", sockpath)
@@ -417,8 +419,7 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
             from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
-        from xpra.log import Logger
-        log = Logger("mdns")
+        log = get_network_logger()
         log("mdns import failure", exc_info=True)
         log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
         log.warn(" %s", e)

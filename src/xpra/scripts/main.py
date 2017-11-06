@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
-from xpra.os_util import getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX, POSIX
+from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX, POSIX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -160,9 +160,7 @@ def main(script_file, cmdline):
             return fm()
 
     def debug_exc(msg="run_mode error"):
-        from xpra.log import Logger
-        log = Logger("util")
-        log(msg, exc_info=True)
+        get_util_logger().debug(msg, exc_info=True)
 
     try:
         try:
@@ -1275,9 +1273,13 @@ def configure_logging(options, mode):
 
     #register posix signals for debugging:
     if POSIX:
+        from xpra.util import dump_all_frames
         def sigusr1(*_args):
             dump_frames()
+        def sigusr2(*_args):
+            dump_all_frames()
         signal.signal(signal.SIGUSR1, sigusr1)
+        signal.signal(signal.SIGUSR2, sigusr2)
 
 def configure_network(options):
     from xpra.net import compression, packet_encoding
@@ -1889,9 +1891,7 @@ def _socket_connect(sock, endpoint, description, dtype, info={}):
     try:
         sock.connect(endpoint)
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("network")
-        log("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
+        get_util_logger().log("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
         raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype, info)
@@ -1906,9 +1906,7 @@ def connect_or_fail(display_desc, opts):
     except InitInfo:
         raise
     except Exception as e:
-        from xpra.log import Logger
-        log = Logger("network")
-        log("failed to connect", exc_info=True)
+        get_util_logger().log("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
@@ -2028,8 +2026,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                     ssh_fail_cb(error_message)
                 if "ssh_abort" not in display_desc:
                     display_desc["ssh_abort"] = True
-                    from xpra.log import Logger
-                    log = Logger()
+                    log = get_util_logger()
                     if not had_connected:
                         log.error("Error: SSH connection to the xpra server failed")
                         if sshpass_error:
@@ -2345,11 +2342,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     del opts
     def do_wrap_socket(tcp_socket):
         tcp_socket.setblocking(True)
-        from xpra.log import Logger
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
         except Exception as e:
-            Logger("network").debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
+            get_util_logger().debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
@@ -2358,7 +2354,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             try:
                 ssl_sock.do_handshake(True)
             except Exception as e:
-                Logger("network").debug("do_handshake", exc_info=True)
+                get_util_logger().debug("do_handshake", exc_info=True)
                 SSLEOFError = getattr(ssl, "SSLEOFError", None)
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
@@ -2475,8 +2471,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 encodings = ["auto"] + app.get_encodings()
                 raise InitInfo(info+"%s xpra client supports the following encodings:\n * %s" % (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
-            from xpra.log import Logger
-            log = Logger()
+            log = get_util_logger()
             target = conn.target
             info = conn.get_info()
             host = info.get("host")
@@ -2721,8 +2716,7 @@ def run_glcheck(opts):
 
 
 def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
-    from xpra.log import Logger
-    log = Logger("proxy")
+    log = get_util_logger()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     username = get_username_for_uid(uid)
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
@@ -2882,8 +2876,7 @@ def get_start_server_args(opts, compat=False):
 
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
-    from xpra.log import Logger
-    log = Logger("proxy")
+    log = get_util_logger()
     log("identify_new_socket%s", (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
     start = monotonic_time()
@@ -3183,8 +3176,7 @@ def run_list(error_cb, opts, extra_args):
     return 0
 
 def run_showconfig(options, args):
-    from xpra.log import Logger
-    log = Logger("util")
+    log = get_util_logger()
     from xpra.util import nonl
     d = dict_to_validated_config({})
     fixup_options(d)

@@ -1,10 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from xpra.os_util import get_util_logger
 from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
 
 PIPE_PREFIX = "Xpra\\"
@@ -51,8 +52,7 @@ class DotXpra(object):
         return {PIPE_PREFIX.rstrip("\\"): [(LIVE, display, pipe_name) for display, pipe_name in self.get_all_namedpipes().items()]}
 
     def get_all_namedpipes(self):
-        from xpra.log import Logger
-        log = Logger("network")
+        log = get_util_logger()
         xpra_pipes = {}
         for pipe_name in os.listdir(PIPE_PATH):
             if not pipe_name.startswith(PIPE_PREFIX):
