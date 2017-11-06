@@ -44,7 +44,7 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, gobject.GObject
         self._listening_to = None
 
     def __repr__(self):
-        xid = None
+        xid = 0
         cw = self.client_window
         if cw:
             xid = cw.xid
