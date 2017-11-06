@@ -587,7 +587,7 @@ class Protocol(object):
             while not self._closed and callback():
                 pass
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
-        except ConnectionClosedException as e:
+        except ConnectionClosedException:
             log("%s closed", self._conn, exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
@@ -675,6 +675,7 @@ class Protocol(object):
         log.error("Error: %s", message, exc_info=ei)
         if exc:
             log.error(" %s", exc, exc_info=exc_info)
+            exc = None
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False):
@@ -867,6 +868,7 @@ class Protocol(object):
                             #only include the exception text when not using encryption
                             #as this may leak crypto information:
                             msg += " %s" % e
+                        del e
                         return self.gibberish(msg, data)
 
                 if self.cipher_in and not (protocol_flags & FLAGS_CIPHER):
