@@ -373,66 +373,8 @@ class UIXpraClient(XpraClientBase):
                 self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
         self.desktop_fullscreen = opts.desktop_fullscreen
 
-        self.webcam_option = opts.webcam
-        self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
-        self.server_supports_webcam = False
-        self.server_virtual_video_devices = 0
-        if self.webcam_forwarding:
-            try:
-                import cv2
-                from PIL import Image
-                assert cv2 and Image
-            except ImportError as e:
-                webcamlog("init webcam failure", exc_info=True)
-                webcamlog.warn("Warning: failed to import opencv:")
-                webcamlog.warn(" %s", e)
-                webcamlog.warn(" webcam forwarding is disabled")
-                self.webcam_forwarding = False
-        webcamlog("webcam forwarding: %s", self.webcam_forwarding)
-
-        self.sound_properties = typedict()
-        self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
-        #ie: "on", "off", "on:Some Device", "off:Some Device"
-        mic = [x.strip() for x in opts.microphone.split(":", 1)]
-        self.microphone_allowed = sound_option(mic[0]) in ("on", "off")
-        self.microphone_device = None
-        if self.microphone_allowed and len(mic)==2:
-            self.microphone_device = mic[1]
-        self.sound_source_plugin = opts.sound_source
-        def sound_option_or_all(*_args):
-            return []
-        if self.speaker_allowed or self.microphone_allowed:
-            try:
-                from xpra.sound.common import sound_option_or_all
-                from xpra.sound.wrapper import query_sound
-                self.sound_properties = query_sound()
-                assert self.sound_properties, "query did not return any data"
-                def vinfo(k):
-                    val = self.sound_properties.strlistget(k)
-                    assert val, "%s not found in sound properties" % k
-                    return ".".join(val[:3])
-                bits = self.sound_properties.intget("python.bits", 32)
-                log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
-            except Exception as e:
-                soundlog("failed to query sound", exc_info=True)
-                soundlog.error("Error: failed to query sound subsystem:")
-                soundlog.error(" %s", e)
-                self.speaker_allowed = False
-                self.microphone_allowed = False
-        encoders = self.sound_properties.strlistget("encoders", [])
-        decoders = self.sound_properties.strlistget("decoders", [])
-        self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
-        self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, encoders)
-        if not self.speaker_codecs:
-            self.speaker_allowed = False
-        if not self.microphone_codecs:
-            self.microphone_allowed = False
-        self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
-        self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
-        self.av_sync = opts.av_sync
-        soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
-        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
-        soundlog("av-sync=%s", self.av_sync)
+        self.init_webcam(opts)
+        self.init_sound(opts)
 
         self.readonly = opts.readonly
         self.windows_enabled = opts.windows
@@ -505,21 +447,7 @@ class UIXpraClient(XpraClientBase):
             self.client_supports_notifications = self.notifier is not None
 
         #audio tagging:
-        if POSIX:
-            try:
-                from xpra import sound
-                assert sound
-            except ImportError as e:
-                log("no sound module, skipping pulseaudio tagging setup")
-            else:
-                try:
-                    from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path
-                    tray_icon_filename = get_icon_filename(opts.tray_icon or "xpra")
-                    set_icon_path(tray_icon_filename)
-                except ImportError as e:
-                    if not OSX:
-                        log.warn("Warning: failed to set pulseaudio tagging icon:")
-                        log.warn(" %s", e)
+        self.init_audio_tagging(opts.tray_icon)
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)
@@ -853,6 +781,7 @@ class UIXpraClient(XpraClientBase):
             except ImportError as e:
                 clipboardlog.error("Error: cannot instantiate %s:", helperclass)
                 clipboardlog.error(" %s", e)
+                del e
             except:
                 clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
         return None
@@ -2204,6 +2133,7 @@ class UIXpraClient(XpraClientBase):
                 except Exception as e:
                     rpclog.error("Error during timeout handler for %s rpc callback:", rpc_type)
                     rpclog.error(" %s", e)
+                    del e
 
     def _process_rpc_reply(self, packet):
         rpc_type, rpcid, success, args = packet[1:5]
@@ -2291,6 +2221,24 @@ class UIXpraClient(XpraClientBase):
         assert self.server_supports_lock_toggle
         self.send("lock-toggle", self.client_lock)
 
+
+    def init_webcam(self, opts):
+        self.webcam_option = opts.webcam
+        self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
+        self.server_supports_webcam = False
+        self.server_virtual_video_devices = 0
+        if self.webcam_forwarding:
+            try:
+                import cv2
+                from PIL import Image
+                assert cv2 and Image
+            except ImportError as e:
+                webcamlog("init webcam failure", exc_info=True)
+                webcamlog.warn("Warning: failed to import opencv:")
+                webcamlog.warn(" %s", e)
+                webcamlog.warn(" webcam forwarding is disabled")
+                self.webcam_forwarding = False
+        webcamlog("webcam forwarding: %s", self.webcam_forwarding)
 
     def start_sending_webcam(self):
         with self.webcam_lock:
@@ -2492,6 +2440,69 @@ class UIXpraClient(XpraClientBase):
         finally:
             self.webcam_lock.release()
 
+
+    def init_audio_tagging(self, tray_icon):
+        if not POSIX:
+            return
+        try:
+            from xpra import sound
+            assert sound
+        except ImportError:
+            log("no sound module, skipping pulseaudio tagging setup")
+            return
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path
+            tray_icon_filename = get_icon_filename(tray_icon or "xpra")
+            set_icon_path(tray_icon_filename)
+        except ImportError as e:
+            if not OSX:
+                log.warn("Warning: failed to set pulseaudio tagging icon:")
+                log.warn(" %s", e)
+
+    def init_sound(self, opts):
+        self.sound_properties = typedict()
+        self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
+        #ie: "on", "off", "on:Some Device", "off:Some Device"
+        mic = [x.strip() for x in opts.microphone.split(":", 1)]
+        self.microphone_allowed = sound_option(mic[0]) in ("on", "off")
+        self.microphone_device = None
+        if self.microphone_allowed and len(mic)==2:
+            self.microphone_device = mic[1]
+        self.sound_source_plugin = opts.sound_source
+        def sound_option_or_all(*_args):
+            return []
+        if self.speaker_allowed or self.microphone_allowed:
+            try:
+                from xpra.sound.common import sound_option_or_all
+                from xpra.sound.wrapper import query_sound
+                self.sound_properties = query_sound()
+                assert self.sound_properties, "query did not return any data"
+                def vinfo(k):
+                    val = self.sound_properties.strlistget(k)
+                    assert val, "%s not found in sound properties" % k
+                    return ".".join(val[:3])
+                bits = self.sound_properties.intget("python.bits", 32)
+                log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
+            except Exception as e:
+                soundlog("failed to query sound", exc_info=True)
+                soundlog.error("Error: failed to query sound subsystem:")
+                soundlog.error(" %s", e)
+                self.speaker_allowed = False
+                self.microphone_allowed = False
+        encoders = self.sound_properties.strlistget("encoders", [])
+        decoders = self.sound_properties.strlistget("decoders", [])
+        self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)
+        self.microphone_codecs = sound_option_or_all("microphone-codec", opts.microphone_codec, encoders)
+        if not self.speaker_codecs:
+            self.speaker_allowed = False
+        if not self.microphone_codecs:
+            self.microphone_allowed = False
+        self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
+        self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
+        self.av_sync = opts.av_sync
+        soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
+        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
+        soundlog("av-sync=%s", self.av_sync)
 
     def get_matching_codecs(self, local_codecs, server_codecs):
         matching_codecs = [x for x in local_codecs if x in server_codecs]
