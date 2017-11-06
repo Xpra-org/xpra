@@ -153,25 +153,26 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
 
+    cleanups = []
     if uinput_uuid:
         #use uinput:
         #identify -config xorg.conf argument and replace it with the uinput one:
         try:
             config_argindex = xvfb_cmd.index("-config")
         except ValueError as e:
-            config_argindex = -1
-        assert config_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -config should not be last (found at index %i)" % config_argindex
-        xorg_conf = xvfb_cmd[config_argindex+1]
-        if xorg_conf.endswith("xorg.conf"):
-            xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
-            if os.path.exists(xorg_conf):
-                xvfb_cmd[config_argindex+1] = xorg_conf
-        #create uinput device definition files:
-        #(we have to assume that Xorg is configured to use this path..)
-        xorg_conf_dir = pathexpand(get_Xdummy_confdir())
-        cleanups = create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
-    else:
-        cleanups = []
+            log.warn("Warning: cannot use uinput")
+            log.warn(" '-config' argument not found in the xvfb command")
+        else:
+            assert config_argindex+1<len(xvfb_cmd), "invalid xvfb command string: -config should not be last (found at index %i)" % config_argindex
+            xorg_conf = xvfb_cmd[config_argindex+1]
+            if xorg_conf.endswith("xorg.conf"):
+                xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
+                if os.path.exists(xorg_conf):
+                    xvfb_cmd[config_argindex+1] = xorg_conf
+            #create uinput device definition files:
+            #(we have to assume that Xorg is configured to use this path..)
+            xorg_conf_dir = pathexpand(get_Xdummy_confdir())
+            cleanups = create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
     xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
