@@ -230,10 +230,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         color_str = color_str.replace(":off", "")
         if color_str=="auto" or color_str=="":
             try:
-                try:
-                    from hashlib import md5
-                except ImportError:
-                    from md5 import md5
+                from hashlib import md5
                 m = md5()
                 for x in extra_args:
                     m.update(strtobytes(x))
@@ -817,6 +814,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                     opengllog("cannot import %s", GL_CLIENT_WINDOW_MODULE, exc_info=True)
                     opengllog.warn("Warning: cannot import %s OpenGL module", impl)
                     opengllog.warn(" %s", e)
+                    del e
                     continue
                 opengllog("%s=%s", GL_CLIENT_WINDOW_MODULE, gl_client_window_module)
                 force_enable = enable_option in TRUE_OPTIONS
@@ -1119,8 +1117,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 module = __import__(mod, {}, {}, [parts[-1]])
                 helperclass = getattr(module, parts[-1])
                 loadable.append(helperclass)
-            except ImportError as e:
-                clipboardlog("cannot load %s: %s", co, e)
+            except ImportError:
+                clipboardlog("cannot load %s", co, exc_info=True)
                 continue
         clipboardlog("get_clipboard_helper_classes()=%s", loadable)
         return loadable
