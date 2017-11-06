@@ -773,11 +773,12 @@ class XpraClientBase(FileTransferHandler):
             printlog.error("Error initializing printing support:")
             printlog.error(" %s", e)
             self.printing = False
-        try:
-            self.do_send_printers()
-        except Exception:
-            printlog.error("Error sending the list of printers:", exc_info=True)
-            self.printing = False
+        else:
+            try:
+                self.do_send_printers()
+            except Exception:
+                printlog.error("Error sending the list of printers:", exc_info=True)
+                self.printing = False
         printlog("init_printing() enabled=%s", self.printing)
 
     def cleanup_printing(self):
@@ -789,8 +790,10 @@ class XpraClientBase(FileTransferHandler):
             from xpra.platform.printing import cleanup_printing
             printlog("cleanup_printing=%s", cleanup_printing)
             cleanup_printing()
-        except Exception:
-            log.warn("failed to cleanup printing subsystem", exc_info=True)
+        except Exception as e:
+            log("cleanup_printing()", exc_info=True)
+            log.warn("Warning: failed to cleanup printing subsystem:")
+            log.warn(" %s", e)
 
     def send_printers(self, *args):
         printlog("send_printers%s timer=%s", args, self.send_printers_timer)
