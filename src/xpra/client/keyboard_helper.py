@@ -165,7 +165,8 @@ class KeyboardHelper(object):
                             args.append(int(x))
                     args = tuple(args)
                 except Exception as e:
-                    log.warn("failed to parse arguments of shortcut '%s': %s", s, e)
+                    log.warn("Warning: failed to parse arguments of shortcut:")
+                    log.warn(" '%s': %s", s, e)
                     continue
             action = action.replace("-", "_")       #must be an object attribute
             log("action(%s)=%s%s", s, action, args)

@@ -221,7 +221,8 @@ class ClientWindowBase(ClientWidgetBase):
                 else:
                     utf8_title = title
             except Exception as e:
-                log.error("error parsing window title: %s", e)
+                log.error("Error parsing window title:")
+                log.error(" %s", e)
                 utf8_title = b""
             self.set_title(utf8_title)
 

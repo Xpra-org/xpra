@@ -98,6 +98,7 @@ class GTKGLWindowBackingBase(GLWindowBackingBase):
         try:
             context = GtkGLExtContext(b)
         except Exception as e:
+            log("gl_context()", exc_info=True)
             log.error("Error: %s", e)
             return None
         log("%s.gl_context() GL Pixmap backing size: %d x %d, context=%s", self, w, h, context)
