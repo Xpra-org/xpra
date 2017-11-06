@@ -1891,7 +1891,7 @@ def _socket_connect(sock, endpoint, description, dtype, info={}):
     try:
         sock.connect(endpoint)
     except Exception as e:
-        get_util_logger().log("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
+        get_util_logger().debug("failed to connect using %s%s", sock.connect, endpoint, exc_info=True)
         raise InitException("failed to connect to '%s':\n %s" % (pretty_socket(endpoint), e))
     sock.settimeout(None)
     return SocketConnection(sock, sock.getsockname(), sock.getpeername(), description, dtype, info)
@@ -1906,7 +1906,7 @@ def connect_or_fail(display_desc, opts):
     except InitInfo:
         raise
     except Exception as e:
-        get_util_logger().log("failed to connect", exc_info=True)
+        get_util_logger().debug("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e)
 
 def ssh_connect_failed(message):
