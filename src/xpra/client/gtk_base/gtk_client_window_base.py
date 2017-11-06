@@ -73,7 +73,9 @@ if POSIX and USE_X11_BINDINGS:
             supported = prop_get(root, "_NET_SUPPORTED", ["atom"], ignore_errors=True)
             CAN_SET_WORKSPACE = SET_WORKSPACE and bool(supported) and "_NET_WM_DESKTOP" in supported
         except Exception as e:
-            log.info("failed to setup workspace hooks: %s", e, exc_info=True)
+            log("x11 workspace bindings error", exc_info=True)
+            log.error("Error: failed to setup workspace hooks:")
+            log.error(" %s", e)
     except ImportError:
         prop_get, prop_set = None, None
 
@@ -93,9 +95,9 @@ if PADDING_COLORS_STR:
         PADDING_COLORS = tuple(float(x.strip()) for x in PADDING_COLORS_STR.split(","))
         assert len(PADDING_COLORS)==3, "you must specify 3 components"
     except Exception as e:
-        log.error("Warning: invalid padding colors specified,")
-        log.error(" %s", e)
-        log.error(" using black")
+        log.warn("Warning: invalid padding colors specified,")
+        log.warn(" %s", e)
+        log.warn(" using black")
         PADDING_COLORS = 0, 0, 0
 del PADDING_COLORS_STR
 
