@@ -552,17 +552,14 @@ def detect_leaks(log, detailed=[]):
             delta = after[k]-before[k]
             if delta>0:
                 leaked[delta] = k
-        before = after
-        after = defaultdict(int)
         for delta in reversed(sorted(leaked.keys())):
             ltype = leaked[delta]
             matches = tuple(x for x in lobjs if type(x)==ltype and ltype not in ignore)
+            minfo = "%6i matches" % len(matches)
             if len(matches)<64:
-                minfo = csv(str(x)[:32] for x in matches)
-            else:
-                minfo = "%6i matches" % len(matches)
+                minfo += ": %s" % csv(str(x)[:32] for x in matches)
             log.info("%8i : %32s : %s", delta, getattr(ltype, "__name__", ltype), minfo)
-            if len(matches)<32 and ltype in detailed:
+            if len(matches)<64 and ltype in detailed:
                 try:
                     import time
                     import types
@@ -570,7 +567,7 @@ def detect_leaks(log, detailed=[]):
                     import objgraph
                     def not_locals(x):
                         #return not x in (before, after, lobjs) and not isinstance(x, types.FrameType)
-                        return not x in (before, after, lobjs)
+                        return not x in (before, after, lobjs, leaked, matches)
                     for x in matches:
                         filename = os.path.expanduser("~/Downloads/objgraph-%s-%i.png" % (type(x).__name__, time.time()))
                         objgraph.show_backrefs(x, max_depth=5, filter=not_locals, too_many=32, filename=filename)
@@ -581,8 +578,8 @@ def detect_leaks(log, detailed=[]):
                         dump_references(log, matches, exclude=exclude)
                     finally:
                         del exclude
-            del matches
-            del minfo
+        before = after
+        after = defaultdict(int)
         return True
     return print_leaks
 
