@@ -43,7 +43,9 @@ try:
         from xpra.sound.pulseaudio import pulseaudio_pactl_util as _pulseaudio_util
 except ImportError as e:
     #fallback forks a process and parses the output:
+    log("cannot import default pulseaudio util: %s", e)
     log("using pulseaudio none fallback")
+    del e
     from xpra.sound.pulseaudio import pulseaudio_none_util as _pulseaudio_util
 
 get_info                = _pulseaudio_util.get_info

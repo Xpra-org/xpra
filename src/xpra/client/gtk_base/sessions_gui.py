@@ -113,6 +113,7 @@ class SessionsGUI(gtk.Window):
                         log("get_session_info(%s)", sockpath, exc_info=True)
                         log.error("Error querying session info for %s", sockpath)
                         log.error(" %s", e)
+                        del e
                     if not info:
                         continue
                 #log("info(%s)=%s", sockpath, repr_ellipsized(str(info)))

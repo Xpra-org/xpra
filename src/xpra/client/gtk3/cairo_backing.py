@@ -20,6 +20,7 @@ except ImportError as e:
     log.warn("Warning: failed to load the gtk3 cairo workaround:")
     log.warn(" %s", e)
     log.warn(" rendering will be slow!")
+    del e
     set_image_surface_data = None
 
 

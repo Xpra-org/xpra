@@ -27,8 +27,10 @@ def init_rencode():
         if use_rencode:
             log.warn("Warning: rencode import failed:")
             log.warn(" %s", e)
+        del e
     except Exception as e:
         log.error("error loading rencode", exc_info=True)
+        del e
     has_rencode = rencode_dumps is not None and rencode_loads is not None and rencode_version is not None
     use_rencode = has_rencode and use_rencode
     log("packet_encoding.init_rencode() has_rencode=%s, use_rencode=%s, version=%s", has_rencode, use_rencode, rencode_version)
@@ -45,8 +47,10 @@ def init_bencode():
         if use_bencode:
             log.warn("Warning: bencode import failed:")
             log.warn(" %s", e)
+        del e
     except Exception as e:
         log.error("error loading bencoder", exc_info=True)
+        del e
     has_bencode = bencode is not None and bdecode is not None
     use_bencode = has_bencode and use_bencode
     log("packet_encoding.init_bencode() has_bencode=%s, use_bencode=%s, version=%s", has_bencode, use_bencode, bencode_version)

@@ -280,6 +280,7 @@ def _call_CG_conv(defs, argument):
                 v = fn(argument)
             except Exception as e:
                 log("function %s failed: %s", fn_name, e)
+                del e
                 continue
             if v is not None:
                 info[prop_name] = conv(v)

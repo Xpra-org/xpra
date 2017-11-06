@@ -1969,7 +1969,9 @@ class ServerSource(FileTransferHandler):
                 del self.printers[k]
                 remove_printer(k)
             except Exception as e:
-                printlog.warn("failed to remove printer %s: %s", k, e)
+                printlog.error("Error: failed to remove printer %s:", k)
+                printlog.error(" %s", e)
+                del e
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
         attributes = {"display"         : os.environ.get("DISPLAY"),
                       "source"          : self.uuid}
@@ -2060,21 +2062,22 @@ class ServerSource(FileTransferHandler):
         self.timeout_add(timeout*1000, check_echo_timeout)
 
     def process_ping(self, time_to_echo):
-        #send back the load average:
-        try:
-            (fl1, fl2, fl3) = os.getloadavg()
-            l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-        except:
-            l1,l2,l3 = 0,0,0
-        #and the last client ping latency we measured (if any):
-        if len(self.statistics.client_ping_latency)>0:
-            _, cl = self.statistics.client_ping_latency[-1]
-            cl = int(1000.0*cl)
-        else:
-            cl = -1
+        l1,l2,l3 = 0,0,0
+        cl = -1
+        if False:
+            #send back the load average:
+            try:
+                (fl1, fl2, fl3) = os.getloadavg()
+                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+            except:
+                l1,l2,l3 = 0,0,0
+            #and the last client ping latency we measured (if any):
+            if len(self.statistics.client_ping_latency)>0:
+                _, cl = self.statistics.client_ping_latency[-1]
+                cl = int(1000.0*cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
-        self.timeout_add(500, self.ping)
+        #self.timeout_add(500, self.ping)
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
@@ -2425,4 +2428,5 @@ class ServerSource(FileTransferHandler):
                     log(" %s", e)
                 else:
                     log.error("Error during encoding:", exc_info=True)
+                del e
             NOYIELD or sleep(0)

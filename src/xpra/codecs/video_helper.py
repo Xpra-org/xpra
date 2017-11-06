@@ -266,8 +266,10 @@ class VideoHelper(object):
                         log(" init_video_encoder_option(%s) error", mod, exc_info=True)
                         log.warn("Warning: cannot load %s video encoder:", mod)
                         log.warn(" %s", e)
+                        del e
             except Exception as e:
                 log.warn("Warning: cannot add %s encoder: %s", x, e)
+                del e
         log("found %i video encoder%s: %s", len(self._video_encoder_specs), engs(self._video_encoder_specs), csv(self._video_encoder_specs))
 
     def init_video_encoder_option(self, encoder_name):
@@ -381,6 +383,7 @@ class VideoHelper(object):
                     self.add_decoder(encoding, colorspace, decoder_name, decoder_module)
                 except Exception as e:
                     log.warn("failed to add decoder %s: %s", decoder_module, e)
+                    del e
 
     def add_decoder(self, encoding, colorspace, decoder_name, decoder_module):
         self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append((decoder_name, decoder_module))

@@ -63,7 +63,7 @@ def init_capture(pixel_depth=32):
     if SHADOW_NVFBC:
         try:
             from xpra.codecs.nvfbc.fbc_capture_win import init_nvfbc_library
-        except ImportError as e:
+        except ImportError:
             log("NvFBC capture is not available", exc_info=True)
         else:
             try:
@@ -86,6 +86,7 @@ def init_capture(pixel_depth=32):
                 log.warn("Warning: NvFBC screen capture initialization failed:")
                 log.warn(" %s", e)
                 log.warn(" using the slower GDI capture code")
+                del e
     if not capture:
         if SHADOW_GDI:
             capture = GDICapture()
@@ -255,13 +256,13 @@ class Win32RootWindowModel(RootWindowModel):
             log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
             #maybe we should exit here?
             log.warn("Warning: %s", e)
-            self.cleanup_capture()
-            return None
+            del e
         except TransientCodecException as e:
             log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
             log.warn("Warning: %s", e)
-            self.cleanup_capture()
-            return None
+            del e
+        self.cleanup_capture()
+        return None
 
     def take_screenshot(self):
         return self.capture.take_screenshot()

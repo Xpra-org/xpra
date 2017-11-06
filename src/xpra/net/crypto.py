@@ -41,8 +41,8 @@ for x in ALL_PADDING_OPTIONS:
 try:
     from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
     xor = xor_str
-except Exception as e:
-    log("no accelerated xor: %s", e)
+except Exception:
+    log("no accelerated xor", exc_info=True)
 
 
 ENCRYPTION_CIPHERS = []

@@ -73,7 +73,7 @@ def pack_one_packet(packet):
             e = get_encoder(ee[0])
             data, flags = e(packet)
             return pack_header(flags, 0, 0, len(data))+data
-    except ImportError as e:
+    except ImportError:
         pass
     return None
 
@@ -434,6 +434,7 @@ class ServerCore(object):
                     netlog("added unix socket path: %s", p)
                 except Exception as e:
                     log.error("failed to set socket path to %s: %s", info, e)
+                    del e
 
     def init_when_ready(self, callbacks):
         self._when_ready = callbacks
@@ -539,6 +540,7 @@ class ServerCore(object):
                     log("start_ready_callbacks()", exc_info=True)
                     log.error("Error on server start ready callback '%s':", x)
                     log.error(" %s", e)
+                    del e
         self.idle_add(start_ready_callbacks)
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)

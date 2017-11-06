@@ -21,7 +21,8 @@ class Keyboard(KeyboardBase):
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
             self.keyboard_bindings = X11KeyboardBindings()
         except Exception as e:
-            log.warn("failed load posix keyboard bindings: %s", e)
+            log.error("Error: failed load posix keyboard bindings")
+            log.error(" %s", e)
             self.keyboard_bindings = None
 
 
@@ -49,16 +50,16 @@ class Keyboard(KeyboardBase):
                 if numlock_mod:
                     mod_missing.append(numlock_mod)
                 return  meanings, [], mod_missing
-        except Exception as e:
-            log.error("failed to use native get_modifier_mappings: %s", e, exc_info=True)
+        except Exception:
+            log.error("failed to use native get_modifier_mappings", exc_info=True)
 
     def get_x11_keymap(self):
         if not self.keyboard_bindings:
             return  {}
         try:
             return self.keyboard_bindings.get_keycode_mappings()
-        except Exception as e:
-            log.error("failed to use raw x11 keymap: %s", e)
+        except Exception:
+            log.error("failed to use raw x11 keymap", exc_info=True)
 
 
     def get_keymap_spec(self):

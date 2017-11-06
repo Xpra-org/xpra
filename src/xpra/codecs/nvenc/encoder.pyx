@@ -1158,6 +1158,7 @@ if CLIENT_KEYS_STR:
                 validated.append(x)
             except Exception as e:
                 log.error("invalid nvenc client key specified: '%s' (%s)", x, e)
+                del e
     CLIENT_KEYS_STR = validated
 
 CODEC_GUIDS = {
@@ -2166,7 +2167,8 @@ cdef class Encoder:
         except driver.LogicError as e:
             if retry>0:
                 raise
-            log.warn("PyCUDA error: %s", e)
+            log.warn("Warning: PyCUDA %s", e)
+            del e
             self.clean()
             self.init_cuda()
             return self.convert_image(image, options, retry+1)

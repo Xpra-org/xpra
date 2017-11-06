@@ -67,6 +67,7 @@ def testdecoder(decoder_module, full):
         except Exception as e:
             log("%s: %s decoding failed", decoder_module.get_type(), encoding, exc_info=True)
             log.warn("%s: %s decoding failed: %s", decoder_module.get_type(), encoding, e)
+            del e
             codecs.remove(encoding)
     if not codecs:
         log.error("%s: all the codecs have failed! (%s)", decoder_module.get_type(), ", ".join(decoder_module.get_encodings()))
@@ -111,6 +112,7 @@ def testencoder(encoder_module, full):
         except Exception as e:
             log("%s: %s encoding failed", encoder_module.get_type(), encoding, exc_info=True)
             log.warn("%s: %s encoding failed: %s", encoder_module.get_type(), encoding, e)
+            del e
             codecs.remove(encoding)
     if not codecs:
         log.error("%s: all the codecs have failed! (%s)", encoder_module.get_type(), ", ".join(encoder_module.get_encodings()))
@@ -145,6 +147,7 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
         except Exception as e:
             log("%s is limited to max width=%i for %s:", einfo(), maxw, encoding)
             log(" %s", e)
+            del e
             break
     log("%s max width=%i", einfo(), maxw)
     maxh = h = 512
@@ -156,6 +159,7 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
         except Exception as e:
             log("%s is limited to max height=%i for %s:", einfo(), maxh, encoding)
             log(" %s", e)
+            del e
             break
     log("%s max height=%i", einfo(), maxh)
     #now try combining width and height
@@ -176,6 +180,7 @@ def get_encoder_max_size(encoder_module, encoding, limit_w=TEST_LIMIT_W, limit_h
             except Exception as e:
                 log("%s is limited to %ix%i for %s", einfo(), MAX_WIDTH, MAX_HEIGHT, encoding)
                 log(" %s", e)
+                del e
                 break
         v *= 2
     log("%s max dimensions for %s: %ix%i", einfo(), encoding, MAX_WIDTH, MAX_HEIGHT)

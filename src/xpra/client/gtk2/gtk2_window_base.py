@@ -231,8 +231,10 @@ class GTK2WindowBase(GTKClientWindowBase):
                 #basename = gf.get_basename()
                 gfile.query_info_async("standard::*", got_file_info, flags=gio.FILE_QUERY_INFO_NONE)
             except Exception as e:
+                log("file upload for %s:", filename, exc_info=True)
                 log.error("Error: cannot upload '%s':", filename)
                 log.error(" %s", e)
+                del e
                 file_done(filename)
 
 

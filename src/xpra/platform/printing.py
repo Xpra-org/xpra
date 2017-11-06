@@ -91,6 +91,7 @@ if not WIN32:
     except Exception as e:
         err("Error: printing disabled:")
         err(" %s", e)
+        del e
 
 platform_import(globals(), "printing", False,
                 "init_printing",

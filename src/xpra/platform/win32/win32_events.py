@@ -24,6 +24,7 @@ try:
 except Exception as e:
     log.error("Error: cannot load WtsApi2 DLL, session events will not be detected")
     log.error(" %s", e)
+    del e
     wtsapi32 = None
 NOTIFY_FOR_THIS_SESSION = 0
 

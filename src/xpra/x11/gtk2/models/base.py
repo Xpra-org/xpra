@@ -28,6 +28,7 @@ if MENU_FORWARDING:
         assert dbus
     except ImportError as e:
         log("this build does not include the dbus module, no menu forwarding")
+        del e
     else:
         try:
             from xpra.dbus.helper import DBusHelper
@@ -36,6 +37,7 @@ if MENU_FORWARDING:
         except Exception as e:
             log.warn("Warning: menu forwarding is disabled:")
             log.warn(" cannot load dbus helper: %s", e)
+            del e
             MENU_FORWARDING = False
 
 

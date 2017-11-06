@@ -26,6 +26,7 @@ try:
     from xpra.x11.bindings.xi2_bindings import X11XI2Bindings   #@UnresolvedImport
 except Exception as e:
     log.error("no X11 bindings", exc_info=True)
+    del e
     X11WindowBindings = None
     X11XI2Bindings = None
 

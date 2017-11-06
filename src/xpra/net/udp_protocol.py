@@ -9,7 +9,7 @@ import random
 try:
     import errno
     EMSGSIZE = errno.EMSGSIZE
-except ImportError as e:
+except ImportError:
     EMSGSIZE = None
 
 from xpra.log import Logger
@@ -85,6 +85,7 @@ class UDPListener(object):
                     if not self._closed:
                         log.error("Error: UDP packet processing error:")
                         log.error(" %s", e)
+                    del e
         except Exception as e:
             #can happen during close(), in which case we just ignore:
             if not self._closed:
@@ -516,7 +517,7 @@ class UDPClientProtocol(UDPProtocol):
                 try:
                     self.mtu = clamp_mtu(con._socket.getsockopt(socket.IPPROTO_IP, IP_MTU))
                     #log("mtu=%s", self.mtu)
-                except IOError as e:
+                except IOError:
                     pass
         return r
 

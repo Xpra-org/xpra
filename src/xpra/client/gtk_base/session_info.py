@@ -207,8 +207,8 @@ class SessionInfo(gtk.Window):
         try:
             from xpra.sound.wrapper import query_sound
             props = query_sound()
-        except Exception as e:
-            log("cannot load sound information: %s", e)
+        except Exception:
+            log("cannot load sound information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strlistget("gst.version")
         pygst_version = props.strlistget("pygst.version")

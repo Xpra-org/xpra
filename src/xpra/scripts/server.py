@@ -485,6 +485,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except ValueError as e:
             stderr.write("Error: invalid displayfd '%s':\n" % opts.displayfd)
             stderr.write(" %s\n" % e)
+            del e
 
     # if pam is present, try to create a new session:
     pam = None
@@ -495,6 +496,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except ImportError as e:
             stderr.write("Error: failed to import pam module\n")
             stderr.write(" %s" % e)
+            del e
             PAM_OPEN = False
     if PAM_OPEN:
         fdc = FDChangeCaptureContext()
@@ -758,6 +760,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.error("write_displayfd failed", exc_info=True)
             log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
             log.error(" %s", str(e) or type(e))
+            del e
         try:
             os.close(displayfd)
         except:
@@ -807,6 +810,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             code, out, err = get_status_output(cmd)
         except Exception as e:
             log("failed to get existing uinput id: %s", e)
+            del e
         else:
             log("Popen(%s)=%s", cmd, (code, out, err))
             if code==0 and out.find("=")>0:
@@ -1032,7 +1036,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         r = 0
-    except Exception as e:
+    except Exception:
         log.error("server error", exc_info=True)
         r = -128
     if r>0:

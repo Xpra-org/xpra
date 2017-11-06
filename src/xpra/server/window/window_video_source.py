@@ -1346,6 +1346,7 @@ class WindowVideoSource(WindowSource):
                     continue
             except TransientCodecException as e:
                 videolog.warn("setup_pipeline failed for %s: %s", option, e)
+                del e
             except:
                 videolog.warn("setup_pipeline failed for %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:

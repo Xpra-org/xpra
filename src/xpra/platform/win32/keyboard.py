@@ -133,7 +133,8 @@ class Keyboard(KeyboardBase):
                     if _layout not in layouts:
                         layouts.append(_layout)
         except Exception as e:
-            log.error("Error: failed to detect keyboard layouts: %s", e)
+            log.error("Error: failed to detect keyboard layouts:")
+            log.error(" %s", e)
         try:
             hkl = GetKeyboardLayout(0)
             log("GetKeyboardLayout(0)=%#x", hkl)
@@ -146,7 +147,8 @@ class Keyboard(KeyboardBase):
             else:
                 layouts.append(layout)
         except Exception as e:
-            log.error("Error: failed to detect keyboard layout: %s", e)
+            log.error("Error: failed to detect keyboard layout:")
+            log.error(" %s", e)
         return layout,layouts,variant,variants
 
     def get_keyboard_repeat(self):

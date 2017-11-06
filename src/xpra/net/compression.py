@@ -57,6 +57,7 @@ try:
                 return level | LZ4_FLAG, LZ4_compress(packet)
 except Exception as e:
     log("lz4 not found: %s", e)
+    del e
     LZ4_uncompress = None
 
 python_lzo_version = None
@@ -71,6 +72,7 @@ try:
     LZO_decompress = lzo.decompress
 except Exception as e:
     log("lzo not found: %s", e)
+    del e
     LZO_decompress = None
     has_lzo = False
     def lzo_compress(packet, level):
@@ -89,7 +91,7 @@ try:
     else:
         def zcompress(packet, level):
             return level + ZLIB_FLAG, zlib.compress(str(packet), level)
-except ImportError as e:
+except ImportError:
     has_zlib = False
     def zcompress(packet, level):
         raise Exception("zlib is not supported!")

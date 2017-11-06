@@ -17,6 +17,7 @@ try:
 except ImportError as e:
     log.error("Error: gdk atoms library not found:")
     log.error(" %s", e)
+    del e
     gdk_atoms = None
 if not is_gtk3():
     try:
@@ -26,6 +27,7 @@ if not is_gtk3():
     except ImportError as e:
         log.error("Error: sanitize_gtkselectiondata not found:")
         log.error(" %s", e)
+        del e
 
 
 class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):

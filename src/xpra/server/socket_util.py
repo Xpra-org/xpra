@@ -308,6 +308,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 except Exception as e:
                     log.warn("Warning: failed to create socket directory '%s'", d)
                     log.warn(" %s", e)
+                    del e
             #wait for all the unknown ones:
             log("sockets in unknown state: %s", unknown)
             if unknown:
@@ -354,12 +355,15 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                     defs.append((("unix-domain", sock, sockpath), cleanup_socket))
                 except Exception as e:
                     handle_socket_error(sockpath, e)
+                    del e
     except:
         for sock, cleanup_socket in defs:
             try:
                 cleanup_socket()
             except Exception as e:
-                log.warn("error cleaning up socket %s", sock)
+                log.error("Error cleaning up socket %s:", sock)
+                log.error(" %s", e)
+                del e
         defs = []
         raise
     return defs

@@ -174,8 +174,10 @@ def get_printers():
                 eprinters.append(name)
             log("%s printers: %s", penum, eprinters)
         except Exception as e:
-            log.warn("Warning: failed to query %s printers: %s", penum, e)
+            log.warn("Warning: failed to query %s printers: %s", penum)
+            log.warn(" %s", e)
             log("query error", exc_info=True)
+            del e
     log("win32.get_printers()=%s", printers)
     return printers
 
