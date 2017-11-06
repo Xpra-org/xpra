@@ -21,5 +21,4 @@ def get_listener_class():
             return ZeroconfListener
         except ImportError as e:
             log("failed to import ZeroconfListener: %s", e)
-            pass
     return None
