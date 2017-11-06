@@ -133,11 +133,12 @@ class RFBProtocol(object):
             log("parse_challenge(%s)", hexstr(response), exc_info=True)
             log.error("Error: authentication challenge failure:")
             log.error(" %s", e)
-        def fail_challenge():
-            self.send(struct.pack("!I", 1))
-            self.close()
-        self.timeout_add(1000, fail_challenge)
+        self.timeout_add(1000, self.send_fail_challenge)
         return len(response)
+
+    def send_fail_challenge():
+        self.send(struct.pack("!I", 1))
+        self.close()
 
     def _parse_security_result(self, packet):
         self.share  = packet != b"\0"
