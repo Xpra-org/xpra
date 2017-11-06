@@ -45,27 +45,12 @@ from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, WCHAR, POINT, RECT
 shell32 = WinDLL("shell32", use_last_error=True)
 try:
     from xpra.platform.win32.propsys import set_window_group    #@UnresolvedImport
-except:
-    #try using pywin32 for "Legacy" builds:
-    try:
-        from win32com.propsys import propsys    #@UnresolvedImport
-        def set_window_group(hwnd, lhandle):
-            try:
-                ps = propsys.SHGetPropertyStoreForWindow(hwnd)
-                key = propsys.PSGetPropertyKeyFromName("System.AppUserModel.ID")
-                value = propsys.PROPVARIANTType(lhandle)
-                log("win32 hooks: calling %s(%s, %s)", ps.SetValue, key, value)
-                ps.SetValue(key, value)
-            except Exception as e:
-                log("set_window_group(%s, %s)", hwnd, lhandle, exc_info=True)
-                log.error("Error: failed to set group leader '%s':", lhandle)
-                log.error(" %s", e)
-        log.info("using legacy propsys function for window grouping")
-    except ImportError as e:
-        log("propsys missing", exc_info=True)
-        log.warn("Warning: propsys support missing, window grouping is not available:")
-        log.warn(" %s", e)
-        set_window_group = None
+except ImportError as e:
+    log("propsys missing", exc_info=True)
+    log.warn("Warning: propsys support missing:")
+    log.warn(" %s", e)
+    log.warn(" window grouping is not available")
+    set_window_group = None
 
 
 try:
@@ -914,7 +899,8 @@ class ClientExtras(object):
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE,  self.inputlangchange)
                 el.add_event_callback(win32con.WM_WININICHANGE,     self.inichange)
         except Exception as e:
-            log.error("cannot register focus and power callbacks: %s", e)
+            log.error("Error: cannot register focus and power callbacks:")
+            log.error(" %s", e)
         self.keyboard_hook_id = None
         if FORWARD_WINDOWS_KEY:
             from xpra.make_thread import make_thread
