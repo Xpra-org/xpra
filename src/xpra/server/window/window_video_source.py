@@ -70,12 +70,14 @@ class WindowVideoSource(WindowSource):
     def __init__(self, *args):
         #this will call init_vars():
         self.supports_scrolling = False
+        self.video_subregion = None
         WindowSource.__init__(self, *args)
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
+        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
@@ -106,8 +108,6 @@ class WindowVideoSource(WindowSource):
 
     def init_vars(self):
         WindowSource.init_vars(self)
-        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
-
         #these constraints get updated with real values
         #when we construct the video pipeline:
         self.min_w = 1
@@ -291,6 +291,11 @@ class WindowVideoSource(WindowSource):
                 if ve:
                     ve.clean()
             self.call_in_encode_thread(False, clean)
+
+    def ui_cleanup(self):
+        WindowSource.ui_cleanup(self)
+        self.video_subregion = None
+
 
     def parse_csc_modes(self, full_csc_modes):
         #only override if values are specified:
@@ -929,20 +934,22 @@ class WindowVideoSource(WindowSource):
         WindowSource.update_encoding_options(self, force_reload)
         self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
         log("update_encoding_options(%s) common_video_encodings=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.common_video_encodings, self._csc_encoder, self._video_encoder)
-        if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
-            self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
-            (self._mmap and self._mmap_size>0):
-            #cannot use video subregions
-            #FIXME: small race if a refresh timer is due when we change encoding - meh
-            self.video_subregion.reset()
-        else:
-            ww, wh = self.window_dimensions
-            self.video_subregion.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
-            if self.video_subregion.rectangle:
-                #when we have a video region, lower the lossless threshold
-                #especially for small regions
-                self._lossless_threshold_base = min(80, 10+self._current_speed//5)
-                self._lossless_threshold_pixel_boost = 90-self._current_speed//5
+        vs = self.video_subregion
+        if vs:
+            if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
+                self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
+                (self._mmap and self._mmap_size>0):
+                #cannot use video subregions
+                #FIXME: small race if a refresh timer is due when we change encoding - meh
+                vs.reset()
+            else:
+                ww, wh = self.window_dimensions
+                vs.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
+                if vs.rectangle:
+                    #when we have a video region, lower the lossless threshold
+                    #especially for small regions
+                    self._lossless_threshold_base = min(80, 10+self._current_speed//5)
+                    self._lossless_threshold_pixel_boost = 90-self._current_speed//5
         if force_reload:
             self.cleanup_codecs()
         self.check_pipeline_score(force_reload)
@@ -1345,9 +1352,13 @@ class WindowVideoSource(WindowSource):
                     #skip cleanup below
                     continue
             except TransientCodecException as e:
+                if self.is_cancelled():
+                    return False
                 videolog.warn("setup_pipeline failed for %s: %s", option, e)
                 del e
             except:
+                if self.is_cancelled():
+                    return False
                 videolog.warn("setup_pipeline failed for %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:
             csce = self._csc_encoder

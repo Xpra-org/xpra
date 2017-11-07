@@ -235,8 +235,10 @@ class WindowSource(object):
 
 
     def init_encoders(self):
-        self._encoders["rgb24"] = self.rgb_encode
-        self._encoders["rgb32"] = self.rgb_encode
+        self._encoders = {
+            "rgb24" : self.rgb_encode,
+            "rgb32" : self.rgb_encode,
+            }
         self.enc_pillow = get_codec("enc_pillow")
         if self.enc_pillow:
             for x in self.enc_pillow.get_encodings():
@@ -313,32 +315,32 @@ class WindowSource(object):
         self._sequence = 1
         self._damage_cancelled = 0
         self._damage_packet_sequence = 1
-        encoders = {}
-        if self._mmap and self._mmap_size>0:
-            #we must always be able to send mmap
-            #so we can reclaim its space
-            encoders["mmap"] = self.mmap_encode
-        self._encoders = encoders
 
     def cleanup(self):
         self.cancel_damage()
-        self.statistics.reset()
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
         #make sure we don't queue any more screen updates for encoding:
         self._damage_cancelled = float("inf")
-        #and only clear the encoders after clearing the encoding queue:
+        #we can only clear the encoders after clearing the whole encoding queue:
         #(because mmap cannot be cancelled once queued for encoding)
-        def clear_encoders():
-            self._encoders = {}
-        self.call_in_encode_thread(False, clear_encoders)
-        def window_signal_handlers_cleanup():
-            log("window_signal_handlers_cleanup: will disconnect %s", self.window_signal_handlers)
-            for sid in self.window_signal_handlers:
-                self.window.disconnect(sid)
-            self.window_signal_handlers = []
-            self.window = None
-        self.idle_add(window_signal_handlers_cleanup)
+        self.call_in_encode_thread(False, self.encode_ended)
+
+    def encode_ended(self):
+        log("encode_ended()")
+        self._encoders = {}
+        self.idle_add(self.ui_cleanup)
+
+    def ui_cleanup(self):
+        log("ui_cleanup: will disconnect %s", self.window_signal_handlers)
+        for sid in self.window_signal_handlers:
+            self.window.disconnect(sid)
+        self.window_signal_handlers = []
+        self.window = None
+        self.batch_config = None
+        self.get_best_encoding = None
+        self.statistics = None
+        self.global_statistics = None
 
 
     def get_info(self):
@@ -1626,8 +1628,9 @@ class WindowSource(object):
     def can_refresh(self):
         if not AUTO_REFRESH:
             return False
+        w = self.window
         #safe to call from any thread (does not call X11):
-        if not self.window.is_managed():
+        if not w or not w.is_managed():
             #window is gone
             return False
         if self.auto_refresh_delay<=0 or self.is_cancelled() or len(self.auto_refresh_encodings)==0 or self._mmap:
