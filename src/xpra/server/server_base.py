@@ -960,6 +960,7 @@ class ServerBase(ServerCore):
                     proc.terminate()
                 except Exception as e:
                     execlog("failed to terminate %s: %s", proc, e)
+                    del e
         if not wait_for:
             return
         execlog("waiting for child commands to exit: %s", wait_for)
@@ -2083,14 +2084,7 @@ class ServerBase(ServerCore):
             }
         printlog("parsed printer options: %s", options)
         if SAVE_PRINT_JOBS:
-            try:
-                save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
-                with open(save_filename, "wb") as f:
-                    f.write(file_data)
-                printlog.info("saved print job to: %s", save_filename)
-            except Exception as e:
-                printlog.error("Error: failed to save print job to %s", save_filename)
-                printlog.error(" %s", e)
+            self._save_print_job(filename, file_data)
 
         sent = 0
         sources = list(self._server_sources.values())
@@ -2122,6 +2116,16 @@ class ServerBase(ServerCore):
             l = printlog.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
         l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
+
+    def _save_print_job(self, filename, file_data):
+        try:
+            save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
+            with open(save_filename, "wb") as f:
+                f.write(file_data)
+            printlog.info("saved print job to: %s", save_filename)
+        except Exception as e:
+            printlog.error("Error: failed to save print job to %s", save_filename)
+            printlog.error(" %s", e)
 
 
     def _process_start_command(self, proto, packet):
@@ -3277,7 +3281,8 @@ class ServerBase(ServerCore):
                 ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
                 return
             except Exception as e:
-                errs[device_str] = e
+                errs[device_str] = str(e)
+                del e
         #all have failed!
         #cannot start webcam..
         ss.send_webcam_stop(device, str(e))
