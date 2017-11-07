@@ -16,275 +16,21 @@ xpra \- viewer for remote, persistent X applications
 .HP \w'xpra\ 'u
 \fBxpra\fP \fBstart\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart\fP \fIssh:HOST:DISPLAY\fP |
 \fBxpra\fP \fBstart-desktop\fP [\fI:DISPLAY\fP] | \fBxpra\fP \fBstart-desktop\fP \fIssh:HOST:DISPLAY\fP
-[\fB\-\-start\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
-[\fB\-\-start\-child\fP=\fICOMMAND\fP]\fB .\|.\|.\fP
-[\fB\-\-start\-after\-connect\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-env\fP=\fIKEY=VALUE\fP]
-[\fB\-\-terminate\-children\fP]
-[\fB\-\-exit\-with\-children\fP]
-[\fB\-\-exit\-with\-client\fP]
-[\fB\-\-start\-new\-commands\fP]
-[\fB\-\-start\-via\-proxy\fP]
-[\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-chdir\fP=\fIDIR\fP]
-[\fB\-\-pidfile\fP=\fIFILENAME\fP]
-[\fB\-\-mdns\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-dbus\-launch\fP=\fICOMMAND\fP|\fIno\fP]
-[\fB\-\-dbus\-proxy\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-dbus\-control\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-use\-display\fP]
-[\fB\-\-displayfd\fP]=\fIFD\fP]
-[\fB\-\-systemd\-run\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
-[\fB\-\-systemd\-run\-args\fP=\fIARGS\fP]
-[\fB\-\-xvfb\fP=\fICMD\fP]
-[\fB\-\-sync\-xvfb\fP=\fIDELAY\fP]
-[\fB\-\-video\-encoders\fP=\fIENCODERS\fP]
-[\fB\-\-csc\-modules\fP=\fIMODULES\fP]
-[\fB\-\-pulseaudio\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-pulseaudio\-command\fP=\fISERVER START COMMAND\fP]
-[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-clipboard\fP=\fIyes\fP|\fIno|clipboard\-type\fP]
-[\fB\-\-clipboard\-direction\fP=
-\fIto\-server\fP|\fIto\-client\fP|
-\fIboth\fP|\fIdisabled\fP]
-[\fB\-\-clipboard\-filter\-file\fP=\fIFILENAME\fP]
-[\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
-[\fB\-\-lock\fP=\fIyes\fP|\fIno\fP|\fIno\fP]
-[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
-[\fB\-\-bind\fP=\fIBIND_LOCATION\fP]
-[\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
-[\fB\-\-encryption\fP=\fICIPHER\fP]
-[\fB\-\-tcp\-encryption\fP=\fICIPHER\fP]
-[\fB\-\-encryption\-keyfile\fP=\fIKEYFILE\fP]
-[\fB\-\-tcp\-encryption\-keyfile\fP=\fIKEYFILE\fP]
-[\fB\-\-auth\fP=\fIMODULE\fP]
-[\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-udp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-ws\-auth\fP=\fIMODULE\fP]
-[\fB\-\-wss\-auth\fP=\fIMODULE\fP]
-[\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
-[\fB\-\-rfb\-auth\fP=\fIMODULE\fP]
-[\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
-[\fB\-\-min\-port\fP=\fIPORT\fP]
-[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP]
-[\fB\-\-ssl\-key\fP=\fIKEYFILE\fP]
-[\fB\-\-ssl\-cert\fP=\fCERTFILE\fP]
-[\fB\-\-ssl\-protocol\fP=PROTOCOLVERSION\fP]
-[\fB\-\-ssl\-ca\-certs\fP=CACERTSFILE\fP]
-[\fB\-\-ssl\-ca\-data\fP=\fCERTDATA\fP]
-[\fB\-\-ssl\-ciphers\fP=CIPHERS\fP]
-[\fB\-\-ssl\-client\-verify\-mode\fP=\fInone\fP|
-\fIoptional\fP|\fIrequired\fP]
-[\fB\-\-ssl\-server\-verify\-mode\fP=\fInone\fP|
-\fIoptional\fP|\fIrequired\fP]
-[\fB\-\-ssl\-verify\-flags\fP=\fIFLAGS\fP]
-[\fB\-\-ssl\-check\-hostname\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
-[\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
-[\fB\-\-dpi\fP=\fIVALUE\fP]
-[\fB\-\-pixel\-depth\fP=\fIVALUE\fP]
-[\fB\-\-input\-method\fP=\fIMETHOD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
-[\fB\-\-mmap\-group\fP]
-[\fB\-\-tcp\-proxy\fP=\fIHOST:PORT\fP]
-[\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
-[\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP]
-[\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
-[\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
-[\fB\-\-attach\fP=\fIyes\fP|\fIno\fP|\fIauto\fP]
+[\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
-[\fB\-zLEVEL | \-\-compress\fP=\fILEVEL\fP]
-[\fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|ABSOLUTEFILENAME]
-[\fB\-\-windows\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-clipboard\-direction\fP=
-\fIto\-server\fP|\fIto\-client\fP|
-\fIboth\fP|\fIdisabled\fP]
-[\fB\-\-cursors\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-xsettings\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-system\-tray\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP|\fI/dev/deviceXXX\fP|
-[\fB\-\-mousewheel\fP=\fIon\fP|\fIoff\fP|\fIinvert\fP|
-\fIinvert-x\fP|\fIinvert-y\fP|\fIinvert-z\fP]
-\fIDEVICEID\fP]
-[\fB\-\-remote\-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP]
-[\fB\-\-keyboard\-sync\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-keyboard\-raw\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-keyboard\-layout\fP=\fILAYOUTSTRING\fP]
-[\fB\-\-keyboard\-layouts\fP=\fILAYOUTS\fP]
-[\fB\-\-keyboard\-variant\fP=\fIVARIANT\fP]
-[\fB\-\-keyboard\-variants\fP=\fIVARIANTS\fP]
-[\fB\-\-keyboard\-options\fP=\fIOPTIONS\fP]
-[\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
-[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|
-\fIon:DEVICE\fP|\fIoff:DEVICE\fP]
-[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-delay\-tray\fP]
-[\fB\-\-encoding\fP=\fIENCODING\fP]
-[\fB\-\-video\-scaling\fP=\fIon\fP|\fIoff\fP|\fISCALING\fP]
-[\fB\-\-opengl\fP=(\fIyes\fP|\fIno\fP|\fIauto\fP)
-[:\fIbackend\fP]]
-[\fB\-\-quality\fP=\fIQUALITY\fP]
-[\fB\-\-min\-quality\fP=\fIMIN\-QUALITY\fP]
-[\fB\-\-speed\fP=\fISPEED\fP]
-[\fB\-\-min-speed\fP=\fIMIN-SPEED\fP]
-[\fB\-\-auto\-refresh\-delay\fP=\fIDELAY\fP]
-[\fB\-\-shortcut\-modifiers\fP=\fIMODIFIERS\fP]
-[\fB\-\-key\-shortcut\fP=\fIKEY:ACTION\fP]
-[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-sharing\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-lock\fP=\fIyes\fP|\fIno\fP|\fIno\fP]
-[\fB\-\-title\fP=\fIVALUE\fP]
-[\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP]
-[\fB\-\-border\fP=\fIBORDER\fP]
-[\fB\-\-window\-icon\fP=\fIFILENAME\fP]
-[\fB\-\-window\-close\fP=\fIACTION\fP]
-[\fB\-\-desktop\-scaling\fP=\fIoff\fP|\fIon\fP|\fIauto\fP|\fIVALUE\fP]
-[\fB\-\-tray\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-tray\-icon\fP=\fIFILENAME\fP]
-[\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-exit\-ssh\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-password\-file\fP=\fIFILENAME\fP]
-[\fB\-\-dpi\fP=\fIVALUE\fP]
-[\fB\-\-pixel\-depth\fP=\fIVALUE\fP]
-[\fB\-\-mouse\-polling\fP=\fIVALUE\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
-[\fB\-\-pings\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-encryption\fP=\fICIPHER\fP]
-[\fB\-\-encryption\-keyfile\fP=\fIFILENAME\fP]
-[\fB\-\-file\-transfer\fP=\fIon\fP|\fIoff\fP]
-[\fB\-\-open\-files\fP=\fIon\fP|\fIoff\fP]
+[\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBshadow\fP [\fI:DISPLAY\fP] | \fIssh:[USER@]HOST[:DISPLAY]\fP
-[\fB\-\-env\fP=\fIKEY=VALUE\fP]\fB .\|.\|.\fP
-[\fB\-\-terminate\-children\fP]
-[\fB\-\-exit\-with\-children\fP]
-[\fB\-\-exit\-with\-client\fP]
-[\fB\-\-start\-new\-commands\fP]
-[\fB\-\-start\-via\-proxy\fP]
-[\fB\-\-uid\fP=\fIUID\fP]
-[\fB\-\-gid\fP=\fIGID\fP]
-[\fB\-\-daemon\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-chdir\fP=\fIDIR\fP]
-[\fB\-\-pidfile\fP=\fIFILENAME\fP]
-[\fB\-\-readonly\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-clipboard\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-notifications\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-bell\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-webcam\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-sound\-source\fP=\fIPLUGIN\fP]
-[\fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
-[\fB\-\-speaker\-codec\fP=\fICODEC\fP]
-[\fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP]
-[\fB\-\-microphone\-codec\fP=\fICODEC\fP]
-[\fB\-\-bandwidth\-limit\fP=\fIBITSPERSECOND\fP]
-[\fB\-\-bind\fP=\fISOCKET|DIRECTORY\fP]
-[\fB\-\-bind\-tcp\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-wss\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-ssl\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-rfb\fP=\fI[HOST]:PORT\fP]
-[\fB\-\-bind\-vsock\fP=\fICID:PORT\fP]
-[\fB\-\-auth\fP=\fIMODULE\fP]
-[\fB\-\-tcp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-udp\-auth\fP=\fIMODULE\fP]
-[\fB\-\-ws\-auth\fP=\fIMODULE\fP]
-[\fB\-\-wss\-auth\fP=\fIMODULE\fP]
-[\fB\-\-ssl\-auth\fP=\fIMODULE\fP]
-[\fB\-\-rfb\-auth\fP=\fIMODULE\fP]
-[\fB\-\-vsock\-auth\fP=\fIMODULE\fP]
-[\fB\-\-min\-port\fP=\fIPORT\fP]
-[\fB\-\-ssl\fP=\fIon\fP|\fIauto\fP|\fIoff\fP|\fItcp\fP|\fIwww\fP]
-[\fB\-\-ssl\-key\fP=\fIKEYFILE\fP]
-[\fB\-\-ssl\-cert\fP=\fCERTFILE\fP]
-[\fB\-\-ssl\-protocol\fP=PROTOCOLVERSION\fP]
-[\fB\-\-ssl\-ca\-certs\fP=CACERTSFILE\fP]
-[\fB\-\-ssl\-ca\-data\fP=\fCERTDATA\fP]
-[\fB\-\-ssl\-ciphers\fP=CIPHERS\fP]
-[\fB\-\-ssl\-client\-verify-mode\fP=\fInone\fP|
-\fIoptional\fP|\fIrequired\fP]
-[\fB\-\-ssl\-server\-verify-mode\fP=\fInone\fP|
-\fIoptional\fP|\fIrequired\fP]
-[\fB\-\-ssl\-verify\-flags\fP=\fIFLAGS\fP]
-[\fB\-\-ssl\-check\-hostname\fP=\fIyes\fP|\fIno\fP]
-[\fB\-\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
-[\fB\-\-server\-idle\-timeout\fP=\fIIDLETIMEOUT\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP]
-[\fB\-\-mmap\-group\fP]
-[\fB\-\-tcp\-proxy\fP=HOST:PORT\fP]
-[\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP]
-[\fB\-\-rfb\-upgrade\fP=\fIDELAY\fP]
+[\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBproxy\fP [\fI:DISPLAY\fP]
+[\fBOPTIONS..\fP]
 .HP
-\fBxpra\fP \fBstop\fP [CONNECTIONSTRING]
-[\fB\-\-ssh=CMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-.HP
-\fBxpra\fP \fBexit\fP [CONNECTIONSTRING]
-[\fB\-\-ssh=CMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-.HP
-\fBxpra\fP \fBdetach\fP [CONNECTIONSTRING]
-[\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-.HP
-\fBxpra\fP \fBscreenshot\fP \fIfilename\fP [CONNECTIONSTRING]
-[\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-.HP
-\fBxpra\fP \fBversion\fP [CONNECTIONSTRING]
-[\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
-.HP
+\fBxpra\fP \fBstop\fP | \fBxpra\fP \fBexit\fP | \fBxpra\fP \fBdetach\fP |
+\fBxpra\fP \fBscreenshot\fP \fIfilename\fP | \fBxpra\fP \fBversion\fP |
 \fBxpra\fP \fBinfo\fP [CONNECTIONSTRING]
-[\fB\-\-ssh\fP=\fICMD\fP]
-[\fB\-\-remote\-xpra\fP=\fICMD\fP]
-[\fB\-\-socket\-dir\fP=\fIDIR\fP]
-[\fB\-\-socket\-dirs\fP=\fIDIRS\fP]
+[\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBcontrol\fP [CONNECTIONSTRING] \fIcommand\fP [\fIarguments..\fP]
 [\fB\-\-ssh\fP=\fICMD\fP]
@@ -294,9 +40,9 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBinitenv\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
 .HP
-\fBxpra\fP \fBshowconfig\fP [\fBOPTIONS..\fP]
-.HP
 \fBxpra\fP \fBlist\fP [\fB\-\-socket\-dir\fP=\fIDIR\fP]
+.HP
+\fBxpra\fP \fBshowconfig\fP [\fBOPTIONS..\fP]
 .HP
 \fBxpra\fP \fBlist-mdns\fP
 .HP
@@ -311,40 +57,50 @@ disconnect from these programs, and reconnect from the same or another
 machine, all without losing any state.  It differs from standard X
 forwarding in that it allows disconnection and reconnection without
 disrupting the forwarded application; it differs from VNC and similar
-remote display technologies in that xpra is \fIrootless\fP: i.e.,
+remote display technologies in that xpra can run \fIrootless\fP: i.e.,
 applications forwarded by xpra appear on your desktop as normal
 windows managed by your window manager, rather than being all "trapped
 in a box together".  Xpra also uses a custom protocol that is
 self-tuning and relatively latency-insensitive, and thus is usable
 over network connections that are too slow or unreliable for standard
 X forwarding.
-Xpra can also be used to shadow an existing X11 display.
+Xpra can also be used to shadow an existing X11 display, or in
+desktop mode where it behaves more like VNC.
 .P
 By default the Xpra server announces available sessions (username and display
 number) via mDNS to the local network. Use \fBmdns=no\fP to disable it.
 .\" --------------------------------------------------------------------
 .SH CONNECTION STRINGS
-Xpra supports 5 types of connection strings (some may require extra
+Xpra supports many types of connection strings (some may require extra
 packages to be installed):
 .SS :DISPLAY
 Local displays: this is the simplest form and is only valid for the
 current local displays of the current user.
-.SS tcp/[USERNAME@]HOST:PORT[/DISPLAY]
+.SS tcp://[USERNAME@]HOST:PORT[/DISPLAY]
 TCP mode uses port numbers and not display numbers. If multiple displays
 are available through a single TCP port (ie: using a proxy server),
 then one can also specify the display number.
-.SS vhost:[USERNAME[:PASSWORD]@]HOST:PORT
+.SS ssl://[USERNAME@]HOST:PORT[/DISPLAY]
+SSL adds a secure socket layer on top of the TCP mode.
+.SS vsock://[USERNAME[:PASSWORD]@]HOST:PORT
 Almost identical to the TCP mode, but using AF_VSOCK for transport.
-.SS ws/[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
+.SS ws://[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
 Connect using websocket protocol.
-.SS ssh/[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/DISPLAY
+.SS wss://[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
+Connect using secure websocket protocol. (websocket with SSL)
+.SS ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/DISPLAY
 Further options can be specified using the \fB\-\-ssh\fP command line option.
 .P
 For backwards compatibility, SSH mode also supports the syntax:
 \fBssh:[USERNAME[:PASSWORD]@HOST:DISPLAY\fP but this form does not
 support specifying the SSH port number.
+Older versions also used the form \fBprotocol:host:port\fP, but users
+are encouraged to move to a more standard URI format using \fB://\fP as
+separator.
 .P
-The password is only actually used on Microsoft Windows.
+The password need only be specified when the server authentication module
+requires it. (ie: often when authenticating against MS Windows servers,
+or with \fBmultifile\fP and \fBsqlite\fP authentication modules)
 .\" --------------------------------------------------------------------
 .SH EXAMPLES
 .TP \w'xpra\ 'u
@@ -389,7 +145,7 @@ Use ssh to attach to the xpra server that is running on machine
 \fIfrodo\fP as user \fIfoo\fP and using display \fI:7\fP.
 Any apps running on that server will appear on your local screen.
 .TP
-\fBxpra start\fP \fI:7\fP \fB&& DISPLAY=\fP\fI:7\fP \fBscreen\fP
+\fBxpra start :7 --start=screen\fP
 Start an xpra server and a \fBscreen\fP(1) session.  If any of the
 applications inside screen attempt to use X, they will be directed to
 the xpra server.
@@ -462,9 +218,9 @@ If the xpra server was given the \fB\-\-bind\-tcp\fP, \fB\-\-bind\-ssl\fP
 \fB\-\-bind\-udp\fP=\fI[HOST]:PORT\fP,
 \fB\-\-bind\-ws\fP, \fB\-\-bind\-wss\fP or \fB\-\-bind\-vsock\fP option
 when started then you can also connect
-to it using a display of the form \fBtcp:HOST:PORT\fP,
-\fBudp:HOST:PORT\fP, \fBssl:HOST:PORT\fP,
-\fBws:HOST:PORT\fP, \fBwss:HOST:PORT\fP or \fBvsock:HOST:PORT\fP.
+to it using a display of the form \fBtcp://HOST:PORT\fP,
+\fBudp://HOST:PORT\fP, \fBssl://HOST:PORT\fP,
+\fBws://HOST:PORT\fP, \fBwss://HOST:PORT\fP or \fBvsock://HOST:PORT\fP.
 (Notice that \fBssh:\fP takes an optional \fIdisplay\fP number,
 while those take a required \fIport\fP number.)
 .\" --------------------------------------------------------------------
