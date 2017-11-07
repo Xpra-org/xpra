@@ -1195,15 +1195,6 @@ def do_validate_encryption(auth, tcp_auth, encryption, tcp_encryption, encryptio
     #    elif tcp_encryption:
     #        raise InitException("tcp-encryption %s should not use the same file as the password authentication file" % tcp_encryption)
 
-def dump_frames(*_args):
-    frames = sys._current_frames()
-    print("")
-    print("found %s frames:" % len(frames))
-    for fid,frame in frames.items():
-        print("%s - %s:" % (fid, frame))
-        traceback.print_stack(frame)
-    print("")
-
 def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     from xpra.sound.wrapper import query_sound
     props = query_sound()
@@ -1273,11 +1264,17 @@ def configure_logging(options, mode):
 
     #register posix signals for debugging:
     if POSIX:
-        from xpra.util import dump_all_frames
+        from xpra.util import dump_all_frames, dump_gc_frames
+        def idle_add(fn):
+            from xpra.gtk_common.gobject_compat import import_glib
+            glib = import_glib()
+            glib.idle_add(fn)
         def sigusr1(*_args):
-            dump_frames()
+            get_util_logger().info("SIGUSR1")
+            idle_add(dump_all_frames)
         def sigusr2(*_args):
-            dump_all_frames()
+            get_util_logger().info("SIGUSR2")
+            idle_add(dump_gc_frames)
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 

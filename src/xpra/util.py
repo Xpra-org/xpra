@@ -456,20 +456,34 @@ def get_screen_info(screen_sizes):
             sinfo["workarea"] = x[6:10]
     return info
 
-
 def dump_all_frames():
     try:
         frames = sys._current_frames()
     except:
         return
+    else:
+        dump_frames(frames.items())
+
+def dump_gc_frames():
+    import gc
+    #import types
+    import inspect
+    gc.collect()
+    #frames = tuple(x for x in gc.get_objects() if isinstance(x, types.FrameType))
+    frames = tuple((None, x) for x in gc.get_objects() if inspect.isframe(x))
+    dump_frames(frames)
+
+def dump_frames(frames):
     log = get_util_logger()
     log("found %s frames:", len(frames))
-    for i,(fid,frame) in enumerate(frames.items()):
-        try:
-            fidstr = hex(fid)
-        except:
-            fidstr = str(fid)
-        log("%i: %s - %s:", i, fidstr, frame)
+    for i,(fid,frame) in enumerate(frames):
+        fidstr = ""
+        if fid is not None:
+            try:
+                fidstr = hex(fid)
+            except:
+                fidstr = str(fid)
+        log("%i: %s %s:", i, fidstr, frame)
         for x in traceback.format_stack(frame):
             for l in x.splitlines():
                 log("%s", l)
