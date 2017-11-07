@@ -14,17 +14,31 @@ from xpra.os_util import bytestostr, strtobytes
 
 MAX_TESTED = 384
 
+nvml_init_warned = False
+def wrap_nvml_init(nvmlInit):
+    try:
+        nvmlInit()
+        return True
+    except Exception as e:
+        log("get_nvml_driver_version() pynvml error", exc_info=True)
+        global nvml_init_warned
+        if not nvml_init_warned:
+            log.warn("Warning: failed to initialize NVML:")
+            log.warn(" %s", e)
+            nvml_init_warned = True
+        return False
+
 def get_nvml_driver_version():
     try:
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
         try:
-            nvmlInit()
-            v = nvmlSystemGetDriverVersion()
-            log("nvmlSystemGetDriverVersion=%s", bytestostr(v))
-            return v.split(b".")
+            if wrap_nvml_init(nvmlInit):
+                v = nvmlSystemGetDriverVersion()
+                log("nvmlSystemGetDriverVersion=%s", bytestostr(v))
+                return v.split(b".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
-            log.warn("Warning: failed to query the NVidia kernel module version via NVML:")
+            log.warn("Warning: failed to query the NVidia kernel module version using NVML:")
             log.warn(" %s", e)
         finally:
             nvmlShutdown()
@@ -85,7 +99,8 @@ def identify_cards():
         from pynvml import nvmlInit, nvmlShutdown, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex
         deviceCount = None
         try:
-            nvmlInit()
+            if not wrap_nvml_init(nvmlInit):
+                return devices
             deviceCount = nvmlDeviceGetCount()
             log("identify_cards() will probe %i cards", deviceCount)
             for i in range(deviceCount):
@@ -146,7 +161,7 @@ def identify_cards():
             #log.info("unitCount=%s", unitCount)
         except Exception as e:
             log("identify_cards() pynvml error", exc_info=True)
-            log.warn("Warning: failed to query the NVidia cards via NVML:")
+            log.warn("Warning: failed to query the NVidia cards using NVML:")
             log.warn(" %s", e)
         finally:
             if deviceCount is not None:
