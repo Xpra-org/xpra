@@ -13,7 +13,7 @@ def check_support():
 
 from xpra.platform import platform_import
 platform_import(globals(), "gl_context", False, "GLContext", "check_support")
-    
+
 
 def main():
     from xpra.platform import program_context

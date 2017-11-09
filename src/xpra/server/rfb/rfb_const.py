@@ -170,7 +170,7 @@ class RFBEncoding(object):
     #-247 to -256    Compression Level Pseudo-encoding
     #-412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
     #-763 to -768    JPEG Subsampling Level Pseudo-encoding
-    
+
     ENCODING_STR = {
         RAW                 : "Raw",
         COPYRECT            : "CopyRect",

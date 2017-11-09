@@ -61,7 +61,7 @@ class NamedPipeConnection(Connection):
         if closed:
             raise ConnectionClosedException(e)
         return False
-        
+
 
     def untilConcludes(self, fn, *args, **kwargs):
         try:

@@ -318,7 +318,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         cdef XRRScreenResources *rsc
         cdef RRMode mode
         cdef RROutput output
-        
+
         #monitor settings as set in xorg.conf...
         cdef unsigned int maxPixelClock = 230*1000*1000         #230MHz
         cdef unsigned int minHSync = 10*1000                    #10KHz
@@ -338,7 +338,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         new_mode = XRRAllocModeInfo(name, len(name))
         try:
             window = XDefaultRootWindow(self.display)
-    
+
             xFront = int(w * timeHFront)
             xSync = int(w * timeHSync)
             xBack = int(w * timeHBack)
@@ -347,7 +347,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             ySync = 3
             yBack = int(h * timeVBack)
             yTotal = h + yFront + ySync + yBack
-    
+
             modeMaxClock = maxPixelClock
             if (maxHSync * xTotal)<maxPixelClock:
                 modeMaxClock = maxHSync * xTotal
@@ -364,14 +364,14 @@ cdef class _RandRBindings(_X11CoreBindings):
                 log.warn("Warning: cannot add mode %s", name)
                 log.warn(" no suitable clocks could be found")
                 return None
-    
+
             idealClock = idealVSync * xTotal * yTotal * yFactor
             clock = idealClock;
             if clock < modeMinClock:
                 clock = modeMinClock
             elif clock > modeMaxClock:
                 clock = modeMaxClock
-            
+
             log("Modeline %sx%s %s %s %s %s %s %s %s %s %s", w, h, clock/1000/1000,
                             w, w+xFront, w+xFront+xSync, xTotal,
                             h, h+yFront, h+yFront+ySync, yTotal)

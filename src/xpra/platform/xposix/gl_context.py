@@ -30,7 +30,7 @@ def get_xdisplay():
     assert ptr, "no X11 display registered"
     from OpenGL.raw.GLX._types import struct__XDisplay
     return cast(ptr, POINTER(struct__XDisplay))
-    
+
 
 class GLXWindowContext(object):
 

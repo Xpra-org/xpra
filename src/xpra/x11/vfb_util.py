@@ -84,7 +84,7 @@ EndSection
         #Option "AccelSpeed" "-1"
     def cleanup_conf_file():
         log("cleanup_conf_file: %s", conf_file)
-        os.unlink(conf_file) 
+        os.unlink(conf_file)
     cleanups.insert(0, cleanup_conf_file)
     return cleanups
 

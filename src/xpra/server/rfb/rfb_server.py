@@ -10,7 +10,7 @@ from xpra.os_util import POSIX, OSX
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
- 
+
 from xpra.log import Logger
 log = Logger("rfb")
 

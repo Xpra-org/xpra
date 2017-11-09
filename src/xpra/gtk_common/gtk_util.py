@@ -442,7 +442,7 @@ else:
         return gtk.Clipboard(selection=selection)
     def clipboard_request_contents(clipboard, target, unpack):
         clipboard.request_contents(target, unpack)
-    
+
     def selection_owner_set(widget, selection, time=0):
         return widget.selection_owner_set(selection, time)
     def selection_add_target(widget, selection, target, info=0):

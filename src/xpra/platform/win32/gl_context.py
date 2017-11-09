@@ -102,7 +102,7 @@ class WGLContext(object):
         self.hdc = GetDC(hwnd)
         flags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DEPTH_DONTCARE
         if DOUBLE_BUFFERED:
-            flags |= PFD_DOUBLEBUFFER 
+            flags |= PFD_DOUBLEBUFFER
         pfd = PIXELFORMATDESCRIPTOR()
         pfd.nsize = sizeof(PIXELFORMATDESCRIPTOR)
         pfd.nVersion = 1
@@ -155,7 +155,7 @@ class WGLContext(object):
             "stencil-size"      : pfd.cStencilBits,
             "aux-buffers"       : pfd.cAuxBuffers,
             "visible-mask"      : pfd.dwVisibleMask,
-            "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER) 
+            "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
             })
         log("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)
