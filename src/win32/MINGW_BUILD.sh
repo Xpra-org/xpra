@@ -162,7 +162,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 		echo "ERROR: service build failed"
 		exit 1
 	fi
-	cp Xpra-Service.exe ../../dist/
+	cp -fn Xpra-Service.exe ../../dist/
 	popd > /dev/null
 fi
 
@@ -242,19 +242,19 @@ if [ "${BUNDLE_PUTTY}" == "1" ]; then
 			exit 1
 		fi
 	fi
-	cp "${TORTOISESVN}/bin/TortoisePlink.exe" "${DIST}/Plink.exe"
+	cp -fn "${TORTOISESVN}/bin/TortoisePlink.exe" "${DIST}/Plink.exe"
 	#are we meant to include those DLLs?
 	#rsync -rplogt "${TORTOISESVN}/bin/"*dll "${DIST}/"
 fi
 
 if [ "${BUNDLE_OPENSSL}" == "1" ]; then
-	cp "${MINGW_PREFIX}/bin/openssl.exe" "${DIST}/"
+	cp -fn "${MINGW_PREFIX}/bin/openssl.exe" "${DIST}/"
 	#use the old filename so we don't have to change the xpra.iss and the py2exe+MSVC build system:
-	cp "${MINGW_PREFIX}/ssl/openssl.cnf" "${DIST}/openssl.cfg"
+	cp -fn "${MINGW_PREFIX}/ssl/openssl.cnf" "${DIST}/openssl.cfg"
 fi
 
 if [ "${DO_VERPATCH}" == "1" ]; then
-	for exe in `ls dist/*exe`; do
+	for exe in `ls dist/*exe | grep -v Plink.exe`; do
 		tool_name=`echo $exe | sed 's+dist/++g;s+Xpra_++g;s+Xpra-++g;s+_+ +g;s+-+ +g;s+\.exe++g'`
 		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2017" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
@@ -287,7 +287,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	INNOSETUP_LOG="win32/innosetup.log"
 	echo "* Creating the installer using InnoSetup"
 	rm -f "Xpra_Setup.exe" "${INSTALLER_FILENAME}" "${INNOSETUP_LOG}"
-	cp "win32/xpra.iss" "xpra.iss"
+	cp -fn "win32/xpra.iss" "xpra.iss"
 	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
 		cat "win32/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' | sed 's/ArchitecturesAllowed=.*/ArchitecturesAllowed=x64/g' > "xpra.iss"
 	fi
