@@ -27,6 +27,8 @@ require {
 	type unconfined_t;
 	type bin_t;
 	type avahi_t;
+
+	attribute can_read_shadow_passwords;
 }
 
 systemd_domain_template(xpra)
@@ -91,6 +93,7 @@ allow xpra_t shell_exec_t:file { execute execute_no_trans };
 allow xpra_t self:unix_dgram_socket { create connect sendto ioctl };
 
 #check passwords:
+typeattribute xpra_t can_read_shadow_passwords;
 allow xpra_t chkpwd_exec_t:file { execute execute_no_trans open read };
 allow xpra_t shadow_t:file { getattr open read };
 allow xpra_t self:capability audit_write;
@@ -131,7 +134,7 @@ dontaudit xpra_t gconf_home_t:dir search;
 #allow xpra_t var_run_t:sock_file getattr;
 allow xpra_t var_run_t:sock_file { getattr write };
 allow xpra_t unconfined_t:unix_stream_socket { connectto };
-allow xpra_t self:capability dac_override;
+allow xpra_t self:capability { dac_override dac_read_search };
 #could use dontaudit here since we should be able to find the socket in XDG_RUNTIME_DIR
 allow xpra_t user_home_dir_t:dir { search getattr read open };
 allow xpra_t user_home_t:dir { search getattr read open };
@@ -152,3 +155,5 @@ allow xpra_t self:capability { setgid setuid };
 allow xpra_t var_run_t:sock_file { create setattr };
 allow xpra_t sysfs_t:dir read;
 allow xpra_t user_tmp_t:sock_file write;
+#proxy instance mmap:
+allow xpra_t tmpfs_t:file map;
