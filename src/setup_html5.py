@@ -150,7 +150,7 @@ def main():
         print("usage:")
         print("%s [installation-directory]" % sys.argv[0])
         sys.exit(1)
-    
+
     install_html5(install_dir)
 
 if __name__ == "__main__":
