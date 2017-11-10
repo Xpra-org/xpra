@@ -12,12 +12,12 @@ from xpra.log import Logger
 log = Logger("gobject", "client")
 
 import sys
-from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, DONE
+from xpra.util import nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, DONE
 from xpra.os_util import bytestostr, get_hex_uuid, PYTHON3, POSIX, OSX
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG)
 
-FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", True)
+FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
 
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
@@ -218,7 +218,7 @@ class InfoXpraClient(CommandConnectClient):
         CommandConnectClient.__init__(self, *args)
         self.hello_extra["info_request"] = True
         self.hello_extra["request"] = "info"
-        if FLATTEN_INFO!=1:
+        if FLATTEN_INFO>=1:
             self.hello_extra["info-namespace"] = True
 
     def timeout(self, *_args):
@@ -228,8 +228,9 @@ class InfoXpraClient(CommandConnectClient):
         if self.server_capabilities:
             if FLATTEN_INFO<2:
                 #compatibility mode:
-                for k in sorted_nicely(self.server_capabilities.keys()):
-                    v = self.server_capabilities.get(k)
+                c = flatten_dict(self.server_capabilities)
+                for k in sorted_nicely(c.keys()):
+                    v = c.get(k)
                     if PYTHON3:
                         #FIXME: this is a nasty and horrible python3 workaround (yet again)
                         #we want to print bytes as strings without the ugly 'b' prefix..
