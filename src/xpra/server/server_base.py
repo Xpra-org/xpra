@@ -39,7 +39,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, \
+from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, detect_leaks, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
@@ -173,10 +173,14 @@ class ServerBase(ServerCore):
         self.init_aliases()
 
         if DETECT_MEMLEAKS:
-            from xpra.util import detect_leaks
             print_leaks = detect_leaks()
             if print_leaks:
-                self.timeout_add(10*1000, print_leaks)
+                def leak_thread():
+                    while True:
+                        print_leaks()
+                        sleep(10)
+                from xpra.make_thread import start_thread
+                start_thread(leak_thread, "leak thread", daemon=True)
         if DETECT_FDLEAKS:
             self.fds = livefds()
             self.timeout_add(10, self.print_fds)
