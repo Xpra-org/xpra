@@ -464,7 +464,7 @@ class ServerSource(FileTransferHandler):
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
         self.calculate_window_ids = set()
-        self.calculate_due = False
+        self.calculate_timer = 0
         self.calculate_last_time = 0
 
 
@@ -488,6 +488,7 @@ class ServerSource(FileTransferHandler):
             self.mmap = None
             self.mmap_size = 0
             mmap.close()
+        self.cancel_recalculate_timer()
         self.cancel_ping_echo_timeout()
         self.stop_sending_sound()
         self.stop_receiving_sound()
@@ -527,8 +528,10 @@ class ServerSource(FileTransferHandler):
             and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
             this runs in the worker thread.
         """
+        self.calculate_timer = 0
         if self.is_closed():
             return
+        self.calculate_last_time = monotonic_time()
         self.update_bandwidth_limits()
         self.statistics.update_averages()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
@@ -591,20 +594,21 @@ class ServerSource(FileTransferHandler):
             return  #not enough pixel updates
         statslog("may_recalculate(%i, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
         self.calculate_window_ids.add(wid)
-        if self.calculate_due:
+        if self.calculate_timer:
             #already due
             return
-        self.calculate_due = True
-        def recalculate_work():
-            self.calculate_due = False
-            self.calculate_last_time = monotonic_time()
-            self.recalculate_delays()
         delta = monotonic_time() - self.calculate_last_time
         RECALCULATE_DELAY = 1.0           #1s
         if delta>RECALCULATE_DELAY:
-            add_work_item(recalculate_work)
+            add_work_item(self.recalculate_delays)
         else:
-            self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, recalculate_work)
+            self.calculate_timer = self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, self.recalculate_delays)
+
+    def cancel_recalculate_timer(self):
+        ct = self.calculate_timer
+        if ct:
+            self.calculate_timer = 0
+            self.source_remove(ct)
 
 
     def suspend(self, ui, wd):
