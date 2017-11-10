@@ -593,21 +593,22 @@ def notypedict(info):
 
 def flatten_dict(info, sep="."):
     to = {}
-    def add_dict(path, d):
-        for k,v in d.items():
-            if path:
-                if k:
-                    npath = path+sep+str(k)
-                else:
-                    npath = path
-            else:
-                npath = str(k)
-            if isinstance(v, dict):
-                add_dict(npath, v)
-            elif v is not None:
-                to[npath] = v
-    add_dict(None, info)
+    _flatten_dict(to, sep, None, info)
     return to
+
+def _flatten_dict(to, sep, path, d):
+    for k,v in d.items():
+        if path:
+            if k:
+                npath = path+sep+str(k)
+            else:
+                npath = path
+        else:
+            npath = str(k)
+        if isinstance(v, dict):
+            _flatten_dict(to, sep, npath, v)
+        elif v is not None:
+            to[npath] = v
 
 def parse_simple_dict(s="", sep=","):
     #parse the options string and add the pairs:
