@@ -174,15 +174,9 @@ class ServerBase(ServerCore):
 
         if DETECT_MEMLEAKS:
             from xpra.util import detect_leaks
-            detailed = []
-            #example: warning, uses ugly direct import:
-            #try:
-            #    from xpra.x11.bindings.ximage import XShmImageWrapper       #@UnresolvedImport
-            #    detailed.append(XShmImageWrapper)
-            #except:
-            #    pass
-            print_leaks = detect_leaks(log, detailed)
-            self.timeout_add(10*1000, print_leaks)
+            print_leaks = detect_leaks()
+            if print_leaks:
+                self.timeout_add(10*1000, print_leaks)
         self.fds = livefds()
         if DETECT_FDLEAKS:
             self.timeout_add(10, self.print_fds)

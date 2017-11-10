@@ -545,71 +545,19 @@ def dump_references(log, instances, exclude=[]):
     finally:
         del frame
 
-def detect_leaks(log, detailed=[]):
-    import types
-    import inspect
-    from collections import defaultdict
+def detect_leaks():
+    try:
+        from pympler import tracker
+    except ImportError as e:
+        get_util_logger().warn("Warning: cannot enable memory leak detection:")
+        get_util_logger().warn(" %s", e)
+        return None
     import gc
-    global before, after
     gc.enable()
     gc.set_debug(gc.DEBUG_LEAK)
-    before = defaultdict(int)
-    after = defaultdict(int)
-    gc.collect()
-    ignore = (defaultdict, types.BuiltinFunctionType, types.BuiltinMethodType, types.FunctionType, types.MethodType)
-    for i in gc.get_objects():
-        if type(i) not in ignore:
-            before[type(i)] += 1
-
+    tr = tracker.SummaryTracker()
     def print_leaks():
-        global before, after
-        gc.collect()
-        lobjs = gc.get_objects()
-        for i in lobjs:
-            if type(i) not in ignore:
-                after[type(i)] += 1
-        log.info("leaks: count : object")
-        leaked = {}
-        for k in after:
-            delta = after[k]-before[k]
-            if delta>0:
-                leaked[delta] = k
-        for delta in reversed(sorted(leaked.keys())):
-            ltype = leaked[delta]
-            matches = tuple(x for x in lobjs if type(x)==ltype and ltype not in ignore)
-            minfo = "%6i matches" % len(matches)
-            if delta<64:
-                minfo += ": %s" % csv(repr_ellipsized(str(x)) for x in matches[-delta:])
-            log.info("%8i : %32s : %s", delta, getattr(ltype, "__name__", ltype), minfo)
-            #if str(ltype)=="<type 'cell'>":
-            #    log.info("dumping last %i cells:", delta)
-            #    for i, x in enumerate(matches[-delta:]):
-            #        log.info("[%3i] %s: %s", i, repr_ellipsized(str(x)), repr_ellipsized(str(x.cell_contents), limit=500))
-            #elif ltype==types.FrameType:
-            #    log.info("dumping last %i frames:", delta)
-            #    for i, x in enumerate(matches[-delta:]):
-            #        log.info("[%3i] %s: %s", i, repr_ellipsized(str(x)), inspect.getframeinfo(x))
-            if len(matches)<64 and ltype in detailed:
-                try:
-                    import time
-                    import os.path
-                    import objgraph
-                    def not_locals(x):
-                        #return not x in (before, after, lobjs) and not isinstance(x, types.FrameType)
-                        return not x in (before, after, lobjs, leaked, matches)
-                    for x in matches:
-                        filename = os.path.expanduser("~/Downloads/objgraph-%s-%i.png" % (type(x).__name__, time.time()))
-                        objgraph.show_backrefs(x, max_depth=5, filter=not_locals, too_many=32, filename=filename)
-                        log.info(" saved objgraph to %s", filename)
-                except ImportError:
-                    exclude = [lobjs]
-                    try:
-                        dump_references(log, matches, exclude=exclude)
-                    finally:
-                        del exclude
-        before = after
-        after = defaultdict(int)
-        dump_all_frames()
+        tr.print_diff()
         return True
     return print_leaks
 
