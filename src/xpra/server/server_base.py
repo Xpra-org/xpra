@@ -2164,7 +2164,7 @@ class ServerBase(ServerCore):
         def cb(proto, info):
             self.do_send_info(proto, info, flatten)
             end = monotonic_time()
-            log.info("processed info request from %s in %ims", proto._conn, (end-start)*1000)
+            log.info("processed %s info request from %s in %ims", ["structured", "flat"][flatten], proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, self._id_to_window.keys())
 
     def get_ui_info(self, _proto, wids=None, *_args):

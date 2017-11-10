@@ -1531,7 +1531,7 @@ class ServerCore(object):
     def send_hello_info(self, proto, flatten=True):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
-        log.info("processing info request from %s", proto._conn)
+        log.info("processing %s info request from %s", ["structured", "flat"][flatten], proto._conn)
         def cb(proto, info):
             self.do_send_info(proto, info, flatten)
         self.get_all_info(cb, proto)
