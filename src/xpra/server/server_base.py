@@ -177,8 +177,8 @@ class ServerBase(ServerCore):
             print_leaks = detect_leaks()
             if print_leaks:
                 self.timeout_add(10*1000, print_leaks)
-        self.fds = livefds()
         if DETECT_FDLEAKS:
+            self.fds = livefds()
             self.timeout_add(10, self.print_fds)
 
     def print_fds(self):
