@@ -15,7 +15,7 @@ import math
 from collections import deque, namedtuple
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import AdHocStruct, updict, rindex, envbool, envint
+from xpra.util import updict, rindex, envbool, envint
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
@@ -58,6 +58,14 @@ CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 
 
+class DesktopState(object):
+    def __init__(self, geom, resize_counter=0, shown=False):
+        self.geom = geom
+        self.resize_counter = resize_counter
+        self.shown = shown
+    def __repr__(self):
+        return "DesktopState(%s, %i, %s)" % (self.geom, self.resize_counter, self.shown)
+
 class DesktopManager(gtk.Widget):
     def __init__(self):
         self._models = {}
@@ -72,11 +80,7 @@ class DesktopManager(gtk.Widget):
 
     def add_window(self, model, x, y, w, h):
         assert self.flags() & gtk.REALIZED
-        s = AdHocStruct()
-        s.shown = False
-        s.geom = [x, y, w, h]
-        s.resize_counter = 0
-        self._models[model] = s
+        self._models[model] = DesktopState([x, y, w, h])
         model.managed_connect("unmanaged", self._unmanaged)
         model.managed_connect("ownership-election", self._elect_me)
         model.ownership_election()
