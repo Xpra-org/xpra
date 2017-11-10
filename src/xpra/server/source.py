@@ -351,6 +351,7 @@ class ServerSource(FileTransferHandler):
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = monotonic_time()
         self.last_ping_echoed_time = 0
+        self.check_ping_echo_timer = 0
 
         self.clipboard_progress_timer = None
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
@@ -487,6 +488,7 @@ class ServerSource(FileTransferHandler):
             self.mmap = None
             self.mmap_size = 0
             mmap.close()
+        self.cancel_ping_echo_timeout()
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
@@ -2057,10 +2059,18 @@ class ServerSource(FileTransferHandler):
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms)
         timeout = 60
-        def check_echo_timeout():
-            if self.last_ping_echoed_time<now_ms and not self.is_closed():
-                self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
-        self.timeout_add(timeout*1000, check_echo_timeout)
+        self.check_ping_echo_timer = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
+
+    def check_ping_echo_timeout(self, now_ms, timeout):
+        self.check_ping_echo_timer = 0
+        if self.last_ping_echoed_time<now_ms and not self.is_closed():
+            self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
+
+    def cancel_ping_echo_timeout(self):
+        pet = self.check_ping_echo_timer
+        if pet:
+            self.check_ping_echo_timer = 0
+            self.source_remove(pet)
 
     def process_ping(self, time_to_echo):
         l1,l2,l3 = 0,0,0
@@ -2081,6 +2091,7 @@ class ServerSource(FileTransferHandler):
         self.timeout_add(500, self.ping)
 
     def process_ping_echo(self, packet):
+        self.cancel_ping_echo_timeout()
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic_time()-echoedtime/1000.0
