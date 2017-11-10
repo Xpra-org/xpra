@@ -520,13 +520,17 @@ def dump_references(log, instances, exclude=[]):
                     lr = len(r)
                     if lr<=128:
                         log.info("    %i %s items: %s", lr, type(r), csv(repr_ellipsized(str(x)) for x in r))
-                    else:
+                    elif lr<512:
                         log.info("    %i %s items: %s..", lr, type(r), repr_ellipsized(csv(r)))
+                    else:
+                        log.info("    %i %s items", lr, type(r))
                     ll = len(listref)
                     if ll<128:
                         log.info("    %i referrers: %s", ll, csv(repr_ellipsized(str(x)) for x in listref))
-                    else:
+                    elif ll<512:
                         log.info("    %i referrers: %s", ll, repr_ellipsized(csv(listref)))
+                    else:
+                        log.info("    %i referrers", ll)
                 elif type(r)==dict:
                     if len(r)>64:
                         log.info("    %s items: %s", len(r), repr_ellipsized(str(r)))
