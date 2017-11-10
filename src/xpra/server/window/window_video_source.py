@@ -852,11 +852,12 @@ class WindowVideoSource(WindowSource):
         if self.encode_from_queue_due==0 or due<self.encode_from_queue_due:
             self.encode_from_queue_due = due
             self.cancel_encode_from_queue()
-            def timer_encode_from_queue():
-                self.encode_from_queue_timer = None
-                self.encode_from_queue_due = 0
-                self.call_in_encode_thread(True, self.encode_from_queue)
-            self.encode_from_queue_timer = self.timeout_add(av_delay, timer_encode_from_queue)
+            self.encode_from_queue_timer = self.timeout_add(av_delay, self.timer_encode_from_queue)
+
+    def timer_encode_from_queue(self):
+        self.encode_from_queue_timer = None
+        self.encode_from_queue_due = 0
+        self.call_in_encode_thread(True, self.encode_from_queue)
 
     def encode_from_queue(self):
         #note: we use a queue here to ensure we preserve the order
@@ -1599,7 +1600,9 @@ class WindowVideoSource(WindowSource):
     def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
         return self.get_fallback_encoding(self.non_video_encodings, order)
 
-    def video_fallback(self, image, options, order=None):
+    def video_fallback(self, image, options, order=None, warn=False):
+        if warn:
+            videolog.warn("using non-video fallback encoding")
         if self.image_depth==8:
             encoding = "png/P"
         else:
@@ -1692,12 +1695,9 @@ class WindowVideoSource(WindowSource):
                     #make sure we start again from scratch next time:
                     scroll_data.free()
                     self.scroll_data = None
+            del scroll_data
         if not self.common_video_encodings or self.image_depth not in (24, 32):
             #we have to send using a non-video encoding as that's all we have!
-            return self.video_fallback(image, options)
-
-        def video_fallback():
-            videolog.warn("using non-video fallback encoding")
             return self.video_fallback(image, options)
 
         vh = self.video_helper
@@ -1726,10 +1726,10 @@ class WindowVideoSource(WindowSource):
             videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
             if FORCE_CSC:
                 videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
-            return video_fallback()
+            return self.video_fallback(image, options, warn=True)
         ve = self._video_encoder
         if not ve:
-            return video_fallback()
+            return self.video_fallback(image, options, warn=True)
 
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
