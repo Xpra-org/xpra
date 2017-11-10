@@ -351,7 +351,7 @@ class ServerSource(FileTransferHandler):
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = monotonic_time()
         self.last_ping_echoed_time = 0
-        self.check_ping_echo_timer = 0
+        self.check_ping_echo_timers = {}
 
         self.clipboard_progress_timer = None
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
@@ -489,7 +489,7 @@ class ServerSource(FileTransferHandler):
             self.mmap_size = 0
             mmap.close()
         self.cancel_recalculate_timer()
-        self.cancel_ping_echo_timeout()
+        self.cancel_ping_echo_timers()
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
@@ -2063,18 +2063,21 @@ class ServerSource(FileTransferHandler):
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms)
         timeout = 60
-        self.check_ping_echo_timer = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
+        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
 
     def check_ping_echo_timeout(self, now_ms, timeout):
-        self.check_ping_echo_timer = 0
+        try:
+            del self.check_ping_echo_timers[now_ms]
+        except:
+            pass
         if self.last_ping_echoed_time<now_ms and not self.is_closed():
             self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
 
-    def cancel_ping_echo_timeout(self):
-        pet = self.check_ping_echo_timer
-        if pet:
-            self.check_ping_echo_timer = 0
-            self.source_remove(pet)
+    def cancel_ping_echo_timers(self):
+        timers = self.check_ping_echo_timers.values()
+        self.check_ping_echo_timers = {}
+        for t in timers:
+            self.source_remove(t)
 
     def process_ping(self, time_to_echo):
         l1,l2,l3 = 0,0,0
@@ -2095,8 +2098,14 @@ class ServerSource(FileTransferHandler):
         self.timeout_add(500, self.ping)
 
     def process_ping_echo(self, packet):
-        self.cancel_ping_echo_timeout()
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
+        timer = self.check_ping_echo_timers.get(echoedtime)
+        if timer:
+            try:
+                self.source_remove(timer)
+                del self.check_ping_echo_timers[echoedtime]
+            except:
+                pass
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic_time()-echoedtime/1000.0
         self.statistics.client_ping_latency.append((monotonic_time(), client_ping_latency))
