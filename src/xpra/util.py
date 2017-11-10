@@ -582,14 +582,12 @@ def iround(v):
     return int(v+0.5)
 
 
-def notypedict(info):
-    def ntd(d):
-        for k in list(d.keys()):
-            v = d[k]
-            if isinstance(v, dict):
-                d[k] = ntd(v)
-        return dict(d)
-    return ntd(info)
+def notypedict(d):
+    for k in list(d.keys()):
+        v = d[k]
+        if isinstance(v, dict):
+            d[k] = notypedict(v)
+    return dict(d)
 
 def flatten_dict(info, sep="."):
     to = {}
