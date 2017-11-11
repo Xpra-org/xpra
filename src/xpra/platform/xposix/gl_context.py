@@ -62,7 +62,7 @@ class GLXWindowContext(object):
 
 class GLXContext(object):
 
-    def __init__(self, alpha=True):
+    def __init__(self, alpha=False):
         display = display_get_default()
         screen = display.get_default_screen()
         bpc = 8
