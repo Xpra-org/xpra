@@ -15,7 +15,7 @@
   <repository name="webkit.org" type="tarball"
               href="http://www.webkitgtk.org/releases/"/>
   <repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
-  <repository type="tarball" name="zlib.net" default="yes" href="https://zlib.net/"/>
+  <repository type="tarball" name="zlib.net" default="yes" href="http://zlib.net/"/>
 
   <!-- Builds last version of WebKitGTK that supported GTK 2.x -->
   <metamodule id="meta-gtk-osx-webkit">
