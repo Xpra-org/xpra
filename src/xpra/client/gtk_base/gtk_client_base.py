@@ -761,7 +761,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if len(parts)==2:
             backends = parts[1].split(",")  #ie: "native", "gtk"
         else:
-            if PYTHON3:
+            if enable_opengl in ("native", "gtk") or enable_opengl.find(",")>0:
+                backends = enable_opengl.split(",")
+            elif PYTHON3:
                 backends = "native", "gtk"
             else:
                 backends = "gtk", "native"
