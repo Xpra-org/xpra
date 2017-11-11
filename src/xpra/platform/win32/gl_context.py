@@ -6,14 +6,18 @@
 from xpra.log import Logger
 log = Logger("opengl")
 
-from ctypes import sizeof, byref
+from ctypes import sizeof, byref, FormatError, WinError
 from xpra.os_util import PYTHON2
 from xpra.client.gl.gl_check import check_PyOpenGL_support
-from xpra.platform.win32.common import GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, GetDesktopWindow
+from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT, WHITE_BRUSH
+from xpra.platform.win32.common import GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA, WNDCLASSEX, GetStockObject
+from xpra.platform.win32.common import GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcW, WNDPROC, DefWindowProcA #,GetModuleHandleW, RegisterClassExW, CreateWindowExW
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
 
 DOUBLE_BUFFERED = True
 
+def DefWndProc(hwnd, msg, wParam, lParam):
+    return DefWindowProcW(hwnd, msg, wParam, lParam)
 
 class WGLWindowContext(object):
 
@@ -61,10 +65,42 @@ class WGLContext(object):
         self.pixel_format_props = {}
 
     def check_support(self, force_enable=False):
-        return {"safe" : True}
-        #hwnd = GetDesktopWindow()
-        #with WGLWindowContext(hwnd) as glwc:
-        #    return glwc.check_support(force_enable)
+        global hInst, reg_atom
+        #create a temporary window to query opengl attributes:
+        hInst = GetModuleHandleA(0)
+        log("check_support() GetModuleHandleW()=%#x", hInst or 0)
+        classname = u"Xpra Temporary Window for OpenGL"
+        wndc = WNDCLASSEX()
+        wndc.cbSize = sizeof(WNDCLASSEX)
+        wndc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW
+        wndc.hInstance = hInst
+        wndc.hBrush = COLOR_WINDOW
+        wndc.lpszClassName = classname
+        wndc.lpfnWndProc = WNDPROC(DefWndProc)
+        reg_atom = RegisterClassExA(byref(wndc))
+        log("check_support() RegisterClassExW()=%#x", reg_atom or 0)
+        if not reg_atom:
+            return {"info" : "disabled: failed to register window class, %s" % FormatError()}
+        style = WS_OVERLAPPED | WS_SYSMENU
+        window_name = u"Xpra OpenGL Test"
+        self.hwnd = CreateWindowExA(0, reg_atom, window_name, style,
+            CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
+            0, 0, hInst, None)
+        log("check_support() CreateWindowExW()=%#x", self.hwnd or 0)
+        if not self.hwnd:
+            return {"info" : "disabled: failed to create temporary window, %s" % FormatError()}
+        try:
+            self.context = self.create_wgl_context(self.hwnd)
+            with WGLWindowContext(self.hwnd, self.hdc, self.context):
+                return check_PyOpenGL_support(force_enable)
+        finally:
+            hwnd = self.hwnd
+            self.destroy()
+            if hwnd:
+                if not DestroyWindow(hwnd):
+                    log.warn("Warning: failed to destroy temporary OpenGL test window")
+            if not UnregisterClassA(classname, hInst):
+                log.warn("Warning: failed to unregister class for OpenGL test window")
 
     def get_bit_depth(self):
         return 0

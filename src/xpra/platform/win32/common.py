@@ -46,7 +46,8 @@ RegisterClassExW = user32.RegisterClassExW
 RegisterClassExW.restype = ATOM
 UnregisterClassA = user32.UnregisterClassA
 UnregisterClassA.restype = BOOL
-UnregisterClassA.argtypes = [LPCSTR, HINSTANCE]
+#painful to convert to LPCSTR, so don't bother:
+#UnregisterClassA.argtypes = [LPCSTR, HINSTANCE]
 UnregisterClassW = user32.UnregisterClassW
 UnregisterClassW.restype = BOOL
 UnregisterClassW.argtypes = [LPCWSTR, HINSTANCE]
