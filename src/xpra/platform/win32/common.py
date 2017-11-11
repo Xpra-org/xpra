@@ -8,7 +8,7 @@ import ctypes
 
 from ctypes import WinDLL, POINTER, WINFUNCTYPE, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA
+from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
 
 LRESULT = c_long
 DEVMODE = c_void_p
@@ -37,11 +37,15 @@ CloseHandle.restype = BOOL
 
 
 user32 = WinDLL("user32", use_last_error=True)
+RegisterClassExA = user32.RegisterClassExA
+RegisterClassExA.restype = ATOM
 RegisterClassExW = user32.RegisterClassExW
 RegisterClassExW.restype = ATOM
+UnregisterClassA = user32.UnregisterClassA
+UnregisterClassA.restype = BOOL
+UnregisterClassA.argtypes = [LPCSTR, HINSTANCE]
 CreateWindowExA = user32.CreateWindowExA
 CreateWindowExA.restype = HWND
-UnregisterClassW = user32.UnregisterClassW
 DestroyWindow = user32.DestroyWindow
 DefWindowProcW = user32.DefWindowProcW
 MessageBoxA = user32.MessageBoxA

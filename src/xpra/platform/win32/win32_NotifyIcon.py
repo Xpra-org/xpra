@@ -8,7 +8,7 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 import ctypes
-from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof
+from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
 from xpra.util import csv, XPRA_APP_ID
@@ -21,7 +21,7 @@ from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
                                         CreateWindowExA,
                                         LoadIconA,
                                         DefWindowProcW, RegisterWindowMessageA,
-                                        RegisterClassExW,
+                                        RegisterClassExA,
                                         LoadImageW, CreateIconIndirect,
                                         GetDC, ReleaseDC,
                                         CreateBitmap, CreateDIBSection,
@@ -229,7 +229,7 @@ def rgba_to_bitmap(rgba, w, h):
         ReleaseDC(None, hdc)
     assert dataptr and bitmap, "failed to create DIB section"
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
-    img_data = ctypes.create_string_buffer(rgba)
+    img_data = create_string_buffer(rgba)
     ctypes.memmove(dataptr, byref(img_data), w*4*h)
     return bitmap
 
@@ -263,9 +263,9 @@ class win32NotifyIcon(object):
 
     def create_tray_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        window_name = bytestostr(self.title+" StatusIcon Window")
+        window_name = u"%s StatusIcon Window" % bytestostr(self.title)
         self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
-            0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, \
+            win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0, \
             0, 0, NIwc.hInstance, None)
         if self.hwnd==0:
             raise ctypes.WinError(ctypes.get_last_error())
@@ -488,20 +488,14 @@ NIwc = WNDCLASSEX()
 NIwc.cbSize = sizeof(WNDCLASSEX)
 NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
 NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
-NIwc.cbClsExtra = 0
-NIwc.cbWndExtra = 0
 NIwc.hInstance = GetModuleHandleA(0)
-NIwc.hIcon = 0
-NIwc.hCursor = 0
 NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
-NIwc.lpszMenuName = 0
 NIwc.lpszClassName = u"win32NotifyIcon"
-NIwc.hIconSm = 0
 
-NIclassAtom = RegisterClassExW(byref(NIwc))
+NIclassAtom = RegisterClassExA(byref(NIwc))
 if NIclassAtom==0:
     raise ctypes.WinError(ctypes.get_last_error())
-log("RegisterClassExW(%s)=%i", NIwc.lpszClassName, NIclassAtom)
+log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 def main():
     import os
