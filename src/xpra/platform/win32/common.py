@@ -10,6 +10,7 @@ from ctypes import WinDLL, POINTER, WINFUNCTYPE, Structure, c_ulong, c_ushort, c
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
 
+LPCTSTR = LPCSTR
 LRESULT = c_long
 DEVMODE = c_void_p
 LPDWORD = POINTER(DWORD)
@@ -19,6 +20,8 @@ SetConsoleTitleA = kernel32.SetConsoleTitleA
 GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
 GetModuleHandleA = kernel32.GetModuleHandleA
 GetModuleHandleA.restype = HMODULE
+GetModuleHandleW = kernel32.GetModuleHandleW
+GetModuleHandleW.restype = HMODULE
 SetConsoleCtrlHandler = kernel32.SetConsoleCtrlHandler
 GetComputerNameW = kernel32.GetComputerNameW
 GetComputerNameW.restype = BOOL
@@ -44,6 +47,9 @@ RegisterClassExW.restype = ATOM
 UnregisterClassA = user32.UnregisterClassA
 UnregisterClassA.restype = BOOL
 UnregisterClassA.argtypes = [LPCSTR, HINSTANCE]
+UnregisterClassW = user32.UnregisterClassW
+UnregisterClassW.restype = BOOL
+UnregisterClassW.argtypes = [LPCWSTR, HINSTANCE]
 CreateWindowExA = user32.CreateWindowExA
 CreateWindowExA.restype = HWND
 DestroyWindow = user32.DestroyWindow
