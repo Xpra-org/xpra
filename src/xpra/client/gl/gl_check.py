@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import logging
 from xpra.util import envbool
 from xpra.os_util import OSX, WIN32, PYTHON3
@@ -389,3 +390,42 @@ def check_PyOpenGL_support(force_enable):
         restore_logger(alogger)
         restore_logger(arlogger)
         restore_logger(clogger)
+
+
+def main():
+    from xpra.platform import program_context
+    from xpra.platform.gui import init as gui_init
+    from xpra.util import print_nested_dict
+    from xpra.log import enable_color
+    with program_context("OpenGL-Check"):
+        gui_init()
+        enable_color()
+        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        if verbose:
+            log.enable_debug()
+        force_enable = "-f" in sys.argv or "--force" in sys.argv
+        from xpra.platform.gl_context import GLContext
+        log("testing %s", GLContext)
+        gl_context = GLContext()
+        log("GLContext=%s", gl_context)
+        #replace ImportError with a log message:
+        global gl_check_error
+        errors = []
+        def log_error(msg):
+            log.error("ERROR: %s", msg)
+            errors.append(msg)
+        gl_check_error = log_error
+        props = gl_context.check_support(force_enable)
+        log.info("")
+        if len(errors)>0:
+            log.info("OpenGL errors:")
+            for e in errors:
+                log.info("  %s", e)
+        log.info("")
+        log.info("OpenGL properties:")
+        print_nested_dict(props)
+        return len(errors)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

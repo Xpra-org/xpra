@@ -1327,7 +1327,10 @@ if WIN32:
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
         if opengl_ENABLED:
-            add_console_exe("xpra/client/gl/gtk_base/gtkgl_check.py", "opengl.ico",       "OpenGL_check")
+            if PYTHON3:
+                add_console_exe("xpra/client/gl/gl_check.py",   "opengl.ico",       "OpenGL_check")
+            else:
+                add_console_exe("xpra/client/gl/gtk_base/gtkgl_check.py", "opengl.ico", "OpenGL_check")
         if webcam_ENABLED:
             add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
             add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
