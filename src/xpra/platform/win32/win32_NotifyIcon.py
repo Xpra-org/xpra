@@ -240,7 +240,7 @@ class win32NotifyIcon(object):
     #this allows us to know which hwnd refers to which instance:
     instances = {}
 
-    def __init__(self, app_id, title, move_callbacks, click_callback, exit_callback, command_callback=None, iconPathName=None):
+    def __init__(self, app_id=0, title="", move_callbacks=None, click_callback=None, exit_callback=None, iconPathName=None):
         log("win32NotifyIcon: app_id=%i, title='%s'", app_id, title)
         self.app_id = app_id
         self.title = title
@@ -258,10 +258,13 @@ class win32NotifyIcon(object):
         self.move_callback = move_callbacks
         self.click_callback = click_callback
         self.exit_callback = exit_callback
-        self.command_callback = command_callback
         self.reset_function = None
 
     def create_tray_window(self):
+        self.create_window()
+        self.register_tray()
+
+    def create_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         window_name = u"%s StatusIcon Window" % bytestostr(self.title)
         self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
@@ -271,6 +274,8 @@ class win32NotifyIcon(object):
             raise ctypes.WinError(ctypes.get_last_error())
         log("hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
+
+    def register_tray(self):
         r = Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
         log("Shell_NotifyIcon ADD=%i", r)
         if not r:
