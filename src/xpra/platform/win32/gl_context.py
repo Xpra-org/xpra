@@ -7,7 +7,7 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 from ctypes import sizeof, byref, FormatError
-from xpra.os_util import PYTHON2
+from xpra.os_util import PYTHON2, PYTHON3
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT
 from xpra.platform.win32.common import (
@@ -17,6 +17,16 @@ from xpra.platform.win32.common import (
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
 
 DOUBLE_BUFFERED = True
+
+if PYTHON3:
+    from ctypes import CDLL, pythonapi, c_void_p, py_object
+    PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
+    PyCapsule_GetPointer.restype = c_void_p
+    PyCapsule_GetPointer.argtypes = [py_object]
+    log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
+    gdkdll = CDLL("libgdk-3-0.dll")
+    log("gdkdll=%s", gdkdll)
+    
 
 def DefWndProc(hwnd, msg, wParam, lParam):
     return DefWindowProcA(hwnd, msg, wParam, lParam)
@@ -94,7 +104,9 @@ class WGLContext(object):
         try:
             self.context = self.create_wgl_context(self.hwnd)
             with WGLWindowContext(self.hwnd, self.hdc, self.context):
-                return check_PyOpenGL_support(force_enable)
+                props = check_PyOpenGL_support(force_enable)
+            props["display_mode"] = [["SINGLE","DOUBLE"][int(DOUBLE_BUFFERED)], ]     #, "ALPHA"]
+            return props
         finally:
             hwnd = self.hwnd
             self.destroy()
@@ -114,13 +126,6 @@ class WGLContext(object):
         if PYTHON2:
             hwnd = gdk_window.handle
         else:
-            from ctypes import CDLL, pythonapi, c_void_p, py_object
-            gdkdll = CDLL("libgdk-3-0.dll")
-            log("gdkdll=%s", gdkdll)
-            PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
-            PyCapsule_GetPointer.restype = c_void_p
-            PyCapsule_GetPointer.argtypes = [py_object]
-            log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
             gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
             log("gpointer=%s", gpointer)
             hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
