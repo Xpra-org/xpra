@@ -172,7 +172,7 @@ class WSRequestHandler(WebSocketRequestHandler):
             headers = {
                 "Content-type"      : ctype,
                 }
-            accept = self.headers.get('accept-encoding', []).split(",")
+            accept = self.headers.get('accept-encoding', '').split(",")
             accept = [x.split(";")[0].strip() for x in accept]
             content = None
             log("accept-encoding=%s", accept)
