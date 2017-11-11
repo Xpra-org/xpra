@@ -499,13 +499,17 @@ it will be deleted when the server exits.
 .TP
 
 \fB\-\-bind\fP=\fIBIND_LOCATION\fP
-Create a local Unix domain socket for each \fBbind\fP option specified.
+Create a local Unix domain socket (on Unix)
+or named-pipe (on MS Windows) for each \fBbind\fP option specified.
 
 This option can be specified multiple times to specify multiple
 socket locations.
 These sockets support local connections with the \fB:7\fP-style display
 address, and remote connections with the \fBssh:frodo:7\fP-style
 display address.
+
+Local sockets may also process HTTP / Websocket connections
+if the \fBhtml\fP switch is enabled.
 
 The location can take the form:
 .RS
@@ -549,11 +553,6 @@ Anyone at all may connect to this port and access your session.
 UDP sessions are trivial to hijack for anyone able to sniff
 even just a single packet, it should only be used in very specific
 use-cases, and never over unsecured networks.
-
-TCP sockets may also process HTTP / Websocket connections
-if the \fBhtml\fP switch is enabled.
-TCP sockets may also be upgraded to SSL sockets if the
-\fBssl\fP switch is enabled.
 .TP
 \fB\-\-bind\-ws\fP=\fI[HOST]:PORT\fP
 Create an HTTP / Websocket listener.
@@ -822,9 +821,10 @@ server.
 .TP
 
 \fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
-Respond to HTTP requests on the TCP port(s).
+Respond to HTTP requests on the TCP port(s) and local sockets.
 This requires \fBwebsockify\fP to be installed and at least one
-TCP port to be configured using \fBbind\-tcp\fP.
+TCP or local socket to be configured using the matching \fBbind\fP
+option.
 The \fBauto\fP mode will enable support if all the components
 are available.
 By default the server will provide access to the HTML5 client.

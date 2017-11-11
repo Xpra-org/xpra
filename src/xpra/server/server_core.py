@@ -838,7 +838,8 @@ class ServerCore(object):
             self.handle_rfb_connection(conn)
             return
 
-        elif socktype=="tcp" and (self._html or self._tcp_proxy or self._ssl_wrap_socket):
+        elif (socktype=="tcp" and self._tcp_proxy or self._ssl_wrap_socket) or \
+            (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
             try:
@@ -1045,7 +1046,8 @@ class ServerCore(object):
                 socktype = "ws%s" % ["","s"][int(is_ssl)]
                 self.make_protocol(socktype, wsc)
             scripts = self.get_http_scripts()
-            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts)
+            disable_nagle = conn.socktype not in ("unix-domain", "named-pipe")
+            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts, disable_nagle)
             return
         except IOError as e:
             wslog("", exc_info=True)

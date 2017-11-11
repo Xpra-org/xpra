@@ -31,7 +31,7 @@ class WSRequestHandler(WebSocketRequestHandler):
     keep_alive = WEBSOCKET_TCP_KEEPALIVE
     server_version = "Xpra-WebSockify"
 
-    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", script_paths={}):
+    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", script_paths={}, disable_nagle=True):
         self.web_root = web_root
         self._new_websocket_client = new_websocket_client
         self.script_paths = script_paths
@@ -39,6 +39,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         server.logger = log
         server.run_once = True
         server.verbose = WEBSOCKET_DEBUG
+        self.disable_nagle_algorithm = disable_nagle
         WebSocketRequestHandler.__init__(self, sock, addr, server)
 
     def new_websocket_client(self):
