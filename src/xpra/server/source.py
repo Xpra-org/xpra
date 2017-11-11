@@ -377,10 +377,10 @@ class ServerSource(FileTransferHandler):
         self.hello_sent = False
 
         self.encoding = None                        #the default encoding for all windows
-        self.encodings = []                         #all the encodings supported by the client
-        self.core_encodings = []
+        self.encodings = ()                         #all the encodings supported by the client
+        self.core_encodings = ()
         self.window_icon_encodings = ["premult_argb32"]
-        self.rgb_formats = ["RGB"]
+        self.rgb_formats = ("RGB",)
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()
@@ -393,7 +393,7 @@ class ServerSource(FileTransferHandler):
         self.hostname = ""
         self.username = ""
         self.name = ""
-        self.argv = []
+        self.argv = ()
         # client capabilities/options:
         self.client_type = None
         self.client_version = None
@@ -410,7 +410,7 @@ class ServerSource(FileTransferHandler):
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
-        self.cursor_encodings = []
+        self.cursor_encodings = ()
         self.send_bell = False
         self.send_notifications = False
         self.send_windows = True
@@ -428,12 +428,12 @@ class ServerSource(FileTransferHandler):
         self.desktop_mode_size = None
         self.desktop_size_unscaled = None
         self.desktop_size_server = None
-        self.screen_sizes = []
+        self.screen_sizes = ()
         self.desktops = 1
-        self.desktop_names = []
+        self.desktop_names = ()
         self.system_tray = False
-        self.control_commands = []
-        self.metadata_supported = []
+        self.control_commands = ()
+        self.metadata_supported = ()
         self.show_desktop_allowed = False
         self.supports_transparency = False
         self.printers = {}
@@ -454,8 +454,8 @@ class ServerSource(FileTransferHandler):
         #sound props:
         self.pulseaudio_id = None
         self.pulseaudio_server = None
-        self.sound_decoders = []
-        self.sound_encoders = []
+        self.sound_decoders = ()
+        self.sound_encoders = ()
 
         self.keyboard_config = None
         self.send_cursor_pending = False
