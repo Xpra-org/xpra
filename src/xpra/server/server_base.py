@@ -3134,7 +3134,8 @@ class ServerBase(ServerCore):
         elif wid in self._id_to_window:
             wid_windows = {wid : self._id_to_window.get(wid)}
         else:
-            log.warn("invalid window specified for refresh: %s", wid)
+            #may have been destroyed since the request was made
+            log("invalid window specified for refresh: %s", wid)
             return
         log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
         batch_props = options.dictget("batch", {})
