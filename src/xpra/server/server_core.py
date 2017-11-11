@@ -51,6 +51,7 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
+PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 
 
 HTTP_UNSUPORTED = """<head>
@@ -767,10 +768,11 @@ class ServerCore(object):
         netlog("handle_new_connection%s sockname=%s, target=%s", (conn, sock, address, socktype, peername, socket_info), sockname, target)
         #peek so we can detect invalid clients early,
         #or handle non-xpra traffic:
-        poll_timeout = 1
         if socktype=="rfb":
             #rfb does not send any data, waits for a server packet
             poll_timeout = 0
+        else:
+            poll_timeout = PEEK_TIMEOUT
         peek_data, line1 = self.peek_connection(conn, poll_timeout)
 
         def ssl_wrap():
@@ -809,7 +811,7 @@ class ServerCore(object):
                     http = True
                 else:
                     ssl_conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(ssl_conn)
+                    peek_data, line1 = self.peek_connection(ssl_conn, PEEK_TIMEOUT)
                     http = line1.find("HTTP/")>0
             if http:
                 self.start_http_socket(ssl_conn, True, peek_data)
@@ -957,7 +959,7 @@ class ServerCore(object):
                     http = True
                 else:
                     conn.enable_peek()
-                    peek_data, line1 = self.peek_connection(conn)
+                    peek_data, line1 = self.peek_connection(conn, PEEK_TIMEOUT)
                     http = line1.find(b"HTTP/")>0
             is_ssl = True
         else:
