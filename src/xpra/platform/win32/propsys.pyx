@@ -33,7 +33,7 @@ cdef extern from "setappid.h" namespace "utility":
 def set_window_group(hwnd, value):
     log("propsys.set_window_group(%i, %s)", hwnd, value)
     cdef HWND hWnd = <HWND> (<uintptr_t> hwnd)
-    s = str(value)
+    s = str(value).encode()
     cdef char *cstr = s
     cdef WCHAR[128] wstr
     cdef int r = MultiByteToWideChar(CP_ACP, 0, cstr, -1, wstr, 128)
