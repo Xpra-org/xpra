@@ -94,6 +94,8 @@ class TrayBase(object):
 
     def recalculate_geometry(self, x, y, width, height):
         log("recalculate_geometry%s tray event locations: %s", (x, y, width, height), len(self.tray_event_locations))
+        if x is None or y is None:
+            return
         if self.geometry_guess is None:
             #better than nothing!
             self.geometry_guess = x, y, width, height
