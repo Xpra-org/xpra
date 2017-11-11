@@ -3018,7 +3018,7 @@ class UIXpraClient(XpraClientBase):
         return window
 
     def assign_signal_watcher_pid(self, wid, pid):
-        if not POSIX or not pid:
+        if not POSIX or OSX or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
