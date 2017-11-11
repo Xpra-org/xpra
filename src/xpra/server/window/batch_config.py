@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -47,6 +47,7 @@ class DamageBatchConfig(object):
     TIMEOUT_DELAY = ival("TIMEOUT_DELAY", 15000, 100, 100000)
 
     def __init__(self):
+        self.wid = 0
         self.always = self.ALWAYS
         self.max_events = self.MAX_EVENTS
         self.max_pixels = self.MAX_PIXELS
@@ -60,11 +61,12 @@ class DamageBatchConfig(object):
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
         self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)
         self.last_updated = 0
-        self.wid = 0
         #the metrics derived from statistics which we use for calculating the new batch delay:
         #(see batch delay calculator)
-        self.factors = []
+        self.factors = ()
 
+    def cleanup(self):
+        self.factors = ()
 
     def get_info(self):
         info = {
@@ -96,6 +98,5 @@ class DamageBatchConfig(object):
             setattr(c, x, getattr(self, x))
         return c
 
-    def __str__(self):
-        return  "DamageBatchConfig(wid=%s, always=%s, min=%s, max=%s, current=%s, locked=%s, max events=%s, max pixels=%s, time unit=%s)" % \
-                (self.wid, self.always, self.min_delay, self.max_delay, self.delay, self.locked, self.max_events, self.max_pixels, self.time_unit)
+    def __repr__(self):
+        return  "DamageBatchConfig(%i)" % (self.wid)

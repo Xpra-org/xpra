@@ -119,16 +119,16 @@ class WindowVideoSource(WindowSource):
         self.actual_scaling = (1, 1)
 
         self.last_pipeline_params = None
-        self.last_pipeline_scores = []
+        self.last_pipeline_scores = ()
         self.last_pipeline_time = 0
 
         self.supports_video_scaling = False
 
         self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
-        self.video_encodings = []
-        self.common_video_encodings = []
-        self.non_video_encodings = []
-        self.non_scroll_encodings = []
+        self.video_encodings = ()
+        self.common_video_encodings = ()
+        self.non_video_encodings = ()
+        self.non_scroll_encodings = ()
         self.edge_encoding = None
         self.start_video_frame = 0
         self.b_frame_flush_timer = None
@@ -325,6 +325,8 @@ class WindowVideoSource(WindowSource):
                 else:
                     l = log
                 l("client does not support any csc modes with %s", x)
+        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
+        log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s", self.common_video_encodings, self._csc_encoder, self._video_encoder)
         WindowSource.update_encoding_selection(self, encoding, exclude, init)
 
     def do_set_client_properties(self, properties):
@@ -933,8 +935,6 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         WindowSource.update_encoding_options(self, force_reload)
-        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
-        log("update_encoding_options(%s) common_video_encodings=%s, csc_encoder=%s, video_encoder=%s", force_reload, self.common_video_encodings, self._csc_encoder, self._video_encoder)
         vs = self.video_subregion
         if vs:
             if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
@@ -1116,7 +1116,7 @@ class WindowVideoSource(WindowSource):
                 for encoder_spec in colorspace_specs:
                     #ensure that the output of the encoder can be processed by the client:
                     matches = [x for x in encoder_spec.output_colorspaces if strtobytes(x) in supported_csc_modes]
-                    if not matches:
+                    if not matches or self.is_cancelled():
                         scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                         continue
                     scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
@@ -1141,8 +1141,12 @@ class WindowVideoSource(WindowSource):
                             add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
-        self.last_pipeline_params = (encodings, width, height, src_format)
-        self.last_pipeline_scores = s
+        if self.is_cancelled():
+            self.last_pipeline_params = None
+            self.last_pipeline_scores = ()
+        else:
+            self.last_pipeline_params = (encodings, width, height, src_format)
+            self.last_pipeline_scores = s
         self.last_pipeline_time = monotonic_time()
         return s
 

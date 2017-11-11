@@ -143,7 +143,7 @@ class WindowSource(object):
         self.client_refresh_encodings = encoding_options.strlistget("auto_refresh_encodings", [])
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
-        self.supports_delta = []
+        self.supports_delta = ()
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
             if self.supports_delta:
@@ -252,24 +252,24 @@ class WindowSource(object):
             self._encoders["mmap"] = self.mmap_encode
 
     def init_vars(self):
-        self.server_core_encodings = []
-        self.server_encodings = []
+        self.server_core_encodings = ()
+        self.server_encodings = ()
         self.encoding = None
-        self.encodings = []
+        self.encodings = ()
         self.encoding_last_used = None
-        self.auto_refresh_encodings = []
-        self.core_encodings = []
-        self.rgb_formats = []
-        self.client_refresh_encodings = []
+        self.auto_refresh_encodings = ()
+        self.core_encodings = ()
+        self.rgb_formats = ()
+        self.client_refresh_encodings = ()
         self.encoding_options = {}
         self.rgb_zlib = False
         self.rgb_lz4 = False
         self.rgb_lzo = False
         self.supports_transparency = False
         self.full_frames_only = False
-        self.supports_delta = []
+        self.supports_delta = ()
         self.delta_buckets = 0
-        self.delta_pixel_data = []
+        self.delta_pixel_data = ()
         self.suspended = False
         self.strict = STRICT_MODE
         #
@@ -322,6 +322,7 @@ class WindowSource(object):
         self.init_vars()
         #make sure we don't queue any more screen updates for encoding:
         self._damage_cancelled = float("inf")
+        self.batch_config.cleanup()
         #we can only clear the encoders after clearing the whole encoding queue:
         #(because mmap cannot be cancelled once queued for encoding)
         self.call_in_encode_thread(False, self.encode_ended)
@@ -742,14 +743,6 @@ class WindowSource(object):
             self.encoding = self.common_encodings[0]
         log("ws.update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s", encoding, exclude, init, self.encoding, self.common_encodings)
         assert self.encoding is not None
-        self.update_quality()
-        self.update_speed()
-        self.update_encoding_options()
-
-    def update_encoding_options(self, force_reload=False):
-        self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
-        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
-        self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #auto-refresh:
         if self.client_refresh_encodings:
             #client supplied list, honour it:
@@ -761,7 +754,15 @@ class WindowSource(object):
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
         self.auto_refresh_encodings = [x for x in are if x in self.common_encodings]
-        log("update_encoding_options(%s) auto_refresh_encodings=%s", force_reload, self.auto_refresh_encodings)
+        log("update_encoding_selection: auto_refresh_encodings=%s", self.auto_refresh_encodings)
+        self.update_quality()
+        self.update_speed()
+        self.update_encoding_options()
+
+    def update_encoding_options(self, force_reload=False):
+        self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
+        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
+        self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
