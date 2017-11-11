@@ -91,7 +91,7 @@ class ClientWindow(GTKClientWindowBase, Gtk.Window):
         if visual is None or not screen.is_composited():
             log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
             return False
-        log.info("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
+        log("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
         self.set_visual(visual)
         return True
 
