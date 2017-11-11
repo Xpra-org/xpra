@@ -53,6 +53,7 @@ UnregisterClassW.argtypes = [LPCWSTR, HINSTANCE]
 CreateWindowExA = user32.CreateWindowExA
 CreateWindowExA.restype = HWND
 DestroyWindow = user32.DestroyWindow
+DefWindowProcA = user32.DefWindowProcA
 DefWindowProcW = user32.DefWindowProcW
 MessageBoxA = user32.MessageBoxA
 GetLastError = ctypes.GetLastError

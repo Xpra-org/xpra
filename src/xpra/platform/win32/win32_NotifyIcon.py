@@ -20,7 +20,7 @@ from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
                                         PostMessageA,
                                         CreateWindowExA,
                                         LoadIconA,
-                                        DefWindowProcW, RegisterWindowMessageA,
+                                        DefWindowProcA, RegisterWindowMessageA,
                                         RegisterClassExA,
                                         LoadImageW, CreateIconIndirect,
                                         GetDC, ReleaseDC,
@@ -487,7 +487,7 @@ def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
     if instance and fn:
         return fn(instance, hwnd, msg, wParam, lParam) or 0
-    return DefWindowProcW(hwnd, msg, wParam, lParam)
+    return DefWindowProcA(hwnd, msg, wParam, lParam)
 
 NIwc = WNDCLASSEX()
 NIwc.cbSize = sizeof(WNDCLASSEX)
