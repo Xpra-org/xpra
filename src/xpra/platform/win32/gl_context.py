@@ -6,18 +6,20 @@
 from xpra.log import Logger
 log = Logger("opengl")
 
-from ctypes import sizeof, byref, FormatError, WinError
+from ctypes import sizeof, byref, FormatError
 from xpra.os_util import PYTHON2
 from xpra.client.gl.gl_check import check_PyOpenGL_support
-from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT, WHITE_BRUSH
-from xpra.platform.win32.common import GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA, WNDCLASSEX, GetStockObject
-from xpra.platform.win32.common import GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcW, WNDPROC, DefWindowProcA #,GetModuleHandleW, RegisterClassExW, CreateWindowExW
+from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT
+from xpra.platform.win32.common import (
+    GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA, 
+    GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcA, WNDPROC, WNDCLASSEX
+    )
 from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
 
 DOUBLE_BUFFERED = True
 
 def DefWndProc(hwnd, msg, wParam, lParam):
-    return DefWindowProcW(hwnd, msg, wParam, lParam)
+    return DefWindowProcA(hwnd, msg, wParam, lParam)
 
 class WGLWindowContext(object):
 
