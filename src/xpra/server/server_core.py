@@ -313,11 +313,11 @@ class ServerCore(object):
         else:
             self._html = parse_bool("html", opts.html)
         if self._html is not False:     #True or None (for "auto")
-            if not (opts.bind_tcp or opts.bind_ws or opts.bind_wss):
+            if not (opts.bind_tcp or opts.bind_ws or opts.bind_wss or opts.bind or opts.bind_ssl):
                 #we need a socket!
                 if self._html:
                     #html was enabled, so log an error:
-                    log.error("Error: cannot use the html server without a tcp or ws(s) socket")
+                    log.error("Error: cannot use the html server without a socket")
                 self._html = False
         if self._html is not False:
             try:
