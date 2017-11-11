@@ -33,7 +33,7 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         GetDeviceCaps,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
-from xpra.os_util import PYTHON2
+from xpra.os_util import PYTHON2, PYTHON3
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
@@ -41,6 +41,16 @@ USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, WCHAR, POINT, RECT
+
+if PYTHON3:
+    from ctypes import CDLL, pythonapi, c_void_p, py_object
+    PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
+    PyCapsule_GetPointer.restype = c_void_p
+    PyCapsule_GetPointer.argtypes = [py_object]
+    log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
+    gdkdll = CDLL("libgdk-3-0.dll")
+    log("gdkdll=%s", gdkdll)
+
 
 shell32 = WinDLL("shell32", use_last_error=True)
 try:
@@ -217,10 +227,13 @@ def get_window_handle(window):
         gdk_window = window.get_window()
     except:
         pass
-    try:
+    if PYTHON2:
         return gdk_window.handle
-    except:
-        return None
+    gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
+    log("gpointer=%#x", gpointer)
+    hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
+    log("hwnd=%#x", hwnd)
+    return hwnd
 
 
 def get_session_type():
@@ -258,8 +271,10 @@ def win32_propsys_set_group_leader(self, leader):
         return
     try:
         log("win32_propsys_set_group_leader(%s)", leader)
-        lhandle = leader.handle
+        lhandle = get_window_handle(leader)
+        assert lhandle
     except:
+        log("win32_propsys_set_group_leader(%s)", leader, exc_info=True)
         log.warn("Warning: no window handle for %s", leader)
         log.warn(" cannot set window grouping attribute")
         return

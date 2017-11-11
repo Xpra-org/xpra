@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import ctypes
-
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t
+from ctypes import WinDLL, POINTER, WINFUNCTYPE, HRESULT, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
+#imported from this module but not used here:
+assert GetLastError
 
 LPCTSTR = LPCSTR
 LRESULT = c_long
@@ -57,7 +57,6 @@ DestroyWindow = user32.DestroyWindow
 DefWindowProcA = user32.DefWindowProcA
 DefWindowProcW = user32.DefWindowProcW
 MessageBoxA = user32.MessageBoxA
-GetLastError = ctypes.GetLastError
 GetSystemMetrics = user32.GetSystemMetrics
 SetWindowLongW = user32.SetWindowLongW
 GetWindowLongW = user32.GetWindowLongW
@@ -91,7 +90,7 @@ DispatchMessageA = user32.DispatchMessageA
 MapVirtualKeyW = user32.MapVirtualKeyW
 GetAsyncKeyState = user32.GetAsyncKeyState
 VkKeyScanW = user32.VkKeyScanW
-VkKeyScanW.argtypes = [ctypes.c_wchar]
+VkKeyScanW.argtypes = [c_wchar]
 keybd_event = user32.keybd_event
 GetKeyState = user32.GetKeyState
 GetKeyState.restype = SHORT
@@ -100,7 +99,7 @@ GetKeyboardLayoutList = user32.GetKeyboardLayoutList
 GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE*32)]
 SystemParametersInfoA = user32.SystemParametersInfoA
 EnumWindows = user32.EnumWindows
-EnumWindowsProc = ctypes.WINFUNCTYPE(BOOL, HWND, LPARAM)
+EnumWindowsProc = WINFUNCTYPE(BOOL, HWND, LPARAM)
 IsWindowVisible = user32.IsWindowVisible
 GetWindowTextLengthW = user32.GetWindowTextLengthW
 GetWindowTextW = user32.GetWindowTextW
@@ -209,7 +208,7 @@ EndPaint.argtypes = [HWND, c_void_p]
 EndPaint.restype = HDC
 
 #wrap EnumDisplayMonitors to hide the callback function:
-MonitorEnumProc = ctypes.WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
+MonitorEnumProc = WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)
 _EnumDisplayMonitors = EnumDisplayMonitors
 def EnumDisplayMonitors():
     results = []
@@ -239,7 +238,7 @@ class WNDCLASSEX(Structure):
         ("hIconSm",         HANDLE),
     ]
 
-#GUID = ctypes.c_ubyte * 16
+#GUID = c_ubyte * 16
 class GUID(Structure):
     _fields_ = [
         ('Data1', c_ulong),

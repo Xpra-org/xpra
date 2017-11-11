@@ -62,14 +62,16 @@ class GLXWindowContext(object):
 
 class GLXContext(object):
 
-    def __init__(self):
+    def __init__(self, alpha=True):
         display = display_get_default()
         screen = display.get_default_screen()
+        bpc = 8
         attrs = c_attrs({
             GLX.GLX_RGBA            : True,
-            GLX.GLX_RED_SIZE        : 8,
-            GLX.GLX_GREEN_SIZE      : 8,
-            GLX.GLX_BLUE_SIZE       : 8,
+            GLX.GLX_RED_SIZE        : bpc,
+            GLX.GLX_GREEN_SIZE      : bpc,
+            GLX.GLX_BLUE_SIZE       : bpc,
+            GLX.GLX_ALPHA_SIZE      : int(alpha)*bpc,
             GLX.GLX_DOUBLEBUFFER    : int(DOUBLE_BUFFERED),
             })
         self.props = {}
@@ -86,7 +88,7 @@ class GLXContext(object):
         assert GLX.glXQueryVersion(self.xdisplay, byref(major), byref(minor))
         log("found GLX version %i.%i", major.value, minor.value)
         self.props["GLX"] = (major.value, minor.value)
-        self.bit_depth = getconfig(GLX.GLX_RED_SIZE) + getconfig(GLX.GLX_GREEN_SIZE) + getconfig(GLX.GLX_BLUE_SIZE)
+        self.bit_depth = getconfig(GLX.GLX_RED_SIZE) + getconfig(GLX.GLX_GREEN_SIZE) + getconfig(GLX.GLX_BLUE_SIZE) + getconfig(GLX.GLX_ALPHA_SIZE)
         self.props["depth"] = self.bit_depth
         self.props["has-depth-buffer"] = getconfig(GLX.GLX_DEPTH_SIZE)>0
         self.props["has-stencil-buffer"] = getconfig(GLX.GLX_STENCIL_SIZE)>0

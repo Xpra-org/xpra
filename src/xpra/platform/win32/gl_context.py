@@ -7,26 +7,17 @@ from xpra.log import Logger
 log = Logger("opengl")
 
 from ctypes import sizeof, byref, FormatError
-from xpra.os_util import PYTHON2, PYTHON3
 from xpra.client.gl.gl_check import check_PyOpenGL_support
+from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW, WS_OVERLAPPED, WS_SYSMENU, CW_USEDEFAULT
 from xpra.platform.win32.common import (
     GetDC, SwapBuffers, ChoosePixelFormat, DescribePixelFormat, SetPixelFormat, BeginPaint, EndPaint, DestroyWindow, UnregisterClassA, 
     GetModuleHandleA, RegisterClassExA, CreateWindowExA, DefWindowProcA, WNDPROC, WNDCLASSEX
     )
-from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_MAIN_PLANE, PAINTSTRUCT
+from xpra.platform.win32.glwin32 import wglCreateContext, wglMakeCurrent, wglDeleteContext , PIXELFORMATDESCRIPTOR, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW, PFD_SUPPORT_OPENGL, PFD_DOUBLEBUFFER, PFD_DEPTH_DONTCARE, PFD_SUPPORT_COMPOSITION, PFD_MAIN_PLANE, PAINTSTRUCT
 
 DOUBLE_BUFFERED = True
 
-if PYTHON3:
-    from ctypes import CDLL, pythonapi, c_void_p, py_object
-    PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
-    PyCapsule_GetPointer.restype = c_void_p
-    PyCapsule_GetPointer.argtypes = [py_object]
-    log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
-    gdkdll = CDLL("libgdk-3-0.dll")
-    log("gdkdll=%s", gdkdll)
-    
 
 def DefWndProc(hwnd, msg, wParam, lParam):
     return DefWindowProcA(hwnd, msg, wParam, lParam)
@@ -70,7 +61,8 @@ class WGLWindowContext(object):
 
 class WGLContext(object):
 
-    def __init__(self):
+    def __init__(self, alpha=True):
+        self.alpha = alpha
         self.hwnd = 0
         self.hdc = 0
         self.context = 0
@@ -123,13 +115,7 @@ class WGLContext(object):
         return DOUBLE_BUFFERED  #self.pixel_format_props.get("double-buffered", False)
 
     def get_paint_context(self, gdk_window):
-        if PYTHON2:
-            hwnd = gdk_window.handle
-        else:
-            gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-            log("gpointer=%s", gpointer)
-            hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
-            log("hwnd=%s", hwnd)
+        hwnd = get_window_handle(gdk_window)
         if self.hwnd!=hwnd:
             #(this shouldn't happen)
             #just make sure we don't keep using a context for a different handle:
@@ -144,6 +130,8 @@ class WGLContext(object):
         self.pixel_format_props = {}
         self.hdc = GetDC(hwnd)
         flags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DEPTH_DONTCARE
+        if self.alpha:
+            flags |= PFD_SUPPORT_COMPOSITION
         if DOUBLE_BUFFERED:
             flags |= PFD_DOUBLEBUFFER
         pfd = PIXELFORMATDESCRIPTOR()
@@ -151,21 +139,21 @@ class WGLContext(object):
         pfd.nVersion = 1
         pfd.dwFlags = flags
         pfd.iPixelType = PFD_TYPE_RGBA
-        pfd.cColorBits = bpc*3
+        pfd.cColorBits = bpc*(3+int(self.alpha))
         pfd.cRedBits = bpc
         pfd.cRedShift = 0
         pfd.cGreenBits = bpc
         pfd.cGreenShift = 0
         pfd.cBlueBits = bpc
         pfd.cBlueShift = 0
-        pfd.cAlphaBits = 0 #bpc
+        pfd.cAlphaBits = int(self.alpha)*8
         pfd.cAlphaShift = 0
         pfd.cAccumBits = 0
         pfd.cAccumRedBits = 0
         pfd.cAccumGreenBits = 0
         pfd.cAccumBlueBits = 0
         pfd.cAccumAlphaBits = 0
-        pfd.cDepthBits = bpc*3
+        pfd.cDepthBits = 24
         pfd.cStencilBits = 2
         pfd.cAuxBuffers = 0
         pfd.iLayerType = PFD_MAIN_PLANE #ignored
@@ -200,7 +188,7 @@ class WGLContext(object):
             "visible-mask"      : pfd.dwVisibleMask,
             "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
             })
-        log("DescribePixelFormat: %s", self.pixel_format_props)
+        log.info("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)
         assert context, "wglCreateContext failed"
         log("wglCreateContext(%#x)=%#x", self.hdc, context)
