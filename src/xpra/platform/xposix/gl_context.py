@@ -117,7 +117,7 @@ class GLXContext(object):
             self.props[name] = v
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
-        log("GLXContext() context=%s, props=%s", self.context, self.props)
+        log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
     def check_support(self, force_enable=False):
         i = self.props
