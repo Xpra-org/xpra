@@ -198,11 +198,11 @@ Requires:			python-gstreamer1
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
-Recommends:			gstreamer1-plugin-timestamp
-Recommends:			gstreamer1-plugins-ugly
-Recommends:			gstreamer1-plugins-ugly-free
-Recommends:			pulseaudio
-Recommends:			pulseaudio-utils
+%{Recommends}:		gstreamer1-plugin-timestamp
+%{Recommends}:		gstreamer1-plugins-ugly
+%{Recommends}:		gstreamer1-plugins-ugly-free
+%{Recommends}:		pulseaudio
+%{Recommends}:		pulseaudio-utils
 %description -n python2-xpra-audio
 This package contains audio support for python2 builds of xpra.
 
@@ -233,22 +233,21 @@ Requires:			xpra-common-server = %{version}-%{build_no}%{dist}
 Requires:			python2-xpra = %{version}-%{build_no}%{dist}
 Requires:			pygtk2
 %{Recommends}:		python-websockify
+%{Recommends}:		cups-filters
 %ifarch x86_64
 %{Recommends}:		python2-pycuda
+%{Recommends}:		python2-pynvml
 %endif
 %if 0%{?fedora}
 Recommends:			python2-xpra-audio
-Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			python2-cups
-Recommends:			python-uinput
+Recommends:			python2-uinput
 %endif
 %if 0%{?el7}
-Requires:			cups-filters
 Requires:			python-cups
 %endif
 %{Recommends}:		python-setproctitle
-%{Recommends}:		python2-pynvml
 BuildRequires:		pam-devel
 BuildRequires:		gcc
 BuildRequires:		python2-Cython
