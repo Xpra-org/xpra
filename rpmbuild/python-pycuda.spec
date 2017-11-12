@@ -12,6 +12,8 @@
 #so that we can install NVidia drivers without using RPM packages:
 %define __requires_exclude ^libcuda.*$
 
+%global debug_package %{nil}
+
 Name:           python2-pycuda
 Version:        2017.1.1
 Release:        1
