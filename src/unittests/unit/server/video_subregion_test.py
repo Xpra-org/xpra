@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_gobject
-gobject = import_gobject()
-gobject.threads_init()
+from xpra.gtk_common.gobject_compat import import_glib
+glib = import_glib()
+glib.threads_init()
 
 import unittest
 from collections import deque
@@ -25,7 +25,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
         def refresh_cb(window, regions):
             log("refresh_cb(%s, %s)", window, regions)
-        r = video_subregion.VideoSubregion(gobject.timeout_add, gobject.source_remove, refresh_cb, 150, True)
+        r = video_subregion.VideoSubregion(glib.timeout_add, glib.source_remove, refresh_cb, 150, True)
 
         ww = 1024
         wh = 768
