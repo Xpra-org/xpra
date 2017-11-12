@@ -2,7 +2,7 @@ Index: selinux/xpra_socketactivation/xpra_socketactivation.te
 ===================================================================
 --- a/selinux/xpra_socketactivation/xpra_socketactivation.te	(revision 17376)
 +++ b/selinux/xpra_socketactivation/xpra_socketactivation.te	(working copy)
-@@ -156,4 +156,4 @@
+@@ -156,5 +156,5 @@
  allow xpra_t sysfs_t:dir read;
  allow xpra_t user_tmp_t:sock_file write;
  #proxy instance mmap:
