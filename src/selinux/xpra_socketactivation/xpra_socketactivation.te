@@ -157,3 +157,4 @@ allow xpra_t sysfs_t:dir read;
 allow xpra_t user_tmp_t:sock_file write;
 #proxy instance mmap:
 allow xpra_t tmpfs_t:file map;
+allow xpra_t bin_t:file map;
