@@ -188,7 +188,7 @@ class WGLContext(object):
             "visible-mask"      : pfd.dwVisibleMask,
             "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
             })
-        log.info("DescribePixelFormat: %s", self.pixel_format_props)
+        log("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)
         assert context, "wglCreateContext failed"
         log("wglCreateContext(%#x)=%#x", self.hdc, context)
