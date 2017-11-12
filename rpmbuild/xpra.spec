@@ -337,11 +337,8 @@ Recommends:			python3-pycuda
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
-#%ifarch x86_64
-#%if 0%{?fedora}
-#%{Recommends}:		python3-uinput
-#%endif
-#%endif
+#once the server is fully ported over to python3:
+#Recommends:		python3-uinput
 %description -n python3-xpra-server
 This package contains the python3 xpra server.
 %endif
