@@ -193,14 +193,16 @@ This package contains the python2 common build of xpra.
 Summary:			python2 build of xpra audio support
 Group:				Networking
 Requires:			python2-xpra = %{version}-%{build_no}%{dist}
+%if 0%{?fedora}
 #EL7 requires 3rd party repos like "media.librelamp.com"
-Requires:			python-gstreamer1
+Requires:			python2-gstreamer1
+Recommends:			gstreamer1-plugins-ugly
+Recommends:			gstreamer1-plugins-ugly-free
+%endif
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
 Requires:			gstreamer1-plugins-good
 %{Recommends}:		gstreamer1-plugin-timestamp
-%{Recommends}:		gstreamer1-plugins-ugly
-%{Recommends}:		gstreamer1-plugins-ugly-free
 %{Recommends}:		pulseaudio
 %{Recommends}:		pulseaudio-utils
 %description -n python2-xpra-audio
