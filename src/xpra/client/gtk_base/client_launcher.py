@@ -853,6 +853,7 @@ def exception_dialog(title):
 
 def main():
     from xpra.os_util import SIGNAMES
+    from xpra.scripts.main import InitExit, InitInfo
     from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     gtk_main_quit_on_fatal_exceptions_enable()
 
@@ -865,6 +866,11 @@ def main():
         try:
             from xpra.scripts.main import parse_cmdline, fixup_debug_option
             options, args = parse_cmdline(sys.argv)
+    except InitInfo as e:
+        print(str(e))
+        return 0
+    except InitExit as e:
+        return e.status
             debug = fixup_debug_option(options.debug)
             if debug:
                 for x in debug.split(","):
