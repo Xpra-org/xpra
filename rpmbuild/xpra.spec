@@ -232,13 +232,13 @@ Group:				Networking
 Requires:			xpra-common-server = %{version}-%{build_no}%{dist}
 Requires:			python2-xpra = %{version}-%{build_no}%{dist}
 Requires:			pygtk2
-%{Recommends}:		python-websockify
 %{Recommends}:		cups-filters
 %ifarch x86_64
 %{Recommends}:		python2-pycuda
 %{Recommends}:		python2-pynvml
 %endif
 %if 0%{?fedora}
+Recommends:			python2-websockify
 Recommends:			python2-xpra-audio
 Recommends:			cups-pdf
 Recommends:			python2-cups
