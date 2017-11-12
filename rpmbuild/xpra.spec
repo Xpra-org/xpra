@@ -17,6 +17,7 @@
 %define update_firewall 1
 %define run_tests 1
 %define with_python3 1
+%define with_selinux 1
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 %define Suggests Suggests
