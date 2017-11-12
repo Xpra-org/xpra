@@ -1,4 +1,4 @@
-v2.2 (2017-10-23)
+v2.2 (2017-11-12)
 ======================
 	-- support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
 	-- UDP transport (experimental) with bind-udp and udp://host:port URLs
@@ -8,6 +8,7 @@ v2.2 (2017-10-23)
 	-- "xpra sessions" browser tool for both mDNS and local sessions
 	-- support arbitrary resolutions with Xvfb (not with Xdummy yet)
 	-- new OpenGL backends, with support for GTK3 on most platforms
+	   and window transparency on MS Windows
 	-- uinput virtual pointer device for supporting fine grained scrolling
 	-- connection strings now support the standard URI format protocol://host:port/
 	-- rencode is now used by default for the initial packet
@@ -20,6 +21,7 @@ v2.2 (2017-10-23)
 	-- move mmap file to $XDG_RUNTIME_DIR (where applicable)
 	-- detect network performance characteristics
 	-- password prompt dialog in client
+	-- fixed memory leaks
 
 
 v2.1 (2017-07-24)
