@@ -634,6 +634,7 @@ semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" ||
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 restorecon -R /usr/lib/cups/backend/xpraforwarder || :
+%endif
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
@@ -643,7 +644,6 @@ else
 	/bin/systemctl restart xpra.socket >/dev/null 2>&1 || :
 fi
 udevadm control --reload-rules && udevadm trigger || :
-%endif
 #reload dbus to get our new policy:
 systemctl reload dbus
 
