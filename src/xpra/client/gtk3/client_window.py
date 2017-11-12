@@ -39,7 +39,7 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
 """
 GTK3 version of the ClientWindow class
 """
-class ClientWindow(GTKClientWindowBase, Gtk.Window):
+class ClientWindow(GTKClientWindowBase):
 
     __gsignals__ = GTKClientWindowBase.__common_gsignals__
 
