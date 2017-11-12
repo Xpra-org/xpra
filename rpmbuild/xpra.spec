@@ -14,10 +14,20 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %define CFLAGS -O2
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra
+
 %define update_firewall 1
 %define run_tests 1
 %define with_python3 1
 %define with_selinux 1
+#we only enable CUDA / NVENC with 64-bit builds:
+%ifarch x86_64
+%define with_cuda 1
+%define build_args %{DEFAULT_BUILD_ARGS}
+%else
+%define with_cuda 0
+%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc 
+%endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 %define Suggests Suggests
@@ -25,7 +35,6 @@
 #we never want to depend on proprietary nvidia bits:
 %global __requires_exclude ^libnvidia-.*\\.so.*$
 
-%define build_args --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra
 
 
 # centos / rhel 7.2 onwards
@@ -236,7 +245,7 @@ Requires:			xpra-common-server = %{version}-%{build_no}%{dist}
 Requires:			python2-xpra = %{version}-%{build_no}%{dist}
 Requires:			pygtk2
 %{Recommends}:		cups-filters
-%ifarch x86_64
+%if %{with_cuda}
 %{Recommends}:		python2-pycuda
 %{Recommends}:		python2-pynvml
 %endif
@@ -335,8 +344,10 @@ Recommends:			cups-pdf
 Recommends:			python3-cups
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
+%if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda
+%endif
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
@@ -459,7 +470,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
 %{_datadir}/xpra/*.wav
-%ifarch x86_64
+%if %{with_cuda}
 %{_datadir}/xpra/cuda
 %endif
 %{_datadir}/man/man1/xpra*
@@ -499,8 +510,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/X11/xorg.conf.d/90-xpra-virtual.conf
 %config(noreplace) %{_sysconfdir}/xpra/xorg.conf
 %config(noreplace) %{_sysconfdir}/xpra/xorg-uinput.conf
-#we only enable CUDA / NVENC with 64-bit builds:
-%ifarch x86_64
+%if %{with_cuda}
 %config(noreplace) %{_sysconfdir}/xpra/cuda.conf
 %config(noreplace) %{_sysconfdir}/xpra/*.keys
 %endif
