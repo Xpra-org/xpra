@@ -67,7 +67,9 @@ Source:				xpra-%{version}.tar.bz2
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
 Patch0:				centos7-oldsystemd.patch
+%if 0%{?fedora}<27
 Patch1:				selinux-nomap.patch
+%endif
 Requires:			xpra-common = %{version}-%{build_no}%{dist}
 Requires:			xpra-html5
 Requires:			python2-xpra-client = %{version}-%{build_no}%{dist}
