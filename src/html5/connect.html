@@ -477,7 +477,7 @@ $(document).ready(function() {
 
 	var audio_codec = getparam("audio_codec") || "";
 	var audio_codec_select = document.getElementById("audio_codec");
-	var ignore_audio_blacklist = getparam("ignore_audio_blacklist");
+	var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
 	if(ignore_audio_blacklist) {
 		$('input#ignore_audio_blacklist').prop("value", true);
 	}
