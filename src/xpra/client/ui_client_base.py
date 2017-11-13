@@ -322,7 +322,7 @@ class UIXpraClient(XpraClientBase):
         self.in_remote_logging = False
         self.local_logging = None
         self._pid_to_signalwatcher = {}
-        self._signalwatcher_to_ids = {}
+        self._signalwatcher_to_wids = {}
 
         #state:
         self._focused = None
@@ -3041,7 +3041,7 @@ class UIXpraClient(XpraClientBase):
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
         if proc:
-            self._signalwatcher_to_ids.setdefault(proc, []).append(wid)
+            self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
         return 0
 
@@ -3432,15 +3432,19 @@ class UIXpraClient(XpraClientBase):
             self.window_ungrab()
             self._window_with_grab = None
         #deal with signal watchers:
-        windowlog("looking for window %i in %s", wid, self._signalwatcher_to_ids)
-        for signalwatcher, wids in list(self._signalwatcher_to_ids.items()):
+        windowlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
+        for signalwatcher, wids in list(self._signalwatcher_to_wids.items()):
             if wid in wids:
                 windowlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
                 wids.remove(wid)
                 if not wids:
                     windowlog("last window, removing watcher %s", signalwatcher)
-                    del self._signalwatcher_to_ids[signalwatcher]
-                    signalwatcher.terminate()
+                    try:
+                        del self._signalwatcher_to_wids[signalwatcher]
+                        if signalwatcher.poll() is None:
+                            signalwatcher.terminate()
+                    except:
+                        log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
                     for pid, w in list(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
