@@ -7,7 +7,7 @@
 import socket
 import os
 import signal
-from threading import Timer
+from threading import Timer, RLock
 from weakref import WeakValueDictionary
 from time import sleep
 
@@ -107,7 +107,8 @@ class ProxyInstanceProcess(Process):
         self.potential_protocols = []
         self.max_connections = MAX_CONCURRENT_CONNECTIONS
         self.timer_id = AtomicInteger()
-        self.timers = WeakValueDictionary()
+        self.timers = {}
+        self.timer_lock = RLock()
 
     def server_message_queue(self):
         while True:
@@ -133,37 +134,70 @@ class ProxyInstanceProcess(Process):
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(SIGNAMES.get(signum, signum))
 
+
     def source_remove(self, tid):
-        try:
-            self.timers[tid].cancel()
-            del self.timers[tid]
-        except:
-            pass
+        log("source_remove(%i)", tid)
+        with self.timer_lock:
+            try:
+                timer = self.timers[tid]
+                if timer is not None:
+                    del self.timers[tid]
+                if timer:
+                    timer.cancel()
+            except:
+                pass
 
     def idle_add(self, fn, *args, **kwargs):
-        return self.do_timeout_add(0, fn, *args, **kwargs)
+        tid = self.timer_id.increase()
+        self.main_queue.put((self.idle_repeat_call, (tid, fn, args, kwargs), {}))
+        #add an entry,
+        #but use the value False to stop us from trying to call cancel()
+        self.timers[tid] = False
+        return tid
+
+    def idle_repeat_call(self, tid, fn, args, kwargs):
+        if tid not in self.timers:
+            return False    #cancelled
+        return fn(*args, **kwargs)
 
     def timeout_add(self, timeout, fn, *args, **kwargs):
-        return self.do_timeout_add(timeout, fn, *args, **kwargs)
-
-    def do_timeout_add(self, timeout, fn, *args, **kwargs):
-        #emulate gobject's timeout_add using Timers
         tid = self.timer_id.increase()
-        def call_fn():
+        self.do_timeout_add(tid, timeout, fn, *args, **kwargs)
+        return tid
+
+    def do_timeout_add(self, tid, timeout, fn, *args, **kwargs):
+        #emulate glib's timeout_add using Timers
+        args = (tid, timeout, fn, args, kwargs)
+        t = Timer(timeout/1000.0, self.queue_timeout_function, args)
+        self.timers[tid] = t
+        t.start()
+
+    def queue_timeout_function(self, tid, timeout, fn, fn_args, fn_kwargs):
+        if tid not in self.timers:
+            return      #cancelled
+        #add to run queue:
+        mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
+        self.main_queue.put((self.timeout_repeat_call, mqargs, {}))
+
+    def timeout_repeat_call(self, tid, timeout, fn, fn_args, fn_kwargs, **kwargs):
+        #executes the function then re-schedules it (if it returns True)
+        if tid not in self.timers:
+            return      #cancelled
+        v = fn(*fn_args, **fn_kwargs)
+        if bool(v):
+            #create a new timer with the same tid:
+            with self.timer_lock:
+                if tid in self.timers:
+                    self.do_timeout_add(tid, timeout, fn, *fn_args, **fn_kwargs)
+        else:
             try:
                 del self.timers[tid]
             except:
                 pass
-            v = fn(*args, **kwargs)
-            if bool(v):
-                self.do_timeout_add(timeout, fn, *args, **kwargs)
-        def timer_exec():
-            #add to run queue:
-            self.main_queue.put((call_fn, [], {}))
-        t = Timer(timeout/1000.0, timer_exec)
-        self.timers[tid] = t
-        t.start()
-        return tid
+        #we do the scheduling via timers, so always return False here
+        #so that the main queue won't re-schedule this function call itself:
+        return False
+
 
     def setproctitle(self, title):
         try:
