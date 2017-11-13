@@ -896,7 +896,7 @@ WTS_SESSION_EVENTS = {
                       }
 
 class ClientExtras(object):
-    def __init__(self, client, opts):
+    def __init__(self, client, _opts):
         self.client = client
         self._kh_warning = False
         self._console_handler_added = False

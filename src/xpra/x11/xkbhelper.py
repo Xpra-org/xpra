@@ -590,7 +590,7 @@ def keymap_to_xmodmap(trans_keycodes):
 ################################################################################
 # modifiers
 
-def clear_modifiers(modifiers):
+def clear_modifiers(_modifiers):
     instructions = []
     for i in range(0, 8):
         instructions.append(("clear", i))

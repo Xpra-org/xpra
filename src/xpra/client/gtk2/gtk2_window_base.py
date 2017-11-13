@@ -124,10 +124,10 @@ class GTK2WindowBase(GTKClientWindowBase):
             grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
             add_event_receiver(self.get_window(), self)
         #other platforms should bet getting regular focus events instead:
-        def focus_in(window, event):
+        def focus_in(_window, event):
             grablog("focus-in-event for wid=%s", self._id)
             self.do_xpra_focus_in_event(event)
-        def focus_out(window, event):
+        def focus_out(_window, event):
             grablog("focus-out-event for wid=%s", self._id)
             self.do_xpra_focus_out_event(event)
         self.connect("focus-in-event", focus_in)

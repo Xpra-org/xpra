@@ -49,10 +49,10 @@ class TestWindow(gtk.Window):
         self.connect("key_press_event", self.on_key_press)
         self.show_all()
 
-    def on_key_press(self, *args):
+    def on_key_press(self, *_args):
         self.rotate = not self.rotate
 
-    def quit_cb(self, *args):
+    def quit_cb(self, *_args):
         gtk.main_quit()
 
 

@@ -54,7 +54,7 @@ X11Window = X11WindowBindings()
 from xpra.gtk_common.error import xsync, XError
 
 
-def _get_atom(disp, d):
+def _get_atom(_disp, d):
     unpacked = struct.unpack("@I", d)[0]
     with xsync:
         pyatom = X11Window.XGetAtomName(unpacked)
@@ -111,15 +111,15 @@ def get_python_type(scalar_type):
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
     "atom": (str, "ATOM", 32,
-             lambda disp, a: struct.pack("@I", _get_xatom(a)),
+             lambda _disp, a: struct.pack("@I", _get_xatom(a)),
               _get_atom,
              b""),
     "visual": (gdk.Visual, "VISUALID", 32,
-               lambda disp, c: struct.pack("=I", get_xvisual(c)),
+               lambda _disp, c: struct.pack("=I", get_xvisual(c)),
                unsupported,
                b""),
     "window": (gdk.Window, "WINDOW", 32,
-               lambda disp, c: struct.pack("=I", get_xwindow(c)),
+               lambda _disp, c: struct.pack("=I", get_xwindow(c)),
                lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
                b""),
     "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
