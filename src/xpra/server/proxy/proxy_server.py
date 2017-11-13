@@ -401,7 +401,7 @@ class ProxyServer(ServerCore):
         proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid, env, cwd)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
-        log("start_new_session(..)=%s, %s", display, proc)
+        log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
 
     def get_proxy_env(self):
