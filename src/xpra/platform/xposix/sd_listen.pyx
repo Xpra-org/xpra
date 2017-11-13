@@ -53,19 +53,22 @@ def get_sd_listen_sockets():
 def get_sd_listen_socket(int fd):
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
-    def wrapsock(fdsock):
-        #python3 does not need re-wrapping?
-        from xpra.os_util import PYTHON2
-        if PYTHON2:
-            return socket.socket(_sock=fdsock)
-        return fdsock
+    from xpra.os_util import PYTHON2
+    if PYTHON2:
+        def fromfd(family, type, proto=0):
+            sock = socket.fromfd(fd, family, type, proto)
+            return socket.socket(_sock=sock)
+    else:
+        def fromfd(family, type, proto=0):
+            #python3 does not need re-wrapping?
+            return socket.socket(family, type, 0, fd)
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:
-        sock = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
+        sock = fromfd(socket.AF_UNIX, socket.SOCK_STREAM)
         sockpath = sock.getsockname()
         return "unix-domain", sock, sockpath
     for family in (socket.AF_INET, socket.AF_INET6):
         if sd_is_socket_inet(fd, family, socket.SOCK_STREAM, 1, 0)>0:
-            sock = wrapsock(socket.fromfd(fd, family, socket.SOCK_STREAM))
+            sock = fromfd(family, socket.SOCK_STREAM)
             host, port = sock.getsockname()[:2]
             return "tcp", sock, (host, port)
     #TODO: handle vsock
