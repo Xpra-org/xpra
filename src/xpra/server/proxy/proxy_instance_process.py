@@ -235,6 +235,7 @@ class ProxyInstanceProcess(Process):
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
         self.client_protocol = Protocol(self, self.client_conn, self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
+        self.client_protocol.large_packets.append("input-devices")
         self.server_protocol = Protocol(self, self.server_conn, self.process_server_packet, self.get_server_packet)
         #server connection tweaks:
         self.server_protocol.large_packets.append("draw")
