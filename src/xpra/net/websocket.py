@@ -232,6 +232,7 @@ class WebSocketConnection(SocketConnection):
         self.ws_handler = ws_handler
 
     def read(self, n):
+        #FIXME: we should try to honour n
         while self.is_active():
             bufs, closed_string = self.ws_handler.recv_frames()
             if closed_string:

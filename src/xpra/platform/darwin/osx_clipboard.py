@@ -101,7 +101,7 @@ class OSXClipboardProtocolHelper(TranslatedClipboardProtocolHelper):
             return None, None
         return TranslatedClipboardProtocolHelper._do_munge_raw_selection_to_wire(self, target, dtype, dformat, data)
 
-    def _get_clipboard_from_remote_handler(self, proxy, selection, target):
+    def _get_clipboard_from_remote_handler(self, _proxy, _selection, _target):
         #cannot work on osx, the nested mainloop doesn't run :(
         #so we don't even try and rely on the "wants_targets" flag
         #to get the server to send us the data with the token

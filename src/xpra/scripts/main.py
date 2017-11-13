@@ -2199,6 +2199,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                         raise ConnectionClosedException(e)
 
                 def read(self, n):
+                    #FIXME: we should try to honour n
                     return self._read(self._socket.recv)
 
                 def write(self, buf):

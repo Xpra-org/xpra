@@ -89,7 +89,7 @@ class ShadowServer(GTKShadowServerBase):
         return  OSXRootWindowModel(self.root)
 
 
-    def screen_refresh_callback(self, count, rects, info):
+    def screen_refresh_callback(self, _count, rects, info):
         #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
         self.refresh_count += 1
         rlist = []
@@ -140,6 +140,8 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def do_process_mouse_common(self, proto, wid, pointer, *_args):
+        assert proto in self._server_sources
+        assert wid in self._id_to_window
         CG.CGWarpMouseCursorPosition(pointer)
 
     def fake_key(self, keycode, press):
@@ -156,7 +158,7 @@ class ShadowServer(GTKShadowServerBase):
         pointer = self._process_mouse_common(proto, wid, pointer)
         self.button_action(pointer, button, pressed, -1, *args)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, pointer, button, pressed, _deviceid=-1, *args):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well

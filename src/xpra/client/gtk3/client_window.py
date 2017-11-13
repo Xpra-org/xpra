@@ -65,19 +65,19 @@ class ClientWindow(GTKClientWindowBase):
         # they moved it gobject, then removed it, unbelievable:
         # https://bugzilla.gnome.org/show_bug.cgi?id=641944
         #self.set_data("_kde_no_window_grab", 1)
-        def motion(w, event):
+        def motion(_w, event):
             self.do_motion_notify_event(event)
             return True
         self.connect("motion-notify-event", motion)
-        def press(w, event):
+        def press(_w, event):
             self.do_button_press_event(event)
             return True
         self.connect("button-press-event", press)
-        def release(w, event):
+        def release(_w, event):
             self.do_button_release_event(event)
             return True
         self.connect("button-release-event", release)
-        def scroll(w, event):
+        def scroll(_w, event):
             self.do_scroll_event(event)
             return True
         self.connect("scroll-event", scroll)

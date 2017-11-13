@@ -109,7 +109,7 @@ class Actions(dbus.service.Object):
         raise dbus.exceptions.DBusException("this object does not have any properties")
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
-    def GetAll(self, interface_name):
+    def GetAll(self, _interface_name):
         return []
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ssv')
@@ -231,7 +231,7 @@ class Menus(dbus.service.Object):
         raise dbus.exceptions.DBusException("this object does not have any properties")
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='a{sv}')
-    def GetAll(self, interface_name):
+    def GetAll(self, _interface_name):
         return []
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ssv')

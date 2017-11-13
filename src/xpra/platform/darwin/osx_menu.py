@@ -301,7 +301,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
         self._clipboard_change_pending = False
         return label
 
-    def set_clipboard_menu(self, clipboard_menu):
+    def set_clipboard_menu(self, _clipboard_menu):
         #find the menu item matching the current settings,
         #and select it
         try:
