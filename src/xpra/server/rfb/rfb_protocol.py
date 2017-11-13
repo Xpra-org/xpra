@@ -136,7 +136,7 @@ class RFBProtocol(object):
         self.timeout_add(1000, self.send_fail_challenge)
         return len(response)
 
-    def send_fail_challenge():
+    def send_fail_challenge(self):
         self.send(struct.pack("!I", 1))
         self.close()
 
