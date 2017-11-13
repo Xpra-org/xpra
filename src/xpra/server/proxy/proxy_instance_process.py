@@ -8,7 +8,6 @@ import socket
 import os
 import signal
 from threading import Timer, RLock
-from weakref import WeakValueDictionary
 from time import sleep
 
 from xpra.log import Logger
