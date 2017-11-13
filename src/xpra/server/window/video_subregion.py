@@ -269,7 +269,8 @@ class VideoSubregion(object):
             self.counter = damage_events_count
             self.time = monotonic_time()
 
-        def few_damage_events(event_types, event_count):
+        if self.counter+10>damage_events_count:
+            #less than 10 events since last time we called update_markers:
             elapsed = monotonic_time()-self.time
             #how many damage events occurred since we chose this region:
             event_count = max(0, damage_events_count - self.set_at)
@@ -277,13 +278,8 @@ class VideoSubregion(object):
             slow_region_timeout = 2 + math.log(2+event_count, 1.5)
             if rect and elapsed>=slow_region_timeout:
                 update_markers()
-                return self.novideoregion("too much time has passed (%is for %s %s events)", elapsed, event_types, event_count)
-            sslog("identify video: waiting for more %s damage events (%s) counters: %s / %s", event_types, event_count, self.counter, damage_events_count)
-
-        if self.counter+10>damage_events_count:
-            #less than 10 events since last time we called update_markers:
-            event_count = damage_events_count-self.counter
-            few_damage_events("total", event_count)
+                return self.novideoregion("too much time has passed (%is for %i total events)", elapsed, event_count)
+            sslog("identify video: waiting for more damage events (%i) counters: %i / %i", event_count, self.counter, damage_events_count)
             return
 
         from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
