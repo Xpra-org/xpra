@@ -165,6 +165,9 @@ var MediaSourceUtil = {
 					}
 					else if (Utilities.isChrome()) {
 						blacklist = ["aac+mpeg4"];
+						if (Utilities.isMacOS()) {
+							blacklist += ["opus+mka"];
+						}
 					}
 					if(blacklist.indexOf(codec_option)>=0) {
 						Utilities.log("audio codec MediaSource '"+codec_option+"' / '"+codec_string+"' is blacklisted for "+navigator.userAgent);
