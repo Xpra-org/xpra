@@ -90,7 +90,7 @@ class GTKServerBase(ServerBase):
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
 
-    def send_initial_cursors(self, ss, sharing=False):
+    def send_initial_cursors(self, ss, _sharing=False):
         #cursors: get sizes and send:
         display = display_get_default()
         self.cursor_sizes = display.get_default_cursor_size(), display.get_maximal_cursor_size()

@@ -1723,6 +1723,7 @@ class ServerBase(ServerCore):
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 
     def control_command_print(self, filename, printer="", client_uuids="*", maxbitrate=0, title="", *options_strs):
+        #FIXME: printer and bitrate are ignored
         #parse options into a dict:
         options = {}
         for arg in options_strs:
@@ -2468,7 +2469,7 @@ class ServerBase(ServerCore):
         self.timeout_add(1000*5, timeout_check)
 
 
-    def clipboard_progress(self, local_requests, remote_requests):
+    def clipboard_progress(self, local_requests, _remote_requests):
         assert self._clipboard_helper is not None
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)
@@ -2827,6 +2828,7 @@ class ServerBase(ServerCore):
         clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
 
     def _process_keyboard_sync_enabled_status(self, proto, packet):
+        assert proto in self._server_sources
         if self.readonly:
             return
         self.keyboard_sync = bool(packet[1])
@@ -3292,6 +3294,7 @@ class ServerBase(ServerCore):
             webcamlog.error(" %s : %s", device_str, err)
 
     def _process_webcam_stop(self, proto, packet):
+        assert proto in self._server_sources
         if self.readonly:
             return
         device, message = (packet+[""])[1:3]

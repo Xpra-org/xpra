@@ -642,12 +642,12 @@ class WindowSource(object):
         self.scaling_control = max(0, min(100, scaling_control))
         self.reconfigure(True)
 
-    def _fullscreen_changed(self, window, *_args):
+    def _fullscreen_changed(self, _window, *_args):
         self.fullscreen = self.window.get_property("fullscreen")
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
 
-    def _iconic_changed(self, window, *_args):
+    def _iconic_changed(self, _window, *_args):
         self.iconic = self.window.get_property("iconic")
         if self.iconic:
             self.go_idle()
