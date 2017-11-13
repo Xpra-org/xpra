@@ -50,7 +50,7 @@ class WindowModelStub(AutoPropGObjectMixin, gobject.GObject):
     def is_managed(self):
         return self._managed
 
-    def unmanage(self, exiting=False):
+    def unmanage(self, _exiting=False):
         self.managed_disconnect()
 
 

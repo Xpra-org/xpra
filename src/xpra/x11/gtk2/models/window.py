@@ -440,14 +440,14 @@ class WindowModel(BaseWindowModel):
             #try to honour initial size and position requests during setup:
             def window_size():
                 return self.get_property("requested-size")
-            def window_position(w=0, h=0):
+            def window_position(_w, _h):
                 return self.get_property("requested-position")
             geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size(), window_position())
         else:
             geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
             def window_size():
                 return self.get_property("geometry")[2:4]
-            def window_position(w=0, h=0):
+            def window_position(_w, _h):
                 return self.get_property("geometry")[:2]
         self._do_update_client_geometry(window_size, window_position)
 
@@ -492,7 +492,7 @@ class WindowModel(BaseWindowModel):
             geomlog.warn("Warning: failed to resize corral window %#x", self.corral_window.xid)
             geomlog.warn(" %s", e)
 
-    def resize_corral_window(self, x, y, w, h, border):
+    def resize_corral_window(self, x, y, w, h, _border):
         #the client window may have been resized or moved (generally programmatically)
         #so we may need to update the corral_window to match
         cox, coy, cow, coh = self.corral_window.get_geometry()[:4]

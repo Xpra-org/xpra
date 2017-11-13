@@ -674,7 +674,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         device_type_str = ["output", "input"][input_or_output]
     if want_monitor_device:
         device_type_str += " monitor"
-    #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True)
+    #def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"])
     devices = get_pa_device_options(want_monitor_device, input_or_output)
     log("found %i pulseaudio %s device%s: %s", len(devices), device_type_str, engs(devices), devices)
     if len(devices)==0:

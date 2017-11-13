@@ -270,13 +270,13 @@ class sound_subprocess_wrapper(subprocess_caller):
             self.cleanup()
 
 
-    def subprocess_signal(self, wrapper, proc):
+    def subprocess_signal(self, _wrapper, proc):
         log("subprocess_signal: %s", proc)
         #call via idle_add to prevent deadlocks on win32!
         self.idle_add(self.stop_protocol)
 
 
-    def state_changed(self, wrapper, new_state):
+    def state_changed(self, _wrapper, new_state):
         self.state = new_state
 
     def get_state(self):
@@ -286,7 +286,7 @@ class sound_subprocess_wrapper(subprocess_caller):
     def get_info(self):
         return self.info
 
-    def info_update(self, wrapper, info):
+    def info_update(self, _wrapper, info):
         log("info_update: %s", info)
         self.info.update(info)
         self.info["time"] = int(monotonic_time())

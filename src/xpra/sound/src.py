@@ -220,11 +220,11 @@ class SoundSource(SoundPipeline):
             l("cutter message, above=%s, min-timestamp=%s, max-timestamp=%s", above, self.min_timestamp, self.max_timestamp)
 
 
-    def on_new_preroll(self, appsink):
+    def on_new_preroll(self, _appsink):
         gstlog('new preroll')
         return 0
 
-    def on_new_sample(self, bus):
+    def on_new_sample(self, _bus):
         #Gst 1.0
         sample = self.sink.emit("pull-sample")
         return self.emit_buffer(sample)
@@ -394,7 +394,7 @@ def main():
             f = open(filename, "wb")
         ss = SoundSource(codecs=[codec])
         lock = Lock()
-        def new_buffer(ss, data, metadata, packet_metadata):
+        def new_buffer(_soundsource, data, metadata, packet_metadata):
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
                 if f:
@@ -411,11 +411,11 @@ def main():
         ss.start()
 
         import signal
-        def deadly_signal(sig, frame):
+        def deadly_signal(sig, _frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
             glib.idle_add(ss.stop)
             glib.idle_add(glib_mainloop.quit)
-            def force_quit(sig, frame):
+            def force_quit(_sig, _frame):
                 sys.exit()
             signal.signal(signal.SIGINT, force_quit)
             signal.signal(signal.SIGTERM, force_quit)

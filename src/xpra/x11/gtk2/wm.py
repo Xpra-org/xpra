@@ -366,7 +366,7 @@ class Wm(gobject.GObject):
             self._update_window_list()
             self.emit("new-window", win)
 
-    def _handle_client_unmanaged(self, window, wm_exiting):
+    def _handle_client_unmanaged(self, window, _wm_exiting):
         gdkwindow = window.get_property("client-window")
         assert gdkwindow in self._windows
         del self._windows[gdkwindow]

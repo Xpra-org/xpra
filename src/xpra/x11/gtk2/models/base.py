@@ -270,13 +270,13 @@ class BaseWindowModel(CoreX11WindowModel):
     # Python objects synced to X11 properties
     #########################################
 
-    def _sync_state(self, *args):
+    def _sync_state(self, *_args):
         state = self.get_property("state")
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xswallow:
             prop_set(self.client_window, "_NET_WM_STATE", ["atom"], state)
 
-    def _sync_iconic(self, *args):
+    def _sync_iconic(self, *_args):
         def set_state(state):
             log("_handle_iconic_update: set_state(%s)", state)
             with xswallow:
@@ -373,7 +373,7 @@ class BaseWindowModel(CoreX11WindowModel):
             self._input_field = int(_input)
             self._update_can_focus()
 
-    def _update_can_focus(self, *args):
+    def _update_can_focus(self, *_args):
         can_focus = bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
 
@@ -394,7 +394,7 @@ class BaseWindowModel(CoreX11WindowModel):
         return props
 
     def _handle_gtk_app_menu_change(self):
-        def nomenu(*args):
+        def nomenu(*_args):
             self._updateprop("menu", {})
         if not MENU_FORWARDING:
             nomenu()

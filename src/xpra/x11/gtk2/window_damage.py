@@ -193,13 +193,13 @@ class WindowDamageHandler(object):
             return None
 
 
-    def do_xpra_damage_event(self, event):
+    def do_xpra_damage_event(self, _event):
         raise NotImplementedError()
 
-    def do_xpra_reparent_event(self, event):
+    def do_xpra_reparent_event(self, _event):
         self.invalidate_pixmap()
 
-    def xpra_unmap_event(self, event):
+    def xpra_unmap_event(self, _event):
         self.invalidate_pixmap()
 
     def do_xpra_configure_event(self, event):

@@ -111,7 +111,7 @@ def get_pulse_id():
     return get_pulse_id_x11_property()
 
 
-def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True):
+def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=["bell-window-system"]):
     """
     Finds the list of devices, monitors=False allows us to filter out monitors
     (which could create sound loops if we use them)
@@ -126,9 +126,9 @@ def get_pa_device_options(monitors=False, input_or_output=None, ignored_devices=
     status, out, _ = pactl_output(False, "list")
     if status!=0 or not out:
         return  {}
-    return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices, log_errors)
+    return do_get_pa_device_options(out, monitors, input_or_output, ignored_devices)
 
-def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=["bell-window-system"], log_errors=True):
+def do_get_pa_device_options(pactl_list_output, monitors=False, input_or_output=None, ignored_devices=["bell-window-system"]):
     device_class = None
     device_description = None
     name = None
@@ -172,7 +172,7 @@ def get_info():
     if status==0 and out:
         for monitors in (True, False):
             for io in (True, False):
-                devices = do_get_pa_device_options(out, monitors, io, log_errors=False)
+                devices = do_get_pa_device_options(out, monitors, io)
                 for d,name in devices.items():
                     dinfo[bytestostr(d)] = bytestostr(name)
                     i += 1

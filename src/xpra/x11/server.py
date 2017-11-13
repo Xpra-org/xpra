@@ -142,7 +142,7 @@ class DesktopManager(gtk.Widget):
 
     ## For communicating with WindowModels:
 
-    def _unmanaged(self, model, wm_exiting):
+    def _unmanaged(self, model, _wm_exiting):
         del self._models[model]
 
     def _elect_me(self, model):
@@ -151,7 +151,7 @@ class DesktopManager(gtk.Widget):
         else:
             return (-1, self)
 
-    def take_window(self, model, window):
+    def take_window(self, _model, window):
         if REPARENT_ROOT:
             parent = self.window.get_screen().get_root_window()
         else:
@@ -397,7 +397,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._add_new_or_window(window)
 
 
-    def parse_hello_ui_window_settings(self, ss, c):
+    def parse_hello_ui_window_settings(self, ss, _caps):
         framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
         frame = None
         if ss.window_frame_sizes:
@@ -444,7 +444,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
 
-    def _new_window_signaled(self, wm, window):
+    def _new_window_signaled(self, _wm, window):
         self._add_new_window(window)
 
     def do_xpra_child_map_event(self, event):
@@ -581,7 +581,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             #from now on, we return to the gtk main loop,
             #so we *should* get a signal when the window goes away
 
-    def _or_window_geometry_changed(self, window, pspec=None):
+    def _or_window_geometry_changed(self, window, _pspec=None):
         geom = window.get_property("geometry")
         x, y, w, h = geom
         if w>=32768 or h>=32768:
@@ -670,7 +670,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         for ss in self._server_sources.values():
             ss.remove_window(wid, window)
         self.cancel_configure_damage(wid)
-        self.repaint_root_overlay()
+        if not wm_exiting:
+            self.repaint_root_overlay()
 
     def _contents_changed(self, window, event):
         if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
@@ -715,6 +716,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
+        assert proto in self._server_sources
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (wid, window, new_window_state))
@@ -957,6 +959,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _process_close_window(self, proto, packet):
+        assert proto in self._server_sources
         wid = packet[1]
         window = self._id_to_window.get(wid, None)
         windowlog("client closed window %s - %s", wid, window)

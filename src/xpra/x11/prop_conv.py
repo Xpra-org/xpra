@@ -58,7 +58,7 @@ def _force_length(name, data, length, noerror_length=None):
 
 
 class NetWMStrut(object):
-    def __init__(self, disp, data):
+    def __init__(self, _disp, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
         # will be only length 4 instead of 12, we just don't define the other values
@@ -82,7 +82,7 @@ class NetWMStrut(object):
 
 
 class MotifWMHints(object):
-    def __init__(self, disp, data):
+    def __init__(self, _disp, data):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
         pdata = _force_length("_MOTIF_WM_HINTS", data, 20, 16)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
@@ -180,7 +180,7 @@ class MotifWMHints(object):
                                      "status"       : self.status}
 
 
-def _read_image(disp, stream):
+def _read_image(_disp, stream):
     try:
         header = stream.read(2 * 4)
         if not header:
@@ -228,16 +228,16 @@ def NetWMIcons(disp, data):
     return icons[-1][1]
 
 
-def _to_latin1(disp, v):
+def _to_latin1(_disp, v):
     return v.encode("latin1")
 
-def _from_latin1(disp, v):
+def _from_latin1(_disp, v):
     return v.decode("latin1")
 
-def _to_utf8(disp, v):
+def _to_utf8(_disp, v):
     return v.encode("UTF-8")
 
-def _from_utf8(disp, v):
+def _from_utf8(_disp, v):
     return v.decode("UTF-8")
 
 
@@ -251,16 +251,16 @@ PROP_TYPES = {
     # that Xutf8TextPropertyToTextList exists.
     "latin1": (unicode, "STRING", 8, _to_latin1, _from_latin1, b"\0"),
     "state": ((int, long), "WM_STATE", 32,
-            lambda disp, c: struct.pack("=I", c),
-            lambda disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack("=I", c),
+            lambda _disp, d: struct.unpack("=I", d)[0],
             b""),
     "u32": ((int, long), "CARDINAL", 32,
-            lambda disp, c: struct.pack("=I", c),
-            lambda disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack("=I", c),
+            lambda _disp, d: struct.unpack("=I", d)[0],
             b""),
     "integer": ((int, long), "INTEGER", 32,
-            lambda disp, c: struct.pack("=I", c),
-            lambda disp, d: struct.unpack("=I", d)[0],
+            lambda _disp, c: struct.pack("=I", c),
+            lambda _disp, d: struct.unpack("=I", d)[0],
             b""),
     "strut": (NetWMStrut, "CARDINAL", 32,
               unsupported, NetWMStrut, None),
@@ -273,8 +273,8 @@ PROP_TYPES = {
     # For uploading ad-hoc instances of the above complex structures to the
     # server, so we can test reading them out again:
     "debug-CARDINAL": (str, "CARDINAL", 32,
-                       lambda disp, c: c,
-                       lambda disp, d: d,
+                       lambda _disp, c: c,
+                       lambda _disp, d: d,
                        None),
     }
 

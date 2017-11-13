@@ -298,7 +298,7 @@ class CoreX11WindowModel(WindowModelStub):
         assert c, "composite window destroyed outside the UI thread?"
         c.acknowledge_changes()
 
-    def _forward_contents_changed(self, obj, event):
+    def _forward_contents_changed(self, _obj, event):
         if self._managed:
             self.emit("client-contents-changed", event)
 
@@ -321,7 +321,7 @@ class CoreX11WindowModel(WindowModelStub):
         #this one is special, and overriden in BaseWindow too:
         self.managed_connect("notify::protocols", self._update_can_focus)
 
-    def _update_can_focus(self, *args):
+    def _update_can_focus(self, *_args):
         can_focus = "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
 
@@ -417,15 +417,15 @@ class CoreX11WindowModel(WindowModelStub):
         prop_set(self.client_window, key, ptype, value)
 
 
-    def _sync_allowed_actions(self, *args):
+    def _sync_allowed_actions(self, *_args):
         actions = self.get_property("allowed-actions") or []
         metalog("sync_allowed_actions: setting _NET_WM_ALLOWED_ACTIONS=%s on %#x", actions, self.xid)
         with xswallow:
             prop_set(self.client_window, "_NET_WM_ALLOWED_ACTIONS", ["atom"], actions)
-    def _handle_frame_changed(self, *args):
+    def _handle_frame_changed(self, *_args):
         #legacy name for _sync_frame() called from Wm
         self._sync_frame()
-    def _sync_frame(self, *args):
+    def _sync_frame(self, *_args):
         v = self.get_property("frame")
         framelog("sync_frame: frame(%#x)=%s", self.xid, v)
         if not v and (not self.is_OR() and not self.is_tray()):
@@ -537,7 +537,7 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 Events
     #########################################
 
-    def do_xpra_unmap_event(self, event):
+    def do_xpra_unmap_event(self, _event):
         self.unmanage()
 
     def do_xpra_destroy_event(self, event):

@@ -133,11 +133,11 @@ class ManagerSelection(gobject.GObject):
         remove_event_receiver(event.window, self)
         gtk.main_quit()
 
-    def _get(self, clipboard, outdata, which, userdata):
+    def _get(self, _clipboard, outdata, _which, _userdata):
         # We are compliant with ICCCM version 2.0 (see section 4.3)
         outdata.set("INTEGER", 32, pack("@ii", 2, 0))
 
-    def _clear(self, clipboard, userdata):
+    def _clear(self, _clipboard, _userdata):
         self._xwindow = None
         self.emit("selection-lost")
 
