@@ -462,6 +462,7 @@ class ServerSource(FileTransferHandler):
         self.cursor_timer = None
         self.last_cursor_sent = None
         self.ping_timer = None
+        self.sound_fade_timer = None
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -494,6 +495,7 @@ class ServerSource(FileTransferHandler):
         self.cancel_ping_echo_timers()
         self.cancel_cursor_timer()
         self.cancel_ping_timer()
+        self.cancel_sound_fade_timer()
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
@@ -1264,7 +1266,8 @@ class ServerSource(FileTransferHandler):
                         volume = min(1.0, volume+step)
                         ss.set_volume(volume)
                     return volume<1.0
-                self.timeout_add(100, fadein)
+                self.cancel_sound_fade_timer()
+                self.sound_fade_timer = self.timeout_add(100, fadein)
             msg = "sound started"
             if codec:
                 msg += " using codec %s" % codec
@@ -1287,7 +1290,8 @@ class ServerSource(FileTransferHandler):
                     return True
                 self.stop_sending_sound()
                 return False
-            self.timeout_add(100, fadeout)
+            self.cancel_sound_fade_timer()
+            self.sound_fade_timer = self.timeout_add(100, fadeout)
         elif action=="new-sequence":
             self.sound_source_sequence = int(args[0])
             return "new sequence is %s" % self.sound_source_sequence
@@ -1308,6 +1312,12 @@ class ServerSource(FileTransferHandler):
             msg = "unknown sound action: %s" % action
             log.error(msg)
             return msg
+
+    def cancel_sound_fade_timer(self):
+        sft = self.sound_fade_timer
+        if sft:
+            self.sound_fade_timer = None
+            self.source_remove(sft)
 
     def sound_data(self, codec, data, metadata, packet_metadata=()):
         soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, packet_metadata, self.sound_sink)
