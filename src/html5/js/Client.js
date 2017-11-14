@@ -715,16 +715,19 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		}
 		//let the OS see Control (or Meta on macos) and Shift:
 		if (clipboard_modifier_keys.indexOf(keyname)>=0) {
+			this._debug("passing clipboard modifier key event to browser:", keyname);
 			return true;
 		}
 		//let the OS see Shift + Insert:
 		if (shift && keyname=="Insert") {
+			this._debug("passing clipboard combination Shift+Insert to browser");
 			return true;
 		}
 		var clipboard_mod_set = raw_modifiers.indexOf(clipboard_modifier)>=0;
 		if (clipboard_mod_set) {
 			var l = keyname.toLowerCase();
 			if (l=="c" || l=="x" || l=="v") {
+				this._debug("passing clipboard combination to browser:", clipboard_modifier, "+", keyname);
 				return true;
 			}
 		}
