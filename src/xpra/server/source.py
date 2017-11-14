@@ -459,8 +459,9 @@ class ServerSource(FileTransferHandler):
         self.sound_encoders = ()
 
         self.keyboard_config = None
-        self.send_cursor_pending = False
+        self.cursor_timer = None
         self.last_cursor_sent = None
+        self.ping_timer = None
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -491,6 +492,8 @@ class ServerSource(FileTransferHandler):
             mmap.close()
         self.cancel_recalculate_timer()
         self.cancel_ping_echo_timers()
+        self.cancel_cursor_timer()
+        self.cancel_ping_timer()
         self.stop_sending_sound()
         self.stop_receiving_sound()
         self.remove_printers()
@@ -1861,51 +1864,57 @@ class ServerSource(FileTransferHandler):
     def send_cursor(self):
         if not self.send_cursors or self.suspended or not self.hello_sent:
             return
-        def do_send_cursor():
-            self.send_cursor_pending = False
-            cd = self.get_cursor_data_cb()
-            if cd and cd[0]:
-                cursor_data, cursor_sizes = cd
-                #skip first two fields (if present) as those are coordinates:
-                if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
-                    cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
-                    return
-                self.last_cursor_sent = cursor_data[:9]
-                w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
-                #compress pixels if needed:
-                encoding = None
-                if pixels is not None:
-                    #convert bytearray to string:
-                    cpixels = strtobytes(pixels)
-                    if "png" in self.cursor_encodings:
-                        from xpra.codecs.loader import get_codec
-                        PIL = get_codec("PIL")
-                        assert PIL
-                        img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
-                        buf = BytesIOClass()
-                        img.save(buf, "PNG")
-                        cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
-                        buf.close()
-                        encoding = "png"
-                    elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
-                        cpixels = self.compressed_wrapper("cursor", pixels)
-                        cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
-                        encoding = "raw"
-                    cursor_data[7] = cpixels
-                cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-                args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-                if self.cursor_encodings and encoding:
-                    args = [encoding] + args
-            else:
-                cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
-                args = [""]
-                self.last_cursor_sent = None
-            self.send("cursor", *args)
         #if not pending already, schedule it:
-        if not self.send_cursor_pending:
-            self.send_cursor_pending = True
+        if not self.cursor_timer:
             delay = max(10, int(self.global_batch_config.delay/4))
-            self.timeout_add(delay, do_send_cursor)
+            self.cursor_timer = self.timeout_add(delay, self.do_send_cursor, delay)
+
+    def cancel_cursor_timer(self):
+        ct = self.cursor_timer
+        if ct:
+            self.cursor_timer = None
+            self.source_remove(ct)
+
+    def do_send_cursor(self, delay):
+        self.cursor_timer = None
+        cd = self.get_cursor_data_cb()
+        if cd and cd[0]:
+            cursor_data, cursor_sizes = cd
+            #skip first two fields (if present) as those are coordinates:
+            if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
+                cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
+                return
+            self.last_cursor_sent = cursor_data[:9]
+            w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
+            #compress pixels if needed:
+            encoding = None
+            if pixels is not None:
+                #convert bytearray to string:
+                cpixels = strtobytes(pixels)
+                if "png" in self.cursor_encodings:
+                    from xpra.codecs.loader import get_codec
+                    PIL = get_codec("PIL")
+                    assert PIL
+                    img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
+                    buf = BytesIOClass()
+                    img.save(buf, "PNG")
+                    cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
+                    buf.close()
+                    encoding = "png"
+                elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
+                    cpixels = self.compressed_wrapper("cursor", pixels)
+                    cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
+                    encoding = "raw"
+                cursor_data[7] = cpixels
+            cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
+            args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
+            if self.cursor_encodings and encoding:
+                args = [encoding] + args
+        else:
+            cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
+            args = [""]
+            self.last_cursor_sent = None
+        self.send("cursor", *args)
 
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
@@ -2059,6 +2068,7 @@ class ServerSource(FileTransferHandler):
             self.send("rpc-reply", *args)
 
     def ping(self):
+        self.ping_timer = None
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
@@ -2096,7 +2106,15 @@ class ServerSource(FileTransferHandler):
                 cl = int(1000.0*cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl)
         #if the client is pinging us, ping it too:
-        self.timeout_add(500, self.ping)
+        if not self.ping_timer:
+            self.ping_timer = self.timeout_add(500, self.ping)
+
+    def cancel_ping_timer(self):
+        pt = self.ping_timer
+        if pt:
+            self.ping_timer = None
+            self.source_remove(pt)
+
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
