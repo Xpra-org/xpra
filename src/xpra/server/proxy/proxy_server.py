@@ -407,8 +407,17 @@ class ProxyServer(ServerCore):
     def get_proxy_env(self):
         ENV_WHITELIST = ["LANG", "HOSTNAME", "PWD", "TERM", "SHELL", "SHLVL", "PATH"]
         env = dict((k,v) for k,v in os.environ.items() if k in ENV_WHITELIST)
+        #env var to add to environment of subprocess:
+        extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
+        if extra_env_str:
+            extra_env = {}
+            for e in extra_env_str.split(os.path.pathsep):  #ie: "A=1:B=2"
+                parts = e.split("=", 1)
+                if len(parts)==2:
+                    extra_env[parts[0]]= parts[1]
+            log("extra_env(%s)=%s", extra_env_str, extra_env)
+            env.update(extra_env)
         return env
-        #return os.environ.copy()
 
 
     def start_win32_shadow(self, username, new_session_dict):
