@@ -571,8 +571,9 @@ class ProxyInstanceProcess(Process):
     def get_client_packet(self):
         #server wants a packet
         p = self.client_packets.get()
-        log("sending to client: %s", p[0])
-        return p, None, None, self.client_packets.qsize()>0
+        s = self.client_packets.qsize()
+        log("sending to client: %s (queue size=%i)", p[0], s)
+        return p, None, None, None, True, s>0
 
     def process_client_packet(self, proto, packet):
         packet_type = packet[0]
@@ -605,8 +606,9 @@ class ProxyInstanceProcess(Process):
     def get_server_packet(self):
         #server wants a packet
         p = self.server_packets.get()
-        log("sending to server: %s", p[0])
-        return p, None, None, self.server_packets.qsize()>0
+        s = self.server_packets.qsize()
+        log("sending to server: %s (queue size=%i)", p[0], s)
+        return p, None, None, None, True, s>0
 
 
     def _packet_recompress(self, packet, index, name):
