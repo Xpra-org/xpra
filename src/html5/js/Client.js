@@ -85,7 +85,7 @@ XpraClient.prototype.init_state = function(container) {
 	// audio
 	this.audio_enabled = false;
 	this.audio_mediasource_enabled = MediaSourceUtil.getMediaSourceClass()!=null;
-	this.audio_aurora_enabled = AV!=null && AV.Decoder!=null && AV.Player.fromXpraSource!=null;
+	this.audio_aurora_enabled = typeof AV!=='undefined' && AV!=null && AV.Decoder!=null && AV.Player.fromXpraSource!=null;
 	this.audio_httpstream_enabled = true;
 	this.audio_codecs = {};
 	this.audio_framework = null;
@@ -933,15 +933,20 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
 	var digests = ["hmac", "hmac+md5", "xor"]
-	try {
-		this._debug("forge.md.algorithms=", forge.md.algorithms);
-		for (var hash in forge.md.algorithms) {
-			digests.push("hmac+"+hash);
+	if (typeof forge!=='undefined') {
+		try {
+			this._debug("forge.md.algorithms=", forge.md.algorithms);
+			for (var hash in forge.md.algorithms) {
+				digests.push("hmac+"+hash);
+			}
+			this._debug("digests:", digests);
 		}
-		this._debug("digests:", digests);
+		catch (e) {
+			console.error("Error probing forge crypto digests:", e);
+		}
 	}
-	catch (e) {
-		console.error("Error probing forge crypto digests:", e);
+	else {
+		console.log("cryptography library 'forge' not found");
 	}
 	this._update_capabilities({
 		// version and platform
