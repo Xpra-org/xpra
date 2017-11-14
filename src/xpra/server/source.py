@@ -63,6 +63,7 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
+PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -2062,7 +2063,7 @@ class ServerSource(FileTransferHandler):
         now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms)
-        timeout = 60
+        timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
 
     def check_ping_echo_timeout(self, now_ms, timeout):
