@@ -595,14 +595,15 @@ def flatten_dict(info, sep="."):
     return to
 
 def _flatten_dict(to, sep, path, d):
+    from xpra.os_util import bytestostr
     for k,v in d.items():
         if path:
             if k:
-                npath = path+sep+str(k)
+                npath = path+sep+bytestostr(k)
             else:
                 npath = path
         else:
-            npath = str(k)
+            npath = bytestostr(k)
         if isinstance(v, dict):
             _flatten_dict(to, sep, npath, v)
         elif v is not None:
