@@ -10,24 +10,11 @@ import logging
 from xpra.util import envbool
 from xpra.os_util import OSX, WIN32, PYTHON3
 from xpra.log import Logger, CaptureHandler
+from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST
 log = Logger("opengl")
 
 required_extensions = ["GL_ARB_texture_rectangle", "GL_ARB_vertex_program"]
 
-
-WHITELIST = {
-    "renderer"  : ["Haswell", "Skylake", "Kabylake", "Cannonlake"],
-    }
-GREYLIST = {
-            "vendor"    : ["Intel", "Humper"]
-            }
-VERSION_REQ = {
-               "nouveau" : [3, 0],      #older versions have issues
-               }
-BLACKLIST = {
-             "renderer" : ["Software Rasterizer", "Mesa DRI Intel(R) Ivybridge Desktop"],
-             "vendor"    : ["VMware, Inc."]
-             }
 
 #for testing:
 #GREYLIST["vendor"].append("NVIDIA Corporation")
