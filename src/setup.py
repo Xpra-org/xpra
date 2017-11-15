@@ -1507,9 +1507,7 @@ else:
             if pam_ENABLED:
                 copytodir("etc/pam.d/xpra", "/etc/pam.d")
 
-            #fedora and centos can use just "/lib/systemd/system" here
-            #but debian gets totally confused if we do...
-            systemd_dir = "/usr/lib/systemd/system"
+            systemd_dir = "/lib/systemd/system"
             if service_ENABLED:
                 #Linux init service:
                 if os.path.exists("/bin/systemctl"):
