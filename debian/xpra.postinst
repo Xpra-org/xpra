@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+    configure)
+        if ! getent group xpra >> /dev/null 2>&1; then
+            addgroup --quiet --system xpra
+        fi
+    ;;
+esac
+
+#DEBHELPER#

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+case "${1}" in
+    purge|remove)
+        if [ -x "$(which delgroup)" ]; then
+            delgroup --quiet --system --only-if-empty xpra || true
+        fi
+    ;;
+esac
+
+#DEBHELPER#
