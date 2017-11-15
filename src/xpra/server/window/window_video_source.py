@@ -706,7 +706,7 @@ class WindowVideoSource(WindowSource):
             if not trimmed:
                 sublog("send_delayed_regions: nothing left after removing video region %s", actual_vr)
                 return
-            sublog("send_delayed_regions: substracted %s from %s gives us %s", actual_vr, regions, trimmed)
+            sublog("send_delayed_regions: subtracted %s from %s gives us %s", actual_vr, regions, trimmed)
             regions = trimmed
 
         #merge existing damage delayed region if there is one:
