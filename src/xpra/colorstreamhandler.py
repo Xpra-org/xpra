@@ -113,8 +113,9 @@ class _WinColorStreamHandler(logging.StreamHandler):
         self._set_color(self.FOREGROUND_WHITE)
 
 # select ColorStreamHandler based on platform
+import os
 import sys
-if sys.platform.startswith("win"):
+if sys.platform.startswith("win") and not os.environ.get("MSYSCON"):
     ColorStreamHandler = _WinColorStreamHandler
 else:
     ColorStreamHandler = _AnsiColorStreamHandler
