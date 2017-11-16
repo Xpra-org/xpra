@@ -52,6 +52,7 @@ SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
+CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
 HTTP_UNSUPORTED = """<head>
@@ -918,8 +919,7 @@ class ServerCore(object):
         protocol.invalid_header = self.invalid_header
         authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
-        t = self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
-        self.socket_verify_timer[protocol] = t
+        self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
     def may_wrap_socket(self, conn, socktype, peek_data=b"", line1=b""):
@@ -1128,6 +1128,10 @@ class ServerCore(object):
             protocol not in self._tcp_proxy_clients
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
+
+    def schedule_verify_connection_accepted(self, protocol, timeout=60):
+        t = self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
+        self.socket_verify_timer[protocol] = t
 
     def verify_connection_accepted(self, protocol):
         self.cancel_verify_connection_accepted(protocol)
@@ -1372,6 +1376,8 @@ class ServerCore(object):
                     salt_digest = choose_digest(salt_digest_modes)
                 proto.challenge_sent = True
                 proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest))
+                self.cancel_verify_connection_accepted(proto)
+                self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
                 return False
 
             if not proto.authenticator.authenticate(challenge_response, client_salt):
