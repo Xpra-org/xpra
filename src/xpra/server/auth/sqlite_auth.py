@@ -32,7 +32,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "sql"
 
-    def get_password(self):
+    def get_passwords(self):
         if not os.path.exists(self.filename):
             log.error("Error: sqlauth cannot find the database file '%s'", self.filename)
             return None
@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticator):
             conn = sqlite3.connect(self.filename)
             cursor = conn.cursor()
             cursor.execute(self.password_query, [self.username])
-            data = cursor.fetchone()
+            data = cursor.fetchall()
         except sqlite3.DatabaseError as e:
             log("get_password()", exc_info=True)
             log.error("Error: sqlauth database access problem:")
@@ -50,7 +50,7 @@ class Authenticator(SysAuthenticator):
         if not data:
             log.info("username '%s' not found in sqlauth database", self.username)
             return None
-        return str(data[0])
+        return tuple(str(x[0]) for x in data)
 
     def get_sessions(self):
         try:
@@ -105,7 +105,7 @@ def create(filename):
         log.error("Error: database file '%s' already exists", filename)
         return 1
     sql = ("CREATE TABLE users ("
-           "username CHAR UNIQUE NOT NULL, "
+           "username VARCHAR NOT NULL, "
            "password VARCHAR, "
            "uid INTEGER NOT NULL, "
            "gid INTEGER NOT NULL, "
@@ -118,9 +118,13 @@ def add_user(filename, username, password, uid=getuid(), gid=getgid(), displays=
     sql = "INSERT INTO users(username, password, uid, gid, displays, env_options, session_options) VALUES(?, ?, ?, ?, ?, ?, ?)"
     return exec_database_sql_script(None, filename, sql, (username, password, uid, gid, displays, env_options, session_options))
 
-def remove_user(filename, username):
+def remove_user(filename, username, password=None):
     sql = "DELETE FROM users WHERE username=?"
-    return exec_database_sql_script(None, filename, sql, (username, ))
+    sqlargs = (username, )
+    if password:
+        sql += " AND password=?"
+        sqlargs = (username, password)
+    return exec_database_sql_script(None, filename, sql, sqlargs)
 
 def list_users(filename):
     fields = ["username", "password", "uid", "gid", "displays", "env_options", "session_options"]
@@ -143,7 +147,7 @@ def main(argv):
         print(" %s databasefile create" % sys.argv[0])
         print(" %s databasefile list" % sys.argv[0])
         print(" %s databasefile add username password [uid, gid, displays, env_options, session_options" % sys.argv[0])
-        print(" %s databasefile remove username" % sys.argv[0])
+        print(" %s databasefile remove username [password]" % sys.argv[0])
         return 1
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
@@ -161,9 +165,9 @@ def main(argv):
                 return usage()
             return add_user(filename, *argv[3:])
         elif cmd=="remove":
-            if l!=4:
+            if l not in (4, 5):
                 return usage()
-            return remove_user(filename, argv[3])
+            return remove_user(filename, *argv[3:])
         elif cmd=="list":
             if l!=3:
                 return usage()

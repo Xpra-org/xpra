@@ -63,6 +63,9 @@ class SysAuthenticator(object):
         #we need the raw password, so tell the client to use "xor":
         return self.salt, self.digest
 
+    def get_passwords(self):
+        return (self.get_password(),)
+
     def get_password(self):
         return None
 
@@ -113,15 +116,19 @@ class SysAuthenticator(object):
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return None
         salt = self.get_response_salt(client_salt)
-        password = self.get_password()
-        if not password:
+        passwords = self.get_passwords()
+        if not passwords:
             log.warn("Warning: %s authentication failed", self)
             log.warn(" no password defined for '%s'", self.username)
             return False
-        if not verify_digest(self.digest, password, salt, challenge_response):
-            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
-            return False
-        return True
+        log("found %i passwords using %s", len(passwords), type(self))
+        for x in passwords:
+            if verify_digest(self.digest, x, salt, challenge_response):
+                return True
+        log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
+        if len(passwords)>1:
+            log.warn(" checked %i passwords", len(passwords))
+        return False
 
     def get_sessions(self):
         uid = self.get_uid()
