@@ -1742,14 +1742,11 @@ class WindowSource(object):
             stats = self.statistics.damage_ack_pending.get(damage_packet_sequence)
             #if we timed it out, it may be gone already:
             if stats:
-                start_send_time = stats[0]
-                start_bytecount = stats[2]
                 stats[3] = now
                 stats[4] = bytecount
                 if damage_time>0:
                     damage_out_latency = now-process_damage_time
                     self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
-                    self.statistics.damage_send_speed.append((now, bytecount-start_bytecount, now-start_send_time))
         if damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time

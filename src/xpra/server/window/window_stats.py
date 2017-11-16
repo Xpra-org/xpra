@@ -51,8 +51,6 @@ class WindowPerformanceStatistics(object):
                                                             #last NRECS: (sent_time, no of pixels, actual batch delay, damage_latency)
         self.damage_out_latency = deque(maxlen=NRECS)       #records how long it took for a damage request to be processed
                                                             #last NRECS: (processed_time, no of pixels, actual batch delay, damage_latency)
-        self.damage_send_speed = deque(maxlen=NRECS)        #how long it took to send damage packets (this is not a sustained speed)
-                                                            #last NRECS: (sent_time, no_of_pixels, elapsed_time)
         self.damage_ack_pending = {}                        #records when damage packets are sent
                                                             #so we can calculate the "client_latency" when the client sends
                                                             #the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
@@ -76,8 +74,6 @@ class WindowPerformanceStatistics(object):
         self.max_latency = self.DEFAULT_DAMAGE_LATENCY + self.DEFAULT_NETWORK_LATENCY
         self.avg_decode_speed = -1
         self.recent_decode_speed = -1
-        self.avg_send_speed = -1
-        self.recent_send_speed = -1
 
     def update_averages(self):
         #damage "in" latency: (the time it takes for damage requests to be processed only)
@@ -93,8 +89,6 @@ class WindowPerformanceStatistics(object):
             #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
             self.avg_decode_speed, self.recent_decode_speed = calculate_timesize_weighted_average(list(self.client_decode_time), sizeunit=1000*1000)
         #network send speed:
-        if len(self.damage_send_speed)>0:
-            self.avg_send_speed, self.recent_send_speed = calculate_timesize_weighted_average(list(self.damage_send_speed))
         all_l = [0.1,
                  self.avg_damage_in_latency, self.recent_damage_in_latency,
                  self.avg_damage_out_latency, self.recent_damage_out_latency]
@@ -111,21 +105,6 @@ class WindowPerformanceStatistics(object):
             metric = "damage-network-delay"
             #info: avg delay=%.3f recent delay=%.3f" % (ad, rd)
             factors.append(calculate_for_average(metric, ad, rd))
-        #send speed:
-        ass = self.avg_send_speed
-        rss = self.recent_send_speed
-        if ass>0 and rss>0:
-            #our calculate methods aims for lower values, so invert speed
-            #this is how long it takes to send 1MB:
-            avg1MB = 1.0*1024*1024/ass
-            recent1MB = 1.0*1024*1024/rss
-            #we only really care about this when the speed is quite low,
-            #so adjust the weight accordingly:
-            minspeed = float(128*1024)
-            div = logp(max(rss, minspeed)/minspeed)
-            metric = "network-send-speed"
-            #info: avg=%s, recent=%s (KBytes/s), div=%s" % (int(self.avg_send_speed/1024), int(self.recent_send_speed/1024), div)
-            factors.append(calculate_for_average(metric, avg1MB, recent1MB, weight_offset=1.0, weight_div=div))
         #client decode time:
         ads = self.avg_decode_speed
         rds = self.recent_decode_speed
