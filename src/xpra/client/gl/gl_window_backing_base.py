@@ -231,7 +231,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.pending_fbo_paint = []
         self.last_flush = monotonic_time()
 
-        WindowBackingBase.__init__(self, wid, window_alpha and GLWindowBackingBase.HAS_ALPHA)
+        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
 
         self.init_gl_config(window_alpha)
         self.init_backing()
