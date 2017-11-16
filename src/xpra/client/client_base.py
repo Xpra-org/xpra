@@ -700,7 +700,7 @@ class XpraClientBase(FileTransferHandler):
             authlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
         if not password and PASSWORD_PROMPT:
             try:
-                if sys.stdin.isatty():
+                if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
                     import getpass
                     authlog("stdin isatty, using password prompt")
                     password = getpass.getpass("%s :" % self.get_challenge_prompt())
