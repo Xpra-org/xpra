@@ -1254,6 +1254,10 @@ the window manage and the application may override this too.
 Choose what action to take when the window is closed by the client.
 The following actions can be used:
 .RS
+.IP \fBauto\fP
+The client will figure out what is best based on the window type.
+ie: it will use \fIdisconnect\fP shadow sessions, \Iforward\fP
+for seamless windows.
 .IP \fBforward\fP
 The event will be forwarded to the server.
 .IP \fBignore\fP
