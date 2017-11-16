@@ -89,7 +89,12 @@ class ClientWindow(GTKClientWindowBase):
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual is None or not screen.is_composited():
-            log.error("enable_alpha() cannot handle window transparency on screen %s", screen)
+            log.error("Error: cannot handle window transparency")
+            if visual is None:
+                log.error(" no RGBA visual")
+            else:
+                assert not screen.is_composited()
+                log.error(" screen is not composited")
             return False
         log("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
         self.set_visual(visual)

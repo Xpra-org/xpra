@@ -284,8 +284,8 @@ class GTK2WindowBase(GTKClientWindowBase):
         rgba = screen.get_rgba_colormap()
         statelog("enable_alpha() rgba colormap=%s", rgba)
         if rgba is None:
-            log.error("Error: cannot handle window transparency, no RGBA colormap")
-            return  False
+            log.error("Error: cannot handle window transparency, no RGBA colormap", exc_info=True)
+            return False
         statelog("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
         self.set_colormap(rgba)
         return True
