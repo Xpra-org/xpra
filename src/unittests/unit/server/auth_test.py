@@ -121,7 +121,7 @@ class TestAuth(unittest.TestCase):
 		a = self._init_auth("none")
 		assert not a.requires_challenge()
 		assert a.get_challenge(get_digests()) is None
-        assert not a.get_password()
+		assert not a.get_password()
 		for x in (None, "bar"):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
