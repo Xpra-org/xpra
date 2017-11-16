@@ -64,7 +64,10 @@ class SysAuthenticator(object):
         return self.salt, self.digest
 
     def get_passwords(self):
-        return (self.get_password(),)
+        p = self.get_password()
+        if p is not None:
+            return (p,)
+        return ()
 
     def get_password(self):
         return None

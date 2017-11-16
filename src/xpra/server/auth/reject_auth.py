@@ -26,6 +26,9 @@ class Authenticator(object):
     def get_gid(self):
         return -1
 
+    def get_passwords(self):
+        return ()
+
     def get_password(self):
         return None
 

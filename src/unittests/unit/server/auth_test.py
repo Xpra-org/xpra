@@ -112,7 +112,7 @@ class TestAuth(unittest.TestCase):
 		c, mac = a.get_challenge(get_digests())
 		assert c and mac
 		assert not a.get_sessions()
-		assert not a.get_password()
+		assert not a.get_passwords()
 		for x in (None, "bar"):
 			assert not a.authenticate(x, c)
 			assert not a.authenticate(x, x)
@@ -121,7 +121,7 @@ class TestAuth(unittest.TestCase):
 		a = self._init_auth("none")
 		assert not a.requires_challenge()
 		assert a.get_challenge(get_digests()) is None
-		assert not a.get_password()
+        assert not a.get_password()
 		for x in (None, "bar"):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
@@ -130,7 +130,7 @@ class TestAuth(unittest.TestCase):
 		a = self._init_auth("allow")
 		assert a.requires_challenge()
 		assert a.get_challenge(get_digests())
-		assert not a.get_password()
+		assert not a.get_passwords()
 		for x in (None, "bar"):
 			assert a.authenticate(x, "")
 			assert a.authenticate("", x)
@@ -139,7 +139,7 @@ class TestAuth(unittest.TestCase):
 		for test_password in (password, "somethingelse"):
 			a = self._init_auth(mod_name, **kwargs)
 			assert a.requires_challenge()
-			assert a.get_password()
+			assert a.get_passwords()
 			salt, mac = a.get_challenge([x for x in get_digests() if x.startswith("hmac")])
 			assert salt
 			assert mac.startswith("hmac"), "invalid mac: %s" % mac
@@ -173,8 +173,8 @@ class TestAuth(unittest.TestCase):
 		#no file, no go:
 		a = self._init_auth(mod_name)
 		assert a.requires_challenge()
-		p = a.get_password()
-		assert not p, "got a password from %s: %s" % (a, p)
+		p = a.get_passwords()
+		assert not p, "got passwords from %s: %s" % (a, p)
 		#challenge twice is a fail
 		assert a.get_challenge(get_digests())
 		assert not a.get_challenge(get_digests())
@@ -204,7 +204,9 @@ class TestAuth(unittest.TestCase):
 						verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
 						assert a.authenticate(verify, client_salt)
 						assert not a.authenticate(verify, client_salt)
-						assert a.get_password()==password
+						passwords = a.get_passwords()
+						assert len(passwords)==1, "expected just one password in file, got %i" % len(passwords)
+						assert password in passwords
 					elif muck==1:
 						for verify in ("whatever", None, "bad"):
 							assert not a.authenticate(verify, client_salt)
