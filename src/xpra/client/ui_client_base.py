@@ -2079,6 +2079,8 @@ class UIXpraClient(XpraClientBase):
             data = self.compressed_wrapper("text", strtobytes(msg % args), level=1)
             self.send("logging", level, data)
             exc_info = kwargs.get("exc_info")
+            if exc_info is True:
+                exc_info = sys.exc_info()
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, strtobytes(x))
