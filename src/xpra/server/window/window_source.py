@@ -1253,8 +1253,9 @@ class WindowSource(object):
         if dap:
             log.warn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
-                ack_data = dap[seq]
-                log.warn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
+                ack_data = dap.get(seq)
+                if ack_data and ack_data[0]>0:
+                    log.warn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
         self.cancel_expire_timer()
@@ -1734,26 +1735,26 @@ class WindowSource(object):
         coding = packet[6]
         damage_packet_sequence = packet[8]
         actual_batch_delay = process_damage_time-damage_time
+        ack_pending = [0, coding, 0, 0, 0, width*height]
+        statistics = self.statistics
+        statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
         def start_send(bytecount):
-            now = monotonic_time()
-            self.statistics.damage_ack_pending[damage_packet_sequence] = [now, coding, bytecount, 0, 0, width*height]
+            ack_pending[0] = monotonic_time()
+            ack_pending[2] = bytecount
+            statistics.last_sequence_sending = damage_packet_sequence
         def damage_packet_sent(bytecount):
             now = monotonic_time()
-            stats = self.statistics.damage_ack_pending.get(damage_packet_sequence)
-            #if we timed it out, it may be gone already:
-            if stats:
-                stats[3] = now
-                stats[4] = bytecount
-                if damage_time>0:
-                    damage_out_latency = now-process_damage_time
-                    self.statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
-        if damage_time>0:
+            ack_pending[3] = now
+            ack_pending[4] = bytecount
+            if process_damage_time>0:
+                damage_out_latency = now-process_damage_time
+                statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
+        if process_damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
-            self.statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
-        fail_cb = self.get_fail_cb(packet)
+            statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
-        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, fail_cb)
+        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet))
 
     def get_fail_cb(self, packet):
         def resend():

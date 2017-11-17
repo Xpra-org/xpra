@@ -242,7 +242,7 @@ class WindowPerformanceStatistics(object):
         return packets_backlog, pixels_backlog, bytes_backlog
 
     def get_acks_pending(self):
-        return len(self.damage_ack_pending)
+        return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
 
     def get_packets_backlog(self):
         packets_backlog = 0
