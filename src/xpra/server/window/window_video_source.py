@@ -460,25 +460,21 @@ class WindowVideoSource(WindowSource):
                 return "rgb32"
         #use sliding scale for lossless threshold
         #(high speed favours switching to lossy sooner)
-        #take into account how many pixels need to be encoder:
+        #take into account how many pixels need to be encoded:
         #more pixels means we switch to lossless more easily
         lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
-        if quality<lossless_q and self.image_depth>16:
-            #lossy options:
-            if "jpeg" in options:
-                #assume that we have "turbojpeg",
-                #which beats everything in terms of efficiency for lossy compression:
-                return "jpeg"
-        else:
-            #lossless options:
-            #avoid very small and very large areas (both slow)
-            if speed>75 or self.image_depth>24:
-                if "rgb24" in options:
-                    return "rgb24"
-                if "rgb32" in options:
-                    return "rgb32"
-            if "png" in options:
-                return "png"
+        if quality<lossless_q and self.image_depth>16 and "jpeg" in options:
+            #assume that we have "turbojpeg",
+            #which beats everything in terms of efficiency for lossy compression:
+            return "jpeg"
+        #lossless options:
+        if speed>75 or self.image_depth>24:
+            if "rgb24" in options:
+                return "rgb24"
+            if "rgb32" in options:
+                return "rgb32"
+        if "png" in options:
+            return "png"
         #we failed to find a good match, default to the first of the options..
         if options:
             return options[0]
