@@ -1265,16 +1265,18 @@ def configure_logging(options, mode):
     #register posix signals for debugging:
     if POSIX:
         from xpra.util import dump_all_frames, dump_gc_frames
-        def idle_add(fn):
+        def idle_add(fn, *args):
             from xpra.gtk_common.gobject_compat import import_glib
             glib = import_glib()
-            glib.idle_add(fn)
+            glib.idle_add(fn, *args)
         def sigusr1(*_args):
-            get_util_logger().info("SIGUSR1")
-            idle_add(dump_all_frames)
+            info = get_util_logger().info
+            info("SIGUSR1")
+            idle_add(dump_all_frames, info)
         def sigusr2(*_args):
-            get_util_logger().info("SIGUSR2")
-            idle_add(dump_gc_frames)
+            info = get_util_logger().info
+            info("SIGUSR2")
+            idle_add(dump_gc_frames, info)
         signal.signal(signal.SIGUSR1, sigusr1)
         signal.signal(signal.SIGUSR2, sigusr2)
 
