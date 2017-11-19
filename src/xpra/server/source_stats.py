@@ -12,7 +12,7 @@ from collections import deque
 from xpra.log import Logger
 log = Logger("stats")
 
-from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
+from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_size_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
 from xpra.simple_stats import get_list_stats
 from xpra.os_util import monotonic_time
 
@@ -52,6 +52,8 @@ class GlobalPerformanceStatistics(object):
                                                             #(event_time, elapsed_time_in_seconds)
         self.server_ping_latency = deque(maxlen=NRECS)      #time it took for the client to get a ping_echo back from us:
                                                             #(event_time, elapsed_time_in_seconds)
+        self.congestion_send_speed = deque(maxlen=4*NRECS)  #when we are being throttled, record what speed we are sending at
+                                                            #last NRECS: (event_time, no of pixels, duration)
         self.client_load = None
         self.damage_events_count = 0
         self.packet_count = 0
@@ -66,6 +68,7 @@ class GlobalPerformanceStatistics(object):
         self.min_server_ping_latency = self.DEFAULT_LATENCY
         self.avg_server_ping_latency = self.DEFAULT_LATENCY
         self.recent_server_ping_latency = self.DEFAULT_LATENCY
+        self.avg_congestion_send_speed = 0
 
     def record_latency(self, wid, decode_time, start_send_at, end_send_at, pixels, bytecount):
         now = monotonic_time()
@@ -98,6 +101,13 @@ class GlobalPerformanceStatistics(object):
             data = list(self.server_ping_latency)
             self.min_server_ping_latency = min([x for _,x in data])
             self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
+        #set to 0 if we have less than 2 events in the last 60 seconds:
+        min_time = monotonic_time()-60
+        css = tuple(x for x in self.congestion_send_speed if x[0]>min_time)
+        if len(css)<=1:
+            self.avg_congestion_send_speed = 0
+        else:
+            self.avg_congestion_send_speed = int(calculate_size_weighted_average(list(self.congestion_send_speed))[0])
 
     def get_factors(self, pixel_count):
         factors = []
@@ -153,6 +163,8 @@ class GlobalPerformanceStatistics(object):
     def get_info(self):
         cwqsizes = [x for _,x in list(self.compression_work_qsizes)]
         pqsizes = [x for _,x in list(self.packet_qsizes)]
+        now = monotonic_time()
+        time_limit = now-60             #ignore old records (60s)
         info = {"damage" : {
                             "events"        : self.damage_events_count,
                             "packets_sent"  : self.packet_count,
@@ -164,10 +176,11 @@ class GlobalPerformanceStatistics(object):
                                                },
                             },
                 "encoding" : {"decode_errors"   : self.decode_errors},
+                "congestion" : {
+                    "avg-send-speed"        : self.avg_congestion_send_speed,
+                                },
             }
         #client pixels per second:
-        now = monotonic_time()
-        time_limit = now-30             #ignore old records (30s)
         #pixels per second: decode time and overall
         total_pixels = 0                #total number of pixels processed
         total_time = 0                  #total decoding time

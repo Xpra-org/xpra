@@ -7,7 +7,8 @@
 import unittest
 import random
 
-from xpra.os_util import monotonic_time, WIN32
+from xpra.os_util import monotonic_time
+from xpra.util import iround
 try:
 	from xpra.server import cystats
 except ImportError:
@@ -22,9 +23,6 @@ class TestCystats(unittest.TestCase):
 		sample_size = 1000
 		data = []
 		t = now - sample_size
-		if True:
-			print("skipping test_calculate_timesize_weighted_average test: needs fixing!")
-			return
 		for _ in range(sample_size):
 			s = random.randint(1000, 10000)
 			v = random.random()
@@ -35,34 +33,36 @@ class TestCystats(unittest.TestCase):
 		#the calculations use the ratio of the size divided by the elapsed time,
 		#so check that a predictable ratio gives the expected value:
 		for x in (5, 1000):
-			v = [(now, i*x, i) for i in range(1, 1000)]
-			a, ra = cystats.calculate_timesize_weighted_average(v)
+			v = [(now, i*x, x) for i in range(1, 1000)]
+			a, ra = cystats.calculate_size_weighted_average(v)
 			#but we need to round to an int to compare
-			self.assertEquals(x, int(round(a)))
-			self.assertEquals(x, int(round(ra)))
+			self.assertEqual(x, iround(a), "average should be %i, got %i" % (x, a))
+			self.assertEqual(x, iround(ra), "recent average should be %i, got %i" % (x, ra))
 		def t(v, ea, era):
-			a, ra = cystats.calculate_timesize_weighted_average(v)
-			self.assertEquals(int(round(a)), ea)
-			self.assertEquals(int(round(ra)), era)
+			a, ra = cystats.calculate_size_weighted_average(v)
+			self.assertEqual(iround(a), iround(ea), "average should be %s, got %s" % (iround(ea), iround(a)))
+			self.assertEqual(iround(ra), iround(era), "recent average should be %s, got %s" % (iround(era), iround(ra)))
 		#an old record won't make any difference
 		#compared with one that was taken just now:
-		for v in (1, 10, 10000):
+		for v in (1, 10, 1000):
 			#1 day ago:
 			if now>60*60*24:
-				t([(now-60*60*24, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-				t([(now-60*60*24, 1*1000, 1000), (now, v*1000, 1000)], v, v)
+				t([(now-60*60*24, 1000, 1000), (now, 1000, v)], v, v)
+				t([(now-60*60*24, 2*1000, 1000), (now, 1000, v)], v, v)
 			#1 hour ago:
 			if now>60*60:
-				t([(now-60*60, 100*1000, 1000), (now, v*1000, 1000)], v, v)
-				t([(now-60*60, 1*1000, 1000), (now, v*1000, 1000)], v, v)
+				t([(now-60*60, 1000, 10), (now, 1000, v)], v, v)
 		#but 100s ago starts to make a difference:
-		t([(now-100, 100*1000, 1000), (now, 50*1000, 1000)], 51, 50)
-		t([(now-100, 1*1000, 1000), (now, 50*1000, 1000)], 50, 50)
+		t([(now-100, 1000, 1), (now, 1000, 100)], 99, 100)
+		#with only 10s:
+		t([(now-10, 1000, 1), (now, 1000, 100)], 92, 100)
+		#1 second:
+		t([(now-1, 1000, 1), (now, 1000, 100)], 67, 92)
 		#if using the same time, then size matters more:
 		v = [(now, 100*1000, 1000), (now, 50*1000, 1000)]
-		a, ra = cystats.calculate_timesize_weighted_average(v)
+		a, ra = cystats.calculate_size_weighted_average(v)
 		#recent is the same as "normal" average:
-		self.assertEquals(int(round(a)), int(round(ra)))
+		self.assertEqual(iround(a), iround(ra))
 		self.assertGreater(a, 75)
 		#real data:
 		v =[(1411278021.557095, 157684, 9110), (1411278022.23345, 3744, 1279), (1411278022.376621, 3744, 706),
@@ -79,10 +79,10 @@ class TestCystats(unittest.TestCase):
 			(1411278044.857039, 78, 1367), (1411278044.858723, 1716, 1078), (1411278044.859743, 78, 1876),
 			(1411278044.993883, 78, 824), (1411278044.99714, 78, 796), (1411278045.001942, 78, 714),
 			(1411278045.002884, 1716, 744), (1411278045.004841, 78, 652), (1411278045.772856, 78, 652)]
-		raw_v = [size/elapsed for _,size,elapsed in v]
+		raw_v = [x[2] for x in v]
 		min_v = min(raw_v)
 		max_v = max(raw_v)
-		a, ra = cystats.calculate_timesize_weighted_average(v)
+		a, ra = cystats.calculate_size_weighted_average(v)
 		self.assertLess(a, max_v)
 		self.assertLess(ra, max_v)
 		self.assertGreater(a, min_v)

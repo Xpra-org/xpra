@@ -107,12 +107,18 @@ def calculate_timesize_weighted_average_score(data):
         rw += w
     return int(tv / tw), int(rv / rw)
 
-def calculate_timesize_weighted_average(data, float sizeunit=1.0):
+def calculate_timesize_weighted_average(data, float unit=1.0):
+    #the value is elapsed time,
+    #so we want to divide by the value:
+    recs = tuple((a,b,unit/c) for a,b,c in data)
+    return calculate_size_weighted_average(recs)
+
+def calculate_size_weighted_average(data):
     """
         This is a time weighted average where the size
         of each record also gives it a weight boost.
         This is to prevent small packets from skewing the average.
-        Data format: (event_time, size, elapsed_time)
+        Data format: (event_time, size, value)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
     cdef double now = monotonic_time()              #@DuplicatedSignature
@@ -123,22 +129,22 @@ def calculate_timesize_weighted_average(data, float sizeunit=1.0):
     cdef double event_time                          #@DuplicatedSignature
     cdef double size
     cdef double size_ps
-    cdef double elapsed_time
+    cdef double value
     cdef double pw
     cdef double w                                   #@DuplicatedSignature
     cdef double delta                               #@DuplicatedSignature
-    for event_time, size, elapsed_time in data:
-        if elapsed_time<=0:
+    for event_time, size, value in data:
+        if value<=0:
             continue        #invalid record
         delta = now-event_time
         pw = clogp(size/size_avg)
-        size_ps = max(1, size*sizeunit/elapsed_time)
+        size_ps = max(1, size*value)
         w = pw/(1.0+delta)
         tv += w*size_ps
-        tw += w
+        tw += w*size
         w = pw/(0.1+delta**2)
         rv += w*size_ps
-        rw += w
+        rw += w*size
     return float(tv / tw), float(rv / rw)
 
 def calculate_for_target(metric, float target_value, float avg_value, float recent_value, float aim=0.5, float div=1.0, float slope=0.1, smoothing=logp, float weight_multiplier=1.0):

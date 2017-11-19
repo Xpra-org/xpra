@@ -87,7 +87,7 @@ class WindowPerformanceStatistics(object):
         #client decode speed:
         if len(self.client_decode_time)>0:
             #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
-            self.avg_decode_speed, self.recent_decode_speed = calculate_timesize_weighted_average(list(self.client_decode_time), sizeunit=1000*1000)
+            self.avg_decode_speed, self.recent_decode_speed = calculate_timesize_weighted_average(list(self.client_decode_time), unit=1000*1000)
         #network send speed:
         all_l = [0.1,
                  self.avg_damage_in_latency, self.recent_damage_in_latency,
@@ -244,10 +244,10 @@ class WindowPerformanceStatistics(object):
     def get_acks_pending(self):
         return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
 
-    def get_packets_backlog(self):
+    def get_packets_backlog(self, latency_tolerance_pct=100):
         packets_backlog = 0
         if len(self.damage_ack_pending)>0:
-            sent_before = monotonic_time()-(self.target_latency+0.020)
+            sent_before = monotonic_time()-((self.target_latency+0.020)*100.0/latency_tolerance_pct)
             for _, (start_send_at, _, _, end_send_at, _, _) in self.damage_ack_pending.items():
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
@@ -260,9 +260,14 @@ class WindowPerformanceStatistics(object):
             count += 1
         return pixels, count
 
-    def get_bits_encoded(self, elapsed=1):
-        cutoff = monotonic_time()-elapsed
-        return sum(v[4] for v in self.encoding_stats if v[0]>cutoff) * 8
+    def get_bitrate(self, max_elapsed=1):
+        cutoff = monotonic_time()-max_elapsed
+        recs = tuple((v[0], v[4]) for v in self.encoding_stats if v[0]>=cutoff)
+        if len(recs)<2:
+            return 0
+        bits = sum(v[1] for v in recs) * 8
+        elapsed = recs[-1][0]-recs[0][0]
+        return bits/elapsed
 
     def get_damage_pixels(self, elapsed=1):
         cutoff = monotonic_time()-elapsed

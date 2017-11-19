@@ -61,7 +61,7 @@ from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import get_list_stats
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
-from xpra.server.cystats import time_weighted_average   #@UnresolvedImport
+from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.server.picture_encode import rgb_encode, mmap_send, argb_swap
@@ -1207,13 +1207,13 @@ class WindowSource(object):
         delayed = self._damage_delayed
         if not delayed:
             #region has been sent
-            return
+            return False
         self.cancel_may_send_timer()
         self.may_send_delayed()
         delayed = self._damage_delayed
         if not delayed:
             #got sent
-            return
+            return False
         #the region has not been sent yet because we are waiting for damage ACKs from the client
         if self.soft_expired<self.max_soft_expired:
             #there aren't too many regions soft expired yet
@@ -1227,6 +1227,7 @@ class WindowSource(object):
             #but if somehow they go missing... clean it up from a timeout:
             delayed_region_time = delayed[0]
             self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay, self.delayed_region_timeout, delayed_region_time)
+        return False
 
     def delayed_region_soft_timeout(self):
         self.soft_timer = None
@@ -1253,8 +1254,8 @@ class WindowSource(object):
         if dap:
             log.warn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
-                ack_data = dap.get(seq)
-                if ack_data and ack_data[0]>0:
+                ack_data = dap[seq]
+                if ack_data[0]>0:
                     log.warn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
         #re-try: cancel anything pending and do a full quality refresh
         self.cancel_damage()
@@ -1308,7 +1309,7 @@ class WindowSource(object):
                 self.do_send_delayed()
             return
         if self.bandwidth_limit>0:
-            used = self.statistics.get_bits_encoded()
+            used = self.statistics.get_bitrate()
             log("may_send_delayed() bandwidth limit=%i, used=%i : %i%%", self.bandwidth_limit, used, 100*used//self.bandwidth_limit)
             if used>=self.bandwidth_limit:
                 check_again(50)
@@ -1733,11 +1734,14 @@ class WindowSource(object):
         width = packet[4]
         height = packet[5]
         coding = packet[6]
+        ldata = len(packet[7])
         damage_packet_sequence = packet[8]
         actual_batch_delay = process_damage_time-damage_time
         ack_pending = [0, coding, 0, 0, 0, width*height]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
+        gs = self.global_statistics
+        max_send_delay = int(5*logp(ldata/1024.0))
         def start_send(bytecount):
             ack_pending[0] = monotonic_time()
             ack_pending[2] = bytecount
@@ -1749,6 +1753,14 @@ class WindowSource(object):
             if process_damage_time>0:
                 damage_out_latency = now-process_damage_time
                 statistics.damage_out_latency.append((now, width*height, actual_batch_delay, damage_out_latency))
+            if gs:
+                elapsed = now-ack_pending[0]
+                send_speed = 0
+                if elapsed>0:
+                    send_speed = int(8*ldata/elapsed)
+                if elapsed*1000>max_send_delay and send_speed<100*1024*1024:
+                    log("recording congestion send speed=%i", send_speed)
+                    gs.congestion_send_speed.append((now, ldata, send_speed))
         if process_damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
@@ -1960,7 +1972,7 @@ class WindowSource(object):
         end = monotonic_time()
         compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
-        self.statistics.encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
+        self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}, options={}):

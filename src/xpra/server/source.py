@@ -64,6 +64,7 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
+DETECT_BANDWIDTH_LIMIT = envbool("XPRA_DETECT_BANDWIDTH_LIMIT", True)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -442,6 +443,7 @@ class ServerSource(FileTransferHandler):
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
         self.bandwidth_limit = self.server_bandwidth_limit
+        self.soft_bandwidth_limit = self.bandwidth_limit
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -508,7 +510,22 @@ class ServerSource(FileTransferHandler):
 
 
     def update_bandwidth_limits(self):
-        if self.bandwidth_limit<=0 or self.mmap_size>0:
+        if self.mmap_size>0:
+            return
+        #calculate soft bandwidth limit based on send congestion data:
+        bandwidth_limit = 0
+        if DETECT_BANDWIDTH_LIMIT:
+            bandwidth_limit = self.statistics.avg_congestion_send_speed
+            statslog("avg_congestion_send_speed=%s", bandwidth_limit)
+            if bandwidth_limit>20*1024*1024:
+                #ignore congestion speed if greater 20Mbps
+                bandwidth_limit = 0
+        if self.bandwidth_limit>0:
+            #command line options could overrule what we detect?
+            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
+        self.soft_bandwidth_limit = bandwidth_limit
+        statslog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
+        if self.soft_bandwidth_limit<=0:
             return
         #figure out how to distribute the bandwidth amongst the windows,
         #we use the window size,
@@ -527,7 +544,7 @@ class ServerSource(FileTransferHandler):
         for wid, ws in self.window_sources.items():
             weight = window_weight.get(wid)
             if weight is not None:
-                ws.bandwidth_limit = max(1, self.bandwidth_limit*weight/total_weight)
+                ws.bandwidth_limit = max(1, bandwidth_limit*weight/total_weight)
 
     def recalculate_delays(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
@@ -538,8 +555,8 @@ class ServerSource(FileTransferHandler):
         if self.is_closed():
             return
         self.calculate_last_time = monotonic_time()
-        self.update_bandwidth_limits()
         self.statistics.update_averages()
+        self.update_bandwidth_limits()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()
@@ -1620,7 +1637,10 @@ class ServerSource(FileTransferHandler):
                 "suspended"         : self.suspended,
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
-                "bandwidth-limit"   : self.bandwidth_limit,
+                "bandwidth-limit"   : {
+                    "setting"       : self.bandwidth_limit,
+                    "actual"        : self.soft_bandwidth_limit,
+                    }
                 }
         if self.desktop_mode_size:
             info["desktop_mode_size"] = self.desktop_mode_size
