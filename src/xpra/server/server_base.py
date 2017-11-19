@@ -2170,9 +2170,9 @@ class ServerBase(ServerCore):
             self.do_send_info(proto, info, flatten)
             end = monotonic_time()
             log.info("processed %s info request from %s in %ims", ["structured", "flat"][flatten], proto._conn, (end-start)*1000)
-        self.get_all_info(cb, proto, self._id_to_window.keys())
+        self.get_all_info(cb, proto, None, self._id_to_window.keys())
 
-    def get_ui_info(self, _proto, wids=None, *_args):
+    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
