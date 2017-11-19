@@ -501,8 +501,8 @@ rm -rf $RPM_BUILD_ROOT
 %files common-server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
 %{_bindir}/udev_product_version
-%{_prefix}/lib/systemd/system/xpra.service
-%{_prefix}/lib/systemd/system/xpra.socket
+/lib/systemd/system/xpra.service
+/lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
