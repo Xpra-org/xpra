@@ -56,6 +56,7 @@ DIR=xpra-html5-${VERSION}
 rm -fr ${DIR}
 mkdir ${DIR}
 cp -apr src/html5 src/setup_html5.py ${DIR}
+rm -f ${DIR}.tar*
 tar -cf ${DIR}.tar ${DIR}
 ls -la ${DIR}.tar
 xz -k ${DIR}.tar
