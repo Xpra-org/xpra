@@ -554,7 +554,9 @@ class ServerSource(FileTransferHandler):
         self.calculate_timer = 0
         if self.is_closed():
             return
-        self.calculate_last_time = monotonic_time()
+        now = monotonic_time()
+        self.calculate_last_time = now
+        self.statistics.bytes_sent.append((now, self.protocol._conn.output_bytecount))
         self.statistics.update_averages()
         self.update_bandwidth_limits()
         wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
@@ -587,7 +589,6 @@ class ServerSource(FileTransferHandler):
             #(ideally this would be a low priority thread)
             sleep(0)
         #calculate weighted average as new global default delay:
-        now = monotonic_time()
         wdimsum, wdelay, tsize, tcount = 0, 0, 0, 0
         for ws in list(self.window_sources.values()):
             if ws.batch_config.last_updated<=0:

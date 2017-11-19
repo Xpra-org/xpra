@@ -52,8 +52,10 @@ class GlobalPerformanceStatistics(object):
                                                             #(event_time, elapsed_time_in_seconds)
         self.server_ping_latency = deque(maxlen=NRECS)      #time it took for the client to get a ping_echo back from us:
                                                             #(event_time, elapsed_time_in_seconds)
-        self.congestion_send_speed = deque(maxlen=4*NRECS)  #when we are being throttled, record what speed we are sending at
+        self.congestion_send_speed = deque(maxlen=NRECS//4) #when we are being throttled, record what speed we are sending at
                                                             #last NRECS: (event_time, no of pixels, duration)
+        self.bytes_sent = deque(maxlen=NRECS//4)            #how much bandwidth we are using
+                                                            #last NRECS: (sample_time, bytes)
         self.client_load = None
         self.damage_events_count = 0
         self.packet_count = 0
@@ -104,7 +106,7 @@ class GlobalPerformanceStatistics(object):
         #set to 0 if we have less than 2 events in the last 60 seconds:
         min_time = monotonic_time()-60
         css = tuple(x for x in self.congestion_send_speed if x[0]>min_time)
-        if len(css)<=1:
+        if len(css)<=2:
             self.avg_congestion_send_speed = 0
         else:
             self.avg_congestion_send_speed = int(calculate_size_weighted_average(list(self.congestion_send_speed))[0])
