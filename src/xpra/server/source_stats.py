@@ -12,7 +12,7 @@ from collections import deque
 from xpra.log import Logger
 log = Logger("stats")
 
-from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_size_weighted_average, calculate_for_target, queue_inspect  #@UnresolvedImport
+from xpra.server.cystats import logp, calculate_time_weighted_average, calculate_size_weighted_average, calculate_for_target, time_weighted_average, queue_inspect  #@UnresolvedImport
 from xpra.simple_stats import get_list_stats
 from xpra.os_util import monotonic_time
 
@@ -53,10 +53,12 @@ class GlobalPerformanceStatistics(object):
         self.server_ping_latency = deque(maxlen=NRECS)      #time it took for the client to get a ping_echo back from us:
                                                             #(event_time, elapsed_time_in_seconds)
         self.congestion_send_speed = deque(maxlen=NRECS//4) #when we are being throttled, record what speed we are sending at
-                                                            #last NRECS: (event_time, no of pixels, duration)
+                                                            #last NRECS: (event_time, lateness_pct, duration)
         self.bytes_sent = deque(maxlen=NRECS//4)            #how much bandwidth we are using
                                                             #last NRECS: (sample_time, bytes)
         self.client_load = None
+        self.last_congestion_time = 0
+        self.congestion_value = 0
         self.damage_events_count = 0
         self.packet_count = 0
         self.decode_errors = 0
@@ -110,6 +112,17 @@ class GlobalPerformanceStatistics(object):
             self.avg_congestion_send_speed = 0
         else:
             self.avg_congestion_send_speed = int(calculate_size_weighted_average(list(self.congestion_send_speed))[0])
+        #how often we get congestion events:
+        #first chunk it into second intervals
+        now = monotonic_time()
+        min_time = now-10
+        cst = tuple(x[0] for x in css)
+        cps = []
+        for t in range(10):
+            etime = now-t
+            cps.append((etime, sum(1 for x in cst if x>etime-1 and x<=etime)))
+        #log("cps(%s)=%s (now=%s)", cst, cps, now)
+        self.congestion_value = time_weighted_average(cps)
 
     def get_factors(self, pixel_count):
         factors = []
@@ -141,6 +154,8 @@ class GlobalPerformanceStatistics(object):
             full = 1.0-float(self.mmap_free_size)/self.mmap_size
             #aim for ~33%
             factors.append(("mmap-area", "%s%% full" % int(100*full), logp(3*full), (3*full)**2))
+        if self.congestion_value>0:
+            factors.append(("congestion", {}, 1+self.congestion_value, self.congestion_value*10))
         return factors
 
     def get_client_info(self):
@@ -180,6 +195,7 @@ class GlobalPerformanceStatistics(object):
                 "encoding" : {"decode_errors"   : self.decode_errors},
                 "congestion" : {
                     "avg-send-speed"        : self.avg_congestion_send_speed,
+                    "elapsed-time"          : now-self.last_congestion_time,
                                 },
             }
         #client pixels per second:

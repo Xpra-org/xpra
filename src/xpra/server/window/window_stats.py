@@ -137,8 +137,8 @@ class WindowPerformanceStatistics(object):
             cutoff = monotonic_time()-1
             used = sum(v[4] for v in self.encoding_stats if v[0]>cutoff) * 8
             info = {
-                "bandwidth-limit"   : bandwidth_limit,
-                "bandwidth-used"    : used,
+                "budget"  : bandwidth_limit,
+                "used"    : used,
                 }
             #aim for 10% below the limit:
             target = used*110.0/100.0/bandwidth_limit

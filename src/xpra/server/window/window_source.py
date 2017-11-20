@@ -1758,10 +1758,10 @@ class WindowSource(object):
             ack_pending[4] = bytecount
             if process_damage_time>0:
                 statistics.damage_out_latency.append((now, width*height, actual_batch_delay, now-process_damage_time))
-            elapsed = now-ack_pending[0]
+            elapsed_ms = int((now-ack_pending[0])*1000)
             #if this packet completed late, record congestion send speed:
-            if elapsed*1000>max_send_delay:
-                self.record_congestion_event(ldata)
+            if elapsed_ms>max_send_delay and ldata>1024:
+                self.record_congestion_event((elapsed_ms*100/max_send_delay)-100)
         if process_damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
@@ -1778,7 +1778,7 @@ class WindowSource(object):
             self.idle_add(self.damage, x, y, width, height)
         return resend
 
-    def record_congestion_event(self, ldata):
+    def record_congestion_event(self, late_pct):
         gs = self.global_statistics
         if not gs or len(gs.bytes_sent)<5:
             return
@@ -1801,9 +1801,10 @@ class WindowSource(object):
         bcount = svalue1-svalue2
         t = stime1-stime2
         if t>0 and t<10:
-            send_speed = bcount*8/t
-            statslog("record_congestion_event(%i) %iKbps", ldata, send_speed/1024)
-            gs.congestion_send_speed.append((now, ldata, send_speed))
+            send_speed = int(bcount*8/t)
+            statslog("record_congestion_event(%i) %iKbps", late_pct, send_speed/1024)
+            gs.congestion_send_speed.append((now, late_pct, send_speed))
+            gs.last_congestion_time = now
 
     def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
         """
