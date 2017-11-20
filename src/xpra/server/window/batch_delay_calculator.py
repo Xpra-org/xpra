@@ -190,6 +190,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
                                            "rel_factor" : int(100.0*dam_lat_rel),
                                            },
             "decoding_latency"          : {
+                                           "avg"      : int(statistics.avg_decode_speed or 0),
                                            "target"   : int(target_decode_speed),
                                            "factor"   : int(100.0*dec_lat),
                                            },
