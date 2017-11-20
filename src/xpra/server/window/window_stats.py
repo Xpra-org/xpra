@@ -23,6 +23,7 @@ from xpra.os_util import monotonic_time
 from xpra.util import engs, csv, envint
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
+    calculate_size_weighted_average,        #@UnresolvedImport
     calculate_timesize_weighted_average,    #@UnresolvedImport
     calculate_for_average)                  #@UnresolvedImport
 
@@ -86,8 +87,11 @@ class WindowPerformanceStatistics(object):
             self.avg_damage_out_latency, self.recent_damage_out_latency = calculate_time_weighted_average(data)
         #client decode speed:
         if len(self.client_decode_time)>0:
-            #the elapsed time recorded is in microseconds, so multiply by 1000*1000 to get the real value:
-            self.avg_decode_speed, self.recent_decode_speed = calculate_timesize_weighted_average(list(self.client_decode_time), unit=1000*1000)
+            #the elapsed time recorded is in microseconds:
+            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in self.client_decode_time)
+            r = calculate_size_weighted_average(decode_speed)
+            self.avg_decode_speed = int(r[0])
+            self.recent_decode_speed = int(r[1])
         #network send speed:
         all_l = [0.1,
                  self.avg_damage_in_latency, self.recent_damage_in_latency,
