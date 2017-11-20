@@ -1544,7 +1544,10 @@ class WindowSource(object):
             return
         #queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time)
+        self.schedule_auto_refresh(packet, options)
 
+
+    def schedule_auto_refresh(self, packet, options):
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
@@ -1597,21 +1600,21 @@ class WindowSource(object):
                 #try to take into account speed and quality:
                 #delay more when quality is low
                 #delay less when speed is high
-                #(the resulting range is 100*100 to 200*200)
-                qsmult = (200-self._current_quality) * (100+self._current_speed)
+                #delay a lot more when we have bandwidth issues
+                qsmult = (200-self._current_quality) * (100+self._current_speed) * (100+self.global_statistics.congestion_value*500)
                 #important: must check both, I think:
                 if target_time==0 or not self.refresh_timer:
                     #this means we must schedule the refresh
                     self.refresh_event_time = monotonic_time()
                     #delay in milliseconds: always at least the settings,
                     #more if we have more than 50% of the window pixels to update:
-                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100))
+                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100*100))
                     self.refresh_target_time = now + sched_delay/1000.0
                     self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
                     msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
                 else:
                     #add to the target time, but this will not move it forwards for small updates following big ones:
-                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100))
+                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100*100))
                     self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                     msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         self.last_auto_refresh_message = monotonic_time(), msg
@@ -1791,7 +1794,7 @@ class WindowSource(object):
                 break
         i += 1
         #find a sample more than 4 seconds earlier,
-        #with at least 2KB send in between:
+        #with at least 2KB sent in between:
         while i<len(gs.bytes_sent):
             stime2, svalue2 = gs.bytes_sent[-i]
             if stime1-stime2>4 and (svalue1-svalue2)>2000:
