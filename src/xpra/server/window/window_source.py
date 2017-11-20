@@ -219,8 +219,8 @@ class WindowSource(object):
         self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
-        self._current_quality = 50
-        self._current_speed = 50
+        self._current_quality = 40
+        self._current_speed = 40
         self._want_alpha = False
         self._lossless_threshold_base = 85
         self._lossless_threshold_pixel_boost = 20
@@ -990,7 +990,7 @@ class WindowSource(object):
         self.may_update_av_sync_delay()
 
     def update_speed(self):
-        if self.suspended or self._mmap:
+        if self.suspended or self._mmap or self._sequence<10:
             return
         speed = self._fixed_speed
         if speed<=0:
@@ -1004,7 +1004,7 @@ class WindowSource(object):
             info = {}
             speed = min(100, speed)
         self._current_speed = int(speed)
-        statslog("update_speed() info=%s, speed=%s", info, self._current_speed)
+        statslog("update_speed() wid=%s, info=%s, speed=%s", self.wid, info, self._current_speed)
         self._encoding_speed.append((monotonic_time(), info, self._current_speed))
 
     def set_min_speed(self, min_speed):
@@ -1022,8 +1022,7 @@ class WindowSource(object):
 
 
     def update_quality(self):
-        statslog("update_quality() suspended=%s, mmap=%s, encoding=%s", self.suspended, self._mmap, self.encoding)
-        if self.suspended or self._mmap:
+        if self.suspended or self._mmap or self._sequence<10:
             return
         if self.encoding in ("rgb", "png", "png/P", "png/L"):
             #the user has selected an encoding which does not use quality
@@ -1042,7 +1041,7 @@ class WindowSource(object):
             info = {}
             quality = min(100, quality)
         self._current_quality = int(quality)
-        statslog("update_quality() info=%s, quality=%s", info, self._current_quality)
+        statslog("update_quality() wid=%i, info=%s, quality=%s", self.wid, info, self._current_quality)
         self._encoding_quality.append((monotonic_time(), info, self._current_quality))
 
     def set_min_quality(self, min_quality):
