@@ -192,7 +192,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
                                            },
             "decoding_latency"          : {
                                            "avg"      : int(statistics.avg_decode_speed or 0),
-                                           "target"   : int(target_decode_speed),
+                                           "min"      : int(min_decode_speed),
                                            "factor"   : int(100.0*dec_lat),
                                            },
             "congestion-value"          : int(1000*global_statistics.congestion_value),
