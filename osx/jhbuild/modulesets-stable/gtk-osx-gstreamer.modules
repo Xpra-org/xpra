@@ -19,7 +19,7 @@
   </autotools>
 
   <autotools id="liborc" autogen-sh="configure">
-    <branch repo="gstreamer" module="orc/orc-0.4.26.tar.xz" version="0.4.26" hash="sha1:8a735b48051facb35b2b2cc57e8e2014a1e25c8a"/>
+    <branch repo="gstreamer" module="orc/orc-0.4.28.tar.xz" version="0.4.28" hash="sha256:bfcd7c6563b05672386c4eedfc4c0d4a0a12b4b4775b74ec6deb88fc2bcd83ce"/>
   </autotools>
 
   <autotools id="faad2" autogen-sh="autoreconf"
