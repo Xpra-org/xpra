@@ -146,10 +146,11 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
 
     #ensure we decode at a reasonable speed (for slow / low-power clients)
     #maybe this should be configurable?
-    target_decode_speed = 8*1000*1000.0      #8 MPixels/s
-    dec_lat = 0.0
-    if statistics.avg_decode_speed>0:
-        dec_lat = target_decode_speed/(statistics.avg_decode_speed or target_decode_speed)
+    min_decode_speed = 1*1000*1000      #MPixels/s
+    dec_lat = 0
+    ads = statistics.avg_decode_speed
+    if ads>0 and ads<(4*min_decode_speed):
+        dec_lat = min_decode_speed/ads
 
     #if we have more pixels to encode, we may need to go faster
     #(this is important because the damage latency used by the other factors
