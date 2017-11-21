@@ -219,8 +219,8 @@ class WindowSource(object):
         self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
-        self._current_quality = 40
-        self._current_speed = 40
+        self._current_quality = self._fixed_quality or 40
+        self._current_speed = self._fixed_speed or 40
         self._want_alpha = False
         self._lossless_threshold_base = 85
         self._lossless_threshold_pixel_boost = 20
