@@ -670,9 +670,9 @@
 
 
   <distutils id="python-lz4">
-	<branch repo="github.com"
-	        module="/python-lz4/python-lz4/archive/v0.11.1.tar.gz"
-	        hash="sha256:bb6554663a944723c2f05aa789f70ec8c18212c6543f5f161db0f21b5cf66d0c"
+	<branch repo="pypi.python.org"
+	        module="/packages/3c/00/668df8820cfafe54257a1e2e723c9bfcd1bd88f5ffe250b6fc6c0cef0fd1/lz4-0.11.1.tar.gz"
+	        hash="sha256:440bbb039e15c09b049c0a8c1294978341d3fac943b83e04ff3f9e3b7ec0058b"
 	        version="0.11.1"/>
         <dependencies>
                 <dep package="python"/>
