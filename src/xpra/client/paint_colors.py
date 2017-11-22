@@ -11,6 +11,7 @@ DEFAULT_BOX_COLORS = {
     "vp8"       : "green",
     "rgb24"     : "orange",
     "rgb32"     : "red",
+    "webp"      : "pink",
     "jpeg"      : "purple",
     "png/P"     : "indigo",
     "png/L"     : "teal",

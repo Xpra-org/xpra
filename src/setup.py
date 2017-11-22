@@ -185,6 +185,7 @@ enc_proxy_ENABLED       = DEFAULT
 enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
 enc_x265_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
+webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = False
@@ -214,7 +215,7 @@ rebuild_ENABLED         = True
 #allow some of these flags to be modified on the command line:
 SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
-            "vpx", "pillow", "jpeg",
+            "vpx", "webp", "pillow", "jpeg",
             "v4l2",
             "dec_avcodec2", "csc_swscale",
             "csc_libyuv",
@@ -935,6 +936,8 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/v4l2/constants.pxi",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/libav_common/av_log.c",
+                   "xpra/codecs/webp/encode.c",
+                   "xpra/codecs/webp/decode.c",
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
@@ -2061,6 +2064,16 @@ if enc_x265_ENABLED:
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 if pillow_ENABLED:
     external_includes += ["PIL", "PIL.Image", "PIL.WebPImagePlugin"]
+
+toggle_packages(webp_ENABLED, "xpra.codecs.webp")
+if webp_ENABLED:
+    webp_pkgconfig = pkgconfig("webp")
+    cython_add(Extension("xpra.codecs.webp.encode",
+                    ["xpra/codecs/webp/encode.pyx"],
+                    **webp_pkgconfig))
+    cython_add(Extension("xpra.codecs.webp.decode",
+                ["xpra/codecs/webp/decode.pyx"],
+                **webp_pkgconfig))
 
 toggle_packages(jpeg_ENABLED, "xpra.codecs.jpeg")
 if jpeg_ENABLED:

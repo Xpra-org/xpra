@@ -10,6 +10,7 @@ log = Logger("window", "encoding")
 from xpra.net import compression
 from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
+from xpra.util import envbool
 from xpra.os_util import memoryview_to_bytes, bytestostr, strtobytes, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
@@ -17,6 +18,8 @@ try:
     from xpra.net.mmap_pipe import mmap_write
 except:
     mmap_write = None               #no mmap
+
+WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 
 
 #give warning message just once per key then ignore:
@@ -26,6 +29,34 @@ def warn_encoding_once(key, message):
     if key not in encoding_warnings:
         log.warn("Warning: "+message)
         encoding_warnings.add(key)
+
+
+def webp_encode(image, rgb_formats, supports_transparency, quality, speed):
+    pixel_format = image.get_pixel_format()
+    #log("webp_encode%s", (coding, image, rgb_formats, supports_transparency, quality, speed))
+    if pixel_format not in rgb_formats:
+        watnted_formats = [x for x in rgb_formats if x in ("BGRA", "BGRX", "RGBA", "RGBX")]
+        if not rgb_reformat(image, watnted_formats, supports_transparency):
+            raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
+        #get the new format:
+        pixel_format = image.get_pixel_format()
+    stride = image.get_rowstride()
+    enc_webp = get_codec("enc_webp")
+    #log("WEBP_PILLOW=%s, enc_webp=%s, stride=%s, pixel_format=%s", WEBP_PILLOW, enc_webp, stride, pixel_format)
+    if not WEBP_PILLOW and enc_webp and stride>0 and stride%4==0 and pixel_format in ("BGRA", "BGRX", "RGBA", "RGBX"):
+        #prefer Cython module:
+        cdata, client_options = enc_webp.compress(image, quality, speed, supports_transparency)
+        return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
+    #fallback using Pillow:
+    enc_pillow = get_codec("enc_pillow")
+    if enc_pillow:
+        if not WEBP_PILLOW:
+            log.warn("Warning: using PIL fallback for webp")
+            log.warn(" enc_webp=%s, stride=%s, pixel format=%s", enc_webp, stride, image.get_pixel_format())
+        for x in ("webp", "png"):
+            if x in enc_pillow.get_encodings():
+                return enc_pillow.encode(x, image, quality, speed, supports_transparency)
+    raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
 
 
 def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -44,7 +44,7 @@ class TestChangeSettings(CommandConnectClient):
         self.queue = []
         for i in range(10):
             self.queue.append(("command_request", "auto-refresh", "%.4f" % (i/100)))
-            for encoding in ("rgb", "png", "jpeg", "h264", "vp8"):
+            for encoding in ("rgb", "png", "jpeg", "h264", "vp8", "webp"):
                 self.queue.append(("command_request", "encoding", encoding, "strict"))
                 self.queue.append(("command_request", "quality", "*", 1))
                 self.queue.append(("command_request", "quality", "*", 100))

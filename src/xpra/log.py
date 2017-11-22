@@ -216,6 +216,8 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("nvfbc"        , "nfbc screen capture"),
                 ("x264"         , "libx264 encoder"),
                 ("x265"         , "libx265 encoder"),
+                ("xvid"         , "Xvid encoder"),
+                ("webp"         , "libwebp encoder and decoder"),
                 ("webcam"       , "webcam access"),
                 ])),
     ("Pointer", OrderedDict([

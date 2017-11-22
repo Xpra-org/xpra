@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from PIL import Image           #@UnresolvedImport
 from io import BytesIO
 
 
-def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
+def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg", "webp"], N=5, Q=[0, 50, 100], S=[0, 1, 50, 90, 100], has_alpha=False):
     from xpra.codecs.pillow.encode import encode
     from xpra.codecs.image_wrapper import ImageWrapper
     image = ImageWrapper(0, 0, w, h, rgb_data, "BGRA", 32, w*4, planes=ImageWrapper.PACKED, thread_safe=True)
@@ -24,6 +24,8 @@ def do_test_encode(rgb_data, w, h, encodings=["png", "png/P", "png/L", "jpeg"], 
         if encoding in ("png", "png/P", "png/L"):
             Q_options = [-1]
         S_options = S
+        if encoding=="webp":
+            S_options = [-1]
         if encoding in ("jpeg"):
             S_options = [0, -1]
         for q in Q_options:

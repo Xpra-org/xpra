@@ -152,6 +152,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         codec_import_check("enc_pillow", "Pillow encoder", "xpra.codecs.pillow", "xpra.codecs.pillow.encode", "encode")
         add_codec_version("enc_pillow", "xpra.codecs.pillow.encode")
 
+        codec_import_check("enc_webp", "webp encoder", "xpra.codecs.webp", "xpra.codecs.webp.encode", "compress")
+        add_codec_version("enc_webp", "xpra.codecs.webp.encode")
+
         codec_import_check("enc_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.encoder", "encoder")
         add_codec_version("enc_jpeg", "xpra.codecs.jpeg.encoder")
 
@@ -182,6 +185,9 @@ def load_codecs(encoders=True, decoders=True, csc=True):
         show += list(DECODER_CODECS)
         codec_import_check("dec_pillow", "Pillow decoder", "xpra.codecs.pillow", "xpra.codecs.pillow.decode", "decode")
         add_codec_version("dec_pillow", "xpra.codecs.pillow.decode")
+
+        codec_import_check("dec_webp", "webp decoder", "xpra.codecs.webp", "xpra.codecs.webp.decode", "decompress")
+        add_codec_version("dec_webp", "xpra.codecs.webp.decode")
 
         codec_import_check("dec_jpeg", "JPEG decoder", "xpra.codecs.jpeg", "xpra.codecs.jpeg.decoder", "decoder")
         add_codec_version("dec_jpeg", "xpra.codecs.jpeg.decoder")
@@ -228,16 +234,16 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_libyuv"
-ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_jpeg"
-DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_avcodec2", "dec_jpeg"
+ENCODER_CODECS = "enc_pillow", "enc_vpx", "enc_webp", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg", "enc_jpeg"
+DECODER_CODECS = "dec_pillow", "dec_vpx", "dec_webp", "dec_avcodec2", "dec_jpeg"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
 #encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "png/P", "png/L", "rgb"]
+EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
 
 
 def get_rgb_compression_options():
@@ -255,6 +261,7 @@ def get_encoding_name(encoding):
           "h265"    : "H.265",
           "mpeg4"   : "MPEG4",
           "vp8"     : "VP8",
+          "webp"    : "WebP",
           "vp9"     : "VP9",
           "png"     : "PNG (24/32bpp)",
           "png/P"   : "PNG (8bpp colour)",
@@ -277,11 +284,12 @@ def get_encoding_help(encoding):
           "png"     : "Portable Network Graphics (lossless, 24bpp or 32bpp for transparency)",
           "png/P"   : "Portable Network Graphics (lossy, 8bpp colour)",
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
+          "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
           "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           }.get(encoding)
 
-HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "rgb", "jpeg")
+HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )

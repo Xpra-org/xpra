@@ -371,7 +371,7 @@ may be overridden on the client.
 \fB\-\-encoding\fP=\fIENCODING\fP
 This specifies the image encoding to use,
 there are a number of encodings supported:
-\fBjpeg\fP, \fBpng\fP, \fBpng/P\fP, \fBpng/L\fP, \fBrgb\fP, \fBvp8\fP, \fBvp9\fP, \fBh264\fP and \fBh265\fP
+\fBjpeg\fP, \fBpng\fP, \fBpng/P\fP, \fBpng/L\fP, \fBwebp\fP, \fBrgb\fP, \fBvp8\fP, \fBvp9\fP, \fBh264\fP and \fBh265\fP
 (some may not be available in your environment).
 The default option is \fBauto\fP which allows the server to
 select the best encoding automatically.
@@ -388,6 +388,10 @@ compressed and lossy: grayscale only using a palette.
 .IP \fBrgb\fP
 a raw pixel format (lossless) compressed with lz4, lzo or zlib (see \fIcompressors\fP)
 the compression ratio is lower, but it is by far the fastest encoding available.
+.IP \fBwebp\fP
+can be used in lossy or lossless mode,
+useful for graphical applications,
+it compresses better than jpeg and is reasonably fast except at high resolutions.
 .IP \fBjpeg\fP
 can be useful for graphical applications,
 it is lossy and usually very fast.

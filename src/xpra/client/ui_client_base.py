@@ -740,14 +740,14 @@ class UIXpraClient(XpraClientBase):
     def do_get_core_encodings(self):
         """
             This method returns the actual encodings supported.
-            ie: ["rgb24", "vp8", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
+            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
             It is often overriden in the actual client class implementations,
             where extra encodings can be added (generally just 'rgb32' for transparency),
             or removed if the toolkit implementation class is more limited.
         """
         #we always support rgb24:
         core_encodings = ["rgb24"]
-        for codec in ("dec_pillow", ):
+        for codec in ("dec_pillow", "dec_webp"):
             if has_codec(codec):
                 c = get_codec(codec)
                 for e in c.get_encodings():
@@ -1539,6 +1539,7 @@ class UIXpraClient(XpraClientBase):
             "video_reinit"              : True,
             "video_scaling"             : True,
             "video_b_frames"            : video_b_frames,
+            "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
@@ -1877,7 +1878,7 @@ class UIXpraClient(XpraClientBase):
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
         self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
-        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "h264"))
+        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.server_auto_video_encoding = c.boolget("auto-video-encoding")
         self.server_start_time = c.intget("start_time", -1)
@@ -2407,7 +2408,7 @@ class UIXpraClient(XpraClientBase):
                 webcamlog.error(" the client supports: %s", csv(client_webcam_encodings))
                 self.stop_sending_webcam()
                 return False
-            preferred_order = ["jpeg", "png", "png/L", "png/P"]
+            preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
             start = monotonic_time()

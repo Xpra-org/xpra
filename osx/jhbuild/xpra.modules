@@ -237,6 +237,18 @@
 	</after>
   </autotools>
 
+  <autotools id="libwebp" autogenargs="" autogen-sh="configure">
+       <branch module="/releases/webp/libwebp-0.6.0.tar.gz"
+               version="0.6.0"
+               hash="sha256:c928119229d4f8f35e20113ffb61f281eda267634a8dc2285af4b0ee27cf2b40"
+               repo="downloads.webmproject.org"/>
+       <dependencies>
+               <dep package="libjpeg"/>
+               <dep package="libpng"/>
+               <dep package="libtiff"/>
+       </dependencies>
+  </autotools>
+
   <autotools id="ffmpeg"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
 		autogenargs="--enable-runtime-cpudetect --enable-pic
@@ -540,9 +552,11 @@
 	     version="4.3.0"/>
         <dependencies>
                 <dep package="python"/>
+		<dep package="libwebp"/>
         </dependencies>
         <after>
                 <dep package="python"/>
+		<dep package="libwebp"/>
         </after>
   </distutils>
 
@@ -656,10 +670,10 @@
 
 
   <distutils id="python-lz4">
-	<branch repo="pypi.python.org"
-	        module="/packages/f5/c6/ef2890b5e287735576e15c1389aa0b9032c9d78ed72385fbd1149af593cd/lz4-0.10.1.tar.gz"
-	        hash="sha256:a0423290a6e89c1789525a7e9d344d877c7a97102cf5c0f99b2319ac560f1b3e"
-	        version="0.10.1"/>
+	<branch repo="github.com"
+	        module="/python-lz4/python-lz4/archive/v0.11.1.tar.gz"
+	        hash="sha256:bb6554663a944723c2f05aa789f70ec8c18212c6543f5f161db0f21b5cf66d0c"
+	        version="0.11.1"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>
@@ -957,6 +971,7 @@
       <dep package="libyuv"/>
       <dep package="libvpx"/>
       <dep package="x264"/>
+      <dep package="libwebp"/>
       <dep package="ffmpeg"/>
       <!--
       sdl doesn't build with newer versions of osx because of missing X header files

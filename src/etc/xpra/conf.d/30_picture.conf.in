@@ -3,7 +3,7 @@
 
 # Encodings allowed:
 # (not all encodings may be available in your environment):
-#encodings = h264, vp8, png, png/P, png/L, rgb, jpeg, h265, vp9
+#encodings = h264, vp8, png, png/P, png/L, webp, rgb, jpeg, h265, vp9
 #encodings = all
 #encodings = rgb
 encodings = all
@@ -15,6 +15,8 @@ encodings = all
 #encoding = png
 #encoding = jpeg
 #encoding = rgb
+#encoding = webp
+encoding = auto
 
 # Used by the server to encode video:
 # video-encoders = x264, vpx, nvenc
@@ -30,7 +32,6 @@ csc-modules = all
 
 # Used by the client for decoding:
 # video-decoders = avcodec2, vpx
-# video-decoders = avcodec, vpx
 # video-decoders = none
 # video-decoders = all
 video-decoders = all

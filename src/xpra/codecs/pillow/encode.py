@@ -27,7 +27,7 @@ def get_type():
 def do_get_encodings():
     log("PIL.Image.SAVE=%s", Image.SAVE)
     encodings = []
-    for encoding in ["png", "png/L", "png/P", "jpeg"]:
+    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.SAVE:
@@ -121,18 +121,20 @@ def encode(coding, image, quality, speed, supports_transparency):
         raise
     buf = BytesIOClass()
     client_options = {}
-    if coding=="jpeg":
+    if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:
         if pixel_format.find("A")>=0:
             im = im.convert("RGB")
-        q = int(min(99, max(1, quality)))
+        q = int(min(100, max(1, quality)))
         kwargs = im.info
         kwargs["quality"] = q
         client_options["quality"] = q
-        if speed<50:
+        if coding=="jpeg" and speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
             client_options["optimize"] = True
+        if coding=="webp" and q>=100:
+            kwargs["lossless"] = 1
         pil_fmt = coding.upper()
     else:
         assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %s" % coding

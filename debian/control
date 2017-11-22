@@ -74,6 +74,12 @@ Recommends:
 # for the proxy server:
         ,python-setproctitle
 # AES encryption:
+        ,libxvidcore4
+#webp
+#stretch:        ,libwebp6
+#xenial:        ,libwebp5
+#zesty:        ,libwebp6
+#artful:        ,libwebp6
         ,python-cryptography
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -106,6 +112,8 @@ Recommends:
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 Suggests: openssh-server
+# optional - only really useful with GPU opencl implementations:
+        ,python-pyopencl
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils

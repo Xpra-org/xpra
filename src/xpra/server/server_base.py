@@ -47,7 +47,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option, parse_env
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.net.file_transfer import FileTransferAttributes
 if PYTHON3:
@@ -327,6 +327,12 @@ class ServerBase(ServerCore):
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
             add_encodings(pil_encs)
+            #Note: webp will only be enabled if we have a Python-PIL fallback
+            #(either "webp" or "png")
+            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
+                add_encodings(["webp"])
+                if "webp" not in self.lossless_mode_encodings:
+                    self.lossless_mode_encodings.append("webp")
         #look for video encodings with lossless mode:
         for e in ve:
             for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
@@ -339,7 +345,8 @@ class ServerBase(ServerCore):
         #now update the variables:
         self.encodings = encs
         self.core_encodings = core_encs
-        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb"))]
+        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
+        log.info("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s", self.allowed_encodings, encs, core_encs, self.lossless_encodings)
         pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
         if pref:
             self.default_encoding = pref[0]
@@ -2278,8 +2285,8 @@ class ServerBase(ServerCore):
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
              "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
-             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L"))),
-             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "h264", "vp8", "vp9")],
+             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L", "webp"))),
+             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
 

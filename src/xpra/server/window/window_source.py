@@ -64,7 +64,7 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import rgb_encode, mmap_send, argb_swap
+from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send, argb_swap
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
@@ -244,7 +244,9 @@ class WindowSource(object):
             for x in self.enc_pillow.get_encodings():
                 if x in self.server_core_encodings:
                     self._encoders[x] = self.pillow_encode
-        #prefer this one over PIL supplied version:
+        #prefer these native encoders over the Pillow version:
+        if "webp" in self.server_core_encodings:
+            self._encoders["webp"] = self.webp_encode
         self.enc_jpeg = get_codec("enc_jpeg")
         if self.enc_jpeg:
             self._encoders["jpeg"] = self.jpeg_encode
@@ -749,7 +751,7 @@ class WindowSource(object):
             are = self.client_refresh_encodings
         else:
             #sane defaults:
-            ropts = set(("png", "rgb24", "rgb32"))          #default encodings for auto-refresh
+            ropts = set(("webp", "png", "rgb24", "rgb32"))          #default encodings for auto-refresh
             if AUTO_REFRESH_QUALITY<100 and self.image_depth>16:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
@@ -850,7 +852,7 @@ class WindowSource(object):
             return "rgb32"
         if "png" in self.common_encodings and quality>75:
             return "png"
-        for x in ("rgb32", "png", "rgb32"):
+        for x in ("webp", "rgb32", "png", "rgb32"):
             if x in self.common_encodings:
                 return x
         return self.common_encodings[0]
@@ -858,6 +860,8 @@ class WindowSource(object):
     def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
+        if "webp" in self.common_encodings and speed<80 and self.image_depth in (24, 32):
+            return "webp"
         if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
             return "png"
         if "jpeg" in self.common_encodings:
@@ -1872,6 +1876,7 @@ class WindowSource(object):
 
             * 'mmap' will use 'mmap_encode'
             * 'jpeg' and 'png' are handled by 'pillow_encode'
+            * 'webp' uses 'webp_encode'
             * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
         """
@@ -2019,6 +2024,11 @@ class WindowSource(object):
         #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
+
+    def webp_encode(self, coding, image, options):
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
+        return webp_encode(image, self.rgb_formats, self.supports_transparency, q, s)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
