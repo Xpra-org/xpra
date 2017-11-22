@@ -54,6 +54,9 @@ XpraClient.prototype.init_settings = function(container) {
 	this.remote_logging = true;
 	this.enabled_encodings = [];
 	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
+	if (Utilities.canUseWebP()) {
+		this.supported_encodings.push("webp");
+	}
 	this.start_new_session = null;
 	this.clipboard_enabled = false;
 	this.file_transfer = false;

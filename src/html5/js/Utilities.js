@@ -151,6 +151,15 @@ var Utilities = {
 		return layout;
 	},
 
+	canUseWebP : function() {
+	    var elem = document.createElement('canvas');
+	    var ctx = elem.getContext('2d');
+	    if (!ctx) {
+	    	return false;
+	    }
+        return elem.toDataURL('image/webp').indexOf('data:image/webp') == 0;
+	},
+
 	getAudioContextClass : function() {
 		return window.AudioContext || window.webkitAudioContext || window.audioContext;
 	},

@@ -1176,6 +1176,7 @@ var DEFAULT_BOX_COLORS = {
         "rgb24"   : "orange",
         "rgb32"   : "red",
         "jpeg"    : "purple",
+        "webp"    : "pink",
         "png/P"   : "indigo",
         "png/L"   : "teal",
         "h265"    : "khaki",
@@ -1256,7 +1257,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			}
 			this.may_paint_now();
 		}
-		else if (coding=="jpeg" || coding=="png") {
+		else if (coding=="jpeg" || coding=="png" || coding=="webp") {
 			this._non_video_paint(coding);
 			var j = new Image();
 			j.onload = function () {
@@ -1270,7 +1271,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				me.may_paint_now();
 			};
 			j.onerror = function () {
-				paint_error("failed to load into image tag");
+				paint_error("failed to load into image tag:", coding);
 				me.may_paint_now();
 			}
 			j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
