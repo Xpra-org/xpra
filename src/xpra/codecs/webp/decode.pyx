@@ -10,7 +10,7 @@ from xpra.buffers.membuf cimport memalign, memory_as_pybuffer
 from xpra.os_util import bytestostr
 
 
-from libc.stdint cimport uint8_t, uint32_t
+from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 
 cdef extern from *:
     ctypedef unsigned long size_t
@@ -163,10 +163,10 @@ cdef class WebpBufferWrapper:
         calling free will free the underlying memory.
     """
 
-    cdef unsigned long buffer_ptr
+    cdef uintptr_t buffer_ptr
     cdef size_t size
 
-    def __cinit__(self, unsigned long buffer_ptr, size_t size):
+    def __cinit__(self, uintptr_t buffer_ptr, size_t size):
         self.buffer_ptr = buffer_ptr
         self.size = size
 
@@ -208,7 +208,7 @@ def decompress(data, has_alpha, rgb_format=None):
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
     cdef uint8_t *buffer = <uint8_t*> memalign(size + stride)      #add one line of padding
-    cdef WebpBufferWrapper b = WebpBufferWrapper(<unsigned long> buffer, size)
+    cdef WebpBufferWrapper b = WebpBufferWrapper(<uintptr_t> buffer, size)
     config.output.u.RGBA.rgba   = buffer
     config.output.u.RGBA.stride = stride
     config.output.u.RGBA.size   = size
