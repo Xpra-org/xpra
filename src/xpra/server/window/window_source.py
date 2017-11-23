@@ -1112,6 +1112,9 @@ class WindowSource(object):
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
+        if self.refresh_timer and (w*h>=ww*wh//4 or w*h>=512*1024):
+            #large enough screen update: cancel refresh timer
+            self.cancel_refresh_timer()
 
         delayed = self._damage_delayed
         if delayed:
@@ -1550,8 +1553,7 @@ class WindowSource(object):
         if not packet:
             return
         #queue packet for sending:
-        self.queue_damage_packet(packet, damage_time, process_damage_time)
-        self.schedule_auto_refresh(packet, options)
+        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
 
     def schedule_auto_refresh(self, packet, options):
@@ -1559,71 +1561,78 @@ class WindowSource(object):
             self.cancel_refresh_timer()
             return
         encoding = packet[6]
-        #the actual encoding used may be different from the global one we specify
-        x, y, w, h = packet[2:6]
+        region = rectangle(*packet[2:6])    #x,y,w,h
         client_options = packet[10]     #info about this packet from the encoder
-        actual_quality = client_options.get("quality", 0)
         if encoding.startswith("png") or encoding.startswith("rgb"):
+            #FIXME: maybe we've sent png for 30bit image,
+            #in which case png is not actually lossless?
             actual_quality = 100
-        #jpeg uses colour subsampling by default, otherwise check the csc format value:
-        lossy_csc = encoding=="jpeg" or client_options.get("csc") in LOSSY_PIXEL_FORMATS
-        scaled = client_options.get("scaled_size") is not None
-        region = rectangle(x, y, w, h)
-        if options.get("auto_refresh", False) or (actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled):
-            #this screen update is lossless or high quality
+            lossy = False
+        else:
+            actual_quality = client_options.get("quality", 0)
+            lossy = (
+                actual_quality<AUTO_REFRESH_THRESHOLD or
+                encoding=="jpeg" or
+                client_options.get("csc") in LOSSY_PIXEL_FORMATS or
+                client_options.get("scaled_size") is not None
+                )
+        schedule = False
+        msg = ""
+        if not lossy or options.get("auto_refresh", False):
             if not self.refresh_regions:
                 #nothing due for refresh, still nothing to do
                 msg = "nothing to do"
             else:
-                #refresh already due: substract this region from the list of regions:
+                #substract this region from the list of refresh regions:
                 self.remove_refresh_region(region)
-                if len(self.refresh_regions)==0:
-                    msg = "covered all regions that needed a refresh, cancelling refresh"
+                if not self.refresh_regions:
+                    msg = "covered all regions that needed a refresh, cancelling refresh timer"
                     self.cancel_refresh_timer()
                 else:
-                    msg = "removed rectangle from regions, keeping refresh"
+                    if self.refresh_timer:
+                        msg = "removed rectangle from regions, keeping existing refresh timer"
+                    else:
+                        msg = "removed rectangle from regions"
+                        schedule = True
         else:
             #if we're here: the window is still valid and this was a lossy update,
             #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
             #so we probably need an auto-refresh (re-schedule it if one was due already)
-
             #try to add the rectangle to the refresh list:
             pixels_modified = self.add_refresh_region(region)
-            #the target time is only set in this function and cleared when the refresh runs,
-            #copy it before we modify anything (as the refresh clears it from another thread)
-            target_time = self.refresh_target_time
-            if pixels_modified==0:
+            if pixels_modified==0 and self.refresh_timer:
                 msg = "keeping existing timer (all pixels outside area)"
-                if self.refresh_regions and not target_time:
-                    #this should never happen:
-                    refreshlog.warn("refresh regions are pending but no refresh timer is due!")
             else:
-                #some pixels were modified, and we do need to refresh them:
-                now = monotonic_time()
-                #figure out the proportion of pixels updated:
-                pixels = region.width*region.height
-                ww, wh = self.window_dimensions
-                pct = 100*pixels/(ww*wh)
-                #try to take into account speed and quality:
-                #delay more when quality is low
-                #delay less when speed is high
-                #delay a lot more when we have bandwidth issues
-                qsmult = (200-self._current_quality) * (100+self._current_speed) * (100+self.global_statistics.congestion_value*500)
-                #important: must check both, I think:
-                if target_time==0 or not self.refresh_timer:
-                    #this means we must schedule the refresh
-                    self.refresh_event_time = monotonic_time()
-                    #delay in milliseconds: always at least the settings,
-                    #more if we have more than 50% of the window pixels to update:
-                    sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100*100))
-                    self.refresh_target_time = now + sched_delay/1000.0
-                    self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
-                    msg = "scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
-                else:
-                    #add to the target time, but this will not move it forwards for small updates following big ones:
-                    sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100*100))
-                    self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
-                    msg = "re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
+                msg = "added pixels to refresh regions"
+                schedule = True
+        if schedule:
+            now = monotonic_time()
+            #figure out the proportion of pixels that need refreshing:
+            #(some of those rectangles may overlap,
+            # so the value may be greater than the size of the window)
+            pixels = sum(rect.width*rect.height for rect in self.refresh_regions)
+            ww, wh = self.window_dimensions
+            pct = min(100, 100*pixels//(ww*wh))
+            #try to take into account speed and quality:
+            #delay more when quality is low
+            #delay less when speed is high
+            #delay a lot more when we have bandwidth issues
+            qsmult = (200-self._current_quality) * (100+self._current_speed) * (100+self.global_statistics.congestion_value*500)
+            if not self.refresh_timer:
+                #we must schedule a new refresh timer
+                self.refresh_event_time = monotonic_time()
+                #delay in milliseconds: always at least the settings,
+                #more if we have more than 50% of the window pixels to update:
+                sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100*100))
+                self.refresh_target_time = now + sched_delay/1000.0
+                self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
+                msg += ", scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
+            else:
+                #add to the target time, but this will not move it forwards for small updates following big ones:
+                sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100*100))
+                target_time = self.refresh_target_time
+                self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
+                msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         self.last_auto_refresh_message = monotonic_time(), msg
         refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
 
@@ -1661,22 +1670,25 @@ class WindowSource(object):
             and if not re-schedule.
         """
         #timer is running now, clear so we don't try to cancel it somewhere else:
-        self.refresh_timer = None
         #re-do some checks that may have changed:
         if not self.can_refresh():
+            self.refresh_timer = None
             self.refresh_event_time = 0
-            return
+            return False
         ret = self.refresh_event_time
         if ret==0:
-            return
+            self.refresh_timer = None
+            return False
         delta = self.refresh_target_time - monotonic_time()
         if delta<0.050:
             #this is about right (due already or due shortly)
+            self.refresh_timer = None
             self.timer_full_refresh()
-            return
+            return False
         #re-schedule ourselves:
         self.refresh_timer = self.timeout_add(int(delta*1000), self.refresh_timer_function, damage_options)
         refreshlog("refresh_timer_function: rescheduling auto refresh timer with extra delay %ims", int(1000*delta))
+        return False
 
     def timer_full_refresh(self):
         #copy event time and list of regions (which may get modified by another thread)
@@ -1733,7 +1745,7 @@ class WindowSource(object):
                 "speed"         : AUTO_REFRESH_SPEED,
                 }
 
-    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0):
+    def queue_damage_packet(self, packet, damage_time=0, process_damage_time=0, options={}):
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -1772,6 +1784,7 @@ class WindowSource(object):
             #if this packet completed late, record congestion send speed:
             if elapsed_ms>max_send_delay and ldata>1024:
                 self.record_congestion_event((elapsed_ms*100/max_send_delay)-100)
+            self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
             damage_in_latency = now-process_damage_time
