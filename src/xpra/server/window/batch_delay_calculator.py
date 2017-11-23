@@ -104,7 +104,7 @@ def update_batch_delay(batch, factors):
     batch.last_updated = now
     batch.factors = valid_factors
 
-def get_target_speed(window_dimensions, batch, global_statistics, statistics, min_speed, speed_data):
+def get_target_speed(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_speed, speed_data):
     low_limit = get_low_limit(global_statistics.mmap_size>0, window_dimensions)
     #***********************************************************
     # encoding speed:
@@ -168,8 +168,13 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
         #(even x264 peaks at tens of MPixels/s)
         pps = mpixels_per_s/50.0
 
+    max_speed = 1
+    if bandwidth_limit>0:
+        #below 10Mbps, lower the speed ceiling
+        max_speed = sqrt(bandwidth_limit/(10.0*1000*1000))
+
     #combine factors: use the highest one:
-    target = min(1.0, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
+    target = min(1.0, max_speed, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
     #discount for congestion:
     target /= (1.0 + global_statistics.congestion_value*5)
 
@@ -179,6 +184,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
 
     #expose data we used:
     info = {
+            "max-speed-range"           : int(100*max_speed),
             "low_limit"                 : int(low_limit),
             "min_speed"                 : int(min_speed),
             "frame_delay"               : int(frame_delay),
@@ -200,7 +206,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, mi
     return info, target_speed
 
 
-def get_target_quality(window_dimensions, batch, global_statistics, statistics, min_quality, min_speed):
+def get_target_quality(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_quality, min_speed):
     info = {
         "min_quality"   : min_quality,
         "min_speed"     : min_speed,
@@ -256,7 +262,14 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         latency_q = 3.0 * statistics.target_latency / global_statistics.recent_client_latency
         target = min(target, latency_q)
         info["latency"] = int(100.0*latency_q)
-    target = min(1.0, max(0.0, target))
+
+    max_quality = 1
+    if bandwidth_limit>0:
+        #below 10Mbps, lower the quality ceiling
+        max_quality = sqrt(bandwidth_limit/(10.0*1000*1000))
+        info["max-quality-range"] = int(100*max_quality)
+
+    target = min(max_quality, max(0.0, target))
     if min_speed>0:
         #discount the quality more aggressively if we have speed requirements to satisfy:
         #ie: for min_speed=50:

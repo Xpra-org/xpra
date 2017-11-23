@@ -1004,7 +1004,7 @@ class WindowSource(object):
         if speed<=0:
             #make a copy to work on (and discard "info")
             speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
-            info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_speed, speed_data)
+            info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
             speed_data.append((monotonic_time(), target_speed))
             speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
             speed = min(99, speed)
@@ -1039,7 +1039,7 @@ class WindowSource(object):
             return
         quality = self._fixed_quality
         if quality<=0:
-            info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self._fixed_min_quality, self._fixed_min_speed)
+            info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
             #make a copy to work on (and discard "info")
             ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
             ves_copy.append((monotonic_time(), quality))
@@ -1622,18 +1622,22 @@ class WindowSource(object):
             #delay less when speed is high
             #delay a lot more when we have bandwidth issues
             qsmult = (200-self._current_quality) * (100+self._current_speed) * (100+self.global_statistics.congestion_value*500)
+            min_wait = 50
+            if self.bandwidth_limit>0:
+                #1Mbps -> 1s, 10Mbps -> 0.1s
+                min_wait = min(1000, 1000*1000*1000//self.bandwidth_limit)
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
                 self.refresh_event_time = monotonic_time()
                 #delay in milliseconds: always at least the settings,
                 #more if we have more than 50% of the window pixels to update:
-                sched_delay = int(max(50, self.auto_refresh_delay * max(50, pct) / 50, self.batch_config.delay*4) * qsmult / (200*100*100))
+                sched_delay = int(max(min_wait, self.auto_refresh_delay * max(50, pct) // 50, self.batch_config.delay*4) * qsmult // (200*100*100))
                 self.refresh_target_time = now + sched_delay/1000.0
                 self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
                 msg += ", scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
             else:
                 #add to the target time, but this will not move it forwards for small updates following big ones:
-                sched_delay = int(max(50, self.auto_refresh_delay * pct / 50, self.batch_config.delay*2) * qsmult / (200*100*100))
+                sched_delay = int(max(min_wait, self.auto_refresh_delay * pct // 50, self.batch_config.delay*2) * qsmult // (200*100*100))
                 target_time = self.refresh_target_time
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
