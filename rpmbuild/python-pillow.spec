@@ -33,7 +33,7 @@
 
 Name:           python2-pillow
 Version:        4.3.0
-Release:        2%{?snap}%{?dist}
+Release:        3%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -206,12 +206,22 @@ cp -a . %{py3dir}
 # Build Python 2 modules
 find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python}|'
 CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+%if %{with_webp} == 0
+#couldn't find a better way to disable webp:
+#(--disable-webp is ignored)
+find -name '*webp*' | xargs rm
+%endif
 
 %if %{with_python3}
 # Build Python 3 modules
 pushd %{py3dir}
 find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python3}|'
 CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
+%if %{with_webp} == 0
+#couldn't find a better way to disable webp:
+#(--disable-webp is ignored)
+find -name '*webp*' | xargs rm
+%endif
 
 #building the html docs require a very specific version of sphinx, PITA
 #pushd docs
@@ -290,7 +300,7 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
-* Thu Nov 23 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-2
+* Thu Nov 23 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-3
 - don't link with webp on CentOS, so we can use our private library in xpra without conflicting
 
 * Mon Oct 09 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-1
