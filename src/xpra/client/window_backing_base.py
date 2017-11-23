@@ -227,7 +227,7 @@ class WindowBackingBase(object):
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
         assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
-        transparency = options.get("transparency", -1)
+        transparency = options.intget("transparency", -1)
         if img.mode=="P":
             if transparency>=0:
                 #this deals with alpha without any extra work
@@ -276,8 +276,8 @@ class WindowBackingBase(object):
         has_alpha = options.boolget("has_alpha", False)
         buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.strget("rgb_format"))
         #replace with the actual rgb format we get from the decoder:
-        options["rgb_format"] = rgb_format
-        def free_buffer(*args):
+        options[b"rgb_format"] = rgb_format
+        def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
@@ -297,7 +297,7 @@ class WindowBackingBase(object):
             the actual paint code is in _do_paint_rgb[24|32]
         """
         try:
-            if not options.get("paint", True):
+            if not options.boolget("paint", True):
                 fire_paint_callbacks(callbacks)
                 return
             if self._backing is None:
@@ -413,7 +413,7 @@ class WindowBackingBase(object):
 
             vd = self._video_decoder
             if vd:
-                if options.get("frame", -1)==0:
+                if options.intget("frame", -1)==0:
                     log("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
                 elif vd.get_encoding()!=coding:
@@ -435,7 +435,7 @@ class WindowBackingBase(object):
 
             img = vd.decompress_image(img_data, options)
             if not img:
-                if options.get("delayed", 0)>0:
+                if options.intget("delayed", 0)>0:
                     #there are further frames queued up,
                     #and this frame references those, so assume all is well:
                     fire_paint_callbacks(callbacks)
@@ -520,10 +520,10 @@ class WindowBackingBase(object):
             coding = bytestostr(coding)
             options["encoding"] = coding            #used for choosing the color of the paint box
             if INTEGRITY_HASH:
-                l = options.get("z.len")
+                l = options.intget("z.len")
                 if l:
                     assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
-                md5 = options.get("z.md5")
+                md5 = options.strget("z.md5")
                 if md5:
                     h = hashlib.md5(img_data)
                     hd = h.hexdigest()
@@ -533,7 +533,7 @@ class WindowBackingBase(object):
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding == "rgb24" or coding == "rgb32":
                 #avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.get(b"rgb_format")
+                rgb_format = options.strget(b"rgb_format")
                 if rgb_format:
                     Bpp = len(rgb_format)
                 elif coding=="rgb24":
