@@ -273,8 +273,8 @@ class WindowBackingBase(object):
         if not dec_webp or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
-        has_alpha = options.get("has_alpha", False)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.get("rgb_format"))
+        has_alpha = options.boolget("has_alpha", False)
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.strget("rgb_format"))
         #replace with the actual rgb format we get from the decoder:
         options["rgb_format"] = rgb_format
         def free_buffer(*args):
