@@ -11,7 +11,7 @@
 %if 0%{?el7}
 	%global with_python3 0
 	%global with_filter 1
-	%global with_webp 1
+	%global with_webp 0
 	%global lcms lcms2
 %endif
 %if 0%{?fedora}
@@ -33,7 +33,7 @@
 
 Name:           python2-pillow
 Version:        4.3.0
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -290,6 +290,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Thu Nov 23 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-2
+- don't link with webp on CentOS, so we can use our private library in xpra without conflicting
+
 * Mon Oct 09 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-1
 - new upstream release
 
