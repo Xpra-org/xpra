@@ -192,7 +192,7 @@ def decompress(data, has_alpha, rgb_format=None):
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
     webp_check(WebPGetFeatures(data, len(data), &config.input))
-    log("webp decompress found features: width=%s, height=%s, has_alpha=%s, input rgb_format=%s", config.input.width, config.input.height, config.input.has_alpha, rgb_format)
+    log("webp decompress found features: width=%4i, height=%4i, has_alpha=%-5s, input rgb_format=%s", config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
     cdef int stride = 4 * config.input.width
     if has_alpha:
