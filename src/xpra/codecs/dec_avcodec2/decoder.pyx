@@ -529,7 +529,7 @@ cdef class Decoder:
             ret = avcodec_receive_frame(self.codec_ctx, self.av_frame)
         free(padded_buf)
         if ret==-errno.EAGAIN:
-            d = options.get("delayed", 0)
+            d = options.intget("delayed", 0)
             if d>0:
                 log("avcodec_decode_video2 %i delayed pictures", d)
                 return None
