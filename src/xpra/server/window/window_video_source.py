@@ -419,14 +419,14 @@ class WindowVideoSource(WindowSource):
             return nonvideo(quality+30, "not the video region")
 
         lde = list(self.statistics.last_damage_events)
-        lim = now-2
-        pixels_last_2secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_2secs<5*videomin:
+        lim = now-4
+        pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+        if pixels_last_4secs<3*videomin:
             #less than 5 full frames in last 2 seconds
             return nonvideo(quality+30, "not enough frames")
-        lim = now-0.5
-        pixels_last_05secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_05secs<pixels_last_2secs//8:
+        lim = now-1
+        pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
+        if pixels_last_sec<pixels_last_4secs//8:
             #framerate is dropping?
             return nonvideo(quality+30, "framerate lowered")
 

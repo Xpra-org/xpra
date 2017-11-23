@@ -846,13 +846,12 @@ class WindowSource(object):
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        if current_encoding in ("rgb32", "png"):
+        if current_encoding in ("webp", "png", "rgb32"):
             return current_encoding
         if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or (self.image_depth>24 and self.client_bit_depth>24)):
+            #the only encoding that can do higher bit depth at present
             return "rgb32"
-        if "png" in self.common_encodings and quality>75:
-            return "png"
-        for x in ("webp", "rgb32", "png", "rgb32"):
+        for x in ("webp", "png", "rgb32"):
             if x in self.common_encodings:
                 return x
         return self.common_encodings[0]
@@ -860,8 +859,13 @@ class WindowSource(object):
     def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
-        if "webp" in self.common_encodings and speed<80 and self.image_depth in (24, 32):
-            return "webp"
+        if self.image_depth>24 and "rgb32" in self.common_encodings and self.client_bit_depth>24:
+            #the only encoding that can do higher bit depth at present
+            return "rgb32"
+        if speed<80 and self.image_depth in (24, 32):
+            for x in ("webp", "png"):
+                if x in self.common_encodings:
+                    return x
         if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
             return "png"
         if "jpeg" in self.common_encodings:
