@@ -12,6 +12,7 @@ from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
 from xpra.os_util import bytestostr
+from xpra.util import csv
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport
@@ -125,7 +126,7 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_GBRP     : 1,
     }
 
-COLORSPACES = FORMAT_TO_ENUM.keys()
+COLORSPACES = list(FORMAT_TO_ENUM.keys())
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
@@ -472,13 +473,17 @@ cdef class Decoder:
         log.error("Error: avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
         log.error(" '%s'", err)
         log.error(" frame %i", self.frames)
+        def pv(v):
+            if isinstance(v, (list, tuple)):
+                return csv(v)
+            return bytestostr(v)
         if options:
             log.error(" frame options:")
             for k,v in options.items():
-                log.error("   %s=%s", k, v)
+                log.error("   %20s = %s", bytestostr(k), pv(v))
         log.error(" decoder state:")
         for k,v in self.get_info().items():
-            log.error("   %s = %s", k, v)
+            log.error("   %20s = %s", k, pv(v))
 
     def decompress_image(self, input, options):
         cdef unsigned char * padded_buf = NULL
