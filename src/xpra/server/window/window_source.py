@@ -1096,22 +1096,26 @@ class WindowSource(object):
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
-        now = monotonic_time()
-        if "auto_refresh" not in options:
-            self.statistics.last_damage_events.append((now, x,y,w,h))
-        self.global_statistics.damage_events_count += 1
-        self.statistics.damage_events_count += 1
-        self.statistics.last_damage_event_time = now
         ww, wh = self.window.get_dimensions()
         if ww==0 or wh==0:
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
+        now = monotonic_time()
+        if not options.get("auto_refresh", False):
+            self.statistics.last_damage_events.append((now, x,y,w,h))
+        self.global_statistics.damage_events_count += 1
+        self.statistics.damage_events_count += 1
+        self.statistics.last_damage_event_time = now
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
+        self.do_damage(ww, wh, x, y, w, h, options)
+
+    def do_damage(self, ww, wh, x, y, w, h, options):
+        now = monotonic_time()
         if self.refresh_timer and (w*h>=ww*wh//4 or w*h>=512*1024):
             #large enough screen update: cancel refresh timer
             self.cancel_refresh_timer()

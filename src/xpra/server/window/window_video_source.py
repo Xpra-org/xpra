@@ -485,6 +485,16 @@ class WindowVideoSource(WindowSource):
         return None #can happen during cleanup!
 
 
+    def do_damage(self, ww, wh, x, y, w, h, options):
+        vs = self.video_subregion
+        if vs:
+            r = vs.rectangle
+            if r and r.intersects(x, y, w, h):
+                #the damage will take care of scheduling it again
+                vs.cancel_refresh_timer()
+        WindowSource.do_damage(self, ww, wh, x, y, w, h, options)
+
+
     def cancel_damage(self):
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
