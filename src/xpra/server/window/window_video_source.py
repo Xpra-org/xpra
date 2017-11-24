@@ -952,13 +952,21 @@ class WindowVideoSource(WindowSource):
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
                 vs.reset()
             else:
+                old = vs.rectangle
                 ww, wh = self.window_dimensions
                 vs.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
-                if vs.rectangle:
+                newrect = vs.rectangle
+                if newrect:
                     #when we have a video region, lower the lossless threshold
                     #especially for small regions
                     self._lossless_threshold_base = min(80, 10+self._current_speed//5)
                     self._lossless_threshold_pixel_boost = 90-self._current_speed//5
+                    #remove this from refresh:
+                    if old and old!=newrect:
+                        self.add_refresh_region(old)
+                        self.remove_refresh_region(newrect) 
+                elif old:
+                    self.add_refresh_region(old)
         if force_reload:
             self.cleanup_codecs()
         self.check_pipeline_score(force_reload)
