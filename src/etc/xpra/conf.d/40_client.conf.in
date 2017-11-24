@@ -33,7 +33,6 @@ ssh = %(ssh_command)s
 # window-close = forward
 # window-close = ignore
 # window-close = disconnect
-# window-close = ask
 window-close = auto
 
 # Desktop Scaling:
