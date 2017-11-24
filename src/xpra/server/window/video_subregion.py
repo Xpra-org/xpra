@@ -125,11 +125,10 @@ class VideoSubregion(object):
 
     def cancel_refresh_timer(self):
         rt = self.refresh_timer
+        refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
         if rt:
-            self.source_remove(rt)
             self.refresh_timer = None
-            self.refresh_regions = []
-        refreshlog("cancel_refresh_timer() timer=%s", rt)
+            self.source_remove(rt)
 
     def get_info(self):
         r = self.rectangle
@@ -179,7 +178,6 @@ class VideoSubregion(object):
         rect = self.rectangle
         if not rect:
             return
-        refreshlog("add_video_refresh(%s) rectangle=%s", region, rect)
         #something in the video region is still refreshing,
         #so we re-schedule the subregion refresh:
         self.cancel_refresh_timer()
@@ -192,6 +190,7 @@ class VideoSubregion(object):
             if not rect.contains_rect(r):
                 non_video += r.substract_rect(rect)
         delay = max(150, self.auto_refresh_delay)
+        refreshlog("add_video_refresh(%s) rectangle=%s, delay=%ims", region, rect, delay)
         if non_video:
             #refresh via timeout_add so this will run in the UI thread:
             self.timeout_add(delay, self.refresh_cb, non_video)
@@ -203,6 +202,7 @@ class VideoSubregion(object):
             self.refresh_timer = self.timeout_add(delay, self.refresh)
 
     def refresh(self):
+        refreshlog("refresh() refresh_timer=%s", self.refresh_timer)
         #runs via timeout_add, safe to call UI!
         self.refresh_timer = None
         regions = self.refresh_regions
