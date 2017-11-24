@@ -41,7 +41,7 @@ pushd ../src
 
 svn upgrade ../.. >& /dev/null
 python -c "from add_build_info import record_src_info;record_src_info()"
-rm -fr build/*
+rm -fr build/* dist/*
 python ./setup.py clean
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
