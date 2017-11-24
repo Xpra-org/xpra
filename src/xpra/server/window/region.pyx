@@ -47,17 +47,17 @@ cdef class rectangle:
         if type(other)!=rectangle:
             raise Exception("cannot compare rectangle and %s" % type(other))
         cdef rectangle o = other
-        if op==2:
+        if op==2:   #==
             return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
-        elif op==3:
+        elif op==3: #!=
             return self.x!=other.x or self.y!=other.y or self.width!=other.width or self.height!=other.height
-        elif op==0:
+        elif op==0: #<
             return self.x<other.x or self.y<other.y or self.width<other.width or self.height<other.height
-        elif op==1:
+        elif op==1: #<=
             return self.x<=other.x or self.y<=other.y or self.width<=other.width or self.height<=other.height
-        elif op==4:
+        elif op==4: #>
             return self.x>other.x or self.y>other.y or self.width>other.width or self.height>other.height
-        elif op==5:
+        elif op==5: #>=
             return self.x>=other.x or self.y>=other.y or self.width>=other.width or self.height>=other.height
         else:
             raise Exception("invalid richcmp operator: %s" % op)
