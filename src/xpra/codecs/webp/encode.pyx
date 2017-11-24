@@ -484,7 +484,9 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False):
         "speed"       : speed,
         "rgb_format"  : pixel_format,
         }
-    if quality>=0 and quality<=100:
+    if config.lossless:
+        client_options["quality"] = 100
+    elif quality>=0 and quality<=100:
         client_options["quality"] = quality
     if alpha_int:
         client_options["has_alpha"] = True
