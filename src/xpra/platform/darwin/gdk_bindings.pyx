@@ -92,7 +92,7 @@ cdef GdkFilterReturn quartz_event_filter(GdkXEvent * event,
             deltaX = getNSEventScrollingDeltaX(nsevent)
             deltaY = getNSEventScrollingDeltaY(nsevent)
             precise = getPreciseScrollingDeltas(nsevent)
-            log("wheel view=%i, deltaX=%f, deltaY=%f, precise=%s, wheel_event_handler=%s", <uintptr_t> view, deltaX, deltaY, precise, wheel_event_handler)
+            log("wheel view=%#x, deltaX=%f, deltaY=%f, precise=%s, wheel_event_handler=%s", <uintptr_t> view, deltaX, deltaY, precise, wheel_event_handler)
             global wheel_event_handler
             if wheel_event_handler:
                 r = wheel_event_handler(<uintptr_t> view, deltaX, deltaY, bool(precise))
