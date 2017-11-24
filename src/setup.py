@@ -983,6 +983,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
+                   "xpra/gtk_common/gdk_atoms.c",
                    "xpra/client/gtk3/cairo_workaround.c",
                    "xpra/server/cystats.c",
                    "xpra/server/window/region.c",
