@@ -33,6 +33,8 @@ videolog = Logger("video")
 avsynclog = Logger("av-sync")
 scrolllog = Logger("scroll")
 compresslog = Logger("compress")
+refreshlog = Logger("refresh")
+regionrefreshlog = Logger("regionrefresh")
 
 
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
@@ -138,24 +140,11 @@ class WindowVideoSource(WindowSource):
         self.scroll_data = None
         self.last_scroll_time = 0
 
-    def set_auto_refresh_delay(self, d):
-        WindowSource.set_auto_refresh_delay(self, d)
+    def do_set_auto_refresh_delay(self, min_delay, delay):
+        WindowSource.do_set_auto_refresh_delay(self, min_delay, delay)
         r = self.video_subregion
         if r:
-            r.set_auto_refresh_delay(d)
-
-    def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
-        WindowSource.calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized)
-        vsr = self.video_subregion
-        bc = self.batch_config
-        if not bc.locked and vsr:
-            #we have a video subregion, update its refresh delay
-            r = vsr.rectangle
-            if r:
-                ww, wh = self.window_dimensions
-                pct = (100*r.width*r.height)/(ww*wh)
-                d = 2 * int(max(100, self.auto_refresh_delay * max(50, pct) / 50, bc.delay*4))
-                vsr.set_auto_refresh_delay(d)
+            r.set_auto_refresh_delay(self.base_auto_refresh_delay)
 
     def update_av_sync_frame_delay(self):
         self.av_sync_frame_delay = 0
@@ -559,7 +548,7 @@ class WindowVideoSource(WindowSource):
 
     def refresh_subregion(self, regions):
         #callback from video subregion to trigger a refresh of some areas
-        sublog("refresh_subregion(%s)", regions)
+        regionrefreshlog("refresh_subregion(%s)", regions)
         if not regions or not self.can_refresh():
             return
         self.flush_video_encoder_now()
@@ -961,12 +950,28 @@ class WindowVideoSource(WindowSource):
                     #especially for small regions
                     self._lossless_threshold_base = min(80, 10+self._current_speed//5)
                     self._lossless_threshold_pixel_boost = 90-self._current_speed//5
-                    #remove this from refresh:
-                    if old and old!=newrect:
-                        self.add_refresh_region(old)
-                        self.remove_refresh_region(newrect) 
+                    #remove this from regular refresh:
+                    if old is None or old!=newrect:
+                        refreshlog("identified new video region: %s", newrect)
+                        #figure out if the new region had pending regular refreshes:
+                        subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
+                        if old:
+                            #we don't bother substracting new and old (too complicated)
+                            refreshlog("scheduling refresh of old region: %s", old)
+                            #this may also schedule a refresh:
+                            WindowSource.add_refresh_region(self, old)
+                        WindowSource.remove_refresh_region(self, newrect)
+                        if not self.refresh_regions:
+                            self.cancel_refresh_timer()
+                        if subregion_needs_refresh:
+                            vs.add_video_refresh(newrect)
+                    else:
+                        refreshlog("video region unchanged: %s - no change in refresh", newrect)
                 elif old:
+                    #add old region to regular refresh:
+                    refreshlog("video region cleared, scheduling refresh of old region: %s", old)
                     self.add_refresh_region(old)
+                    vs.cancel_refresh_timer()
         if force_reload:
             self.cleanup_codecs()
         self.check_pipeline_score(force_reload)

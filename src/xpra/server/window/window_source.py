@@ -10,6 +10,7 @@ import time
 import os
 import hashlib
 import threading
+from math import sqrt
 from collections import deque
 
 from xpra.os_util import monotonic_time
@@ -152,6 +153,7 @@ class WindowSource(object):
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
+        self.base_auto_refresh_delay = auto_refresh_delay
         self.last_auto_refresh_message = None
         self.video_helper = video_helper
         if window.is_shadow():
@@ -277,6 +279,8 @@ class WindowSource(object):
         #
         self.may_send_timer = None
         self.auto_refresh_delay = 0
+        self.base_auto_refresh_delay = 0
+        self.min_auto_refresh_delay = 50
         self.video_helper = None
         self.refresh_event_time = 0
         self.refresh_target_time = 0
@@ -376,12 +380,15 @@ class WindowSource(object):
         larm = self.last_auto_refresh_message
         if larm:
             esinfo = {"auto-refresh"    : {
-                                           "last-event" : {
-                                                           "elapsed"    : int(1000*(monotonic_time()-larm[0])),
-                                                           "message"    : larm[1],
-                                                           }
-                                           }
-                      }
+                "min-delay"     : self.min_auto_refresh_delay,
+                "delay"         : self.auto_refresh_delay,
+                "base-delay"    : self.base_auto_refresh_delay,
+                "last-event"    : {
+                    "elapsed"    : int(1000*(monotonic_time()-larm[0])),
+                    "message"    : larm[1],
+                    }
+                }
+            }
 
         now = monotonic_time()
         buckets_info = {}
@@ -683,6 +690,7 @@ class WindowSource(object):
 
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
+        self.update_refresh_delay()
 
     def set_av_sync_delay(self, new_delay):
         self.av_sync_delay_base = new_delay
@@ -760,6 +768,7 @@ class WindowSource(object):
         self.update_quality()
         self.update_speed()
         self.update_encoding_options()
+        self.update_refresh_delay()
 
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
@@ -770,9 +779,19 @@ class WindowSource(object):
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
         pcmult = float(0.5+min(20, self.statistics.packet_count))/20.0
-        self._rgb_auto_threshold = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
+        max_rgb_threshold = 128*1024
+        min_rgb_threshold = 4096
+        cv = self.global_statistics.congestion_value
+        if cv>0.1:
+            max_rgb_threshold = int(32*1024/(1+cv))
+            min_rgb_threshold = 1024
+        bwl = self.bandwidth_limit
+        if bwl:
+            max_rgb_threshold = min(max_rgb_threshold, bwl//1000)
+        v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
+        self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         self.get_best_encoding = self.get_best_encoding_impl()
-        log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, small_as_rgb=%s, get_best_encoding=%s",
+        log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, rgb auto threshold=%s, get_best_encoding=%s",
                         force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
 
     def get_best_encoding_impl(self):
@@ -1069,10 +1088,42 @@ class WindowSource(object):
         return self._current_quality
 
 
+    def update_refresh_delay(self):
+        if self.auto_refresh_delay==0:
+            self.base_auto_refresh_delay = 0
+            return
+        ww, wh = self.window_dimensions
+        #try to take into account:
+        # - window size: bigger windows are more costly, refresh more slowly
+        # - when quality is low, we can refresh more slowly
+        # - when speed is low, we can also refresh slowly
+        # - delay a lot more when we have bandwidth issues
+        sizef = sqrt(float(ww*wh)/(1000*1000))      #more than 1 megapixel -> delay more
+        qf = (150-self._current_quality)/100.0
+        sf = (150-self._current_speed)/100.0
+        cf = (100+self.global_statistics.congestion_value*500)/100.0    #high congestion value -> very high delay
+        #bandwidth limit is used to set a minimum on the delay
+        min_delay = int(max(100*cf, self.auto_refresh_delay, 50 * sizef, self.batch_config.delay*4))
+        bwl = self.bandwidth_limit
+        if bwl>0:
+            #1Mbps -> 1s, 10Mbps -> 0.1s
+            min_delay = max(min_delay, 1000*1000*1000//bwl)
+        max_delay = int(1000*cf)
+        raw_delay = int(sizef * qf * sf * cf)
+        delay = max(min_delay, min(max_delay, raw_delay))
+        refreshlog("update_refresh_delay() sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
+        self.do_set_auto_refresh_delay(min_delay, delay)
+
+    def do_set_auto_refresh_delay(self, min_delay, delay):
+        self.min_auto_refresh_delay = min_delay
+        self.base_auto_refresh_delay = delay
+
+
     def reconfigure(self, force_reload=False):
         self.update_quality()
         self.update_speed()
         self.update_encoding_options(force_reload)
+        self.update_refresh_delay()
 
 
     def damage(self, x, y, w, h, options={}):
@@ -1617,27 +1668,17 @@ class WindowSource(object):
             pixels = sum(rect.width*rect.height for rect in self.refresh_regions)
             ww, wh = self.window_dimensions
             pct = min(100, 100*pixels//(ww*wh))
-            #try to take into account speed and quality:
-            #delay more when quality is low
-            #delay less when speed is high
-            #delay a lot more when we have bandwidth issues
-            qsmult = (200-self._current_quality) * (100+self._current_speed) * (100+self.global_statistics.congestion_value*500)
-            min_wait = 50
-            if self.bandwidth_limit>0:
-                #1Mbps -> 1s, 10Mbps -> 0.1s
-                min_wait = min(1000, 1000*1000*1000//self.bandwidth_limit)
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
                 self.refresh_event_time = monotonic_time()
-                #delay in milliseconds: always at least the settings,
-                #more if we have more than 50% of the window pixels to update:
-                sched_delay = int(max(min_wait, self.auto_refresh_delay * max(50, pct) // 50, self.batch_config.delay*4) * qsmult // (200*100*100))
+                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) / 10.0))
                 self.refresh_target_time = now + sched_delay/1000.0
                 self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
                 msg += ", scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
             else:
-                #add to the target time, but this will not move it forwards for small updates following big ones:
-                sched_delay = int(max(min_wait, self.auto_refresh_delay * pct // 50, self.batch_config.delay*2) * qsmult // (200*100*100))
+                #add to the target time,
+                #but don't use sqrt() so this will not move it forwards for small updates following bigger ones:
+                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct / 100.0))
                 target_time = self.refresh_target_time
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
