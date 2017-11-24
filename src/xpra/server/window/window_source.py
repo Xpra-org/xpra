@@ -881,10 +881,8 @@ class WindowSource(object):
         if self.image_depth>24 and "rgb32" in self.common_encodings and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
-        if speed<80 and self.image_depth in (24, 32):
-            for x in ("webp", "png"):
-                if x in self.common_encodings:
-                    return x
+        if speed<80 and self.image_depth in (24, 32) and "webp" in self.common_encodings:
+            return "webp"
         if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
             return "png"
         if "jpeg" in self.common_encodings:
