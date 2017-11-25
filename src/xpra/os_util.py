@@ -418,6 +418,43 @@ def shellsub(s, subs={}):
         s = s.replace("${%s}" % var, str(value))
     return s
 
+
+def osexpand(s, actual_username="", uid=0, gid=0, subs={}):
+    def expanduser(s):
+        if len(actual_username)>0 and s.startswith("~/"):
+            #replace "~/" with "~$actual_username/"
+            return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
+        return os.path.expanduser(s)
+    if len(actual_username)>0:
+        HOME = os.path.expanduser("~%s" % actual_username)
+    else:
+        HOME = os.path.expanduser("~")
+    from collections import OrderedDict
+    d = OrderedDict(subs)
+    d.update({
+        "PID"   : os.getpid(),
+        "HOME"  : HOME,
+        })
+    if os.name=="posix":
+        from xpra.platform.xposix.paths import get_runtime_dir
+        d.update({
+            "UID"   : uid or os.geteuid(),
+            "GID"   : gid or os.getegid(),
+            "XDG_RUNTIME_DIR"   : os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir()),
+            })
+    if len(actual_username)>0:
+        d.update({
+            "USERNAME"  : actual_username,
+            "USER"      : actual_username,
+            })
+    #first, expand the substitutions themselves,
+    #as they may contain references to other variables:
+    ssub = OrderedDict()
+    for k,v in d.items():
+        ssub[k] = expanduser(shellsub(str(v), d))
+    return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
+
+
 def path_permission_info(filename, ftype=None):
     if not POSIX:
         return []

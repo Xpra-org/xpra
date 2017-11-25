@@ -6,8 +6,8 @@
 import sys
 import os.path
 
-from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger
-from xpra.platform.dotxpra import osexpand, norm_makepath
+from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger, osexpand
+from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
 

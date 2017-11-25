@@ -13,7 +13,7 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
-from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, POSIX
+from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, POSIX
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
@@ -94,12 +94,16 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
 
-    from xpra.platform.xposix.paths import _get_runtime_dir
     log = _vfb_logger()
     log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
 
+    subs = {}
+    def pathexpand(s):
+        return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
+
     # We need to set up a new server environment
-    xauthority = os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))
+    xauthority = os.environ.get("XAUTHORITY", pathexpand("~/.Xauthority"))
+    subs["XAUTHORITY"] = xauthority
     if not os.path.exists(xauthority):
         log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
         try:
@@ -111,26 +115,18 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             log.error("Error trying to create XAUTHORITY file %s:", xauthority)
             log.error(" %s", e)
     use_display_fd = display_name[0]=='S'
-
-    HOME = os.path.expanduser("~%s" % username)
-    subs = {
-            "XAUTHORITY"        : xauthority,
-            "USER"              : username or os.environ.get("USER", "unknown-user"),
-            "UID"               : uid,
-            "GID"               : gid,
-            "PID"               : os.getpid(),
-            "HOME"              : HOME,
-            "DISPLAY"           : display_name,
-            }
-    def pathexpand(s):
-        return shellsub(s, subs)
-    subs["XDG_RUNTIME_DIR"] = pathexpand(os.environ.get("XDG_RUNTIME_DIR", _get_runtime_dir()))
+    subs["DISPLAY"] = display_name
     subs["XPRA_LOG_DIR"] = pathexpand(os.environ.get("XPRA_LOG_DIR"))
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
     import shlex
     xvfb_cmd = shlex.split(xvfb_str)
+    if not xvfb_cmd:
+        raise InitException("cannot start Xvfb, the command definition is missing!")
+    #make sure all path values are expanded:
+    xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
+
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
     except ValueError:
@@ -154,11 +150,6 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
                         pass
             except OSError as e:
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
-
-    #apply string substitutions:
-    xvfb_cmd = shlex.split(pathexpand(xvfb_str))
-    if not xvfb_cmd:
-        raise InitException("cannot start Xvfb, the command definition is missing!")
 
     cleanups = []
     if uinput_uuid:
@@ -194,7 +185,6 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
-        log("xvfb_cmd=%s", xvfb_cmd)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
                                 stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
         # Read the display number from the pipe we gave to Xvfb

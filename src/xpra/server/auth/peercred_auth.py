@@ -6,8 +6,7 @@
 import os
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-from xpra.platform.dotxpra_common import osexpand
-from xpra.os_util import get_peercred, get_group_id, POSIX
+from xpra.os_util import get_peercred, get_group_id, osexpand, POSIX
 from xpra.util import csv
 assert init and log #tests will disable logging from here
 

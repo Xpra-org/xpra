@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.os_util import get_util_logger
-from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
+from xpra.os_util import get_util_logger, osexpand
+from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE
 
 PIPE_PREFIX = "Xpra\\"
 PIPE_ROOT = "\\\\"

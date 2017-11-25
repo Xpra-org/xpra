@@ -69,7 +69,7 @@ def do_get_script_bin_dirs():
     return script_bin_dirs
 
 
-def _get_runtime_dir():
+def get_runtime_dir():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:
         #replace uid with the string "$UID"
@@ -86,7 +86,7 @@ def _get_runtime_dir():
     return runtime_dir
 
 def _get_xpra_runtime_dir():
-    runtime_dir = _get_runtime_dir()
+    runtime_dir = get_runtime_dir()
     if not runtime_dir:
         return None
     return os.path.join(runtime_dir, "xpra")

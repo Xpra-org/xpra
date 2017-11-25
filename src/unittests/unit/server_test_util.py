@@ -11,9 +11,9 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
-from xpra.os_util import OSEnvContext, pollwait, POSIX
+from xpra.os_util import OSEnvContext, pollwait, osexpand, POSIX
 from xpra.scripts.config import get_defaults
-from xpra.platform.dotxpra import DotXpra, osexpand
+from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
 
 from xpra.log import Logger

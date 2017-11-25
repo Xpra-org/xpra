@@ -10,8 +10,8 @@ import socket
 import errno
 import stat
 
-from xpra.os_util import get_util_logger
-from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE, osexpand
+from xpra.os_util import get_util_logger, osexpand
+from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
 
 
 def norm_makepath(dirpath, name):
