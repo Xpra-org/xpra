@@ -188,6 +188,13 @@ class WGLContext(object):
             "visible-mask"      : pfd.dwVisibleMask,
             "double-buffered"   : bool(pfd.dwFlags & PFD_DOUBLEBUFFER)
             })
+        #attribute names matching gtkgl:
+        display_mode = []
+        if pfd.dwFlags & PFD_DOUBLEBUFFER:
+            display_mode.append("DOUBLE")
+        else:
+            display_mode.append("SINGLE")
+        self.props["display_mode"] = display_mode
         log("DescribePixelFormat: %s", self.pixel_format_props)
         context = wglCreateContext(self.hdc)
         assert context, "wglCreateContext failed"
