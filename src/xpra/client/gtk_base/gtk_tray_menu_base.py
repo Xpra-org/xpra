@@ -415,6 +415,7 @@ class GTKTrayMenuBase(object):
                 self.client.send_sharing_enabled()
             log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
         self.sharing_menuitem = self.checkitem("Sharing", sharing_toggled)
+        self.sharing_menuitem.set_tooltip_text("Allow other clients to connect to this session")
         set_sensitive(self.sharing_menuitem, False)
         def set_sharing_menuitem(*args):
             log("set_sharing_menuitem%s client_supports_sharing=%s, server_supports_sharing_toggle=%s, server_sharing=%s", args, self.client.client_supports_sharing, self.client.server_supports_sharing_toggle, self.client.server_sharing)
@@ -435,6 +436,7 @@ class GTKTrayMenuBase(object):
                 self.client.send_lock_enabled()
             log("lock_toggled(%s) lock=%s", args, self.client.client_lock)
         self.lock_menuitem = self.checkitem("Lock", lock_toggled)
+        self.lock_menuitem.set_tooltip_text("Prevent other clients from stealing this session")
         set_sensitive(self.lock_menuitem, False)
         def set_lock_menuitem(*args):
             log("set_lock_menuitem%s client_lock=%s, server_supports_lock_toggle=%s, server lock=%s", args, self.client.client_lock, self.client.server_supports_lock_toggle, self.client.server_lock)
@@ -679,6 +681,7 @@ class GTKTrayMenuBase(object):
 
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
+        gl.set_tooltip_text("hardware accelerated rendering using OpenGL")
         def gl_set(*args):
             log("gl_set(%s) opengl_enabled=%s, ", args, self.client.opengl_enabled)
             gl.set_active(self.client.opengl_enabled)
