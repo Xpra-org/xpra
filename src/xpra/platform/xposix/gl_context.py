@@ -115,6 +115,17 @@ class GLXContext(object):
             if name in ("stereo", "double-buffered", "rgba"):
                 v = bool(v)
             self.props[name] = v
+        #attribute names matching gtkgl:
+        display_mode = []
+        if getconfig(GLX.GLX_RGBA):
+            #this particular context may not have alpha channel support...
+            #but if we have RGBA then it's almost guaranteed that we can do ALPHA
+            display_mode.append("ALPHA")
+        if getconfig(GLX.GLX_DOUBLEBUFFER):
+            display_mode.append("DOUBLE")
+        else:
+            display_mode.append("SINGLE")
+        self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
