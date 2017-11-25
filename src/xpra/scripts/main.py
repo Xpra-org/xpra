@@ -1580,7 +1580,7 @@ def parse_display_name(error_cb, opts, display_name):
         pos +=1
     if protocol=="socket":
         #socket paths may start with a slash!
-        #in which case the slash is part of the path, not the seperator!
+        #in which case the last slash is part of the path, not the seperator!
         if psep==":/" or psep==":///":
             psep = psep[:-1]
             pos -= 1
@@ -3040,7 +3040,7 @@ def run_sessions_gui(error_cb, options):
     if mdns:
         return run_mdns_gui(error_cb, options)
     from xpra.client.gtk_base import sessions_gui
-    sessions_gui.do_main(options)
+    return sessions_gui.do_main(options)
 
 def run_mdns_gui(error_cb, options):
     from xpra.net.mdns import get_listener_class
@@ -3048,7 +3048,7 @@ def run_mdns_gui(error_cb, options):
     if not listener:
         error_cb("sorry, 'mdns-gui' is not supported on this platform yet")
     from xpra.client.gtk_base import mdns_gui
-    mdns_gui.do_main(options)
+    return mdns_gui.do_main(options)
 
 def run_list_mdns(error_cb, extra_args):
     no_gtk()

@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 gtk = import_gtk()
 glib = import_glib()
@@ -57,14 +59,16 @@ def do_main(opts):
         if not get_listener_class():
             command_error("no mDNS support in this build")
             return 1
-        mdns_sessions(opts)
+        gui = mdns_sessions(opts)
         gtk_main()
+        return gui.exit_code
 
 def main():
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
-    do_main(opts)
+    return do_main(opts)
 
 
 if __name__ == "__main__":
-    main()
+    r = main()
+    sys.exit(r)

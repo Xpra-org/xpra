@@ -32,6 +32,7 @@ class SessionsGUI(gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
         gtk.Window.__init__(self)
+        self.exit_code = 0
         self.set_title(title)
         self.set_border_width(20)
         self.set_resizable(True)
@@ -83,6 +84,9 @@ class SessionsGUI(gtk.Window):
         glib.timeout_add(5*1000, self.poll_local_sessions)
         self.populate_table()
 
+        import signal
+        signal.signal(signal.SIGINT, self.app_signal)
+        signal.signal(signal.SIGTERM, self.app_signal)
         self.show_all()
 
     def quit(self, *args):
@@ -92,6 +96,11 @@ class SessionsGUI(gtk.Window):
     def do_quit(self):
         log("do_quit()")
         gtk.main_quit()
+
+    def app_signal(self, signum, _frame):
+        self.exit_code = 128 + signum
+        log("app_signal(%s, %s) exit_code=%i", signum, _frame, self.exit_code)
+        self.do_quit()
 
 
     def poll_local_sessions(self):
@@ -155,7 +164,7 @@ class SessionsGUI(gtk.Window):
         out = strtobytes(stdout)
         info = {}
         for line in out.splitlines():
-            parts = line.split("=", 1)
+            parts = line.split(b"=", 1)
             if len(parts)==2:
                 info[parts[0]] = parts[1]
         return info
@@ -316,14 +325,17 @@ def do_main(opts):
     from xpra.log import enable_color
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
-        SessionsGUI(opts)
+        gui = SessionsGUI(opts)
         gtk_main()
+        log.info("do_main() gui.exit_code=%i", gui.exit_code)
+        return gui.exit_code
 
 def main():
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
-    do_main(opts)
+    return do_main(opts)
 
 
 if __name__ == "__main__":
-    main()
+    r = main()
+    sys.exit(r)
