@@ -433,7 +433,8 @@ class UIXpraClient(XpraClientBase):
             self.menu_helper = self.make_tray_menu_helper()
             def setup_xpra_tray():
                 self.tray = self.setup_xpra_tray(opts.tray_icon or "xpra")
-                self.tray.show()
+                if self.tray:
+                    self.tray.show()
             if opts.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
@@ -879,7 +880,10 @@ class UIXpraClient(XpraClientBase):
             menu = self.menu_helper.build()
         tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
-        return tray
+        def reset_tray_title():
+            if self.tray:
+                self.tray.set_tooltip(self.get_tray_title())
+        return self.after_handshake(reset_tray_title)
 
     def get_tray_title(self):
         t = []
