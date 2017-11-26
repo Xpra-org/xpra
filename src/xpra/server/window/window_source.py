@@ -759,7 +759,7 @@ class WindowSource(object):
             are = self.client_refresh_encodings
         else:
             #sane defaults:
-            ropts = set(("webp", "png", "rgb24", "rgb32"))          #default encodings for auto-refresh
+            ropts = set(("webp", "png", "rgb24", "rgb32", "jpeg2000"))  #default encodings for auto-refresh
             if AUTO_REFRESH_QUALITY<100 and self.image_depth>16:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
@@ -887,6 +887,8 @@ class WindowSource(object):
             return "png"
         if "jpeg" in self.common_encodings:
             return "jpeg"
+        if "jpeg2000" in self.common_encodings and ww>=32 and wh>=32:
+            return "jpeg2000"
         return [x for x in self.common_encodings if x!="rgb"][0]
 
     def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *_args):
@@ -2070,7 +2072,7 @@ class WindowSource(object):
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
         end = monotonic_time()
-        compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
+        compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                  (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)

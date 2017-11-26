@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 
 from xpra.log import Logger
@@ -16,6 +17,7 @@ from PIL import Image, ImagePalette     #@UnresolvedImport
 from xpra.codecs.pillow import PIL_VERSION
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp,jpeg2000").split(",")
 
 
 def get_version():
@@ -27,7 +29,7 @@ def get_type():
 def do_get_encodings():
     log("PIL.Image.SAVE=%s", Image.SAVE)
     encodings = []
-    for encoding in ["png", "png/L", "png/P", "jpeg", "webp"]:
+    for encoding in ENCODE_FORMATS:
         #strip suffix (so "png/L" -> "png")
         stripped = encoding.split("/")[0].upper()
         if stripped in Image.SAVE:
@@ -121,7 +123,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         raise
     buf = BytesIOClass()
     client_options = {}
-    if coding in ("jpeg", "webp"):
+    if coding in ("jpeg", "webp", "jpeg2000"):
         #newer versions of pillow require explicit conversion to non-alpha:
         if pixel_format.find("A")>=0:
             im = im.convert("RGB")
@@ -129,11 +131,14 @@ def encode(coding, image, quality, speed, supports_transparency):
         kwargs = im.info
         kwargs["quality"] = q
         client_options["quality"] = q
-        if coding=="jpeg" and speed<50:
+        if coding=="jpeg2000":
+            kwargs["quality_mode"] = "rates"    #other option: "dB"
+            kwargs["quality_layers"] = max(1, (100-q)*5)
+        elif coding=="jpeg" and speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
             client_options["optimize"] = True
-        if coding=="webp" and q>=100:
+        elif coding=="webp" and q>=100:
             kwargs["lossless"] = 1
         pil_fmt = coding.upper()
     else:

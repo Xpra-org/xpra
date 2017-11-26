@@ -6,7 +6,7 @@
 
 import weakref
 from xpra.log import Logger
-log = Logger("util")
+log = Logger("util", "encoding")
 
 
 #value: how much smaller the output is

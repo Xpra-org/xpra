@@ -241,7 +241,7 @@ ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + DECODER_CODECS))
 
 #note: this is just for defining the order of encodings,
 #so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265"]
+PREFERED_ENCODING_ORDER = ["h264", "vp9", "vp8", "mpeg4", "mpeg4+mp4", "h264+mp4", "mpeg4+mp4", "vp8+webm", "vp9+webm", "png", "png/P", "png/L", "webp", "rgb", "rgb24", "rgb32", "jpeg", "h265", "jpeg2000"]
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER = ["rgb24", "rgb32", "jpeg", "png", "webp", "png/P", "png/L", "rgb"]
 
@@ -267,6 +267,7 @@ def get_encoding_name(encoding):
           "png/P"   : "PNG (8bpp colour)",
           "png/L"   : "PNG (8bpp grayscale)",
           "jpeg"    : "JPEG",
+          "jpeg2000": "JPEG 2000",
           "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)
@@ -286,10 +287,11 @@ def get_encoding_help(encoding):
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
+          "jpeg2000": "JPEG 2000 lossy compression (slow)",
           "rgb"     : "Raw RGB pixels, lossless, compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           }.get(encoding)
 
-HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg")
+HELP_ORDER = ("auto", "h264", "h265", "vp8", "vp9", "mpeg4", "png", "png/P", "png/L", "webp", "rgb", "jpeg", "jpeg2000")
 
 #those are currently so useless that we don't want the user to select them by mistake
 PROBLEMATIC_ENCODINGS = ("h265", )

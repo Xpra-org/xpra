@@ -741,7 +741,7 @@ class UIXpraClient(XpraClientBase):
     def do_get_core_encodings(self):
         """
             This method returns the actual encodings supported.
-            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
+            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "jpeg2000", "h264", "vpx"]
             It is often overriden in the actual client class implementations,
             where extra encodings can be added (generally just 'rgb32' for transparency),
             or removed if the toolkit implementation class is more limited.

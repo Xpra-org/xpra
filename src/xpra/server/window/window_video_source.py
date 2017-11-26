@@ -459,13 +459,15 @@ class WindowVideoSource(WindowSource):
         if "webp" in options and pixel_count>=16384:
             return "webp"
         #lossless options:
-        if speed>75 or self.image_depth>24:
+        if speed>95 or self.image_depth>24:
             if "rgb24" in options:
                 return "rgb24"
             if "rgb32" in options:
                 return "rgb32"
         if "png" in options:
             return "png"
+        if "jpeg2000" in options and ww>=32 and wh>=32:
+            return "jpeg2000"
         #we failed to find a good match, default to the first of the options..
         if options:
             return options[0]
@@ -1550,7 +1552,7 @@ class WindowVideoSource(WindowSource):
             end = monotonic_time()
             packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet)
-            compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
+            compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
         #send the rest as rectangles:
         if non_scroll:
@@ -1588,7 +1590,7 @@ class WindowVideoSource(WindowSource):
                     self.queue_damage_packet(packet)
                     psize = w*sh*4
                     csize = len(data)
-                    compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %6s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
+                    compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
                          (monotonic_time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
                 scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
             else:
@@ -1605,7 +1607,10 @@ class WindowVideoSource(WindowSource):
                 order = FAST_ORDER
             else:
                 order = PREFERED_ENCODING_ORDER
-        fallback_encodings = tuple(x for x in order if (x in encodings and x in self._encoders and x!="mmap"))
+        #jpeg2000 errors out on images smaller than 32x32,
+        #and we don't know the size in this method, so discard it
+        #also, don't choose mmap!
+        fallback_encodings = tuple(x for x in order if (x in encodings and x in self._encoders and x!="mmap" and x!="jpeg2000"))
         if self.image_depth==8 and "png/P" in fallback_encodings:
             return "png/P"
         elif self.image_depth==30 and "rgb32" in fallback_encodings:
