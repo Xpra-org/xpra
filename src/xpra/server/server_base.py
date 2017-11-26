@@ -355,10 +355,12 @@ class ServerBase(ServerCore):
 
 
     def init_encoding(self, cmdline_encoding):
-        if cmdline_encoding and cmdline_encoding not in self.encodings:
-            log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
-        else:
+        if not cmdline_encoding or str(cmdline_encoding).lower() in ("auto", "none"):
+            self.default_encoding = None
+        elif cmdline_encoding in self.encodings:
             self.default_encoding = cmdline_encoding
+        else:
+            log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
 
 
     def init_sockets(self, sockets):
