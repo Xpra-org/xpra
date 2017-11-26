@@ -79,16 +79,16 @@ class WindowPerformanceStatistics(object):
     def update_averages(self):
         #damage "in" latency: (the time it takes for damage requests to be processed only)
         if len(self.damage_in_latency)>0:
-            data = [(when, latency) for when, _, _, latency in list(self.damage_in_latency)]
+            data = [(when, latency) for when, _, _, latency in tuple(self.damage_in_latency)]
             self.avg_damage_in_latency, self.recent_damage_in_latency =  calculate_time_weighted_average(data)
         #damage "out" latency: (the time it takes for damage requests to be processed and sent out)
         if len(self.damage_out_latency)>0:
-            data = [(when, latency) for when, _, _, latency in list(self.damage_out_latency)]
+            data = [(when, latency) for when, _, _, latency in tuple(self.damage_out_latency)]
             self.avg_damage_out_latency, self.recent_damage_out_latency = calculate_time_weighted_average(data)
         #client decode speed:
         if len(self.client_decode_time)>0:
             #the elapsed time recorded is in microseconds:
-            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in self.client_decode_time)
+            decode_speed = tuple((event_time, size, size*1000*1000/elapsed) for event_time, size, elapsed in tuple(self.client_decode_time))
             r = calculate_size_weighted_average(decode_speed)
             self.avg_decode_speed = int(r[0])
             self.recent_decode_speed = int(r[1])
@@ -161,7 +161,7 @@ class WindowPerformanceStatistics(object):
                 }
         #encoding stats:
         if len(self.encoding_stats)>0:
-            estats = list(self.encoding_stats)
+            estats = tuple(self.encoding_stats)
             encodings_used = [x[1] for x in estats]
             def add_compression_stats(enc_stats, encoding=None):
                 comp_ratios_pct = []
@@ -188,9 +188,9 @@ class WindowPerformanceStatistics(object):
                 add_compression_stats(enc_stats, encoding)
 
         dinfo = info.setdefault("damage", {})
-        latencies = [x*1000 for _, _, _, x in list(self.damage_in_latency)]
+        latencies = [x*1000 for _, _, _, x in tuple(self.damage_in_latency)]
         dinfo["in_latency"]  = get_list_stats(latencies, show_percentile=[9])
-        latencies = [x*1000 for _, _, _, x in list(self.damage_out_latency)]
+        latencies = [x*1000 for _, _, _, x in tuple(self.damage_out_latency)]
         dinfo["out_latency"] = get_list_stats(latencies, show_percentile=[9])
         #per encoding totals:
         if self.encoding_totals:
@@ -210,7 +210,7 @@ class WindowPerformanceStatistics(object):
             """
         decoding_latency = 0.010
         if len(self.client_decode_time)>0:
-            decoding_latency, _ = calculate_timesize_weighted_average(list(self.client_decode_time))
+            decoding_latency, _ = calculate_timesize_weighted_average(tuple(self.client_decode_time))
             decoding_latency /= 1000.0
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)
@@ -266,7 +266,7 @@ class WindowPerformanceStatistics(object):
 
     def get_bitrate(self, max_elapsed=1):
         cutoff = monotonic_time()-max_elapsed
-        recs = tuple((v[0], v[4]) for v in self.encoding_stats if v[0]>=cutoff)
+        recs = tuple((v[0], v[4]) for v in tuple(self.encoding_stats) if v[0]>=cutoff)
         if len(recs)<2:
             return 0
         bits = sum(v[1] for v in recs) * 8
