@@ -15,7 +15,7 @@ import signal
 from xpra.util import envint, envbool
 from xpra.os_util import POSIX
 from xpra.log import Logger
-log = Logger("server", "util")
+log = Logger("server", "util", "exec")
 
 
 USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
@@ -131,6 +131,12 @@ class ChildReaper(object):
     def sigchld(self, signum, frame):
         self.glib.idle_add(log, "sigchld(%s, %s)", signum, frame)
         self.glib.idle_add(self.reap)
+
+    def get_proc_info(self, pid):
+        for proc_info in list(self._proc_info):
+            if proc_info.pid==pid:
+                return proc_info
+        return None
 
     def add_dead_pid(self, pid):
         #find the procinfo for this pid:

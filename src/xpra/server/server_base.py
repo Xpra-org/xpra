@@ -908,14 +908,22 @@ class ServerBase(ServerCore):
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
 
     def _exec_commands(self, start_list, start_child_list):
+        started = []
         if start_list:
             for x in start_list:
                 if x:
-                    self.start_child(x, x, ignore=True)
+                    proc = self.start_child(x, x, ignore=True)
+                    if proc:
+                        started.append(proc)
         if start_child_list:
             for x in start_child_list:
                 if x:
-                    self.start_child(x, x, ignore=False)
+                    proc = self.start_child(x, x, ignore=False)
+                    if proc:
+                        started.append(proc)
+        procs = tuple(x for x in started if x is not None)
+        if not self.session_name and procs:
+            self.guess_session_name(procs)
 
     def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=None, **kwargs):
         execlog("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
@@ -977,6 +985,22 @@ class ServerBase(ServerCore):
             wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
             execlog("still not terminated: %s", wait_for)
         execlog("done waiting for child commands")
+
+
+    def guess_session_name(self, procs):
+        #use the commands to define the session name:
+        self.child_reaper.poll()
+        cmd_names = []
+        for proc in procs:
+            proc_info = self.child_reaper.get_proc_info(proc.pid)
+            if not proc_info:
+                continue
+            cmd = proc_info.command
+            cmd_names.append(os.path.basename(cmd[0]))
+        execlog("guess_session_name() commands=%s", cmd_names)
+        if cmd_names:
+            self.session_name = csv(cmd_names)
+
 
     def do_cleanup(self):
         self.server_event("exit")
