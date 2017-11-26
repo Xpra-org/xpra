@@ -124,7 +124,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
     def get_image(self, x, y, width, height):
         image = None
         if not self.capture:
-            ww, wh = self.get_geometry()
+            ww, wh = self.get_geometry()[2:4]
             if USE_NVFBC:
                 try:
                     if USE_NVFBC_CUDA:
