@@ -249,7 +249,7 @@ class Wm(gobject.GObject):
         # Set up the necessary EWMH properties on the root window.
         self._setup_ewmh_window()
         # Start with just one desktop:
-        self.set_desktop_list([u"Main"])
+        self.set_desktop_list((u"Main", ))
         self.set_current_desktop(0)
         # Start with the full display as workarea:
         root_w, root_h = gtk.gdk.get_default_root_window().get_size()

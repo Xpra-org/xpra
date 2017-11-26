@@ -612,8 +612,8 @@ class SessionInfo(gtk.Window):
             addavg(self.avg_batch_delay, "batch.delay")
             addavg(self.avg_damage_out_latency, "damage.out_latency")
             if len(self.client.server_ping_latency)>0 and len(self.client.client_ping_latency)>0:
-                spl = [1000.0*x for _,x in list(self.client.server_ping_latency)]
-                cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
+                spl = [1000.0*x for _,x in tuple(self.client.server_ping_latency)]
+                cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
                 self.avg_ping_latency.append(sum(spl+cpl)/len(spl+cpl))
             if len(self.client.pixel_counter)>0:
                 tsize = 0
@@ -679,7 +679,7 @@ class SessionInfo(gtk.Window):
     def show_window_renderers(self):
         wr = []
         renderers = {}
-        for wid, window in list(self.client._id_to_window.items()):
+        for wid, window in tuple(self.client._id_to_window.items()):
             renderers.setdefault(window.get_backing_class(), []).append(wid)
         for bclass, windows in renderers.items():
             wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
@@ -904,10 +904,10 @@ class SessionInfo(gtk.Window):
             setall(labels, rounded_values)
 
         if len(self.client.server_ping_latency)>0:
-            spl = [1000.0*x for _,x in list(self.client.server_ping_latency)]
+            spl = [1000.0*x for _,x in tuple(self.client.server_ping_latency)]
             setlabels(self.server_latency_labels, spl)
         if len(self.client.client_ping_latency)>0:
-            cpl = [1000.0*x for _,x in list(self.client.client_ping_latency)]
+            cpl = [1000.0*x for _,x in tuple(self.client.client_ping_latency)]
             setlabels(self.client_latency_labels, cpl)
         if self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
@@ -1044,8 +1044,8 @@ class SessionInfo(gtk.Window):
                     if value==1:
                         return str(unit)
                     return "x%s%s" % (int(value), unit)
-            net_in_scale, net_in_data = values_to_diff_scaled_values(list(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-            net_out_scale, net_out_data = values_to_diff_scaled_values(list(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             if SHOW_RECV:
                 labels += ["recv %sB/s" % unit(net_in_scale), "sent %sB/s" % unit(net_out_scale)]
                 datasets += [net_in_data, net_out_data]
@@ -1053,15 +1053,15 @@ class SessionInfo(gtk.Window):
                 labels += ["recv %sB/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
         if SHOW_PIXEL_STATS and self.client.windows_enabled:
-            pixel_scale, in_pixels = values_to_scaled_values(list(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
+            pixel_scale, in_pixels = values_to_scaled_values(tuple(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
         if SHOW_SOUND_STATS and self.sound_in_bitcount:
-            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(list(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(tuple(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_in_data)
             labels.append("Speaker %sb/s" % unit(sound_in_scale))
         if SHOW_SOUND_STATS and self.sound_out_bitcount:
-            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(list(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(tuple(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_out_data)
             labels.append("Mic %sb/s" % unit(sound_out_scale))
 

@@ -58,7 +58,7 @@ def native_to_dbus(value):
         sig = None
         if len(keytypes)==1:
             #just one type of key:
-            keytype = list(keytypes)[0]
+            keytype = tuple(keytypes)[0]
             if keytype is int:
                 sig = "i"
             if keytype is long:
@@ -81,7 +81,7 @@ def native_to_dbus(value):
         sig = None
         if len(keytypes)==1:
             #just one type of key:
-            keytype = list(keytypes)[0]
+            keytype = tuple(keytypes)[0]
             if keytype is int:
                 sig = "i"
             if keytype is long:

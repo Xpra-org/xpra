@@ -838,7 +838,7 @@ class Protocol(object):
                             try:
                                 return hexstr(bytearray(s))
                             except:
-                                return csv(list(str(s)))
+                                return csv(tuple(s))
                         # pad byte value is number of padding bytes added
                         padtext = pad(self.cipher_in_padding, padding_size)
                         if data.endswith(padtext):

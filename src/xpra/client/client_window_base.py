@@ -130,7 +130,7 @@ class ClientWindowBase(ClientWidgetBase):
         #(with a bit of magic to collapse the missing namespace from encoding_defaults)
         backing_props = self._backing.get_encoding_properties()
         encoding_defaults = self._client.encoding_defaults
-        for k in list(backing_props.keys()):
+        for k in tuple(backing_props.keys()):
             v = backing_props[k]
             try:
                 #ie: "encodings.rgb_formats" -> "rgb_formats"

@@ -402,7 +402,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             log("too many new modes (%i), trying to remove the oldest entry", len(self._added_modes))
             log("added modes=%s", csv(self._added_modes.items()))
             try:
-                rname, mode = list(self._added_modes.items())[0]
+                rname, mode = tuple(self._added_modes.items())[0]
                 self.remove_mode(mode)
                 del self._added_modes[rname]
             except:

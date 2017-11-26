@@ -233,7 +233,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         metalog("forcing POPUP type for Java AWT skip-taskbar window, transient-for=%s", transient_for)
                         return True
         window_types = metadata.strlistget("window-type", [])
-        popup_types = list(POPUP_TYPE_HINTS.intersection(window_types))
+        popup_types = tuple(POPUP_TYPE_HINTS.intersection(window_types))
         metalog("popup_types(%s)=%s", window_types, popup_types)
         if popup_types:
             metalog("forcing POPUP window type for %s", popup_types)
@@ -257,7 +257,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         window_types = metadata.strlistget("window-type", [])
         if ("NORMAL" not in window_types) and ("DIALOG" not in window_types) and metadata.intget("transient-for", -1)>0:
             return False
-        undecorated_types = list(UNDECORATED_TYPE_HINTS.intersection(window_types))
+        undecorated_types = tuple(UNDECORATED_TYPE_HINTS.intersection(window_types))
         metalog("undecorated_types(%s)=%s", window_types, undecorated_types)
         if undecorated_types:
             metalog("not decorating window type %s", undecorated_types)
@@ -430,7 +430,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         bc = self.get_backing_class()
         metalog("set_alpha() has_alpha=%s, %s.HAS_ALPHA=%s, realized=%s", self._has_alpha, bc, bc.HAS_ALPHA, self.is_realized())
         #by default, only RGB (no transparency):
-        #rgb_formats = list(BACKING_CLASS.RGB_MODES)
+        #rgb_formats = tuple(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
         if not self._has_alpha or not bc.HAS_ALPHA:
             self._client_properties["encoding.transparency"] = False
@@ -523,7 +523,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                             self._window_state = {}
                     #calculate a good delay to prevent races causing minimize/unminimize loops:
                     delay = 150
-                    spl = list(self._client.server_ping_latency)
+                    spl = tuple(self._client.server_ping_latency)
                     if len(spl)>0:
                         worst = max([x for _,x in spl])
                         delay += int(1000*worst)

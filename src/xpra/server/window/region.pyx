@@ -162,7 +162,7 @@ def add_rectangle(object regions, rectangle region):
     cdef int w = region.width
     cdef int h = region.height
     cdef rectangle r
-    for r in list(regions):
+    for r in tuple(regions):
         #unroll contains() call:
         #if r.contains_rect(region):
         if r.x<=x and r.y<=y and r.x+r.width>=x+w and r.y+r.height>=y+h:

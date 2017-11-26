@@ -833,7 +833,7 @@ cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="windo
         return
     # Copy the 'handlers' list, because signal handlers might cause items
     # to be added or removed from it while we are iterating:
-    for handler in list(handlers):
+    for handler in tuple(handlers):
         signals = gobject.signal_list_names(handler)
         if signal in signals:
             if DEBUG:

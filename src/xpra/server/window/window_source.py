@@ -436,7 +436,7 @@ class WindowSource(object):
             info["mapped-at"] = ma
         now = monotonic_time()
         cutoff = now-5
-        lde = [x for x in list(self.statistics.last_damage_events) if x[0]>=cutoff]
+        lde = [x for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff]
         dfps = 0
         if lde:
             dfps = len(lde) // 5
@@ -460,7 +460,7 @@ class WindowSource(object):
         def add_list_info(prefix, v):
             if not v:
                 return
-            l = list(v)
+            l = tuple(v)
             if len(l)==0:
                 return
             li = get_list_stats(x for _, _, x in l)
@@ -922,7 +922,7 @@ class WindowSource(object):
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         #make sure we don't account for those as they will get dropped
         #(generally before encoding - only one may still get encoded):
-        for sequence in list(self.statistics.encoding_pending.keys()):
+        for sequence in tuple(self.statistics.encoding_pending.keys()):
             if self._damage_cancelled>=sequence:
                 try:
                     del self.statistics.encoding_pending[sequence]
@@ -984,10 +984,10 @@ class WindowSource(object):
         statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %i seconds ago", self.wid, self.batch_config.delay, elapsed)
         if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.statistics.get_packets_backlog()==0:
             #delay is low-ish, figure out if we should bother updating it
-            lde = list(self.statistics.last_damage_events)
+            lde = tuple(self.statistics.last_damage_events)
             if len(lde)==0:
                 return      #things must have got reset anyway
-            since_last = [(pixels, compressed_size) for t, _, pixels, _, compressed_size, _ in list(self.statistics.encoding_stats) if t>=lr]
+            since_last = [(pixels, compressed_size) for t, _, pixels, _, compressed_size, _ in tuple(self.statistics.encoding_stats) if t>=lr]
             if len(since_last)<=5:
                 statslog("calculate_batch_delay for wid=%i, skipping - only %i events since the last update", self.wid, len(since_last))
                 return
@@ -1020,7 +1020,7 @@ class WindowSource(object):
         speed = self._fixed_speed
         if speed<=0:
             #make a copy to work on (and discard "info")
-            speed_data = [(event_time, speed) for event_time, _, speed in list(self._encoding_speed)]
+            speed_data = [(event_time, speed) for event_time, _, speed in tuple(self._encoding_speed)]
             info, target_speed = get_target_speed(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_speed, speed_data)
             speed_data.append((monotonic_time(), target_speed))
             speed = max(self._fixed_min_speed, time_weighted_average(speed_data, min_offset=1, rpow=1.1))
@@ -1058,7 +1058,7 @@ class WindowSource(object):
         if quality<=0:
             info, quality = get_target_quality(self.window_dimensions, self.batch_config, self.global_statistics, self.statistics, self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
             #make a copy to work on (and discard "info")
-            ves_copy = [(event_time, speed) for event_time, _, speed in list(self._encoding_quality)]
+            ves_copy = [(event_time, speed) for event_time, _, speed in tuple(self._encoding_quality)]
             ves_copy.append((monotonic_time(), quality))
             quality = max(self._fixed_min_quality, time_weighted_average(ves_copy, min_offset=0.1, rpow=1.2))
             quality = min(99, quality)
@@ -1452,7 +1452,7 @@ class WindowSource(object):
                 send_full_window_update()
                 return
 
-        regions = list(set(regions))
+        regions = tuple(set(regions))
         if MERGE_REGIONS:
             bytes_threshold = ww*wh*self.max_bytes_percent/100
             pixel_count = sum(rect.width*rect.height for rect in regions)
@@ -1976,7 +1976,7 @@ class WindowSource(object):
             dlen = len(dpixels)
             store = sequence
             deltalog("delta available for %s and %i %s pixels on wid=%i", coding, isize, pixel_format, self.wid)
-            for i, dr in enumerate(list(self.delta_pixel_data)):
+            for i, dr in enumerate(tuple(self.delta_pixel_data)):
                 if dr is None:
                     continue
                 lw, lh, lpixel_format, lcoding, lsequence, buflen, ldata, hits, _ = dr

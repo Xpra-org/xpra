@@ -163,14 +163,14 @@ def make_window_metadata(window, propname, get_transient_for=None, get_window_id
     #it was just easier to handle them here
     #(convert to a type that can be encoded for xpra info):
     elif propname in ("state", "protocols"):
-        return {"state" : list(raw() or [])}
+        return {"state" : tuple(raw() or [])}
     elif propname == "allowed-actions":
-        return {"allowed-actions" : list(raw())}
+        return {"allowed-actions" : tuple(raw())}
     elif propname == "frame":
         frame = raw()
         if not frame:
             return {}
-        return {"frame" : list(frame)}
+        return {"frame" : tuple(frame)}
     raise Exception("unhandled property name: %s" % propname)
 
 
@@ -559,7 +559,7 @@ class ServerSource(FileTransferHandler):
         self.statistics.bytes_sent.append((now, self.protocol._conn.output_bytecount))
         self.statistics.update_averages()
         self.update_bandwidth_limits()
-        wids = list(self.calculate_window_ids)  #make a copy so we don't clobber new wids
+        wids = tuple(self.calculate_window_ids)  #make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()
         maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
@@ -590,7 +590,7 @@ class ServerSource(FileTransferHandler):
             sleep(0)
         #calculate weighted average as new global default delay:
         wdimsum, wdelay, tsize, tcount = 0, 0, 0, 0
-        for ws in list(self.window_sources.values()):
+        for ws in tuple(self.window_sources.values()):
             if ws.batch_config.last_updated<=0:
                 continue
             w, h = ws.window_dimensions
@@ -1760,7 +1760,7 @@ class ServerSource(FileTransferHandler):
         """
             Adds encoding and window specific information
         """
-        pqpixels = [x[2] for x in list(self.packet_queue)]
+        pqpixels = [x[2] for x in tuple(self.packet_queue)]
         pqpi = get_list_stats(pqpixels)
         if len(pqpixels)>0:
             pqpi["current"] = pqpixels[-1]
@@ -1785,11 +1785,11 @@ class ServerSource(FileTransferHandler):
                 #per-window source stats:
                 winfo[wid] = ws.get_info()
                 #collect stats for global averages:
-                for _, _, pixels, _, _, encoding_time in list(ws.statistics.encoding_stats):
+                for _, _, pixels, _, _, encoding_time in tuple(ws.statistics.encoding_stats):
                     total_pixels += pixels
                     total_time += encoding_time
-                in_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_in_latency)]
-                out_latencies += [x*1000 for _, _, _, x in list(ws.statistics.damage_out_latency)]
+                in_latencies += [x*1000 for _, _, _, x in tuple(ws.statistics.damage_in_latency)]
+                out_latencies += [x*1000 for _, _, _, x in tuple(ws.statistics.damage_out_latency)]
             info["window"] = winfo
             v = 0
             if total_time>0:
@@ -1996,7 +1996,7 @@ class ServerSource(FileTransferHandler):
         from xpra.platform.pycups_printing import remove_printer
         #remove the printers no longer defined
         #or those whose definition has changed (and we will re-add them):
-        for k in list(self.printers.keys()):
+        for k in tuple(self.printers.keys()):
             cpd = self.printers.get(k)
             npd = printers.get(k)
             if cpd==npd:
@@ -2330,19 +2330,19 @@ class ServerSource(FileTransferHandler):
 
 
     def set_min_quality(self, min_quality):
-        for ws in list(self.window_sources.values()):
+        for ws in tuple(self.window_sources.values()):
             ws.set_min_quality(min_quality)
 
     def set_quality(self, quality):
-        for ws in list(self.window_sources.values()):
+        for ws in tuple(self.window_sources.values()):
             ws.set_quality(quality)
 
     def set_min_speed(self, min_speed):
-        for ws in list(self.window_sources.values()):
+        for ws in tuple(self.window_sources.values()):
             ws.set_min_speed(min_speed)
 
     def set_speed(self, speed):
-        for ws in list(self.window_sources.values()):
+        for ws in tuple(self.window_sources.values()):
             ws.set_speed(speed)
 
 
@@ -2470,7 +2470,7 @@ class ServerSource(FileTransferHandler):
         now = monotonic_time()
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
-            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in list(self.packet_queue) if x[1]==wid)))
+            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
         self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb))
         p = self.protocol
         if p:

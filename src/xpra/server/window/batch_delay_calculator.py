@@ -73,7 +73,7 @@ def update_batch_delay(batch, factors):
             #get the weighted average
             #older values matter less, we decay them according to how much we batch already
             #(older values matter more when we batch a lot)
-            for when, delay in list(delays):
+            for when, delay in tuple(delays):
                 #newer matter more:
                 w = d_weight/(1.0+((now-when)/decay)**2)
                 d = max(0, min(max_delay, delay))
@@ -128,7 +128,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     else:
         #calculate a target latency and try to get close to it
         avg_delay = batch.delay
-        delays = list(batch.last_actual_delays)
+        delays = tuple(batch.last_actual_delays)
         if len(delays)>0:
             #average recent actual delay:
             avg_delay = time_weighted_average(delays)
@@ -159,7 +159,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #only count the last second's worth:
     now = monotonic_time()
     lim = now-1.0
-    lde = [w*h for t,_,_,w,h in list(statistics.last_damage_events) if t>=lim]
+    lde = [w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=lim]
     pixels = sum(lde)
     mpixels_per_s = pixels/1024.0/1024.0
     pps = 0.0
@@ -237,7 +237,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
             info["batch-delay-ratio"] = int(100.0*batch_q)
             target = min(1.0, target, batch_q)
     #from here on, the compression ratio integer value is in per-1000:
-    es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in list(statistics.encoding_stats) if pixels>=4096]
+    es = [(t, pixels, 1000*compressed_size*bpp//pixels//32) for (t, _, pixels, bpp, compressed_size, _) in tuple(statistics.encoding_stats) if pixels>=4096]
     if len(es)>=2:
         #use the recent vs average compression ratio
         #(add value to smooth things out a bit, so very low compression ratios don't skew things)
@@ -282,7 +282,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
     ww, wh = window_dimensions
     if ww>0 and wh>0:
         now = monotonic_time()
-        damage_pixel_count = dict((lim, sum([w*h for t,_,_,w,h in list(statistics.last_damage_events) if t>=now-lim and t<now-lim+1])) for lim in range(1,11))
+        damage_pixel_count = dict((lim, sum([w*h for t,_,_,w,h in tuple(statistics.last_damage_events) if t>=now-lim and t<now-lim+1])) for lim in range(1,11))
         pixl5 = sum(v for lim,v in damage_pixel_count.items() if lim<=5)
         pixn5 = sum(v for lim,v in damage_pixel_count.items() if lim>5)
         pctpixdamaged = float(pixl5)/(ww*wh)

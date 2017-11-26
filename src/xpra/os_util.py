@@ -537,9 +537,9 @@ class FDChangeCaptureContext(object):
     def __repr__(self):
         return "FDChangeCaptureContext"
     def get_new_fds(self):
-        return sorted(list(set(self.exit_fds)-set(self.enter_fds)))
+        return sorted(tuple(set(self.exit_fds)-set(self.enter_fds)))
     def get_lost_fds(self):
-        return sorted(list(set(self.enter_fds)-set(self.exit_fds)))
+        return sorted(tuple(set(self.enter_fds)-set(self.exit_fds)))
 
 class DummyContextManager(object):
 

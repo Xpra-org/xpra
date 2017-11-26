@@ -850,7 +850,7 @@ class UIXpraClient(XpraClientBase):
             except:
                 log("make_instance(%s, %s)", class_options, args, exc_info=True)
                 log.error("Error: cannot instantiate %s:", c)
-                log.error(" with arguments %s", list(args))
+                log.error(" with arguments %s", tuple(args))
         return None
 
 
@@ -1712,7 +1712,7 @@ class UIXpraClient(XpraClientBase):
         self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
         wait = 2.0
         if len(self.server_ping_latency)>0:
-            l = [x for _,x in list(self.server_ping_latency)]
+            l = [x for _,x in tuple(self.server_ping_latency)]
             avg = sum(l) / len(l)
             wait = min(5, 1.0+avg*2.0)
             netlog("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
@@ -1764,7 +1764,7 @@ class UIXpraClient(XpraClientBase):
     def send_info_request(self, *categories):
         if not self.info_request_pending:
             self.info_request_pending = True
-            self.send("info-request", [self.uuid], list(self._id_to_window.keys()), categories)
+            self.send("info-request", [self.uuid], tuple(self._id_to_window.keys()), categories)
 
 
     def send_quality(self):
@@ -2126,7 +2126,7 @@ class UIXpraClient(XpraClientBase):
 
     def rpc_filter_pending(self):
         """ removes timed out dbus requests """
-        for k in list(self.rpc_pending_requests.keys()):
+        for k in tuple(self.rpc_pending_requests.keys()):
             v = self.rpc_pending_requests.get(k)
             if v is None:
                 continue
@@ -2385,7 +2385,7 @@ class UIXpraClient(XpraClientBase):
         #not all frames have been acked
         latency = 100
         if len(self.server_ping_latency)>0:
-            l = [x for _,x in list(self.server_ping_latency)]
+            l = [x for _,x in tuple(self.server_ping_latency)]
             latency = int(1000 * sum(l) / len(l))
         #how many frames should be in flight
         n = max(1, latency // (1000//WEBCAM_TARGET_FPS))    #20fps -> 50ms target between frames
@@ -2404,7 +2404,7 @@ class UIXpraClient(XpraClientBase):
             assert self.webcam_device, "no webcam device to capture from"
             from xpra.codecs.pillow.encode import get_encodings
             client_webcam_encodings = get_encodings()
-            common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
+            common_encodings = tuple(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
             webcamlog("common encodings (server=%s, client=%s): %s", csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
             if not common_encodings:
                 webcamlog.error("Error: cannot send webcam image, no common formats")
@@ -3440,7 +3440,7 @@ class UIXpraClient(XpraClientBase):
             self._window_with_grab = None
         #deal with signal watchers:
         windowlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
-        for signalwatcher, wids in list(self._signalwatcher_to_wids.items()):
+        for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):
             if wid in wids:
                 windowlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
                 wids.remove(wid)
@@ -3453,7 +3453,7 @@ class UIXpraClient(XpraClientBase):
                     except:
                         log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
-                    for pid, w in list(self._pid_to_signalwatcher.items()):
+                    for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
                             del self._pid_to_signalwatcher[pid]
 

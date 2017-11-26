@@ -178,7 +178,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     #generate the translation map:
     trans = {}
     for keycode, defs in keycodes.items():
-        for keysym,i in list(defs):             #ie: ('1', 0)
+        for keysym,i in tuple(defs):             #ie: ('1', 0)
             x11_keycode = find_keycode(keycode, keysym, i)
             if x11_keycode:
                 trans[(keycode, keysym)] = x11_keycode
@@ -234,20 +234,20 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         invalid_keysyms = set()
         def estr(entries):
             try:
-                return csv(list(set(x[0] for x in entries)))
+                return csv(tuple(set(x[0] for x in entries)))
             except:
-                return csv(list(entries))
+                return csv(tuple(entries))
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
             if len(mods)>1:
                 log.warn("Warning: keymapping changed:")
-                log.warn(" keycode %s points to %i modifiers: %s", keycode, len(mods), csv(list(mods)))
+                log.warn(" keycode %s points to %i modifiers: %s", keycode, len(mods), csv(tuple(mods)))
                 log.warn(" from definition: %s", estr(entries))
                 for mod in mods:
                     emod = [entry for entry in entries if mod in modifiers_for([entry])]
                     log.warn(" %s: %s", mod, estr(emod))
                 #keep just the first one:
-                mods = list(mods)[:1]
+                mods = tuple(mods)[:1]
                 mod = mods[0]
                 entries = [entry for entry in entries if mod in modifiers_for([entry])]
                 log.warn(" keeping: %s for %s", estr(entries), mod)
@@ -443,7 +443,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
         keysyms = set([keysym for keysym, _ in entries])
         if len(keysyms)==0:
             return 0
-        if len(keysyms)==1 and list(keysyms)[0]=='0xffffff':
+        if len(keysyms)==1 and tuple(keysyms)[0]=='0xffffff':
             log("skipped invalid keysym: %s / %s", client_keycode, entries)
             return 0
         l = log
@@ -455,11 +455,11 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keys
             return do_assign(client_keycode, client_keycode, entries)
         if len(keysyms)==1:
             #only one keysym, replace with single entry
-            entries = set([(list(keysyms)[0], 0)])
+            entries = set([(tuple(keysyms)[0], 0)])
 
         #the candidate preserve entries: those that have at least one of the keysyms:
         preserve_keycode_matches = {}
-        for keysym in list(keysyms):
+        for keysym in tuple(keysyms):
             keycodes = preserve_keysyms_map.get(keysym, [])
             for keycode in keycodes:
                 v = preserve_keycode_entries.get(keycode)

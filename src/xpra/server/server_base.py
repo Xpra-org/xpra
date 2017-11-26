@@ -958,7 +958,7 @@ class ServerBase(ServerCore):
             self.idle_add(self.clean_quit)
 
     def terminate_children_processes(self):
-        cl = list(self.children_started)
+        cl = tuple(self.children_started)
         self.children_started = []
         execlog("terminate_children_processes() children=%s", cl)
         if not cl:
@@ -1551,7 +1551,7 @@ class ServerBase(ServerCore):
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
-                 "rpc-types"                    : list(self.rpc_handlers.keys()),
+                 "rpc-types"                    : tuple(self.rpc_handlers.keys()),
                  "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
@@ -1655,23 +1655,23 @@ class ServerBase(ServerCore):
         return "gave focus to window %s" % wid
 
     def control_command_suspend(self):
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             csource.suspend(True, self._id_to_window)
         return "suspended %s clients" % len(self._server_sources)
 
     def control_command_resume(self):
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             csource.resume(True, self._id_to_window)
         return "resumed %s clients" % len(self._server_sources)
 
     def control_command_ungrab(self):
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             csource.pointer_ungrab(-1)
         return "ungrabbed %s clients" % len(self._server_sources)
 
     def control_command_idle_timeout(self, t):
         self.idle_timeout = t
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             csource.idle_timeout = t
             csource.schedule_idle_timeout()
         return "idle-timeout set to %s" % t
@@ -1805,7 +1805,7 @@ class ServerBase(ServerCore):
         opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
         if c not in opts:
             raise ControlError("compressor argument must be one of: %s" % (", ".join(opts)))
-        for cproto in list(self._server_sources.keys()):
+        for cproto in tuple(self._server_sources.keys()):
             cproto.enable_compressor(c)
         self.all_send_client_command("enable_%s" % c)
         return "compressors set to %s" % compression
@@ -1816,7 +1816,7 @@ class ServerBase(ServerCore):
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
         if e not in opts:
             raise ControlError("encoder argument must be one of: %s" % (", ".join(opts)))
-        for cproto in list(self._server_sources.keys()):
+        for cproto in tuple(self._server_sources.keys()):
             cproto.enable_encoder(e)
         self.all_send_client_command("enable_%s" % e)
         return "encoders set to %s" % encoder
@@ -1824,7 +1824,7 @@ class ServerBase(ServerCore):
 
     def all_send_client_command(self, *client_command):
         """ forwards the command to all clients """
-        for source in list(self._server_sources.values()):
+        for source in tuple(self._server_sources.values()):
             """ forwards to *the* client, if there is *one* """
             if client_command[0] not in source.control_commands:
                 commandlog.info("client command '%s' not forwarded to client %s (not supported)", client_command, source)
@@ -1846,7 +1846,7 @@ class ServerBase(ServerCore):
         #then returns all the window sources for those wids
         if len(args)==0 or len(args)==1 and args[0]=="*":
             #default to all if unspecified:
-            wids = list(self._id_to_window.keys())
+            wids = tuple(self._id_to_window.keys())
         else:
             wids = []
             for x in args:
@@ -1859,7 +1859,7 @@ class ServerBase(ServerCore):
                 else:
                     commandlog("window id %s does not exist", wid)
         wss = {}
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             for wid in wids:
                 ws = csource.window_sources.get(wid)
                 window = self._id_to_window.get(wid)
@@ -1872,7 +1872,7 @@ class ServerBase(ServerCore):
             fn = getattr(ws, "set_%s" % name.replace("-", "_"))   #ie: "set_quality"
             fn(value)
         #now also update the defaults:
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             csource.default_encoding_options[name] = value
         return "%s set to %i" % (name, value)
 
@@ -2015,7 +2015,7 @@ class ServerBase(ServerCore):
 
     def control_command_sound_output(self, *args):
         msg = []
-        for csource in list(self._server_sources.values()):
+        for csource in tuple(self._server_sources.values()):
             msg.append("%s : %s" % (csource, csource.sound_control(*args)))
         return ", ".join(msg)
 
@@ -2119,7 +2119,7 @@ class ServerBase(ServerCore):
             self._save_print_job(filename, file_data)
 
         sent = 0
-        sources = list(self._server_sources.values())
+        sources = tuple(self._server_sources.values())
         printlog("will try to send to %i clients: %s", len(sources), sources)
         for ss in sources:
             if source_uuid!='*' and ss.uuid!=source_uuid:
@@ -2217,7 +2217,7 @@ class ServerBase(ServerCore):
         return info
 
     def get_thread_info(self, proto):
-        return get_thread_info(proto, list(self._server_sources.keys()))
+        return get_thread_info(proto, tuple(self._server_sources.keys()))
 
 
     def get_info(self, proto=None, client_uuids=None, wids=None, *_args):
@@ -2230,7 +2230,7 @@ class ServerBase(ServerCore):
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
-            sources = list(self._server_sources.values())
+            sources = tuple(self._server_sources.values())
         if not wids:
             wids = self._id_to_window.keys()
         log("info-request: sources=%s, wids=%s", sources, wids)
@@ -2297,7 +2297,7 @@ class ServerBase(ServerCore):
                                    "command"    : self.pulseaudio_command,
                                    },
              "dbus_proxy"       : self.supports_dbus_proxy,
-             "rpc-types"        : list(self.rpc_handlers.keys()),
+             "rpc-types"        : tuple(self.rpc_handlers.keys()),
              "clipboard"        : self.supports_clipboard,
              "idle_timeout"     : self.idle_timeout,
              }
@@ -2375,7 +2375,7 @@ class ServerBase(ServerCore):
         # csc and video encoders:
         up("video",     getVideoHelper().get_info())
 
-        info.setdefault("state", {})["windows"] = len([window for window in list(self._id_to_window.values()) if window.is_managed()])
+        info.setdefault("state", {})["windows"] = len([window for window in tuple(self._id_to_window.values()) if window.is_managed()])
         # other clients:
         info["clients"] = {""                   : len([p for p in self._server_sources.keys() if p!=proto]),
                            "unauthenticated"    : len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])}

@@ -407,7 +407,7 @@ class WindowVideoSource(WindowSource):
             #raise the quality as the areas around video tend to not be graphics
             return nonvideo(quality+30, "not the video region")
 
-        lde = list(self.statistics.last_damage_events)
+        lde = tuple(self.statistics.last_damage_events)
         lim = now-4
         pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_4secs<3*videomin:
@@ -1224,7 +1224,7 @@ class WindowVideoSource(WindowSource):
                 #calculate full frames per second (measured in pixels vs window size):
                 ffps = 0
                 stime = now-5           #only look at the last 5 seconds max
-                lde = [x for x in list(self.statistics.last_damage_events) if x[0]>stime]
+                lde = [x for x in tuple(self.statistics.last_damage_events) if x[0]>stime]
                 if len(lde)>10:
                     #the first event's first element is the oldest event time:
                     otime = lde[0][0]
@@ -1745,7 +1745,7 @@ class WindowVideoSource(WindowSource):
                     if especs.codec_type not in encoder_types:
                         encoder_types.append(especs.codec_type)
             videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s", encoding, src_format)
-            videolog.error(" all encoders: %s", ", ".join(list(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
+            videolog.error(" all encoders: %s", ", ".join(tuple(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
             videolog.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
             videolog.error(" supported encoders: %s", ", ".join(encoder_types))
             videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))

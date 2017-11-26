@@ -108,7 +108,7 @@ class KeyboardConfig(KeyboardConfigBase):
             v = getattr(self, "xkbmap_"+x)
             if v:
                 info[x] = v
-        modsinfo["nuisance"] = list(self.xkbmap_mod_nuisance or [])
+        modsinfo["nuisance"] = tuple(self.xkbmap_mod_nuisance or [])
         info["modifier"] = modinfo
         info["modifiers"] = modsinfo
         log("keyboard info: %s", info)

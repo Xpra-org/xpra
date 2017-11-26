@@ -79,10 +79,10 @@ class DamageBatchConfig(object):
             info["delay"] = self.delay
         else:
             if len(self.last_delays)>0:
-                batch_delays = [x for _,x in list(self.last_delays)]
+                batch_delays = [x for _,x in tuple(self.last_delays)]
                 info["delay"] = get_list_stats(batch_delays)
             if len(self.last_actual_delays)>0:
-                batch_delays = [x for _,x in list(self.last_actual_delays)]
+                batch_delays = [x for _,x in tuple(self.last_actual_delays)]
                 info["actual_delays"] = get_list_stats(batch_delays, show_percentile=[9])
             for name, details, factor, weight in self.factors:
                 fdetails = details.copy()

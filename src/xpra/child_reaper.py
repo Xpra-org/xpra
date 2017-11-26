@@ -105,7 +105,7 @@ class ChildReaper(object):
     def poll(self):
         #poll each process that is not dead yet:
         log("poll() procinfo list: %s", self._proc_info)
-        for procinfo in list(self._proc_info):
+        for procinfo in tuple(self._proc_info):
             process = procinfo.process
             if not procinfo.dead and process and process.poll() is not None:
                 self.add_dead_process(procinfo)
@@ -118,7 +118,7 @@ class ChildReaper(object):
         #see if we are meant to exit-with-children
         #see if we still have procinfos alive (and not meant to be ignored)
         self.poll()
-        alive = [procinfo for procinfo in list(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
+        alive = [procinfo for procinfo in tuple(self._proc_info) if (not procinfo.ignore and not procinfo.dead)]
         cb = self._quit
         log("check() alive=%s, quit callback=%s", alive, cb)
         if len(alive)==0:
@@ -133,7 +133,7 @@ class ChildReaper(object):
         self.glib.idle_add(self.reap)
 
     def get_proc_info(self, pid):
-        for proc_info in list(self._proc_info):
+        for proc_info in tuple(self._proc_info):
             if proc_info.pid==pid:
                 return proc_info
         return None
@@ -192,7 +192,7 @@ class ChildReaper(object):
             self.add_dead_pid(pid)
 
     def get_info(self):
-        iv = list(self._proc_info)
+        iv = tuple(self._proc_info)
         info = {
                 "children"  : {
                                "total"      : len(iv),

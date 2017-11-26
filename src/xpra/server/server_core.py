@@ -593,7 +593,7 @@ class ServerCore(object):
 
     def cleanup(self, *_args):
         netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
-        for p in list(self._tcp_proxy_clients):
+        for p in tuple(self._tcp_proxy_clients):
             p.quit()
         netlog("cleanup will disconnect: %s", self._potential_protocols)
         if self._upgrading:
@@ -623,7 +623,7 @@ class ServerCore(object):
         self.cleanup_protocols(protocols, reason)
 
     def get_all_protocols(self):
-        return list(self._potential_protocols)
+        return tuple(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason, force=False):
         netlog("cleanup_protocols(%s, %s, %s)", protocols, reason, force)

@@ -126,7 +126,7 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_GBRP     : 1,
     }
 
-COLORSPACES = list(FORMAT_TO_ENUM.keys())
+COLORSPACES = tuple(FORMAT_TO_ENUM.keys())
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt

@@ -558,7 +558,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         for context in it.list_contexts():
             icons += it.list_icons(context)
         log("icons: %s", icons)
-        capabilities["theme.default.icons"] = list(set(icons))
+        capabilities["theme.default.icons"] = tuple(set(icons))
         if METADATA_SUPPORTED:
             ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
         else:
@@ -617,7 +617,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     def reset_windows_cursors(self, *_args):
         cursorlog("reset_windows_cursors() resetting cursors for: %s", self._cursors.keys())
-        for w,cursor_data in list(self._cursors.items()):
+        for w,cursor_data in tuple(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
 

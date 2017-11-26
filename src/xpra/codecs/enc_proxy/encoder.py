@@ -70,7 +70,7 @@ class Encoder(object):
         last_time = now
         cut_off = now-10.0
         f = 0
-        for v in list(self.last_frame_times):
+        for v in tuple(self.last_frame_times):
             if v>cut_off:
                 f += 1
                 last_time = min(last_time, v)

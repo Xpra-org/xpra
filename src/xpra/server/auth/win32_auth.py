@@ -59,7 +59,7 @@ def main():
     with program_context("Auth-Test", "Auth-Test"):
         enable_color()
         for x in ("-v", "--verbose"):
-            if x in list(sys.argv):
+            if x in tuple(sys.argv):
                 log.enable_debug()
                 sys.argv.remove(x)
         if len(sys.argv)!=3:

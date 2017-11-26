@@ -92,7 +92,7 @@ def validate_backend(try_backend):
 
 
 def get_digests():
-    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in list(reversed(sorted(hashlib.algorithms_available)))]
+    digests = ["hmac", "xor"] + ["hmac+%s" % x for x in tuple(reversed(sorted(hashlib.algorithms_available)))]
     try:
         from xpra.net import d3des
         assert d3des

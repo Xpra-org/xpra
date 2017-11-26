@@ -83,7 +83,7 @@ def get_csc_module_name(x):
 def get_DEFAULT_VIDEO_ENCODERS():
     """ returns all the video encoders installed """
     encoders = []
-    for x in list(ALL_VIDEO_ENCODER_OPTIONS):
+    for x in tuple(ALL_VIDEO_ENCODER_OPTIONS):
         mods = get_encoder_module_names(x)
         for mod in mods:
             c = get_codec(mod)
@@ -95,7 +95,7 @@ def get_DEFAULT_VIDEO_ENCODERS():
 def get_DEFAULT_CSC_MODULES():
     """ returns all the csc modules installed """
     csc = []
-    for x in list(ALL_CSC_MODULE_OPTIONS):
+    for x in tuple(ALL_CSC_MODULE_OPTIONS):
         mod = get_csc_module_name(x)
         c = get_codec(mod)
         if c:
@@ -105,7 +105,7 @@ def get_DEFAULT_CSC_MODULES():
 def get_DEFAULT_VIDEO_DECODERS():
     """ returns all the video decoders installed """
     decoders = []
-    for x in list(ALL_VIDEO_DECODER_OPTIONS):
+    for x in tuple(ALL_VIDEO_DECODER_OPTIONS):
         mod = get_decoder_module_name(x)
         c = get_codec(mod)
         if c:

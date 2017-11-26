@@ -314,7 +314,7 @@ class X11ServerCore(GTKServerBase):
         with xsync:
             info.setdefault("keyboard", {}).update({
                                                     "state"             : {
-                                                                           "keys_pressed"   : list(self.keys_pressed.keys())
+                                                                           "keys_pressed"   : tuple(self.keys_pressed.keys())
                                                                            },
                                                     "fast-switching"    : True,
                                                     "layout-group"      : X11Keyboard.get_layout_group(),
@@ -340,7 +340,7 @@ class X11ServerCore(GTKServerBase):
                 if self.randr and len(sizes)>=0:
                     sinfo["randr"] = {
                         ""          : True,
-                        "options"   : list(reversed(sorted(sizes))),
+                        "options"   : tuple(reversed(sorted(sizes))),
                         "exact"     : self.randr_exact_size,
                         }
         except:

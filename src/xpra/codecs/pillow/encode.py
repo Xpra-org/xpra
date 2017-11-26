@@ -204,7 +204,7 @@ def selftest(full=False):
         vrange = (0, 50, 100)
     else:
         vrange = (50, )
-    for encoding in list(ENCODINGS):
+    for encoding in tuple(ENCODINGS):
         try:
             for q in vrange:
                 for s in vrange:

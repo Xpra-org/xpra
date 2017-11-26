@@ -557,7 +557,7 @@ class BaseWindowModel(CoreX11WindowModel):
         for x in state_names:
             if x in self._state_properties_reversed:
                 notify_props.add(self._state_properties_reversed[x])
-        for x in list(notify_props):
+        for x in tuple(notify_props):
             self.notify(x)
 
     def _state_isset(self, state_name):

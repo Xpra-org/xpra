@@ -160,7 +160,7 @@ class VideoSubregion(object):
         if ls:
             #convert rectangles into tuples:
             info["scores"] = dict((r.get_geometry(), score) for r,score in ls.items() if r is not None)
-        rr = list(self.refresh_regions)
+        rr = tuple(self.refresh_regions)
         if rr:
             for i, r in enumerate(rr):
                 info["refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
@@ -286,7 +286,7 @@ class VideoSubregion(object):
 
         from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
         #create a list (copy) to work on:
-        lde = [x for x in list(last_damage_events) if x[0]>=from_time]
+        lde = [x for x in tuple(last_damage_events) if x[0]>=from_time]
         dc = len(lde)
         if dc<=MIN_EVENTS:
             return self.novideoregion("not enough damage events yet (%s)", dc)

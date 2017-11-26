@@ -117,7 +117,7 @@ def find_invpow(x, n):
 def get_list_stats(in_values, show_percentile=[5, 8, 9], show_dev=False):
     #this may be backed by a deque/list whichi is used by other threads
     #so make a copy before use:
-    values = list(in_values)
+    values = tuple(in_values)
     if len(values)==0:
         return  {}
     #arithmetic mean

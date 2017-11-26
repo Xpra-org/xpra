@@ -88,21 +88,21 @@ class GlobalPerformanceStatistics(object):
 
     def get_damage_pixels(self, wid):
         """ returns the list of (event_time, pixelcount) for the given window id """
-        return [(event_time, value) for event_time, dwid, value in list(self.damage_packet_qpixels) if dwid==wid]
+        return [(event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid]
 
     def update_averages(self):
         if len(self.client_latency)>0:
-            data = [(when, latency) for _, when, _, latency in list(self.client_latency)]
+            data = [(when, latency) for _, when, _, latency in tuple(self.client_latency)]
             self.min_client_latency = min([x for _,x in data])
             self.avg_client_latency, self.recent_client_latency = calculate_time_weighted_average(data)
         #client ping latency: from ping packets
         if len(self.client_ping_latency)>0:
-            data = list(self.client_ping_latency)
+            data = tuple(self.client_ping_latency)
             self.min_client_ping_latency = min([x for _,x in data])
             self.avg_client_ping_latency, self.recent_client_ping_latency = calculate_time_weighted_average(data)
         #server ping latency: from ping packets
         if len(self.server_ping_latency)>0:
-            data = list(self.server_ping_latency)
+            data = tuple(self.server_ping_latency)
             self.min_server_ping_latency = min([x for _,x in data])
             self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
         #set to 0 if we have less than 2 events in the last 60 seconds:
@@ -111,7 +111,7 @@ class GlobalPerformanceStatistics(object):
         if len(css)<=2:
             self.avg_congestion_send_speed = 0
         else:
-            self.avg_congestion_send_speed = int(calculate_size_weighted_average(list(self.congestion_send_speed))[0])
+            self.avg_congestion_send_speed = int(calculate_size_weighted_average(tuple(self.congestion_send_speed))[0])
         #how often we get congestion events:
         #first chunk it into second intervals
         now = monotonic_time()
@@ -145,7 +145,7 @@ class GlobalPerformanceStatistics(object):
         #packet queue size: (includes packets from all windows)
         factors.append(queue_inspect("packet-queue-size", self.packet_qsizes, smoothing=sqrt))
         #packet queue pixels (global):
-        qpix_time_values = [(event_time, value) for event_time, _, value in list(self.damage_packet_qpixels)]
+        qpix_time_values = [(event_time, value) for event_time, _, value in tuple(self.damage_packet_qpixels)]
         factors.append(queue_inspect("packet-queue-pixels", qpix_time_values, div=pixel_count, smoothing=sqrt))
         #compression data queue: (This is an important metric since each item will consume a fair amount of memory and each will later on go through the other queues.)
         factors.append(queue_inspect("compression-work-queue", self.compression_work_qsizes))
@@ -159,17 +159,17 @@ class GlobalPerformanceStatistics(object):
         return factors
 
     def get_client_info(self):
-        latencies = [x*1000 for (_, _, _, x) in list(self.client_latency)]
+        latencies = [x*1000 for (_, _, _, x) in tuple(self.client_latency)]
         info = {
                 "connection"        : {
                                        "mmap_bytecount"  : self.mmap_bytes_sent
                                        },
                 "latency"           : get_list_stats(latencies),
                 "server"            : {
-                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in list(self.server_ping_latency)),
+                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.server_ping_latency)),
                                        },
                 "client"            : {
-                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in list(self.client_ping_latency)),
+                                       "ping_latency"   : get_list_stats(1000.0*x for _, x in tuple(self.client_ping_latency)),
                                        },
                 }
         if self.min_client_latency is not None:
@@ -178,8 +178,8 @@ class GlobalPerformanceStatistics(object):
 
 
     def get_info(self):
-        cwqsizes = [x for _,x in list(self.compression_work_qsizes)]
-        pqsizes = [x for _,x in list(self.packet_qsizes)]
+        cwqsizes = [x for _,x in tuple(self.compression_work_qsizes)]
+        pqsizes = [x for _,x in tuple(self.packet_qsizes)]
         now = monotonic_time()
         time_limit = now-60             #ignore old records (60s)
         info = {"damage" : {
@@ -204,7 +204,7 @@ class GlobalPerformanceStatistics(object):
         total_time = 0                  #total decoding time
         start_time = None               #when we start counting from (oldest record)
         region_sizes = []
-        for _, event_time, pixels, decode_time in list(self.client_decode_time):
+        for _, event_time, pixels, decode_time in tuple(self.client_decode_time):
             #time filter and ignore failed decoding (decode_time==0)
             if event_time<time_limit or decode_time<=0:
                 continue

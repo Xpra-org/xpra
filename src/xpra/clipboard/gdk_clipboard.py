@@ -45,7 +45,7 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
             # not actual X atoms, but an array of GdkAtom's reinterpreted
             # as a byte buffer.
             atoms = gdk_atoms.gdk_atom_objects_from_gdk_atom_array(data)
-            log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s", target, datatype, dataformat, type(data), len(data), list(atoms))
+            log("_do_munge_raw_selection_to_wire(%s, %s, %s, %s:%s) atoms=%s", target, datatype, dataformat, type(data), len(data), tuple(atoms))
             atom_names = [str(atom) for atom in atoms]
             if target==b"TARGETS":
                 atom_names = _filter_targets(atom_names)
@@ -56,6 +56,6 @@ class GDKClipboardProtocolHelper(ClipboardProtocolHelperBase):
         if encoding==b"atoms" and gdk_atoms:
             atom_array = gdk_atoms.gdk_atom_array_from_atoms(data)
             bdata = struct.pack("@" + "L" * len(atom_array), *atom_array)
-            log("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), data, atom_array, list(bdata))
+            log("_munge_wire_selection_to_raw(%s, %s, %s, %s:%s)=%s=%s=%s", encoding, datatype, dataformat, type(data), len(data or ""), data, atom_array, tuple(bdata))
             return bdata
         return ClipboardProtocolHelperBase._munge_wire_selection_to_raw(self, encoding, datatype, dataformat, data)

@@ -125,7 +125,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.source_remove = glib.source_remove
 
     def cleanup(self):
-        for x in list(self.file_descriptors):
+        for x in tuple(self.file_descriptors):
             try:
                 x.close()
             except:

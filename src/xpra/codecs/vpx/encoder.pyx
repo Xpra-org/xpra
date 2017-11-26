@@ -488,7 +488,7 @@ cdef class Encoder:
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
-        for start,end in list(self.last_frame_times):
+        for start,end in tuple(self.last_frame_times):
             if end>cut_off:
                 f += 1
                 last_time = min(last_time, end)

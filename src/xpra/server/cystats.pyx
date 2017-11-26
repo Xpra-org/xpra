@@ -198,6 +198,6 @@ def queue_inspect(metric, time_values, float target=1.0, float div=1.0, smoothin
     #inspect a queue size history: figure out if things are better or worse than before
     if len(time_values)==0:
         return  metric, {}, 1.0, 0.0
-    avg, recent = calculate_time_weighted_average(list(time_values))
+    avg, recent = calculate_time_weighted_average(tuple(time_values))
     weight_multiplier = sqrt(max(avg, recent) / div / target)
     return  calculate_for_target(metric, target, avg, recent, aim=0.25, div=div, slope=1.0, smoothing=smoothing, weight_multiplier=weight_multiplier)

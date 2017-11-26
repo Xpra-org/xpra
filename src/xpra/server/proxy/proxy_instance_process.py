@@ -305,7 +305,7 @@ class ProxyInstanceProcess(Process):
         enclog("encoder types found: %s", tuple(encoder_types))
         #remove duplicates and use preferred order:
         order = PREFERRED_ENCODER_ORDER[:]
-        for x in list(encoder_types):
+        for x in tuple(encoder_types):
             if x not in order:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
@@ -905,7 +905,7 @@ class ProxyInstanceProcess(Process):
         #so we just ask the encode thread (which deals with encoders already)
         #to do what may need to be done if we find a timeout:
         now = monotonic_time()
-        for wid in list(self.video_encoders_last_used_time.keys()):
+        for wid in tuple(self.video_encoders_last_used_time.keys()):
             idle_time = int(now-self.video_encoders_last_used_time.get(wid))
             if idle_time is None:
                 continue

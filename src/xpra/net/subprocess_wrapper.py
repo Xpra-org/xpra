@@ -112,7 +112,7 @@ class subprocess_callee(object):
         signal_name = args[-1]
         log("export(%s, ...)", signal_name)
         data = args[1:-1]
-        self.send(signal_name, *list(data))
+        self.send(signal_name, *tuple(data))
 
 
     def start(self):

@@ -1073,7 +1073,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                             paint_grey_rect((1, 1, 1), dwork_x, dwork_y, dwork_width, dwork_height)
         #now paint all the windows on top:
         order = {}
-        focus_history = list(self._focus_history)
+        focus_history = tuple(self._focus_history)
         for wid, window in self._id_to_window.items():
             prio = int(self._has_focus==wid)*32768 + int(self._has_grab==wid)*65536
             if prio==0:

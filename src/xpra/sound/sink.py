@@ -220,7 +220,7 @@ class SoundSink(SoundPipeline):
 
     def get_level_range(self, mintime=2, maxtime=10):
         now = monotonic_time()
-        filtered = [v for t,v in list(self.levels) if (now-t)>=mintime and (now-t)<=maxtime]
+        filtered = [v for t,v in tuple(self.levels) if (now-t)>=mintime and (now-t)<=maxtime]
         if len(filtered)>=10:
             maxl = max(filtered)
             minl = min(filtered)
@@ -290,7 +290,7 @@ class SoundSink(SoundPipeline):
         log("set_max_level lrange=%3i, elapsed=%is", lrange, int(elapsed))
         cmst = self.queue.get_property("max-size-time")//MS_TO_NS
         #overruns in the last minute:
-        olm = len([x for x in list(self.overrun_events) if now-x<60])
+        olm = len([x for x in tuple(self.overrun_events) if now-x<60])
         #increase target if we have more than 5 overruns in the last minute:
         target_mst = lrange*(100 + MARGIN + min(100, olm*20))//100
         #from 100% down to 0% in 2 seconds after underrun:

@@ -92,7 +92,7 @@ class _codec_spec(object):
     def make_instance(self):
         cur = self.get_instance_count()
         if (self.max_instances>0 and cur>=self.max_instances) or cur>=_codec_spec.WARN_LIMIT:
-            log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, list(self.instances.keys()))
+            log.warn("Warning: already %s active instances of %s: %s", cur, self.codec_class, tuple(self.instances.keys()))
             from xpra.util import dump_references
             dump_references(log, self.instances.keys())
         else:
