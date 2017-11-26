@@ -2872,7 +2872,7 @@ class UIXpraClient(XpraClientBase):
         clipboard_enabled, reason = packet[1:3]
         if self.clipboard_enabled!=clipboard_enabled:
             clipboardlog.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])
-            clipboardlog.info(" %s", reason)
+            clipboardlog.info(" %s", bytestostr(reason))
             self.clipboard_enabled = bool(clipboard_enabled)
             self.emit("clipboard-toggled")
 
