@@ -1566,8 +1566,8 @@ class ServerCore(object):
         try:
             info = self.get_info(proto, *args)
             merge_dicts(ui_info, info)
-        except Exception as e:
-            log.error("error during info collection: %s", e, exc_info=True)
+        except Exception:
+            log.error("Error during info collection using %s", self.get_info, exc_info=True)
         end = monotonic_time()
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)
