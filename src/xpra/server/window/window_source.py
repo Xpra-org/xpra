@@ -778,7 +778,7 @@ class WindowSource(object):
         #if speed is high, assume we have bandwidth to spare
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
-        pcmult = float(0.5+min(20, self.statistics.packet_count))/20.0
+        pcmult = float(min(20, 0.5+self.statistics.packet_count))/20.0
         max_rgb_threshold = 128*1024
         min_rgb_threshold = 4096
         cv = self.global_statistics.congestion_value
@@ -787,12 +787,12 @@ class WindowSource(object):
             min_rgb_threshold = 1024
         bwl = self.bandwidth_limit
         if bwl:
-            max_rgb_threshold = min(max_rgb_threshold, bwl//1000)
+            max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         self.get_best_encoding = self.get_best_encoding_impl()
-        log("update_encoding_options(%s) want_alpha=%s, lossless threshold: %s / %s, rgb auto threshold=%s, get_best_encoding=%s",
-                        force_reload, self._want_alpha, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, self.get_best_encoding)
+        log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i, bandwidth-limit=%i, lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i), get_best_encoding=%s",
+                        force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality, bwl, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold, self.get_best_encoding)
 
     def get_best_encoding_impl(self):
         if HARDCODED_ENCODING:
