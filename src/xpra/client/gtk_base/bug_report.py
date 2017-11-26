@@ -17,9 +17,9 @@ gtk = import_gtk()
 gdk = import_gdk()
 pango = import_pango()
 
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, \
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, get_default_root_window, \
                                     JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
-from xpra.util import nonl, envint
+from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("util")
@@ -163,10 +163,10 @@ class BugReport(object):
             #default: gtk screen capture
             try:
                 from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
-                rwm = GTKRootWindowModel(gtk.gdk.get_default_root_window())
+                rwm = GTKRootWindowModel(get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
             except:
-                log("failed to load gtk screenshot code", exc_info=True)
+                log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn:
             def get_screenshot():
@@ -281,10 +281,11 @@ class BugReport(object):
                 try:
                     value = value_cb()
                 except TypeError:
-                    log.error("error on %s", value_cb, exc_info=True)
+                    log.error("Error collecting %s bug report data using %s", name, value_cb, exc_info=True)
                     value = str(value_cb)
                     dtype = "txt"
                 except Exception as e:
+                    log.error("Error collecting %s bug report data using %s", name, value_cb, exc_info=True)
                     value = e
                     dtype = "txt"
             if value is None:
@@ -295,6 +296,7 @@ class BugReport(object):
                 s = os.linesep.join(str(x) for x in value)
             else:
                 s = str(value)
+            log("%s (%s) %s: %s", title, tooltip, dtype, repr_ellipsized(s))
             data.append((title, tooltip, dtype, s))
             time.sleep(STEP_DELAY)
         return data

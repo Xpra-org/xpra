@@ -92,6 +92,9 @@ if is_gtk3():
                                          has_alpha, 8, w, h, rowstride,
                                          None, None)
 
+
+    get_pixbuf_from_window = gdk.pixbuf_get_from_window
+
     def get_preferred_size(widget):
         #ignore "min", we only care about "natural":
         _, w = widget.get_preferred_width()
@@ -305,6 +308,11 @@ if is_gtk3():
 else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+
+    def get_pixbuf_from_window(window, x, y, w, h):
+        pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
+        pixbuf = pixbuf.get_from_drawable(window, window.get_colormap(), x, y, 0, 0, w, h)
+        return pixbuf
 
     def get_preferred_size(widget):
         return widget.size_request()
