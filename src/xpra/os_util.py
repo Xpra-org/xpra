@@ -436,12 +436,13 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs={}):
         "HOME"  : HOME,
         })
     if os.name=="posix":
-        from xpra.platform.xposix.paths import get_runtime_dir
         d.update({
             "UID"   : uid or os.geteuid(),
             "GID"   : gid or os.getegid(),
-            "XDG_RUNTIME_DIR"   : os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir()),
             })
+        if not OSX:
+            from xpra.platform.xposix.paths import get_runtime_dir
+            d["XDG_RUNTIME_DIR"] = os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
     if len(actual_username)>0:
         d.update({
             "USERNAME"  : actual_username,
