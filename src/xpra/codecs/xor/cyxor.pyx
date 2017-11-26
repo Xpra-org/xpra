@@ -25,7 +25,7 @@ def xor_str(a, b):
     for 0 <= i < steps:
         obuf[i] = abuf[i] ^ bbuf[i]
     #only used for the few remaining bytes at the end:
-    cdef int char_steps = alen % 8
+    cdef unsigned int char_steps = alen % 8
     cdef unsigned char *acbuf, *bcbuf, *ocbuf
     if char_steps>0:
         acbuf = <unsigned char *> abuf
