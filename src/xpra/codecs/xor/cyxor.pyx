@@ -6,22 +6,32 @@
 #cython: wraparound=False
 from __future__ import absolute_import
 
-from xpra.buffers.membuf cimport getbuf, MemBuf
-from xpra.buffers.membuf cimport object_as_buffer
+from libc.stdint cimport uint64_t
+from xpra.buffers.membuf cimport getbuf, object_as_buffer, MemBuf
 
 
-def xor_str(buf, xor):
-    assert len(buf)==len(xor), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(buf), len(buf), type(xor), len(xor))
-    cdef const unsigned char * cbuf                 #@DuplicatedSignature
-    cdef Py_ssize_t cbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(buf), buf)
-    cdef const unsigned char * xbuf                 #@DuplicatedSignature
-    cdef Py_ssize_t xbuf_len = 0                    #@DuplicatedSignature
-    assert object_as_buffer(xor, <const void**> &xbuf, &xbuf_len)==0, "cannot get buffer pointer for %s: %s" % (type(xor), xor)
-    assert cbuf_len == xbuf_len, "python or cython bug? buffers don't have the same length?"
-    cdef MemBuf out_buf = getbuf(cbuf_len)
-    cdef unsigned char *obuf = <unsigned char*> out_buf.get_mem()
-    cdef int i                                      #@DuplicatedSignature
-    for 0 <= i < cbuf_len:
-        obuf[i] = cbuf[i] ^ xbuf[i]
+def xor_str(a, b):
+    assert len(a)==len(b), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b))
+    cdef uint64_t *abuf, *bbuf
+    cdef Py_ssize_t alen = 0, blen = 0
+    assert object_as_buffer(a, <const void**> &abuf, &alen)==0, "cannot get buffer pointer for %s" % type(a)
+    assert object_as_buffer(b, <const void**> &bbuf, &blen)==0, "cannot get buffer pointer for %s" % type(b)
+    assert alen == blen, "python or cython bug? buffers don't have the same length?"
+    cdef MemBuf out_buf = getbuf(alen)
+    cdef uint64_t *obuf = <uint64_t*> out_buf.get_mem()
+    #64 bits at a time (8 bytes):
+    cdef unsigned int steps = alen//8
+    cdef unsigned int i,j
+    for 0 <= i < steps:
+        obuf[i] = abuf[i] ^ bbuf[i]
+    #only used for the few remaining bytes at the end:
+    cdef int char_steps = alen % 8
+    cdef unsigned char *acbuf, *bcbuf, *ocbuf
+    if char_steps>0:
+        acbuf = <unsigned char *> abuf
+        bcbuf = <unsigned char *> bbuf
+        ocbuf = <unsigned char *> obuf
+        for 0 <= i < char_steps:
+            j = steps*8 + i
+            ocbuf[j] = acbuf[j] ^ bcbuf[j]
     return memoryview(out_buf)
