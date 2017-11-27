@@ -187,7 +187,6 @@ def main(script_file, cmdline):
             return 0
         except InitException as e:
             debug_exc()
-            warn("InitException: %s" % e)
             command_error("xpra initialization error:\n %s" % e)
             return 1
         except AssertionError as e:
