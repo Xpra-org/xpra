@@ -36,10 +36,10 @@ class SysAuthenticator(object):
         except:
             self.pw = None
         #warn about unused options:
-        unused = [(k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd")]
+        unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd"))
         if unused:
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
-            log.warn(" %s", kwargs)
+            log.warn(" %s", unused)
 
     def get_uid(self):
         if self.pw is None:
