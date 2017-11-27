@@ -1852,7 +1852,7 @@ def pick_display(error_cb, opts, extra_args):
     else:
         error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
 
-def single_display_match(dir_servers, error_cb):
+def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
     #ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
     #aggregate all the different locations:
     allservers = []
@@ -1864,7 +1864,7 @@ def single_display_match(dir_servers, error_cb):
                 if not display.startswith(":proxy-"):
                     noproxy.append((sockdir, display, path))
     if len(allservers)==0:
-        error_cb("cannot find any live servers to connect to")
+        error_cb(nomatch)
     if len(allservers)>1:
         #maybe the same server is available under multiple paths
         displays = set([v[1] for v in allservers])
@@ -2371,7 +2371,7 @@ def get_sockpath(display_desc, error_cb):
         dotxpra = DotXpra(display_desc.get("socket_dir"), display_desc.get("socket_dirs"), display_desc.get("username", ""), display_desc.get("uid", 0), display_desc.get("gid", 0))
         display = display_desc["display"]
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE, matching_display=display)
-        _, _, sockpath = single_display_match(dir_servers, error_cb)
+        _, _, sockpath = single_display_match(dir_servers, error_cb, nomatch="cannot find live server for display %s" % display)
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
