@@ -1913,8 +1913,8 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
 		var gainNode = ctx.audio_context.createGain();
 		oscillator.connect(gainNode);
 		gainNode.connect(ctx.audio_context.destination);
-		gainNode.gain.value = percent;
-		oscillator.frequency.value = pitch;
+		gainNode.gain.setValueAtTime(percent, ctx.audio_context.currentTime);
+		oscillator.frequency.setValueAtTime(pitch, ctx.audio_context.currentTime);
 		oscillator.start();
 		setTimeout(function(){oscillator.stop()}, duration);
 	}
