@@ -71,6 +71,9 @@
 				return false;
 			}
 
+			var cdebug = console.debug;
+			var clog = console.log;
+
 			function init_client() {
 				if (typeof jQuery == 'undefined') {
 					window.alert("Incomplete Xpra HTML5 client installation: jQuery is missing, cannot continue.");
@@ -121,7 +124,7 @@
 				var progress_offset = 0;
 				// show connection progress:
 				function connection_progress(state, details, progress) {
-					console.log("connection_progress(", state, ", ", details, ", ", progress, ")");
+					clog("connection_progress(", state, ", ", details, ", ", progress, ")");
 					if (progress>=100) {
 						$('#progress').hide();
 					}
@@ -174,16 +177,16 @@
 		    	if (debug) {
 		    		//example of client event hooks:
 			    	client.on_open = function() {
-			    		console.debug("connection open");
+			    		cdebug("connection open");
 			    	};
 			    	client.on_connect = function() {
-			    		console.debug("connection established");
+			    		cdebug("connection established");
 			    	};
 			    	client.on_first_ui_event = function() {
-			    		console.debug("first ui event");
+			    		cdebug("first ui event");
 			    	};
 			    	client.on_last_window = function() {
-			    		console.debug("last window disappeared");
+			    		cdebug("last window disappeared");
 			    	};
 		    	}
 
@@ -219,7 +222,7 @@
 			    // sound support
 			    if(sound) {
 			    	client.audio_enabled = true;
-			    	console.log("sound enabled, audio codec string: "+audio_codec);
+			    	clog("sound enabled, audio codec string: "+audio_codec);
 			    	if(audio_codec && audio_codec.indexOf(":")>0) {
 				    	var acparts = audio_codec.split(":");
 				    	client.audio_framework = acparts[0];
@@ -330,7 +333,7 @@
 			   	pasteboard.on("input", function(e) {
 			   		var txt = pasteboard.val();
 			   		pasteboard.val("");
-			   		client._debug("oninput:", txt);
+			   		cdebug("oninput:", txt);
 			   		if (!client.topwindow) {
 			   			return;
 			   		}
@@ -342,10 +345,10 @@
 				   			keyval = keycode;
 				   			group = 0;
 							packet = ["key-action", client.topwindow, str, true, modifiers, keyval, str, keycode, group];
-							client._debug(packet);
+							cdebug(packet);
 							client.send(packet);
 							packet = ["key-action", client.topwindow, str, false, modifiers, keyval, str, keycode, group];
-							client._debug(packet);
+							cdebug(packet);
 							client.send(packet);
 				   		}
 				   		catch (e) {
@@ -360,7 +363,7 @@
 			    //clipboard hooks:
 				pasteboard.on('paste', function (e) {
 					var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-					client._debug("paste event, data=", paste_data);
+					cdebug("paste event, data=", paste_data);
 			        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
 			        return false;
 				});
@@ -368,7 +371,7 @@
 			        var clipboard_buffer = client.get_clipboard_buffer();
 					$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 			        $('#pasteboard').select();
-					client._debug("copy event, clipboard buffer=", clipboard_buffer);
+					cdebug("copy event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
 				});
@@ -376,17 +379,17 @@
 			        var clipboard_buffer = client.get_clipboard_buffer();
 			        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
 			        $('#pasteboard').select();
-					client._debug("cut event, clipboard buffer=", clipboard_buffer);
+					cdebug("cut event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
 				});
 				$('#screen').on('click', function (e) {
-					//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
+					//clog("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 					if (client.clipboard_pending) {
 				        var clipboard_buffer = client.get_clipboard_buffer();
 				        $('#pasteboard').text(clipboard_buffer);
 				        $('#pasteboard').select();
-						client._debug("click event, with pending clipboard buffer=", clipboard_buffer);
+						cdebug("click event, with pending clipboard buffer=", clipboard_buffer);
 						//for IE:
 						var success = true;
 						if (window.clipboardData && window.clipboardData.setData) {
@@ -394,7 +397,7 @@
 						}
 					    else {
 							success = document.execCommand('copy');
-							//console.log("copy success=", success);
+							//clog("copy success=", success);
 						}
 						if (success) {
 					        client.clipboard_pending = false;
@@ -405,7 +408,7 @@
 
 			function init_file_transfer(client) {
 				function send_file(f) {
-					console.log("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
+					clog("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
 					var fileReader = new FileReader();
 					fileReader.onloadend = function (evt) {
 						var u8a = new Uint8Array(evt.target.result);
@@ -436,6 +439,14 @@
 				var client = init_client();
 			    client.connect();
 
+			    //from now on, send log and debug to client function
+			    //which may forward it to the server once connected:
+			    clog = function() {
+			    	client.log.apply(client, arguments);
+			    }
+			    cdebug = function() {
+			    	client._debug.apply(client, arguments);
+			    }
 			    init_tablet_input(client);
 			    if (client.clipboard_enabled) {
 			    	init_clipboard(client);
