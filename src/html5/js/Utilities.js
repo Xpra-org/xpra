@@ -397,6 +397,23 @@ var Utilities = {
 		return headers;
 	},
 
+	getparam : function(prop) {
+		var value = window.location.getParameter(prop);
+		if (value === undefined && typeof(sessionStorage) !== undefined) {
+			value = sessionStorage.getItem(prop);
+		}
+		return value;
+	},
+
+
+	getboolparam : function(prop, default_value) {
+		var v = Utilities.getparam(prop);
+		if(v===null) {
+			return default_value;
+		}
+		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())>=0;
+	},
+
 	getConnectionInfo : function() {
 		var c = navigator.connection;
 		if (!c) {

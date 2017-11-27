@@ -283,25 +283,6 @@ if (!window.location.getParameter ) {
 	};
 }
 
-function getparam(prop) {
-	var value = window.location.getParameter(prop);
-	if (value === undefined && typeof(Storage) !== undefined) {
-		value = sessionStorage.getItem(prop);
-	}
-	return value;
-}
-function getboolparam(prop, default_value) {
-	var v = getparam(prop);
-	if(v===null) {
-		return default_value;
-	}
-	return ["true", "on", "1"].indexOf(String(v).toLowerCase())>=0;
-}
-
-function encodeData(s) {
-	return encodeURIComponent(s);
-}
-
 function doConnect() {
 	// url to client
 	var url = "/index.html";
@@ -317,7 +298,7 @@ function doConnect() {
 			if (value===null || value==="undefined") {
 				value = "";
 			}
-			url = url + "&"+prop+"="+encodeData(""+value);
+			url = url + "&"+prop+"="+encodeURIComponent(""+value);
 		}
 	}
 	add_prop("submit", true);
@@ -363,6 +344,8 @@ function doConnect() {
 }
 
 $(document).ready(function() {
+	var getparam = Utilities.getparam;
+	var getboolparam = Utilities.getboolparam;
 
 	var ssl = document.location.protocol=="https:";
 	var disconnect_reason = getparam("disconnect") || null;

@@ -94,30 +94,13 @@
 				return false;
 			}
 
-			function getparam(prop) {
-				var value = window.location.getParameter(prop);
-				if (value === undefined && typeof(Storage) !== undefined) {
-					value = sessionStorage.getItem(prop);
-				}
-				return value;
-			}
-			function getboolparam(prop, default_value) {
-				var v = getparam(prop);
-				if(v===null) {
-					return default_value;
-				}
-				return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())>=0;
-			}
-
-			function encodeData(s) {
-				return encodeURIComponent(s);
-			}
-
-			$(document).ready(function() {
+			function init_client() {
 				if (typeof jQuery == 'undefined') {
 					window.alert("Incomplete Xpra HTML5 client installation: jQuery is missing, cannot continue.");
 					return;
 				}
+				var getparam = Utilities.getparam;
+				var getboolparam = Utilities.getboolparam;
 				// look at url parameters
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
@@ -311,7 +294,7 @@
 				    				if (value===null || value==="undefined") {
 				    					value = "";
 				    				}
-				    				url = url + "&"+prop+"="+encodeData(""+value);
+				    				url = url + "&"+prop+"="+encodeURIComponent(""+value);
 				    			}
 				    		}
 				    		add_prop("disconnect", message);
@@ -361,87 +344,12 @@
 			    client.host = server;
 			    client.port = port;
 			    client.ssl = ssl;
+				return client;
+			}
 
-			    // and connect
-			    client.connect();
-
-			    var pasteboard = $('#pasteboard');
-			   	if (clipboard) {
-				    //clipboard hooks:
-					pasteboard.on('paste', function (e) {
-						var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-						client._debug("paste event, data=", paste_data);
-				        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
-				        return false;
-					});
-					pasteboard.on('copy', function (e) {
-				        var clipboard_buffer = client.get_clipboard_buffer();
-						$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
-				        $('#pasteboard').select();
-						client._debug("copy event, clipboard buffer=", clipboard_buffer);
-				        client.clipboard_pending = false;
-				        return true;
-					});
-					pasteboard.on('cut', function (e) {
-				        var clipboard_buffer = client.get_clipboard_buffer();
-				        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
-				        $('#pasteboard').select();
-						client._debug("cut event, clipboard buffer=", clipboard_buffer);
-				        client.clipboard_pending = false;
-				        return true;
-					});
-					$('#screen').on('click', function (e) {
-						//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
-						if (client.clipboard_pending) {
-					        var clipboard_buffer = client.get_clipboard_buffer();
-					        $('#pasteboard').text(clipboard_buffer);
-					        $('#pasteboard').select();
-							client._debug("click event, with pending clipboard buffer=", clipboard_buffer);
-							//for IE:
-							var success = true;
-							if (window.clipboardData && window.clipboardData.setData) {
-						        clipboardData.setData("Text", this.clipboard_buffer);
-							}
-						    else {
-								success = document.execCommand('copy');
-								//console.log("copy success=", success);
-							}
-							if (success) {
-						        client.clipboard_pending = false;
-							}
-						}
-					});
-			   	}
-			   	//file transfer hooks:
-			   	if (file_transfer) {
-					function send_file(f) {
-						console.log("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
-						var fileReader = new FileReader();
-						fileReader.onloadend = function (evt) {
-							var u8a = new Uint8Array(evt.target.result);
-							var buf = Utilities.Uint8ToString(u8a);
-							client.send_file(f.name, f.type, f.size, buf);
-						};
-						fileReader.readAsArrayBuffer(f);
-					}
-					function handleFileSelect(evt) {
-						evt.stopPropagation();
-						evt.preventDefault();
-						var files = evt.dataTransfer.files;
-						for (var i = 0, f; f = files[i]; i++) {
-							send_file(f);
-						}
-					}
-					function handleDragOver(evt) {
-						evt.stopPropagation();
-						evt.preventDefault();
-						evt.dataTransfer.dropEffect = 'copy';
-					}
-					var screen = document.getElementById('screen');
-					screen.addEventListener('dragover', handleDragOver, false);
-					screen.addEventListener('drop', handleFileSelect, false);
-			   	}
+			function init_tablet_input(client) {
 			   	//keyboard input for tablets:
+			    var pasteboard = $('#pasteboard');
 			   	pasteboard.on("input", function(e) {
 			   		var txt = pasteboard.val();
 			   		pasteboard.val("");
@@ -468,6 +376,96 @@
 				   		}
 			   		}
 			   	});
+			}
+
+			function init_clipboard(client) {
+			    var pasteboard = $('#pasteboard');
+			    //clipboard hooks:
+				pasteboard.on('paste', function (e) {
+					var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
+					client._debug("paste event, data=", paste_data);
+			        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
+			        return false;
+				});
+				pasteboard.on('copy', function (e) {
+			        var clipboard_buffer = client.get_clipboard_buffer();
+					$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
+			        $('#pasteboard').select();
+					client._debug("copy event, clipboard buffer=", clipboard_buffer);
+			        client.clipboard_pending = false;
+			        return true;
+				});
+				pasteboard.on('cut', function (e) {
+			        var clipboard_buffer = client.get_clipboard_buffer();
+			        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
+			        $('#pasteboard').select();
+					client._debug("cut event, clipboard buffer=", clipboard_buffer);
+			        client.clipboard_pending = false;
+			        return true;
+				});
+				$('#screen').on('click', function (e) {
+					//console.log("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
+					if (client.clipboard_pending) {
+				        var clipboard_buffer = client.get_clipboard_buffer();
+				        $('#pasteboard').text(clipboard_buffer);
+				        $('#pasteboard').select();
+						client._debug("click event, with pending clipboard buffer=", clipboard_buffer);
+						//for IE:
+						var success = true;
+						if (window.clipboardData && window.clipboardData.setData) {
+					        clipboardData.setData("Text", this.clipboard_buffer);
+						}
+					    else {
+							success = document.execCommand('copy');
+							//console.log("copy success=", success);
+						}
+						if (success) {
+					        client.clipboard_pending = false;
+						}
+					}
+				});
+			}
+
+			function init_file_transfer(client) {
+				function send_file(f) {
+					console.log("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
+					var fileReader = new FileReader();
+					fileReader.onloadend = function (evt) {
+						var u8a = new Uint8Array(evt.target.result);
+						var buf = Utilities.Uint8ToString(u8a);
+						client.send_file(f.name, f.type, f.size, buf);
+					};
+					fileReader.readAsArrayBuffer(f);
+				}
+				function handleFileSelect(evt) {
+					evt.stopPropagation();
+					evt.preventDefault();
+					var files = evt.dataTransfer.files;
+					for (var i = 0, f; f = files[i]; i++) {
+						send_file(f);
+					}
+				}
+				function handleDragOver(evt) {
+					evt.stopPropagation();
+					evt.preventDefault();
+					evt.dataTransfer.dropEffect = 'copy';
+				}
+				var screen = document.getElementById('screen');
+				screen.addEventListener('dragover', handleDragOver, false);
+				screen.addEventListener('drop', handleFileSelect, false);
+			}
+
+			$(document).ready(function() {
+				var client = init_client();
+			    client.connect();
+
+			    init_tablet_input(client);
+			    if (client.clipboard_enabled) {
+			    	init_clipboard(client);
+			    }
+			   	if (client.file_transfer) {
+			   		init_file_transfer(client);
+			   	}
 			});
 		</script>
 	</body>
