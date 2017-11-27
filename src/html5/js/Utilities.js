@@ -397,8 +397,27 @@ var Utilities = {
 		return headers;
 	},
 
+	parseParams : function(q) {
+		var params = {},
+				e,
+				a = /\+/g,	// Regex for replacing addition symbol with a space
+				r = /([^&=]+)=?([^&]*)/g,
+				d = function (s) { return decodeURIComponent(s.replace(a, " ")); };
+		while (e = r.exec(q))
+				params[d(e[1])] = d(e[2]);
+		return params;
+	},
+
 	getparam : function(prop) {
-		var value = window.location.getParameter(prop);
+		var getParameter = window.location.getParameter;
+		if (!getParameter) {
+			getParameter = function(key) {
+				if (!window.location.queryStringParams)
+					window.location.queryStringParams = Utilities.parseParams(window.location.search.substring(1));
+				return window.location.queryStringParams[key];
+			};
+		}
+		var value = getParameter(prop);
 		if (value === undefined && typeof(sessionStorage) !== undefined) {
 			value = sessionStorage.getItem(prop);
 		}
