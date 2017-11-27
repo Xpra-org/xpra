@@ -369,16 +369,16 @@
 				});
 				pasteboard.on('copy', function (e) {
 			        var clipboard_buffer = client.get_clipboard_buffer();
-					$('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
-			        $('#pasteboard').select();
-					cdebug("copy event, clipboard buffer=", clipboard_buffer);
+			        pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
+			        pasteboard.select();
+			        cdebug("copy event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
 				});
 				pasteboard.on('cut', function (e) {
 			        var clipboard_buffer = client.get_clipboard_buffer();
-			        $('#pasteboard').text(decodeURIComponent(escape(clipboard_buffer)));
-			        $('#pasteboard').select();
+			        pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
+			        pasteboard.select();
 					cdebug("cut event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
@@ -387,8 +387,8 @@
 					//clog("click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 					if (client.clipboard_pending) {
 				        var clipboard_buffer = client.get_clipboard_buffer();
-				        $('#pasteboard').text(clipboard_buffer);
-				        $('#pasteboard').select();
+				        pasteboard.text(clipboard_buffer);
+				        pasteboard.select();
 						cdebug("click event, with pending clipboard buffer=", clipboard_buffer);
 						//for IE:
 						var success = true;
