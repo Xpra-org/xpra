@@ -213,8 +213,14 @@ class WSRequestHandler(WebSocketRequestHandler):
             for k,v in headers.items():
                 self.send_header(k, v)
             self.end_headers()
-        except IOError:
-            self.send_error(404, "File not found")
+        except IOError as e:
+            log("send_head()", exc_info=True)
+            log.error("Error sending '%s':", path)
+            log.error(" %s", e)
+            try:
+                self.send_error(404, "File not found")
+            except:
+                log("failed to send 404 error - maybe some of the headers were already sent?")
             if f:
                 try:
                     f.close()
