@@ -1254,12 +1254,6 @@ XpraClient.prototype._window_set_focus = function(win) {
 	//client._set_favicon(wid);
 }
 
-XpraClient.prototype._window_send_damage_sequence = function(wid, packet_sequence, width, height, decode_time, error_message) {
-	// this function requires wid as argument because it may be called
-	// without a valid client side window
-	this.send(["damage-sequence", packet_sequence, wid, width, height, decode_time, error_message]);
-}
-
 
 XpraClient.prototype._sound_start_receiving = function() {
 	try {
@@ -1488,18 +1482,18 @@ XpraClient.prototype.do_reconnect = function() {
 	//try again:
 	this.reconnect_in_progress = true;
 	var me = this;
+	var protocol = this.protocol;
 	setTimeout(function(){
 		try {
 			me.close_windows();
 			me.close_audio();
 			me.clear_timers();
 			me.init_state();
-			if (me.protocol) {
-				me.open_protocol();
+			if (protocol) {
+				this.protocol = null;
+				protocol.terminate();
 			}
-			else {
-				me.connect();
-			}
+			me.connect();
 		}
 		finally {
 			me.reconnect_in_progress = false;
@@ -2077,10 +2071,16 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 	if (packet.length>10)
 		options = packet[10];
 	var win = ctx.id_to_window[wid];
-	var decode_time = -1;
+	var protocol = ctx.protocol;
+	if (!protocol) {
+		return;
+	}
+	function send_damage_sequence(decode_time, message) {
+		protocol.send(["damage-sequence", packet_sequence, wid, width, height, decode_time, message]);
+	}
 	if (!win) {
 		ctx._debug('cannot paint, window not found:', wid);
-		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, "window not found");
+		send_damage_sequence(-1, "window not found");
 		return;
 	}
 	try {
@@ -2089,24 +2089,24 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 			coding, data, packet_sequence, rowstride, options,
 			function (error) {
 				var flush = options["flush"] || 0;
+				var decode_time = -1;
 				if(flush==0) {
 					ctx.request_redraw(win);
 				}
 				if (error) {
-					decode_time = -1;
 					ctx.request_redraw(win);
 				}
 				else {
 					decode_time = Math.round(Utilities.monotonicTime() - start);
 				}
 				ctx._debug("decode time for ", coding, " sequence ", packet_sequence, ": ", decode_time, ", flush=", flush);
-				ctx._window_send_damage_sequence(wid, packet_sequence, width, height, decode_time, error || "");
+				send_damage_sequence(decode_time, error || "");
 			}
 		);
 	}
 	catch(e) {
 		ctx.error('error painting', coding, e);
-		ctx._window_send_damage_sequence(wid, packet_sequence, width, height, -1, String(e));
+		send_damage_sequence(-1, String(e));
 		ctx.request_redraw(win);
 	}
 }
