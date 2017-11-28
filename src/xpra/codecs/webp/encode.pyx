@@ -481,7 +481,9 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False):
     if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
     client_options = {
-        "speed"       : speed,
+        #no need to expose speed
+        #(not used for anything downstream)
+        #"speed"       : speed,
         "rgb_format"  : pixel_format,
         }
     if config.lossless:

@@ -28,7 +28,6 @@ statslog = Logger("stats")
 
 
 AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
-AUTO_REFRESH_THRESHOLD = envint("XPRA_AUTO_REFRESH_THRESHOLD", 100)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
 AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
@@ -282,6 +281,8 @@ class WindowSource(object):
         self.base_auto_refresh_delay = 0
         self.min_auto_refresh_delay = 50
         self.video_helper = None
+        self.refresh_quality = AUTO_REFRESH_QUALITY
+        self.refresh_speed = AUTO_REFRESH_SPEED
         self.refresh_event_time = 0
         self.refresh_target_time = 0
         self.refresh_timer = None
@@ -380,6 +381,8 @@ class WindowSource(object):
         larm = self.last_auto_refresh_message
         if larm:
             esinfo = {"auto-refresh"    : {
+                "quality"       : self.refresh_quality,
+                "speed"         : self.refresh_speed,
                 "min-delay"     : self.min_auto_refresh_delay,
                 "delay"         : self.auto_refresh_delay,
                 "base-delay"    : self.base_auto_refresh_delay,
@@ -690,7 +693,7 @@ class WindowSource(object):
 
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
-        self.update_refresh_delay()
+        self.update_refresh_attributes()
 
     def set_av_sync_delay(self, new_delay):
         self.av_sync_delay_base = new_delay
@@ -760,7 +763,7 @@ class WindowSource(object):
         else:
             #sane defaults:
             ropts = set(("webp", "png", "rgb24", "rgb32", "jpeg2000"))  #default encodings for auto-refresh
-            if AUTO_REFRESH_QUALITY<100 and self.image_depth>16:
+            if self.refresh_quality<100 and self.image_depth>16:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
         self.auto_refresh_encodings = [x for x in are if x in self.common_encodings]
@@ -768,7 +771,7 @@ class WindowSource(object):
         self.update_quality()
         self.update_speed()
         self.update_encoding_options()
-        self.update_refresh_delay()
+        self.update_refresh_attributes()
 
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
@@ -1088,11 +1091,12 @@ class WindowSource(object):
         return self._current_quality
 
 
-    def update_refresh_delay(self):
+    def update_refresh_attributes(self):
         if self.auto_refresh_delay==0:
             self.base_auto_refresh_delay = 0
             return
         ww, wh = self.window_dimensions
+        cv = self.global_statistics.congestion_value
         #try to take into account:
         # - window size: bigger windows are more costly, refresh more slowly
         # - when quality is low, we can refresh more slowly
@@ -1101,7 +1105,7 @@ class WindowSource(object):
         sizef = sqrt(float(ww*wh)/(1000*1000))      #more than 1 megapixel -> delay more
         qf = (150-self._current_quality)/100.0
         sf = (150-self._current_speed)/100.0
-        cf = (100+self.global_statistics.congestion_value*500)/100.0    #high congestion value -> very high delay
+        cf = (100+cv*500)/100.0    #high congestion value -> very high delay
         #bandwidth limit is used to set a minimum on the delay
         min_delay = int(max(100*cf, self.auto_refresh_delay, 50 * sizef, self.batch_config.delay*4))
         bwl = self.bandwidth_limit
@@ -1111,8 +1115,22 @@ class WindowSource(object):
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
         delay = max(min_delay, min(max_delay, raw_delay))
-        refreshlog("update_refresh_delay() sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
+        refreshlog("update_refresh_attributes() sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
         self.do_set_auto_refresh_delay(min_delay, delay)
+        rs = AUTO_REFRESH_SPEED
+        rq = AUTO_REFRESH_QUALITY
+        if self._current_quality<70 and (cv>0.1 or (bwl>0 and bwl<=1000*1000)):
+            #when bandwidth is scarce, don't use lossless refresh,
+            #switch to almost-lossless:
+            rs = AUTO_REFRESH_SPEED//2
+            rq = 100-cv*10
+            if bwl>0:
+                rq -= sqrt(1000*1000//bwl)
+            rs = min(50, max(0, rs))
+            rq = min(99, max(80, int(rq), self._current_quality+30))
+        refreshlog("update_refresh_attributes() refresh quality=%i%%, refresh speed=%i%%, for cv=%.2f, bwl=%i", rq, rs, cv, bwl)
+        self.refresh_quality = rq
+        self.refresh_speed = rs
 
     def do_set_auto_refresh_delay(self, min_delay, delay):
         self.min_auto_refresh_delay = min_delay
@@ -1123,7 +1141,7 @@ class WindowSource(object):
         self.update_quality()
         self.update_speed()
         self.update_encoding_options(force_reload)
-        self.update_refresh_delay()
+        self.update_refresh_attributes()
 
 
     def damage(self, x, y, w, h, options={}):
@@ -1626,8 +1644,7 @@ class WindowSource(object):
         else:
             actual_quality = client_options.get("quality", 0)
             lossy = (
-                actual_quality<AUTO_REFRESH_THRESHOLD or
-                encoding=="jpeg" or
+                actual_quality<self.refresh_quality or
                 client_options.get("csc") in LOSSY_PIXEL_FORMATS or
                 client_options.get("scaled_size") is not None
                 )
@@ -1755,7 +1772,11 @@ class WindowSource(object):
     def get_refresh_encoding(self, pixel_count, ww, wh, speed, quality, coding):
         refresh_encodings = self.auto_refresh_encodings
         encoding = refresh_encodings[0]
-        best_encoding = self.get_best_encoding(ww*wh, ww, wh, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, encoding)
+        if self.refresh_quality<100:
+            for x in ("jpeg", "webp"):
+                if x in self.common_encodings:
+                    return x
+        best_encoding = self.get_best_encoding(ww*wh, ww, wh, self.refresh_speed, self.refresh_quality, encoding)
         if best_encoding not in refresh_encodings:
             best_encoding = refresh_encodings[0]
         refreshlog("get_refresh_encoding(%i, %i, %i, %i, %i, %s)=%s", pixel_count, ww, wh, speed, quality, coding, best_encoding)
