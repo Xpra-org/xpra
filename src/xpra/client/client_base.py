@@ -691,6 +691,7 @@ class XpraClientBase(FileTransferHandler):
         return key.strip("\n\r")
 
     def load_password(self):
+        authlog("load_password() existing value found: %s", bool(self.password))
         if self.password:
             return self.password
         password = os.environ.get('XPRA_PASSWORD')
@@ -698,6 +699,7 @@ class XpraClientBase(FileTransferHandler):
             filename = os.path.expanduser(self.password_file)
             password = load_binary_file(filename)
             authlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
+        authlog("load_password() PASSWORD_PROMPT=%s, isatty=%s", PASSWORD_PROMPT, sys.stdin.isatty())
         if not password and PASSWORD_PROMPT:
             try:
                 if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
