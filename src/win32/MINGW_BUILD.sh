@@ -39,7 +39,7 @@ fi
 PROGRAMFILES_X86="C:\\Program Files (x86)"
 
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5 --without-rfb"
 else
 	# Find a java interpreter we can use for the html5 minifier
 	$JAVA -version >& /dev/null
