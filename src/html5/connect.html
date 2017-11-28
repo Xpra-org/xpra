@@ -515,7 +515,7 @@ $(document).ready(function() {
 		var def = default_on.indexOf(prop)>=0;
 		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
-	$('input#password').prop("disabled", !insecure_input.checked && typeof(Storage)==="undefined");
+	$('input#password').prop("disabled", !ssl && !insecure_input.checked && typeof(Storage)==="undefined");
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
