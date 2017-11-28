@@ -1589,6 +1589,23 @@ def parse_display_name(error_cb, opts, display_name):
     separator = psep[-1]                    #ie: "/"
     parts = afterproto.split(separator)     #ie: "host:port", "DISPLAY"
 
+    def parse_username_and_password(s):
+        ppos = s.find(":")
+        if ppos>=0:
+            password = s[ppos+1:]
+            username = s[:ppos]
+        else:
+            username = s
+            password = ""
+        #fugly: we override the command line option after parsing the string:
+        if username:
+            desc["username"] = username
+            opts.username = username
+        if password:
+            opts.password = password
+            desc["password"] = password
+        return username, password
+
     def parse_host_string(host, default_port=DEFAULT_PORT):
         """
             Parses [username[:password]@]host[:port]
@@ -1601,18 +1618,8 @@ def parse_display_name(error_cb, opts, display_name):
         port = default_port
         if upos>=0:
             #HOST=username@host
-            username = host[:upos]
+            username, password = parse_username_and_password(host[:upos])
             host = host[upos+1:]
-            ppos = username.find(":")
-            if ppos>=0:
-                password = username[ppos+1:]
-                username = username[:ppos]
-                desc["password"] = password
-                opts.password = password
-            if username:
-                desc["username"] = username
-                #fugly: we override the command line option after parsing the string:
-                opts.username = username
         port_str = None
         if host.count(":")>=2:
             #more than 2 ":", assume this is IPv6:
@@ -1733,7 +1740,12 @@ def parse_display_name(error_cb, opts, display_name):
         return desc
     elif protocol=="socket":
         #use the socketfile specified:
-        sockfile = afterproto
+        if afterproto.find("@")>=0:
+            parts = afterproto.split("@", 1)
+            parse_username_and_password(parts[0])
+            sockfile = parts[1]
+        else:
+            sockfile = afterproto
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
@@ -1801,9 +1813,12 @@ def parse_display_name(error_cb, opts, display_name):
                 })
         return desc
     elif WIN32 or display_name.startswith("named-pipe:"):
-        pipe_name = display_name
-        if display_name.startswith("named-pipe:"):
-            pipe_name = display_name[len("named-pipe:"):]
+        if afterproto.find("@")>=0:
+            parts = afterproto.split("@", 1)
+            parse_username_and_password(parts[0])
+            pipe_name = parts[1]
+        else:
+            pipe_name = afterproto
         desc.update({
                      "type"             : "named-pipe",
                      "local"            : True,
