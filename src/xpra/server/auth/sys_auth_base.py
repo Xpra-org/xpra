@@ -33,7 +33,8 @@ class SysAuthenticator(object):
         try:
             import pwd
             self.pw = pwd.getpwnam(username)
-        except:
+        except Exception as e:
+            log("cannot load password database entry for '%s': %s", username, e)
             self.pw = None
         #warn about unused options:
         unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd"))
@@ -103,7 +104,7 @@ class SysAuthenticator(object):
         salt = self.get_response_salt(client_salt)
         password = xor(challenge_response, salt)
         #warning: enabling logging here would log the actual system password!
-        #log("authenticate(%s) password=%s", binascii.hexlify(challenge_response), password)
+        #log.info("authenticate(%s, %s) password=%s (%s)", hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
         #verify login:
         try :
             ret = self.check(password)

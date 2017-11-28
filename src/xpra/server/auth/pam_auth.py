@@ -25,6 +25,7 @@ def check(username, password):
 class Authenticator(SysAuthenticator):
 
     def check(self, password):
+        log("pam.check(..) pw=%s", self.pw)
         if self.pw is None:
             return False
         return check(self.username, password)
