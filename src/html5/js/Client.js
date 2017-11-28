@@ -279,27 +279,24 @@ XpraClient.prototype.init_keyboard = function() {
 	// assign the keypress callbacks
 	// if we detect jQuery, use that to assign them instead
 	// to allow multiple clients on the same page
-	if (window.jQuery) {
-		jQuery(document).keydown(function (e) {
-			return me._keyb_onkeydown(e, me);
-		});
-		jQuery(document).keyup(function (e) {
-			return me._keyb_onkeyup(e, me);
-		});
-		jQuery(document).keypress(function (e) {
-			return me._keyb_onkeypress(e, me);
-		});
-	} else {
-		document.onkeydown = function (e) {
-			return me._keyb_onkeydown(e, me);
-		};
-		document.onkeyup = function (e) {
-			return me._keyb_onkeyup(e, me);
-		};
-		document.onkeypress = function (e) {
-			return me._keyb_onkeypress(e, me);
-		};
-	}
+	document.addEventListener('keydown', function(e) {
+		var r = me._keyb_onkeydown(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
+	document.addEventListener('keyup', function (e) {
+		var r = me._keyb_onkeyup(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
+	document.addEventListener('keypress', function (e) {
+		var r = me._keyb_onkeypress(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
 }
 
 
