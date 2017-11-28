@@ -1574,13 +1574,18 @@ def parse_display_name(error_cb, opts, display_name):
     #but the separator value we use thereafter can only be ":" or "/"
     #because we want strings like ssl://host:port/DISPLAY to be parsed into ["ssl", "host:port", "DISPLAY"]
     psep = ""
-    while display_name[pos] in (":", "/"):
-        psep += display_name[pos]
-        pos +=1
+    if display_name[pos]==":":
+        psep += ":"
+        pos += 1
+    scount = 0
+    while display_name[pos]=="/" and scount<2:
+        psep += "/"
+        pos += 1
+        scount += 1
     if protocol=="socket":
         #socket paths may start with a slash!
-        #in which case the last slash is part of the path, not the seperator!
-        if psep==":/" or psep==":///":
+        #so socket:/path means that the slash is part of the path
+        if psep==":/":
             psep = psep[:-1]
             pos -= 1
     if psep not in (":", "/", "://"):
