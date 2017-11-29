@@ -240,7 +240,7 @@
   <autotools id="libwebp" autogenargs="" autogen-sh="configure">
        <branch module="/releases/webp/libwebp-0.6.1.tar.gz"
                version="0.6.1"
-               hash="sha256:a86045e3ec24704bddbaa369ca30980d6bf4f2625f4cdca03715e91f9c08bbb4"
+               hash="sha256:06503c782d9f151baa325591c3579c68ed700ffc62d4f5a32feead0ff017d8ab"
                repo="downloads.webmproject.org"/>
        <dependencies>
                <dep package="libjpeg"/>
