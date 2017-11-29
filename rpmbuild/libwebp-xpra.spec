@@ -1,5 +1,5 @@
 Name:	     libwebp-xpra
-Version:     0.6.0
+Version:     0.6.1
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
@@ -73,6 +73,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Nov 29 2017 Antoine Martin <antoine@devloop.org.uk> 0.6.1-1
+- new upstream release
+
 * Wed Nov 22 2017 Antoine Martin <antoine@devloop.org.uk> 0.6.0-1
 - new upstream release
 
