@@ -147,7 +147,9 @@ def encode(image, int quality=50, int speed=50, options={}):
             log.error(" %s", get_error_str())
     cdata = makebuf(out, out_size)
     #100 would mean lossless, so cap it at 99:
-    client_options = {"quality" : min(99, quality)}
+    client_options = {
+        "quality"   : min(99, quality),
+        }
     return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
 
 

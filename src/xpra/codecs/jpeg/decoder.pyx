@@ -150,7 +150,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
-    log("decompress_to_yuv: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
     #allocate YUV buffers:
     cdef unsigned long plane_sizes[3]
     cdef unsigned char *planes[3]
