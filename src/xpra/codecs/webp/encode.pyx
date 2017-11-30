@@ -129,7 +129,13 @@ cdef extern from "webp/encode.h":
         int thread_level                #If non-zero, try and use multi-threaded encoding.
         int low_memory                  #If set, reduce memory usage (but increase CPU use).
 
-        uint32_t pad[5]                 #padding for later use
+        int near_lossless               #Near lossless encoding [0 = max loss .. 100 = off
+                                        #(default)
+        int exact                       #if non-zero, preserve the exact RGB values under
+                                        #transparent area. Otherwise, discard this invisible
+                                        #RGB information for better compression. The default
+                                        #value is 0.
+        uint32_t pad[3]                 #padding for later use
 
     ctypedef struct WebPMemoryWriter:
         uint8_t* mem                    #final buffer (of size 'max_size', larger than 'size').
