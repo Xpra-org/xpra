@@ -17,6 +17,7 @@ fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
+JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", False)
@@ -871,10 +872,13 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        #img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
-        #self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
-        img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
-        self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
+        if JPEG_YUV:
+            img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
+            flush = options.intget("flush", 0)
+            self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+        else:
+            img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
+            self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
 
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
