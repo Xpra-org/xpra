@@ -119,11 +119,10 @@ def encode(image, int quality=50, int speed=50, options={}):
         log.error("Error: failed to instantiate a JPEG compressor")
         return None
     cdef TJSAMP subsamp = TJSAMP_444
-    if quality<80:
-        if quality<50:
-            subsamp = TJSAMP_420
-        else:
-            subsamp = TJSAMP_422
+    if quality<50:
+        subsamp = TJSAMP_420
+    elif quality<80:
+        subsamp = TJSAMP_422
     cdef int flags = 0
     cdef unsigned char *out = NULL
     cdef unsigned long out_size = 0
