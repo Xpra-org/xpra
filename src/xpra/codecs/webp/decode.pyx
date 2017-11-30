@@ -6,6 +6,7 @@
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport memalign, memory_as_pybuffer
 from xpra.os_util import bytestostr
 
@@ -123,6 +124,7 @@ cdef extern from "webp/decode.h":
     int WebPInitDecoderConfig(WebPDecoderConfig* config)
     VP8StatusCode WebPDecode(const uint8_t* data, size_t data_size,
                                       WebPDecoderConfig* config)
+    void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
 ERROR_TO_NAME = {
@@ -155,6 +157,9 @@ def webp_check(int ret):
 
 def get_encodings():
     return ["webp"]
+
+cdef inline int roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
 
 
 cdef class WebpBufferWrapper:
@@ -207,16 +212,89 @@ def decompress(data, has_alpha, rgb_format=None):
         config.output.colorspace = MODE_RGB
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
-    cdef uint8_t *buffer = <uint8_t*> memalign(size + stride)      #add one line of padding
-    cdef WebpBufferWrapper b = WebpBufferWrapper(<uintptr_t> buffer, size)
-    config.output.u.RGBA.rgba   = buffer
+    cdef uint8_t *buf = <uint8_t*> memalign(size + stride)      #add one line of padding
+    cdef WebpBufferWrapper b = WebpBufferWrapper(<uintptr_t> buf, size)
+    config.output.u.RGBA.rgba   = buf
     config.output.u.RGBA.stride = stride
     config.output.u.RGBA.size   = size
     config.output.is_external_memory = 1
 
     webp_check(WebPDecode(data, len(data), &config))
+    #we use external memory, so this is not needed:
+    #WebPFreeDecBuffer(&config.output)
 
     return b, config.input.width, config.input.height, stride, has_alpha and config.input.has_alpha, rgb_format
+
+
+def decompress_yuv(data, has_alpha=False):
+    """
+        This returns a WebpBufferWrapper, you MUST call free() on it
+        once the pixel buffer can be freed.
+    """
+    cdef WebPDecoderConfig config
+    config.options.use_threads = 1
+    WebPInitDecoderConfig(&config)
+    webp_check(WebPGetFeatures(data, len(data), &config.input))
+    log("webp decompress_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
+
+    config.output.colorspace = MODE_YUV
+    cdef alpha = has_alpha and config.input.has_alpha
+    if alpha:
+        log.warn("Warning: webp YUVA colorspace not supported yet")
+        #config.output.colorspace = MODE_YUVA
+
+    cdef int w = config.input.width
+    cdef int h = config.input.height
+    cdef WebPYUVABuffer *YUVA = &config.output.u.YUVA
+    YUVA.y_stride = roundup(w, 4)
+    YUVA.u_stride = roundup((w+1)//2, 4)
+    YUVA.v_stride = roundup((w+1)//2, 4)
+    if alpha:
+        YUVA.a_stride = w
+    else:
+        YUVA.a_stride = 0
+    cdef size_t y_size = YUVA.y_stride * h
+    cdef size_t u_size = YUVA.u_stride * ((h+1)//2)
+    cdef size_t v_size = YUVA.v_stride * ((h+1)//2)
+    cdef size_t a_size = YUVA.a_stride * h
+    YUVA.y_size = y_size
+    YUVA.u_size = u_size
+    YUVA.v_size = v_size
+    YUVA.a_size = a_size
+    #allocate a buffer big enough for all planes with 1 stride of padding after each:
+    cdef uint8_t *buf = <uint8_t*> memalign(y_size + u_size + v_size + a_size + 4*w)
+    YUVA.y = buf
+    YUVA.u = <uint8_t*> (<uintptr_t> buf + y_size + w)
+    YUVA.v = <uint8_t*> (<uintptr_t> buf + y_size + u_size + 2*w)
+    if alpha:
+        YUVA.a = <uint8_t*> (<uintptr_t> buf + y_size + u_size + v_size + 3*w)
+    else:
+        YUVA.a = NULL
+    config.output.is_external_memory = 1
+    log("WebPDecode: image size %ix%i : buffer=%#x", w, h, <uintptr_t> buf)
+    webp_check(WebPDecode(data, len(data), &config))
+    planes = (
+        memory_as_pybuffer(<void *> YUVA.y, y_size, True),
+        memory_as_pybuffer(<void *> YUVA.u, u_size, True),
+        memory_as_pybuffer(<void *> YUVA.v, v_size, True),
+        )
+    strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
+    img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", 24, strides, ImageWrapper._3_PLANES)
+    img.cython_buffer = <uintptr_t> buf
+    return img
+
+
+class YUVImageWrapper(ImageWrapper):
+
+    def _cn(self):
+        return "webp.YUVImageWrapper"
+
+    def free(self):                             #@DuplicatedSignature
+        log("webp.YUVImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
+        ImageWrapper.free(self)
+        if self.cython_buffer>0:
+            free(<void *> (<uintptr_t> self.cython_buffer))
+            self.cython_buffer = 0
 
 
 def selftest(full=False):

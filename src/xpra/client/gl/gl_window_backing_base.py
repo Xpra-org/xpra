@@ -18,6 +18,7 @@ OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", False)
+WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", False)
@@ -33,7 +34,7 @@ if SAVE_BUFFERS:
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
 from xpra.client.spinner import cv
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
@@ -880,6 +881,13 @@ class GLWindowBackingBase(WindowBackingBase):
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
 
+    def paint_webp(self, img_data, x, y, width, height, options, callbacks):
+        if WEBP_YUV and self.webp_decoder and not WEBP_PILLOW:
+            img = self.webp_decoder.decompress_yuv(img_data)
+            flush = options.intget("flush", 0)
+            self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            return
+        WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
         log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)", self, rgb_format, len(img_data), x, y, width, height, rowstride, options)

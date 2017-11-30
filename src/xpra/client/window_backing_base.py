@@ -97,6 +97,7 @@ class WindowBackingBase(object):
         self.mmap = None
         self.mmap_enabled = False
         self.jpeg_decoder = get_codec("dec_jpeg")
+        self.webp_decoder = get_codec("dec_webp")
 
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
@@ -269,12 +270,11 @@ class WindowBackingBase(object):
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        dec_webp = get_codec("dec_webp")
-        if not dec_webp or WEBP_PILLOW:
+        if not self.webp_decoder or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
         has_alpha = options.boolget("has_alpha", False)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = dec_webp.decompress(img_data, has_alpha, options.strget("rgb_format"))
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, options.strget("rgb_format"))
         #replace with the actual rgb format we get from the decoder:
         options[b"rgb_format"] = rgb_format
         def free_buffer(*_args):
