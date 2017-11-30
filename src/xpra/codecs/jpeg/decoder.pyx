@@ -52,7 +52,6 @@ cdef extern from "turbojpeg.h":
 
     int TJFLAG_BOTTOMUP
     int TJFLAG_FASTUPSAMPLE
-    int TJFLAG_FASTUPSAMPLE
     int TJFLAG_FASTDCT
     int TJFLAG_ACCURATEDCT
 
@@ -158,7 +157,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
     cdef int strides[3]
     cdef int i, stride
     cdef MemBuf membuf
-    cdef int flags = 0      #TJFLAG_BOTTOMUP
+    cdef int flags = 0
     pystrides = []
     pyplanes = []
     cdef unsigned long total_size = 0
