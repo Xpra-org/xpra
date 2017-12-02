@@ -12,7 +12,7 @@ if envbool("XPRA_USE_CYTHON_BENCODE", True):
         cython_bencode_loaded = True
     except ImportError as e:
         from xpra.os_util import get_util_logger
-        get_util_logger().warn("Waring: cannot load cython bencode module: %s", e)
+        get_util_logger().warn("Warning: cannot load cython bencode module: %s", e)
 if not cython_bencode_loaded:
     from xpra.net.bencode.bencode import bencode, bdecode, __version__      #@Reimport
 
