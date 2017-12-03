@@ -557,7 +557,6 @@ def keymap_to_xmodmap(trans_keycodes):
         names = [""]*keysyms_per_keycode
         for name, index in entries:
             assert 0<=index and index<keysyms_per_keycode
-            names[index] = name
             try:
                 keysym = X11Keyboard.parse_keysym(name)
             except:
@@ -567,8 +566,13 @@ def keymap_to_xmodmap(trans_keycodes):
                     missing_keysyms.append(name)
             else:
                 if keysyms[index] is not None:
-                    log.warn("we already have a keysym for %s at index %s: %s, entries=%s", server_keycode, index, keysyms[index], entries)
+                    log.warn("Warning: more than one keysym for keycode %-3i at index %i: %s", server_keycode, index, keysyms[index])
+                    log.warn(" entries=%s", csv(tuple(entries)))
+                    log.warn(" keysyms=%s", csv(keysyms))
+                    log.warn(" assigned keysym=%s", names[index])
+                    log.warn(" wanted keysym=%s", name)
                 else:
+                    names[index] = name
                     keysyms[index] = keysym
                     if keysym in DEBUG_KEYSYMS:
                         log.info("keymap_to_xmodmap: keysyms[%s]=%s", index, keysym)
