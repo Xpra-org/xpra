@@ -275,4 +275,4 @@ class WindowPerformanceStatistics(object):
 
     def get_damage_pixels(self, elapsed=1):
         cutoff = monotonic_time()-elapsed
-        return sum(v[3]*v[4] for v in self.last_damage_events if v[0]>cutoff)
+        return sum(v[3]*v[4] for v in tuple(self.last_damage_events) if v[0]>cutoff)
