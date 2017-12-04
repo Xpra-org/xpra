@@ -361,7 +361,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return True
 
     def set_layout_group(self, int grp):
-        log("setting XKB layout group `%s`", grp)
+        log("setting XKB layout group %s", grp)
         if XkbLockGroup(self.display, XkbUseCoreKbd, grp):
             XFlush(self.display)
         else:
@@ -489,7 +489,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return keysym
 
     def parse_keysym(self, symbol):
-        return self._parse_keysym(symbol)
+        return int(self._parse_keysym(symbol))
 
     cdef _keysym_str(self, keysym_val):
         cdef KeySym keysym                      #@DuplicatedSignature
