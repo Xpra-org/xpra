@@ -194,7 +194,7 @@ class KeyboardConfig(KeyboardConfigBase):
         """ The keycodes for all modifiers (those are *client* keycodes!) """
         try:
             server_mappings = X11Keyboard.get_modifier_mappings()
-            log("get_modifier_mappings=%s", server_mappings)
+            log("compute_client_modifier_keycodes() server mappings=%s", server_mappings)
             #update the mappings to use the keycodes the client knows about:
             reverse_trans = {}
             for k,v in self.keycode_translation.items():
@@ -258,6 +258,7 @@ class KeyboardConfig(KeyboardConfigBase):
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
             self.compute_modifier_keynames()
+            self.compute_client_modifier_keycodes()
             return
 
         try:
@@ -371,6 +372,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     keynames.append(m[1])   #ie: 'Control_L'
             self.keynames_for_mod[modifier] = set(keynames)
         self.compute_modifier_keynames()
+        self.compute_client_modifier_keycodes()
         log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
         log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("set_default_keymap: modifier_map=%s", self.modifier_map)
