@@ -25,7 +25,7 @@ def _GetKeyboardLayoutList():
     count = GetKeyboardLayoutList(max_items, ctypes.byref(handle_list))
     layouts = []
     for i in range(count):
-        layouts.append(handle_list[i])
+        layouts.append(int(handle_list[i]))
     return layouts
 
 def GetIntSystemParametersInfo(key):
