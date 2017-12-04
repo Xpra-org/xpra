@@ -12,7 +12,8 @@ from xpra.buffers.membuf cimport getbuf, object_as_buffer, MemBuf
 
 def xor_str(a, b):
     assert len(a)==len(b), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b))
-    cdef uint64_t *abuf, *bbuf
+    cdef uint64_t *abuf
+    cdef uint64_t *bbuf
     cdef Py_ssize_t alen = 0, blen = 0
     assert object_as_buffer(a, <const void**> &abuf, &alen)==0, "cannot get buffer pointer for %s" % type(a)
     assert object_as_buffer(b, <const void**> &bbuf, &blen)==0, "cannot get buffer pointer for %s" % type(b)
@@ -26,7 +27,9 @@ def xor_str(a, b):
         obuf[i] = abuf[i] ^ bbuf[i]
     #only used for the few remaining bytes at the end:
     cdef unsigned int char_steps = alen % 8
-    cdef unsigned char *acbuf, *bcbuf, *ocbuf
+    cdef unsigned char *acbuf
+    cdef unsigned char *bcbuf
+    cdef unsigned char *ocbuf
     if char_steps>0:
         acbuf = <unsigned char *> abuf
         bcbuf = <unsigned char *> bbuf
