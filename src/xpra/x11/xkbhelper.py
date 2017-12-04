@@ -129,7 +129,7 @@ def apply_xmodmap(instructions):
         with xsync:
             unset = X11Keyboard.set_xmodmap(instructions)
     except:
-        log.error("apply_xmodmap", exc_info=True)
+        log.error("Error configuring modifier map", exc_info=True)
         unset = instructions
     if unset is None:
         #None means an X11 error occurred, re-do all:
@@ -555,7 +555,8 @@ def keymap_to_xmodmap(trans_keycodes):
     for server_keycode, entries in trans_keycodes.items():
         keysyms = [None]*keysyms_per_keycode
         names = [""]*keysyms_per_keycode
-        for name, index in entries:
+        sentries = sorted(entries, key=lambda x:x[1])
+        for name, index in sentries:
             assert 0<=index and index<keysyms_per_keycode
             try:
                 keysym = X11Keyboard.parse_keysym(name)
@@ -566,16 +567,30 @@ def keymap_to_xmodmap(trans_keycodes):
                     missing_keysyms.append(name)
             else:
                 if keysyms[index] is not None:
-                    log.warn("Warning: more than one keysym for keycode %-3i at index %i: %s", server_keycode, index, keysyms[index])
-                    log.warn(" entries=%s", csv(tuple(entries)))
-                    log.warn(" keysyms=%s", csv(keysyms))
-                    log.warn(" assigned keysym=%s", names[index])
-                    log.warn(" wanted keysym=%s", name)
-                else:
-                    names[index] = name
-                    keysyms[index] = keysym
-                    if keysym in DEBUG_KEYSYMS:
-                        log.info("keymap_to_xmodmap: keysyms[%s]=%s", index, keysym)
+                    #if the client provides multiple keysyms for the same index,
+                    #replace with the new one if the old one exists elsewhere,
+                    #or skip it if we have another entry for it
+                    can_override = any(True for i,v in enumerate(keysyms) if i<index and v==keysyms[index])
+                    can_skip = any(True for i,v in enumerate(keysyms) if i!=index and v==keysym)
+                    if can_override or can_skip:
+                        l = log.debug
+                    else:
+                        l = log.warn
+                    l("Warning: more than one keysym for keycode %-3i at index %i:", server_keycode, index)
+                    l(" entries=%s", csv(tuple(sentries)))
+                    l(" keysyms=%s", csv(keysyms))
+                    l(" assigned keysym=%s", names[index])
+                    l(" wanted keysym=%s", name)
+                    if can_override:
+                        l(" current value also found at another index, overriding it")
+                    elif can_skip:
+                        l(" new value also found elsewhere, skipping it")
+                    else:
+                        continue
+                names[index] = name
+                keysyms[index] = keysym
+                if name in DEBUG_KEYSYMS:
+                    log.info("keymap_to_xmodmap: keysyms[%s]=%s (%s)", index, keysym, name)
         #remove empty keysyms:
         while len(keysyms)>0 and keysyms[0] is None:
             keysyms = keysyms[1:]
