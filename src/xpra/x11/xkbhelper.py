@@ -111,14 +111,14 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                 if m:
                     layout = std(m.group(1))
                     log.info("guessing keyboard layout='%s'" % layout)
-                    X11Keyboard.setxkbmap("", "pc104", layout, "", "")
+                    X11Keyboard.setxkbmap("evdev", "pc105", layout, "", "")
                     return
         except Exception as e:
             log.info("error setting keymap: %s" % e)
     #fallback:
     layout = xkbmap_layout or "us"
     log.info("setting keyboard layout to '%s'", std(layout))
-    X11Keyboard.setxkbmap("", "", layout, xkbmap_variant, "")
+    X11Keyboard.setxkbmap("evdev", "pc105", layout, xkbmap_variant, "")
 
 
 ################################################################################
