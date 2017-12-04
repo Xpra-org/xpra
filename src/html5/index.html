@@ -92,6 +92,7 @@
 				var submit = getboolparam("submit", true);
 				var server = getparam("server") || window.location.hostname;
 				var port = getparam("port") || window.location.port;
+				var path = getparam("path") || "";
 				var encryption = getboolparam("encryption", false);
 				var key = getparam("key") || null;
 				var keyboard_layout = getparam("keyboard_layout") || null;
@@ -324,6 +325,7 @@
 			    client.host = server;
 			    client.port = port;
 			    client.ssl = ssl;
+			    client.path = path;
 				return client;
 			}
 
