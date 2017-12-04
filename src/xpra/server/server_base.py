@@ -2998,11 +2998,11 @@ class ServerBase(ServerCore):
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
         def press():
-            keylog("handle keycode pressing %s: key %s", keycode, name)
+            keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
             self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
         def unpress():
-            keylog("handle keycode unpressing %s: key %s", keycode, name)
+            keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
             if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]
             self.fake_key(keycode, False)

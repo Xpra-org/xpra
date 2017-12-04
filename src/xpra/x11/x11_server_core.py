@@ -216,6 +216,7 @@ class X11ServerCore(GTKServerBase):
         clean_keyboard_state()
 
     def set_keyboard_layout_group(self, grp):
+        keylog("set_keyboard_layout_group(%i) current keyboard group=%s", grp, self.current_keyboard_group)
         if self.current_keyboard_group!=grp and X11Keyboard.hasXkb():
             try:
                 with xsync:

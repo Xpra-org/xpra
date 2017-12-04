@@ -174,7 +174,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         self.xkbmap_mod_nuisance.add(modifier)
                     keyval = gdk.keyval_from_name(keyname)
                     if keyval==0:
-                        log.error("no keyval found for keyname %s (modifier %s)", keyname, modifier)
+                        log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
                         return  []
                     entries = keymap.get_entries_for_keyval(keyval)
                     if entries:
@@ -268,6 +268,7 @@ class KeyboardConfig(KeyboardConfigBase):
         except:
             log.error("Error setting up new keymap", exc_info=True)
         self.is_native_keymap = bool(self.xkbmap_print) or bool(self.xkbmap_query)
+        log("set_keymap(%s) is_native_keymap=%s", translate_only, self.is_native_keymap)
         try:
             with xsync:
                 #first clear all existing modifiers:
@@ -291,7 +292,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         #non-Unix-like OS provides just keycodes for now:
                         self.keynames_for_mod = get_modifiers_from_keycodes(self.xkbmap_keycodes)
                     else:
-                        log.error("missing both xkbmap_mod_meanings and xkbmap_keycodes, modifiers will probably not work as expected!")
+                        log.warn("Warning: client did not supply any modifier definitions")
                         self.keynames_for_mod = {}
                     #if the client does not provide a full keymap,
                     #try to preserve the initial server keycodes
@@ -441,7 +442,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     continue
                 keynames = self.keynames_for_mod.get(modifier)
                 if is_ignored(modifier, keynames):
-                    log("modifier %s ignored (in ignored keynames=%s)", modifier, keynames)
+                    log("modifier '%s' ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 m.add(modifier)
             log("filtered_modifiers_set(%s)=%s", modifiers, m)
@@ -471,7 +472,7 @@ class KeyboardConfig(KeyboardConfigBase):
                             if keycode not in keycodes:
                                 keycodes.append(keycode)
                 if ignored_modifier_keycode is not None and ignored_modifier_keycode in keycodes:
-                    log("modifier %s ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
+                    log("modifier '%s' ignored (ignored keycode=%s)", modifier, ignored_modifier_keycode)
                     continue
                 #nuisance keys (lock, num, scroll) are toggled by a
                 #full key press + key release (so act accordingly in the loop below)
@@ -495,7 +496,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     success = (modifier in new_mask)==press
                     if success:
                         modkeycode = keycode
-                        log("change_mask(%s) %s modifier %s using %s", info, modifier_list, modifier, keycode)
+                        log("change_mask(%s) %s modifier '%s' using keycode %s", info, modifier_list, modifier, keycode)
                         break   #we're done for this modifier
                     log("%s %s with keycode %s did not work", info, modifier, keycode)
                     if press and not nuisance:
@@ -505,7 +506,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         new_mask = self.get_current_mask()
                         if (modifier in new_mask)==press:
                             break
-                    log("change_mask(%s) %s modifier %s using %s, success: %s", info, modifier_list, modifier, keycode, success)
+                    log("change_mask(%s) %s modifier '%s' using keycode %s, success: %s", info, modifier_list, modifier, keycode, success)
                 if not modkeycode:
                     failed.append(modifier)
             log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
