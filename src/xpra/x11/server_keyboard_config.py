@@ -268,6 +268,7 @@ class KeyboardConfig(KeyboardConfigBase):
         except:
             log.error("Error setting up new keymap", exc_info=True)
         self.is_native_keymap = bool(self.xkbmap_print) or bool(self.xkbmap_query)
+        log("set_keymap: xkbmap_print=%s, xkbmap_query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         log("set_keymap(%s) is_native_keymap=%s", translate_only, self.is_native_keymap)
         try:
             with xsync:
@@ -296,8 +297,8 @@ class KeyboardConfig(KeyboardConfigBase):
                         self.keynames_for_mod = {}
                     #if the client does not provide a full keymap,
                     #try to preserve the initial server keycodes
-                    #(used by non X11 clients like osx,win32 or Android)
-                    preserve_server_keycodes = not self.xkbmap_print and not self.xkbmap_query
+                    #(used by non X11 clients like osx,win32 or HTML5)
+                    preserve_server_keycodes = not self.is_native_keymap
                     self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
                     self.add_gtk_keynames()
 
