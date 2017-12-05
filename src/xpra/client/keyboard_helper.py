@@ -414,7 +414,7 @@ class KeyboardHelper(object):
 
     def send_layout(self):
         log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s, xkbmap_options=%s", self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant, self.xkbmap_options)
-        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "", self.xkbmap_options)
+        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "", self.xkbmap_options or "")
 
     def send_keymap(self):
         log("send_keymap()")
