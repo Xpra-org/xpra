@@ -1436,8 +1436,8 @@ class ServerSource(FileTransferHandler):
 #
 # Keyboard magic
 #
-    def set_layout(self, layout, variant):
-        return self.keyboard_config.set_layout(layout, variant)
+    def set_layout(self, layout, variant, options):
+        return self.keyboard_config.set_layout(layout, variant, options)
 
     def keys_changed(self):
         if self.keyboard_config:

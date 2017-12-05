@@ -54,6 +54,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.xkbmap_x11_keycodes = []
         self.xkbmap_layout = None
         self.xkbmap_variant = None
+        self.xkbmap_options = None
 
         #this is shared between clients!
         self.keys_pressed = {}
@@ -66,7 +67,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.modifiers_filter = []
 
     def __repr__(self):
-        return "KeyboardConfig(%s / %s)" % (self.xkbmap_layout, self.xkbmap_variant)
+        return "KeyboardConfig(%s / %s / %s)" % (self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options)
 
     def get_info(self):
         info = KeyboardConfigBase.get_info(self)
@@ -160,7 +161,7 @@ class KeyboardConfig(KeyboardConfigBase):
             #flatten the dict in a predicatable order:
             for k in sorted(self.xkbmap_query_struct.keys()):
                 hashadd(self.xkbmap_query_struct.get(k))
-        return "%s/%s/%s" % (self.xkbmap_layout, self.xkbmap_variant, m.hexdigest())
+        return "%s/%s/%s/%s" % (self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options, m.hexdigest())
 
     def compute_modifier_keynames(self):
         self.keycodes_for_modifier_keynames = {}
@@ -241,11 +242,12 @@ class KeyboardConfig(KeyboardConfigBase):
         return False
 
 
-    def set_layout(self, layout, variant):
-        log("set_layout(%s, %s)", layout, variant)
-        if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant:
+    def set_layout(self, layout, variant, options):
+        log("set_layout(%s, %s, %s)", layout, variant, options)
+        if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant or options!=self.xkbmap_options:
             self.xkbmap_layout = layout
             self.xkbmap_variant = variant
+            self.xkbmap_options = options
             return True
         return False
 
@@ -253,7 +255,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap(%s) layout=%s, variant=%s, print=%s, query=%s", translate_only, self.xkbmap_layout, self.xkbmap_variant, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+        log("set_keymap(%s) layout=%s, variant=%s, options=%s, print=%s, query=%s", translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options, nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
@@ -264,7 +266,7 @@ class KeyboardConfig(KeyboardConfigBase):
         try:
             with xsync:
                 clean_keyboard_state()
-                do_set_keymap(self.xkbmap_layout, self.xkbmap_variant,
+                do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
                               self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         except:
             log.error("Error setting up new keymap", exc_info=True)

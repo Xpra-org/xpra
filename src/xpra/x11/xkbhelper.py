@@ -50,7 +50,7 @@ def clean_keyboard_state():
 ################################################################################
 # keyboard layouts
 
-def do_set_keymap(xkbmap_layout, xkbmap_variant,
+def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
                   xkbmap_print, xkbmap_query, xkbmap_query_struct={}):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
         xkbmap_variant is the layout variant (may not be set)
@@ -73,7 +73,6 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
             "layout"      : "gb",
             "options"     : "grp:shift_caps_toggle",
             }
-        (we execute the options separately in case that fails..)
         """
         #parse the data into a dict:
         rules = xkbmap_query_struct.get("rules")
@@ -83,25 +82,11 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
         options = xkbmap_query_struct.get("options")
         if layout:
             log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
-            try:
-                X11Keyboard.setxkbmap(rules, model, layout, variant, options)
-                return
-            except:
-                log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
-            if options:
-                #try again with no options:
-                try:
-                    X11Keyboard.setxkbmap(rules, model, layout, variant, "")
-                    return
-                except:
-                    log.error("failed to set exact keymap even without applying options")
+            safe_setxkbmap(rules, model, layout, variant, options)
         else:
-            try:
-                X11Keyboard.setxkbmap(rules, model, "", "", "")
-                return
-            except:
-                log.warn("failed to set exact keymap using %s", xkbmap_query_struct)
+            safe_setxkbmap(rules, model, "", "", "")
     if xkbmap_print:
+        #TODO: this is no longer used with any client, remove it
         log("do_set_keymap using xkbmap_print")
         #try to guess the layout by parsing "setxkbmap -print"
         try:
@@ -111,14 +96,31 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant,
                 if m:
                     layout = std(m.group(1))
                     log.info("guessing keyboard layout='%s'" % layout)
-                    X11Keyboard.setxkbmap("evdev", "pc105", layout, "", "")
+                    safe_setxkbmap("evdev", "pc105", layout, "", xkbmap_options)
                     return
         except Exception as e:
             log.info("error setting keymap: %s" % e)
-    #fallback:
+    #fallback for non X11 clients:
     layout = xkbmap_layout or "us"
     log.info("setting keyboard layout to '%s'", std(layout))
-    X11Keyboard.setxkbmap("evdev", "pc105", layout, xkbmap_variant, "")
+    safe_setxkbmap("evdev", "pc105", layout, xkbmap_variant, xkbmap_options)
+
+def safe_setxkbmap(rules, model, layout, variant, options):
+    #(we execute the options separately in case that fails..)
+    try:
+        X11Keyboard.setxkbmap(rules, model, layout, variant, options)
+        return
+    except:
+        log.warn("Warning: failed to set exact keymap,")
+        log.warn(" rules=%s, model=%s, layout=%s, variant=%s, options=%s", rules, model, layout, variant, options)
+    if options:
+        #try again with no options:
+        try:
+            X11Keyboard.setxkbmap(rules, model, layout, variant, "")
+            return
+        except:
+            log.error("Error: failed to set exact keymap")
+            log.error(" even without applying any options..")
 
 
 ################################################################################

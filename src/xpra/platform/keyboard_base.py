@@ -57,7 +57,7 @@ class KeyboardBase(object):
         return {}
 
     def get_layout_spec(self):
-        return "", [], "", None
+        return "", [], "", None, ""
 
     def get_keyboard_repeat(self):
         return None

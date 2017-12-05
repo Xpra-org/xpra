@@ -52,6 +52,7 @@ class KeyboardHelper(object):
         self.xkbmap_layouts = []
         self.xkbmap_variant = ""
         self.xkbmap_variants = []
+        self.xkbmap_options = ""
         self.xkbmap_print = ""
         self.xkbmap_query = ""
         self.xkbmap_query_struct = {}
@@ -347,8 +348,8 @@ class KeyboardHelper(object):
 
     def get_layout_spec(self):
         """ add / honour overrides """
-        layout, layouts, variant, variants = self.keyboard.get_layout_spec()
-        log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants))
+        layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
+        log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
         def inl(v, l):
             try:
                 if v in l or v is None:
@@ -362,31 +363,33 @@ class KeyboardHelper(object):
         layouts  = inl(layout, self.layouts_option or layouts)
         variant  = self.variant_option or variant
         variants = inl(variant, self.variants_option or variants)
-        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants)
+        options  = self.options or options
+        val = (layout, layouts, self.variant_option or variant, self.variants_option or variants, self.options)
         log("get_layout_spec()=%s", val)
         return val
 
     def get_keymap_spec(self):
         _print, query, query_struct = self.keyboard.get_keymap_spec()
-        if self.layout_option:
-            query_struct["layout"] = self.layout_option
-        if self.layouts_option:
-            query_struct["layouts"] = csv(self.layouts_option)
-        if self.variant_option:
-            query_struct["variant"] = self.variant_option
-        if self.variants_option:
-            query_struct["variants"] = csv(self.variants_option)
-        if self.options:
-            if self.options.lower()=="none":
-                query_struct["options"] = ""
-            else:
-                query_struct["options"] = self.options
-        if self.layout_option or self.layouts_option or self.variant_option or self.variants_option or self.options:
-            query = xkbmap_query_tostring(query_struct)
+        if query_struct:
+            if self.layout_option:
+                query_struct["layout"] = self.layout_option
+            if self.layouts_option:
+                query_struct["layouts"] = csv(self.layouts_option)
+            if self.variant_option:
+                query_struct["variant"] = self.variant_option
+            if self.variants_option:
+                query_struct["variants"] = csv(self.variants_option)
+            if self.options:
+                if self.options.lower()=="none":
+                    query_struct["options"] = ""
+                else:
+                    query_struct["options"] = self.options
+            if self.layout_option or self.layouts_option or self.variant_option or self.variants_option or self.options:
+                query = xkbmap_query_tostring(query_struct)
         return _print, query, query_struct
 
     def query_xkbmap(self):
-        self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants = self.get_layout_spec()
+        self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants, self.xkbmap_options = self.get_layout_spec()
         self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct = self.get_keymap_spec()
         self.xkbmap_keycodes = self.get_full_keymap()
         self.xkbmap_x11_keycodes = self.keyboard.get_x11_keymap()
@@ -410,8 +413,8 @@ class KeyboardHelper(object):
 
 
     def send_layout(self):
-        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s", self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant)
-        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "")
+        log("send_layout() layout_option=%s, xkbmap_layout=%s, variant_option=%s, xkbmap_variant=%s, xkbmap_options=%s", self.layout_option, self.xkbmap_layout, self.variant_option, self.xkbmap_variant, self.xkbmap_options)
+        self.send("layout-changed", self.layout_option or self.xkbmap_layout or "", self.variant_option or self.xkbmap_variant or "", self.xkbmap_options)
 
     def send_keymap(self):
         log("send_keymap()")

@@ -33,7 +33,7 @@ class KeyboardConfigBase(object):
     def get_hash(self):
         return ""
 
-    def set_layout(self, layout, variant):
+    def set_layout(self, layout, variant, options):
         pass
 
     def set_keymap(self, translate_only=False):

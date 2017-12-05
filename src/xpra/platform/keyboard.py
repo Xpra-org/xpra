@@ -48,11 +48,12 @@ def main():
         print("Server Managed                    : %s" % (csv(mod_managed) or "None"))
         print("Missing from pointer events       : %s" % (csv(mod_pointermissing) or "None"))
         print("")
-        layout,layouts,variant,variants = keyboard.get_layout_spec()
+        layout,layouts,variant,variants, options = keyboard.get_layout_spec()
         print("Layout:     '%s'" % bytestostr(layout or b""))
         print("Layouts:    %s" % csv("'%s'" % x for x in (layouts or [])))
         print("Variant:    '%s'" % bytestostr(variant or b""))
         print("Variants:   %s" % csv("'%s'" % x for x in (variants or [])))
+        print("Options:    %s" % (options))
         print("")
         print("Repeat:     %s" % csv(keyboard.get_keyboard_repeat()))
         if verbose and POSIX:

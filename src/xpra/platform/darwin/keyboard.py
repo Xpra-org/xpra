@@ -88,6 +88,7 @@ class Keyboard(KeyboardBase):
         layouts = ["us"]
         variant = ""
         variants = []
+        options = ""
         try:
             from AppKit import NSTextInputContext       #@UnresolvedImport
             ic = NSTextInputContext.new()
@@ -114,7 +115,7 @@ class Keyboard(KeyboardBase):
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
             log.error(" %s", e)
-        return layout, layouts, variant, variants
+        return layout, layouts, variant, variants, options
 
     def get_keymap_modifiers(self):
         """

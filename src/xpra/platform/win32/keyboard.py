@@ -122,6 +122,7 @@ class Keyboard(KeyboardBase):
         layouts = []
         variant = None
         variants = None
+        options = ""
         try:
             l = _GetKeyboardLayoutList()
             log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
@@ -149,7 +150,7 @@ class Keyboard(KeyboardBase):
         except Exception as e:
             log.error("Error: failed to detect keyboard layout:")
             log.error(" %s", e)
-        return layout,layouts,variant,variants
+        return layout,layouts,variant,variants, options
 
     def get_keyboard_repeat(self):
         try:

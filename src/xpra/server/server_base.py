@@ -2914,8 +2914,12 @@ class ServerBase(ServerCore):
         if self.readonly:
             return
         layout, variant = packet[1:3]
+        if len(packet)>=4:
+            options = packet[3]
+        else:
+            options = ""
         ss = self._server_sources.get(proto)
-        if ss and ss.set_layout(layout, variant):
+        if ss and ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
     def _process_keymap(self, proto, packet):

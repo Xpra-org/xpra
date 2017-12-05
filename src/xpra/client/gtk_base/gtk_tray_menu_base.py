@@ -1237,7 +1237,7 @@ class GTKTrayMenuBase(object):
         def keysort(key):
             c,l = key
             return c.lower()+l.lower()
-        layout, layouts, variant, variants = self.client.keyboard_helper.get_layout_spec()
+        layout, layouts, variant, variants, _ = self.client.keyboard_helper.get_layout_spec()
         layout = bytestostr(layout)
         layouts = tuple(bytestostr(x) for x in layouts)
         variant = bytestostr(variant or b"")

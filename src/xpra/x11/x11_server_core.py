@@ -376,6 +376,7 @@ class X11ServerCore(GTKServerBase):
         keyboard_config.parse_options(props)
         keyboard_config.xkbmap_layout = props.strget("xkbmap_layout")
         keyboard_config.xkbmap_variant = props.strget("xkbmap_variant")
+        keyboard_config.xkbmap_options = props.strget("xkbmap_options")
         keylog("get_keyboard_config(..)=%s", keyboard_config)
         return keyboard_config
 
