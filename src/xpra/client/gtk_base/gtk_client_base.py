@@ -51,6 +51,7 @@ missing_cursor_names = set()
 
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
+EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 
 
 class GTKXpraClient(UIXpraClient, GObjectXpraClient):
@@ -540,25 +541,26 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         capabilities = UIXpraClient.make_hello(self)
         capabilities["named_cursors"] = len(cursor_types)>0
         capabilities.update(flatten_dict(get_gtk_version_info()))
-        #tell the server which icons GTK can use
-        #so it knows when it should supply one as fallback
-        it = icon_theme_get_default()
-        #this would add our bundled icon directory
-        #to the search path, but I don't think we have
-        #any extra icons that matter in there:
-        #from xpra.platform.paths import get_icon_dir
-        #d = get_icon_dir()
-        #if d not in it.get_search_path():
-        #    it.append_search_path(d)
-        #    it.rescan_if_needed()
-        log("default icon theme: %s", it)
-        log("icon search path: %s", it.get_search_path())
-        log("contexts: %s", it.list_contexts())
-        icons = []
-        for context in it.list_contexts():
-            icons += it.list_icons(context)
-        log("icons: %s", icons)
-        capabilities["theme.default.icons"] = tuple(set(icons))
+        if EXPORT_ICON_DATA:
+            #tell the server which icons GTK can use
+            #so it knows when it should supply one as fallback
+            it = icon_theme_get_default()
+            #this would add our bundled icon directory
+            #to the search path, but I don't think we have
+            #any extra icons that matter in there:
+            #from xpra.platform.paths import get_icon_dir
+            #d = get_icon_dir()
+            #if d not in it.get_search_path():
+            #    it.append_search_path(d)
+            #    it.rescan_if_needed()
+            log("default icon theme: %s", it)
+            log("icon search path: %s", it.get_search_path())
+            log("contexts: %s", it.list_contexts())
+            icons = []
+            for context in it.list_contexts():
+                icons += it.list_icons(context)
+            log("icons: %s", icons)
+            capabilities["theme.default.icons"] = tuple(set(icons))
         if METADATA_SUPPORTED:
             ms = [x.strip() for x in METADATA_SUPPORTED.split(",")]
         else:
