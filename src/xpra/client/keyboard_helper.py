@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,8 +11,10 @@ log = Logger("keyboard")
 
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.util import nonl, csv, std, print_nested_dict
+from xpra.util import nonl, csv, std, envbool, print_nested_dict
 from xpra.os_util import POSIX
+
+LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 
 class KeyboardHelper(object):
@@ -56,6 +58,7 @@ class KeyboardHelper(object):
         self.xkbmap_print = ""
         self.xkbmap_query = ""
         self.xkbmap_query_struct = {}
+        self.xkbmap_layout_groups = LAYOUT_GROUPS
 
         self.hash = None
 
@@ -443,7 +446,7 @@ class KeyboardHelper(object):
     def get_keymap_properties(self):
         props = {}
         for x in ("layout", "layouts", "variant", "variants",
-                  "raw",
+                  "raw", "layout_groups",
                   "print", "query", "query_struct", "mod_meanings",
                   "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes"):
             p = "xkbmap_%s" % x

@@ -57,6 +57,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.xkbmap_layout = None
         self.xkbmap_variant = None
         self.xkbmap_options = None
+        self.xkbmap_layout_groups = False
 
         #this is shared between clients!
         self.keys_pressed = {}
@@ -107,8 +108,8 @@ class KeyboardConfig(KeyboardConfigBase):
             for mod, mod_name in self.xkbmap_mod_meanings.items():
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.xkbmap_x11_keycodes
-        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing", "raw"):
-            v = getattr(self, "xkbmap_"+x)
+        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
+            v = getattr(self, "xkbmap_"+x.replace("-", "_"))
             if v:
                 info[x] = v
         modsinfo["nuisance"] = tuple(self.xkbmap_mod_nuisance or [])
@@ -122,14 +123,14 @@ class KeyboardConfig(KeyboardConfigBase):
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
         KeyboardConfigBase.parse_options(self, props)
-        modded = []
-        def parse_option(name, parse_fn):
+        modded = {}
+        def parse_option(name, parse_fn, *parse_args):
             prop = "xkbmap_%s" % name
             cv = getattr(self, prop)
-            nv = parse_fn(prop)
+            nv = parse_fn(prop, *parse_args)
             if cv!=nv:
                 setattr(self, prop, nv)
-                modded.append(prop)
+                modded[prop] = nv
         #plain strings:
         for x in ("print", "query"):
             parse_option(x, props.strget)
@@ -142,7 +143,12 @@ class KeyboardConfig(KeyboardConfigBase):
         for x in ("mod_managed", "mod_pointermissing"):
             parse_option(x, props.strlistget)
         parse_option("raw", props.boolget)
+        #older clients don't specify if they support layout groups safely
+        #(MS Windows clients used base-1)
+        #so only enable it by default for X11 clients
+        parse_option("layout_groups", props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
         log("assign_keymap_options(..) modified %s", modded)
+        log.info("layout_groups=%s", self.xkbmap_layout_groups)
         return len(modded)>0
 
 
@@ -206,8 +212,6 @@ class KeyboardConfig(KeyboardConfigBase):
             self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
             for modifier, keys in server_mappings.items():
                 #ie: modifier=mod3, keys=[(115, 'Super_L'), (116, 'Super_R'), (127, 'Super_L')]
-                #if self.is_native_keymap:
-                #    client_keycodes = keys
                 client_keydefs = []
                 for keycode,keysym in keys:
                     #ie: keycode=115, keysym=Super_L
@@ -272,9 +276,7 @@ class KeyboardConfig(KeyboardConfigBase):
                               self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         except:
             log.error("Error setting up new keymap", exc_info=True)
-        self.is_native_keymap = bool(self.xkbmap_query)
         log("set_keymap: xkbmap_print=%s, xkbmap_query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
-        log("set_keymap(%s) is_native_keymap=%s", translate_only, self.is_native_keymap)
         try:
             with xsync:
                 #first clear all existing modifiers:
@@ -302,11 +304,12 @@ class KeyboardConfig(KeyboardConfigBase):
                     else:
                         log.warn("Warning: client did not supply any modifier definitions")
                         self.keynames_for_mod = {}
-                    if self.is_native_keymap:
+                    if bool(self.xkbmap_query):
+                        #native full mapping of all keycodes:
                         self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
                     else:
                         #if the client does not provide a full native keymap with all the keycodes,
-                        #try to preserve the initial server keycodes and translate the client keycodes:
+                        #try to preserve the initial server keycodes and translate the client keycodes instead:
                         #(used by non X11 clients like osx,win32 or HTML5)
                         self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
                     self.add_gtk_keynames()
@@ -358,7 +361,6 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         if not self.enabled:
             return
-        self.is_native_keymap = False
         clean_keyboard_state()
         #keycodes:
         keycode_to_keynames = X11Keyboard.get_keycode_mappings()
@@ -392,16 +394,11 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1
         keycode = self.keycode_translation.get((client_keycode, keyname))
         if keycode is None:
-            if self.is_native_keymap:
-                #native: assume no translation for this key
-                keycode = client_keycode
-                log("get_keycode(%s, %s, %s) native keymap, using unmodified keycode: %s", client_keycode, keyname, modifiers, keycode)
-            else:
-                #non-native: try harder to find matching keysym
-                keycode = self.keycode_translation.get(keyname, client_keycode)
-                log("get_keycode(%s, %s, %s) non-native keymap, translation lookup: %s", client_keycode, keyname, modifiers, keycode)
+            #non-native: try harder to find matching keysym
+            keycode = self.keycode_translation.get(keyname, client_keycode)
+            log("get_keycode(%s, %s, %s) keyname lookup: %s", client_keycode, keyname, modifiers, keycode)
         else:
-            log("get_keycode(%s, %s, %s) is_native_keymap=%s, found using translation: %s", client_keycode, keyname, modifiers, self.is_native_keymap, keycode)
+            log("get_keycode(%s, %s, %s) keyname+keycode lookup: %s", client_keycode, keyname, modifiers, keycode)
         return keycode
 
 

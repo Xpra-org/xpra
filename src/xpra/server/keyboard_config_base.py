@@ -14,7 +14,6 @@ class KeyboardConfigBase(object):
 
     def __init__(self):
         self.enabled = True
-        self.is_native_keymap = True
         self.owner = None
 
     def __repr__(self):
@@ -23,7 +22,6 @@ class KeyboardConfigBase(object):
     def get_info(self):
         return {
                 "enabled"   : self.enabled,
-                "native"    : self.is_native_keymap,
                 "owner"     : self.owner or "",
                 }
 
