@@ -160,9 +160,15 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     x11_keycodes_for_keysym = {}
     for keycode, keysyms in x11_keycodes.items():
         for keysym in keysyms:
-            x11_keycodes_for_keysym.setdefault(keysym, []).append(keycode)
+            x11_keycodes_for_keysym.setdefault(keysym, set()).add(keycode)
     def find_keycode(kc, keysym, i):
-        keycodes = x11_keycodes_for_keysym.get(keysym)
+        keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
+        if keysym in DEBUG_KEYSYMS:
+            log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
+        def rlog(v, msg):
+            if keysym in DEBUG_KEYSYMS:
+                log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), v, msg)
+            return v
         if not keycodes:
             return None
         #no other option, use it:
@@ -170,17 +176,19 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
             return keycodes[0]
         for keycode in keycodes:
             defs = x11_keycodes.get(keycode)
+            if keysym in DEBUG_KEYSYMS:
+                log.info("x11 keycode %i: %s", keycode, defs)
             assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
             if len(defs)>i and defs[i]==keysym:
-                return keycode
+                return rlog(keycode, "exact index match")
         #if possible, use the same one:
         if kc in keycodes:
-            return kc
-        return keycodes[0]
+            return rlog(kc, "using same keycode as client")
+        return rlog(keycodes[0], "using first match")
     #generate the translation map:
     trans = {}
     for keycode, defs in keycodes.items():
-        for keysym,i in tuple(defs):             #ie: ('1', 0)
+        for keysym,i in tuple(defs):             #ie: ('1', 0) or ('A', 1), etc
             x11_keycode = find_keycode(keycode, keysym, i)
             if x11_keycode:
                 trans[(keycode, keysym)] = x11_keycode
