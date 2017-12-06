@@ -171,7 +171,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         for keycode in keycodes:
             defs = x11_keycodes.get(keycode)
             assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
-            if (keysym, i) in defs:
+            if len(defs)>i and defs[i]==keysym:
                 return keycode
         #if possible, use the same one:
         if kc in keycodes:
