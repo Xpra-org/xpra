@@ -663,7 +663,7 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings):
     log("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
     return modifiers
 
-def get_modifiers_from_keycodes(xkbmap_keycodes):
+def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
     """
         Some platforms can't tell us about modifier mappings
         So we try to find matches from the defaults below:
@@ -672,7 +672,6 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
     pref = DEFAULT_MODIFIER_MEANINGS
     #keycodes are: {keycode : (keyval, name, keycode, group, level)}
     matches = {}
-    log("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes))
     log("get_modifiers_from_keycodes(%s...)", str(xkbmap_keycodes)[:160])
     all_keynames = set()
     for entry in xkbmap_keycodes:
@@ -682,18 +681,45 @@ def get_modifiers_from_keycodes(xkbmap_keycodes):
             keynames = matches.setdefault(modifier, set())
             keynames.add(keyname)
             all_keynames.add(keyname)
-    #try to add missings ones (magic!)
-    defaults = {}
-    for keyname, modifier in DEFAULT_MODIFIER_MEANINGS.items():
-        if keyname in all_keynames:
-            continue            #aleady defined
-        if modifier not in matches:
-            #define it since it is completely missing
-            defaults.setdefault(modifier, set()).add(keyname)
-        elif modifier in ["shift", "lock", "control", "mod1", "mod2"] or keyname=="ISO_Level3_Shift":
-            #these ones we always add them, even if a record for this modifier already exists
-            matches.setdefault(modifier, set()).add(keyname)
-    log("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
-    matches.update(defaults)
+    if add_default_modifiers:
+        #try to add missings ones (magic!)
+        defaults = {}
+        for keyname, modifier in DEFAULT_MODIFIER_MEANINGS.items():
+            if keyname in all_keynames:
+                continue            #aleady defined
+            if modifier not in matches:
+                #define it since it is completely missing
+                defaults.setdefault(modifier, set()).add(keyname)
+            elif modifier in ["shift", "lock", "control", "mod1", "mod2"] or keyname=="ISO_Level3_Shift":
+                #these ones we always add them, even if a record for this modifier already exists
+                matches.setdefault(modifier, set()).add(keyname)
+        log("get_modifiers_from_keycodes(...) adding defaults: %s", defaults)
+        matches.update(defaults)
     log("get_modifiers_from_keycodes(...)=%s", matches)
     return matches
+
+def map_missing_modifiers(keynames_for_mod):
+    x11_keycodes = X11Keyboard.get_keycode_mappings()
+    min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
+    free_keycodes = [x for x in range(min_keycode, max_keycode) if x not in x11_keycodes]
+    log("map_missing_modifiers(%s) min_keycode=%i max_keycode=%i, free_keycodes=%s", keynames_for_mod, min_keycode, max_keycode, free_keycodes)
+    keysyms_to_keycode = {}
+    for keycode, keysyms in x11_keycodes.items():
+        for keysym in keysyms:
+            keysyms_to_keycode.setdefault(keysym, []).append(keycode)
+    xmodmap_changes = []
+    for mod, keysyms in keynames_for_mod.items():
+        missing = []
+        for keysym in keysyms:
+            if keysym not in keysyms_to_keycode:
+                missing.append(keysym)
+        if missing:
+            log("map_missing_modifiers: no keycode found for modifier keys %s (%s)", csv(missing), mod)
+            if not free_keycodes:
+                log.warn("Warning: keymap is full, cannot add '%s' for modifier '%s'", keysym, mod)
+            else:
+                keycode = free_keycodes.pop()
+                xmodmap_changes.append(("keycode", keycode, missing))
+    if xmodmap_changes:
+        log("xmodmap_changes=%s", xmodmap_changes)
+        X11Keyboard.set_xmodmap(xmodmap_changes)

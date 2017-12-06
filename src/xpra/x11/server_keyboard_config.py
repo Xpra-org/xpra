@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-from xpra.util import csv, nonl
+from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
@@ -20,12 +20,14 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISA
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, set_keycode_translation, \
                            get_modifiers_from_meanings, get_modifiers_from_keycodes, \
-                           clear_modifiers, set_modifiers, \
+                           clear_modifiers, set_modifiers, map_missing_modifiers, \
                            clean_keyboard_state
 from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gobject_compat import import_gdk, is_gtk3
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
+
+MAP_MISSING_MODIFIERS = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 
 ALL_X11_MODIFIERS = {
                     "shift"     : 0,
@@ -270,7 +272,7 @@ class KeyboardConfig(KeyboardConfigBase):
                               self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         except:
             log.error("Error setting up new keymap", exc_info=True)
-        self.is_native_keymap = bool(self.xkbmap_print) or bool(self.xkbmap_query)
+        self.is_native_keymap = bool(self.xkbmap_query)
         log("set_keymap: xkbmap_print=%s, xkbmap_query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
         log("set_keymap(%s) is_native_keymap=%s", translate_only, self.is_native_keymap)
         try:
@@ -294,20 +296,24 @@ class KeyboardConfig(KeyboardConfigBase):
                         self.keynames_for_mod = get_modifiers_from_meanings(self.xkbmap_mod_meanings)
                     elif self.xkbmap_keycodes:
                         #non-Unix-like OS provides just keycodes for now:
-                        self.keynames_for_mod = get_modifiers_from_keycodes(self.xkbmap_keycodes)
+                        self.keynames_for_mod = get_modifiers_from_keycodes(self.xkbmap_keycodes, MAP_MISSING_MODIFIERS)
+                        if MAP_MISSING_MODIFIERS:
+                            map_missing_modifiers(self.keynames_for_mod)
                     else:
                         log.warn("Warning: client did not supply any modifier definitions")
                         self.keynames_for_mod = {}
-                    #if the client does not provide a full keymap,
-                    #try to preserve the initial server keycodes
-                    #(used by non X11 clients like osx,win32 or HTML5)
-                    preserve_server_keycodes = not self.is_native_keymap
-                    self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, preserve_server_keycodes, self.keynames_for_mod)
+                    if self.is_native_keymap:
+                        self.keycode_translation = set_all_keycodes(self.xkbmap_x11_keycodes, self.xkbmap_keycodes, False, self.keynames_for_mod)
+                    else:
+                        #if the client does not provide a full native keymap with all the keycodes,
+                        #try to preserve the initial server keycodes and translate the client keycodes:
+                        #(used by non X11 clients like osx,win32 or HTML5)
+                        self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
                     self.add_gtk_keynames()
 
                     #now set the new modifier mappings:
                     clean_keyboard_state()
-                    log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []))
+                    log("going to set modifiers, xkbmap_mod_meanings=%s, len(xkbmap_keycodes)=%s, keynames_for_mod=%s", self.xkbmap_mod_meanings, len(self.xkbmap_keycodes or []), self.keynames_for_mod)
                     if self.keynames_for_mod:
                         set_modifiers(self.keynames_for_mod)
                     log("keynames_for_mod=%s", self.keynames_for_mod)
