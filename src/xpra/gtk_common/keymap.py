@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("keyboard")
 
@@ -45,6 +46,10 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
         else:
             #gtk2:
             for keyval, keycode, group, level in entries:
+                if WIN32:
+                    if group==0:
+                        continue
+                    group -= 1
                 #assert keycode==i
                 name = gdk.keyval_name(keyval)
                 name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
