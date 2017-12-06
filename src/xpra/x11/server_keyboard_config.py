@@ -148,7 +148,6 @@ class KeyboardConfig(KeyboardConfigBase):
         #so only enable it by default for X11 clients
         parse_option("layout_groups", props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
         log("assign_keymap_options(..) modified %s", modded)
-        log.info("layout_groups=%s", self.xkbmap_layout_groups)
         return len(modded)>0
 
 
