@@ -5,9 +5,14 @@
 
 import os
 from xpra.client.notifications.notifier_base import NotifierBase, log
-#beware: this import has side-effects:
-import dbus.glib
-assert dbus.glib
+try:
+    #new recommended way of using the glib main loop:
+    from dbus.mainloop.glib import DBusGMainLoop
+    DBusGMainLoop(set_as_default=True)
+except:
+    #beware: this import has side-effects:
+    import dbus.glib
+    assert dbus.glib
 import dbus.exceptions
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
