@@ -118,7 +118,8 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
     submenu.get_current_value = get_current_value
     submenu.set_min_value_cb = set_min_value_cb
     submenu.set_value_cb = set_value_cb
-    fstitle = gtk.MenuItem("Fixed %s:" % title)
+    fstitle = gtk.MenuItem()
+    fstitle.set_label("Fixed %s:" % title)
     set_sensitive(fstitle, False)
     submenu.append(fstitle)
     submenu.menu_items = {}
@@ -163,7 +164,8 @@ def make_min_auto_menu(title, min_options, options, get_current_min_value, get_c
                     x.set_active(v==0)
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
     submenu.append(gtk.SeparatorMenuItem())
-    mstitle = gtk.MenuItem("Minimum %s:" % title)
+    mstitle = gtk.MenuItem()
+    mstitle.set_label("Minimum %s:" % title)
     set_sensitive(mstitle, False)
     submenu.append(mstitle)
     def set_min_value(item, ss):

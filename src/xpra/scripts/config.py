@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, is_CentOS, is_RedHat, is_Fedora
+from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -265,7 +265,11 @@ def read_config(conf_file):
     if not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file!", conf_file)
         return d
-    with open(conf_file, "rU") as f:
+    if PYTHON2:
+        mode = "rU"
+    else:
+        mode = "r"
+    with open(conf_file, mode) as f:
         lines = []
         no = 0
         for line in f:

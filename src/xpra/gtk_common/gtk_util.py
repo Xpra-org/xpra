@@ -41,6 +41,7 @@ def get_gtk_version_info():
 
     if not GTK_VERSION_INFO:
         V("gobject",    gobject,    "pygobject_version")
+        glib = import_glib()
 
         if is_gtk3():
             #this isn't the actual version, (only shows as "3.0")
@@ -54,26 +55,32 @@ def get_gtk_version_info():
 
             av("pygtk", "n/a")
             V("pixbuf",     Pixbuf,     "PIXBUF_VERSION")
-            try:
-                v = [getattr(gtk, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]
-                av("gtk", ".".join(str(x) for x in v))
-            except:
-                pass
+            def MAJORMICROMINOR(name, module):
+                try:
+                    v = [getattr(module, x) for x in ["MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"]]
+                    av(name, ".".join(str(x) for x in v))
+                except:
+                    pass
+            MAJORMICROMINOR("gtk",  gtk)
+            MAJORMICROMINOR("glib", glib)
         else:
             V("pygtk",      gtk,        "pygtk_version")
             V("gtk",        gtk,        "gtk_version")
             V("gdk",        gdk,        "__version__")
+            V("glib",       glib,       "glib_version")
+            V("pyglib",     glib,       "pyglib_version")
 
         #from here on, the code is the same for both GTK2 and GTK3, hooray:
-        vfn = getattr(cairo, "cairo_version_string", None)
-        if vfn:
-            av("cairo", vfn())
+        vi = getattr(cairo, "version_info", None)
+        if vi:
+            av("cairo", vi)
+        else:
+            vfn = getattr(cairo, "cairo_version_string", None)
+            if vfn:
+                av("cairo", vfn())
         vfn = getattr(pango, "version_string")
         if vfn:
             av("pango", vfn())
-        glib = import_glib()
-        V("glib",       glib,       "glib_version")
-        V("pyglib",     glib,       "pyglib_version")
     return GTK_VERSION_INFO.copy()
 
 
@@ -102,7 +109,13 @@ if is_gtk3():
         return w, h
 
     def color_parse(*args):
-        ok, v = gdk.Color.parse(*args)
+        try:
+            v = gdk.RGBA()
+            ok = v.parse(*args)
+            if not ok:
+                return None
+        except:
+            ok, v = gdk.Color.parse(*args)
         if not ok:
             return None
         return v
@@ -533,7 +546,8 @@ class TrayCheckMenuItem(gtk.CheckMenuItem):
         (or the other way around?)
     """
     def __init__(self, label, tooltip=None):
-        gtk.CheckMenuItem.__init__(self, label)
+        gtk.CheckMenuItem.__init__(self)
+        self.set_label(label)
         self.label = label
         if tooltip:
             self.set_tooltip_text(tooltip)
@@ -902,7 +916,8 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
 
 def menuitem(title, image=None, tooltip=None, cb=None):
     """ Utility method for easily creating an ImageMenuItem """
-    menu_item = gtk.ImageMenuItem(title)
+    menu_item = gtk.ImageMenuItem()
+    menu_item.set_label(title)
     if image:
         menu_item.set_image(image)
         #override gtk defaults: we *want* icons:
@@ -1056,3 +1071,16 @@ def choose_file(parent_window, title, action, action_button, callback, file_filt
         return
     filename = filenames[0]
     callback(filename)
+
+
+
+def main():
+    from xpra.platform import program_context
+    from xpra.log import enable_color
+    with program_context("GTK-Version-Info", "GTK Version Info"):
+        enable_color()
+        print("%s" % get_gtk_version_info())
+
+
+if __name__ == "__main__":
+    main()

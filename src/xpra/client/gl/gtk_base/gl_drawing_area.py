@@ -37,7 +37,8 @@ class GLDrawingArea(GLWindowBackingBase):
         da = gtk.DrawingArea()
         #da.connect('configure_event', self.on_configure_event)
         #da.connect('draw', self.on_draw)
-        da.set_double_buffered(True)
+        #double-buffering is enabled by default anyway, so this is redundant:
+        #da.set_double_buffered(True)
         da.set_size_request(*self.size)
         da.set_events(da.get_events() | POINTER_MOTION_MASK | POINTER_MOTION_HINT_MASK)
         da.show()
