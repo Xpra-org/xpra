@@ -6,42 +6,17 @@
 %{!?python2_version: %global python2_version %(%{__python2} -c "import sys; sys.stdout.write(sys.version[:3])")}
 
 #this spec file is for both Fedora and CentOS
-%define with_python3 1
-%define py2prefix python2
-%define refpy2prefix python2
-%define python2_numpy numpy
-
-%if 0%{?suse_version}
-%define python2_numpy python-numpy
-%define with_python3 0
-%define py2prefix python
-%define refpy2prefix python
-%endif
-
-
 %global srcname PyOpenGL
-%if 0%{?suse_version}
-%global shortname opengl
-%else
-%global shortname pyopengl
-%endif
 
-Name:           %{py2prefix}-%{shortname}
+Name:           python2-pyopengl
 Version:        3.1.1a1
-Release:        4.2xpra4%{?dist}
+Release:        9xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
 Source0:        https://pypi.python.org/packages/source/P/%{srcname}/%{srcname}-%{version}.tar.gz
 Source1:        https://pypi.python.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
 
-%if 0%{?fedora}0%{?suse_version}
-#those distros are handled below using a sub-package
-%else
-%define with_python3 0
-BuildRequires:  python-devel
-BuildRequires:  python-setuptools-devel
-Requires:       %{python2_numpy}
 Requires:       freeglut
 Obsoletes:      python-pyopengl < 3.1.2
 Provides:       python-pyopengl = %{version}-%{release}
@@ -55,6 +30,16 @@ Conflicts:		PyOpenGL
 Obsoletes:      PyOpenGL-accelerate < 3.1.2
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate
+
+%if 0%{?fedora}
+%define with_python3 1
+Requires:       python2-numpy
+BuildRequires:  python2-setuptools
+BuildRequires:  python2-devel
+%else
+Requires:       numpy
+BuildRequires:  python-setuptools
+BuildRequires:  python-devel
 %endif
 
 %description
@@ -67,37 +52,8 @@ PyOpenGL is inter-operable with a large number of external GUI libraries
 for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 
 
-%if 0%{?fedora}0%{?suse_version}
-%package -n     %{py2prefix}-%{shortname}
-Summary:        Python 2 bindings for OpenGL
-BuildRequires:  %{refpy2prefix}-setuptools
-BuildRequires:  %{refpy2prefix}-devel
-Requires:       %{python2_numpy}
-
-Obsoletes:      PyOpenGL < 3.1.2
-#Fedora broke our xpra repository :(
-Obsoletes:      PyOpenGL-accelerate < 3.1.2
-Provides:       PyOpenGL = %{version}-%{release}
-Provides:       PyOpenGL-accelerate = %{version}-%{release}
-Provides:       python-pyopengl = %{version}-%{release}
-%if 0%{?fedora}
-#does not exist in suse?
-Requires:       freeglut
-%endif
-
-%description -n %{py2prefix}-%{shortname}
-PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
-includes support for OpenGL v1.1, GLU, GLUT v3.7, GLE 3 and WGL 4. It also
-includes support for dozens of extensions (where supported in the underlying
-implementation).
-
-PyOpenGL is inter-operable with a large number of external GUI libraries
-for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
-%endif
-
-
-%if %{with_python3}
-%package -n     python3-%{shortname}
+%if 0%{?with_python3}
+%package -n     python3-pyopengl
 Summary:        Python 3 bindings for OpenGL
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -109,7 +65,7 @@ Obsoletes:      python3-PyOpenGL-accelerate < 3.1.2
 Provides:       python3-PyOpenGL = %{version}-%{release}
 Provides:       python3-PyOpenGL-accelerate = %{version}-%{release}
 
-%description -n python3-%{shortname}
+%description -n python3-pyopengl
 PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
 includes support for OpenGL v1.1, GLU, GLUT v3.7, GLE 3 and WGL 4. It also
 includes support for dozens of extensions (where supported in the underlying
@@ -120,29 +76,31 @@ for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 %endif
 
 
-%package -n     %{py2prefix}-%{shortname}-tk
+%package -n     python2-pyopengl-tk
 Summary:        %{srcname} Python 2.x Tk widget
 BuildArch:      noarch
-Requires:       %{py2prefix}-%{shortname} = %{version}-%{release}
+Requires:       python2-pyopengl = %{version}-%{release}
 Requires:       tkinter
 Obsoletes:      PyOpenGL-Tk < 3.1.2
 Provides:       PyOpenGL-Tk = %{version}-%{release}
+Obsoletes:      python-pyopengl-tk < 3.1.2
+Provides:       python-pyopengl-tk = %{version}-%{release}
 
-%description -n %{py2prefix}-%{shortname}-tk
+%description -n python2-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 2.x.
 
 
-%if %{with_python3}
-%package -n     python3-%{shortname}-tk
+%if 0%{?with_python3}
+%package -n     python3-pyopengl-tk
 Summary:        %{srcname} Python 3.x Tk widget
 BuildArch:      noarch
-Requires:       python3-%{shortname} = %{version}-%{release}
+Requires:       python3-pyopengl = %{version}-%{release}
 Requires:       python3-tkinter
 # These can be removed in Fedora 27
 Obsoletes:      python3-PyOpenGL-Tk < 3.1.2
 Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 
-%description -n python3-%{shortname}-tk
+%description -n python3-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
 %endif
 
@@ -154,7 +112,7 @@ Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
 	%{__python2} setup.py build
-	%if %{with_python3}
+	%if 0%{?with_python3}
 	%{__python3} setup.py build
     %endif
     popd
@@ -165,7 +123,7 @@ done
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
 	%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
-	%if %{with_python3}
+	%if 0%{?with_python3}
 	%{__python3} setup.py install -O1 --skip-build --root %{buildroot}
     %endif
     popd
@@ -173,7 +131,7 @@ done
 
 # Fix up perms on compiled object files
 find %{buildroot}%{python2_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 755 '{}' \;
-%if %{with_python3}
+%if 0%{?with_python3}
 find %{buildroot}%{python3_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 755 '{}' \;
 
 # Remove shebangs - note that weirdly these files have a space between
@@ -188,20 +146,15 @@ popd
 %endif
 
 
-%if %{with_python3}
-%files -n %{py2prefix}-%{shortname}
-%license %{srcname}-%{version}/license.txt
-%else
 %files
-%endif
 %{python2_sitelib}/%{srcname}-%{version}-py%{python2_version}.egg-info
 %{python2_sitelib}/OpenGL/
 %exclude %{python2_sitelib}/OpenGL/Tk
 %{python2_sitearch}/OpenGL_accelerate/
 %{python2_sitearch}/%{srcname}_accelerate-%{version}-py%{python2_version}.egg-info/
 
-%if %{with_python3}
-%files -n python3-%{shortname}
+%if 0%{?with_python3}
+%files -n python3-pyopengl
 %license %{srcname}-%{version}/license.txt
 %{python3_sitelib}/%{srcname}-%{version}-py%{python3_version}.egg-info
 %{python3_sitelib}/OpenGL/
@@ -211,17 +164,19 @@ popd
 %endif
 
 
-%files -n %{py2prefix}-%{shortname}-tk
+%files -n python2-pyopengl-tk
 %{python2_sitelib}/OpenGL/Tk
 
-
-%if %{with_python3}
-%files -n python3-%{shortname}-tk
+%if 0%{?with_python3}
+%files -n python3-pyopengl-tk
 %{python3_sitelib}/OpenGL/Tk
 %endif
 
 
 %changelog
+* Thu Dec 07 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-9xpra1
+- remove opensuse bitrot
+
 * Thu Jul 13 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-4.2xpra4
 - also obsolete / provide "python-opengl" package name
 
