@@ -195,7 +195,7 @@ class GlobalPerformanceStatistics(object):
                 "encoding" : {"decode_errors"   : self.decode_errors},
                 "congestion" : {
                     "avg-send-speed"        : self.avg_congestion_send_speed,
-                    "elapsed-time"          : now-self.last_congestion_time,
+                    "elapsed-time"          : int(now-self.last_congestion_time),
                                 },
             }
         #client pixels per second:
