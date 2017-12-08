@@ -759,15 +759,17 @@ class WindowSource(object):
         #auto-refresh:
         if self.client_refresh_encodings:
             #client supplied list, honour it:
-            are = self.client_refresh_encodings
+            are = tuple(x for x in self.client_refresh_encodings if x in self.common_encodings)
         else:
             #sane defaults:
             ropts = set(("webp", "png", "rgb24", "rgb32", "jpeg2000"))  #default encodings for auto-refresh
             if self.refresh_quality<100 and self.image_depth>16:
                 ropts.add("jpeg")
-            are = [x for x in PREFERED_ENCODING_ORDER if x in ropts]
-        self.auto_refresh_encodings = [x for x in are if x in self.common_encodings]
-        log("update_encoding_selection: auto_refresh_encodings=%s", self.auto_refresh_encodings)
+            are = [x for x in PREFERED_ENCODING_ORDER if x in ropts and x in self.common_encodings]
+            if not are and "jpeg" in self.common_encodings:
+                are.append("jpeg")
+        self.auto_refresh_encodings = are
+        log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s", self.client_refresh_encodings, self.auto_refresh_encodings)
         self.update_quality()
         self.update_speed()
         self.update_encoding_options()
@@ -1700,7 +1702,7 @@ class WindowSource(object):
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         self.last_auto_refresh_message = monotonic_time(), msg
-        refreshlog("auto refresh: %5s screen update (quality=%3i), %s (region=%s, refresh regions=%s)", encoding, actual_quality, msg, region, self.refresh_regions)
+        refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)", encoding, actual_quality, lossy, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
         #removes the given region from the refresh list
