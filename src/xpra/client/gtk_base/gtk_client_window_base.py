@@ -1254,6 +1254,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if (w, h) != self._size or (self._backing is None and not self._iconified):
             self._size = (w, h)
             self._set_backing_size(w, h)
+        elif self._backing and not self._iconified:
+            log("configure event: size unchanged, queueing redraw")
+            self.queue_draw(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):
         assert skip_geometry or not self.is_OR()
