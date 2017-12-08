@@ -217,7 +217,7 @@ def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
         raise Exception("failed to decompress JPEG header: %s" % get_error_str())
     assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
-    log("decompress_to_rgb: size=%ix%i, subsampling=%s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s", w, h, subsamp_str, TJCS_STR.get(cs, cs))
     cdef MemBuf membuf
     cdef unsigned char *dst_buf
     cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
