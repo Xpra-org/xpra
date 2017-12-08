@@ -26,7 +26,7 @@ grablog = Logger("grab")
 
 
 from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX, POSIX, PYTHON3
-from xpra.util import (AdHocStruct, typedict, envint, envbool,
+from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
                        MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
@@ -555,7 +555,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             except:
                 pass
         def do_set_command():
-            metalog("do_set_command() str(%s)=%s (type=%s)", command, v, type(command))
+            metalog("do_set_command() str(%s)='%s' (type=%s)", command, nonl(v), type(command))
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
         self.when_realized("command", do_set_command)
 
@@ -1250,12 +1250,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             for window in self._override_redirect_windows:
                 x, y = window.get_position()
                 window.move(x+dx, y+dy)
-        log("configure event: current size=%s, new size=%s, backing=%s, iconified=%s", self._size, (w, h), self._backing, self._iconified)
+        geomlog("configure event: current size=%s, new size=%s, backing=%s, iconified=%s", self._size, (w, h), self._backing, self._iconified)
         if (w, h) != self._size or (self._backing is None and not self._iconified):
             self._size = (w, h)
             self._set_backing_size(w, h)
         elif self._backing and not self._iconified:
-            log("configure event: size unchanged, queueing redraw")
+            geomlog("configure event: size unchanged, queueing redraw")
             self.queue_draw(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):

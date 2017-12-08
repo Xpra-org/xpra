@@ -465,7 +465,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.geometry_hints = hints
             self.apply_geometry_hints(hints)
         except:
-            geomlog("set_size_constraints%s", (size_constraints, max_window_size))
+            geomlog("set_size_constraints%s", (size_constraints, max_window_size), exc_info=True)
             geomlog.error("Error setting window hints:")
             for k,v in hints.items():
                 geomlog.error(" %s=%s", k, v)
