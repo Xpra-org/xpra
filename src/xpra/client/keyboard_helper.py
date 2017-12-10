@@ -11,7 +11,7 @@ log = Logger("keyboard")
 
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
-from xpra.util import nonl, csv, std, envbool, print_nested_dict
+from xpra.util import nonl, csv, std, envbool, print_nested_dict, repr_ellipsized
 from xpra.os_util import POSIX
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
@@ -399,9 +399,9 @@ class KeyboardHelper(object):
         self.xkbmap_mod_meanings, self.xkbmap_mod_managed, self.xkbmap_mod_pointermissing = self.keyboard.get_keymap_modifiers()
         self.update_hash()
         log("layout=%s, layouts=%s, variant=%s, variants=%s", self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
-        log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), nonl(self.xkbmap_query_struct))
-        log("keycodes=%s", str(self.xkbmap_keycodes)[:80]+"...")
-        log("x11 keycodes=%s", str(self.xkbmap_x11_keycodes)[:80]+"...")
+        log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), self.xkbmap_query_struct)
+        log("keycodes=%s", repr_ellipsized(str(self.xkbmap_keycodes)))
+        log("x11 keycodes=%s", repr_ellipsized(str(self.xkbmap_x11_keycodes)))
         log("mod managed: %s", self.xkbmap_mod_managed)
         log("mod meanings: %s", self.xkbmap_mod_meanings)
         log("mod pointermissing: %s", self.xkbmap_mod_pointermissing)
