@@ -382,6 +382,7 @@ def check_PyOpenGL_support(force_enable):
 def main():
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
+    from xpra.os_util import POSIX
     from xpra.util import print_nested_dict
     from xpra.log import enable_color
     with program_context("OpenGL-Check"):
@@ -390,6 +391,9 @@ def main():
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
             log.enable_debug()
+        if POSIX:
+            from xpra.x11.gtk_x11.gdk_display_source import init_display_source
+            init_display_source()
         force_enable = "-f" in sys.argv or "--force" in sys.argv
         from xpra.platform.gl_context import GLContext
         log("testing %s", GLContext)
