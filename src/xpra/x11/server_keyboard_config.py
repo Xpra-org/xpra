@@ -109,7 +109,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.xkbmap_x11_keycodes
         for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
-            v = getattr(self, "xkbmap_"+x.replace("-", "_"))
+            v = getattr(self, "xkbmap_%s" % x)
             if v:
                 info[x] = v
         modsinfo["nuisance"] = tuple(self.xkbmap_mod_nuisance or [])
@@ -147,7 +147,7 @@ class KeyboardConfig(KeyboardConfigBase):
         #(MS Windows clients used base-1)
         #so only enable it by default for X11 clients
         parse_option("layout_groups", props.boolget, bool(self.xkbmap_query or self.xkbmap_query_struct))
-        log("assign_keymap_options(..) modified %s", modded)
+        log.info("assign_keymap_options(..) modified %s", modded)
         return len(modded)>0
 
 
