@@ -406,15 +406,21 @@ def main():
             log.error("ERROR: %s", msg)
             errors.append(msg)
         gl_check_error = log_error
-        props = gl_context.check_support(force_enable)
+        try:
+            props = gl_context.check_support(force_enable)
+        except Exception as e:
+            props = {}
+            log("check_support", exc_info=True)
+            errors.append(e)
         log.info("")
         if len(errors)>0:
             log.info("OpenGL errors:")
             for e in errors:
                 log.info("  %s", e)
-        log.info("")
-        log.info("OpenGL properties:")
-        print_nested_dict(props)
+        if props:
+            log.info("")
+            log.info("OpenGL properties:")
+            print_nested_dict(props)
         return len(errors)
 
 
