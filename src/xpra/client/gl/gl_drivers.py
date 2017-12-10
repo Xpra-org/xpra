@@ -14,7 +14,7 @@ WHITELIST = {
 #Chipsets from these vendors will trigger warnings,
 #but OpenGL will still be enabled:
 GREYLIST = {
-    "vendor"    : ["Intel", "Humper"]
+    "vendor"    : ["Intel", ]
     }
 
 #Versions older than this will trigger warnings:
@@ -31,5 +31,6 @@ BLACKLIST = {
         ],
     "vendor"    : [
         "VMware, Inc.",
+        "Humper",
         ]
     }
