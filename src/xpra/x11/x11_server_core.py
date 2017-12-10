@@ -258,6 +258,7 @@ class X11ServerCore(GTKServerBase):
         GTKServerBase.do_cleanup(self)
         if self.fake_xinerama:
             cleanup_fakeXinerama()
+        clean_keyboard_state()
 
 
     def get_uuid(self):
