@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import WIN32
 from xpra.log import Logger
 log = Logger("keyboard")
 
@@ -41,15 +40,12 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
                 keycode = key.keycode
                 name = gdk.keyval_name(keyval)
                 name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
+                group = key.group or 0
                 if name not in ignore_keys:
-                    keycodes.append((keyval or 0, name or "", keycode or 0, key.group or 0, key.level or 0))
+                    keycodes.append((keyval or 0, name or "", keycode or 0, group, key.level or 0))
         else:
             #gtk2:
             for keyval, keycode, group, level in entries:
-                if WIN32:
-                    if group==0:
-                        continue
-                    group -= 1
                 #assert keycode==i
                 name = gdk.keyval_name(keyval)
                 name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)

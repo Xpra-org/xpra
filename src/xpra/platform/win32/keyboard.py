@@ -178,10 +178,6 @@ class Keyboard(KeyboardBase):
         if key_event.keyval==2**24-1 and key_event.keyname=="VoidSymbol":
             log("process_key_event: ignoring %s", key_event)
             return
-        #on ms windows, the groups value always seems to be in base-1
-        #but the server expects base-0, so adjust it:
-        if key_event.group>0:
-            key_event.group -= 1
         #self.modifier_mappings = None       #{'control': [(37, 'Control_L'), (105, 'Control_R')], 'mod1':
         #self.modifier_keys = {}             #{"Control_L" : "control", ...}
         #self.modifier_keycodes = {}         #{"Control_R" : [105], ...}
