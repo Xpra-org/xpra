@@ -160,31 +160,38 @@ class X11ServerCore(GTKServerBase):
 
     def query_opengl(self):
         self.opengl_props = {}
-        try:
-            import subprocess
-            from xpra.platform.paths import get_xpra_command
-            cmd = self.get_full_child_command(get_xpra_command()+["opengl"])
-            env = self.get_child_env()
-            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=False, close_fds=True)
-            out,err = proc.communicate()
-            gllog("out(xpra opengl)=%s", out)
-            gllog("err(xpra opengl)=%s", err)
-            if proc.returncode==0:
-                #parse output:
-                for line in out.splitlines():
-                    parts = line.split(b"=")
-                    if len(parts)!=2:
-                        continue
-                    k = bytestostr(parts[0].strip())
-                    v = bytestostr(parts[1].strip())
-                    self.opengl_props[k] = v
-            else:
-                self.opengl_props["error"] = str(err).strip("\n\r")
-        except Exception as e:
-            gllog("query_opengl()", exc_info=True)
-            gllog.warn("Warning: failed to query OpenGL properties")
-            gllog.warn(" %s", e)
-            self.opengl_props["error"] = str(e)
+        if os.path.exists("/sys/module/vboxguest"):
+            gllog.warn("Warning: skipped OpenGL probing, vboxguest module found")
+            self.opengl_props["error"] = "VirtualBox guest detected"
+        if os.path.exists("/sys/module/vboxvideo"):
+            gllog.warn("Warning: skipped OpenGL probing, vboxvideo module found")
+            self.opengl_props["error"] = "VirtualBox video detected"
+        else:
+            try:
+                import subprocess
+                from xpra.platform.paths import get_xpra_command
+                cmd = self.get_full_child_command(get_xpra_command()+["opengl"])
+                env = self.get_child_env()
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=False, close_fds=True)
+                out,err = proc.communicate()
+                gllog("out(xpra opengl)=%s", out)
+                gllog("err(xpra opengl)=%s", err)
+                if proc.returncode==0:
+                    #parse output:
+                    for line in out.splitlines():
+                        parts = line.split(b"=")
+                        if len(parts)!=2:
+                            continue
+                        k = bytestostr(parts[0].strip())
+                        v = bytestostr(parts[1].strip())
+                        self.opengl_props[k] = v
+                else:
+                    self.opengl_props["error"] = str(err).strip("\n\r")
+            except Exception as e:
+                gllog("query_opengl()", exc_info=True)
+                gllog.warn("Warning: failed to query OpenGL properties")
+                gllog.warn(" %s", e)
+                self.opengl_props["error"] = str(e)
         gllog("OpenGL: %s", self.opengl_props)
 
     def init_x11_atoms(self):
