@@ -1,10 +1,11 @@
-v2.2 (2017-11-26)
+v2.2 (2017-12-11)
 ======================
 	-- support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
 	-- UDP transport (experimental) with bind-udp and udp://host:port URLs
 	-- TCP sockets can be upgrade to Websockets and / or SSL, RFB
 	-- multiple bind options for all socket types supported: tcp, ssl, ws, wss, udp, rfb
 	-- bandwidth-limit option, support for very low bandwidth connections
+	-- detect network performance characteristics
 	-- "xpra sessions" browser tool for both mDNS and local sessions
 	-- support arbitrary resolutions with Xvfb (not with Xdummy yet)
 	-- new OpenGL backends, with support for GTK3 on most platforms
@@ -14,13 +15,13 @@ v2.2 (2017-11-26)
 	-- connection strings now support the standard URI format protocol://host:port/
 	-- rencode is now used by default for the initial packet
 	-- skip sending audio packets when inactive
+	-- improved support for non-us keyboard layouts with non-X11 clients
 	-- better modifier key support on Mac OS
 	-- clipboard support with GTK3
 	-- displayfd command line option
-	-- cosmetic system tray menu layout change
+	-- cosmetic system tray menu layout changes
 	-- dbus service for the system wide proxy server (stub)
 	-- move mmap file to $XDG_RUNTIME_DIR (where applicable)
-	-- detect network performance characteristics
 	-- password prompt dialog in client
 	-- fixed memory leaks
 

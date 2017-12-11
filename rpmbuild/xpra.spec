@@ -717,8 +717,31 @@ fi
 
 
 %changelog
-* Wed Jul 26 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
-- TODO
+* Mon Dec 11 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
+- support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
+- UDP transport (experimental) with bind-udp and udp://host:port URLs
+- TCP sockets can be upgrade to Websockets and / or SSL, RFB
+- multiple bind options for all socket types supported: tcp, ssl, ws, wss, udp, rfb
+- bandwidth-limit option, support for very low bandwidth connections
+- detect network performance characteristics
+- "xpra sessions" browser tool for both mDNS and local sessions
+- support arbitrary resolutions with Xvfb (not with Xdummy yet)
+- new OpenGL backends, with support for GTK3 on most platforms
+- window transparency on MS Windows
+- optimized webp encoding, supported in HTML5 client
+- uinput virtual pointer device for supporting fine grained scrolling
+- connection strings now support the standard URI format protocol://host:port/
+- rencode is now used by default for the initial packet
+- skip sending audio packets when inactive
+- improved support for non-us keyboard layouts with non-X11 clients
+- better modifier key support on Mac OS
+- clipboard support with GTK3
+- displayfd command line option
+- cosmetic system tray menu layout changes
+- dbus service for the system wide proxy server (stub)
+- move mmap file to $XDG_RUNTIME_DIR (where applicable)
+- password prompt dialog in client
+- fixed memory leaks
 
 * Mon Jul 24 2017 Antoine Martin <antoine@devloop.org.uk> 2.1-1
 - improve system wide proxy server, logind support on, socket activation
