@@ -1,3 +1,7 @@
+xpra (2.3-1) UNRELEASED; urgency=low
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Dec 2017 00:00:55 +0700
+
 xpra (2.2-1) UNRELEASED; urgency=low
   * support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
   * UDP transport (experimental) with bind-udp and udp://host:port URLs

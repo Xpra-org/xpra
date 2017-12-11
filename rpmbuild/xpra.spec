@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.2
+%define version 2.3
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -717,6 +717,9 @@ fi
 
 
 %changelog
+* Tue Dec 12 2017 Antoine Martin <antoine@devloop.org.uk> 2.3-1
+- TODO
+
 * Mon Dec 11 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
 - support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
 - UDP transport (experimental) with bind-udp and udp://host:port URLs
