@@ -10,7 +10,7 @@ from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk_common.gobject_compat import get_xid
-from xpra.gtk_common.gtk_util import display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import display_get_default, import_gdk, is_gtk3
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 
@@ -132,9 +132,24 @@ class GLXContext(object):
 
     def check_support(self, force_enable=False):
         i = self.props
-        root = get_default_root_window()
-        with self.get_paint_context(root):
+        gdk = import_gdk()
+        title = "tmp-opengl-check"
+        if is_gtk3():
+            attributes = gdk.WindowAttr()
+            attributes.width = 1
+            attributes.height = 1
+            attributes.title = title
+            attributes.window_type = gdk.WindowType.TOPLEVEL
+            attributes.wclass = gdk.WindowWindowClass.INPUT_OUTPUT
+            attributes.event_mask = 0
+            attributes_mask = gdk.WindowAttributesType.TITLE | gdk.WindowAttributesType.WMCLASS
+            tmp = gdk.Window(None, attributes, attributes_mask)
+        else:
+            tmp = gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_OUTPUT, title)
+        log("check_support(%s) using temporary window=%s", force_enable, tmp)
+        with self.get_paint_context(tmp):
             i.update(check_PyOpenGL_support(force_enable))
+        tmp.destroy()
         return i
 
     def get_bit_depth(self):
