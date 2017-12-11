@@ -275,7 +275,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             from xpra.client.gtk_base.start_new_command import getStartNewCommand
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
-            self.start_new_command = getStartNewCommand(run_command_cb, self.server_supports_sharing and self.server_supports_window_filters)
+            self.start_new_command = getStartNewCommand(run_command_cb, self.server_sharing and self.server_supports_window_filters)
         self.start_new_command.show()
         return self.start_new_command
 
