@@ -1118,7 +1118,7 @@ class WindowSource(object):
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
         delay = max(min_delay, min(max_delay, raw_delay))
-        refreshlog("update_refresh_attributes() sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
+        refreshlog("update_refresh_attributes() wid=%i, sizef=%.2f, qf=%.2f, sf=%.2f, cf=%.2f, batch delay=%i, bandwidth-limit=%s, min-delay=%i, max-delay=%i, delay=%i", self.wid, sizef, qf, sf, cf, self.batch_config.delay, bwl, min_delay, max_delay, delay)
         self.do_set_auto_refresh_delay(min_delay, delay)
         rs = AUTO_REFRESH_SPEED
         rq = AUTO_REFRESH_QUALITY
@@ -1131,7 +1131,7 @@ class WindowSource(object):
                 rq -= sqrt(1000*1000//bwl)
             rs = min(50, max(0, rs))
             rq = min(99, max(80, int(rq), self._current_quality+30))
-        refreshlog("update_refresh_attributes() refresh quality=%i%%, refresh speed=%i%%, for cv=%.2f, bwl=%i", rq, rs, cv, bwl)
+        refreshlog("update_refresh_attributes() wid=%i, refresh quality=%i%%, refresh speed=%i%%, for cv=%.2f, bwl=%i", self.wid, rq, rs, cv, bwl)
         self.refresh_quality = rq
         self.refresh_speed = rs
 
