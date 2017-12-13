@@ -25,7 +25,7 @@ fi
 start() {
   echo 'Starting service…' >&2
   xpra proxy $VIRTUAL_DISPLAY \
-    --bind=/run/xpra/system --auth=$AUTH \
+	--bind=/run/xpra/system --auth=$AUTH \
 	--bind-tcp=0.0.0.0:$PORT --tcp-auth=$TCP_AUTH --ssl-cert=/etc/xpra/ssl-cert.pem \
 	--socket-permissions=666 --debug=$DEBUG \
 	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR --pidfile=$PIDFILE
