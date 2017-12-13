@@ -28,7 +28,10 @@ try:
         python_lz4_version = python_lz4_version.encode("latin1")
     except:
         pass
-    from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
+    try:
+        from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
+    except Exception as e:
+        log("outdated version of python-lz4: %s", e)
     if hasattr(lz4, "block"):
         from lz4.block import compress, decompress
         LZ4_uncompress = decompress
