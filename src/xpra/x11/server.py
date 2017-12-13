@@ -58,6 +58,8 @@ REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 
+WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
+
 
 class DesktopState(object):
     def __init__(self, geom, resize_counter=0, shown=False):
@@ -268,7 +270,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
-                "signals"                : ("SIGINT", "SIGTERM"),
+                "signals"                : WINDOW_SIGNALS,
                 "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
                 })
         return capabilities
@@ -981,7 +983,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         assert proto in self._server_sources
         wid = packet[1]
         sig = packet[2]
-        if sig not in ("SIGINT", "SIGTERM"):
+        if sig not in WINDOW_SIGNALS:
             log.warn("Warning: window signal '%s' not handled", sig)
             return
         w = self._id_to_window.get(wid)

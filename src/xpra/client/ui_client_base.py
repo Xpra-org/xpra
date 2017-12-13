@@ -43,6 +43,7 @@ cursorlog = Logger("cursor")
 netlog = Logger("network")
 
 
+from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
 from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
@@ -75,6 +76,9 @@ except:
     LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
     def add_legacy_names(codecs):
         return codecs
+
+
+glib = import_glib()
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
@@ -3041,33 +3045,51 @@ class UIXpraClient(XpraClientBase):
                 log.error("Error: cannot execute signal listener")
                 log.error(" %s", e)
                 proc = None
-            def signal_received(*args):
-                registered = proc in self._pid_to_signalwatcher.values()
-                log("signal_received(%s) for server pid=%s, exit code=%i, registered=%s", args, pid, proc.poll(), registered)
-                if proc.returncode==0:
-                    #normal exit, which we should be able to trigger somehow
-                    return
-                sigval = proc.returncode-128
-                signame = {
-                    signal.SIGINT   : "SIGINT",
-                    signal.SIGTERM  : "SIGTERM",
-                    }.get(sigval)
-                if not signame:
-                    log.warn("Warning: unknown signal %i received for window %i, pid=%i", sigval, wid, pid)
-                    return
-                if signame not in self.server_window_signals:
-                    log.warn("Warning: signal %s cannot be forwarded to this server", signame)
-                    return
-                self.send("window-signal", wid, signame)
             if proc and proc.poll() is None:
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
-                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=signal_received)
+                proc.stdout_io_watch = None
+                def watcher_terminated(*args):
+                    #watcher process terminated, remove io watch:
+                    #this may be redundant since we also return False from signal_watcher_event
+                    log("watcher_terminated%s", args)
+                    source = proc.stdout_io_watch
+                    if source:
+                        proc.stdout_io_watch = None
+                        self.source_remove(source)
+                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
+                proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
         return 0
+
+    def signal_watcher_event(self, fd, cb_condition, proc, pid, wid):
+        log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid))
+        if cb_condition==glib.IO_HUP:
+            proc.stdout_io_watch = None
+            return False
+        if cb_condition==glib.IO_IN:
+            try:
+                signame = proc.stdout.readline().strip("\n\r")
+                log("signal_watcher_event: %s", signame)
+                if not signame:
+                    pass
+                elif signame not in self.server_window_signals:
+                    log("Warning: signal %s cannot be forwarded to this server", signame)
+                else:
+                    self.send("window-signal", wid, signame)
+            except Exception as e:
+                log("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
+                log.error("Error: processing signal watcher output for pid %i of window %i", pid, wid)
+                log.error(" %s", e)
+        if proc.poll():
+            #watcher ended, stop watching its stdout
+            proc.stdout_io_watch = None
+            return False
+        return True
+
 
     def freeze(self):
         log("freeze()")
@@ -3465,7 +3487,7 @@ class UIXpraClient(XpraClientBase):
                     try:
                         del self._signalwatcher_to_wids[signalwatcher]
                         if signalwatcher.poll() is None:
-                            signalwatcher.terminate()
+                            os.kill(signalwatcher.pid, signal.SIGKILL)
                     except:
                         log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
