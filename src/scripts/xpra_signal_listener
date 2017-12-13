@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import signal
 
-def addsignalhandler(sig):
+def addsignalhandler(signame):
+    sigval = getattr(signal, signame, None)
+    if not sigval:
+        return
     def cb(*_args):
-        #print("%i\n" % sig)
-        sys.exit(128+sig)
-    signal.signal(sig, cb)
+        sys.stdout.write("%s\n" % signame)
+        sys.stdout.flush()
+    signal.signal(sigval, cb)
 
-addsignalhandler(signal.SIGINT)
-#addsignalhandler(signal.SIGSTOP)
-addsignalhandler(signal.SIGTERM)
-signal.pause()
+WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
+for x in WINDOW_SIGNALS:
+    addsignalhandler(x)
+
+while True:
+    signal.pause()
