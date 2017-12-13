@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import time
+import signal
 import datetime
 import traceback
 import logging
@@ -281,6 +282,7 @@ class UIXpraClient(XpraClientBase):
         self.server_supports_window_filters = False
         self.server_input_devices = None
         self.server_window_states = []
+        self.server_window_signals = ()
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -1946,6 +1948,7 @@ class UIXpraClient(XpraClientBase):
         c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
+        self.server_window_signals = c.strlistget("window.signals")
         self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
         self.server_supports_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
@@ -3041,7 +3044,21 @@ class UIXpraClient(XpraClientBase):
             def signal_received(*args):
                 registered = proc in self._pid_to_signalwatcher.values()
                 log("signal_received(%s) for server pid=%s, exit code=%i, registered=%s", args, pid, proc.poll(), registered)
-                #TODO: forward to server!
+                if proc.returncode==0:
+                    #normal exit, which we should be able to trigger somehow
+                    return
+                sigval = proc.returncode-128
+                signame = {
+                    signal.SIGINT   : "SIGINT",
+                    signal.SIGTERM  : "SIGTERM",
+                    }.get(sigval)
+                if not signame:
+                    log.warn("Warning: unknown signal %i received for window %i, pid=%i", sigval, wid, pid)
+                    return
+                if signame not in self.server_window_signals:
+                    log.warn("Warning: signal %s cannot be forwarded to this server", signame)
+                    return
+                self.send("window-signal", wid, signame)
             if proc and proc.poll() is None:
                 #def add_process(self, process, name, command, ignore=False, forget=False, callback=None):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=signal_received)
@@ -3051,7 +3068,6 @@ class UIXpraClient(XpraClientBase):
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid
         return 0
-
 
     def freeze(self):
         log("freeze()")

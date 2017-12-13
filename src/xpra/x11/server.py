@@ -11,6 +11,7 @@ import gtk
 from gtk import gdk
 import glib
 import gobject
+import signal
 import math
 from collections import deque, namedtuple
 
@@ -242,6 +243,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.snc_timer = 0
 
 
+    def init_packet_handlers(self):
+        X11ServerBase.init_packet_handlers(self)
+        self._authenticated_ui_packet_handlers["window-signal"] = self._process_window_signal
+
+
     def get_server_mode(self):
         return "X11"
 
@@ -262,6 +268,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 "resize-counter"         : True,
                 "configure.skip-geometry": True,
                 "configure.pointer"      : True,
+                "signals"                : ("SIGINT", "SIGTERM"),
                 "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
                 })
         return capabilities
@@ -968,6 +975,32 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
+
+
+    def _process_window_signal(self, proto, packet):
+        assert proto in self._server_sources
+        wid = packet[1]
+        sig = packet[2]
+        if sig not in ("SIGINT", "SIGTERM"):
+            log.warn("Warning: window signal '%s' not handled", sig)
+            return
+        w = self._id_to_window.get(wid)
+        if not w:
+            log.warn("Warning: window %s not found", wid)
+            return
+        pid = w.get_property("pid")
+        log("window-signal %s for wid=%i, pid=%s", sig, wid, pid)
+        if not pid:
+            log.warn("Warning: no pid found for window %s, cannot send %s", wid, sig)
+            return
+        try:
+            sigval = getattr(signal, sig)       #ie: signal.SIGINT
+            os.kill(pid, sigval)
+            log.info("sent signal %s to pid %i for window %i", sig, pid, wid)
+        except Exception as e:
+            log("_process_window_signal(%s, %s)", proto, packet, exc_info=True)
+            log.error("Error: failed to send signal %s to pid %i for window %i", sig, pid, wid)
+            log.error(" %s", e)
 
 
     def _damage(self, window, x, y, width, height, options=None):
