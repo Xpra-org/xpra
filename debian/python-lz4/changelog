@@ -1,3 +1,9 @@
+python-lz4 (0.11.1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 13 Dec 2017 17:21:02 +1000
+
 python-lz4 (0.10.1) UNRELEASED; urgency=low
 
   * Packaging for xpra so we can rely on an up to date version
