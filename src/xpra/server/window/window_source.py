@@ -39,6 +39,7 @@ MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
+BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
@@ -1874,6 +1875,8 @@ class WindowSource(object):
         return resend
 
     def record_congestion_event(self, late_pct):
+        if not BANDWIDTH_DETECTION:
+            return
         gs = self.global_statistics
         if not gs or len(gs.bytes_sent)<5:
             return
