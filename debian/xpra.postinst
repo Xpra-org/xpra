@@ -10,4 +10,13 @@ case "${1}" in
     ;;
 esac
 
+if [ ! -f  /etc/xpra/ssl-cert.pem ]; then
+	umask=`umask`
+	umask 077
+	openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
+		-keyout "/etc/xpra/ssl-cert.pem" -out "/etc/xpra/ssl-cert.pem"
+	umask $umask
+fi
+
 #DEBHELPER#
