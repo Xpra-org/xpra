@@ -8,7 +8,7 @@
 # be parsed first.
 #
 # Each user may also define its own options in the file
-# ~/xpra/xpra.conf which will take precedence over this file.
+# ~/.xpra/xpra.conf which will take precedence over this file.
 #
 # Most options can also be overriden on the xpra command line.
 # See "xpra -h" or the man page for details.
