@@ -298,11 +298,19 @@ def has_uinput():
         assert uinput
     except (ImportError, NameError) as e:
         log = get_util_logger()
+        log("has_uinput()", exc_info=True)
         log.info("cannot access python uinput module:")
         log.info(" %s", e)
         return False
-    else:
-        return True
+    try:
+        uinput.fdopen()
+    except Exception as e:
+        log = get_util_logger()
+        log("has_uinput()", exc_info=True)
+        log.info("cannot use uinput for virtual devices:")
+        log.info(" %s", e)
+        return False
+    return True
 
 def create_uinput_pointer_device(uuid, uid):
     log = get_util_logger()
