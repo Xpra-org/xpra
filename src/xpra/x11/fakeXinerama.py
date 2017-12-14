@@ -29,7 +29,7 @@ def find_libfakeXinerama():
             if libpath:
                 return libpath
         except Exception as e:
-            log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:", e)
+            log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:")
             log.error(" %s", e)
     return find_lib("libfakeXinerama.so.1")
 
