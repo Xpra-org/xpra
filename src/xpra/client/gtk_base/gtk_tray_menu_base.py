@@ -35,6 +35,7 @@ avsynclog = Logger("menu", "av-sync")
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
+SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
@@ -366,13 +367,23 @@ class GTKTrayMenuBase(object):
         info_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
         menu.append(self.make_aboutmenuitem())
+        if SHOW_VERSION_CHECK:
+            menu.append(self.make_updatecheckmenuitem())
         menu.append(self.make_sessioninfomenuitem())
         menu.append(self.make_bugreportmenuitem())
         info_menu_item.show_all()
         return info_menu_item
 
     def make_aboutmenuitem(self):
-        return  self.menuitem("About Xpra", "xpra.png", None, about)
+        return self.menuitem("About Xpra", "xpra.png", None, about)
+
+    def make_updatecheckmenuitem(self):
+        def show_update_window(*_args):
+            from xpra.client.gtk_base.update_status import getUpdateStatusWindow
+            w = getUpdateStatusWindow()
+            w.show()
+            w.check()
+        return self.menuitem("Check for updates", "update.png", None, show_update_window)
 
     def make_sessioninfomenuitem(self):
         def get_title():

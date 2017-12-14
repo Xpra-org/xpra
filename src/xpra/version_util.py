@@ -10,7 +10,7 @@ import sys
 import os
 
 import xpra
-from xpra.util import updict
+from xpra.util import updict, nonl, envbool
 from xpra.os_util import get_linux_distribution
 from xpra.log import Logger
 log = Logger("util")
@@ -155,3 +155,56 @@ def get_platform_info():
     if platform_info_cache is None:
         platform_info_cache = do_get_platform_info()
     return platform_info_cache
+
+
+def get_version_from_url(url):
+    e = None
+    try:
+        import urllib2
+        response = urllib2.urlopen(url)
+        latest_version = response.read().rstrip("\n\r")
+        latest_version_no = tuple(int(y) for y in latest_version.split("."))
+        log("get_version_from_url(%s)=%s", url, latest_version_no)
+        return latest_version_no
+    except urllib2.HTTPError, e:
+        log("get_version_from_url(%s)", url, exc_info=True)
+        if hasattr(e, "code") and e.code==404:
+            log("no version at url=%s", url)
+        else:
+            log("Error retrieving URL '%s': %s", url, e)
+    except urllib2.URLError, e:
+        log("get_version_from_url(%s)", url, exc_info=True)
+        log("Error retrieving URL '%s': %s", url, e)
+    except Exception, e:
+        log("get_version_from_url(%s)", url, exc_info=True)
+        log("Error retrieving URL '%s': %s", url, e)
+    return None
+
+def version_update_check():
+    FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
+    CURRENT_VERSION_URL = "https://xpra.org/CURRENT_VERSION"
+    PLATFORM_FRIENDLY_NAMES = {
+        "linux2"    : "LINUX",
+        "win"       : "WINDOWS",
+        "darwin"    : "OSX",
+        }
+    from xpra import __version__ as our_version_str
+    our_version_no = tuple(int(y) for y in our_version_str.split("."))
+    platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
+    arch = get_platform_info().get("machine")
+    latest_version_no = None
+    if arch:
+        latest_version_no = get_version_from_url("%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, our_version_str))
+    if not latest_version_no:
+        latest_version_no = get_version_from_url("%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, our_version_str))
+    if not latest_version_no:
+        latest_version_no = get_version_from_url("%s?%s" % (CURRENT_VERSION_URL, our_version_str))
+    if latest_version_no is None:
+        log("version_update_check() failed to contact version server")
+        return None
+    elif latest_version_no>our_version_no or FAKE_NEW_VERSION:
+        log("version_update_check() newer version found! local version is %s and the latest version available is %s", our_version_no, latest_version_no)
+        #latest_version = ".".join([str(x) for x in latest_version_no])
+        return latest_version_no
+    else:
+        return False
