@@ -307,7 +307,16 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                         unknown.append(sockpath)
                 d = os.path.dirname(sockpath)
                 try:
-                    dotxpra.mksockdir(d)
+                    kwargs = {}
+                    if getuid()==0 and d=="/var/run/xpra" or d=="/run/xpra":
+                        #this is normally done by tmpfiles.d,
+                        #but we may need to do it ourselves in some cases:
+                        kwargs = {"mode"  : 0o775}
+                        xpra_gid = get_group_id("xpra")
+                        if xpra_gid>0:
+                            kwargs["gid"] = xpra_gid
+                    log("creating sockdir=%s, kwargs=%s" % (d, kwargs))
+                    dotxpra.mksockdir(d, **kwargs)
                 except Exception as e:
                     log.warn("Warning: failed to create socket directory '%s'", d)
                     log.warn(" %s", e)
