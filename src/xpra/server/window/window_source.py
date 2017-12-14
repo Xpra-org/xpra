@@ -1893,17 +1893,17 @@ class WindowSource(object):
             i += 1
             #find a sample more than 4 seconds earlier,
             #with at least 64KB sent in between:
-            #(means we don't calculate the send speed if we're not sending at least 16*8=128Kbps)
+            t = 0
             while i<len(gs.bytes_sent):
                 stime2, svalue2 = gs.bytes_sent[-i]
-                if stime1-stime2>10:
+                t = stime1-stime2
+                if t>10:
                     #too far back, not enough data sent in 10 seconds
                     break
-                if stime1-stime2>4 and (svalue1-svalue2)>65536:
+                if t>=4 and (svalue1-svalue2)>=65536:
                     break
                 i += 1
-            t = stime1-stime2
-            if t>=0 and t<=10:
+            if t>=4 and t<=10:
                 #calculate the send speed over that interval:
                 bcount = svalue1-svalue2
                 avg_send_speed = int(bcount*8/t)
