@@ -353,7 +353,7 @@ external_excludes = [
                     "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
                     #not used:
                     "curses", "pdb",
-                    "urllib2", "tty",
+                    "tty",
                     "cookielib", "ftplib", "httplib", "fileinput",
                     "distutils", "setuptools", "doctest"
                     ]

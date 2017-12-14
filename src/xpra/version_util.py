@@ -161,6 +161,9 @@ def get_version_from_url(url):
     e = None
     try:
         import urllib2
+    except ImportError as e:
+        return None
+    try:
         response = urllib2.urlopen(url)
         latest_version = response.read().rstrip("\n\r")
         latest_version_no = tuple(int(y) for y in latest_version.split("."))
