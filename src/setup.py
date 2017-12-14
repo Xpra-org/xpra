@@ -354,7 +354,6 @@ external_excludes = [
                     #not used:
                     "curses", "pdb",
                     "tty",
-                    "cookielib", "ftplib", "httplib", "fileinput",
                     "distutils", "setuptools", "doctest"
                     ]
 if not html5_ENABLED and not crypto_ENABLED:
@@ -1234,6 +1233,12 @@ if WIN32:
             external_includes += ["multiprocessing", "setproctitle"]
 
         external_includes += ["encodings"]
+        if client_ENABLED:
+            #for version check:
+            external_includes += ["urllib2",
+                                  "cookielib", "ftplib", "httplib", "fileinput",
+                                  ]
+
         if PYTHON3:
             #hopefully, cx_Freeze will fix this horror:
             #(we shouldn't have to deal with DLL dependencies)

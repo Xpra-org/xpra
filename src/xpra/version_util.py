@@ -162,6 +162,7 @@ def get_version_from_url(url):
     try:
         import urllib2
     except ImportError as e:
+        log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return None
     try:
         response = urllib2.urlopen(url)
@@ -185,7 +186,13 @@ def get_version_from_url(url):
 
 def version_update_check():
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
-    CURRENT_VERSION_URL = "https://xpra.org/CURRENT_VERSION"
+    from xpra.os_util import WIN32
+    if WIN32:
+        #no idea how to make it verify the certificate properly
+        #so don't bother
+        CURRENT_VERSION_URL = "http://xpra.org/CURRENT_VERSION"
+    else:
+        CURRENT_VERSION_URL = "https://xpra.org/CURRENT_VERSION"
     PLATFORM_FRIENDLY_NAMES = {
         "linux2"    : "LINUX",
         "win"       : "WINDOWS",
