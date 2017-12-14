@@ -198,17 +198,16 @@ def version_update_check():
         "win"       : "WINDOWS",
         "darwin"    : "OSX",
         }
-    from xpra import __version__ as our_version_str
-    our_version_no = tuple(int(y) for y in our_version_str.split("."))
+    our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
     latest_version_no = None
     if arch:
-        latest_version_no = get_version_from_url("%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, our_version_str))
+        latest_version_no = get_version_from_url("%s_%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, arch, XPRA_VERSION))
     if not latest_version_no:
-        latest_version_no = get_version_from_url("%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, our_version_str))
+        latest_version_no = get_version_from_url("%s_%s?%s" % (CURRENT_VERSION_URL, platform_name, XPRA_VERSION))
     if not latest_version_no:
-        latest_version_no = get_version_from_url("%s?%s" % (CURRENT_VERSION_URL, our_version_str))
+        latest_version_no = get_version_from_url("%s?%s" % (CURRENT_VERSION_URL, XPRA_VERSION))
     if latest_version_no is None:
         log("version_update_check() failed to contact version server")
         return None
