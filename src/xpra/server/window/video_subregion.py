@@ -137,6 +137,7 @@ class VideoSubregion(object):
                 "enabled"   : self.enabled,
                 "detection" : self.detection,
                 "counter"   : self.counter,
+                "auto-refresh-delay" : self.auto_refresh_delay,
                 }
         if r is None:
             return info
