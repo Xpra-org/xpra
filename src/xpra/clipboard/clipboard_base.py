@@ -492,7 +492,7 @@ class ClipboardProxy(gtk.Invisible):
         #semaphore to block the sending of the token when we change the owner ourselves:
         self._block_owner_change = False
         self._last_emit_token = 0
-        self._emit_token_timer = 0
+        self._emit_token_timer = None
         #counters for info:
         self._selection_request_events = 0
         self._selection_get_events = 0
