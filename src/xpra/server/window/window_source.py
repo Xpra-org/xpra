@@ -1856,7 +1856,7 @@ class WindowSource(object):
             elapsed_ms = int((now-ack_pending[0])*1000)
             #if this packet completed late, record congestion send speed:
             if elapsed_ms>max_send_delay and ldata>1024:
-                self.record_congestion_event((elapsed_ms*100/max_send_delay)-100)
+                self.record_congestion_event((elapsed_ms*100/max_send_delay)-100, ldata, elapsed_ms)
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
@@ -1874,35 +1874,43 @@ class WindowSource(object):
             self.idle_add(self.damage, x, y, width, height)
         return resend
 
-    def record_congestion_event(self, late_pct):
+    def record_congestion_event(self, late_pct, ldata, elapsed_ms):
         if not BANDWIDTH_DETECTION:
             return
+        #calculate the send speed for the packet we just sent:
+        last_send_speed = int(ldata*8*1000/elapsed_ms)
+        send_speed = last_send_speed
+        avg_send_speed = 0
         gs = self.global_statistics
-        if not gs or len(gs.bytes_sent)<5:
-            return
-        now = monotonic_time()
-        #find a sample more than a second old
-        #(hopefully before the congestion started)
-        for i in range(1,4):
-            stime1, svalue1 = gs.bytes_sent[-i]
-            if now-stime1>1:
-                break
-        i += 1
-        #find a sample more than 4 seconds earlier,
-        #with at least 2KB sent in between:
-        while i<len(gs.bytes_sent):
-            stime2, svalue2 = gs.bytes_sent[-i]
-            if stime1-stime2>4 and (svalue1-svalue2)>2000:
-                break
+        if gs and len(gs.bytes_sent)>=5:
+            now = monotonic_time()
+            #find a sample more than a second old
+            #(hopefully before the congestion started)
+            for i in range(1,4):
+                stime1, svalue1 = gs.bytes_sent[-i]
+                if now-stime1>1:
+                    break
             i += 1
-        #calculate the send speed over that interval:
-        bcount = svalue1-svalue2
-        t = stime1-stime2
-        if t>0 and t<10:
-            send_speed = int(bcount*8/t)
-            statslog("record_congestion_event(%i) %iKbps", late_pct, send_speed/1024)
-            gs.congestion_send_speed.append((now, late_pct, send_speed))
-            gs.last_congestion_time = now
+            #find a sample more than 4 seconds earlier,
+            #with at least 64KB sent in between:
+            #(means we don't calculate the send speed if we're not sending at least 16*8=128Kbps)
+            while i<len(gs.bytes_sent):
+                stime2, svalue2 = gs.bytes_sent[-i]
+                if stime1-stime2>10:
+                    #too far back, not enough data sent in 10 seconds
+                    break
+                if stime1-stime2>4 and (svalue1-svalue2)>65536:
+                    break
+                i += 1
+            t = stime1-stime2
+            if t>=0 and t<=10:
+                #calculate the send speed over that interval:
+                bcount = svalue1-svalue2
+                avg_send_speed = int(bcount*8/t)
+                send_speed = (avg_send_speed + last_send_speed)//2
+        statslog("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        gs.congestion_send_speed.append((now, late_pct, send_speed))
+        gs.last_congestion_time = now
 
     def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
         """
