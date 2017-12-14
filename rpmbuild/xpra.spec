@@ -178,9 +178,13 @@ BuildRequires:		gcc-c++
 BuildRequires:		python2-Cython
 BuildRequires:		python2
 %if 0%{?fedora}
+Requires:			libwebp
+BuildRequires:		libwebp-devel
 BuildRequires:		python2-setuptools
 %endif
 %if 0%{?el7}
+Requires:			libwebp-xpra
+BuildRequires:		libwebp-xpra-devel
 BuildRequires:		python-setuptools
 %endif
 BuildRequires:		libxkbfile-devel
@@ -289,6 +293,14 @@ Requires:			python3-netifaces
 Requires:			python3-gobject
 Recommends:			dbus-python
 Recommends:			python3-avahi
+%if 0%{?fedora}
+Requires:			libwebp
+BuildRequires:		libwebp-devel
+%endif
+%if 0%{?el7}
+Requires:			libwebp-xpra
+BuildRequires:		libwebp-xpra-devel
+%endif
 BuildRequires:		libyuv-devel
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
