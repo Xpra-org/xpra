@@ -10,7 +10,7 @@ import sys
 import os
 
 import xpra
-from xpra.util import updict, nonl, envbool
+from xpra.util import updict, envbool
 from xpra.os_util import get_linux_distribution
 from xpra.log import Logger
 log = Logger("util")
@@ -170,13 +170,13 @@ def get_version_from_url(url):
         latest_version_no = tuple(int(y) for y in latest_version.split("."))
         log("get_version_from_url(%s)=%s", url, latest_version_no)
         return latest_version_no
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         log("get_version_from_url(%s)", url, exc_info=True)
         if hasattr(e, "code") and e.code==404:
             log("no version at url=%s", url)
         else:
             log("Error retrieving URL '%s': %s", url, e)
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         log("get_version_from_url(%s)", url, exc_info=True)
         log("Error retrieving URL '%s': %s", url, e)
     except Exception, e:
