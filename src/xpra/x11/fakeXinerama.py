@@ -8,7 +8,7 @@
 import os
 
 from xpra.log import Logger
-log = Logger("x11", "server", "x11")
+log = Logger("x11", "server", "util")
 
 from xpra.util import prettify_plug_name
 from xpra.os_util import find_lib, find_lib_ldconfig, LINUX
@@ -29,6 +29,7 @@ def find_libfakeXinerama():
             if libpath:
                 return libpath
         except Exception as e:
+            log("find_libfakeXinerama()", exc_info=True)
             log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:")
             log.error(" %s", e)
     return find_lib("libfakeXinerama.so.1")
