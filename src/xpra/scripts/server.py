@@ -18,7 +18,7 @@ import traceback
 
 from xpra.scripts.main import info, warn, error, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, WIN32, OSX
+from xpra.os_util import SIGNAMES, POSIX, PYTHON3, FDChangeCaptureContext, close_fds, get_ssh_port, get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid, get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand, WIN32, OSX
 from xpra.util import envbool, csv
 from xpra.platform.dotxpra import DotXpra
 
@@ -569,7 +569,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
         if opts.daemon:
             from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
-            log_filename0 = select_log_file(log_dir, opts.log_file, display_name)
+            log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name), username, uid, gid)
             logfd = open_log_file(log_filename0)
             if ROOT and (uid>0 or gid>0):
                 try:
@@ -777,7 +777,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 fn(*args)
             except:
                 pass
-        log_filename1 = select_log_file(log_dir, opts.log_file, display_name)
+        log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name), username, uid, gid)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             os.rename(log_filename0, log_filename1)
