@@ -109,6 +109,8 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
+TRAY_DELAY = envint("XPRA_TRAY_DELAY", 1000)
+
 WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 
@@ -446,7 +448,7 @@ class UIXpraClient(XpraClientBase):
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
                 #show shortly after the main loop starts running:
-                self.timeout_add(1000, setup_xpra_tray)
+                self.timeout_add(TRAY_DELAY, setup_xpra_tray)
 
         notifylog("client_supports_notifications=%s", self.client_supports_notifications)
         if self.client_supports_notifications:
