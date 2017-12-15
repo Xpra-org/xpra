@@ -179,7 +179,7 @@ def get_version_from_url(url):
     except urllib2.URLError as e:
         log("get_version_from_url(%s)", url, exc_info=True)
         log("Error retrieving URL '%s': %s", url, e)
-    except Exception, e:
+    except Exception as e:
         log("get_version_from_url(%s)", url, exc_info=True)
         log("Error retrieving URL '%s': %s", url, e)
     return None
