@@ -445,8 +445,8 @@ class UIXpraClient(XpraClientBase):
             if opts.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
-                #show when the main loop is running:
-                self.idle_add(setup_xpra_tray)
+                #show shortly after the main loop starts running:
+                self.timeout_add(1000, setup_xpra_tray)
 
         notifylog("client_supports_notifications=%s", self.client_supports_notifications)
         if self.client_supports_notifications:
