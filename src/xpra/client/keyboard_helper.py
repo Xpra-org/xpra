@@ -19,12 +19,7 @@ LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 class KeyboardHelper(object):
 
-    def __init__(self,
-                 idle_add, timeout_add, source_remove,
-                 net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
-        self.idle_add = idle_add
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
+    def __init__(self, net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
         self.reset_state()
         self.send = net_send
         self.locked = False
@@ -72,12 +67,10 @@ class KeyboardHelper(object):
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.keys_pressed = {}
         self.keyboard_sync = False
         self.key_shortcuts = {}
 
     def cleanup(self):
-        self.clear_repeat()
         self.reset_state()
         def nosend(*args):
             pass
@@ -297,65 +290,6 @@ class KeyboardHelper(object):
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))
         self.send(*packet)
-        log("send_key_action keyboard-sync=%s, key-repeat-delay=%i, key-repeat-interval=%i", self.keyboard_sync, self.key_repeat_delay, self.key_repeat_interval)
-        if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(wid, key_event)
-
-    def _key_repeat(self, wid, key_event):
-        """ this method takes care of scheduling the sending of
-            "key-repeat" packets to the server so that it can
-            maintain a consistent keyboard state.
-        """
-        keyname, pressed, keyval, keycode = key_event.keyname, key_event.pressed, key_event.keyval, key_event.keycode
-        #we keep track of which keys are still pressed in a dict,
-        if keycode<0:
-            key = keyname
-        else:
-            key = keycode
-        if not pressed and key in self.keys_pressed:
-            """ stop the timer and clear this keycode: """
-            timer = self.keys_pressed[key]
-            log("key repeat: clearing timer %s for %s / %s", timer, keyname, keycode)
-            self.source_remove(timer)
-            del self.keys_pressed[key]
-        elif pressed and key not in self.keys_pressed:
-            """ we must send packets to the server regularly for as long as the key is still pressed: """
-            #TODO: we can have latency measurements (see ping).. use them?
-            LATENCY_JITTER = 100
-            MIN_DELAY = 5
-            delay = max(self.key_repeat_delay-LATENCY_JITTER, MIN_DELAY)
-            interval = max(self.key_repeat_interval-LATENCY_JITTER, MIN_DELAY)
-            log("scheduling key repeat for %s: delay=%s, interval=%s (from %s and %s)", keyname, delay, interval, self.key_repeat_delay, self.key_repeat_interval)
-            def send_key_repeat():
-                modifiers = self.get_current_modifiers()
-                self.send_now("key-repeat", wid, keyname, keyval, keycode, modifiers)
-            def continue_key_repeat(*_args):
-                #if the key is still pressed (redundant check?)
-                #confirm it and continue, otherwise stop
-                log("continue_key_repeat for %s / %s", keyname, keycode)
-                if key in self.keys_pressed:
-                    send_key_repeat()
-                    return  True
-                else:
-                    del self.keys_pressed[key]
-                    return  False
-            def start_key_repeat(*_args):
-                #if the key is still pressed (redundant check?)
-                #confirm it and start repeat:
-                log("start_key_repeat for %s / %s", keyname, keycode)
-                if key in self.keys_pressed:
-                    send_key_repeat()
-                    self.keys_pressed[key] = self.timeout_add(interval, continue_key_repeat)
-                else:
-                    del self.keys_pressed[key]
-                return False   #never run this timer again
-            log("key repeat: starting timer for %s / %s with delay %s and interval %s", keyname, keycode, delay, interval)
-            self.keys_pressed[key] = self.timeout_add(delay, start_key_repeat)
-
-    def clear_repeat(self):
-        for timer in self.keys_pressed.values():
-            self.source_remove(timer)
-        self.keys_pressed = {}
 
 
     def get_layout_spec(self):
