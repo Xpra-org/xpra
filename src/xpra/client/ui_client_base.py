@@ -1278,8 +1278,6 @@ class UIXpraClient(XpraClientBase):
     def update_focus(self, wid, gotit):
         focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
         if gotit and self._focused is not wid:
-            if self.keyboard_helper:
-                self.keyboard_helper.clear_repeat()
             self.send_focus(wid)
             self._focused = wid
         if not gotit:
@@ -1293,8 +1291,6 @@ class UIXpraClient(XpraClientBase):
                 # their parent receives the focus-out event)
                 focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
                 self.send_focus(wid)
-            if self.keyboard_helper:
-                self.keyboard_helper.clear_repeat()
             if self._focused:
                 #send the lost-focus via a timer and re-check it
                 #(this allows a new window to gain focus without having to do a reset_focus)
@@ -3465,8 +3461,6 @@ class UIXpraClient(XpraClientBase):
             self.destroy_window(wid, window)
         if len(self._id_to_window)==0:
             windowlog("last window gone, clearing key repeat")
-            if self.keyboard_helper:
-                self.keyboard_helper.clear_repeat()
 
     def destroy_window(self, wid, window):
         windowlog("destroy_window(%s, %s)", wid, window)
