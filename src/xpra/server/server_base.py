@@ -3040,14 +3040,15 @@ class ServerBase(ServerCore):
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
-            def _key_repeat_timeout(when):
-                self.key_repeat_timer = None
-                now = monotonic_time()
-                keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
-                self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
-                self.keys_timedout[keycode] = now
             now = monotonic_time()
-            self.key_repeat_timer = self.timeout_add(delay_ms, _key_repeat_timeout, now)
+            self.key_repeat_timer = self.timeout_add(0, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers)
+
+    def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers):
+        self.key_repeat_timer = None
+        now = monotonic_time()
+        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
+        self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
+        self.keys_timedout[keycode] = now
 
     def _process_key_repeat(self, proto, packet):
         if self.readonly:
