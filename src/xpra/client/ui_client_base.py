@@ -437,7 +437,8 @@ class UIXpraClient(XpraClientBase):
 
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
-            def setup_xpra_tray():
+            def setup_xpra_tray(*args):
+                traylog("setup_xpra_tray%s", args)
                 self.tray = self.setup_xpra_tray(opts.tray_icon or "xpra")
                 if self.tray:
                     self.tray.show()
