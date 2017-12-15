@@ -903,7 +903,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             elif self.client_supports_opengl:
                 opengllog("OpenGL supported with %s, but not enabled", driver_info)
         except ImportError as e:
-            err("OpenGL support is missing:", e)
+            err("OpenGL accelerated rendering is not available:", e)
         except RuntimeError as e:
             err("OpenGL support could not be enabled on this hardware:", e)
         except Exception as e:
