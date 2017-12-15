@@ -171,7 +171,7 @@ def main():
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
     log.enable_debug()
-    s = GTKStatusIconTray(None, None, "test", "xpra.png", None, None, None, gtk.main_quit)
+    s = GTKStatusIconTray(None, None, None, "test", "xpra.png", None, None, None, gtk.main_quit)
     glib.timeout_add(1000*2, s.set_blinking, True)
     glib.timeout_add(1000*5, s.set_blinking, False)
     glib.timeout_add(1000*30, gtk.main_quit)
