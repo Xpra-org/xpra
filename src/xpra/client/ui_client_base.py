@@ -433,7 +433,9 @@ class UIXpraClient(XpraClientBase):
                     return None
                 return v
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
-            self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
+            self.keyboard_helper = self.keyboard_helper_class(
+                self.idle_add, self.timeout_add, self.source_remove,
+                self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
 
         if opts.tray:
             self.menu_helper = self.make_tray_menu_helper()
@@ -1449,9 +1451,8 @@ class UIXpraClient(XpraClientBase):
         self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
 
         if self.keyboard_helper:
-            key_repeat = self.keyboard_helper.keyboard.get_keyboard_repeat()
-            if key_repeat:
-                delay_ms,interval_ms = key_repeat
+            delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
+            if delay_ms>0 and interval_ms>0:
                 capabilities["key_repeat"] = (delay_ms,interval_ms)
             else:
                 #cannot do keyboard_sync without a key repeat value!

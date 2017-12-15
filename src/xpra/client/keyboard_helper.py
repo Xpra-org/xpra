@@ -19,7 +19,12 @@ LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 class KeyboardHelper(object):
 
-    def __init__(self, net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
+    def __init__(self,
+                 idle_add, timeout_add, source_remove,
+                 net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
+        self.idle_add = idle_add
+        self.timeout_add = timeout_add
+        self.source_remove = source_remove
         self.reset_state()
         self.send = net_send
         self.locked = False
@@ -37,6 +42,9 @@ class KeyboardHelper(object):
         from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
         log("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
+        key_repeat = self.keyboard.get_keyboard_repeat()
+        if key_repeat:
+            self.key_repeat_delay, self.key_repeat_interval = key_repeat
 
     def mask_to_names(self, mask):
         return self.keyboard.mask_to_names(mask)
@@ -289,15 +297,16 @@ class KeyboardHelper(object):
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))
         self.send(*packet)
+        log("send_key_action keyboard-sync=%s, key-repeat-delay=%i, key-repeat-interval=%i", self.keyboard_sync, self.key_repeat_delay, self.key_repeat_interval)
         if self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(key_event)
+            self._key_repeat(wid, key_event)
 
-    def _key_repeat(self, key_event):
+    def _key_repeat(self, wid, key_event):
         """ this method takes care of scheduling the sending of
             "key-repeat" packets to the server so that it can
             maintain a consistent keyboard state.
         """
-        wid, keyname, pressed, _, keyval, _, keycode, _ = key_event
+        keyname, pressed, keyval, keycode = key_event.keyname, key_event.pressed, key_event.keyval, key_event.keycode
         #we keep track of which keys are still pressed in a dict,
         if keycode<0:
             key = keyname
@@ -339,7 +348,7 @@ class KeyboardHelper(object):
                     self.keys_pressed[key] = self.timeout_add(interval, continue_key_repeat)
                 else:
                     del self.keys_pressed[key]
-                return  False   #never run this timer again
+                return False   #never run this timer again
             log("key repeat: starting timer for %s / %s with delay %s and interval %s", keyname, keycode, delay, interval)
             self.keys_pressed[key] = self.timeout_add(delay, start_key_repeat)
 
