@@ -123,7 +123,7 @@ def main():
     item = gtk.MenuItem("Some Menu Item Here")
     menu.append(item)
     menu.show_all()
-    a = AppindicatorTray(menu, "test", "xpra.png", None, None, None, gtk.main_quit)
+    a = AppindicatorTray(None, None, menu, "test", "xpra.png", None, None, None, gtk.main_quit)
     a.show()
     glib.timeout_add(1000*10, gtk.main_quit)
     gtk.main()
