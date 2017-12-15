@@ -889,10 +889,11 @@ class UIXpraClient(XpraClientBase):
             menu = self.menu_helper.build()
         tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
-        def reset_tray_title():
-            if self.tray:
-                self.tray.set_tooltip(self.get_tray_title())
-        return self.after_handshake(reset_tray_title)
+        if tray:
+            def reset_tray_title():
+                tray.set_tooltip(self.get_tray_title())
+            self.after_handshake(reset_tray_title)
+        return tray
 
     def get_tray_title(self):
         t = []
