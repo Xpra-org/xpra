@@ -305,6 +305,12 @@ PRESET_NAME_TO_CONSTANT = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
 
+CONTENT_TYPE_PRESET = {
+    "picture"   : WEBP_PRESET_PICTURE,
+    "text"      : WEBP_PRESET_TEXT,
+    "browser"   : WEBP_PRESET_TEXT,
+    }
+
 IMAGE_HINT = {
               WEBP_HINT_DEFAULT     : "default",
               WEBP_HINT_PICTURE     : "picture",
@@ -314,6 +320,10 @@ IMAGE_HINT = {
 HINT_NAME_TO_CONSTANT = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
+
+CONTENT_TYPE_HINT = {
+    "picture"   : WEBP_HINT_PICTURE,
+    }
 
 cdef WebPImageHint DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "graph").lower(), WEBP_HINT_GRAPH)
 cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "text").lower(), WEBP_PRESET_TEXT)
@@ -380,7 +390,7 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
-def compress(image, int quality=50, int speed=50, supports_alpha=False):
+def compress(image, int quality=50, int speed=50, supports_alpha=False, content_type=""):
     pixel_format = image.get_pixel_format()
     if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA"):
         raise Exception("unsupported pixel format %s" % pixel_format)
@@ -388,6 +398,8 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False):
     cdef unsigned int height = image.get_height()
     cdef unsigned int stride = image.get_rowstride()
     cdef unsigned int Bpp = len(pixel_format)
+    if width>WEBP_MAX_DIMENSION or height>WEBP_MAX_DIMENSION:
+        raise Exception("this image is too big for webp: %ix%i" % (width, height))
     pixels = image.get_pixels()
 
     cdef uint8_t *pic_buf
@@ -396,12 +408,12 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False):
     cdef WebPPreset preset = DEFAULT_PRESET
     if width*height<8192:
         preset = PRESET_SMALL
-    if width>WEBP_MAX_DIMENSION or height>WEBP_MAX_DIMENSION:
-        raise Exception("this image is too big for webp: %ix%i" % (width, height))
-
+    preset = CONTENT_TYPE_PRESET.get(content_type, preset)
+    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
+    
     cdef int ret = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
     assert ret==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), ret)
-    log("webp.compress(%s, %i, %i, %s) buf=%#x", image, width, height, supports_alpha, <uintptr_t> pic_buf)
+    log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> pic_buf)
     cdef int size = stride * height
     assert pic_buf_len>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, pic_buf_len)
 
@@ -449,13 +461,13 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False):
         config.autofilter = 0
     config._pass = MAX(1, MIN(10, (100-speed)//10))
     config.preprocessing = int(speed<50)
-    config.image_hint = DEFAULT_IMAGE_HINT
+    config.image_hint = image_hint
     config.thread_level = WEBP_THREADING
     config.partitions = 3
     config.partition_limit = MAX(0, MIN(100, 100-quality))
 
-    log("webp.compress config: lossless=%s, quality=%s, method=%s, alpha=%s,%s,%s", config.lossless, config.quality, config.method,
-                    config.alpha_compression, config.alpha_filtering, config.alpha_quality)
+    log("webp.compress config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i, preset=%-8s, image hint=%s", config.lossless, config.quality, config.method,
+                    config.alpha_compression, config.alpha_filtering, config.alpha_quality, PRESETS.get(preset, preset), IMAGE_HINT.get(image_hint, image_hint))
     ret = WebPValidateConfig(&config)
     if not ret:
         info = get_config_info(&config)

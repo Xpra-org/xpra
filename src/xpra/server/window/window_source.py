@@ -58,6 +58,7 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 from xpra.os_util import BytesIOClass, memoryview_to_bytes
+from xpra.server.window.content_guesser import guess_content_type
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.simple_stats import get_list_stats
@@ -170,7 +171,11 @@ class WindowSource(object):
         self.scaling = None
         self.maximized = False          #set by the client!
         self.iconic = False
+        self.content_type = ""
         self.window_signal_handlers = []
+        sid = window.connect("notify::class-instance", self._class_changed)
+        self.window_signal_handlers.append(sid)
+        self._class_changed(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
             sid = window.connect("notify::iconic", self._iconic_changed)
@@ -404,6 +409,7 @@ class WindowSource(object):
         info.update({
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
+                "content-type"          : self.content_type,
                 "bandwidth-limit"       : self.bandwidth_limit,
                 "av-sync"               : {
                                            "enabled"    : self.av_sync,
@@ -666,6 +672,11 @@ class WindowSource(object):
             self.go_idle()
         else:
             self.no_idle()
+
+    def _class_changed(self, window, *_args):
+        self.content_type = guess_content_type(window)
+        log("class-changed(%s, %s) content-type=%s", window, _args, self.content_type)
+
 
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
@@ -2128,7 +2139,7 @@ class WindowSource(object):
     def webp_encode(self, coding, image, options):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return webp_encode(image, self.rgb_formats, self.supports_transparency, q, s)
+        return webp_encode(image, self.rgb_formats, self.supports_transparency, q, s, self.content_type)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed

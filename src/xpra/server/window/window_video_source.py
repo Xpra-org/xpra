@@ -376,9 +376,10 @@ class WindowVideoSource(WindowSource):
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
+        video_hint = self.content_type=="video"
 
         rgbmax = self._rgb_auto_threshold
-        videomin = min(640*480, cww*cwh)
+        videomin = min(640*480, cww*cwh) // (1+video_hint*2)
         sr = self.video_subregion.rectangle
         if sr:
             videomin = min(videomin, sr.width * sr.height)
@@ -411,7 +412,6 @@ class WindowVideoSource(WindowSource):
         lim = now-4
         pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
         if pixels_last_4secs<3*videomin:
-            #less than 5 full frames in last 2 seconds
             return nonvideo(quality+30, "not enough frames")
         lim = now-1
         pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
@@ -423,7 +423,8 @@ class WindowVideoSource(WindowSource):
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
                    1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
                    max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                   1.0 / (int(bool(self._video_encoder)) + 1)   #if we have a video encoder already, make it more likely we'll use it:
+                   1.0 / (int(bool(self._video_encoder)) + 1),  #if we have a video encoder already, make it more likely we'll use it:
+                   (1-video_hint/2.0),                          #video hint lowers the threshold
                    )
         max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
         if pixel_count<=max_nvp:
@@ -614,9 +615,14 @@ class WindowVideoSource(WindowSource):
         if not vr:
             return False
         events_count = self.statistics.damage_events_count - self.video_subregion.set_at
-        if events_count<MIN_VIDEO_EVENTS:
+        min_video_events = MIN_VIDEO_EVENTS
+        min_video_fps = MIN_VIDEO_FPS
+        if self.content_type=="video":
+            min_video_events //= 2
+            min_video_fps //= 2
+        if events_count<min_video_events:
             return False
-        if self.video_subregion.fps<MIN_VIDEO_FPS:
+        if self.video_subregion.fps<min_video_fps:
             return False
         return True
 
@@ -1685,7 +1691,7 @@ class WindowVideoSource(WindowSource):
 
         #don't download the pixels if we have a GPU buffer,
         #since that means we're likely to be able to compress on the GPU too with NVENC:
-        if self.supports_scrolling and image.has_pixels():
+        if self.supports_scrolling and image.has_pixels() and self.content_type!="video":
             scroll_data = self.scroll_data
             if self.b_frame_flush_timer and scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)

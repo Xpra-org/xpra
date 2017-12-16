@@ -31,7 +31,7 @@ def warn_encoding_once(key, message):
         encoding_warnings.add(key)
 
 
-def webp_encode(image, rgb_formats, supports_transparency, quality, speed):
+def webp_encode(image, rgb_formats, supports_transparency, quality, speed, content_type):
     pixel_format = image.get_pixel_format()
     #log("webp_encode%s", (coding, image, rgb_formats, supports_transparency, quality, speed))
     if pixel_format not in rgb_formats:
@@ -45,7 +45,7 @@ def webp_encode(image, rgb_formats, supports_transparency, quality, speed):
     #log("WEBP_PILLOW=%s, enc_webp=%s, stride=%s, pixel_format=%s", WEBP_PILLOW, enc_webp, stride, pixel_format)
     if not WEBP_PILLOW and enc_webp and stride>0 and stride%4==0 and pixel_format in ("BGRA", "BGRX", "RGBA", "RGBX"):
         #prefer Cython module:
-        cdata, client_options = enc_webp.compress(image, quality, speed, supports_transparency)
+        cdata, client_options = enc_webp.compress(image, quality, speed, supports_transparency, content_type)
         return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
     #fallback using Pillow:
     enc_pillow = get_codec("enc_pillow")
