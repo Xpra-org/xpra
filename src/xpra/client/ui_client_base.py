@@ -3189,7 +3189,7 @@ class UIXpraClient(XpraClientBase):
                     backing._csc_decoder = csc_decoder
                     backing._decoder_lock = decoder_lock
                 if current_icon:
-                    window.update_icon(*current_icon)
+                    window.update_icon(current_icon)
             finally:
                 if decoder_lock:
                     decoder_lock.release()
@@ -3472,7 +3472,7 @@ class UIXpraClient(XpraClientBase):
         if ICON_OVERLAY:
             xpra_icon_filename = get_icon_filename("xpra")
             xpra_icon = PIL.Image.open(xpra_icon_filename)
-            half = xpra_icon.resize((width//2, height//2))
+            half = xpra_icon.resize((width//2, height//2), PIL.Image.ANTIALIAS)
             xpra_corner = PIL.Image.new("RGBA", (width, height))
             xpra_corner.paste(half, (width//2, height//2, width, height))
             composite = PIL.Image.alpha_composite(img, xpra_corner)

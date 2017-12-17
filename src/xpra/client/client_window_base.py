@@ -151,7 +151,7 @@ class ClientWindowBase(ClientWidgetBase):
         current_icon = self._current_icon
         iconlog("reset_icon() current icon=%s", current_icon)
         if current_icon:
-            self.update_icon(*current_icon)
+            self.update_icon(current_icon)
 
     def update_icon(self, img):
         raise NotImplementedError("override me!")
