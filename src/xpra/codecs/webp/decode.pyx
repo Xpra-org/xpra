@@ -208,8 +208,12 @@ def decompress(data, has_alpha, rgb_format=None):
             rgb_format = "BGRA"
         config.output.colorspace = MODE_bgrA
     else:
-        if len(rgb_format or "")!=3:
-            #use default if the format given is not valid:
+        rgb_format = (rgb_format or "").replace("A", "").replace("X", "")
+        #the webp encoder takes BGRA input,
+        #so we have to swap the colours in the output to match:
+        if rgb_format=="RGB":
+            rgb_format = "BGR"
+        else:
             rgb_format = "RGB"
         config.output.colorspace = MODE_RGB
     cdef size_t size = stride * config.input.height

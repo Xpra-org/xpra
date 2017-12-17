@@ -33,8 +33,8 @@ def warn_encoding_once(key, message):
 
 def webp_encode(image, rgb_formats, supports_transparency, quality, speed, content_type):
     pixel_format = image.get_pixel_format()
-    #log("webp_encode%s", (coding, image, rgb_formats, supports_transparency, quality, speed))
-    if pixel_format not in rgb_formats:
+    #the native webp encoder only takes this pixel format as input:
+    if pixel_format not in ("BGRA", "BGRX", "RGBX", "RGBA"):
         wanted_formats = [x for x in rgb_formats if x in ("BGRA", "BGRX", "RGBA", "RGBX")]
         if not rgb_reformat(image, wanted_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))

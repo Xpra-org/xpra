@@ -256,13 +256,27 @@ class WindowBackingBase(object):
 
         raw_data = img.tobytes("raw", img.mode)
         paint_options = typedict(options)
-        rgb_format = img.mode
-        if rgb_format=="RGB":
+        if img.mode=="RGB":
             #PIL flattens the data to a continuous straightforward RGB format:
             rowstride = width*3
+            rgb_format = options.strget("rgb_format", "")
+            rgb_format = rgb_format.replace("A", "").replace("X", "")
+            #the webp encoder only takes BGRX input,
+            #so we have to swap things around if it was fed "RGB":
+            if rgb_format=="RGB":
+                rgb_format = "BGR"
+            else:
+                rgb_format = "RGB"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        elif rgb_format=="RGBA":
+        elif img.mode=="RGBA":
             rowstride = width*4
+            rgb_format = options.strget("rgb_format", "")
+            #the webp encoder only takes BGRX input,
+            #so we have to swap things around if it was fed "RGBA":
+            if rgb_format=="RGBA":
+                rgb_format = "BGRA"
+            else:
+                rgb_format = "RGBA"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
         else:
             raise Exception("invalid image mode: %s" % img.mode)
@@ -270,7 +284,7 @@ class WindowBackingBase(object):
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        if not self.webp_decoder or WEBP_PILLOW:
+        if not self.webp_decoder or WEBP_PILLOW or ("BGRX" not in self.RGB_MODES):
             #if webp is enabled, then Pillow should be able to take care of it:
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
         has_alpha = options.boolget("has_alpha", False)

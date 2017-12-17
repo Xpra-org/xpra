@@ -410,7 +410,7 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
         preset = PRESET_SMALL
     preset = CONTENT_TYPE_PRESET.get(content_type, preset)
     cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
-    
+
     cdef int ret = object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)
     assert ret==0, "failed to get buffer from pixel object: %s (returned %s)" % (type(pixels), ret)
     log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> pic_buf)
