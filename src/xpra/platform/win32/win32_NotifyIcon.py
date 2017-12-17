@@ -369,7 +369,7 @@ class win32NotifyIcon(object):
         mask = 0
         try:
             from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
-            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", "RGBA")))
+            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", img_format)))
             bitmap = rgba_to_bitmap(bgra, w, h)
             mask = CreateBitmap(w, h, 1, 1, None)
 
