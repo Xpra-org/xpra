@@ -153,24 +153,24 @@ class ClientWindowBase(ClientWidgetBase):
         if current_icon:
             self.update_icon(*current_icon)
 
-    def update_icon(self, width, height, coding, data):
-        raise Exception("override me!")
+    def update_icon(self, img):
+        raise NotImplementedError("override me!")
 
     def is_realized(self):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def apply_transient_for(self, wid):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def paint_spinner(self, context, area):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
     def _pointer_modifiers(self, event):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
 
     def xget_u32_property(self, target, name):
-        raise Exception("override me!")
+        raise NotImplementedError("override me!")
 
 
     def is_OR(self):

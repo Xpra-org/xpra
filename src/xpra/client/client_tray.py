@@ -127,7 +127,7 @@ class ClientTray(ClientWidgetBase):
     def update_metadata(self, metadata):
         log("%s.update_metadata(%s)", self, metadata)
 
-    def update_icon(self, width, height, coding, data):
+    def update_icon(self, img):
         #this is the window icon... not the tray icon!
         pass
 

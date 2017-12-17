@@ -63,7 +63,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, OSX, POSIX
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -110,6 +110,9 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
+
+ICON_OVERLAY = envbool("XPRA_ICON_OVERLAY", True)
+SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
@@ -3440,11 +3443,46 @@ class UIXpraClient(XpraClientBase):
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet):
-        wid, w, h, pixel_format, data = packet[1:6]
+        wid, w, h, coding, data = packet[1:6]
+        img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
-        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) window=%s", wid, w, h, pixel_format, len(data), window)
-        if window:
-            window.update_icon(w, h, pixel_format, data)
+        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
+        if window and img:
+            window.update_icon(img)
+
+    def _window_icon_image(self, wid, width, height, coding, data):
+        #convert the data into a pillow image,
+        #adding the icon overlay (if enabled)
+        PIL = get_codec("PIL")
+        assert PIL.Image, "PIL.Image not found"
+        coding = bytestostr(coding)
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
+            from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
+            data = unpremultiply_argb(data)
+            rowstride = width*4
+            img = PIL.Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
+            has_alpha = True
+        else:
+            buf = BytesIOClass(data)
+            img = PIL.Image.open(buf)
+            assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
+            has_alpha = img.mode=="RGBA"
+            rowstride = width * (3+int(has_alpha))
+        if ICON_OVERLAY:
+            xpra_icon_filename = get_icon_filename("xpra")
+            xpra_icon = PIL.Image.open(xpra_icon_filename)
+            half = xpra_icon.resize((width//2, height//2))
+            xpra_corner = PIL.Image.new("RGBA", (width, height))
+            xpra_corner.paste(half, (width//2, height//2, width, height))
+            composite = PIL.Image.alpha_composite(img, xpra_corner)
+            img = composite
+        if SAVE_WINDOW_ICONS:
+            filename = "client-window-%i-icon-%i.png" % (wid, int(time.time()))
+            img.save(filename, "png")
+            iconlog("client window icon saved to %s", filename)
+        return img
+        
 
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]

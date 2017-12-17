@@ -25,7 +25,7 @@ menulog = Logger("menu")
 grablog = Logger("grab")
 
 
-from xpra.os_util import memoryview_to_bytes, bytestostr, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import bytestostr, WIN32, OSX, POSIX, PYTHON3
 from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
@@ -41,7 +41,6 @@ from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_win
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
-from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba    #@UnresolvedImport
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
 
 gtk     = import_gtk()
@@ -83,6 +82,7 @@ if POSIX and USE_X11_BINDINGS:
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 
+ICON_OVERLAY = envbool("XPRA_ICON_OVERLAY", True)
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
@@ -1519,22 +1519,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self._button_action(button_mapping, event, False)
 
 
-    def update_icon(self, width, height, coding, data):
-        self._current_icon = (width, height, coding, data)
-        coding = bytestostr(coding)
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
-        if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
-            data = unpremultiply_argb(data)
-            rgba = memoryview_to_bytes(memoryview(bgra_to_rgba(data)))
-            pixbuf = get_pixbuf_from_data(rgba, True, width, height, width*4)
-        else:
-            loader = PixbufLoader()
-            loader.write(data)
-            loader.close()
-            pixbuf = loader.get_pixbuf()
+    def update_icon(self, img):
+        self._current_icon = img
+        has_alpha = img.mode=="RGBA"
+        width, height = img.size
+        rowstride = width * (3+int(has_alpha))
+        pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
         iconlog("%s.set_icon(%s)", self, pixbuf)
         self.set_icon(pixbuf)
-        if SAVE_WINDOW_ICONS:
-            filename = "client-window-%i-icon-%i.png" % (self._id, int(time.time()))
-            pixbuf.save(filename, "png")
-            iconlog("client window icon saved to %s", filename)

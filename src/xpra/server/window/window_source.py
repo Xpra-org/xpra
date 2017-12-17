@@ -33,6 +33,9 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 
+ARGB_ICONS = envbool("XPRA_ARGB_ICONS", True)
+PNG_ICONS = envbool("XPRA_PNG_ICONS", True)
+
 DELTA = envbool("XPRA_DELTA", True)
 MIN_DELTA_SIZE = envint("XPRA_MIN_DELTA_SIZE", 1024)
 MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
@@ -614,8 +617,8 @@ class WindowSource(object):
         #use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
         #or if we must downscale it (bigger than what the client is willing to deal with),
         #or if we want to save window icons
-        has_png = PIL and ("png" in self.window_icon_encodings)
-        has_premult = "premult_argb32" in self.window_icon_encodings
+        has_png = PIL and PNG_ICONS and ("png" in self.window_icon_encodings)
+        has_premult = ARGB_ICONS and "premult_argb32" in self.window_icon_encodings
         use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or w*h>=1024 or (not has_premult) or (pixel_format!="BGRA"))
         iconlog("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, has_png=%s, has_premult=%s, pixel_format=%s", w, h, self.window_icon_max_size, self.window_icon_size, use_png, has_png, has_premult, pixel_format)
         if use_png:
