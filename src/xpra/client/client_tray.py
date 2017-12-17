@@ -23,7 +23,7 @@ class ClientTray(ClientWidgetBase):
 
     def __init__(self, client, wid, w, h, tray_widget, mmap_enabled, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
-        ClientWidgetBase.__init__(self, client, wid, True)
+        ClientWidgetBase.__init__(self, client, 0, wid, True)
         self.tray_widget = tray_widget
         self._geometry = None
         self._window_alpha = True
