@@ -498,13 +498,14 @@ class WindowVideoSource(WindowSource):
 
 
     def full_quality_refresh(self, damage_options={}):
-        if self.video_subregion.rectangle:
-            if self.video_subregion.detection:
+        vs = self.video_subregion
+        if vs and vs.rectangle:
+            if vs.detection:
                 #reset the video region on full quality refresh
-                self.video_subregion.reset()
+                vs.reset()
             else:
                 #keep the region, but cancel the refresh:
-                self.video_subregion.cancel_refresh_timer()
+                vs.cancel_refresh_timer()
         self.scroll_data = None
         self.last_scroll_time = 0
         if self.non_video_encodings:
