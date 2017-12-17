@@ -35,8 +35,8 @@ def webp_encode(image, rgb_formats, supports_transparency, quality, speed, conte
     pixel_format = image.get_pixel_format()
     #log("webp_encode%s", (coding, image, rgb_formats, supports_transparency, quality, speed))
     if pixel_format not in rgb_formats:
-        watnted_formats = [x for x in rgb_formats if x in ("BGRA", "BGRX", "RGBA", "RGBX")]
-        if not rgb_reformat(image, watnted_formats, supports_transparency):
+        wanted_formats = [x for x in rgb_formats if x in ("BGRA", "BGRX", "RGBA", "RGBX")]
+        if not rgb_reformat(image, wanted_formats, supports_transparency):
             raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, rgb_formats))
         #get the new format:
         pixel_format = image.get_pixel_format()
