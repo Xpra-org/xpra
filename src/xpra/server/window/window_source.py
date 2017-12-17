@@ -616,13 +616,13 @@ class WindowSource(object):
         #or if we want to save window icons
         has_png = PIL and ("png" in self.window_icon_encodings)
         has_premult = "premult_argb32" in self.window_icon_encodings
-        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or (not has_premult) or (pixel_format!="BGRA"))
-        iconlog("compress_and_send_window_icon: %sx%s, sending as png=%s", w, h, use_png)
+        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or w*h>=1024 or (not has_premult) or (pixel_format!="BGRA"))
+        iconlog("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, has_png=%s, has_premult=%s, pixel_format=%s", w, h, self.window_icon_max_size, self.window_icon_size, use_png, has_png, has_premult, pixel_format)
         if use_png:
             img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", pixel_format, 0, 1)
-            icon_w, icon_h = self.window_icon_size
-            if w>icon_w or h>icon_h:
+            if w>max_w or h>max_h:
                 #scale the icon down to the size the client wants
+                icon_w, icon_h = self.window_icon_size
                 if float(w)/icon_w>=float(h)/icon_h:
                     h = min(max_h, h*icon_w//w)
                     w = icon_w
