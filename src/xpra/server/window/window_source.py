@@ -1806,7 +1806,7 @@ class WindowSource(object):
     def full_quality_refresh(self, damage_options={}):
         #called on use request via xpra control,
         #or when we need to resend the window after a send timeout
-        if not self.self.window or not self.window.is_managed():
+        if not self.window or not self.window.is_managed():
             #this window is no longer managed
             return
         if not self.auto_refresh_encodings or self.is_cancelled():
