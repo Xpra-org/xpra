@@ -1522,10 +1522,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def update_icon(self, width, height, coding, data):
         self._current_icon = (width, height, coding, data)
         coding = bytestostr(coding)
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
-        if PYTHON3 and WIN32:
-            iconlog("not setting icon to prevent crashes..")
-            return
+        iconlog.warn("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             data = unpremultiply_argb(data)
             rgba = memoryview_to_bytes(memoryview(bgra_to_rgba(data)))
