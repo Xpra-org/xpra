@@ -143,9 +143,9 @@ class GTKStatusIconTray(TrayBase):
         if not tray_icon or not self.tray_widget:
             return
         tw, th = self.get_geometry()[2:4]
-        if tw<=2 or th<=2:
-            log("not setting tray icon, size too small: %ix%i", tw, th)
-            return
+        if (tw<=2 or th<=2) or (tw==200 and th==200):
+            log("bogus tray icon size: %ix%i", tw, th)
+            tw = th = 48
         w = tray_icon.get_width()
         h = tray_icon.get_height()
         log("set_icon_from_pixbuf(%s) geometry=%s, icon size=%s", tray_icon, self.get_geometry(), (w, h))
