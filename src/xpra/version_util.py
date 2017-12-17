@@ -11,7 +11,7 @@ import os
 
 import xpra
 from xpra.util import updict, envbool
-from xpra.os_util import get_linux_distribution
+from xpra.os_util import get_linux_distribution, strtobytes, PYTHON3
 from xpra.log import Logger
 log = Logger("util")
 
@@ -160,28 +160,25 @@ def get_platform_info():
 def get_version_from_url(url):
     e = None
     try:
-        import urllib2
-    except ImportError as e:
+        if PYTHON3:
+            from urllib.request import urlopen
+        else:
+            from urllib2 import urlopen
+    except ImportError:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return None
     try:
-        response = urllib2.urlopen(url)
-        latest_version = response.read().rstrip("\n\r")
-        latest_version_no = tuple(int(y) for y in latest_version.split("."))
+        response = urlopen(url)
+        latest_version = response.read().rstrip(b"\n\r")
+        latest_version_no = tuple(int(y) for y in latest_version.split(b"."))
         log("get_version_from_url(%s)=%s", url, latest_version_no)
         return latest_version_no
-    except urllib2.HTTPError as e:
+    except Exception as e:
         log("get_version_from_url(%s)", url, exc_info=True)
         if hasattr(e, "code") and e.code==404:
             log("no version at url=%s", url)
         else:
             log("Error retrieving URL '%s': %s", url, e)
-    except urllib2.URLError as e:
-        log("get_version_from_url(%s)", url, exc_info=True)
-        log("Error retrieving URL '%s': %s", url, e)
-    except Exception as e:
-        log("get_version_from_url(%s)", url, exc_info=True)
-        log("Error retrieving URL '%s': %s", url, e)
     return None
 
 def version_update_check():

@@ -11,7 +11,6 @@ import cups
 import time
 import subprocess
 import shlex
-import urllib
 from threading import Lock
 
 from xpra.os_util import OSX, PYTHON3
@@ -293,9 +292,13 @@ def add_printer(name, options, info, location, attributes={}, success_cb=None):
         log.error("Error: cannot add printer '%s':", name)
         log.error(" the printing system does not support %s", " or ".join(mimetypes))
         return
+    if PYTHON3:
+        from urrlib.parse import urlencode      #@UnresolvedImport @UnusedImport
+    else:
+        from urllib import urlencode            #@Reimport
     command = [
                "-p", PRINTER_PREFIX+sanitize_name(name),
-               "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urllib.urlencode(attributes),
+               "-v", FORWARDER_BACKEND+":"+FORWARDER_TMPDIR+"?"+urlencode(attributes),
                "-D", info,
                "-L", location,
                ]

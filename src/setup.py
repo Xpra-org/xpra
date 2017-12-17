@@ -1235,9 +1235,13 @@ if WIN32:
         external_includes += ["encodings"]
         if client_ENABLED:
             #for version check:
-            external_includes += ["urllib2",
-                                  "cookielib", "ftplib", "httplib", "fileinput",
+            external_includes += [
+                                  "ftplib", "fileinput",
                                   ]
+            if PYTHON3:
+                external_includes += ["urllib", "http.cookiejar", "http.client"]
+            else:
+                external_includes += ["urllib2", "cookielib", "httplib"]
 
         if PYTHON3:
             #hopefully, cx_Freeze will fix this horror:
@@ -1550,6 +1554,8 @@ else:
     if OSX:
         #pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
+        if not PYTHON3:
+            external_includes += ["urllib2"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
