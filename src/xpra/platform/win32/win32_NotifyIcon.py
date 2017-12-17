@@ -341,7 +341,7 @@ class win32NotifyIcon(object):
         self.reset_function = (self.set_icon, iconPathName)
 
     def do_set_icon(self, hicon):
-        log("do_set_icon(%s)", hicon)
+        log("do_set_icon(%#x)", hicon)
         self.current_icon = hicon
         Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
@@ -362,21 +362,23 @@ class win32NotifyIcon(object):
         if w!=icon_w or h!=icon_h:
             log("resizing tray icon to %ix%i", icon_w, icon_h)
             img = img.resize((w, h), Image.ANTIALIAS)
+            w, h = icon_w, icon_h
+            rowstride = w*4
 
         bitmap = 0
         mask = 0
         try:
             from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
-            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes()))
-            bitmap = rgba_to_bitmap(bgra, icon_w, icon_h)
-            mask = CreateBitmap(icon_w, icon_h, 1, 1, None)
+            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", "RGBA")))
+            bitmap = rgba_to_bitmap(bgra, w, h)
+            mask = CreateBitmap(w, h, 1, 1, None)
 
             iconinfo = ICONINFO()
             iconinfo.fIcon = True
             iconinfo.hbmMask = mask
             iconinfo.hbmColor = bitmap
             hicon = CreateIconIndirect(byref(iconinfo))
-            log("CreateIconIndirect()=%s", hicon)
+            log("CreateIconIndirect()=%#x", hicon)
             if not hicon:
                 raise ctypes.WinError(ctypes.get_last_error())
         except Exception:
