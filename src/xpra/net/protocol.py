@@ -955,7 +955,10 @@ class Protocol(object):
                 #write queue still has stuff in it..
                 if timeout<=0:
                     log("flush_then_close: queue still busy, closing without sending the last packet")
-                    self._write_lock.release()
+                    try:
+                        self._write_lock.release()
+                    except:
+                        pass
                     self.close()
                     done()
                 else:
