@@ -893,7 +893,8 @@ class WindowSource(object):
         for x in ("webp", "png", "rgb32"):
             if x in self.common_encodings:
                 return x
-        return self.common_encodings[0]
+        #so we don't have an encoding that does transparency...
+        return self.get_auto_encoding(pixel_count, ww, wh, speed, quality)
 
     def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
