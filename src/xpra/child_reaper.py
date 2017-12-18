@@ -45,7 +45,7 @@ class ProcInfo(object):
         return "ProcInfo(%s)" % self.__dict__
 
     def get_info(self):
-        return {
+        info = {
             "pid"       : self.pid,
             "name"      : self.name,
             "command"   : self.command,
@@ -53,9 +53,11 @@ class ProcInfo(object):
             "forget"    : self.forget,
             #not base types:
             #callback, process
-            "returncode": self.returncode,
             "dead"      : self.dead,
             }
+        if self.returncode is not None:
+            info["returncode"] = self.returncode
+        return info
 
 
 # Note that this class has async subtleties -- e.g., it is possible for a

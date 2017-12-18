@@ -40,6 +40,7 @@ SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
+SHOW_SERVER_COMMANDS = envbool("XPRA_SHOW_SERVER_COMMANDS", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
@@ -292,7 +293,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_webcammenuitem())
         if self.client.windows_enabled and WINDOWS_MENU:
             menu.append(self.make_windowsmenuitem())
-        menu.append(self.make_servermenuitem())
+        if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
+            menu.append(self.make_servermenuitem())
         menu.append(self.make_disconnectmenuitem())
         if show_close:
             menu.append(self.make_closemenuitem())
@@ -1353,7 +1355,9 @@ class GTKTrayMenuBase(object):
         server_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
         if RUNCOMMAND_MENU:
-            menu.append(self.make_runcommandmenu())
+            menu.append(self.make_runcommandmenuitem())
+        if SHOW_SERVER_COMMANDS:
+            menu.append(self.make_servercommandsmenuitem())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
         if SHOW_SHUTDOWN:
@@ -1361,8 +1365,17 @@ class GTKTrayMenuBase(object):
         server_menu_item.show_all()
         return server_menu_item
 
+    def make_servercommandsmenuitem(self):
+        self.servercommands = self.menuitem("Server Commands", "list.png", "Commands running on the server", self.client.show_server_commands)
+        def enable_servercommands(*args):
+            log("enable_servercommands%s server-commands-info=%s", args, self.client.server_commands_info)
+            set_sensitive(self.servercommands, self.client.server_commands_info)
+            if not self.client.server_commands_info:
+                self.startnewcommand.set_tooltip_text("Not supported by the server")
+        self.client.after_handshake(enable_servercommands)
+        return self.servercommands
 
-    def make_runcommandmenu(self):
+    def make_runcommandmenuitem(self):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
         def enable_start_new_command(*args):
             log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)

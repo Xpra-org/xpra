@@ -159,7 +159,7 @@ def main():
         gtk_main_quit_on_fatal_exceptions_enable()
 
         app = StartNewCommand()
-        app.close = app.quit
+        app.hide = app.quit
         def app_signal(signum, _frame):
             print("")
             log.info("got signal %s", SIGNAMES.get(signum, signum))

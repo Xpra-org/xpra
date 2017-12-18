@@ -1523,6 +1523,7 @@ class ServerBase(ServerCore):
                 "auto-video-encoding",
                 "window-filters",
                 "connection-data",
+                "server-commands-info",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,

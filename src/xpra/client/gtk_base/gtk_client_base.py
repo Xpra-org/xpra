@@ -68,6 +68,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.file_size_dialog = None
         self.file_dialog = None
         self.start_new_command = None
+        self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
         self.border = None
         #clipboard bits:
@@ -159,6 +160,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.start_new_command:
             self.start_new_command.destroy()
             self.start_new_command = None
+        if self.server_commands:
+            self.server_commands.destroy()
+            self.server_commands = None
         UIXpraClient.cleanup(self)
 
 
@@ -264,6 +268,17 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.border = WindowBorder(enabled, color.red/65536.0, color.green/65536.0, color.blue/65536.0, alpha, size)
         log("parse_border(%s)=%s", border_str, self.border)
 
+
+    def show_server_commands(self, *args):
+        if not self.server_commands_info:
+            log.warn("Warning: cannot show server commands")
+            log.warn(" the feature is not available on the server")
+            return
+        if self.server_commands is None:
+            from xpra.client.gtk_base.server_commands import getServerCommandsWindow
+            self.server_commands = getServerCommandsWindow(self)
+        self.server_commands.show()
+        return self.server_commands
 
     def show_start_new_command(self, *args):
         if not self.start_new_commands:
