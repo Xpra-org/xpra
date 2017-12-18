@@ -914,21 +914,21 @@ class ServerBase(ServerCore):
         if start_list:
             for x in start_list:
                 if x:
-                    proc = self.start_child(x, x, ignore=True)
+                    proc = self.start_command(x, x, ignore=True)
                     if proc:
                         started.append(proc)
         if start_child_list:
             for x in start_child_list:
                 if x:
-                    proc = self.start_child(x, x, ignore=False)
+                    proc = self.start_command(x, x, ignore=False)
                     if proc:
                         started.append(proc)
         procs = tuple(x for x in started if x is not None)
         if not self.session_name and procs:
             self.guess_session_name(procs)
 
-    def start_child(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=None, **kwargs):
-        execlog("start_child%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
+    def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=None, **kwargs):
+        execlog("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
         import subprocess
         env = self.get_child_env()
         try:
@@ -1689,7 +1689,7 @@ class ServerBase(ServerCore):
     def do_control_command_start(self, ignore, *args):
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
-        proc = self.start_child(" ".join(args), args, ignore, shell=True)
+        proc = self.start_command(" ".join(args), args, ignore, shell=True)
         if not proc:
             raise ControlError("failed to start new child command %s" % str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
@@ -2167,7 +2167,7 @@ class ServerBase(ServerCore):
             log.warn(" but the feature is currently disabled")
             return
         name, command, ignore = packet[1:4]
-        proc = self.start_child(name, command, ignore)
+        proc = self.start_command(name, command, ignore)
         if len(packet)>=5:
             shared = packet[4]
             if proc and not shared:
