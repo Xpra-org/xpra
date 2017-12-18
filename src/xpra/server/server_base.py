@@ -906,7 +906,7 @@ class ServerBase(ServerCore):
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
     def exec_on_connect_commands(self):
-        execlog("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_commands)
+        execlog("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
 
     def _exec_commands(self, start_list, start_child_list):
