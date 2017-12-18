@@ -74,6 +74,9 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
+        self.init_vars()
+
+    def init_vars(self):
         self.swap_keys = True
         self.meta_modifier = None
         self.control_modifier = None
@@ -81,6 +84,11 @@ class Keyboard(KeyboardBase):
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
         self.key_translations = {}
+        self.text_input_context = None
+
+    def cleanup(self):
+        self.init_vars()
+        KeyboardBase.cleanup(self)
 
 
     def get_layout_spec(self):
@@ -91,11 +99,11 @@ class Keyboard(KeyboardBase):
         options = ""
         try:
             from AppKit import NSTextInputContext       #@UnresolvedImport
-            ic = NSTextInputContext.new()
-            current_keyboard = ic.selectedKeyboardInputSource()
+            self.text_input_context = NSTextInputContext.new()
+            current_keyboard = self.text_input_context.selectedKeyboardInputSource()
             code = APPLE_LAYOUTS.get(current_keyboard.split(".")[-1])
             log("get_layout_spec() current_keyboard=%s, code=%s", current_keyboard, code)
-            all_keyboards = ic.keyboardInputSources()
+            all_keyboards = self.text_input_context.keyboardInputSources()
             log("get_layout_spec() other keyboards=%s", all_keyboards)
             if code:
                 layout = code
@@ -110,7 +118,7 @@ class Keyboard(KeyboardBase):
             else:
                 if code not in layouts:
                     layouts.insert(0, code)
-            log("get_layout_spec() layout=%s, layouts=%s", layout, layouts)
+            log("get_layout_spec() input_context=%s, layout=%s, layouts=%s", self.text_input_context, layout, layouts)
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
