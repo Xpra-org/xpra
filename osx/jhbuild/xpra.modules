@@ -768,8 +768,8 @@
 
   <distutils id="python-pyobjc-core">
 	<branch repo="pypi.python.org"
-		module="/packages/ed/62/bd9cd64402645d9f9c50595b5a468d62a2fc6ae0478222833b21d4bc25d2/pyobjc-4.1.tar.gz"
-		hash="sha256:287db11f912ac7d05c4907dbf6e74abaa475e36368f7c92e05aca2886a94562c"
+		module="/packages/a6/af/bde88e81e5428f7561911da2207f5efd3b4b2aa2bd0263b63302b840e23c/pyobjc-core-4.1.tar.gz"
+		hash="sha256:e42d3558b65485f896e272e48e108d4df8ccd7f130f552dddb4a47732dd0ee65"
 		version="4.1"/>
         <dependencies>
                 <dep package="python"/>
