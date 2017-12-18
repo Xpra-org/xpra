@@ -768,9 +768,9 @@
 
   <distutils id="python-pyobjc-core">
 	<branch repo="pypi.python.org"
-		module="/packages/b0/4f/93d8b4beac7b686c3f1a8f682062a9e65c87e5e45a99863ea7e4ba43813f/pyobjc-core-4.0.tar.gz"
-		hash="sha256:c132417a7122681d4b6841673970429fc423c81c702c58097b19c946bd9b35f7"
-		version="4.0"/>
+		module="/packages/ed/62/bd9cd64402645d9f9c50595b5a468d62a2fc6ae0478222833b21d4bc25d2/pyobjc-4.1.tar.gz"
+		hash="sha256:287db11f912ac7d05c4907dbf6e74abaa475e36368f7c92e05aca2886a94562c"
+		version="4.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -781,9 +781,9 @@
 
   <distutils id="python-pyobjc-framework-cocoa">
 	<branch repo="pypi.python.org"
-		module="/packages/a7/8d/fc2b9d569ba23775724849eeed39a53665b3b1058eac00c3d3ac3a54e3cc/pyobjc-framework-Cocoa-4.0.tar.gz"
-		hash="sha256:851f95ba957ee2ab3b8f2b24dec18aa94a614bd056fa15439154ff1819f4b70e"
-		version="4.0"/>
+		module="/packages/8e/39/ef763cbc0825baec366171c4552c53adb38a866bd94922594946869ccb0e/pyobjc-framework-Cocoa-4.1.tar.gz"
+		hash="sha256:9a221f0549067b402b85a9c3425cd962870f94b404e2e3a543fc0029d124fddf"
+		version="4.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -794,9 +794,9 @@
 
   <distutils id="python-pyobjc-framework-quartz">
 	<branch repo="pypi.python.org"
-		module="/packages/87/5b/253e9455d93ab0ddb0d6850fb1f3e589e495d4e222bcd84818334595de40/pyobjc-framework-Quartz-4.0.tar.gz"
-		hash="sha256:1f97540f7d4635637b178235d665a10ab9af12a71b64b06fd5e427d7b92e892d"
-		version="4.0"/>
+		module="https://pypi.python.org/packages/26/95/77a6c495d46b18aa5995ed8215d2ad6fc840e426abfcb2ad9bf07c17cba9/pyobjc-framework-Quartz-4.1.tar.gz"
+		hash="sha256:a0e1e3a3ff2422372c961c1d9384c4734dec715da32b1d9be76a5c237cde1709"
+		version="4.1"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
