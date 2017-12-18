@@ -1604,6 +1604,11 @@ class UIXpraClient(XpraClientBase):
         encoding_caps["rgb_formats"] = rgb_formats
         #figure out which CSC modes (usually YUV) can give us those RGB modes:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
+        if has_codec("dec_webp"):
+            if self.opengl_enabled:
+                full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
+            else:
+                full_csc_modes["webp"] = ("BGRX", "BGRA", )
         log("supported full csc_modes=%s", full_csc_modes)
         encoding_caps["full_csc_modes"] = full_csc_modes
 

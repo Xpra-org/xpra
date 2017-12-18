@@ -69,7 +69,7 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send, argb_swap
+from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send, argb_swap, rgb_reformat
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
@@ -262,6 +262,8 @@ class WindowSource(object):
             self._encoders["jpeg"] = self.jpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
+        self.full_csc_modes = {}
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
 
     def init_vars(self):
         self.server_core_encodings = ()
@@ -272,6 +274,7 @@ class WindowSource(object):
         self.auto_refresh_encodings = ()
         self.core_encodings = ()
         self.rgb_formats = ()
+        self.full_csc_modes = {}
         self.client_refresh_encodings = ()
         self.encoding_options = {}
         self.rgb_zlib = False
@@ -359,6 +362,13 @@ class WindowSource(object):
         self.statistics = None
         self.global_statistics = None
 
+
+    def get_client_info(self):
+        info = {}
+        if self.full_csc_modes:
+            for enc, csc_modes in self.full_csc_modes.items():
+                info["csc_modes.%s" % enc] = csc_modes
+        return info
 
     def get_info(self):
         #should get prefixed with "client[M].window[N]." by caller
@@ -704,7 +714,16 @@ class WindowSource(object):
             #remove rgb formats with alpha
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
+        self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.update_encoding_selection(self.encoding, [])
+
+
+    def parse_csc_modes(self, full_csc_modes):
+        #only override if values are specified:
+        log("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
+        if full_csc_modes is not None and type(full_csc_modes)==dict:
+            self.full_csc_modes = full_csc_modes
+
 
     def set_auto_refresh_delay(self, d):
         self.auto_refresh_delay = d
@@ -2143,7 +2162,15 @@ class WindowSource(object):
     def webp_encode(self, coding, image, options):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return webp_encode(image, self.rgb_formats, self.supports_transparency, q, s, self.content_type)
+        pixel_format = image.get_pixel_format()
+        #the native webp encoder only takes BGRX / BGRA as input,
+        #but the client may be able to swap channels,
+        #so it may be able to process RGBX / RGBA:
+        client_rgb_formats = self.full_csc_modes.get("webp", ("BGRA", "BGRX", ))
+        if pixel_format not in client_rgb_formats:
+            if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
+                raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (pixel_format, self.rgb_formats))
+        return webp_encode(image, self.supports_transparency, q, s, self.content_type)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed

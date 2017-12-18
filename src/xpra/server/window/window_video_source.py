@@ -84,8 +84,6 @@ class WindowVideoSource(WindowSource):
     def init_encoders(self):
         WindowSource.init_encoders(self)
         #for 0.12 onwards: per encoding lists:
-        self.full_csc_modes = {}
-        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
 
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
@@ -126,7 +124,6 @@ class WindowVideoSource(WindowSource):
 
         self.supports_video_scaling = False
 
-        self.full_csc_modes = {}                            #for 0.12 onwards: per encoding lists
         self.video_encodings = ()
         self.common_video_encodings = ()
         self.non_video_encodings = ()
@@ -157,11 +154,8 @@ class WindowVideoSource(WindowSource):
 
 
     def get_client_info(self):
-        info = {
-                "supports_video_scaling"    : self.supports_video_scaling,
-                }
-        for enc, csc_modes in (self.full_csc_modes or {}).items():
-            info["csc_modes.%s" % enc] = csc_modes
+        info = WindowSource.get_client_info(self)
+        info["supports_video_scaling"] = self.supports_video_scaling
         return info
 
     def get_property_info(self):
@@ -286,13 +280,6 @@ class WindowVideoSource(WindowSource):
         self.video_subregion = None
 
 
-    def parse_csc_modes(self, full_csc_modes):
-        #only override if values are specified:
-        csclog("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
-        if full_csc_modes is not None and type(full_csc_modes)==dict:
-            self.full_csc_modes = full_csc_modes
-
-
     def set_new_encoding(self, encoding, strict=None):
         if self.encoding!=encoding:
             #ensure we re-init the codecs asap:
@@ -320,7 +307,6 @@ class WindowVideoSource(WindowSource):
 
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
-        self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
         self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling) and not STRICT_MODE
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
         self.supports_video_scaling = properties.boolget("encoding.video_scaling", self.supports_video_scaling)

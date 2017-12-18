@@ -1058,6 +1058,7 @@ XpraClient.prototype._make_hello = function() {
 			"mpeg4+mp4"	: ["YUV420P"],
 			"h264+mp4"	: ["YUV420P"],
 			"vp8+webm"	: ["YUV420P"],
+			"webp"		: ["BGRX", "BGRA"],
 		},
 		"encoding.x264.YUV420P.profile"		: "baseline",
 		"encoding.h264.YUV420P.profile"		: "baseline",
