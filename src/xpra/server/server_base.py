@@ -2257,9 +2257,9 @@ class ServerBase(ServerCore):
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
+        info.setdefault("commands", self.get_commands_info())
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
-
 
     def get_printing_info(self):
         d = {
@@ -2273,7 +2273,7 @@ class ServerBase(ServerCore):
         return d
 
     def get_commands_info(self):
-        return {
+        info = {
                 "start"                     : self.start_commands,
                 "start-child"               : self.start_child_commands,
                 "start-after-connect"       : self.start_after_connect,
@@ -2284,6 +2284,9 @@ class ServerBase(ServerCore):
                 "start-after-connect-done"  : self.start_after_connect_done,
                 "start-new"                 : self.start_new_commands,
                 }
+        for i,procinfo in enumerate(self.children_started):
+            info[i] = procinfo.get_info()
+        return info
 
     def get_features_info(self):
         i = {

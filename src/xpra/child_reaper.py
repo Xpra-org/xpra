@@ -44,6 +44,19 @@ class ProcInfo(object):
     def __repr__(self):
         return "ProcInfo(%s)" % self.__dict__
 
+    def get_info(self):
+        return {
+            "pid"       : self.pid,
+            "name"      : self.name,
+            "command"   : self.command,
+            "ignore"    : self.ignore,
+            "forget"    : self.forget,
+            #not base types:
+            #callback, process
+            "returncode": self.returncode,
+            "dead"      : self.dead,
+            }
+
 
 # Note that this class has async subtleties -- e.g., it is possible for a
 # child to exit and us to receive the SIGCHLD before our fork() returns (and
