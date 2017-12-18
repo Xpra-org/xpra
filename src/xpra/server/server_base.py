@@ -998,7 +998,9 @@ class ServerBase(ServerCore):
             if not proc_info:
                 continue
             cmd = proc_info.command
-            cmd_names.append(os.path.basename(cmd[0]))
+            bcmd = os.path.basename(cmd[0])
+            if bcmd not in cmd_names:
+                cmd_names.append(bcmd)
         execlog("guess_session_name() commands=%s", cmd_names)
         if cmd_names:
             self.session_name = csv(cmd_names)
