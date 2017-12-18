@@ -367,9 +367,9 @@ class GTKTrayMenuBase(object):
         info_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
         menu.append(self.make_aboutmenuitem())
+        menu.append(self.make_sessioninfomenuitem())
         if SHOW_VERSION_CHECK:
             menu.append(self.make_updatecheckmenuitem())
-        menu.append(self.make_sessioninfomenuitem())
         menu.append(self.make_bugreportmenuitem())
         info_menu_item.show_all()
         return info_menu_item
