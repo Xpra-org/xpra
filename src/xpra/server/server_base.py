@@ -742,6 +742,7 @@ class ServerBase(ServerCore):
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
+            "command-signal":                       self._process_command_signal,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -1524,6 +1525,7 @@ class ServerBase(ServerCore):
                 "window-filters",
                 "connection-data",
                 "server-commands-info",
+                "server-commands-signal",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
@@ -1636,6 +1638,9 @@ class ServerBase(ServerCore):
         auth_class = self.auth_classes.get("unix-domain")
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
+
+    def _process_command_signal(self, proto, packet):
+        log.info("%s", packet)
 
     #########################################
     # Control Commands
