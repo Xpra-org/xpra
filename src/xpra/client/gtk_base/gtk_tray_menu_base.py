@@ -364,7 +364,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_infomenuitem(self):
-        info_menu_item = self.menuitem("Information", "information.png", "About Xpra, session information..")
+        info_menu_item = self.menuitem("Information", "information.png")
         menu = gtk.Menu()
         info_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -409,7 +409,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_featuresmenuitem(self):
-        features_menu_item = self.menuitem("Features", "features.png", "OpenGL, Bell, Cursor, etc..")
+        features_menu_item = self.menuitem("Features", "features.png")
         menu = gtk.Menu()
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -714,7 +714,7 @@ class GTKTrayMenuBase(object):
         return gl
 
     def make_picturemenuitem(self):
-        picture_menu_item = self.menuitem("Picture", "picture.png", "Encoding, quality, ..")
+        picture_menu_item = self.menuitem("Picture", "picture.png")
         menu = gtk.Menu()
         picture_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -972,7 +972,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_audiomenuitem(self):
-        audio_menu_item = self.menuitem("Audio", "audio.png", "Speaker and Microphone forwarding")
+        audio_menu_item = self.menuitem("Audio", "audio.png")
         menu = gtk.Menu()
         audio_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -1116,7 +1116,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_webcammenuitem(self):
-        webcam = self.menuitem("Webcam", "webcam.png", "Forward webcam pictures to the server", None)
+        webcam = self.menuitem("Webcam", "webcam.png")
         if not self.client.webcam_forwarding:
             webcam.set_tooltip_text("Webcam forwarding is disabled")
             set_sensitive(webcam, False)
@@ -1317,7 +1317,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_windowsmenuitem(self):
-        windows_menu_item = self.menuitem("Windows", "windows.png", "Windows Actions: refresh, raise, minimize")
+        windows_menu_item = self.menuitem("Windows", "windows.png")
         menu = gtk.Menu()
         windows_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
@@ -1350,7 +1350,7 @@ class GTKTrayMenuBase(object):
 
 
     def make_servermenuitem(self):
-        server_menu_item = self.menuitem("Server", "server.png", "Server Actions: run command, upload, shutdown")
+        server_menu_item = self.menuitem("Server", "server.png")
         menu = gtk.Menu()
         server_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
