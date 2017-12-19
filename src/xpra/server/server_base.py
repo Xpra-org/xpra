@@ -33,6 +33,7 @@ webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 httplog = Logger("http")
 
+from xpra.platform.features import COMMAND_SIGNALS, CLIPBOARDS
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -641,7 +642,6 @@ class ServerBase(ServerCore):
         self._clipboards = []
         if not self.supports_clipboard:
             return
-        from xpra.platform.features import CLIPBOARDS
         clipboard_filter_res = []
         if self.clipboard_filter_file:
             if not os.path.exists(self.clipboard_filter_file):
@@ -1431,7 +1431,6 @@ class ServerBase(ServerCore):
         want_targets = c.boolget("clipboard.want_targets")
         self._clipboard_helper.set_want_targets_client(want_targets)
         #the selections the client supports (default to all):
-        from xpra.platform.features import CLIPBOARDS
         client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
         clipboardlog("client %s is the clipboard peer", ss)
         clipboardlog(" greedy=%s", greedy)
@@ -1524,8 +1523,6 @@ class ServerBase(ServerCore):
                 "auto-video-encoding",
                 "window-filters",
                 "connection-data",
-                "server-commands-info",
-                "server-commands-signal",
                 ))
         f["sound"] = {
                       "ogg-latency-fix" : True,
@@ -1571,6 +1568,8 @@ class ServerBase(ServerCore):
                  "sharing-toggle"               : self.sharing is None,
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
+                 "server-commands-signals"      : COMMAND_SIGNALS,
+                 "server-commands-info"         : not WIN32 and not OSX,
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
@@ -1641,6 +1640,29 @@ class ServerBase(ServerCore):
 
     def _process_command_signal(self, proto, packet):
         log.info("%s", packet)
+        pid = packet[1]
+        signame = packet[2]
+        if signame not in COMMAND_SIGNALS:
+            log.warn("Warning: invalid signal received: '%s'", signame)
+            return
+        procinfo = self.child_reaper.get_proc_info(pid)
+        if not procinfo:
+            log.warn("Warning: command not found for pid %i", pid)
+            return
+        if procinfo.returncode is not None:
+            log.warn("Warning: command for pid %i has already terminated", pid)
+            return
+        import signal
+        sigval = getattr(signal, signame, None)
+        if not sigval:
+            log.error("Error: signal '%s' not found!", signame)
+            return
+        try:
+            os.kill(pid, sigval)
+        except Exception as e:
+            log.error("Error sending signal '%s' to pid %i", signame, pid)
+            log.error(" %s", e)
+            
 
     #########################################
     # Control Commands

@@ -1875,7 +1875,7 @@ class UIXpraClient(XpraClientBase):
         self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
         self.start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
-        self.server_commands_signal = c.boolget("server-commands-signal")
+        self.server_commands_signals = c.strlistget("server-commands-signals")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES

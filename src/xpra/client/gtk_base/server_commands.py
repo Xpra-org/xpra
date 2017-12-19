@@ -67,15 +67,8 @@ class ServerCommandsWindow(object):
         hbox = gtk.HBox(False, 20)
         vbox.pack_start(hbox)
         def btn(label, tooltip, callback, icon_name=None):
-            btn = gtk.Button(label)
-            btn.set_tooltip_text(tooltip)
-            btn.connect("clicked", callback)
-            if icon_name:
-                icon = self.get_icon(icon_name)
-                if icon:
-                    btn.set_image(scaled_image(icon, 24))
-            hbox.pack_start(btn)
-            return btn
+            b = self.btn(label, tooltip, callback, icon_name)
+            hbox.pack_start(b)
         if self.client.start_new_commands:
             btn("Start New", "Run a command on the server", self.client.show_start_new_command, "forward.png")
         btn("Close", "", self.close, "quit.png")
@@ -87,19 +80,27 @@ class ServerCommandsWindow(object):
         self.window.vbox = vbox
         self.window.add(vbox)
 
+    def btn(self, label, tooltip, callback, icon_name=None):
+        btn = gtk.Button(label)
+        btn.set_tooltip_text(tooltip)
+        btn.connect("clicked", callback)
+        if icon_name:
+            icon = self.get_icon(icon_name)
+            if icon:
+                btn.set_image(scaled_image(icon, 24))
+        return btn
 
     def populate_table(self):
-        log.info("populate_table()")
         commands_info = self.client.server_last_info.get("commands")
         if self.commands_info!=commands_info:
-            log.info("populate_table() new commands_info=%s", commands_info)
+            log("populate_table() new commands_info=%s", commands_info)
             self.commands_info = commands_info
             if self.table:
                 self.alignment.remove(self.table)
             tb = TableBuilder(rows=1, columns=2, row_spacings=15)
             self.table = tb.get_table()
             headers = [gtk.Label(""), gtk.Label("PID"), gtk.Label("Command"), gtk.Label("Exit Code")]
-            if self.client.server_commands_signal:
+            if self.client.server_commands_signals:
                 headers.append(gtk.Label("Send Signal"))
             tb.add_row(*headers)
             for procinfo in self.commands_info.values():
@@ -126,7 +127,7 @@ class ServerCommandsWindow(object):
                             log("icons: %s", icons)
                             if icons:
                                 from PIL import Image
-                                img = icons[0].resize((32, 32), Image.ANTIALIAS)
+                                img = icons[0].resize((24, 24), Image.ANTIALIAS)
                                 has_alpha = img.mode=="RGBA"
                                 width, height = img.size
                                 rowstride = width * (3+int(has_alpha))
@@ -136,10 +137,9 @@ class ServerCommandsWindow(object):
                         except Exception:
                             log("failed to get window icon", exc_info=True)
                     items = [icon, gtk.Label("%s" % pid), gtk.Label(cmd_str), gtk.Label(rstr)]
-                    if self.client.server_commands_signal:
+                    if self.client.server_commands_signals:
                         if returncode is None:
-                            #TODO: signal drop down goes here!
-                            items.append(gtk.Label(""))
+                            items.append(self.signal_button(pid))
                         else:
                             items.append(gtk.Label(""))
                     tb.add_row(*items)
@@ -147,6 +147,20 @@ class ServerCommandsWindow(object):
             self.table.show_all()
         self.client.send_info_request()
         return True
+
+    def signal_button(self, pid):
+        hbox = gtk.HBox()
+        combo = gtk.combo_box_new_text()
+        for x in self.client.server_commands_signals:
+            combo.append_text(x)
+        def send(*_args):
+            a = combo.get_active()
+            signame = self.client.server_commands_signals[a]
+            self.client.send("command-signal", pid, signame)
+        b = self.btn("Send", None, send, "send")
+        hbox.pack_start(combo)
+        hbox.pack_start(b)
+        return hbox
 
     def schedule_timer(self):
         if not self.populate_timer:
@@ -228,6 +242,11 @@ def main():
             }
         client.server_last_info = {"commands" : commands_info}
         client.start_new_commands = True
+        client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
+        def noop(*_args):
+            pass
+        client.send_info_request = noop
+        client.send = noop
         window1 = AdHocStruct()
         window1._metadata = {"pid" : 542}
         client._id_to_window = {

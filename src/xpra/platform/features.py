@@ -29,6 +29,8 @@ CLIPBOARD_NATIVE_CLASS = None
 UI_THREAD_POLLING = 0
 OPEN_COMMAND = "xdg-open"
 
+COMMAND_SIGNALS = ()
+
 DEFAULT_ENV = []
 
 DEFAULT_SSH_COMMAND = "ssh -x"
@@ -58,6 +60,7 @@ _features_list_ = [
                    "MMAP_SUPPORTED",
                    "SYSTEM_TRAY_SUPPORTED",
                    "REINIT_WINDOWS",
+                   "COMMAND_SIGNALS",
                    "DEFAULT_ENV",
                    "DEFAULT_SSH_COMMAND",
                    "DEFAULT_PULSEAUDIO_COMMAND",
