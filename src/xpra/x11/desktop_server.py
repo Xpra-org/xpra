@@ -11,6 +11,7 @@ import socket
 
 from xpra.util import updict, log_screen_sizes
 from xpra.os_util import get_generic_os_name
+from xpra.scripts.config import parse_bool
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
 from xpra.server.rfb.rfb_server import RFBServer
@@ -270,7 +271,10 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def init(self, opts):
         X11ServerBase.init(self, opts)
         RFBServer.init(self)
-        self._rfb_upgrade = int(opts.rfb_upgrade)
+        if not parse_bool("rfb-upgrade", opts.rfb_upgrade):
+            self._rfb_upgrade = 0
+        else:
+            self._rfb_upgrade = int(opts.rfb_upgrade)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
