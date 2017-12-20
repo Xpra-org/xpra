@@ -327,7 +327,7 @@ class ServerBase(ServerCore):
         enc_pillow = get_codec("enc_pillow")
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
-            add_encodings(pil_encs)
+            add_encodings(x for x in pil_encs if x!="webp")
             #Note: webp will only be enabled if we have a Python-PIL fallback
             #(either "webp" or "png")
             if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
