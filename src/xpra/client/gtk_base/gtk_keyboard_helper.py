@@ -8,7 +8,7 @@
 from xpra.client.keyboard_helper import KeyboardHelper, log
 from xpra.gtk_common.gobject_compat import import_gdk, import_glib
 from xpra.gtk_common.keymap import get_gtk_keymap
-from xpra.gtk_common.gtk_util import display_get_default
+from xpra.gtk_common.gtk_util import display_get_default, get_default_keymap
 gdk = import_gdk()
 glib = import_glib()
 
@@ -21,10 +21,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         #(as we may be getting dozens of such events at a time)
         self._keymap_changing = False
         self._keymap_change_handler_id = None
-        try:
-            self._keymap = gdk.keymap_get_default()
-        except:
-            self._keymap = None
+        self._keymap = get_default_keymap()
         self.update()
         if self._keymap:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
@@ -34,7 +31,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         if self._keymap_change_handler_id:
             self._keymap.disconnect(self._keymap_change_handler_id)
             self._keymap_change_handler_id = None
-        self._keymap = gdk.keymap_get_default()
+        self._keymap = get_default_keymap()
         if self._keymap_changing:
             #timer due already
             return
