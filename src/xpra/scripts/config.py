@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora
+from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, osexpand
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -359,7 +359,7 @@ def read_xpra_conf(conf_dir, xpra_conf_filename=DEFAULT_XPRA_CONF_FILENAME):
         d.update(cd)
     return d
 
-def read_xpra_defaults():
+def read_xpra_defaults(username=None, uid=None, gid=None):
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -379,12 +379,12 @@ def read_xpra_defaults():
     # * user config            (ie: "~/.xpra/" on all Posix, including OSX)
     #                          (ie: "C:\Documents and Settings\Username\Application Data\Xpra" with XP)
     #                          (ie: "C:\Users\<user name>\AppData\Roaming" with Visa onwards)
-    dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs()
+    dirs = get_default_conf_dirs() + get_system_conf_dirs() + get_user_conf_dirs(uid)
     defaults = {}
     for d in dirs:
         if not d:
             continue
-        ad = os.path.expanduser(d)
+        ad = osexpand(d, actual_username=username, uid=uid, gid=gid)
         if not os.path.exists(ad):
             debug("read_xpra_defaults: skipping %s", ad)
             continue
@@ -1129,9 +1129,9 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
     return nd
 
 
-def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}):
+def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}, username="", uid=0, gid=0):
     #populate config with default values:
-    defaults = read_xpra_defaults()
+    defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
 def dict_to_validated_config(d={}, extras_defaults={}, extras_types={}, extras_validation={}):

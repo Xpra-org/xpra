@@ -18,16 +18,16 @@ def valid_dir(path):
 
 
 #helpers to easily override using env vars:
-def envaslist_or_delegate(env_name, impl):
+def envaslist_or_delegate(env_name, impl, *args):
     env_value = os.environ.get(env_name)
     if env_value is not None:
         return [env_value]
-    return impl()
-def env_or_delegate(env_name, impl):
+    return impl(*args)
+def env_or_delegate(env_name, impl, *args):
     env_value = os.environ.get(env_name)
     if env_value is not None:
         return env_value
-    return impl()
+    return impl(*args)
 
 
 def get_install_prefix():
@@ -47,12 +47,9 @@ def do_get_system_conf_dirs():
     #hope the prefix is something like "/usr/local" or "$HOME/.local":
     return [prefix + '/etc/xpra/']
 
-def get_user_conf_dirs():
-    return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs)
-def do_get_user_conf_dirs():
-    #per-user configuration location:
-    if os.name!="posix" or os.getuid()>0:
-        return ["~/.xpra"]
+def get_user_conf_dirs(uid=None):
+    return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs, uid)
+def do_get_user_conf_dirs(_uid):
     return []
 
 def get_default_conf_dirs():

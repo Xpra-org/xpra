@@ -69,6 +69,16 @@ def do_get_script_bin_dirs():
     return script_bin_dirs
 
 
+def do_get_user_conf_dirs(uid):
+    #per-user configuration location:
+    #(but never use /root/.xpra)
+    if uid is None:
+        uid = os.getuid()
+    if uid>0:
+        return ["~/.xpra"]
+    return []
+
+
 def get_runtime_dir():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:

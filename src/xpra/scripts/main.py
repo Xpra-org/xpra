@@ -2734,10 +2734,9 @@ def run_glcheck(opts):
     return 0
 
 
-def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
+def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     log = get_util_logger()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
-    username = get_username_for_uid(uid)
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
@@ -2775,7 +2774,7 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     log("start_server_subprocess: existing_sockets=%s", existing_sockets)
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
-    cmd += get_start_server_args(opts)      #ie: ["--exit-with-children", "--start-child=xterm"]
+    cmd += get_start_server_args(opts, uid, gid)      #ie: ["--exit-with-children", "--start-child=xterm"]
     #when starting via the system proxy server,
     #we may already have a XPRA_PROXY_START_UUID,
     #specified by the proxy-start command:
@@ -2856,8 +2855,8 @@ def start_server_subprocess(script_file, args, mode, opts, uid=getuid(), gid=get
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
-def get_start_server_args(opts, compat=False):
-    defaults = make_defaults_struct()
+def get_start_server_args(opts, uid=os.getuid(), gid=os.getgid(), compat=False):
+    defaults = make_defaults_struct(uid=uid, gid=gid)
     fixup_options(defaults)
     args = []
     for x, ftype in OPTION_TYPES.items():

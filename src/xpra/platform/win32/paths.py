@@ -62,7 +62,7 @@ def do_get_default_conf_dirs():
     from xpra.platform.paths import get_app_dir
     return [os.path.join(get_app_dir(), "etc", "xpra")]
 
-def do_get_user_conf_dirs():
+def do_get_user_conf_dirs(_uid):
     #ie: "C:\Documents and Settings\<user name>\Application Data\Xpra" with XP
     #or: "C:\Users\<user name>\AppData\Roaming" with Visa onwards
     return [_get_data_dir()]

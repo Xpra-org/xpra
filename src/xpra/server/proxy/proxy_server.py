@@ -296,8 +296,8 @@ class ProxyServer(ServerCore):
             for arg in args:
                 log.warn(" %s", arg)
             raise Exception("parse error on %s: %s" % (display, args))
-        opts = make_defaults_struct()
-        opts.username = client_proto.authenticator.username
+        opts = make_defaults_struct(username=username, uid=uid, gid=gid)
+        opts.username = username
         disp_desc = parse_display_name(parse_error, opts, display)
         if uid or gid:
             disp_desc["uid"] = uid
@@ -376,7 +376,7 @@ class ProxyServer(ServerCore):
         if display:
             args = [display]
         #allow the client to override some options:
-        opts = make_defaults_struct()
+        opts = make_defaults_struct(username=username, uid=uid, gid=gid)
         for k,v in sns.items():
             if k in ("mode", "display"):
                 continue    #those special attributes have been consumed already
@@ -398,7 +398,7 @@ class ProxyServer(ServerCore):
         log("env=%s", env)
         log("args=%s", args)
         log("cwd=%s", cwd)
-        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, uid, gid, env, cwd)
+        proc, socket_path, display = start_server_subprocess(sys.argv[0], args, mode, opts, username, uid, gid, env, cwd)
         if proc:
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), "xpra %s" % mode, True, True)
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
