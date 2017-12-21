@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
-from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, get_username_for_uid, WIN32, OSX, POSIX
+from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, WIN32, OSX, POSIX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \

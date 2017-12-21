@@ -11,7 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
-from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, osexpand
+from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, osexpand, getuid, getgid, get_username_for_uid
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -798,8 +798,6 @@ def get_defaults():
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
-    from xpra.os_util import getuid, getgid
-
     GLOBAL_DEFAULTS = {
                     "encoding"          : "",
                     "title"             : "@title@ on @client-machine@",
@@ -1129,8 +1127,14 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
     return nd
 
 
-def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}, username="", uid=0, gid=0):
+def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}, username="", uid=None, gid=None):
     #populate config with default values:
+    if uid is None:
+        uid = getuid()
+    if gid is None:
+        gid = getgid()
+    if not username and uid:
+        username = get_username_for_uid(uid)
     defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
