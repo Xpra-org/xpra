@@ -229,7 +229,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             #so we only add the menu item if it does something
             def add_ah(*_args):
                 if self.client.start_new_commands:
-                    actions_menu.add(self.make_runcommandmenu())
+                    actions_menu.add(self.make_runcommandmenuitem())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
                     actions_menu.add(self.make_uploadmenuitem())
             self.client.after_handshake(add_ah)
