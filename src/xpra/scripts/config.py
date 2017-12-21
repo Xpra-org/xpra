@@ -1127,12 +1127,8 @@ def validate_config(d={}, discard=NO_FILE_OPTIONS, extras_types={}, extras_valid
     return nd
 
 
-def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}, username="", uid=None, gid=None):
+def make_defaults_struct(extras_defaults={}, extras_types={}, extras_validation={}, username="", uid=getuid(), gid=getgid()):
     #populate config with default values:
-    if uid is None:
-        uid = getuid()
-    if gid is None:
-        gid = getgid()
     if not username and uid:
         username = get_username_for_uid(uid)
     defaults = read_xpra_defaults(username, uid, gid)

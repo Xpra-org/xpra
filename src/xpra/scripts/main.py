@@ -406,7 +406,7 @@ def do_parse_cmdline(cmdline, defaults):
                 "html"      : ""})
     legacy_bool_parse("daemon")
     legacy_bool_parse("attach")
-    if POSIX and os.getuid()==0:
+    if POSIX and getuid()==0:
         group.add_option("--uid", action="store",
                           dest="uid", default=defaults.uid,
                           help="The user id to change to when the server is started by root. Default: %s." % defaults.uid)
@@ -1317,7 +1317,7 @@ def parse_env(env):
 def configure_env(env_str):
     if env_str:
         env = parse_env(env_str)
-        if POSIX and os.getuid()==0:
+        if POSIX and getuid()==0:
             #running as root!
             #sanitize: only allow "safe" environment variables
             #as these may have been specified by a non-root user
@@ -2855,7 +2855,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
-def get_start_server_args(opts, uid=os.getuid(), gid=os.getgid(), compat=False):
+def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fixup_options(defaults)
     args = []
