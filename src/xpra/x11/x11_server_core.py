@@ -26,6 +26,7 @@ from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import StringIOClass, monotonic_time
+from xpra.util import engs, csv
 from xpra.net.compression import Compressed
 
 
@@ -160,12 +161,14 @@ class X11ServerCore(GTKServerBase):
 
     def query_opengl(self):
         self.opengl_props = {}
-        if os.path.exists("/sys/module/vboxguest"):
-            gllog.warn("Warning: skipped OpenGL probing, vboxguest module found")
-            self.opengl_props["error"] = "VirtualBox guest detected"
-        if os.path.exists("/sys/module/vboxvideo"):
-            gllog.warn("Warning: skipped OpenGL probing, vboxvideo module found")
-            self.opengl_props["error"] = "VirtualBox video detected"
+        blacklisted_kernel_modules = []
+        for mod in ("vboxguest", "vboxvideo"):
+            if os.path.exists("/sys/module/%s" % mod):
+                blacklisted_kernel_modules.append(mod)
+        if blacklisted_kernel_modules:
+            gllog.warn("Warning: skipped OpenGL probing, found %i blacklisted kernel module%s:", len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
+            gllog.warn(" %s", csv(blacklisted_kernel_modules))
+            self.opengl_props["error"] = "VirtualBox guest detected: %s" % csv(blacklisted_kernel_modules)
         else:
             try:
                 import subprocess
