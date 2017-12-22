@@ -743,6 +743,7 @@ class ServerBase(ServerCore):
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
             "command-signal":                       self._process_command_signal,
+            "open":                                 self._process_open,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -2074,6 +2075,9 @@ class ServerBase(ServerCore):
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
+
+    def _process_open(self, proto, packet):
+        pass
 
     def _process_send_file(self, proto, packet):
         ss = self._server_sources.get(proto)

@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+# This file is part of Xpra.
+# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
+
+import os
+import sys
+
+
+if os.environ.get("XPRA_XDG_OPEN"):
+    sys.stderr.write("xdg-open: aborting to avoid forwarding loop")
+    sys.exit(1)
+
+socket_path = os.environ.get("XPRA_XDG_OPEN_SERVER_SOCKET")
+display = os.environ.get("DISPLAY", "unknown")
+if socket_path and os.path.exists(socket_path):
+    #try to forward open commands:
+    for x in sys.argv[1:]:
+        filename = os.path.abspath(x)
+        if os.path.exists(x) and os.path.isfile(x):
+            from subprocess import Popen, PIPE
+            try:
+                command = ["xpra", "control", "socket://%s" % socket_path, "send-file", filename, "open", "*"]
+                proc = Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, shell=False, close_fds=True)
+                out, err = proc.communicate(None)
+                if proc.returncode==0:
+                    sys.exit(0)
+                else:
+                    if out:
+                        sys.stdout.write(out)
+                        sys.stdout.flush()
+                    if err:
+                        sys.stderr.write(err)
+                        sys.stderr.flush()
+            except Exception as e:
+                sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
+                sys.stderr.flush()
+
+#fallback to the "real" xdg-open:
+this_file = os.path.abspath(__file__)
+xdg_open_override_dir = os.path.dirname(this_file)
+env = os.environ.copy()
+PATH = env.get("PATH", "").split(os.pathsep)
+if xdg_open_override_dir not in ("/usr/bin", "/bin"):
+    #remove our path from PATH:
+    PATH = [x for x in PATH if os.path.abspath(x)!=xdg_open_override_dir]
+    env["PATH"] = os.pathsep.join(PATH)
+env["XPRA_XDG_OPEN"] = "1"
+#find the real xdg-open:
+real_xdg_open = None
+for x in PATH:
+    real_xdg_open = os.path.join(x, "xdg-open")
+    if os.path.exists(real_xdg_open) and os.path.isfile(real_xdg_open):
+        break
+if not real_xdg_open:
+    sys.stderr.write("xdg-open: real executable not found in $PATH\n")
+    sys.exit(1)
+if real_xdg_open==this_file:
+    sys.stderr.write("xdg-open: loop detected\n")
+    sys.exit(1)
+os.execve(real_xdg_open, ["xdg-open"]+sys.argv[1:], env)

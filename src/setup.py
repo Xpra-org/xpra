@@ -167,6 +167,7 @@ html5_brotli_ENABLED = DEFAULT
 minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
+xdg_open_ENABLED        = LINUX and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
@@ -226,7 +227,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "gtk_x11", "service",
             "gtk2", "gtk3", "example",
             "html5", "minify", "html5_gzip", "html5_brotli",
-            "pam",
+            "pam", "xdg_open",
             "sound", "opengl", "printing", "webcam",
             "rebuild",
             "annotate", "warn", "strict",
@@ -1445,6 +1446,12 @@ if WIN32:
 else:
     #OSX and *nix:
     scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/udev_product_version", "scripts/xpra_signal_listener"]
+    if xdg_open_ENABLED:
+        from xpra.os_util import is_Fedora, is_CentOS
+        if is_Fedora() or is_CentOS():
+            add_data_files("libexec/xpra/", ["scripts/xdg-open"])
+        else:
+            add_data_files("lib/xpra/",     ["scripts/xdg-open"])
     add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))

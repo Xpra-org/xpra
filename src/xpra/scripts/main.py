@@ -950,6 +950,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--password-file", action="store",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode). Default: '%default'.")
+    group.add_option("--forward-xdg-open", action="store",
+                      dest="forward_xdg_open", default=defaults.forward_xdg_open,
+                      help="Intercept calls to xdg-open and forward them to the client. Default: '%default'.")
     group.add_option("--input-method", action="store",
                       dest="input_method", default=defaults.input_method,
                       help="Which X11 input method to configure for client applications started with start or start-child (default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
