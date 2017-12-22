@@ -14,7 +14,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, bytestostr, strtobytes
 from xpra.util import typedict, csv, nonl, envint, envbool
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
@@ -36,7 +36,8 @@ def safe_open_download_file(basefilename, mimetype):
     from xpra.platform.paths import get_download_dir
     #make sure we use a filename that does not exist already:
     dd = os.path.expanduser(get_download_dir())
-    wanted_filename = os.path.abspath(os.path.join(dd, os.path.basename(basefilename)))
+    base = os.path.basename(basefilename)
+    wanted_filename = os.path.abspath(os.path.join(dd, base))
     ext = MIMETYPE_EXTS.get(mimetype)
     if ext:
         #on some platforms (win32),
@@ -243,7 +244,12 @@ class FileTransferHandler(FileTransferAttributes):
             l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return
-        filename, fd = safe_open_download_file(basefilename, mimetype)
+        #basefilename should be utf8:
+        try:
+            base = basefilename.decode("utf8")
+        except:
+            base = bytestostr(basefilename)
+        filename, fd = safe_open_download_file(base, mimetype)
         self.file_descriptors.add(fd)
         chunk_id = options.get("file-chunk-id")
         if chunk_id:
@@ -431,7 +437,12 @@ class FileTransferHandler(FileTransferAttributes):
             cdata = self.compressed_wrapper("file-data", data)
             assert len(cdata)<=filesize     #compressed wrapper ensures this is true
         basefilename = os.path.basename(filename)
-        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options)
+        #convert str to utf8 bytes:
+        try:
+            base = basefilename.encode("utf8")
+        except:
+            base = strtobytes(basefilename)
+        self.send("send-file", base, mimetype, printit, openit, filesize, cdata, options)
         return True
 
     def _check_chunk_sending(self, chunk_id, chunk_no):
