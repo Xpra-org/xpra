@@ -91,8 +91,8 @@ class ServerCommandsWindow(object):
         return btn
 
     def populate_table(self):
-        commands_info = self.client.server_last_info.get("commands")
-        if self.commands_info!=commands_info:
+        commands_info = typedict(self.client.server_last_info).dictget("commands")
+        if self.commands_info!=commands_info and commands_info:
             log("populate_table() new commands_info=%s", commands_info)
             self.commands_info = commands_info
             if self.table:
@@ -155,8 +155,9 @@ class ServerCommandsWindow(object):
             combo.append_text(x)
         def send(*_args):
             a = combo.get_active()
-            signame = self.client.server_commands_signals[a]
-            self.client.send("command-signal", pid, signame)
+            if a>=0:
+                signame = self.client.server_commands_signals[a]
+                self.client.send("command-signal", pid, signame)
         b = self.btn("Send", None, send, "send")
         hbox.pack_start(combo)
         hbox.pack_start(b)
