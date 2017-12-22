@@ -174,7 +174,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
+            filelog.error("Error: cannot find the file transfer id '%s'", nonl(bytestostr(chunk_id)))
             self.send("ack-file-chunk", chunk_id, False, "file transfer id not found", chunk)
             return
         fd = chunk_state[1]
@@ -251,8 +251,9 @@ class FileTransferHandler(FileTransferAttributes):
             base = bytestostr(basefilename)
         filename, fd = safe_open_download_file(base, mimetype)
         self.file_descriptors.add(fd)
-        chunk_id = options.get("file-chunk-id")
+        chunk_id = options.strget("file-chunk-id")
         if chunk_id:
+            chunk_id = strtobytes(chunk_id)
             if len(self.receive_chunks_in_progress)>=MAX_CONCURRENT_FILES:
                 self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress", 0)
                 os.close(fd)
@@ -265,7 +266,7 @@ class FileTransferHandler(FileTransferAttributes):
             self.send("ack-file-chunk", chunk_id, True, "", chunk)
             return
         #not chunked, full file:
-        assert file_data, "no data!"
+        assert file_data, "no data, got %s" % (file_data,)
         if len(file_data)!=filesize:
             l.error("Error: invalid data size for file '%s'", basefilename)
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
