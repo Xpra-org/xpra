@@ -34,7 +34,6 @@ Requires: 		lz4
 Provides:		python-lz4
 Obsoletes:      python-lz4 < 0.8.2-3
 Conflicts:		python-lz4 < 0.8.2-3
-Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
 This package provides Python2 bindings for the lz4 compression library
@@ -53,11 +52,6 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %prep
 %setup -q -n lz4-%{version}
 #only needed on centos (a fairly brutal solution):
-%if 0%{?fedora:1}
-#should work... until things get out of sync again
-%else
-%patch0 -p1
-%endif
 
 %if 0%{?with_python3}
 rm -rf %{py3dir}
