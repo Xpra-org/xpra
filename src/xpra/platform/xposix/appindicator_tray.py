@@ -11,9 +11,12 @@ import os
 from xpra.log import Logger
 log = Logger("tray", "posix")
 
+from xpra.util import envbool
 from xpra.os_util import is_unity
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
+
+DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
 
 _appindicator = False
@@ -81,13 +84,14 @@ class AppindicatorTray(TrayBase):
             return
         import tempfile
         try:
-            _, filename = tempfile.mkstemp(suffix="png")
+            _, filename = tempfile.mkstemp(suffix=".png")
             log("set_icon_from_data%s using temporary file %s", ("%s pixels" % len(pixels), has_alpha, w, h, rowstride), filename)
             tray_icon = gdk.pixbuf_new_from_data(pixels, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
             tray_icon.save(filename, "png")
             self.do_set_icon_from_file(filename)
         finally:
-            os.unlink(filename)
+            if DELETE_TEMP_FILE:
+                os.unlink(filename)
 
     def do_set_icon_from_file(self, filename):
         if not hasattr(self.tray_widget, "set_icon_theme_path"):
