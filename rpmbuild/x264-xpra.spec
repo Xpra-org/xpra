@@ -1,5 +1,5 @@
 Name:	     x264-xpra
-Version:     20170704
+Version:     20171222
 %define SNAPSHOTTYPE -stable
 %if 0%{?beta} < 1
 Release:     1%{?dist}
@@ -76,6 +76,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Sat Dec 23 2017 Antoine Martin <antoine@devloop.org.uk> 20171222-1
+- use a newer snapshot
+
 * Wed Jul 05 2017 Antoine Martin <antoine@devloop.org.uk> 20170704-1
 - use a newer snapshot
 
