@@ -225,7 +225,7 @@
   </autotools>
 
   <autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
-	<branch module="/pub/x264/snapshots/x264-snapshot-20171102-2245-stable.tar.bz2"
+	<branch module="/pub/x264/snapshots/x264-snapshot-20171222-2245-stable.tar.bz2"
 		version="20171222-2245-stable"
 		hash="sha256:27b812c0d007c8cbca3fe7a632888083e2d67bee8e7493fbc886e899fd94aef9"
 		repo="download.videolan.org"/>
