@@ -110,6 +110,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
+DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not WIN32)
 
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -3470,9 +3471,10 @@ class UIXpraClient(XpraClientBase):
         #find all the window icons,
         #and if they are all using the same one, then use it as tray icon
         #otherwise use the default icon
+        traylog("set_tray_icon() DYNAMIC_TRAY_ICON=%s, tray=%s", DYNAMIC_TRAY_ICON, self.tray)
         if not self.tray:
             return
-        if WIN32:
+        if not DYNAMIC_TRAY_ICON:
             #the icon ends up looking garbled on win32,
             #and we somehow also lose the settings that can keep us in the visible systray list
             #so don't bother
@@ -3480,7 +3482,9 @@ class UIXpraClient(XpraClientBase):
         windows = tuple(w for w in self._window_to_id.keys() if not w.is_tray())
         #get all the icons:
         icons = tuple(getattr(w, "_current_icon", None) for w in windows)
-        if icons and not any(True for icon in icons if icon is None):
+        missing = sum(1 for icon in icons if icon is None)
+        traylog("set_tray_icon() %i windows, %i icons, %i missing", len(windows), len(icons), missing)
+        if icons and not missing:
             icon = icons[0]
             for i in icons[1:]:
                 if i!=icon:
@@ -3490,11 +3494,13 @@ class UIXpraClient(XpraClientBase):
             if icon:
                 has_alpha = icon.mode=="RGBA"
                 width, height = icon.size
+                traylog("set_tray_icon() using unique icon: %ix%i", width, height)
                 rowstride = width * (3+int(has_alpha))
                 rgb_data = icon.tobytes("raw")
                 self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
                 return
         #this sets the default icon (badly named function!)
+        traylog("set_tray_icon() using default icon")
         self.tray.set_icon()
 
     def _window_icon_image(self, wid, width, height, coding, data):
