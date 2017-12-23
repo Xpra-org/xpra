@@ -2086,7 +2086,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
                 print("error trying to stop ssh tunnel process: %s" % e)
         from xpra.net.bytestreams import TwoFileConnection
         info = {}
-        target = "ssh/"
+        target = "ssh://"
         username = display_desc.get("username")
         if username:
             target += "%s@" % username
