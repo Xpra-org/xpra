@@ -11,7 +11,8 @@ from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_encodingsmenu, \
-            CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS, CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL, SHOW_UPLOAD
+            CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS, CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL, \
+            SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
 
@@ -27,6 +28,7 @@ SHOW_ENCODINGS_MENU = True
 SHOW_ACTIONS_MENU = True
 SHOW_INFO_MENU = True
 SHOW_CLIPBOARD_MENU = True
+SHOW_SERVER_MENU = True
 
 SHOW_ABOUT_XPRA = True
 
@@ -179,6 +181,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if SHOW_INFO_MENU:
             info_menu = self.make_menu()
             info_menu.append(self.make_sessioninfomenuitem())
+            if SHOW_VERSION_CHECK:
+                info_menu.append(self.make_updatecheckmenuitem())
             info_menu.append(self.make_bugreportmenuitem())
             menus.append(("Info", info_menu))
         if SHOW_FEATURES_MENU:
@@ -225,15 +229,22 @@ class OSXMenuHelper(GTKTrayMenuBase):
             actions_menu = self.make_menu()
             actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_raisewindowsmenuitem())
+            menus.append(("Actions", actions_menu))
+        if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
+            server_menu = self.make_menu()
+            if SHOW_SHUTDOWN:
+                server_menu.append(self.make_shutdownmenuitem())
             #set_sensitive(bool) does not work on OSX,
             #so we only add the menu item if it does something
             def add_ah(*_args):
                 if self.client.start_new_commands:
-                    actions_menu.add(self.make_runcommandmenuitem())
+                    server_menu.add(self.make_runcommandmenuitem())
+                if SHOW_SERVER_COMMANDS and self.client.server_commands_info:
+                    server_menu.append(self.make_servercommandsmenuitem())
                 if SHOW_UPLOAD and self.client.remote_file_transfer:
-                    actions_menu.add(self.make_uploadmenuitem())
+                    server_menu.add(self.make_uploadmenuitem())
             self.client.after_handshake(add_ah)
-            menus.append(("Actions", actions_menu))
+            menus.append(("Server", server_menu))
         menus.append((SEPARATOR+"-EXTRAS", None))
         return menus
 
