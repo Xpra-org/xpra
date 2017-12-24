@@ -546,7 +546,7 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def _process_send_data_request(self, packet):
-        dtype, send_id, url, _, _, printit, openit = packet[1:8]
+        dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
         filelog("send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
@@ -577,11 +577,11 @@ class FileTransferHandler(FileTransferAttributes):
             #it would fail later when we don't find this send_id in our accepted list
             cb_answer(False)
         else:
-            self.ask_data_request(cb_answer, send_id, dtype, url, printit, openit)
+            self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def ask_data_request(self, cb_answer, send_id, dtype, filename, printit, openit):
+    def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         #subclasses may prompt the user here instead
-        filelog("ask_data_request%s", (send_id, dtype, filename, printit, openit))
+        filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
         cb_answer(False)
 
     def _process_send_data_response(self, packet):

@@ -28,7 +28,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
-from xpra.simple_stats import std_unit
+from xpra.simple_stats import std_unit, std_unit_dec
 from xpra.net.compression import Compressible
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -299,7 +299,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     ################################
     # file handling
-    def ask_data_request(self, cb_answer, send_id, dtype, url, printit, openit):
+    def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         #show a dialog, fire cb_answer with True or False depending on the response
         assert send_id not in self.file_ask_dialogs
         parent = None
@@ -309,11 +309,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             action = "open"
         else:
             action = "send"
-        msgs = (
-                "The xpra server is requesting to %s the %s '%s'" % (action, dtype, url),
-                )
+        msg = "The xpra server is requesting to %s the %s '%s'" % (action, dtype, url)
+        if dtype=="file" and filesize>0:
+            msg += "\n(filesize is %s)" % std_unit_dec(filesize)
         dialog = gtk.MessageDialog(parent, 0, MESSAGE_INFO,
-                                      BUTTONS_OK_CANCEL, "\n".join(msgs))
+                                      BUTTONS_OK_CANCEL, msg)
         try:
             image = gtk.image_new_from_stock(gtk.STOCK_OK, 64)
             dialog.set_image(image)
