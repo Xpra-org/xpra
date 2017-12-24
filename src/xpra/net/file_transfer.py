@@ -306,7 +306,7 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet)>=9:
             send_id = packet[8]
-        if not self.accept_data(send_id, "file", basefilename, printit, openit):
+        if not self.accept_data(send_id, b"file", basefilename, printit, openit):
             filelog.warn("Warning: file transfer rejected for file '%s'", basefilename)
             return
         options = typedict(options)
@@ -474,7 +474,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
             return
-        if not self.open_url_ask or self.accept_data(send_id, "url", url, False, True):
+        if not self.open_url_ask or self.accept_data(send_id, b"url", url, False, True):
             self._open_url(url)
         else:
             filelog("url '%s' not accepted", url)
@@ -486,7 +486,7 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         if self.remote_open_url_ask:
             #ask the client if it is OK to send
-            return self.send_data_request("open", "url", url)
+            return self.send_data_request("open", b"url", url)
         self.do_send_open_url(url)
         return True
 
@@ -528,7 +528,7 @@ class FileTransferHandler(FileTransferAttributes):
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
-            return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
+            return self.send_data_request(action, b"file", filename, mimetype, data, filesize, printit, openit, options)
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
         return True
 
@@ -551,7 +551,7 @@ class FileTransferHandler(FileTransferAttributes):
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, bool(accept))
-        if dtype=="file":
+        if dtype==b"file":
             if not self.file_transfer:
                 cb_answer(False)
                 return
@@ -562,14 +562,15 @@ class FileTransferHandler(FileTransferAttributes):
                 ask = self.file_transfer_ask or self.open_files_ask
             else:
                 ask = self.file_transfer_ask
-        elif dtype=="url":
+        elif dtype==b"url":
             if not self.open_url:
                 cb_answer(False)
                 return
             ask = self.open_url_ask
         else:
-            filelog.warn("Warning: unkown data request type '%s'", dtype)
+            filelog.warn("Warning: unknown data request type '%s'", dtype)
             cb_answer(False)
+            return
         if not ask:
             filelog.warn("Warning: received a send-data request for a %s,", dtype)
             filelog.warn(" but authorization is not required by the client")
@@ -607,10 +608,10 @@ class FileTransferHandler(FileTransferAttributes):
         if not accept:
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
-        if dtype=="file":
+        if dtype==b"file":
             mimetype, data, filesize, printit, openit, options = v[2:]
             self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
-        elif dtype=="url":
+        elif dtype==b"url":
             self.do_send_open_url(url, send_id)
         else:
             filelog.error("Error: unknown datatype '%s'", dtype)

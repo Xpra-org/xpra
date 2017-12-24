@@ -300,6 +300,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     ################################
     # file handling
     def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
+        self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
+        
+    def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         #show a dialog, fire cb_answer with True or False depending on the response
         assert send_id not in self.file_ask_dialogs
         parent = None
@@ -309,8 +312,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             action = "open"
         else:
             action = "send"
-        msg = "The xpra server is requesting to %s the %s '%s'" % (action, dtype, url)
-        if dtype=="file" and filesize>0:
+        msg = "The xpra server is requesting to %s the %s '%s'" % (bytestostr(action), bytestostr(dtype), bytestostr(url))
+        if dtype==b"file" and filesize>0:
             msg += "\n(filesize is %s)" % std_unit_dec(filesize)
         dialog = gtk.MessageDialog(parent, 0, MESSAGE_INFO,
                                       BUTTONS_OK_CANCEL, msg)
