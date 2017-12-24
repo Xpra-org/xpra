@@ -2,7 +2,13 @@
 # File transfers
 
 # Receive files
-file-transfer = yes
+#file-transfer = ask
+#file-transfer = no
+file-transfer = auto
+
+# Open URL
+#open-url = no
+open-url = ask
 
 # Location where files are received:
 #download-path = ~/Downloads
@@ -16,4 +22,5 @@ file-size-limit = 100
 #open-command = xdg-open
 
 # Open files
-open-files = no
+#open-files = no
+open-files = auto
