@@ -260,7 +260,7 @@ def is_distribution_variant(variant=b"Debian", os_file="/etc/os-release"):
         pass
     try:
         v = load_binary_file(os_file)
-        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith("NAME="))
+        return any(l.find(variant)>=0 for l in v.splitlines() if l.startswith(b"NAME="))
     except:
         return False
 
