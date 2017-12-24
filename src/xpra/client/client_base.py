@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON2, PYTHON3, strtobytes, bytestostr, hexstr
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, envint, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -307,6 +307,8 @@ class XpraClientBase(FileTransferHandler):
     def init_authenticated_packet_handlers(self):
         self.set_packet_handlers(self._packet_handlers, {
             "send-file"        : self._process_send_file,
+            "send-file-request" : self._process_send_file_request,
+            "send-file-response": self._process_send_file_response,
             "ack-file-chunk"   : self._process_ack_file_chunk,
             "send-file-chunk"  : self._process_send_file_chunk,
             })

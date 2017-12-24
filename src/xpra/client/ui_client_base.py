@@ -63,7 +63,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, WIN32
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, WIN32, is_Ubuntu
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -110,7 +110,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
-DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not WIN32)
+DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not WIN32 and not is_Ubuntu())
 
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)

@@ -38,7 +38,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, \
-            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE
+            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, BUTTONS_OK_CANCEL, RESPONSE_OK
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.client_base import PASSWORD_PROMPT
@@ -66,11 +66,13 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info = None
         self.bug_report = None
         self.file_size_dialog = None
+        self.file_ask_dialogs = {}
         self.file_dialog = None
         self.start_new_command = None
         self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
         self.border = None
+        self.file_requests = {}
         #clipboard bits:
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
@@ -295,6 +297,62 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return self.start_new_command
 
 
+    ################################
+    # file handling
+    def ask_file(self, cb_answer, send_id, filename, printit, openit):
+        #show a dialog, fire cb_answer with True or False depending on the response
+        assert send_id not in self.file_ask_dialogs
+        parent = None
+        if printit:
+            action = "print"
+        elif openit:
+            action = "open"
+        else:
+            action = "send"
+        msgs = (
+                "The xpra server is requesting this client to %s the file '%s'" % (action, filename),
+                )
+        dialog = gtk.MessageDialog(parent, 0, MESSAGE_INFO,
+                                      BUTTONS_OK_CANCEL, "\n".join(msgs))
+        try:
+            image = gtk.image_new_from_stock(gtk.STOCK_OK, 64)
+            dialog.set_image(image)
+        except Exception as e:
+            log.warn("Warning: failed to set dialog image: %s", e)
+        dialog.connect("response", self.ask_file_response, cb_answer, send_id, filename, printit, openit)
+        dialog.show()
+        self.file_ask_dialogs[send_id] = dialog
+
+    def ask_file_response(self, dialog, response, cb_answer, send_id, filename, printit, openit):
+        #the file dialog has been closed
+        #tell the cb_answer if the response is OK or not
+        filelog("ask_file_response%s", (dialog, response, cb_answer, send_id, filename, printit, openit))
+        accept = response == RESPONSE_OK
+        dialog.destroy()
+        try:
+            del self.file_ask_dialogs[send_id]
+        except KeyError:
+            pass
+        if accept:
+            #record our response, so we will accept the file
+            self.file_requests[send_id] = (filename, printit, openit)
+        cb_answer(accept)
+
+    def accept_file(self, send_id, filename, printit, openit):
+        #verify that we have accepted this file,
+        #and with the same attributes
+        r = self.file_requests.get(send_id)
+        if not r:
+            filelog.warn("Warning: received a file which was never accepted")
+            return False
+        if r!=(filename, printit, openit):
+            filelog.warn("Warning: the file attributes are different")
+            filelog.warn(" from the ones that were used to accept the transfer")
+            filelog.warn(" expected filename=%s, print=%s, open=%s", *r)
+            filelog.warn(" received filename=%s, print=%s, open=%s", filename, printit, openit)
+            return False
+        return True
+
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:
             #close previous warning
@@ -312,7 +370,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             image = gtk.image_new_from_stock(gtk.STOCK_DIALOG_WARNING, 64)
             self.file_size_dialog.set_image(image)
         except Exception as e:
-            log.warn("failed to set dialog image: %s", e)
+            log.warn("Warning: failed to set dialog image: %s", e)
         self.file_size_dialog.connect("response", self.close_file_size_warning)
         self.file_size_dialog.show()
 
