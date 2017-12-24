@@ -668,6 +668,18 @@
         </after>
   </distutils>
 
+  <distutils id="python-pkgconfig">
+	<branch repo="pypi.python.org"
+	        module="/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz"
+	        hash="sha256:3685ba02a9b72654a764b728b559f327e1dbd7dc6ebc310a1bd429666ee202aa"
+	        version="1.2.2"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
 
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
@@ -676,10 +688,12 @@
 	        version="0.14.0"/>
         <dependencies>
                 <dep package="python"/>
+                <dep package="python-pkgconfig"/>
                 <dep package="python-setuptools-scm"/>
         </dependencies>
         <after>
                 <dep package="python"/>
+                <dep package="python-pkgconfig"/>
                 <dep package="python-setuptools-scm"/>
         </after>
   </distutils>
