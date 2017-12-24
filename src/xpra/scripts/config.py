@@ -949,7 +949,7 @@ def get_defaults():
                     "swap-keys"         : OSX,  #only used on osx
                     "desktop-fullscreen": False,
                     "global-menus"      : True,
-                    "forward-xdg-open"  : False,
+                    "forward-xdg-open"  : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : [],
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
