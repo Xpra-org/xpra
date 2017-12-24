@@ -17,7 +17,7 @@
 
 
 Name:           python2-lz4
-Version:        0.13.0
+Version:        0.14.0
 Release:        1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
@@ -90,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Dec 25 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.14.0-1
+- New upstream release
+
 * Fri Dec 22 2017 Antoine Martin <antoine@nagafix.co.uk> - 0.13.0-1
 - New upstream release
 

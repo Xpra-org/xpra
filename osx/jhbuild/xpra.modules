@@ -671,9 +671,9 @@
 
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
-	        module="/packages/f8/d8/f59c7b1b7bd92b06a2ba3f846c6925471d62af606a505535477fc38e3161/lz4-0.13.0.tar.gz"
-	        hash="sha256:c226cf0270319b0468de819aeb5c164e164c1389ea80088044749b80371de25f"
-	        version="0.13.0"/>
+	        module="https://pypi.python.org/packages/d4/88/a00383fe9905a51ffae2f78b7429d51e982b3ea7958ea06fee3288f9e0ac/lz4-0.14.0.tar.gz"
+	        hash="sha256:27399b9e4cb907e3b9b067181c433648731e4bb5dc0651d08197544daf18dd77"
+	        version="0.14.0"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-setuptools-scm"/>
