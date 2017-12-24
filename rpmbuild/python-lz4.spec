@@ -27,10 +27,7 @@ Source:         https://pypi.python.org/packages/f8/d8/f59c7b1b7bd92b06a2ba3f846
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
-%if 0%{?fedora}
-#on centos7, we build the dirty way using "easy_install pkgconfig"
 BuildRequires:  python2-pkgconfig
-%endif
 Requires: 		lz4
 Requires: 		python2-deprecation
 Provides:		python-lz4
