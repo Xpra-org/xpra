@@ -517,6 +517,7 @@ rm -rf $RPM_BUILD_ROOT
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
+%{_libexecdir}/xpra/xdg-open
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_prefix}/lib/tmpfiles.d/xpra.conf
 %config %{_prefix}/lib/sysusers.d/xpra.conf
