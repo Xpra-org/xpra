@@ -681,6 +681,19 @@
         </after>
   </distutils>
 
+  <distutils id="python-deprecation">
+	<branch repo="pypi.python.org"
+	        module="/packages/8c/e3/e5c66eba8fa2fd567065fa70ada98b990f449f74fb812b408fa7aafe82c9/deprecation-1.0.1.tar.gz"
+	        hash="sha256:b9bff5cc91f601ef2a8a0200bc6cde3f18a48c2ed3d1ecbfc16076b14b3ad935"
+	        version="1.0.1"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
+
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
 	        module="https://pypi.python.org/packages/d4/88/a00383fe9905a51ffae2f78b7429d51e982b3ea7958ea06fee3288f9e0ac/lz4-0.14.0.tar.gz"
@@ -689,11 +702,13 @@
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-pkgconfig"/>
+                <dep package="python-deprecation"/>
                 <dep package="python-setuptools-scm"/>
         </dependencies>
         <after>
                 <dep package="python"/>
                 <dep package="python-pkgconfig"/>
+                <dep package="python-deprecation"/>
                 <dep package="python-setuptools-scm"/>
         </after>
   </distutils>

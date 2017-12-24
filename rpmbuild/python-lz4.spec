@@ -27,10 +27,9 @@ Source:         https://pypi.python.org/packages/f8/d8/f59c7b1b7bd92b06a2ba3f846
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
-%if 0%{?suse_version}==0
-BuildRequires:  lz4-devel
-%endif
+BuildRequires:  python2-pkgconfig
 Requires: 		lz4
+Requires: 		python2-deprecation
 Provides:		python-lz4
 Obsoletes:      python-lz4 < 0.8.2-3
 Conflicts:		python-lz4 < 0.8.2-3
@@ -43,6 +42,8 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %package -n python3-lz4
 Summary:        LZ4 Bindings for Python3
 Group:          Development/Languages/Python
+BuildRequires:  python3-pkgconfig
+Requires: 		python3-deprecation
 
 %description -n python3-lz4
 This package provides Python3 bindings for the lz4 compression library
