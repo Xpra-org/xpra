@@ -35,7 +35,7 @@ if socket_path and os.path.exists(socket_path):
         try:
             command = ["xpra", "control", "socket://%s" % socket_path] + control_command
             proc = Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, shell=False, close_fds=True)
-            sys.stderr.write("Popen(%s)=%s\n" % (command, proc))
+            #sys.stderr.write("Popen(%s)=%s\n" % (command, proc))
             out, err = proc.communicate(None)
             if proc.returncode==0:
                 sys.exit(0)

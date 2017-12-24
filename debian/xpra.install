@@ -8,6 +8,8 @@ usr/bin/xpra_signal_listener
 usr/bin/udev_product_version
 usr/lib/cups/backend/xpraforwarder
 usr/lib/xpra/xdg-open
+usr/lib/xpra/gnome-open
+usr/lib/xpra/gvfs-open
 usr/share/applications/xpra-launcher.desktop
 usr/share/applications/xpra-browser.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml

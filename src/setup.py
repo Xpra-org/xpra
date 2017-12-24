@@ -1449,9 +1449,10 @@ else:
     if xdg_open_ENABLED:
         from xpra.os_util import is_Fedora, is_CentOS
         if is_Fedora() or is_CentOS():
-            add_data_files("libexec/xpra/", ["scripts/xdg-open"])
+            libexec = "libexec"
         else:
-            add_data_files("lib/xpra/",     ["scripts/xdg-open"])
+            libexec = "lib"
+        add_data_files("%s/xpra/" % libexec, ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"])
     add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))
