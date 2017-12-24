@@ -735,8 +735,8 @@ class ServerBase(ServerCore):
             "send-file":                            self._process_send_file,
             "ack-file-chunk":                       self._process_ack_file_chunk,
             "send-file-chunk":                      self._process_send_file_chunk,
-            "send-file-request":                    self._process_send_file_request,
-            "send-file-response":                   self._process_send_file_response,
+            "send-data-request":                    self._process_send_data_request,
+            "send-data-response":                   self._process_send_data_response,
             "webcam-start":                         self._process_webcam_start,
             "webcam-stop":                          self._process_webcam_stop,
             "webcam-frame":                         self._process_webcam_frame,
@@ -745,7 +745,6 @@ class ServerBase(ServerCore):
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
             "command-signal":                       self._process_command_signal,
-            "open":                                 self._process_open,
           }
         self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
         self._authenticated_ui_packet_handlers.update({
@@ -838,6 +837,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=2, validation=[str, parse_boolean_value]),
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=1),
+            ArgsControlCommand("open-url",              "open the URL on the client(s)",    min_args=1, max_args=2),
             ArgsControlCommand("send-file",             "sends the file to the client(s)",  min_args=1, max_args=4),
             ArgsControlCommand("send-notification",     "sends a notification to the client(s)",  min_args=4, max_args=5, validation=[int]),
             ArgsControlCommand("close-notification",    "send the request to close an existing notification to the client(s)", min_args=1, max_args=2, validation=[int]),
@@ -1784,6 +1784,17 @@ class ServerBase(ServerCore):
         return msg
 
 
+    def control_command_open_url(self, url, client_uuids="*"):
+        #find the clients:
+        sources = self._control_get_sources(client_uuids)
+        if not sources:
+            raise ControlError("no clients found matching: %s" % client_uuids)
+        clients = 0
+        for ss in sources:
+            if ss.send_open_url(url):
+                clients += 1
+        return "url sent to %i clients" % clients
+
     def control_command_send_file(self, filename, openit="open", client_uuids="*", maxbitrate=0):
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
@@ -2078,9 +2089,6 @@ class ServerBase(ServerCore):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
 
-    def _process_open(self, proto, packet):
-        pass
-
     def _process_send_file(self, proto, packet):
         ss = self._server_sources.get(proto)
         if not ss:
@@ -2102,19 +2110,19 @@ class ServerBase(ServerCore):
             return
         ss._process_send_file_chunk(packet)
 
-    def _process_send_file_request(self, proto, packet):
+    def _process_send_data_request(self, proto, packet):
         ss = self._server_sources.get(proto)
         if not ss:
             log.warn("Warning: invalid client source for send-file-request packet")
             return
-        ss._process_send_file_request(packet)
+        ss._process_send_data_request(packet)
 
-    def _process_send_file_response(self, proto, packet):
+    def _process_send_data_response(self, proto, packet):
         ss = self._server_sources.get(proto)
         if not ss:
-            log.warn("Warning: invalid client source for send-file-response packet")
+            log.warn("Warning: invalid client source for send-data-response packet")
             return
-        ss._process_send_file_response(packet)
+        ss._process_send_data_response(packet)
 
     def _process_print(self, _proto, packet):
         #ie: from the xpraforwarder we call this command:

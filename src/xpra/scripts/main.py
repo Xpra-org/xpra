@@ -453,12 +453,16 @@ def do_parse_cmdline(cmdline, defaults):
     legacy_bool_parse("printing")
     legacy_bool_parse("file-transfer")
     legacy_bool_parse("open-files")
+    legacy_bool_parse("open-url")
     group.add_option("--file-transfer", action="store", metavar="yes|no|ask",
                       dest="file_transfer", default=defaults.file_transfer,
                       help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
     group.add_option("--open-files", action="store", metavar="yes|no|ask",
                       dest="open_files", default=defaults.open_files,
                       help="Automatically open uploaded files (potentially dangerous). Default: '%default'.")
+    group.add_option("--open-url", action="store", metavar="yes|no|ask",
+                      dest="open_url", default=defaults.open_url,
+                      help="Automatically open URL (potentially dangerous). Default: '%default'.")
     group.add_option("--printing", action="store", metavar="yes|no|ask",
                       dest="printing", default=defaults.printing,
                       help="Support printing. Default: %s." % enabled_str(defaults.printing))

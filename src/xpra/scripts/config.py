@@ -511,6 +511,7 @@ OPTION_TYPES = {
                     "input-devices"     : str,
                     "shortcut-modifiers": str,
                     "open-files"        : str,
+                    "open-url"          : str,
                     "file-transfer"     : str,
                     "printing"          : str,
                     #ssl options:
@@ -632,7 +633,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
+OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "open-url", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
                     "forward-xdg-open",
                           ]
 
@@ -644,7 +645,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "systemd-run", "systemd-run-args",
                   "socket-dir", "socket-dirs",
                   "border", "window-close", "max-size", "desktop-scaling",
-                  "file-transfer", "file-size-limit", "download-path", "open-command", "open-files", "printing",
+                  "file-transfer", "file-size-limit", "download-path", "open-command", "open-files", "printing", "open-url",
                   "dbus-proxy",
                   "remote-logging",
                   "lpadmin", "lpinfo",
@@ -693,7 +694,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "terminate-children", "exit-with-children", "exit-with-client",
     "av-sync", "global-menus",
     "forward-xdg-open",
-    "printing", "file-transfer", "open-command", "open-files", "start-new-commands",
+    "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "rfb-auth",
     "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-rfb",
@@ -874,6 +875,7 @@ def get_defaults():
                     "input-devices"     : "auto",
                     "shortcut-modifiers": "auto",
                     "open-files"        : "ask",
+                    "open-url"          : "ask",
                     "file-transfer"     : "yes",
                     "printing"          : "yes",
                     #ssl options:

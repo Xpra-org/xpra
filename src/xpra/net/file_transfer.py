@@ -71,15 +71,16 @@ class FileTransferAttributes(object):
             #copy attributes
             for x in ("file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
                       "printing", "printing_ask", "open_files", "open_files_ask",
+                      "open_url", "open_url_ask",
                       "file_ask_timeout", "open_command"):
                 setattr(self, x, getattr(attrs, x))
 
     def init_opts(self, opts):
         #get the settings from a config object
-        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_command)
+        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_url, opts.open_command)
 
-    def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_command=None):
-        filelog("file transfer: init_attributes%s", (file_transfer, file_size_limit, printing, open_files, open_command))
+    def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None):
+        filelog("file transfer: init_attributes%s", (file_transfer, file_size_limit, printing, open_files, open_url, open_command))
         #printing and file transfer:
         self.file_transfer_ask = file_transfer.lower() in ("ask", "auto")
         self.file_transfer = self.file_transfer_ask or parse_bool("file-transfer", file_transfer)
@@ -89,8 +90,12 @@ class FileTransferAttributes(object):
         self.printing = self.printing_ask or parse_bool("printing", printing)
         self.open_files_ask = open_files.lower() in ("ask", "auto")
         self.open_files = self.open_files_ask or parse_bool("open-files", open_files)
+        #FIXME: command line options needed here:
+        self.open_url_ask = open_url.lower() in ("ask", "auto")
+        self.open_url = self.open_url_ask or parse_bool("open-url", open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
+        filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self):
         #used in hello packets
@@ -103,6 +108,8 @@ class FileTransferAttributes(object):
                 "open-files-ask"    : self.open_files_ask,
                 "printing"          : self.printing,
                 "printing-ask"      : self.printing_ask,
+                "open-url"          : self.open_url,
+                "open-url-ask"      : self.open_url_ask,
                 "file-ask-timeout"  : self.file_ask_timeout,
                 }
 
@@ -116,6 +123,8 @@ class FileTransferAttributes(object):
                 "chunks"            : self.file_chunks,
                 "open"              : self.open_files,
                 "open-ask"          : self.open_files_ask,
+                "open-url"          : self.open_url,
+                "open-url-ask"      : self.open_url_ask,
                 "printing"          : self.printing,
                 "printing-ask"      : self.printing_ask,
                 "ask-timeout"       : self.file_ask_timeout,
@@ -136,11 +145,13 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_printing_ask = False
         self.remote_open_files = False
         self.remote_open_files_ask = False
+        self.remote_open_url = False
+        self.remote_open_url_ask = False
         self.remote_file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
-        self.pending_send_file = {}
-        self.pending_send_file_timers = {}
+        self.pending_send_data = {}
+        self.pending_send_data_timers = {}
         self.send_chunks_in_progress = {}
         self.receive_chunks_in_progress = {}
         self.file_descriptors = set()
@@ -152,9 +163,9 @@ class FileTransferHandler(FileTransferAttributes):
             self.source_remove = glib.source_remove
 
     def cleanup(self):
-        for t in self.pending_send_file_timers.values():
+        for t in self.pending_send_data_timers.values():
             self.source_remove(t)
-        self.pending_send_file_timers = {}
+        self.pending_send_data_timers = {}
         for v in self.receive_chunks_in_progress.values():
             t = v[-2]
             self.source_remove(t)
@@ -174,9 +185,15 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_printing_ask = c.boolget("printing-ask")
         self.remote_open_files = c.boolget("open-files")
         self.remote_open_files_ask = c.boolget("open-files-ask")
+        self.remote_open_url = c.boolget("open-url")
+        self.remote_open_url_ask = c.boolget("open-url-ask")
         self.remote_file_ask_timeout = c.intget("file-ask-timeout")
         self.remote_file_size_limit = c.intget("file-size-limit")
         self.remote_file_chunks = max(0, min(self.remote_file_size_limit*1024*1024, c.intget("file-chunks")))
+        filelog("parse_file_transfer_caps() remote: file-transfer=%s (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
+        filelog("parse_file_transfer_caps() remote: printing=%s (ask=%s)", self.remote_printing, self.remote_printing_ask)
+        filelog("parse_file_transfer_caps() remote: open-files=%s (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
+        filelog("parse_file_transfer_caps() remote: open-url=%s (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
 
     def get_info(self):
         info = FileTransferAttributes.get_info(self)
@@ -187,6 +204,8 @@ class FileTransferHandler(FileTransferAttributes):
                           "file-chunks"     : self.remote_file_chunks,
                           "open-files"      : self.remote_open_files,
                           "open-files-ask"  : self.remote_open_files_ask,
+                          "open-url"        : self.remote_open_url,
+                          "open-url-ask"    : self.remote_open_url_ask,
                           "printing"        : self.remote_printing,
                           "printing-ask"    : self.remote_printing_ask,
                           "file-ask-timeout" : self.remote_file_ask_timeout,
@@ -270,7 +289,7 @@ class FileTransferHandler(FileTransferAttributes):
         t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False, args=(filename, mimetype, printit, openit, filesize, options))
         filelog("started process-download thread: %s", t)
 
-    def accept_file(self, _send_id, _basefilename, printit, openit):
+    def accept_data(self, _send_id, _dtype, _basefilename, printit, openit):
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         if printit:
@@ -287,7 +306,7 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet)>=9:
             send_id = packet[8]
-        if not self.accept_file(send_id, basefilename, printit, openit):
+        if not self.accept_data(send_id, "file", basefilename, printit, openit):
             filelog.warn("Warning: file transfer rejected for file '%s'", basefilename)
             return
         options = typedict(options)
@@ -353,7 +372,12 @@ class FileTransferHandler(FileTransferAttributes):
             self._print_file(filename, mimetype, options)
             return
         elif openit:
-            self._open_file(filename)
+            if not self.open_files:
+                filelog.warn("Warning: opening files automatically is disabled,")
+                filelog.warn(" ignoring uploaded file:")
+                filelog.warn(" '%s'", filename)
+                return
+            self._open_url("file://%s" % filename)
 
     def _print_file(self, filename, mimetype, options):
         printlog("print_file%s", (filename, mimetype, options))
@@ -415,22 +439,17 @@ class FileTransferHandler(FileTransferAttributes):
             #check every 10 seconds:
             self.timeout_add(10000, check_printing_finished)
 
-    def _open_file(self, filename):
-        if not self.open_files:
-            filelog.warn("Warning: opening files automatically is disabled,")
-            filelog.warn(" ignoring uploaded file:")
-            filelog.warn(" '%s'", filename)
-            return
-        command = shlex.split(self.open_command)+[filename]
+    def _open_url(self, url):
+        command = shlex.split(self.open_command)+[url]
         proc = subprocess.Popen(command)
         def open_done(*_args):
             returncode = proc.poll()
             filelog("open_done: command %s has ended, returncode=%s", command, returncode)
             if returncode!=0:
-                filelog.warn("Warning: failed to open the downloaded file")
-                filelog.warn(" '%s %s' returned %s", self.open_command, filename, returncode)
+                filelog.warn("Warning: failed to open the downloaded content")
+                filelog.warn(" '%s %s' returned %s", self.open_command, url, returncode)
         cr = getChildReaper()
-        cr.add_process(proc, "Open File %s" % filename, command, True, True, open_done)
+        cr.add_process(proc, "Open URL %s" % url, command, True, True, open_done)
 
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
@@ -448,17 +467,43 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         return True
 
+
+    def _process_open_url(self, packet):
+        url, send_id = packet[1:3]
+        if not self.open_url:
+            filelog.warn("Warning: received a request to open URL '%s'", url)
+            filelog.warn(" but opening of URLs is disabled")
+            return
+        if not self.open_url_ask or self.accept_data(send_id, "url", url, False, True):
+            self._open_url(url)
+        else:
+            filelog("url '%s' not accepted", url)
+        
+
+    def send_open_url(self, url):
+        if not self.remote_open_url:
+            filelog.warn("Warning: remote end does not accept URLs")
+            return False
+        if self.remote_open_url_ask:
+            #ask the client if it is OK to send
+            return self.send_data_request("open", "url", url)
+        self.do_send_open_url(url)
+        return True
+
+    def do_send_open_url(self, url, send_id=""):
+        self.send("open-url", url, send_id)
+
     def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}):
         if printit:
+            l = printlog
             if not self.printing:
-                printlog.warn("Warning: printing is not enabled for %s", self)
+                l.warn("Warning: printing is not enabled for %s", self)
                 return False
             if not self.remote_printing:
-                printlog.warn("Warning: remote end does not support printing")
+                l.warn("Warning: remote end does not support printing")
                 return False
             ask = self.remote_printing_ask
             action = "print"
-            l = printlog
         else:
             if not self.file_transfer:
                 filelog.warn("Warning: file transfers are not enabled for %s", self)
@@ -466,89 +511,118 @@ class FileTransferHandler(FileTransferAttributes):
             if not self.remote_file_transfer:
                 printlog.warn("Warning: remote end does not support file transfers")
                 return False
+            l = filelog
             ask = self.remote_file_transfer_ask
             action = "upload"
             if openit:
-                ask |= self.remote_open_files_ask
-                action = "open"
-            l = filelog
-        if not ask and (not printit and openit and not self.remote_open_files):
-            l.warn("Warning: opening the file after transfer is disabled on the remote end")
-            openit = False
+                if not self.remote_open_files:
+                    l.warn("Warning: opening the file after transfer is disabled on the remote end")
+                    openit = False
+                    action = "upload"
+                else:
+                    ask |= self.remote_open_files_ask
+                    action = "open"
         assert len(data)>=filesize, "data is smaller then the given file size!"
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s action=%s, ask=%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
         if not self.check_file_size(action, filename, filesize):
             return False
-        send_id = uuid.uuid4().hex
         if ask:
-            if len(self.pending_send_file)>=MAX_CONCURRENT_FILES:
-                l.warn("Warning: %s dropped", action)
-                l.warn(" %i transfer%s already waiting for a response", len(self.pending_send_file), engs(self.pending_send_file))
-                return False
-            self.pending_send_file[send_id] = (filename, mimetype, data, filesize, printit, openit, options)
-            self.pending_send_file_timers[send_id] = self.timeout_add(self.remote_file_ask_timeout*1000, self.open_files_ask_timeout, send_id)
-            l("sending file request for send-id=%s", send_id)
-            self.send("send-file-request", send_id, filename, mimetype, filesize, printit, openit)
-            return True
-        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
+            return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
+        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
+        return True
 
-    def _process_send_file_request(self, packet):
-        #subclasses should prompt the user
-        send_id, filename, _, _, printit, openit = packet[1:7]
-        filelog("send-file-request: send_id=%s, filename=%s, printit=%s, openit=%s", send_id, filename, printit, openit)
-        if printit:
-            ask = self.printing_ask
-        elif openit:
-            ask = self.file_transfer_ask or self.open_files_ask
-        else:
-            ask = self.file_transfer_ask
+    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options={}):
+        send_id = uuid.uuid4().hex
+        if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
+            filelog.warn("Warning: %s dropped", action)
+            filelog.warn(" %i transfer%s already waiting for a response", len(self.pending_send_data), engs(self.pending_send_data))
+            return None
+        self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options)
+        self.pending_send_data_timers[send_id] = self.timeout_add(self.remote_file_ask_timeout*1000, self.send_data_ask_timeout, send_id)
+        filelog("sending data request for %s '%s' with send-id=%s", dtype, url, send_id)
+        self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
+        return send_id
+
+
+    def _process_send_data_request(self, packet):
+        dtype, send_id, url, _, _, printit, openit = packet[1:8]
+        filelog("send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
         def cb_answer(accept):
-            filelog("accept%s=%s", (filename, printit, openit), accept)
-            self.send("send-file-response", send_id, bool(accept))
-        if not ask:
-            filelog.warn("Warning: received a send-file request,")
-            filelog.warn(" but authorization is not required by the client")
-            cb_answer(True)
+            filelog("accept%s=%s", (url, printit, openit), accept)
+            self.send("send-data-response", send_id, bool(accept))
+        if dtype=="file":
+            if not self.file_transfer:
+                cb_answer(False)
+                return
+            url = os.path.basename(url)
+            if printit:
+                ask = self.printing_ask
+            elif openit:
+                ask = self.file_transfer_ask or self.open_files_ask
+            else:
+                ask = self.file_transfer_ask
+        elif dtype=="url":
+            if not self.open_url:
+                cb_answer(False)
+                return
+            ask = self.open_url_ask
         else:
-            basefilename = os.path.basename(filename)
-            self.ask_file(cb_answer, send_id, basefilename, printit, openit)
+            filelog.warn("Warning: unkown data request type '%s'", dtype)
+            cb_answer(False)
+        if not ask:
+            filelog.warn("Warning: received a send-data request for a %s,", dtype)
+            filelog.warn(" but authorization is not required by the client")
+            #fail it because if we responded with True,
+            #it would fail later when we don't find this send_id in our accepted list
+            cb_answer(False)
+        else:
+            self.ask_data_request(cb_answer, send_id, dtype, url, printit, openit)
 
-    def ask_file(self, _cb_answer, _send_id, _filename, _printit, _openit):
-        return False
+    def ask_data_request(self, cb_answer, send_id, dtype, filename, printit, openit):
+        #subclasses may prompt the user here instead
+        filelog("ask_data_request%s", (send_id, dtype, filename, printit, openit))
+        cb_answer(False)
 
-    def _process_send_file_response(self, packet):
+    def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
-        filelog("send-file-response: send_id=%s, accept=%s", send_id, accept)
-        timer = self.pending_send_file_timers.get(send_id)
+        filelog("send-data-response: send_id=%s, accept=%s", send_id, accept)
+        timer = self.pending_send_data_timers.get(send_id)
         if timer:
             try:
-                del self.pending_send_file_timers[send_id]
+                del self.pending_send_data_timers[send_id]
             except KeyError:
                 pass
             self.source_remove(timer)
-        v = self.pending_send_file.get(send_id)
+        v = self.pending_send_data.get(send_id)
         if not v:
             filelog.warn("Warning: cannot find send-file entry")
             return
         try:
-            del self.pending_send_file[send_id]
+            del self.pending_send_data[send_id]
         except KeyError:
             pass
-        filename, mimetype, data, filesize, printit, openit, options = v
+        dtype = v[0]
+        url = v[1]
         if not accept:
-            filelog.info("the request to send file '%s' has been denied", filename)
+            filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
-        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
+        if dtype=="file":
+            mimetype, data, filesize, printit, openit, options = v[2:]
+            self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
+        elif dtype=="url":
+            self.do_send_open_url(url, send_id)
+        else:
+            filelog.error("Error: unknown datatype '%s'", dtype)
 
-    def open_files_ask_timeout(self, send_id):
-        v = self.pending_send_file_timers.get(send_id)
+    def send_data_ask_timeout(self, send_id):
+        v = self.pending_send_data_timers.get(send_id)
         if not v:
             filelog.warn("Warning: send timeout, id '%s' not found!", send_id)
             return False
         try:
-            del self.pending_send_file[send_id]
-            del self.pending_send_file_timers[send_id]
+            del self.pending_send_data[send_id]
+            del self.pending_send_data_timers[send_id]
         except KeyError:
             pass
         filename = v[0]

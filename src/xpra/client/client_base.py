@@ -306,11 +306,12 @@ class XpraClientBase(FileTransferHandler):
 
     def init_authenticated_packet_handlers(self):
         self.set_packet_handlers(self._packet_handlers, {
-            "send-file"        : self._process_send_file,
-            "send-file-request" : self._process_send_file_request,
-            "send-file-response": self._process_send_file_response,
-            "ack-file-chunk"   : self._process_ack_file_chunk,
-            "send-file-chunk"  : self._process_send_file_chunk,
+            "open-url"          : self._process_open_url,
+            "send-file"         : self._process_send_file,
+            "send-data-request" : self._process_send_data_request,
+            "send-data-response": self._process_send_data_response,
+            "ack-file-chunk"    : self._process_ack_file_chunk,
+            "send-file-chunk"   : self._process_send_file_chunk,
             })
 
 

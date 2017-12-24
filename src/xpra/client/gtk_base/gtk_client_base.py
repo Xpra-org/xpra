@@ -72,7 +72,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
         self.border = None
-        self.file_requests = {}
+        self.data_send_requests = {}
         #clipboard bits:
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
@@ -299,7 +299,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
     ################################
     # file handling
-    def ask_file(self, cb_answer, send_id, filename, printit, openit):
+    def ask_data_request(self, cb_answer, send_id, dtype, url, printit, openit):
         #show a dialog, fire cb_answer with True or False depending on the response
         assert send_id not in self.file_ask_dialogs
         parent = None
@@ -310,7 +310,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         else:
             action = "send"
         msgs = (
-                "The xpra server is requesting this client to %s the file '%s'" % (action, filename),
+                "The xpra server is requesting to %s the %s '%s'" % (action, dtype, url),
                 )
         dialog = gtk.MessageDialog(parent, 0, MESSAGE_INFO,
                                       BUTTONS_OK_CANCEL, "\n".join(msgs))
@@ -319,14 +319,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             dialog.set_image(image)
         except Exception as e:
             log.warn("Warning: failed to set dialog image: %s", e)
-        dialog.connect("response", self.ask_file_response, cb_answer, send_id, filename, printit, openit)
+        dialog.connect("response", self.ask_file_response, cb_answer, send_id, dtype, url, printit, openit)
         dialog.show()
         self.file_ask_dialogs[send_id] = dialog
 
-    def ask_file_response(self, dialog, response, cb_answer, send_id, filename, printit, openit):
+    def ask_file_response(self, dialog, response, cb_answer, send_id, dtype, url, printit, openit):
         #the file dialog has been closed
         #tell the cb_answer if the response is OK or not
-        filelog("ask_file_response%s", (dialog, response, cb_answer, send_id, filename, printit, openit))
+        filelog("ask_file_response%s", (dialog, response, cb_answer, send_id, dtype, url, printit, openit))
         accept = response == RESPONSE_OK
         dialog.destroy()
         try:
@@ -335,21 +335,21 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             pass
         if accept:
             #record our response, so we will accept the file
-            self.file_requests[send_id] = (filename, printit, openit)
+            self.data_send_requests[send_id] = (dtype, url, printit, openit)
         cb_answer(accept)
 
-    def accept_file(self, send_id, filename, printit, openit):
+    def accept_data(self, send_id, dtype, url, printit, openit):
         #verify that we have accepted this file,
         #and with the same attributes
-        r = self.file_requests.get(send_id)
+        r = self.data_send_requests.get(send_id)
         if not r:
-            filelog.warn("Warning: received a file which was never accepted")
+            filelog.warn("Warning: received %s '%s' which was never accepted", dtype, url)
             return False
-        if r!=(filename, printit, openit):
+        if r!=(dtype, url, printit, openit):
             filelog.warn("Warning: the file attributes are different")
             filelog.warn(" from the ones that were used to accept the transfer")
-            filelog.warn(" expected filename=%s, print=%s, open=%s", *r)
-            filelog.warn(" received filename=%s, print=%s, open=%s", filename, printit, openit)
+            filelog.warn(" expected data type=%s, url=%s, print=%s, open=%s", *r)
+            filelog.warn(" received data type=%s, url=%s, print=%s, open=%s", dtype, url, printit, openit)
             return False
         return True
 
