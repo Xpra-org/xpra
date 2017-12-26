@@ -30,6 +30,7 @@ from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, rep
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
+from xpra.net.file_transfer import FileTransferHandler
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.window_border import WindowBorder
@@ -328,20 +329,18 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
 
 
     def accept_data(self, send_id, dtype, url, printit, openit):
-        #verify that we have accepted this file,
-        #and with the same attributes
+        #check if we have accepted this file via the GUI:
         r = self.data_send_requests.get(send_id)
-        if not r:
-            filelog.warn("Warning: received %s '%s' which was never accepted", bytestostr(dtype), bytestostr(url))
-            return False
-        del self.data_send_requests[send_id]
-        if r!=(dtype, url, printit, openit):
-            filelog.warn("Warning: the file attributes are different")
-            filelog.warn(" from the ones that were used to accept the transfer")
-            filelog.warn(" expected data type=%s, url=%s, print=%s, open=%s", *r)
-            filelog.warn(" received data type=%s, url=%s, print=%s, open=%s", dtype, url, printit, openit)
-            return False
-        return True
+        if r:
+            del self.data_send_requests[send_id]
+            if r!=(dtype, url, printit, openit):
+                filelog.warn("Warning: the file attributes are different")
+                filelog.warn(" from the ones that were used to accept the transfer")
+                filelog.warn(" expected data type=%s, url=%s, print=%s, open=%s", *r)
+                filelog.warn(" received data type=%s, url=%s, print=%s, open=%s", dtype, url, printit, openit)
+                return False
+            return True
+        return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:

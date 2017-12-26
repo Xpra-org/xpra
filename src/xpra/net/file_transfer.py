@@ -194,10 +194,13 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = c.intget("file-ask-timeout")
         self.remote_file_size_limit = c.intget("file-size-limit")
         self.remote_file_chunks = max(0, min(self.remote_file_size_limit*1024*1024, c.intget("file-chunks")))
-        filelog("parse_file_transfer_caps() remote: file-transfer=%s (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog("parse_file_transfer_caps() remote: printing=%s (ask=%s)", self.remote_printing, self.remote_printing_ask)
-        filelog("parse_file_transfer_caps() remote: open-files=%s (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
-        filelog("parse_file_transfer_caps() remote: open-url=%s (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
+        self.dump_remote_caps()
+
+    def dump_remote_caps(self):
+        filelog("file transfer remote caps: file-transfer=%s   (ask=%s)", self.remote_file_transfer, self.remote_file_transfer_ask)
+        filelog("file transfer remote caps: printing=%s        (ask=%s)", self.remote_printing, self.remote_printing_ask)
+        filelog("file transfer remote caps: open-files=%s      (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
+        filelog("file transfer remote caps: open-url=%s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
 
     def get_info(self):
         info = FileTransferAttributes.get_info(self)
@@ -297,18 +300,12 @@ class FileTransferHandler(FileTransferAttributes):
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         if printit:
-            if self.printing and not self.printing_ask:
-                return ACCEPT
-            else:
-                return DENY
+            return self.printing and not self.printing_ask
         if not self.file_transfer or self.file_transfer_ask:
-            return DENY
+            return False
         if openit:
-            if self.open_files and not self.open_files_ask:
-                return ACCEPT
-            else:
-                return DENY
-        return ACCEPT
+            return self.open_files and not self.open_files_ask
+        return True
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
@@ -546,7 +543,8 @@ class FileTransferHandler(FileTransferAttributes):
             action = "upload"
             if openit:
                 if not self.remote_open_files:
-                    l.warn("Warning: opening the file after transfer is disabled on the remote end")
+                    l.info("opening the file after transfer is disabled on the remote end")
+                    l.info(" sending only, the file will need to be opended manually")
                     openit = False
                     action = "upload"
                 else:
@@ -555,6 +553,7 @@ class FileTransferHandler(FileTransferAttributes):
         assert len(data)>=filesize, "data is smaller then the given file size!"
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s action=%s, ask=%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
+        self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
