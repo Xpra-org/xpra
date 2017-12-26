@@ -373,6 +373,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
     def do_process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
+        filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
         filelog.info("downloaded %s bytes to %s file%s:", filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
         if printit:
