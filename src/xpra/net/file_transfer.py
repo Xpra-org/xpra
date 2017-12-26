@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-import subprocess, shlex
+import subprocess
 import hashlib
 import uuid
 
@@ -455,9 +455,11 @@ class FileTransferHandler(FileTransferAttributes):
         return env
 
     def _open_file(self, url):
+        filelog("_open_file(%s)", url)
         self.exec_open_command(url)
 
     def _open_url(self, url):
+        filelog("_open_url(%s)", url)
         if POSIX:
             #we can't use webbrowser,
             #because this will use "xdg-open" from the $PATH
@@ -468,7 +470,12 @@ class FileTransferHandler(FileTransferAttributes):
             webbrowser.open_new_tab(url)
 
     def exec_open_command(self, url):
-        command = shlex.split(self.open_command)+[url]
+        try:
+            import shlex
+            command = shlex.split(self.open_command)+[url]
+        except ImportError as e:
+            filelog("exec_open_command(%s) no shlex: %s", url, e)
+            command = self.open_command.split(" ")
         proc = subprocess.Popen(command, env=self.get_open_env())
         filelog("exec_open_command(%s) Popen(%s)=%s", url, command, proc)
         def open_done(*_args):
