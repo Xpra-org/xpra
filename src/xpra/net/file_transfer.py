@@ -490,7 +490,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog("open_file: command %s has ended, returncode=%s", command, returncode)
             if returncode!=0:
                 filelog.warn("Warning: failed to open the downloaded content")
-                filelog.warn(" '%s %s' returned %s", " ".join(command), returncode)
+                filelog.warn(" '%s' returned %s", " ".join(command), returncode)
         cr = getChildReaper()
         cr.add_process(proc, "Open file %s" % url, command, True, True, open_done)
 
