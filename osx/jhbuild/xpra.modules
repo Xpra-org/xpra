@@ -630,10 +630,11 @@
   </distutils>
 
   <distutils id="python-websocket-client">
-	<branch repo="pypi.python.org"
-		module="/packages/06/19/f00725a8aee30163a7f257092e356388443034877c101757c1466e591bf8/websocket_client-0.44.0.tar.gz"
-		hash="sha256:15f585566e2ea7459136a632b9785aa081093064391878a448c382415e948d72"
-		version="0.44.0"/>
+	<branch repo="github.com"
+		module="/websocket-client/websocket-client/archive/v0.45.0.tar.gz"
+		hash="sha256:84f28e57233ed70ec31d3f055d2e72aa8ec32e4da53fb45e5ec955a417405a03"
+		checkoutdir="websocket-client-0.45.0"
+		version="0.45.0"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
