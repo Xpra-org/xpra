@@ -28,7 +28,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
 from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
-from xpra.simple_stats import std_unit, std_unit_dec
+from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -38,7 +38,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, \
-            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, BUTTONS_OK_CANCEL, RESPONSE_OK
+            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.client_base import PASSWORD_PROMPT
@@ -66,7 +66,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.session_info = None
         self.bug_report = None
         self.file_size_dialog = None
-        self.file_ask_dialogs = {}
+        self.file_ask_dialog = None
         self.file_dialog = None
         self.start_new_command = None
         self.server_commands = None
@@ -159,6 +159,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.bug_report = None
         self.close_file_size_warning()
         self.close_file_upload_dialog()
+        self.close_ask_data_dialog()
         if self.start_new_command:
             self.start_new_command.destroy()
             self.start_new_command = None
@@ -303,43 +304,28 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
         
     def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
-        #show a dialog, fire cb_answer with True or False depending on the response
-        assert send_id not in self.file_ask_dialogs
-        parent = None
-        if printit:
-            action = "print"
-        elif openit:
-            action = "open"
-        else:
-            action = "send"
-        msg = "The xpra server is requesting to %s the %s '%s'" % (bytestostr(action), bytestostr(dtype), bytestostr(url))
-        if dtype==b"file" and filesize>0:
-            msg += "\n(filesize is %s)" % std_unit_dec(filesize)
-        dialog = gtk.MessageDialog(parent, 0, MESSAGE_INFO,
-                                      BUTTONS_OK_CANCEL, msg)
-        try:
-            image = gtk.image_new_from_stock(gtk.STOCK_OK, 64)
-            dialog.set_image(image)
-        except Exception as e:
-            log.warn("Warning: failed to set dialog image: %s", e)
-        dialog.connect("response", self.ask_file_response, cb_answer, send_id, dtype, url, printit, openit)
-        dialog.show()
-        self.file_ask_dialogs[send_id] = dialog
+        from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
+        timeout = self.remote_file_ask_timeout
+        def rec_answer(accept):
+            if accept:
+                #record our response, so we will accept the file
+                self.data_send_requests[send_id] = (dtype, url, printit, openit)
+            cb_answer(accept)
+        self.file_ask_dialog = getOpenRequestsWindow()
+        self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
+        self.file_ask_dialog.show()
 
-    def ask_file_response(self, dialog, response, cb_answer, send_id, dtype, url, printit, openit):
-        #the file dialog has been closed
-        #tell the cb_answer if the response is OK or not
-        filelog("ask_file_response%s", (dialog, response, cb_answer, send_id, dtype, url, printit, openit))
-        accept = response == RESPONSE_OK
-        dialog.destroy()
-        try:
-            del self.file_ask_dialogs[send_id]
-        except KeyError:
-            pass
-        if accept:
-            #record our response, so we will accept the file
-            self.data_send_requests[send_id] = (dtype, url, printit, openit)
-        cb_answer(accept)
+    def close_ask_data_dialog(self):
+        fad = self.file_ask_dialog
+        if fad:
+            self.file_ask_dialog = None
+            fad.destroy()
+
+    def show_ask_data_dialog(self, *_args):
+        from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
+        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload)
+        self.file_ask_dialog.show()
+
 
     def accept_data(self, send_id, dtype, url, printit, openit):
         #verify that we have accepted this file,
@@ -348,6 +334,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if not r:
             filelog.warn("Warning: received %s '%s' which was never accepted", dtype, url)
             return False
+        del self.data_send_requests[send_id]
         if r!=(dtype, url, printit, openit):
             filelog.warn("Warning: the file attributes are different")
             filelog.warn(" from the ones that were used to accept the transfer")

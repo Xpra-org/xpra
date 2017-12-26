@@ -41,6 +41,7 @@ STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_SERVER_COMMANDS = envbool("XPRA_SHOW_SERVER_COMMANDS", True)
+SHOW_TRANSFERS = envbool("XPRA_SHOW_TRANSFERS", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
@@ -1358,6 +1359,8 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_runcommandmenuitem())
         if SHOW_SERVER_COMMANDS:
             menu.append(self.make_servercommandsmenuitem())
+        if SHOW_TRANSFERS:
+            menu.append(self.make_servertransfersmenuitem())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
         if SHOW_SHUTDOWN:
@@ -1384,6 +1387,18 @@ class GTKTrayMenuBase(object):
                 self.startnewcommand.set_tooltip_text("Not supported by the server")
         self.client.after_handshake(enable_start_new_command)
         return self.startnewcommand
+
+    def make_servertransfersmenuitem(self):
+        self.transfers = self.menuitem("Transfers", "transfer.png", "Files and URLs forwarding", self.client.show_ask_data_dialog)
+        def enable_transfers(*args):
+            log("enable_transfers%s ask=%s", args, ())
+            has_ask = (self.client.remote_file_transfer_ask or
+                       self.client.remote_printing_ask or
+                       self.client.remote_open_files_ask or 
+                       self.remote_open_url_ask)
+            set_sensitive(self.transfers, has_ask)
+        self.client.after_handshake(enable_transfers)
+        return self.transfers
 
     def make_uploadmenuitem(self):
         self.upload = self.menuitem("Upload File", "upload.png", "Send a file to the server", self.client.show_file_upload)

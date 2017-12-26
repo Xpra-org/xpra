@@ -82,6 +82,8 @@ class ServerCommandsWindow(object):
 
     def btn(self, label, tooltip, callback, icon_name=None):
         btn = gtk.Button(label)
+        settings = btn.get_settings()
+        settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
         if icon_name:
@@ -158,7 +160,7 @@ class ServerCommandsWindow(object):
             if a>=0:
                 signame = self.client.server_commands_signals[a]
                 self.client.send("command-signal", pid, signame)
-        b = self.btn("Send", None, send, "send")
+        b = self.btn("Send", None, send, "forward.png")
         hbox.pack_start(combo)
         hbox.pack_start(b)
         return hbox
