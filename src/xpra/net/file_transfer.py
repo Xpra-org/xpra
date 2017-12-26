@@ -14,7 +14,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import monotonic_time, bytestostr, strtobytes, POSIX
+from xpra.os_util import monotonic_time, bytestostr, strtobytes, POSIX, WIN32
 from xpra.util import typedict, csv, nonl, envint, envbool, engs
 from xpra.scripts.config import parse_bool
 from xpra.simple_stats import std_unit
@@ -479,7 +479,7 @@ class FileTransferHandler(FileTransferAttributes):
             command = self.open_command.split(" ")
         filelog("exec_open_command(%s) command=%s", url, command)
         try:
-            proc = subprocess.Popen(command, env=self.get_open_env(), shell=True)
+            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)
         except Exception as e:
             filelog("exec_open_command(%s)", url, exc_info=True)
             filelog.error("Error: cannot open '%s': %s", url, e)
