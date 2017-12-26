@@ -1235,6 +1235,8 @@ if WIN32:
 
         external_includes += ["encodings"]
         if client_ENABLED:
+            #for parsing "open-command":
+            external_includes += ["shlex"]
             #for version check:
             external_includes += [
                                   "ftplib", "fileinput",

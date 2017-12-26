@@ -470,13 +470,20 @@ class FileTransferHandler(FileTransferAttributes):
             webbrowser.open_new_tab(url)
 
     def exec_open_command(self, url):
+        filelog("exec_open_command(%s)", url)
         try:
             import shlex
             command = shlex.split(self.open_command)+[url]
         except ImportError as e:
             filelog("exec_open_command(%s) no shlex: %s", url, e)
             command = self.open_command.split(" ")
-        proc = subprocess.Popen(command, env=self.get_open_env())
+        filelog("exec_open_command(%s) command=%s", url, command)
+        try:
+            proc = subprocess.Popen(command, env=self.get_open_env(), shell=True)
+        except Exception as e:
+            filelog("exec_open_command(%s)", url, exc_info=True)
+            filelog.error("Error: cannot open '%s': %s", url, e)
+            return
         filelog("exec_open_command(%s) Popen(%s)=%s", url, command, proc)
         def open_done(*_args):
             returncode = proc.poll()

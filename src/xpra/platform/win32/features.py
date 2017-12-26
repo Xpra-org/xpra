@@ -20,7 +20,7 @@ DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = []
 PRINT_COMMAND = ""
 DEFAULT_SSH_COMMAND="plink -ssh -agent"
 
-OPEN_COMMAND = ["start", "open"]
+OPEN_COMMAND = ["start", "''"]
 
 #not implemented:
 SYSTEM_PROXY_SOCKET = "xpra-proxy"
