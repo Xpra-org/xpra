@@ -856,7 +856,7 @@ def get_defaults():
                     "display"           : "",
                     "tcp-proxy"         : "",
                     "download-path"     : get_download_dir(),
-                    "open-command"      : OPEN_COMMAND,
+                    "open-command"      : " ".join(OPEN_COMMAND),
                     "remote-logging"    : "both",
                     "lpadmin"           : "/usr/sbin/lpadmin",
                     "lpinfo"            : "/usr/sbin/lpinfo",

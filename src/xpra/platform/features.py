@@ -27,7 +27,7 @@ CLIPBOARD_GREEDY = envbool("XPRA_CLIPBOARD_GREEDY")
 CLIPBOARD_NATIVE_CLASS = None
 
 UI_THREAD_POLLING = 0
-OPEN_COMMAND = "xdg-open"
+OPEN_COMMAND = []
 
 COMMAND_SIGNALS = ()
 
@@ -73,6 +73,7 @@ _features_list_ = [
                    "CLIENT_MODULES",
                    "INPUT_DEVICES",
                    "SYSTEM_PROXY_SOCKET",
+                   "OPEN_COMMAND",
                    ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,

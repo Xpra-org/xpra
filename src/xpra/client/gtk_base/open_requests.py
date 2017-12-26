@@ -153,22 +153,27 @@ class OpenRequestsWindow(object):
             else:
                 self.populate_table()
                 self.window.resize(1, 1)
+        from xpra.net.file_transfer import ACCEPT, OPEN, DENY
         def ok(*_args):
             remove_entry()
-            cb_answer(True)
+            cb_answer(ACCEPT)
+        def remote(*_args):
+            remove_entry()
+            cb_answer(OPEN)
         def cancel(*_args):
             remove_entry()
-            cb_answer(False)
+            cb_answer(DENY)
         hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
         if dtype==b"url":
-            hbox.pack_start(self.btn("Open Link", None, ok, "browser.png"))
+            hbox.pack_start(self.btn("Open Locally", None, ok, "browser.png"))
+            hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
             hbox.pack_start(self.btn("Print", None, ok, "printer.png"))
         elif openit:
-            #hbox.pack_start(self.btn("Download", None, do_download, "printer.png"))
-            hbox.pack_start(self.btn("Download and Open", None, ok, "printer.png"))
+            hbox.pack_start(self.btn("Download and Open", None, ok, "download.png"))
+            hbox.pack_start(self.btn("Open on server", None, remote))
         else:
-            hbox.pack_start(self.btn("Download", None, ok, "printer.png"))
+            hbox.pack_start(self.btn("Download", None, ok, "download.png"))
         return hbox
 
     def schedule_timer(self):

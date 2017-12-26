@@ -307,7 +307,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
         def rec_answer(accept):
-            if accept:
+            if int(accept)==1:
                 #record our response, so we will accept the file
                 self.data_send_requests[send_id] = (dtype, url, printit, openit)
             cb_answer(accept)
@@ -332,7 +332,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #and with the same attributes
         r = self.data_send_requests.get(send_id)
         if not r:
-            filelog.warn("Warning: received %s '%s' which was never accepted", dtype, url)
+            filelog.warn("Warning: received %s '%s' which was never accepted", bytestostr(dtype), bytestostr(url))
             return False
         del self.data_send_requests[send_id]
         if r!=(dtype, url, printit, openit):

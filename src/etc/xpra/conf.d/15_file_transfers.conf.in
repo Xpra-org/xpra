@@ -19,7 +19,7 @@ open-url = ask
 file-size-limit = 100
 
 # How to open files:
-#open-command = xdg-open
+#open-command = /usr/bin/xdg-open
 
 # Open files
 #open-files = no

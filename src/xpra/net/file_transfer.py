@@ -14,7 +14,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import monotonic_time, bytestostr, strtobytes
+from xpra.os_util import monotonic_time, bytestostr, strtobytes, POSIX
 from xpra.util import typedict, csv, nonl, envint, envbool, engs
 from xpra.scripts.config import parse_bool
 from xpra.simple_stats import std_unit
@@ -32,6 +32,10 @@ MIMETYPE_EXTS = {
                  "application/pdf"          : "pdf",
                  "raw"                      : "raw",
                  }
+
+DENY = 0
+ACCEPT = 1
+OPEN = 2
 
 
 def safe_open_download_file(basefilename, mimetype):
@@ -293,12 +297,18 @@ class FileTransferHandler(FileTransferAttributes):
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
         if printit:
-            return self.printing and not self.printing_ask
+            if self.printing and not self.printing_ask:
+                return ACCEPT
+            else:
+                return DENY
         if not self.file_transfer or self.file_transfer_ask:
-            return False
+            return DENY
         if openit:
-            return self.open_files and not self.open_files_ask
-        return True
+            if self.open_files and not self.open_files_ask:
+                return ACCEPT
+            else:
+                return DENY
+        return ACCEPT
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
@@ -307,7 +317,7 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet)>=9:
             send_id = packet[8]
         if not self.accept_data(send_id, b"file", basefilename, printit, openit):
-            filelog.warn("Warning: file transfer rejected for file '%s'", basefilename)
+            filelog.warn("Warning: file transfer rejected for file '%s'", bytestostr(basefilename))
             return
         options = typedict(options)
         if printit:
@@ -377,7 +387,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.warn(" ignoring uploaded file:")
                 filelog.warn(" '%s'", filename)
                 return
-            self._open_url("file://%s" % filename)
+            self._open_file(filename)
 
     def _print_file(self, filename, mimetype, options):
         printlog("print_file%s", (filename, mimetype, options))
@@ -439,18 +449,38 @@ class FileTransferHandler(FileTransferAttributes):
             #check every 10 seconds:
             self.timeout_add(10000, check_printing_finished)
 
+
+    def get_open_env(self):
+        env = os.environ.copy()
+        #prevent loops:
+        env["XPRA_XDG_OPEN"] = "1"
+        return env
+
+    def _open_file(self, url):
+        self.exec_open_command(url)
+
     def _open_url(self, url):
+        if POSIX:
+            #we can't use webbrowser,
+            #because this will use "xdg-open" from the $PATH
+            #which may point back to us!
+            self.exec_open_command(url)
+        else:
+            import webbrowser
+            webbrowser.open_new_tab(url)
+
+    def exec_open_command(self, url):
         command = shlex.split(self.open_command)+[url]
-        proc = subprocess.Popen(command)
+        proc = subprocess.Popen(command, env=self.get_open_env())
+        filelog("exec_open_command(%s) Popen(%s)=%s", url, command, proc)
         def open_done(*_args):
             returncode = proc.poll()
-            filelog("open_done: command %s has ended, returncode=%s", command, returncode)
+            filelog("open_file: command %s has ended, returncode=%s", command, returncode)
             if returncode!=0:
                 filelog.warn("Warning: failed to open the downloaded content")
-                filelog.warn(" '%s %s' returned %s", self.open_command, url, returncode)
+                filelog.warn(" '%s %s' returned %s", " ".join(command), returncode)
         cr = getChildReaper()
-        cr.add_process(proc, "Open URL %s" % url, command, True, True, open_done)
-
+        cr.add_process(proc, "Open file %s" % url, command, True, True, open_done)
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
@@ -547,10 +577,10 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_data_request(self, packet):
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
-        filelog("send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
+        filelog("process send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
-            self.send("send-data-response", send_id, bool(accept))
+            self.send("send-data-response", send_id, accept)
         if dtype==b"file":
             if not self.file_transfer:
                 cb_answer(False)
@@ -587,7 +617,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
-        filelog("send-data-response: send_id=%s, accept=%s", send_id, accept)
+        filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.get(send_id)
         if timer:
             try:
@@ -605,14 +635,26 @@ class FileTransferHandler(FileTransferAttributes):
             pass
         dtype = v[0]
         url = v[1]
-        if not accept:
+        if accept==DENY:
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
+        else:
+            assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
         if dtype==b"file":
             mimetype, data, filesize, printit, openit, options = v[2:]
-            self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
+            if accept==ACCEPT:
+                self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
+            else:
+                assert openit and accept==OPEN
+                #try to open at this end:
+                self._open_file(url)
         elif dtype==b"url":
-            self.do_send_open_url(url, send_id)
+            if accept==ACCEPT:
+                self.do_send_open_url(url, send_id)
+            else:
+                assert accept==OPEN
+                #open it at this end:
+                self._open_url(url)
         else:
             filelog.error("Error: unknown datatype '%s'", dtype)
 
