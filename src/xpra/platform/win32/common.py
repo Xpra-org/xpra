@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, HRESULT, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar
+from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
 #imported from this module but not used here:

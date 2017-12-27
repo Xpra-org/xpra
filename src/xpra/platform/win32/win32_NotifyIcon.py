@@ -11,7 +11,7 @@ import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
-from xpra.util import csv, XPRA_APP_ID
+from xpra.util import csv, nonl, XPRA_APP_ID
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
@@ -309,7 +309,7 @@ class win32NotifyIcon(object):
         else:
             nid.uVersion = 3
         nid.uFlags = flags
-        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, title, self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
+        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
 
     def delete_tray_window(self):
