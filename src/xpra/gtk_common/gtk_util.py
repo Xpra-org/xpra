@@ -157,6 +157,7 @@ if is_gtk3():
     pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
     window_set_default_icon = gtk.Window.set_default_icon
     icon_theme_get_default  = gtk.IconTheme.get_default
+    image_new_from_stock    = gtk.image.new_from_stock
 
     def gdk_cairo_context(cairo_context):
         return cairo_context
@@ -195,6 +196,7 @@ if is_gtk3():
     BUTTONS_OK_CANCEL = gtk.ButtonsType.OK_CANCEL
     BUTTONS_NONE    = gtk.ButtonsType.NONE
     DIALOG_DESTROY_WITH_PARENT  = 0
+    ICON_SIZE_BUTTON = gtk.ICON_SIZE_BUTTON
 
     WINDOW_POPUP    = gtk.WindowType.POPUP
     WINDOW_TOPLEVEL = gtk.WindowType.TOPLEVEL
@@ -364,6 +366,7 @@ else:
     screen_get_default      = gdk.screen_get_default
     window_set_default_icon = gtk.window_set_default_icon
     icon_theme_get_default  = gtk.icon_theme_get_default
+    image_new_from_stock    = gtk.image_new_from_stock
 
     def gdk_cairo_context(cairo_context):
         return gdk.CairoContext(cairo_context)
@@ -397,6 +400,7 @@ else:
     BUTTONS_OK_CANCEL = gtk.BUTTONS_OK_CANCEL
     BUTTONS_NONE    = gtk.BUTTONS_NONE
     DIALOG_DESTROY_WITH_PARENT = gtk.DIALOG_DESTROY_WITH_PARENT
+    ICON_SIZE_BUTTON = gtk.IconSize.BUTTON
 
     WINDOW_POPUP    = gtk.WINDOW_POPUP
     WINDOW_TOPLEVEL = gtk.WINDOW_TOPLEVEL
