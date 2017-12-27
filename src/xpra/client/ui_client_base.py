@@ -110,7 +110,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
-DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not WIN32 and not is_Ubuntu())
+DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -3494,9 +3494,9 @@ class UIXpraClient(XpraClientBase):
             if icon:
                 has_alpha = icon.mode=="RGBA"
                 width, height = icon.size
-                traylog("set_tray_icon() using unique icon: %ix%i", width, height)
+                traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)", icon.mode, width, height, has_alpha)
                 rowstride = width * (3+int(has_alpha))
-                rgb_data = icon.tobytes("raw")
+                rgb_data = icon.tobytes("raw", icon.mode)
                 self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
                 return
         #this sets the default icon (badly named function!)
