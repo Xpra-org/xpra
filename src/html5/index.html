@@ -103,7 +103,6 @@
 				var video = getboolparam("video", false);
 				var mediasource_video = getboolparam("mediasource_video", false);
 				var remote_logging = getboolparam("remote_logging", true);
-				var debug = getboolparam("debug", false);
 				var insecure = getboolparam("insecure", false);
 				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
 				var clipboard = getboolparam("clipboard", true);
@@ -155,9 +154,20 @@
 					}
 				}
 
+				var debug_categories = [];
+				var categories = ["main", "keyboard", "mouse", "clipboard", "draw", "audio", "network"];
+				for(var i=0, len=categories.length; i < len; i++) {
+					var category = categories[i];
+					var debug = getboolparam("debug_"+category, false);
+					if (debug) {
+						debug_categories.push(category);
+					}
+				}
+				console.log("debug enabled for:", debug_categories);
+
 				// create the client
 				var client = new XpraClient('screen');
-				client.debug = debug;
+				client.debug_categories = debug_categories;
 				client.remote_logging = remote_logging;
 				client.sharing = sharing;
 		    	client.insecure = insecure;
@@ -178,16 +188,16 @@
 		    	if (debug) {
 		    		//example of client event hooks:
 			    	client.on_open = function() {
-			    		cdebug("connection open");
+			    		cdebug("network", "connection open");
 			    	};
 			    	client.on_connect = function() {
-			    		cdebug("connection established");
+			    		cdebug("network", "connection established");
 			    	};
 			    	client.on_first_ui_event = function() {
-			    		cdebug("first ui event");
+			    		cdebug("network", "first ui event");
 			    	};
 			    	client.on_last_window = function() {
-			    		cdebug("last window disappeared");
+			    		cdebug("network", "last window disappeared");
 			    	};
 		    	}
 
@@ -255,7 +265,8 @@
 			    }
 
 			    // attach a callback for when client closes
-			    if(!debug) {
+			    var debug_main = getboolparam("debug_main", false);
+			    if(!debug_main) {
 				    client.callback_close = function(reason) {
 				    	if(submit) {
 				    		var message = "Connection closed (socket closed)";
@@ -297,11 +308,14 @@
 				    				"steal"				: steal,
 				    				"video"				: video,
 				    				"mediasource_video"	: mediasource_video,
-				    				"debug"				: debug,
 				    				"remote_logging"	: remote_logging,
 				    				"insecure"			: insecure,
 				    				"ignore_audio_blacklist" : ignore_audio_blacklist,
 				    				}
+							for (var i=0, len=client.debug_categories.length; i < len; i++) {
+								var category = client.debug_categories[i];
+								props["debug_"+category] = true;
+							}
 				    		if (insecure || sessionStorage) {
 			    				props["password"] = password;
 				    		}
@@ -335,7 +349,7 @@
 			   	pasteboard.on("input", function(e) {
 			   		var txt = pasteboard.val();
 			   		pasteboard.val("");
-			   		cdebug("oninput:", txt);
+			   		cdebug("keyboard", "oninput:", txt);
 			   		if (!client.topwindow) {
 			   			return;
 			   		}
@@ -347,10 +361,10 @@
 				   			keyval = keycode;
 				   			group = 0;
 							packet = ["key-action", client.topwindow, str, true, modifiers, keyval, str, keycode, group];
-							cdebug(packet);
+							cdebug("keyboard", packet);
 							client.send(packet);
 							packet = ["key-action", client.topwindow, str, false, modifiers, keyval, str, keycode, group];
-							cdebug(packet);
+							cdebug("keyboard", packet);
 							client.send(packet);
 				   		}
 				   		catch (e) {
@@ -365,7 +379,7 @@
 			    //clipboard hooks:
 				pasteboard.on('paste', function (e) {
 					var paste_data = (e.originalEvent || e).clipboardData.getData('text/plain');
-					cdebug("paste event, data=", paste_data);
+					cdebug("clipboard", "paste event, data=", paste_data);
 			        client.send_clipboard_token(unescape(encodeURIComponent(paste_data)));
 			        return false;
 				});
@@ -373,7 +387,7 @@
 			        var clipboard_buffer = client.get_clipboard_buffer();
 			        pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
 			        pasteboard.select();
-			        cdebug("copy event, clipboard buffer=", clipboard_buffer);
+			        cdebug("clipboard", "copy event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
 				});
@@ -381,7 +395,7 @@
 			        var clipboard_buffer = client.get_clipboard_buffer();
 			        pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
 			        pasteboard.select();
-					cdebug("cut event, clipboard buffer=", clipboard_buffer);
+					cdebug("clipboard", "cut event, clipboard buffer=", clipboard_buffer);
 			        client.clipboard_pending = false;
 			        return true;
 				});
@@ -391,7 +405,7 @@
 				        var clipboard_buffer = client.get_clipboard_buffer();
 				        pasteboard.text(clipboard_buffer);
 				        pasteboard.select();
-						cdebug("click event, with pending clipboard buffer=", clipboard_buffer);
+						cdebug("clipboard", "click event, with pending clipboard buffer=", clipboard_buffer);
 						//for IE:
 						var success = true;
 						if (window.clipboardData && window.clipboardData.setData) {
@@ -447,7 +461,7 @@
 			    	client.log.apply(client, arguments);
 			    }
 			    cdebug = function() {
-			    	client._debug.apply(client, arguments);
+			    	client.debug.apply(client, arguments);
 			    }
 			    init_tablet_input(client);
 			    if (client.clipboard_enabled) {
