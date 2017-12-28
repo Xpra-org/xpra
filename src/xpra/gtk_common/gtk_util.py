@@ -157,7 +157,7 @@ if is_gtk3():
     pixbuf_new_from_file    = GdkPixbuf.Pixbuf.new_from_file
     window_set_default_icon = gtk.Window.set_default_icon
     icon_theme_get_default  = gtk.IconTheme.get_default
-    image_new_from_stock    = gtk.image.new_from_stock
+    image_new_from_stock    = gtk.Image.new_from_stock
 
     def gdk_cairo_context(cairo_context):
         return cairo_context
