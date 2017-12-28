@@ -127,7 +127,7 @@ class OSX_Notifier(NotifierBase):
 
     def cleanup(self):
         NotifierBase.cleanup(self)
-        self.notification_center.removeAllDeliveredNotifications_()
+        self.notification_center.removeAllDeliveredNotifications()
 
 
 class OSX_Subprocess_Notifier(NotifierBase):
