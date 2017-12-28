@@ -220,6 +220,8 @@ echo
 echo "*******************************************************************************"
 echo "Hacks"
 #HACKS
+echo " * macos notifications API look for Info.plist in the wrong place"
+cp ${CONTENTS_DIR}/Info.plist ${RSCDIR}/bin/
 #no idea why I have to do this by hand
 echo " * add gtk .so"
 rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
@@ -358,3 +360,5 @@ rsync --delete -rplogt "${APP_DIR}" ~/Desktop/
 echo "Done"
 echo "*******************************************************************************"
 echo
+
+svn revert Info.plist

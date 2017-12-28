@@ -1761,7 +1761,7 @@ class ServerBase(ServerCore):
             notifylog(msg)
             return msg
         sources = self._control_get_sources(client_uuids)
-        notifylog("control_command_send_notification(%i, %s, %s, %s) will send to %s", nid, title, message, client_uuids, sources)
+        notifylog("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)", nid, title, message, client_uuids, sources, client_uuids)
         count = 0
         for source in sources:
             if source.notify(0, nid, "control channel", 0, "", title, message, 10):

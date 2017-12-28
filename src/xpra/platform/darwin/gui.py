@@ -17,12 +17,16 @@ import Quartz.CoreGraphics as CG    #@UnresolvedImport
 from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
 from AppKit import NSApp, NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
+from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotificationDefaultSoundName #@UnresolvedImport
 
 from xpra.util import envbool, envint, roundup
+from xpra.client.notifications.notifier_base import NotifierBase
+
 from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 mouselog = Logger("osx", "events", "mouse")
+notifylog = Logger("osx", "notify")
 
 
 OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
@@ -30,6 +34,8 @@ SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 WHEEL = envbool("XPRA_WHEEL", True)
+NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", False)
+SUBPROCESS_NOTIFIER = envbool("XPRA_OSX_SUBPROCESS_NOTIFIER", True)
 
 ALPHA = {
          CG.kCGImageAlphaNone                  : "AlphaNone",
@@ -94,6 +100,65 @@ def do_ready():
     if osxapp:
         osxapp.ready()
 
+
+class OSX_Notifier(NotifierBase):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+        notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
+        notification = NSUserNotification.alloc().init()
+        notification.setTitle_(summary)
+        notification.setInformativeText_(body)
+        notification.setIdentifier_("%s" % nid)
+        #enable sound:
+        notification.setSoundName_(NSUserNotificationDefaultSoundName)
+        notifylog("show_notify(..) nid=%s, %s(%s)", nid, notification_center.deliverNotification_, notification)
+        notification_center.deliverNotification_(notification)
+
+    def close_notify(self, nid):
+        pass
+
+class OSX_Subprocess_Notifier(NotifierBase):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+        from xpra.platform.darwin import osx_notifier
+        osx_notifier_file = osx_notifier.__file__
+        if osx_notifier_file.endswith("pyc"):
+            osx_notifier_file = osx_notifier_file[:-1]
+        import time
+        #osx_notifier_file = "/Users/osx/osx_notifier.py"
+        from xpra.platform.paths import get_app_dir
+        base = get_app_dir()
+        #python_bin = "/usr/bin/python"
+        python_bin = os.path.join(base, "Resources", "bin", "python")
+        cmd = [python_bin, osx_notifier_file, "%s-%s" % (int(time.time()), nid), summary, body]
+        from xpra.child_reaper import getChildReaper
+        import subprocess
+        env = os.environ.copy()
+        for x in ("DYLD_LIBRARY_PATH", "XDG_CONFIG_DIRS", "XDG_DATA_DIRS",
+                  "GTK_DATA_PREFIX", "GTK_EXE_PREFIX", "GTK_PATH",
+                  "GTK2_RC_FILES", "GTK_IM_MODULE_FILE", "GDK_PIXBUF_MODULE_FILE",
+                  "PANGO_RC_FILE", "PANGO_LIBDIR", "PANGO_SYSCONFDIR",
+                  "CHARSETALIASDIR",
+                  "GST_BUNDLE_CONTENTS", "PYTHON", "PYTHONHOME",
+                  "PYTHONPATH"):
+            if x in env:
+                del env[x]
+        notifylog("running %s with env=%s", cmd, env)
+        proc = subprocess.Popen(cmd, env=env)
+        proc.wait()
+        notifylog("returned %i", proc.poll())
+        getChildReaper().add_process(proc, "notifier-%s" % nid, cmd, True, True)
+
+    def close_notify(self, nid):
+        pass
+    
+
+def get_native_notifier_classes():
+    v = []
+    if NATIVE_NOTIFIER and NSUserNotificationCenter.defaultUserNotificationCenter():
+        v.append(OSX_Notifier)
+    if SUBPROCESS_NOTIFIER:
+        v.append(OSX_Subprocess_Notifier)
+    notifylog("get_native_notifier_classes()=%s", v)
+    return v
 
 def get_native_tray_menu_helper_classes():
     if get_OSXApplication():
