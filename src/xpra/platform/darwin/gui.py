@@ -102,19 +102,33 @@ def do_ready():
 
 
 class OSX_Notifier(NotifierBase):
+
+    def __init__(self):
+        self.notifications = {}
+        self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
+        assert self.notification_center
+
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
-        notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         notification = NSUserNotification.alloc().init()
         notification.setTitle_(summary)
         notification.setInformativeText_(body)
         notification.setIdentifier_("%s" % nid)
         #enable sound:
         notification.setSoundName_(NSUserNotificationDefaultSoundName)
-        notifylog("show_notify(..) nid=%s, %s(%s)", nid, notification_center.deliverNotification_, notification)
-        notification_center.deliverNotification_(notification)
+        notifylog("show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
+        self.notifications[nid] = notification
+        self.notification_center.deliverNotification_(notification)
 
     def close_notify(self, nid):
-        pass
+        notification = self.notifications.get(nid)
+        notifylog("close_notify(..) notification[%i]=%s", nid, notification)
+        if notification:
+            self.notification_center.removeDeliveredNotification_(notification)
+
+    def cleanup(self):
+        NotifierBase.cleanup(self)
+        self.notification_center.removeAllDeliveredNotifications_()
+
 
 class OSX_Subprocess_Notifier(NotifierBase):
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
