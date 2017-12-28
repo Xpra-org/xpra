@@ -191,7 +191,7 @@ jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = False
 #opencv currently broken on 32-bit windows (crashes on load):
-webcam_ENABLED          = DEFAULT and not OSX and not (WIN32 and BITS==32)
+webcam_ENABLED          = DEFAULT and not OSX
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
