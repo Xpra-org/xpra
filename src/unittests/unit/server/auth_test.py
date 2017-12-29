@@ -67,6 +67,9 @@ class TestAuth(unittest.TestCase):
 		#some auth modules require this to function:
 		if "connection" not in kwargs:
 			kwargs["connection"] = "fake-connection-data"
+		#exec auth would fail during rpmbuild without a default command:
+		if "command" not in kwargs:
+			kwargs["command"] = "/usr/bin/true"
 		try:
 			return c(username, **kwargs)
 		except Exception as e:
