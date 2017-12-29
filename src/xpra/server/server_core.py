@@ -349,20 +349,24 @@ class ServerCore(object):
             self._tcp_proxy = False
 
     def init_auth(self, opts):
-        auth = self.get_auth_module("local-auth", opts.auth, opts)
+        auth = self.get_auth_modules("local-auth", opts.auth, opts)
         if WIN32:
             self.auth_classes["named-pipe"] = auth
         else:
             self.auth_classes["unix-domain"] = auth
         for x in ("tcp", "ws", "wss", "ssl", "rfb", "vsock", "udp"):
             opts_value = getattr(opts, "%s_auth" % x)
-            self.auth_classes[x] = self.get_auth_module(x, opts_value, opts)
+            self.auth_classes[x] = self.get_auth_modules(x, opts_value, opts)
         authlog("init_auth(..) auth=%s", self.auth_classes)
+
+    def get_auth_modules(self, socket_type, auth_strs, opts):
+        authlog("get_auth_modules(%s, %s, {..})", socket_type, auth_strs)
+        if not auth_strs:
+            return None
+        return tuple(self.get_auth_module(socket_type, auth_str, opts) for auth_str in auth_strs)
 
     def get_auth_module(self, socket_type, auth_str, opts):
         authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
-        if not auth_str:
-            return None
         #separate options from the auth module name
         parts = auth_str.split(":", 1)
         if len(parts)==1 and auth_str.find(",")>0:
@@ -904,8 +908,7 @@ class ServerCore(object):
         protocol = protocol_class(conn)
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
-        protocol.challenge_sent = False
-        protocol.authenticator = None
+        protocol.authenticators = ()
         protocol.encryption = None
         protocol.keyfile = None
         if socktype=="tcp":
@@ -1251,54 +1254,56 @@ class ServerCore(object):
         if c.boolget("version_request"):
             self.send_version_info(proto, c.boolget("full-version-request"))
             return
-
-        auth_caps = self.verify_hello(proto, c)
-        if auth_caps is not False:
-            command_req = c.strlistget("command_request")
-            if len(command_req)>0:
-                #call from UI thread:
-                self.idle_add(self.handle_command_request, proto, *command_req)
-                return
-            #continue processing hello packet in UI thread:
-            self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
-
-    def make_authenticator(self, socktype, username, conn):
-        authlog("make_authenticator%s", (socktype, username, conn))
-        authenticator = None
-        auth_class = self.auth_classes[socktype]
-        if auth_class:
-            authlog("creating authenticator %s for %s, with username=%s, connection=%s", auth_class, socktype, username, conn)
-            auth, aclass, options = auth_class
-            opts = dict(options)
-            opts["connection"] = conn
-            authenticator = aclass(username, **opts)
-            authlog("authenticator: %s(%s, %s)=%s", auth, username, opts, authenticator)
-        return authenticator
-
-    def verify_hello(self, proto, c):
+        #verify version:
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
             self.disconnect_client(proto, VERSION_ERROR, "incompatible version: %s" % verr)
             proto.close()
-            return False
+            return
+        #this will call auth_verified if successful
+        #it may also just send challenge packets,
+        #in which case we'll end up here parsing the hello again
+        start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
+    def make_authenticators(self, socktype, username, conn):
+        authlog("make_authenticators%s", (socktype, username, conn))
+        authenticators = []
+        auth_classes = self.auth_classes[socktype]
+        i = 0
+        if auth_classes:
+            authlog("creating authenticators %s for %s, with username=%s, connection=%s", csv(auth_classes), socktype, username, conn)
+            for auth_class in auth_classes:
+                auth, aclass, options = auth_class
+                opts = dict(options)
+                opts["connection"] = conn
+                authenticator = aclass(username, **opts)
+                authlog("authenticator %i: %s(%s, %s)=%s", i, auth, username, opts, authenticator)
+                authenticators.append(authenticator)
+                i += 1
+        return tuple(authenticators)
+
+    def send_challenge(self, proto, salt, digest, salt_digest, auth_caps=None):
+        proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest))
+        self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
+
+    def verify_auth(self, proto, packet, c):
         def auth_failed(msg):
             authlog.warn("Warning: authentication failed")
             authlog.warn(" %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
+        username = c.strget("username", "unknown")
         #authenticator:
-        if not proto.authenticator:
-            username = c.strget("username")
+        if not proto.authenticators:
             try:
-                proto.authenticator = self.make_authenticator(proto.socket_type, username, proto._conn)
+                proto.authenticators = self.make_authenticators(proto.socket_type, username, proto._conn)
             except Exception as e:
                 authlog("instantiating authenticator for %s", proto.socket_type, exc_info=True)
                 authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
                 authlog.error(" %s", e)
                 auth_failed("authentication failed")
-                return False
+                return
 
         digest_modes = c.strlistget("digest", ("hmac", ))
         salt_digest_modes = c.strlistget("salt-digest", ("xor",))
@@ -1314,14 +1319,14 @@ class ServerCore(object):
             if cipher not in ENCRYPTION_CIPHERS:
                 authlog.warn("unsupported cipher: %s", cipher)
                 auth_failed("unsupported cipher")
-                return False
-            encryption_key = self.get_encryption_key(proto.authenticator, proto.keyfile)
+                return
+            encryption_key = self.get_encryption_key(proto.authenticators, proto.keyfile)
             if encryption_key is None:
                 auth_failed("encryption key is missing")
-                return False
+                return
             if padding not in ALL_PADDING_OPTIONS:
                 auth_failed("unsupported padding: %s" % padding)
-                return False
+                return
             authlog("set output cipher using encryption key '%s'", repr_ellipsized(encryption_key))
             proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
@@ -1331,64 +1336,97 @@ class ServerCore(object):
             if proto.encryption:
                 authlog("client does not provide encryption tokens")
                 auth_failed("missing encryption tokens")
-                return False
+                return
             auth_caps = None
 
-        #verify authentication if required:
-        if (proto.authenticator and proto.authenticator.requires_challenge()) or c.get("challenge") is not None:
-            challenge_response = c.strget("challenge_response")
-            client_salt = c.strget("challenge_client_salt")
-            authlog("processing authentication with %s, response=%s, client_salt=%s, challenge_sent=%s, digest_modes=%s, salt_digest_modes=%s", proto.authenticator, hexstr(challenge_response), hexstr(client_salt or ""), proto.challenge_sent, digest_modes, salt_digest_modes)
-            #send challenge if this is not a response:
-            if not challenge_response:
-                if proto.challenge_sent:
-                    auth_failed("invalid state, challenge already sent - no response!")
-                    return False
-                if proto.authenticator:
-                    challenge = proto.authenticator.get_challenge(digest_modes)
-                    if challenge is None:
-                        if proto.authenticator.requires_challenge():
-                            auth_failed("invalid state, unexpected challenge response")
-                            return False
-                        authlog.warn("Warning: authentication module '%s' does not require any credentials", proto.authenticator)
-                        authlog.warn(" but the client %s supplied them", proto)
-                        #fake challenge so the client will send the real hello:
-                        salt, digest = get_salt(), choose_digest(digest_modes)
-                    else:
-                        salt, digest = challenge
-                        authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
-                        authlog.info("Authentication required by %s authenticator module", proto.authenticator)
-                        authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
-                    if digest not in digest_modes:
-                        auth_failed("cannot proceed without %s digest support" % digest)
-                        return False
-                    salt_digest = proto.authenticator.choose_salt_digest(salt_digest_modes)
-                    if salt_digest in ("xor", "des"):
-                        if not LEGACY_SALT_DIGEST:
-                            auth_failed("insecure salt digest '%s' rejected" % salt_digest)
-                            return False
-                        log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
-                else:
-                    authlog.warn("Warning: client expects a challenge but this connection is unauthenticated")
-                    #fake challenge so the client will send the real hello:
-                    salt = get_salt()
-                    digest = choose_digest(digest_modes)
-                    salt_digest = choose_digest(salt_digest_modes)
-                proto.challenge_sent = True
-                proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest))
-                self.cancel_verify_connection_accepted(proto)
-                self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
-                return False
+        def send_fake_challenge():
+            #fake challenge so the client will send the real hello:
+            salt = get_salt()
+            digest = choose_digest(digest_modes)
+            salt_digest = choose_digest(salt_digest_modes)
+            self.send_challenge(proto, salt, digest, salt_digest, auth_caps)
 
-            if not proto.authenticator.authenticate(challenge_response, client_salt):
-                auth_failed("invalid challenge response")
-                return False
-            authlog("authentication challenge passed")
-        else:
-            #did the client expect a challenge?
-            if c.boolget("challenge"):
-                authlog.warn("this server does not require authentication (client supplied a challenge)")
-        return auth_caps
+        #skip the authentication module we have "passed" already:
+        remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
+
+        client_expects_challenge = c.get("challenge") is not None
+        challenge_response = c.strget("challenge_response")
+        client_salt = c.strget("challenge_client_salt")
+        if client_expects_challenge and not remaining_authenticators:
+            authlog.warn("Warning: client expects a challenge, sending a fake one")
+            send_fake_challenge()
+            return
+
+        authlog("processing authentication with %s, remaining=%s, response=%s, client_salt=%s, digest_modes=%s, salt_digest_modes=%s",
+                proto.authenticators, remaining_authenticators, hexstr(challenge_response), hexstr(client_salt or ""), digest_modes, salt_digest_modes)
+        #verify each remaining authenticator:
+        for index, authenticator in enumerate(proto.authenticators):
+            if authenticator not in remaining_authenticators:
+                authlog("authenticator[%i]=%s (already passed)", index, authenticator)
+                continue
+            req = authenticator.requires_challenge()
+            authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s", index, authenticator, req, authenticator.challenge_sent)
+            if not req:
+                #this authentication module does not need a challenge
+                #(ie: "peercred" or "none")
+                continue
+            if not authenticator.challenge_sent:
+                #we'll re-schedule this when we call send_challenge()
+                #as the authentication module is free to take its time
+                self.cancel_verify_connection_accepted(proto)
+                #note: we may have received a challenge_response from a previous auth module's challenge
+                challenge = authenticator.get_challenge(digest_modes)
+                if challenge is None:
+                    if authenticator.requires_challenge():
+                        auth_failed("invalid state, unexpected challenge response")
+                        return
+                    authlog.warn("Warning: authentication module '%s' does not require any credentials", authenticator)
+                    authlog.warn(" but the client %s supplied them", proto)
+                    #fake challenge so the client will send the real hello:
+                    send_fake_challenge()
+                    return
+                salt, digest = challenge
+                authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
+                authlog.info("Authentication required by %s authenticator module %i", authenticator, (index+1))
+                authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
+                if digest not in digest_modes:
+                    auth_failed("cannot proceed without %s digest support" % digest)
+                    return
+                salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                if salt_digest in ("xor", "des"):
+                    if not LEGACY_SALT_DIGEST:
+                        auth_failed("insecure salt digest '%s' rejected" % salt_digest)
+                        return
+                    log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
+                self.send_challenge(proto, salt, digest, salt_digest, auth_caps)
+                return
+            #challenge has been sent already for this module
+            if not challenge_response:
+                auth_failed("invalid state, challenge already sent - no response!")
+                return
+            if not authenticator.authenticate(challenge_response, client_salt):
+                auth_failed("authentication failed")
+                return
+            authenticator.passed = True
+            authlog("authentication challenge passed for %s", authenticator)
+            #don't re-use this response with the next authentication module:
+            challenge_response = None
+            client_salt = None
+        authlog("all authentication modules passed")
+        self.auth_verified(proto, packet, auth_caps)
+
+    def auth_verified(self, proto, packet, auth_caps):
+        capabilities = packet[1]
+        c = typedict(capabilities)
+        command_req = c.strlistget("command_request")
+        if len(command_req)>0:
+            #call from UI thread:
+            authlog("auth_verified(..) command request=%s", command_req)
+            self.idle_add(self.handle_command_request, proto, *command_req)
+            return
+        #continue processing hello packet in UI thread:
+        self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
+
 
     def filedata_nocrlf(self, filename):
         v = load_binary_file(filename)
@@ -1397,9 +1435,9 @@ class ServerCore(object):
             return None
         return v.strip("\n\r")
 
-    def get_encryption_key(self, authenticator=None, keyfile=None):
+    def get_encryption_key(self, authenticators=None, keyfile=None):
         #if we have a keyfile specified, use that:
-        authlog("get_encryption_key(%s, %s)", authenticator, keyfile)
+        authlog("get_encryption_key(%s, %s)", authenticators, keyfile)
         v = None
         if keyfile:
             authlog("loading encryption key from keyfile: %s", keyfile)
@@ -1408,8 +1446,11 @@ class ServerCore(object):
             v = os.environ.get('XPRA_ENCRYPTION_KEY')
             if v:
                 authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
-        if not v and authenticator:
-            v = authenticator.get_password()
+        if not v and authenticators:
+            for authenticator in authenticators:
+                v = authenticator.get_password()
+                if v:
+                    break
         return v
 
     def call_hello_oked(self, proto, packet, c, auth_caps):
@@ -1631,9 +1672,10 @@ class ServerCore(object):
         for socktype, _, info in self._socket_info:
             if info:
                 si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
-        for socktype, auth_class in self.auth_classes.items():
-            if auth_class:
-                si.setdefault(socktype, {})["authenticator"] = auth_class[0], auth_class[2]
+        for socktype, auth_classes in self.auth_classes.items():
+            if auth_classes:
+                for i, auth_class in enumerate(auth_classes):
+                    si.setdefault(socktype, {})["authenticator"] = auth_class[0], auth_class[2]
         return si
 
 

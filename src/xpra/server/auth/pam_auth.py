@@ -12,7 +12,7 @@ assert init and log #tests will disable logging from here
 
 def check(username, password):
     log("pam check(%s, [..])", username)
-    from xpra.server.pam import pam_session
+    from xpra.server.pam import pam_session #@UnresolvedImport
     session = pam_session(username, password, "login")
     if not session.start(password):
         return False

@@ -662,7 +662,6 @@ class XpraClientBase(FileTransferHandler):
             return
         authlog("%s(%s, %s)=%s", digest, repr(password), hexstr(salt), hexstr(challenge_response))
         self.password_sent = True
-        self.remove_packet_handlers("challenge")
         self.send_hello(challenge_response, client_salt)
 
     def set_server_encryption(self, caps, key):
@@ -719,6 +718,7 @@ class XpraClientBase(FileTransferHandler):
         return password
 
     def _process_hello(self, packet):
+        self.remove_packet_handlers("challenge")
         if not self.password_sent and self.has_password():
             self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
             return

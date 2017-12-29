@@ -30,6 +30,8 @@ class SysAuthenticator(object):
         self.salt = None
         self.digest = None
         self.salt_digest = None
+        self.challenge_sent = False
+        self.passed = False
         try:
             import pwd
             self.pw = pwd.getpwnam(username)
@@ -61,7 +63,7 @@ class SysAuthenticator(object):
             return None
         self.salt = get_salt()
         self.digest = choose_digest(digests)
-        #we need the raw password, so tell the client to use "xor":
+        self.challenge_sent = True
         return self.salt, self.digest
 
     def get_passwords(self):
@@ -78,6 +80,7 @@ class SysAuthenticator(object):
 
     def authenticate(self, challenge_response, client_salt=None):
         #this will call check(password)
+        assert self.challenge_sent and not self.passed
         return self.authenticate_check(challenge_response, client_salt)
 
     def choose_salt_digest(self, digest_modes):

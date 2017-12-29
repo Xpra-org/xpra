@@ -995,30 +995,30 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--username", action="store",
                       dest="username", default=defaults.username,
                       help="The username supplied by the client for authentication. Default: '%default'.")
-    group.add_option("--auth", action="store",
-                      dest="auth", default=defaults.auth,
+    group.add_option("--auth", action="append",
+                      dest="auth", default=list(defaults.auth or []),
                       help="The authentication module to use (default: '%default')")
-    group.add_option("--tcp-auth", action="store",
-                      dest="tcp_auth", default=defaults.tcp_auth,
+    group.add_option("--tcp-auth", action="append",
+                      dest="tcp_auth", default=list(defaults.tcp_auth or []),
                       help="The authentication module to use for TCP sockets (default: '%default')")
-    group.add_option("--udp-auth", action="store",
-                      dest="udp_auth", default=defaults.udp_auth,
+    group.add_option("--udp-auth", action="append",
+                      dest="udp_auth", default=list(defaults.udp_auth or []),
                       help="The authentication module to use for UDP sockets (default: '%default')")
-    group.add_option("--ws-auth", action="store",
-                      dest="ws_auth", default=defaults.ws_auth,
+    group.add_option("--ws-auth", action="append",
+                      dest="ws_auth", default=list(defaults.ws_auth or []),
                       help="The authentication module to use for Websockets (default: '%default')")
-    group.add_option("--wss-auth", action="store",
-                      dest="wss_auth", default=defaults.wss_auth,
+    group.add_option("--wss-auth", action="append",
+                      dest="wss_auth", default=list(defaults.wss_auth or []),
                       help="The authentication module to use for Secure Websockets (default: '%default')")
-    group.add_option("--ssl-auth", action="store",
-                      dest="ssl_auth", default=defaults.ssl_auth,
+    group.add_option("--ssl-auth", action="append",
+                      dest="ssl_auth", default=list(defaults.ssl_auth or []),
                       help="The authentication module to use for SSL sockets (default: '%default')")
-    group.add_option("--rfb-auth", action="store",
-                      dest="rfb_auth", default=defaults.rfb_auth,
+    group.add_option("--rfb-auth", action="append",
+                      dest="rfb_auth", default=list(defaults.rfb_auth or []),
                       help="The authentication module to use for RFB sockets (default: '%default')")
     if vsock:
-        group.add_option("--vsock-auth", action="store",
-                         dest="vsock_auth", default=defaults.vsock_auth,
+        group.add_option("--vsock-auth", action="append",
+                         dest="vsock_auth", default=list(defaults.vsock_auth or []),
                          help="The authentication module to use for vsock sockets (default: '%default')")
     else:
         ignore({"vsock-auth" : defaults.vsock_auth})

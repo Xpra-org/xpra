@@ -13,11 +13,14 @@ def init(opts):
 class Authenticator(object):
     def __init__(self, username, **_kwargs):
         self.username = username
+        self.challenge_sent = False
+        self.passed = False
 
     def requires_challenge(self):
         return True
 
     def get_challenge(self, digests):
+        self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
     def get_uid(self):
