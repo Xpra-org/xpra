@@ -1034,7 +1034,7 @@ class ServerCore(object):
             sock.settimeout(self._ws_timeout)
             def new_websocket_client(wsh):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
-                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.target, conn.socktype, wsh)
+                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.endpoint, conn.socktype, wsh)
                 # we need this workaround for non-blocking sockets
                 # TODO: python3 will need a different solution
                 if not PYTHON3:

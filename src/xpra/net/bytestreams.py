@@ -123,8 +123,10 @@ def pretty_socket(s):
 
 class Connection(object):
     def __init__(self, endpoint, socktype, info={}):
+        log("Connection%s", (endpoint, socktype, info))
         self.endpoint = endpoint
         try:
+            assert type(endpoint) in (tuple, list)
             self.target = ":".join(str(x) for x in endpoint)
         except:
             self.target = str(endpoint)
