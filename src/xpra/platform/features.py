@@ -26,6 +26,8 @@ CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
 CLIPBOARD_GREEDY = envbool("XPRA_CLIPBOARD_GREEDY")
 CLIPBOARD_NATIVE_CLASS = None
 
+EXECUTABLE_EXTENSION = ""
+
 UI_THREAD_POLLING = 0
 OPEN_COMMAND = []
 
@@ -69,6 +71,7 @@ _features_list_ = [
                    "CLIPBOARD_WANT_TARGETS",
                    "CLIPBOARD_GREEDY",
                    "CLIPBOARD_NATIVE_CLASS",
+                   "EXECUTABLE_EXTENSION",
                    "UI_THREAD_POLLING",
                    "CLIENT_MODULES",
                    "INPUT_DEVICES",

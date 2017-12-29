@@ -14,6 +14,8 @@ CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_GREEDY = True
 CLIPBOARD_NATIVE_CLASS = "xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
 
+EXECUTABLE_EXTENSION = "exe"
+
 #these don't make sense on win32:
 DEFAULT_PULSEAUDIO_COMMAND = ""
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = []

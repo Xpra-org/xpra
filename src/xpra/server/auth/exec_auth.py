@@ -6,10 +6,10 @@
 import os
 from subprocess import Popen
 
-from xpra.os_util import POSIX
 from xpra.util import envint
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
+from xpra.platform.features import EXECUTABLE_EXTENSION
 from xpra.gtk_common.gobject_compat import import_glib
 
 glib = import_glib()
@@ -24,9 +24,6 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         log("exec.Authenticator(%s, %s)", username, kwargs)
-        if not POSIX:
-            log.warn("Warning: exec authentication is not supported on %s", os.name)
-            return
         self.command = kwargs.pop("command", "")
         self.timeout = kwargs.pop("timeout", TIMEOUT)
         self.timer = None
@@ -37,9 +34,14 @@ class Authenticator(SysAuthenticator):
             from xpra.platform.paths import get_libexec_dir
             libexec = get_libexec_dir()
             xpralibexec = os.path.join(libexec, "xpra")
+            log("libexec=%s, xpralibexec=%s", libexec, xpralibexec)
             if os.path.exists(xpralibexec):
                 libexec = xpralibexec
             auth_dialog = os.path.join(libexec, "auth_dialog")
+            if EXECUTABLE_EXTENSION:
+                #ie: add ".exe" on MS Windows
+                auth_dialog += ".%s" % EXECUTABLE_EXTENSION
+            log("auth_dialog=%s", auth_dialog)
             if os.path.exists(auth_dialog):
                 self.command = auth_dialog
         assert self.command, "exec authentication module is not configured correctly: no command specified"
