@@ -376,14 +376,7 @@ class ServerCore(object):
         if len(parts)>1:
             auth_options = parse_simple_dict(parts[1])
         auth_options["exec_cwd"] = self.exec_cwd
-        if auth=="sys":
-            #resolve virtual "sys" auth:
-            if WIN32:
-                auth = "win32"
-            else:
-                auth = "pam"
-            authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
-        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth, peercred_auth
+        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth
         AUTH_MODULES = {
                         "fail"      : fail_auth,
                         "reject"    : reject_auth,
@@ -395,7 +388,9 @@ class ServerCore(object):
                         "file"      : file_auth,
                         }
         if POSIX and not OSX:
+            from xpra.server.auth import peercred_auth, hosts_auth
             AUTH_MODULES["peercred"] = peercred_auth
+            AUTH_MODULES["hosts"] = hosts_auth
         try:
             from xpra.server.auth import sqlite_auth
             AUTH_MODULES["sqlite"] = sqlite_auth
@@ -414,6 +409,13 @@ class ServerCore(object):
                 AUTH_MODULES["pam"] = pam_auth
             except Exception as e:
                 authlog("cannot load pam auth: %s", e)
+        if auth=="sys":
+            #resolve virtual "sys" auth:
+            if WIN32:
+                auth = "win32"
+            else:
+                auth = "pam"
+            authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
         auth_module = AUTH_MODULES.get(auth)
         if not auth_module:
             raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, csv(AUTH_MODULES.keys())))
@@ -696,7 +698,7 @@ class ServerCore(object):
         try:
             peername = sock.getpeername()
         except:
-            peername = str(address)
+            peername = address
         #limit number of concurrent network connections:
         if socktype not in ("unix-domain", ) and len(self._potential_protocols)>=self._max_connections:
             netlog.error("Error: too many connections (%i)", len(self._potential_protocols))
@@ -704,10 +706,9 @@ class ServerCore(object):
             sock.close()
             return True
         sockname = sock.getsockname()
-        target = peername or sockname
         sock.settimeout(self._socket_timeout)
         netlog("new_connection(%s) sock=%s, socket_info=%s, timeout=%s, address=%s, peername=%s. timeout=%s", args, sock, socket_info, self._socket_timeout, address, peername, self._socket_timeout)
-        conn = SocketConnection(sock, sockname, address, target, socktype)
+        conn = SocketConnection(sock, sockname, address, peername, socktype)
 
         #from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, "new-%s-connection" % socktype, True, args=(conn, sock, address, socktype, peername, socket_info))
@@ -1302,7 +1303,7 @@ class ServerCore(object):
                 authlog("instantiating authenticator for %s", proto.socket_type, exc_info=True)
                 authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
                 authlog.error(" %s", e)
-                auth_failed("authentication failed")
+                auth_failed(str(e))
                 return
 
         digest_modes = c.strlistget("digest", ("hmac", ))

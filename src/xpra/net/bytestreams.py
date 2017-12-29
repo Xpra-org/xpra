@@ -122,10 +122,12 @@ def pretty_socket(s):
 
 
 class Connection(object):
-    def __init__(self, target, socktype, info={}):
-        if type(target)==tuple:
-            target = ":".join([str(x) for x in target])
-        self.target = target
+    def __init__(self, endpoint, socktype, info={}):
+        self.endpoint = endpoint
+        try:
+            self.target = ":".join(str(x) for x in endpoint)
+        except:
+            self.target = str(endpoint)
         self.socktype = socktype
         self.info = info
         self.input_bytecount = 0
@@ -173,7 +175,7 @@ class Connection(object):
         info = self.info.copy()
         info.update({
                 "type"              : self.socktype or "",
-                "endpoint"          : self.target or "",
+                "endpoint"          : self.endpoint or (),
                 "active"            : self.active,
                 "input"             : {
                                        "bytecount"      : self.input_bytecount,
@@ -258,6 +260,7 @@ class TwoFileConnection(Connection):
 
 class SocketConnection(Connection):
     def __init__(self, socket, local, remote, target, socktype, info={}):
+        log("SocketConnection%s", (socket, local, remote, target, socktype, info))
         Connection.__init__(self, target, socktype, info)
         self._socket = socket
         self.local = local
@@ -301,6 +304,7 @@ class SocketConnection(Connection):
     def get_info(self):
         d = Connection.get_info(self)
         try:
+            d["remote"] = self.remote or ""
             d["protocol-type"] = self.protocol_type
             si = self.get_socket_info()
             if si:

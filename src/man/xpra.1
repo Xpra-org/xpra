@@ -634,6 +634,11 @@ The sessions available for each user will be querying using:
 FROM users WHERE username=(?)\fP
 Multiple displays may be specified as a comma separated list.
 
+.IP \fBhosts\fP
+checks the host using the system's \fItcp-wrappers\fP library.
+(Posix only, and not available on Mac OS)
+See \fIhosts.allow\fP and \fIhosts.deny\fP for details.
+
 .IP \fBpeercred\fP
 checks the unix domain socket peer credentials using \fISO_PEERCRED\fP.
 This authentication module is only available on some Posix compliant
