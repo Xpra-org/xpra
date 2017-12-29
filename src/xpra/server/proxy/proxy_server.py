@@ -186,7 +186,7 @@ class ProxyServer(ServerCore):
             self.send_disconnect(client_proto, reason, *extras)
 
         #find the target server session:
-        if not client_proto.authenticator:
+        if not client_proto.authenticators:
             log.error("Error: the proxy server requires an authentication mode,")
             try:
                 log.error(" client connection '%s' does not specify one", client_proto._conn.socktype)
@@ -195,14 +195,20 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
-        try:
-            sessions = client_proto.authenticator.get_sessions()
-        except Exception as e:
-            authlog("failed to get the list of sessions", exc_info=True)
-            authlog.error("Error: failed to get the list of sessions using '%s' authenticator", client_proto.authenticator)
-            authlog.error(" %s", e)
-            disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
-            return
+        sessions = []
+        for authenticator in client_proto.authenticators:
+            try:
+                auth_sessions = authenticator.get_sessions()
+                #don't add duplicates:
+                for x in auth_sessions:
+                    if x not in sessions:
+                        sessions.append(x)
+            except Exception as e:
+                authlog("failed to get the list of sessions from %s", authenticator, exc_info=True)
+                authlog.error("Error: failed to get the list of sessions using '%s' authenticator", authenticator)
+                authlog.error(" %s", e)
+                disconnect(AUTHENTICATION_ERROR, "cannot access sessions")
+                return
         authlog("proxy_auth(%s, {..}, %s) found sessions: %s", client_proto, auth_caps, sessions)
         if sessions is None:
             disconnect(SESSION_NOT_FOUND, "no sessions found")
@@ -225,7 +231,11 @@ class ProxyServer(ServerCore):
             log("username(%i)=%s, groups=%s", uid, username, groups)
         else:
             #the auth module recorded the username we authenticate against
-            username = getattr(client_proto.authenticator, "username", "")
+            assert client_proto.authenticators
+            for authenticator in client_proto.authenticators:
+                username = getattr(authenticator, "username", "")
+                if username:
+                    break
         #ensure we don't loop back to the proxy:
         proxy_virtual_display = os.environ.get("DISPLAY")
         if proxy_virtual_display in displays:
@@ -329,7 +339,7 @@ class ProxyServer(ServerCore):
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:
-                encryption_key = self.get_encryption_key(client_proto.authenticator, client_proto.keyfile)
+                encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
         log("start_proxy(..) client connection=%s", client_conn)
         log("start_proxy(..) client state=%s", client_state)
 
@@ -483,8 +493,14 @@ class ProxyServer(ServerCore):
         info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         #only show more info if we have authenticated
         #as the user running the proxy server process:
-        if proto and proto.authenticator:
-            sessions = proto.authenticator.get_sessions()
+        if proto and proto.authenticators:
+            sessions = []
+            for authenticator in proto.authenticators:
+                auth_sessions = authenticator.get_sessions()
+                #don't add duplicates:
+                for x in auth_sessions:
+                    if x not in sessions:
+                        sessions.append(x)
             if sessions:
                 uid, gid = sessions[:2]
                 if not POSIX or (uid==os.getuid() and gid==os.getgid()):
