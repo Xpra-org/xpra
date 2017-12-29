@@ -313,8 +313,8 @@ class TestAuth(unittest.TestCase):
 			a = self._init_auth("exec", **kwargs)
 			assert not a.requires_challenge()
 			assert a.authenticate()==success
-		exec_cmd("/bin/true", True)
-		exec_cmd("/bin/false", False)
+		exec_cmd("/usr/bin/true", True)
+		exec_cmd("/usr/bin/false", False)
 
 
 def main():
