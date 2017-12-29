@@ -19,14 +19,14 @@ def init(opts):
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        SysAuthenticator.__init__(self, username)
-        filename = kwargs.get("filename", 'sqlite.sdb')
+        filename = kwargs.pop("filename", 'sqlite.sdb')
         if filename and not os.path.isabs(filename):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             filename = os.path.join(exec_cwd, filename)
         self.filename = filename
-        self.password_query = kwargs.get("password_query", "SELECT password FROM users WHERE username=(?)")
-        self.sessions_query = kwargs.get("sessions_query", "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(?)")
+        self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(?)")
+        self.sessions_query = kwargs.pop("sessions_query", "SELECT uid, gid, displays, env_options, session_options FROM users WHERE username=(?)")
+        SysAuthenticator.__init__(self, username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
     def __repr__(self):

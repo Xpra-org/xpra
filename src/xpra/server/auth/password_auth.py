@@ -10,8 +10,8 @@ assert init and log #tests will disable logging from here
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        SysAuthenticator.__init__(self, username)
-        self.value = kwargs.get("value")
+        self.value = kwargs.pop("value")
+        SysAuthenticator.__init__(self, username, **kwargs)
         self.authenticate = self.authenticate_hmac
 
     def __repr__(self):

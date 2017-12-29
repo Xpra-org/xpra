@@ -1283,8 +1283,8 @@ class ServerCore(object):
                 i += 1
         return tuple(authenticators)
 
-    def send_challenge(self, proto, salt, digest, salt_digest, auth_caps=None):
-        proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest))
+    def send_challenge(self, proto, salt, auth_caps, digest, salt_digest, prompt="password"):
+        proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def verify_auth(self, proto, packet, c):
@@ -1344,7 +1344,7 @@ class ServerCore(object):
             salt = get_salt()
             digest = choose_digest(digest_modes)
             salt_digest = choose_digest(salt_digest_modes)
-            self.send_challenge(proto, salt, digest, salt_digest, auth_caps)
+            self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
 
         #skip the authentication module we have "passed" already:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
@@ -1398,7 +1398,7 @@ class ServerCore(object):
                         auth_failed("insecure salt digest '%s' rejected" % salt_digest)
                         return
                     log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
-                self.send_challenge(proto, salt, digest, salt_digest, auth_caps)
+                self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             #challenge has been sent already for this module
             if not challenge_response:

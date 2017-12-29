@@ -14,7 +14,6 @@ assert init and log #tests will disable logging from here
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        SysAuthenticator.__init__(self, username)
         log("peercred.Authenticator(%s, %s)", username, kwargs)
         self.uid = -1
         self.gid = -1
@@ -22,8 +21,8 @@ class Authenticator(SysAuthenticator):
             log.warn("Warning: peercred authentication is not supported on %s", os.name)
             return
         connection = kwargs.get("connection", None)
-        uids = kwargs.get("uid")
-        gids = kwargs.get("gid")
+        uids = kwargs.pop("uid", None)
+        gids = kwargs.pop("gid", None)
         allow_uids = None
         allow_gids = None
         if uids:
@@ -77,6 +76,7 @@ class Authenticator(SysAuthenticator):
         except Exception as e:
             log.error("Error: cannot get peer uid")
             log.error(" %s", e)
+        SysAuthenticator.__init__(self, username, **kwargs)
 
     def get_uid(self):
         return self.uid

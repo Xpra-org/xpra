@@ -11,9 +11,10 @@ def init(opts):
 
 
 class Authenticator(object):
-    def __init__(self, username, **_kwargs):
+    def __init__(self, username, **kwargs):
         self.username = username
         self.challenge_sent = False
+        self.prompt = kwargs.pop("prompt", "password")
         self.passed = False
 
     def requires_challenge(self):

@@ -679,7 +679,7 @@ class ApplicationWindow:
 
         if self.config.password:
             #pass the password to the class directly:
-            def load_password():
+            def load_password(*_args):
                 return self.config.password
             self.client.password_file = "FAKE-PASSWORD-FILE-FOR-LAUNCHER"
             self.client.load_password = load_password

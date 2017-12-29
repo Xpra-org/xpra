@@ -26,7 +26,7 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, DEFAULT_METADATA_SUPPORTED
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
@@ -173,7 +173,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def _process_challenge(self, packet):
         if not self.validate_challenge_packet(packet):
             return
-        password = self.load_password()
+        prompt = "password"
+        if len(packet)>=6:
+            prompt = std(packet[5])
+        password = self.load_password(prompt)
         if password:
             self.send_challenge_reply(packet, password)
             return
@@ -205,7 +208,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         title = gtk.Label("Server Authentication")
         title.modify_font(pango.FontDescription("sans 14"))
         add(title, 16)
-        add(gtk.Label(self.get_challenge_prompt()), 10)
+        add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
         def password_activate(*_args):
             handle_response(dialog, gtk.RESPONSE_ACCEPT)
         password_input = gtk.Entry(max=255)

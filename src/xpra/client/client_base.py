@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr
-from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, envbool, envint, disconnect_is_an_error, dump_all_frames
+from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames
 from xpra.net.file_transfer import FileTransferHandler
 
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
@@ -577,7 +577,10 @@ class XpraClientBase(FileTransferHandler):
         authlog("processing challenge: %s", packet[1:])
         if not self.validate_challenge_packet(packet):
             return
-        password = self.load_password()
+        prompt = "password"
+        if len(packet)>=6:
+            prompt = std(packet[5])
+        password = self.load_password(prompt)
         if not password:
             self.quit(EXIT_PASSWORD_REQUIRED)
         else:
@@ -610,8 +613,8 @@ class XpraClientBase(FileTransferHandler):
             log.warn("Warning: server using legacy support for '%s' salt digest", salt_digest)
         return True
 
-    def get_challenge_prompt(self):
-        text = "Please enter the password"
+    def get_challenge_prompt(self, prompt="password"):
+        text = "Please enter the %s" % (prompt,)
         try:
             from xpra.net.bytestreams import pretty_socket
             conn = self._protocol._conn
@@ -697,7 +700,7 @@ class XpraClientBase(FileTransferHandler):
             raise InitExit(1, "no encryption key")
         return key.strip("\n\r")
 
-    def load_password(self):
+    def load_password(self, prompt="password"):
         authlog("load_password() existing value found: %s", bool(self.password))
         if self.password:
             return self.password
@@ -712,7 +715,7 @@ class XpraClientBase(FileTransferHandler):
                 if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
                     import getpass
                     authlog("stdin isatty, using password prompt")
-                    password = getpass.getpass("%s :" % self.get_challenge_prompt())
+                    password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
             except Exception:
                 authlog("password request failure", exc_info=True)
         return password

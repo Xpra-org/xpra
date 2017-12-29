@@ -30,6 +30,7 @@ class SysAuthenticator(object):
         self.salt = None
         self.digest = None
         self.salt_digest = None
+        self.prompt = kwargs.pop("prompt", "password")
         self.challenge_sent = False
         self.passed = False
         try:
