@@ -10,6 +10,7 @@ usr/lib/cups/backend/xpraforwarder
 usr/lib/xpra/xdg-open
 usr/lib/xpra/gnome-open
 usr/lib/xpra/gvfs-open
+usr/lib/xpra/auth_dialog
 usr/share/applications/xpra-launcher.desktop
 usr/share/applications/xpra-browser.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml

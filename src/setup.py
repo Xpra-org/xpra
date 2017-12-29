@@ -1312,6 +1312,8 @@ if WIN32:
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
+        if server_ENABLED:
+            add_gui_exe("scripts/auth_dialog",                  "authentication.ico", "Auth_Dialog")
         if gtk2_ENABLED:
             #these need porting..
             add_gui_exe("xpra/gtk_common/gtk_view_clipboard.py","clipboard.ico",    "GTK_Clipboard_Test")
@@ -1448,13 +1450,18 @@ if WIN32:
 else:
     #OSX and *nix:
     scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/udev_product_version", "scripts/xpra_signal_listener"]
+    libexec_scripts = []
     if xdg_open_ENABLED:
         from xpra.os_util import is_Fedora, is_CentOS
         if is_Fedora() or is_CentOS():
             libexec = "libexec"
         else:
             libexec = "lib"
-        add_data_files("%s/xpra/" % libexec, ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"])
+        libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
+    if server_ENABLED and POSIX:
+        libexec_scripts.append("scripts/auth_dialog")
+    if libexec_scripts:
+        add_data_files("%s/xpra/" % libexec, libexec_scripts)
     add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))

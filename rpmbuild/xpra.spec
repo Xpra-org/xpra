@@ -520,6 +520,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
+%{_libexecdir}/xpra/auth_dialog
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_prefix}/lib/tmpfiles.d/xpra.conf
 %config %{_prefix}/lib/sysusers.d/xpra.conf
