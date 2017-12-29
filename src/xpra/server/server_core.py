@@ -945,13 +945,13 @@ class ServerCore(object):
         frominfo = pretty_socket(conn.remote)
         if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
             socktype = "SSL"
-            sock, sockname, address, target = conn._socket, conn.local, conn.remote, conn.target
+            sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(sock)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
                 netlog("ignoring SSL EOF error")
                 return False, None, None
-            conn = SSLSocketConnection(sock, sockname, address, target, socktype)
+            conn = SSLSocketConnection(sock, sockname, address, endpoint, socktype)
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
             if self.ssl_mode=="tcp":
