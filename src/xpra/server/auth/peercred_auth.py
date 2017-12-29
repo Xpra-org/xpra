@@ -15,11 +15,12 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
         log("peercred.Authenticator(%s, %s)", username, kwargs)
-        self.uid = -1
-        self.gid = -1
         if not POSIX:
             log.warn("Warning: peercred authentication is not supported on %s", os.name)
             return
+        self.uid = -1
+        self.gid = -1
+        self.peercred_check = False
         connection = kwargs.get("connection", None)
         uids = kwargs.pop("uid", None)
         gids = kwargs.pop("gid", None)
@@ -69,6 +70,7 @@ class Authenticator(SysAuthenticator):
                     log.warn("Warning: peercred access denied,")
                     log.warn(" gid %i is not in the whitelist: %s", gid, csv(allow_gids))
                 else:
+                    self.peercred_check = True
                     self.uid = uid
                     self.gid = gid
             else:
@@ -86,12 +88,10 @@ class Authenticator(SysAuthenticator):
 
 
     def requires_challenge(self):
-        #if we didn't find the peercred,
-        #pretend to require a challenge and fail it:
-        return self.uid<0
-
-    def authenticate(self, _challenge_response, _client_salt=None):
         return False
+
+    def authenticate(self, _challenge_response=None, _client_salt=None):
+        return self.peercred_check
 
     def __repr__(self):
         return "peercred"

@@ -55,6 +55,12 @@ def do_get_icon_dir():
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
+def do_get_libexec_dir():
+    from xpra.os_util import is_Fedora, is_CentOS
+    if is_Fedora() or is_CentOS():
+        return "/usr/libexec/"
+    return "/usr/lib"
+
 def do_get_mmap_dir():
     return _get_xpra_runtime_dir() or os.getenv("TMPDIR", "/tmp")
 

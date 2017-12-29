@@ -7,7 +7,7 @@
 import os
 import sys
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, strtobytes
 from ctypes import CDLL, c_int, c_char_p
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
@@ -20,21 +20,22 @@ hosts_ctl = libwrap.hosts_ctl
 hosts_ctl.argtypes = [c_char_p, c_char_p, c_char_p, c_char_p]
 hosts_ctl.restype = c_int
 
-PRG_NAME = "xpra"
+PRG_NAME = b"xpra"
 prg = c_char_p(PRG_NAME)
-UNKNOWN = ""
+UNKNOWN = b""
 unknown = c_char_p(UNKNOWN)
 
 
 def check_host(peername, host):
     log("check_host(%s, %s)", peername, host)
     #name = c_char_p(username)
-    c_host = c_char_p(host)
-    c_peername = c_char_p(peername)
+    c_host = c_char_p(strtobytes(host))
+    c_peername = c_char_p(strtobytes(peername))
     #v = hosts_ctl(prg, c_host, unknown, unknown)
     v = hosts_ctl(prg, c_peername, c_host, unknown)
     log("hosts_ctl%s=%s", (PRG_NAME, peername, host, UNKNOWN), v)
     return bool(v)
+
 
 class Authenticator(SysAuthenticator):
 
@@ -56,18 +57,21 @@ class Authenticator(SysAuthenticator):
             log.error("Error: cannot get host from connection")
             log.error(" %s", e)
             raise
-        if not host or not check_host(peername, host):
-            errinfo = "'%s'" % peername
-            if peername!=host:
-                errinfo += " ('%s')" % host
-            raise Exception("access denied for host %s" % errinfo)
+        self.peername = peername
+        self.host = host
         SysAuthenticator.__init__(self, username, **kwargs)
 
     def requires_challenge(self):
         return False
 
-    def authenticate(self, _challenge_response, _client_salt=None):
-        return False
+    def authenticate(self, _challenge_response=None, _client_salt=None):
+        if not self.host or not check_host(self.peername, self.host):
+            errinfo = "'%s'" % self.peername
+            if self.peername!=self.host:
+                errinfo += " ('%s')" % self.host
+            log.warn("Warning: access denied for host %s" % errinfo)
+            return False
+        return True
 
     def __repr__(self):
         return "hosts"

@@ -376,7 +376,7 @@ class ServerCore(object):
         if len(parts)>1:
             auth_options = parse_simple_dict(parts[1])
         auth_options["exec_cwd"] = self.exec_cwd
-        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth
+        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth, exec_auth
         AUTH_MODULES = {
                         "fail"      : fail_auth,
                         "reject"    : reject_auth,
@@ -386,6 +386,7 @@ class ServerCore(object):
                         "password"  : password_auth,
                         "multifile" : multifile_auth,
                         "file"      : file_auth,
+                        "exec"      : exec_auth,
                         }
         if POSIX and not OSX:
             from xpra.server.auth import peercred_auth, hosts_auth
@@ -1365,11 +1366,17 @@ class ServerCore(object):
             if authenticator not in remaining_authenticators:
                 authlog("authenticator[%i]=%s (already passed)", index, authenticator)
                 continue
+            
             req = authenticator.requires_challenge()
             authlog("authenticator[%i]=%s, requires-challenge=%s, challenge-sent=%s", index, authenticator, req, authenticator.challenge_sent)
             if not req:
                 #this authentication module does not need a challenge
                 #(ie: "peercred" or "none")
+                if not authenticator.authenticate():
+                    auth_failed("%s authentication failed" % authenticator)
+                    return
+                authenticator.passed = True
+                authlog("authentication passed for %s (no challenge provided)", authenticator)
                 continue
             if not authenticator.challenge_sent:
                 #we'll re-schedule this when we call send_challenge()

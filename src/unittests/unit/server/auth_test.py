@@ -64,6 +64,9 @@ class TestAuth(unittest.TestCase):
 			c = module.Authenticator
 		except Exception as e:
 			raise Exception("module %s does not contain an Authenticator class!")
+		#some auth modules require this to function:
+		if "connection" not in kwargs:
+			kwargs["connection"] = "fake-connection-data"
 		try:
 			return c(username, **kwargs)
 		except Exception as e:
@@ -96,6 +99,8 @@ class TestAuth(unittest.TestCase):
 		if sys.platform.startswith("win"):
 			self.a("win32")
 			test_modules.append("win32")
+		if POSIX:
+			test_modules.append("exec")
 		for module in test_modules:
 			self._test_module(module)
 
@@ -252,7 +257,7 @@ class TestAuth(unittest.TestCase):
 			return
 		#no connection supplied:
 		pc = self._init_auth("peercred", {})
-		assert pc.requires_challenge()
+		assert not pc.requires_challenge()
 		assert not pc.authenticate("", "")
 		assert pc.get_uid()==-1 and pc.get_gid()==-1
 		#now with a connection object:
@@ -292,6 +297,24 @@ class TestAuth(unittest.TestCase):
 			except:
 				pass
 		assert verified
+
+	def test_hosts(self):
+		#cannot be tested (would require root to edit the hosts.deny file)
+		pass
+
+	def test_exec(self):
+		if not POSIX:
+			return
+		def exec_cmd(cmd, success=True):
+			kwargs = {
+				"command" 		: cmd,
+				"timeout"		: 2,
+				}
+			a = self._init_auth("exec", **kwargs)
+			assert not a.requires_challenge()
+			assert a.authenticate()==success
+		exec_cmd("/bin/true", True)
+		exec_cmd("/bin/false", False)
 
 
 def main():

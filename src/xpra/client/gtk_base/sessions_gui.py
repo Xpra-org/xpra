@@ -327,7 +327,7 @@ def do_main(opts):
         enable_color()
         gui = SessionsGUI(opts)
         gtk_main()
-        log.info("do_main() gui.exit_code=%i", gui.exit_code)
+        log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
 
 def main():

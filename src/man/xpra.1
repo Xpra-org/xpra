@@ -639,6 +639,15 @@ checks the host using the system's \fItcp-wrappers\fP library.
 (Posix only, and not available on Mac OS)
 See \fIhosts.allow\fP and \fIhosts.deny\fP for details.
 
+.IP \fBexec\fP
+Executes the command specified using the \fIcommand\fP attribute,
+the arguments to this command are: a description of the access
+request and the \fItimeout\fP value. (also configurable)
+If the command is not specified, the system will try to locate
+and use the \fIauth_dialog\fP utility which is shipped with xpra.
+The command should return 0 to allow access, any other value will
+deny access.
+
 .IP \fBpeercred\fP
 checks the unix domain socket peer credentials using \fISO_PEERCRED\fP.
 This authentication module is only available on some Posix compliant
