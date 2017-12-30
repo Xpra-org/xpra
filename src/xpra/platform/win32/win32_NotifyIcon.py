@@ -361,8 +361,7 @@ class win32NotifyIcon(object):
         icon_h = GetSystemMetrics(win32con.SM_CYSMICON)
         if w!=icon_w or h!=icon_h:
             log("resizing tray icon to %ix%i", icon_w, icon_h)
-            w, h = icon_w, icon_h
-            img = img.resize((w, h), Image.ANTIALIAS)
+            img = img.resize((icon_w, icon_h), Image.ANTIALIAS)
             rowstride = w*4
 
         bitmap = 0
@@ -370,8 +369,8 @@ class win32NotifyIcon(object):
         try:
             from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
             bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", img_format)))
-            bitmap = rgba_to_bitmap(bgra, w, h)
-            mask = CreateBitmap(w, h, 1, 1, None)
+            bitmap = rgba_to_bitmap(bgra, icon_w, icon_h)
+            mask = CreateBitmap(icon_w, icon_h, 1, 1, None)
 
             iconinfo = ICONINFO()
             iconinfo.fIcon = True
