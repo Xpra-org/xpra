@@ -232,8 +232,8 @@ class WSRequestHandler(WebSocketRequestHandler):
 
 class WebSocketConnection(SocketConnection):
 
-    def __init__(self, socket, local, remote, target, info, ws_handler):
-        SocketConnection.__init__(self, socket, local, remote, target, info)
+    def __init__(self, socket, local, remote, target, socktype, ws_handler):
+        SocketConnection.__init__(self, socket, local, remote, target, socktype)
         self.protocol_type = "websocket"
         self.ws_handler = ws_handler
 
