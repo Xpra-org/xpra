@@ -79,7 +79,7 @@ class SysAuthenticator(object):
     def check(self, password):
         raise NotImplementedError()
 
-    def authenticate(self, challenge_response, client_salt=None):
+    def authenticate(self, challenge_response=None, client_salt=None):
         #this will call check(password)
         assert self.challenge_sent and not self.passed
         return self.authenticate_check(challenge_response, client_salt)

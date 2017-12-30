@@ -23,7 +23,7 @@ class Authenticator(SysAuthenticator):
     def get_password(self):
         return None
 
-    def authenticate(self, _challenge_response, _client_salt=None):
+    def authenticate(self, _challenge_response=None, _client_salt=None):
         return True
 
     def __repr__(self):
