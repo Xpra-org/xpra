@@ -130,6 +130,7 @@ class Connection(object):
             self.target = ":".join(str(x) for x in endpoint)
         except:
             self.target = str(endpoint)
+        self.socktype_wrapped = socktype
         self.socktype = socktype
         self.info = info
         self.input_bytecount = 0
@@ -175,6 +176,8 @@ class Connection(object):
 
     def get_info(self):
         info = self.info.copy()
+        if self.socktype_wrapped!=self.socktype:
+            info["wrapped"] = self.socktype_wrapped
         info.update({
                 "type"              : self.socktype or "",
                 "endpoint"          : self.endpoint or (),

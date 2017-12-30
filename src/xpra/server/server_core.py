@@ -793,7 +793,7 @@ class ServerCore(object):
             netlog("ssl_wrap()=%s", ssl_conn)
             return ssl_conn
 
-        if socktype=="SSL" or socktype=="wss":
+        if socktype=="ssl" or socktype=="wss":
             #verify that this isn't plain HTTP / xpra:
             if peek_data:
                 packet_type = None
@@ -821,7 +821,7 @@ class ServerCore(object):
                     peek_data, line1 = self.peek_connection(ssl_conn, PEEK_TIMEOUT)
                     http = line1.find("HTTP/")>0
             if http:
-                self.start_http_socket(ssl_conn, True, peek_data)
+                self.start_http_socket(socktype, ssl_conn, True, peek_data)
             else:
                 log_new_connection(conn, socket_info)
                 self.make_protocol(socktype, ssl_conn)
@@ -838,14 +838,14 @@ class ServerCore(object):
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra", "packet looks like a plain xpra packet")
                     return
-            self.start_http_socket(conn, False, peek_data)
+            self.start_http_socket(socktype, conn, False, peek_data)
             return
 
         elif socktype=="rfb" and not peek_data:
             self.handle_rfb_connection(conn)
             return
 
-        elif (socktype=="tcp" and self._tcp_proxy or self._ssl_wrap_socket) or \
+        elif (socktype=="tcp" and (self._tcp_proxy or self._ssl_wrap_socket)) or \
             (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websockify adapter:
@@ -944,14 +944,14 @@ class ServerCore(object):
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
         if self._ssl_wrap_socket and peek_data[0] in (chr(0x16), 0x16):
-            socktype = "SSL"
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(sock)
             if sock is None:
                 #None means EOF! (we don't want to import ssl bits here)
                 netlog("ignoring SSL EOF error")
                 return False, None, None
-            conn = SSLSocketConnection(sock, sockname, address, endpoint, socktype)
+            conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl")
+            conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             netlog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
             if self.ssl_mode=="tcp":
@@ -972,7 +972,7 @@ class ServerCore(object):
             http = line1.find(b"HTTP/")>0
             is_ssl = False
         if http:
-            self.start_http_socket(conn, is_ssl, peek_data)
+            self.start_http_socket(socktype, conn, is_ssl, peek_data)
             return False, conn, None
         if self._tcp_proxy:
             netlog.info("New tcp proxy connection received from %s", frominfo)
@@ -994,7 +994,7 @@ class ServerCore(object):
         except:
             c = int(v[0])
         if c==0x16:
-            return "SSL", "SSL packet?"
+            return "ssl", "SSL packet?"
         s = bytestostr(v)
         if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
             return "HTTP", "HTTP %s request" % s.split(" ")[0]
@@ -1007,7 +1007,7 @@ class ServerCore(object):
             "/Info"         : self.http_info_request,
             }
 
-    def start_http_socket(self, conn, is_ssl=False, peek_data=""):
+    def start_http_socket(self, socktype, conn, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
         line1 = b""
         if peek_data:
@@ -1024,17 +1024,19 @@ class ServerCore(object):
             tname = "%s-proxy" % req_info
         #we start a new thread,
         #only so that the websocket handler thread is named correctly:
-        start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(conn, is_ssl, req_info, conn.remote))
+        start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
 
-    def start_websockify(self, conn, is_ssl, req_info, frominfo):
-        wslog("start_websockify(%s, %s, %s, %s) www dir=%s", conn, is_ssl, req_info, frominfo, self._www_dir)
+    def start_websockify(self, socktype, conn, is_ssl, req_info, frominfo):
+        wslog("start_websockify(%s, %s, %s, %s, %s) www dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
             def new_websocket_client(wsh):
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
-                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.endpoint, conn.socktype, wsh)
+                newsocktype = "ws%s" % ["","s"][int(is_ssl)]
+                wsc = WebSocketConnection(sock, conn.local, conn.remote, conn.endpoint, newsocktype, wsh)
+                wsc.socktype_wrapped = socktype
                 # we need this workaround for non-blocking sockets
                 # TODO: python3 will need a different solution
                 if not PYTHON3:
@@ -1048,8 +1050,7 @@ class ServerCore(object):
                         return untilConcludes(wsc.is_active, wsc.can_retry, saved_send, *args)
                     sock.recv = recv
                     sock.send = send
-                socktype = "ws%s" % ["","s"][int(is_ssl)]
-                self.make_protocol(socktype, wsc)
+                self.make_protocol(newsocktype, wsc)
             scripts = self.get_http_scripts()
             disable_nagle = conn.socktype not in ("unix-domain", "named-pipe")
             WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts, disable_nagle)
@@ -1299,7 +1300,8 @@ class ServerCore(object):
         #authenticator:
         if not proto.authenticators:
             try:
-                proto.authenticators = self.make_authenticators(proto.socket_type, username, proto._conn)
+                socktype = proto._conn.socktype_wrapped
+                proto.authenticators = self.make_authenticators(socktype, username, proto._conn)
             except Exception as e:
                 authlog("instantiating authenticator for %s", proto.socket_type, exc_info=True)
                 authlog.error("Error instantiating authenticator for %s:", proto.socket_type)

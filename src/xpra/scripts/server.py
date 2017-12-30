@@ -649,7 +649,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # (which may not be ours to kill at that point)
     netlog("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
-        add_tcp_socket("SSL", host, iport)
+        add_tcp_socket("ssl", host, iport)
     netlog("setting up https / wss (secure websockets): %s", csv(bind_wss))
     for host, iport in bind_wss:
         add_tcp_socket("wss", host, iport)
