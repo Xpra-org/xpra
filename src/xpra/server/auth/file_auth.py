@@ -7,6 +7,7 @@
 
 from xpra.net.crypto import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
+from xpra.util import obsc
 
 
 #will be called when we init the module
@@ -21,6 +22,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         salt = self.get_response_salt(client_salt)
         password = self.get_password()
+        log("authenticate_hmac() get_password()=%s", obsc(password))
         if not password:
             log.warn("Warning: authentication failed")
             log.warn(" no password for '%s' in '%s'", self.username, self.password_filename)

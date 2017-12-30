@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr
-from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames
+from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
 from xpra.net.file_transfer import FileTransferHandler
 
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
@@ -92,7 +92,8 @@ class XpraClientBase(FileTransferHandler):
         self.display = None
         self.username = None
         self.password = None
-        self.password_file = None
+        self.password_file = ()
+        self.password_index = 0
         self.password_sent = False
         self.bandwidth_limit = 0
         self.encryption = None
@@ -626,7 +627,7 @@ class XpraClientBase(FileTransferHandler):
     def send_challenge_reply(self, packet, password):
         if not password:
             if self.password_file:
-                self.auth_error(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file %s" % self.password_file, "no password available")
+                self.auth_error(EXIT_PASSWORD_FILE_ERROR, "failed to load password from file%s %s" % (engs(self.password_file), csv(self.password_file)), "no password available")
             else:
                 self.auth_error(EXIT_PASSWORD_REQUIRED, "this server requires authentication and no password is available")
             return
@@ -705,17 +706,21 @@ class XpraClientBase(FileTransferHandler):
         if self.password:
             return self.password
         password = os.environ.get('XPRA_PASSWORD')
-        if self.password_file:
-            filename = os.path.expanduser(self.password_file)
+        if self.password_index<len(self.password_file):
+            password_file = self.password_file[self.password_index]
+            self.password_index += 1
+            filename = os.path.expanduser(password_file)
             password = load_binary_file(filename)
-            authlog("password read from file %s is %s", self.password_file, "".join(["*" for _ in (password or "")]))
-        authlog("load_password() PASSWORD_PROMPT=%s, isatty=%s", PASSWORD_PROMPT, sys.stdin.isatty())
+            authlog("password read from file %i '%s': %s", self.password_index, password_file, obsc(password))
+        else:
+            authlog("load_password() PASSWORD_PROMPT=%s, isatty=%s", PASSWORD_PROMPT, sys.stdin.isatty())
         if not password and PASSWORD_PROMPT:
             try:
                 if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
                     import getpass
                     authlog("stdin isatty, using password prompt")
                     password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
+                    authlog("password read from tty via getpass: %s", obsc(password))
             except Exception:
                 authlog("password request failure", exc_info=True)
         return password

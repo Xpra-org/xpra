@@ -951,9 +951,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
                       help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
-    group.add_option("--password-file", action="store",
+    group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
-                      help="The file containing the password required to connect (useful to secure TCP mode). Default: '%default'.")
+                      help="The file containing the password required to connect (useful to secure TCP mode). Default: %s." % csv(defaults.password_file))
     group.add_option("--forward-xdg-open", action="store",
                       dest="forward_xdg_open", default=defaults.forward_xdg_open,
                       help="Intercept calls to xdg-open and forward them to the client. Default: '%default'.")
@@ -1742,13 +1742,16 @@ def parse_display_name(error_cb, opts, display_name):
         desc["remote_xpra"] = opts.remote_xpra
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
-        if desc.get("password") is None and opts.password_file and os.path.exists(opts.password_file):
-            try:
-                with open(opts.password_file, "rb") as f:
-                    desc["password"] = f.read()
-            except Exception as e:
-                warn("Error: failed to read the password file '%s':\n", opts.password_file)
-                warn(" %s\n", e)
+        if desc.get("password") is None and opts.password_file:
+            for x in opts.password_file:
+                if os.path.exists(x):
+                    try:
+                        with open(opts.password_file, "rb") as f:
+                            desc["password"] = f.read()
+                        break
+                    except Exception as e:
+                        warn("Error: failed to read the password file '%s':\n", x)
+                        warn(" %s\n", e)
         return desc
     elif protocol=="socket":
         #use the socketfile specified:

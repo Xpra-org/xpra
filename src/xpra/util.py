@@ -753,6 +753,14 @@ def engs(v):
     except:
         return ""
 
+
+def obsc(v):
+    OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)
+    if OBSCURE_PASSWORDS:
+        return "".join("*" for _ in (v or ""))
+    return v
+
+
 def csv(v):
     try:
         return ", ".join(str(x) for x in v)
