@@ -1,3 +1,18 @@
+xpra (1.0.10-1) UNRELEASED; urgency=low
+  * fix client authentication failures with multiple challenges
+  * fix system tray menu entries wrongly disabled
+  * fix man page for all 'start' command variants
+  * fix handling of encodings with uppercase characters (ie: png/L and png/P)
+  * fix error in server window debug logging
+  * fix launcher error with informational command line exit messages
+  * fix packet warnings with large "input-devices" packets
+  * fix speed and quality not honoured initially
+  * fix typo in file location example
+  * add missing file to build clean list
+  * remove invalid option from configuration file example
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 30 Dec 2017 15:13:47 +0700
+
 xpra (1.0.9-1) UNRELEASED; urgency=low
   * fix authentication weaknesses in client salt handling
   * fix window icons going back to default on window re-initialization

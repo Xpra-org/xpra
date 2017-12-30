@@ -37,7 +37,7 @@ import sys, os, syslog
 import subprocess, traceback
 import urlparse
 
-__version__ = "1.0.9"
+__version__ = "1.0.10"
 
 #Writes a syslog entry (msg) at the default facility:
 def debug(msg):

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.9
+%define version 1.0.10
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -609,7 +609,20 @@ fi
 
 
 %changelog
-* Tue Oct 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Sat Dec 30 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+- fix client authentication failures with multiple challenges
+- fix system tray menu entries wrongly disabled
+- fix man page for all 'start' command variants
+- fix handling of encodings with uppercase characters (ie: png/L and png/P)
+- fix error in server window debug logging
+- fix launcher error with informational command line exit messages
+- fix packet warnings with large "input-devices" packets
+- fix speed and quality not honoured initially
+- fix typo in file location example
+- add missing file to build clean list
+- remove invalid option from configuration file example
+
+* Tue Oct 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
 - fix authentication weaknesses in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
