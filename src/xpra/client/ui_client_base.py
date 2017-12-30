@@ -916,7 +916,7 @@ class UIXpraClient(XpraClientBase):
         if len(t)==0:
             t.insert(0, "Xpra")
         v = "\n".join(t)
-        traylog("get_tray_title()=%s", nonl(v))
+        traylog("get_tray_title()=%s (items=%s)", nonl(v), t)
         return v
 
     def setup_system_tray(self, client, wid, w, h, title):

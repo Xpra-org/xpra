@@ -389,18 +389,11 @@ class GTKTrayMenuBase(object):
         return self.menuitem("Check for updates", "update.png", None, show_update_window)
 
     def make_sessioninfomenuitem(self):
-        def get_title():
-            if self.client.session_name and self.client.session_name!="Xpra session":
-                return "Info: %s"  % self.client.session_name
-            return "Session Info"
         def show_session_info_cb(*_args):
             #we define a generic callback to remove the arguments
             #(which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
-        sessioninfomenuitem = self.handshake_menuitem(get_title(), "statistics.png", None, show_session_info_cb)
-        def set_menuitem_title(*_args):
-            sessioninfomenuitem.set_label(get_title())
-        self.client.after_handshake(set_menuitem_title)
+        sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", None, show_session_info_cb)
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self):
