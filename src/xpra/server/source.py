@@ -75,9 +75,11 @@ counter = AtomicInteger()
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
+    #note: some of the properties handled here aren't exported to the clients,
+    #but we do expose them via xpra info
     def raw():
         return window.get_property(propname)
-    if propname in ("title", "icon-title", "command"):
+    if propname in ("title", "icon-title", "command", "content-type"):
         v = raw()
         if v is None:
             return {propname: ""}

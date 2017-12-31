@@ -19,7 +19,7 @@ class RootWindowModel(object):
         self.window = root_window
         self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon", "shadow"]
         self.dynamic_property_names = []
-        self.internal_property_names = []
+        self.internal_property_names = ["content-type"]
 
     def get_info(self):
         return {}
@@ -106,6 +106,8 @@ class RootWindowModel(object):
             except:
                 log("failed to return window icon")
                 return None
+        elif prop=="content-type":
+            return "desktop"
         else:
             raise ValueError("invalid property: %s" % prop)
         return None

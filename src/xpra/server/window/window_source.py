@@ -688,7 +688,7 @@ class WindowSource(object):
             self.no_idle()
 
     def _class_changed(self, window, *_args):
-        self.content_type = guess_content_type(window)
+        self.content_type = window.get("content-type") or guess_content_type(window)
         log("class-changed(%s, %s) content-type=%s", window, _args, self.content_type)
 
 
