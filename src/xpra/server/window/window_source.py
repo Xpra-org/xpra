@@ -176,8 +176,9 @@ class WindowSource(object):
         self.iconic = False
         self.content_type = ""
         self.window_signal_handlers = []
-        sid = window.connect("notify::class-instance", self._class_changed)
-        self.window_signal_handlers.append(sid)
+        if "class-instance" in window.get_dynamic_property_names():
+            sid = window.connect("notify::class-instance", self._class_changed)
+            self.window_signal_handlers.append(sid)
         self._class_changed(window)
         if "iconic" in window.get_dynamic_property_names():
             self.iconic = window.get_property("iconic")
