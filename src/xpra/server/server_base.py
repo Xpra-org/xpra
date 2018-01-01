@@ -145,7 +145,7 @@ class ServerBase(ServerCore):
         self.scaling_control = False
         self.rpc_handlers = {}
         self.webcam_option = ""
-        self.webcam_forwarding = False
+        self.webcam = False
         self.webcam_encodings = []
         self.webcam_forwarding_device = None
         self.virtual_video_devices = 0
@@ -153,6 +153,7 @@ class ServerBase(ServerCore):
         self.input_devices_format = None
         self.input_devices_data = None
         self.mem_bytes = 0
+        self.client_shutdown = CLIENT_CAN_SHUTDOWN
 
         #sound:
         self.pulseaudio = False
@@ -264,7 +265,7 @@ class ServerBase(ServerCore):
         self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.webcam_option = opts.webcam
-        self.webcam_forwarding = opts.webcam.lower() not in FALSE_OPTIONS
+        self.webcam = opts.webcam.lower() not in FALSE_OPTIONS
 
         #sound:
         self.pulseaudio = opts.pulseaudio
@@ -431,7 +432,7 @@ class ServerBase(ServerCore):
         printlog("init_printing() printing=%s", printing)
 
     def init_webcam(self):
-        if not self.webcam_forwarding:
+        if not self.webcam:
             return
         try:
             from xpra.codecs.pillow.decode import get_encodings
@@ -439,13 +440,13 @@ class ServerBase(ServerCore):
         except Exception as e:
             webcamlog.error("Error: webcam forwarding disabled:")
             webcamlog.error(" %s", e)
-            self.webcam_forwarding = False
+            self.webcam = False
         if self.webcam_option.startswith("/dev/video"):
             self.virtual_video_devices = 1
         else:
             self.virtual_video_devices = self.init_virtual_video_devices()
             if self.virtual_video_devices==0:
-                self.webcam_forwarding = False
+                self.webcam = False
 
     def init_virtual_video_devices(self):
         webcamlog("init_virtual_video_devices")
@@ -1029,7 +1030,7 @@ class ServerBase(ServerCore):
         self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
 
     def _process_shutdown_server(self, _proto, _packet):
-        if not CLIENT_CAN_SHUTDOWN:
+        if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
         log.info("Shutting down in response to client request")
@@ -1561,11 +1562,11 @@ class ServerBase(ServerCore):
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
-                 "webcam"                       : self.webcam_forwarding,
+                 "webcam"                       : self.webcam,
                  "webcam.encodings"             : self.webcam_encodings,
                  "virtual-video-devices"        : self.virtual_video_devices,
                  "input-devices"                : self.input_devices,
-                 "client-shutdown"              : CLIENT_CAN_SHUTDOWN,
+                 "client-shutdown"              : self.client_shutdown,
                  "window.states"                : [],   #subclasses set this as needed
                  "sharing"                      : self.sharing is not False,
                  "sharing-toggle"               : self.sharing is None,
@@ -1735,7 +1736,7 @@ class ServerBase(ServerCore):
 
     def control_command_toggle_feature(self, feature, state):
         if feature not in ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
-                           "start-new-commands", ):
+                           "start-new-commands", "client-shutdown", "webcam", ):
             msg = "invalid feature '%s'" % feature
             commandlog.warn(msg)
             return msg
@@ -2414,7 +2415,7 @@ class ServerBase(ServerCore):
 
     def get_webcam_info(self):
         webcam_info = {
-                       ""                       : self.webcam_forwarding,
+                       ""                       : self.webcam,
                        }
         if self.webcam_option.startswith("/dev/video"):
             webcam_info["device"] = self.webcam_option
@@ -3350,7 +3351,7 @@ class ServerBase(ServerCore):
     def _process_webcam_start(self, proto, packet):
         if self.readonly:
             return
-        assert self.webcam_forwarding
+        assert self.webcam
         ss = self._server_sources.get(proto)
         if not ss:
             webcamlog.warn("Warning: invalid client source for webcam start")

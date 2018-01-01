@@ -2095,7 +2095,7 @@ class UIXpraClient(XpraClientBase):
             "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
             "clipboard-direction", "session_name",
             "sharing", "sharing-toggle", "lock", "lock-toggle",
-            "start-new-commands", "client-shutdown",
+            "start-new-commands", "client-shutdown", "webcam",
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:

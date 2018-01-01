@@ -1207,7 +1207,7 @@ class GTKTrayMenuBase(object):
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Webcam forwarding is disabled")
                 return
-            if self.client.server_virtual_video_devices<=0:
+            if self.client.server_virtual_video_devices<=0 or not self.client.server_webcam:
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Server does not support webcam forwarding")
                 return
@@ -1221,6 +1221,7 @@ class GTKTrayMenuBase(object):
         self.client.connect("webcam-changed", webcam_changed)
         set_sensitive(webcam, False)
         self.client.after_handshake(webcam_changed)
+        self.client.on_server_setting_changed("webcam", webcam_changed)
         return webcam
 
     def make_layoutsmenuitem(self):
