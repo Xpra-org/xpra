@@ -3031,9 +3031,14 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         sys.stdout.write("Trying to %s %i displays:\n" % (mode, len(displays)))
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
+        cmd = ["xpra", mode, "--socket-dir=%s" % opts.socket_dir]
+        for x in opts.socket_dirs:
+            if x:
+                cmd.append("--socket-dirs=%s" % x)
         #use a subprocess per display:
         for display in displays:
-            proc = Popen(["xpra", mode, display])
+            dcmd = cmd + [display]
+            proc = Popen(dcmd)
             procs.append(proc)
         start = monotonic_time()
         live = procs
