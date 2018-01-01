@@ -1450,18 +1450,19 @@ if WIN32:
 else:
     #OSX and *nix:
     scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/udev_product_version", "scripts/xpra_signal_listener"]
-    libexec_scripts = []
-    if xdg_open_ENABLED:
+    if POSIX and not OSX:
+        libexec_scripts = []
         from xpra.os_util import is_Fedora, is_CentOS
         if is_Fedora() or is_CentOS():
             libexec = "libexec"
         else:
             libexec = "lib"
-        libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
-    if server_ENABLED and POSIX:
-        libexec_scripts.append("scripts/auth_dialog")
-    if libexec_scripts:
-        add_data_files("%s/xpra/" % libexec, libexec_scripts)
+        if xdg_open_ENABLED:
+            libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
+        if server_ENABLED:
+            libexec_scripts.append("scripts/auth_dialog")
+        if libexec_scripts:
+            add_data_files("%s/xpra/" % libexec, libexec_scripts)
     add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))
