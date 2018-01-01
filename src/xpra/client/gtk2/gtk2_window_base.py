@@ -30,6 +30,7 @@ from xpra.os_util import strtobytes
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
+HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", True)
 
 try:
     from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
@@ -104,7 +105,7 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def setup_window(self, *args):
         #preserve screen:
-        if not self._override_redirect:
+        if HONOUR_SCREEN_MAPPING and not self._override_redirect:
             display = gtk.gdk.display_get_default()
             screen_num = self._client_properties.get("screen", -1)
             n = display.get_n_screens()
