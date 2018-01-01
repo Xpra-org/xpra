@@ -698,7 +698,7 @@
   <distutils id="python-lz4">
 	<branch repo="pypi.python.org"
 	        module="/packages/2b/88/4a102ae3b0959f0647040b7f8bbc74ed87a0125a2a3439733159f0152fac/lz4-0.18.1.tar.gz"
-	        hash="sha256:a53cfe726fbe5b484f29653af0e0b05843cbaefc17d456490a6c984edde8d534"
+	        hash="sha256:e6b90591c5a80573995e90686c5b03a8e612d1ac4b19eae0c7422958c45cdde6"
 	        version="0.18.1"/>
         <dependencies>
                 <dep package="python"/>
