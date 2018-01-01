@@ -78,7 +78,7 @@ class GObjectXpraClient(XpraClientBase, gobject.GObject):
         XpraClientBase.run(self)
         self.glib_mainloop = glib.MainLoop()
         self.glib_mainloop.run()
-        return  self.exit_code
+        return self.exit_code
 
     def make_hello(self):
         capabilities = XpraClientBase.make_hello(self)

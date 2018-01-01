@@ -2991,6 +2991,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     return  0
 
 def run_stopexit(mode, error_cb, opts, extra_args):
+    assert mode in ("stop", "exit")
     no_gtk()
 
     def show_final_state(display_desc):
@@ -3026,6 +3027,27 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             assert False, "invalid state: %s" % final_state
             return 1
 
+    if len(extra_args)==1 and extra_args[0]=="all":
+        #stop or exit all
+        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        displays = dotxpra.displays(check_uid=getuid(), matching_state=DotXpra.LIVE)
+        if not displays:
+            sys.stdout.write("No xpra sessions found\n")
+            return 1
+        if len(displays)>1:
+            sys.stdout.write("Trying to stop %i displays:\n" % len(displays))
+            sys.stdout.write(" %s\n" % csv(displays))
+            procs = []
+            #use a subprocess per display:
+            for display in displays:
+                proc = Popen(["xpra", mode, display])
+                procs.append(proc)
+            start = monotonic_time()
+            live = procs
+            while monotonic_time()-start<10 and live:
+                live = [x for x in procs if x.poll() is None]
+            return 0
+
     display_desc = pick_display(error_cb, opts, extra_args)
     conn = connect_or_fail(display_desc, opts)
     app = None
@@ -3034,11 +3056,10 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if mode=="stop":
             from xpra.client.gobject_client_base import StopXpraClient
             app = StopXpraClient((conn, display_desc), opts)
-        elif mode=="exit":
+        else:
+            assert mode=="exit"
             from xpra.client.gobject_client_base import ExitXpraClient
             app = ExitXpraClient((conn, display_desc), opts)
-        else:
-            raise Exception("invalid mode: %s" % mode)
         e = app.run()
     finally:
         if app:
@@ -3048,7 +3069,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             show_final_state(display_desc)
         else:
             print("Sent shutdown command")
-    return  e
+    return e
 
 
 def may_cleanup_socket(state, display, sockpath, clean_states=[DotXpra.DEAD]):
