@@ -64,6 +64,9 @@ TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
+TOGGLE_FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+                   "start-new-commands", "client-shutdown", "webcam", )
+
 
 class ServerBase(ServerCore):
     """
@@ -835,7 +838,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
-            ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=1, max_args=2, validation=[str, parse_boolean_value]),
+            ArgsControlCommand("toggle-feature",        "toggle a server feature on or off, one of: %s" % csv(TOGGLE_FEATURES), min_args=1, max_args=2, validation=[str, parse_boolean_value]),
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=1),
             ArgsControlCommand("open-url",              "open the URL on the client(s)",    min_args=1, max_args=2),
@@ -1735,12 +1738,8 @@ class ServerBase(ServerCore):
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
     def control_command_toggle_feature(self, feature, state=None):
-        log.info("control_command_toggle_feature(%s, %s)", feature, state)
-        FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
-                           "start-new-commands", "client-shutdown", "webcam", )
-        if feature=="help":
-            return "The following features can be toggled: %s" % csv(FEATURES)
-        if feature not in FEATURES:
+        log("control_command_toggle_feature(%s, %s)", feature, state)
+        if feature not in TOGGLE_FEATURES:
             msg = "invalid feature '%s'" % feature
             commandlog.warn(msg)
             return msg
