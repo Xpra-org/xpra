@@ -1357,7 +1357,8 @@ class ServerCore(object):
         challenge_response = c.strget("challenge_response")
         client_salt = c.strget("challenge_client_salt")
         if client_expects_challenge and not remaining_authenticators:
-            authlog.warn("Warning: client expects a challenge, sending a fake one")
+            authlog.warn("Warning: client expects an authentication challenge,")
+            authlog.warn(" sending a fake one")
             send_fake_challenge()
             return
 
