@@ -3027,6 +3027,20 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             assert False, "invalid state: %s" % final_state
             return 1
 
+    def multimode(displays):
+        sys.stdout.write("Trying to %s %i displays:\n" % (mode, len(displays)))
+        sys.stdout.write(" %s\n" % csv(displays))
+        procs = []
+        #use a subprocess per display:
+        for display in displays:
+            proc = Popen(["xpra", mode, display])
+            procs.append(proc)
+        start = monotonic_time()
+        live = procs
+        while monotonic_time()-start<10 and live:
+            live = [x for x in procs if x.poll() is None]
+        return 0
+
     if len(extra_args)==1 and extra_args[0]=="all":
         #stop or exit all
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -3035,18 +3049,9 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             sys.stdout.write("No xpra sessions found\n")
             return 1
         if len(displays)>1:
-            sys.stdout.write("Trying to stop %i displays:\n" % len(displays))
-            sys.stdout.write(" %s\n" % csv(displays))
-            procs = []
-            #use a subprocess per display:
-            for display in displays:
-                proc = Popen(["xpra", mode, display])
-                procs.append(proc)
-            start = monotonic_time()
-            live = procs
-            while monotonic_time()-start<10 and live:
-                live = [x for x in procs if x.poll() is None]
-            return 0
+            return multimode(displays)
+    elif len(extra_args)>1:
+        return multimode(extra_args)
 
     display_desc = pick_display(error_cb, opts, extra_args)
     conn = connect_or_fail(display_desc, opts)
