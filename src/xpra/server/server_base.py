@@ -852,6 +852,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("set-sharing",           "modify the sharing attribute",     min_args=1, max_args=1),
             #session and clients:
             ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
+            ArgsControlCommand("client-property",       "set a client property",            min_args=4, max_args=5, validation=[int]),
             ArgsControlCommand("name",                  "set the session name",             min_args=1, max_args=1),
             ArgsControlCommand("key",                   "press or unpress a key",           min_args=1, max_args=2),
             ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1, max_args=2),
@@ -1894,6 +1895,19 @@ class ServerBase(ServerCore):
     def control_command_client(self, *args):
         self.all_send_client_command(*args)
         return "client control command '%s' forwarded to clients" % str(args)
+
+    def control_command_client_property(self, wid, uuid, prop, value, conv=None):
+        wid = int(wid)
+        conv_fn = {
+            "int"   : int,
+            "float" : float,
+            ""      : str,
+            }.get(conv)
+        assert conv_fn
+        typeinfo = "%s " % (conv or "string")
+        value = conv_fn(value)
+        self.client_properties.setdefault(wid, {}).setdefault(uuid, {})[prop] = value
+        return "property '%s' set to %s value '%s' for window %i, client %s" % (prop, typeinfo, value, wid, uuid)
 
     def control_command_name(self, name):
         self.session_name = name
