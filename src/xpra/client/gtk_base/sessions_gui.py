@@ -23,7 +23,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
 from xpra.net.net_util import if_indextoname
-from xpra.os_util import strtobytes, WIN32
+from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 log = Logger("client", "util")
 
@@ -161,10 +161,10 @@ class SessionsGUI(gtk.Window):
         stdout, _ = p.communicate()
         if p.returncode!=0:
             return None
-        out = strtobytes(stdout)
+        out = bytestostr(stdout)
         info = {}
         for line in out.splitlines():
-            parts = line.split(b"=", 1)
+            parts = line.split("=", 1)
             if len(parts)==2:
                 info[parts[0]] = parts[1]
         return info
