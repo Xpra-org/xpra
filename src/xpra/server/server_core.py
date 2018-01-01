@@ -1489,6 +1489,9 @@ class ServerCore(object):
             response = {"connect_test_response" : ctr}
             proto.send_now(("hello", response))
             return
+        if is_req("id"):
+            self.send_id_info(proto)
+            return True
         if is_req("info"):
             flatten = not c.boolget("info-namespace", False)
             self.send_hello_info(proto, flatten)
@@ -1589,6 +1592,23 @@ class ServerCore(object):
             capabilities["session_name"] = self.session_name
         return capabilities
 
+
+    def send_id_info(self, proto):
+        log("id info request from %s", proto._conn)
+        proto.send_now(("hello", self.get_session_id_info()))
+
+    def get_session_id_info(self):
+        #minimal information for identifying the session
+        id_info = {
+            "session-type"  : self.session_type,
+            "session-name"  : self.session_name,
+            "uuid"          : self.uuid,
+            "platform"      : sys.platform,
+            }
+        display = os.environ.get("DISPLAY")
+        if display:
+            id_info["display"] = display
+        return id_info
 
     def send_hello_info(self, proto, flatten=True):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()

@@ -247,6 +247,12 @@ class InfoXpraClient(CommandConnectClient):
                 print_nested_dict(self.server_capabilities)
         self.quit(EXIT_OK)
 
+class IDXpraClient(InfoXpraClient):
+
+    def __init__(self, *args):
+        InfoXpraClient.__init__(self, *args)
+        self.hello_extra["request"] = "id"
+
 
 class ConnectTestXpraClient(CommandConnectClient):
     """ This client does one thing only:

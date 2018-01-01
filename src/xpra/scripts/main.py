@@ -23,7 +23,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import csv, envbool, envint, DEFAULT_PORT
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSH_FAILURE, EXIT_STR
-from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, WIN32, OSX, POSIX
+from xpra.os_util import get_util_logger, getuid, getgid, monotonic_time, setsid, bytestostr, WIN32, OSX, POSIX
 from xpra.scripts.config import OPTION_TYPES, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS, START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V1, \
     InitException, InitInfo, InitExit, \
     fixup_debug_option, fixup_options, dict_to_validated_config, \
@@ -1234,7 +1234,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 def configure_logging(options, mode):
     to = sys.stderr
-    if mode in ("showconfig", "info", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
+    if mode in ("showconfig", "info", "id", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
         to = sys.stdout
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
@@ -1499,7 +1499,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
                 add_when_ready(attach_client)
             return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in ("attach", "detach", "screenshot", "version", "info", "control", "_monitor", "print", "connect-test", "request-start", "request-start-desktop", "request-shadow"):
+        elif mode in ("attach", "detach", "screenshot", "version", "info", "id", "control", "_monitor", "print", "connect-test", "request-start", "request-start-desktop", "request-shadow"):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit"):
             nox()
@@ -1563,11 +1563,56 @@ def parse_vsock(vsock_str):
 def is_local(host):
     return host.lower() in ("localhost", "127.0.0.1", "::1")
 
-def parse_display_name(error_cb, opts, display_name):
+
+def find_session_by_name(opts, session_name):
+    from xpra.platform.paths import get_nodock_command
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    socket_paths = dotxpra.socket_paths(check_uid=getuid(), matching_state=DotXpra.LIVE)
+    if not socket_paths:
+        return None
+    id_sessions = {}
+    for socket_path in socket_paths:
+        cmd = get_nodock_command()+["id", "socket://%s" % socket_path]
+        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE, shell=False)
+        id_sessions[socket_path] = proc
+    now = monotonic_time()
+    import time
+    while any(proc.poll() is None for proc in id_sessions.values()) and monotonic_time()-now<10:
+        time.sleep(0.5)
+    session_uuid_to_path = {}
+    for socket_path, proc in id_sessions.items():
+        if proc.poll()==0:
+            out, err = proc.communicate()
+            d = {}
+            for line in bytestostr(out or err).splitlines():
+                try:
+                    k,v = line.split("=", 1)
+                    d[k] = v
+                except ValueError:
+                    continue
+            name = d.get("session-name")
+            uuid = d.get("uuid")
+            if name==session_name and uuid:
+                session_uuid_to_path[uuid] = socket_path
+    if not session_uuid_to_path:
+        return None
+    if len(session_uuid_to_path)>1:
+        raise InitException("more than one session found matching '%s'" % session_name)
+    return "socket://%s" % tuple(session_uuid_to_path.values())[0]
+
+def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     desc = {"display_name" : display_name}
     #split the display name on ":" or "/"
     scpos = display_name.find(":")
     slpos = display_name.find("/")
+    if scpos<0 and slpos<0:
+        if session_name_lookup:
+            #try to find a session whose "session-name" matches:
+            match = find_session_by_name(opts, display_name)
+            if match:
+                display_name = match
+                scpos = display_name.find(":")
+                slpos = display_name.find("/")
     if scpos<0 and slpos<0:
         error_cb("unknown format for display name: %s" % display_name)
     if scpos<0:
@@ -1877,7 +1922,7 @@ def pick_display(error_cb, opts, extra_args):
                 })
         return desc
     elif len(extra_args) == 1:
-        return parse_display_name(error_cb, opts, extra_args[0])
+        return parse_display_name(error_cb, opts, extra_args[0], session_name_lookup=True)
     else:
         error_cb("too many arguments (%i): %s" % (len(extra_args), extra_args))
 
@@ -2440,6 +2485,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
     elif mode=="info":
         from xpra.client.gobject_client_base import InfoXpraClient
         app = InfoXpraClient(connect(), opts)
+    elif mode=="id":
+        from xpra.client.gobject_client_base import IDXpraClient
+        app = IDXpraClient(connect(), opts)
     elif mode=="connect-test":
         from xpra.client.gobject_client_base import ConnectTestXpraClient
         app = ConnectTestXpraClient(connect(), opts)
@@ -3031,7 +3079,9 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         sys.stdout.write("Trying to %s %i displays:\n" % (mode, len(displays)))
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
-        cmd = ["xpra", mode, "--socket-dir=%s" % opts.socket_dir]
+        #["xpra", "stop", ..]
+        from xpra.platform.paths import get_nodock_command
+        cmd = get_nodock_command()+[mode, "--socket-dir=%s" % opts.socket_dir]
         for x in opts.socket_dirs:
             if x:
                 cmd.append("--socket-dirs=%s" % x)

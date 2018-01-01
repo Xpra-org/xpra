@@ -130,10 +130,10 @@ class SessionsGUI(gtk.Window):
         def make_text(info):
             text = {"mode" : "socket"}
             for k, name in {
-                "server.platform"       : "platform",
-                "server.uuid"           : "uuid",
-                "server.display"        : "display",
-                "server.session-type"   : "type"
+                "platform"       : "platform",
+                "uuid"           : "uuid",
+                "display"        : "display",
+                "session-type"   : "type"
                 }.items():
                 v = info.get(k)
                 if v is not None:
@@ -156,9 +156,10 @@ class SessionsGUI(gtk.Window):
 
     def get_session_info(self, sockpath):
         #the lazy way using a subprocess
-        cmd = get_nodock_command()+["info", "socket:%s" % sockpath]
+        cmd = get_nodock_command()+["id", "socket:%s" % sockpath]
         p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, _ = p.communicate()
+        log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
         if p.returncode!=0:
             return None
         out = bytestostr(stdout)
@@ -195,6 +196,7 @@ class SessionsGUI(gtk.Window):
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             key = (uuid, uuid or i, host, display, platform, dtype)
+            log.info("key=%s", key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
         for key, recs in d.items():
             if type(key)==tuple:
