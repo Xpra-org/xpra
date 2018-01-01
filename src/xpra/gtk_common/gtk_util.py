@@ -114,6 +114,7 @@ if is_gtk3():
             ok = v.parse(*args)
             if not ok:
                 return None
+            return v.to_color()
         except:
             ok, v = gdk.Color.parse(*args)
         if not ok:
