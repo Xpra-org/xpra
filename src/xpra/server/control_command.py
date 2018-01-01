@@ -56,6 +56,9 @@ class ArgsControlCommand(ControlCommand):
             self.raise_error("too many arguments, %i maximum" % self.max_args)
         args = list(args)
         for i,validation in enumerate(self.validation):
+            if i>=len(args):
+                #argument not supplied
+                continue
             v = args[i]
             log("running '%s' validation for argument %i: %s (value=%s, type=%s)", self.name, i, validation, v, type(v))
             if not validation:

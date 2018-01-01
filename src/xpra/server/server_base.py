@@ -835,7 +835,7 @@ class ServerBase(ServerCore):
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
-            ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=2, validation=[str, parse_boolean_value]),
+            ArgsControlCommand("toggle-feature",        "toggle a server feature on or off", min_args=1, max_args=2, validation=[str, parse_boolean_value]),
             #network and transfers:
             ArgsControlCommand("print",                 "sends the file to the client(s) for printing", min_args=1),
             ArgsControlCommand("open-url",              "open the URL on the client(s)",    min_args=1, max_args=2),
@@ -1734,14 +1734,21 @@ class ServerBase(ServerCore):
             raise ControlError("failed to start new child command %s" % str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
-    def control_command_toggle_feature(self, feature, state):
-        if feature not in ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
-                           "start-new-commands", "client-shutdown", "webcam", ):
+    def control_command_toggle_feature(self, feature, state=None):
+        log.info("control_command_toggle_feature(%s, %s)", feature, state)
+        FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+                           "start-new-commands", "client-shutdown", "webcam", )
+        if feature=="help":
+            return "The following features can be toggled: %s" % csv(FEATURES)
+        if feature not in FEATURES:
             msg = "invalid feature '%s'" % feature
             commandlog.warn(msg)
             return msg
         fn = feature.replace("-", "_")
         cur = getattr(self, fn, None)
+        if state is None:
+            #if the new state is not specified, just negate the value
+            state = not cur
         assert cur is not None, "feature '%s' is set to None!"
         setattr(self, fn, state)
         self.setting_changed(feature, state)
