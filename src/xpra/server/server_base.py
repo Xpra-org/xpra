@@ -2500,6 +2500,11 @@ class ServerBase(ServerCore):
              "tray"                 : window.is_tray(),
              "size"                 : window.get_dimensions(),
              })
+        wid = self._window_to_id.get(window)
+        if wid:
+            wprops = self.client_properties.get(wid)
+            if wprops:
+                info["client-properties"] = wprops
         return info
 
 
@@ -2646,7 +2651,7 @@ class ServerBase(ServerCore):
     def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
             x, y, w, h = geometry
             #adjust if the transient-for window is not mapped in the same place by the client we send to:
             if "transient-for" in window.get_property_names():
@@ -2962,7 +2967,6 @@ class ServerBase(ServerCore):
         ss = self._server_sources.get(proto)
         if ss:
             ss.set_client_properties(wid, window, typedict(new_client_properties))
-            client_properties = self.client_properties.setdefault("%s|%s" % (wid, ss.uuid), {})
             #filter out encoding properties, which are expected to be set everytime:
             ncp = {}
             for k,v in new_client_properties.items():
@@ -2971,8 +2975,10 @@ class ServerBase(ServerCore):
                     continue
                 if not k.startswith(b"encoding"):
                     ncp[k] = v
-            log("set_client_properties updating window %s with %s", wid, ncp)
-            client_properties.update(ncp)
+            if ncp:
+                log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
+                client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
+                client_properties.update(ncp)
 
 
     def _process_focus(self, proto, packet):

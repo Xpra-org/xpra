@@ -172,7 +172,7 @@ class ShadowServerBase(RFBServer):
             window = self._id_to_window[wid]
             assert window == self.root_window_model, "expected window to be %s, but got %s" % (self.root_window_model, window)
             w, h = self.root_window_model.get_dimensions()
-            ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(ss.uuid))
+            ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(wid, {}).get(ss.uuid))
 
 
     def _add_new_window(self, window):

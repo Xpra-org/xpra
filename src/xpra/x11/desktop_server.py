@@ -432,7 +432,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid,window in sorted(self._id_to_window.items()):
             x, y, w, h = window.get_geometry()
-            wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
             ss.new_window("new-window", wid, window, x, y, w, h, wprops)
             ss.damage(wid, window, 0, 0, w, h)
 

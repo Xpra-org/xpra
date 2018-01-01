@@ -441,7 +441,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             elif window.is_OR():
                 #code more or less duplicated from _send_new_or_window_packet:
                 x, y, w, h = window.get_property("geometry")
-                wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid)
                 ss.new_window("new-override-redirect", wid, window, x, y, w, h, wprops)
                 ss.damage(wid, window, 0, 0, w, h)
             else:
@@ -449,7 +449,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 if not sharing:
                     self._desktop_manager.hide_window(window)
                 x, y, w, h = self._desktop_manager.window_geometry(window)
-                wprops = self.client_properties.get("%s|%s" % (wid, ss.uuid))
+                wprops = self.client_properties.get(wid, {}).get(ss.uuid)
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
 
@@ -681,6 +681,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.cancel_configure_damage(wid)
         if not wm_exiting:
             self.repaint_root_overlay()
+        try:
+            del self.client_properties[wid]
+        except KeyError:
+            pass
 
     def _contents_changed(self, window, event):
         if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
