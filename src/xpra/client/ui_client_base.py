@@ -63,7 +63,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, WIN32, is_Ubuntu
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -191,6 +191,7 @@ class UIXpraClient(XpraClientBase):
         self.server_av_sync = False
         self.server_bandwidth_limit_change = False
         self.server_bandwidth_limit = 0
+        self.server_session_name = None
         self.pixel_counter = deque(maxlen=1000)
         self.server_last_info = None
         self.info_request_pending = False
@@ -215,7 +216,7 @@ class UIXpraClient(XpraClientBase):
         self.webcam_ack_check_timer = None
         self.webcam_send_timer = None
         self.webcam_lock = RLock()
-        self.server_supports_webcam = False
+        self.server_webcam = False
         self.server_virtual_video_devices = 0
 
         #sound:
@@ -281,15 +282,15 @@ class UIXpraClient(XpraClientBase):
         self.xsettings_enabled = False
         self.server_dbus_proxy = False
         self.server_rpc_types = []
-        self.start_new_commands = False
+        self.server_start_new_commands = False
         self.server_window_decorations = False
         self.server_window_frame_extents = False
         self.server_is_desktop = False
         self.server_sharing = False
-        self.server_supports_sharing_toggle = False
+        self.server_sharing_toggle = False
         self.server_lock = False
-        self.server_supports_lock_toggle = False
-        self.server_supports_window_filters = False
+        self.server_lock_toggle = False
+        self.server_window_filters = False
         self.server_input_devices = None
         self.server_window_states = []
         self.server_window_signals = ()
@@ -344,6 +345,7 @@ class UIXpraClient(XpraClientBase):
         self._suspended_at = 0
         self._button_state = {}
         self._on_handshake = []
+        self._on_server_setting_changed = {}
         self._current_screen_sizes = None
 
         self.init_aliases()
@@ -909,8 +911,8 @@ class UIXpraClient(XpraClientBase):
 
     def get_tray_title(self):
         t = []
-        if self.session_name:
-            t.append(self.session_name)
+        if self.session_name or self.server_session_name:
+            t.append(self.session_name or self.server_session_name)
         if self._protocol and self._protocol._conn:
             t.append(self._protocol._conn.target)
         if len(t)==0:
@@ -1492,6 +1494,7 @@ class UIXpraClient(XpraClientBase):
             "notify-startup-complete"   : True,
             "wants_events"              : True,
             "wants_default_cursor"      : True,
+            "setting-change"            : True,
             "randr_notify"              : True,
             "screen-scaling"            : True,
             "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
@@ -1826,25 +1829,24 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
         c = self.server_capabilities
-        if not self.session_name:
-            self.session_name = c.strget("session_name", "")
+        self.server_session_name = c.strget("session_name", "")
         from xpra.platform import set_name
-        set_name("Xpra", self.session_name or "Xpra")
+        set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
-        self.server_supports_notifications = c.boolget("notifications")
+        self.server_notifications = c.boolget("notifications")
         self.server_sharing = c.boolget("sharing")
-        self.server_supports_sharing_toggle = c.boolget("sharing-toggle")
+        self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
-        self.server_supports_lock_toggle = c.boolget("lock-toggle")
+        self.server_lock_toggle = c.boolget("lock-toggle")
         self.notifications_enabled = self.client_supports_notifications
-        self.server_supports_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
-        self.cursors_enabled = self.server_supports_cursors and self.client_supports_cursors
+        self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
+        self.cursors_enabled = self.server_cursors and self.client_supports_cursors
         self.default_cursor_data = c.listget("cursor.default", None)
-        self.server_supports_bell = c.boolget("bell")          #added in 0.5, default to True!
-        self.bell_enabled = self.server_supports_bell and self.client_supports_bell
-        self.server_supports_clipboard = c.boolget("clipboard")
+        self.server_bell = c.boolget("bell")          #added in 0.5, default to True!
+        self.bell_enabled = self.server_bell and self.client_supports_bell
+        self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
         if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
             if self.client_clipboard_direction=="disabled":
@@ -1858,15 +1860,15 @@ class UIXpraClient(XpraClientBase):
             else:
                 clipboardlog.warn("Warning: incompatible clipboard direction settings")
                 clipboardlog.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
-        self.server_supports_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
+        self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         clipboardlog("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
-                     self.server_supports_clipboard, self.server_clipboard_direction, self.server_supports_clipboard_enable_selections)
+                     self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
         clipboardlog("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
 
         self.server_compressors = c.strlistget("compressors", ["zlib"])
-        self.clipboard_enabled = self.client_supports_clipboard and self.server_supports_clipboard
+        self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         #default for pre-0.16 servers:
         if self.server_dbus_proxy:
@@ -1874,7 +1876,7 @@ class UIXpraClient(XpraClientBase):
         else:
             default_rpc_types = []
         self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
-        self.start_new_commands = c.boolget("start-new-commands")
+        self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
@@ -1960,7 +1962,7 @@ class UIXpraClient(XpraClientBase):
             self.clipboard_helper = self.make_clipboard_helper()
             self.clipboard_enabled = self.clipboard_helper is not None
             clipboardlog("clipboard helper=%s", self.clipboard_helper)
-            if self.clipboard_enabled and self.server_supports_clipboard_enable_selections:
+            if self.clipboard_enabled and self.server_clipboard_enable_selections:
                 #tell the server about which selections we really want to sync with
                 #(could have been translated, or limited if the client only has one, etc)
                 clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
@@ -1972,7 +1974,7 @@ class UIXpraClient(XpraClientBase):
         log("server desktop size=%s", server_desktop_size)
         self.server_window_signals = c.strlistget("window.signals")
         self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
-        self.server_supports_window_filters = c.boolget("window-filters")
+        self.server_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
         skip_vfb_size_check = False           #if we decide not to use scaling, skip warnings
         if not fequ(self.xscale, 1.0) or not fequ(self.yscale, 1.0):
@@ -2006,11 +2008,11 @@ class UIXpraClient(XpraClientBase):
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
 
         #webcam
-        self.server_supports_webcam = c.boolget("webcam")
+        self.server_webcam = c.boolget("webcam")
         self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
         self.server_virtual_video_devices = c.intget("virtual-video-devices")
-        webcamlog("webcam server support: %s (%i devices, encodings: %s)", self.server_supports_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
-        if self.webcam_forwarding and self.server_supports_webcam and self.server_virtual_video_devices>0:
+        webcamlog("webcam server support: %s (%i devices, encodings: %s)", self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
+        if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices>0:
             if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
                 self.start_sending_webcam()
 
@@ -2049,7 +2051,7 @@ class UIXpraClient(XpraClientBase):
         self.handshake_complete()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
-        if self.server_supports_clipboard:
+        if self.server_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.clipboard_toggled)
             self.clipboard_toggled()
@@ -2081,6 +2083,35 @@ class UIXpraClient(XpraClientBase):
         if self.tray:
             self.tray.ready()
         self.send_info_request()
+
+
+    def on_server_setting_changed(self, setting, cb):
+        self._on_server_setting_changed.setdefault(setting, []).append(cb)
+
+    def _process_setting_change(self, packet):
+        setting, value = packet[1:3]
+        #convert "hello" / "setting" variable names to client variables:
+        if setting in (
+            "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+            "clipboard-direction", "session_name",
+            "sharing", "sharing-toggle", "lock", "lock-toggle",
+            "start-new-commands", "client-shutdown",
+            ):
+            setattr(self, "server_%s" % setting.replace("-", "_"), value)
+        else:
+            log.info("unknown server setting changed: %s=%s", setting, value)
+            return
+        log.info("server setting changed: %s=%s", setting, value)
+        self.server_setting_changed(setting, value)
+
+    def server_setting_changed(self, setting, value):
+        log("setting_changed(%s, %s)", setting, value)
+        cbs = self._on_server_setting_changed.get(setting)
+        if cbs:
+            for cb in cbs:
+                log("setting_changed(%s, %s) calling %s", setting, value, cb)
+                cb(setting, value)
+
 
     def handshake_complete(self):
         oh = self._on_handshake
@@ -2209,8 +2240,8 @@ class UIXpraClient(XpraClientBase):
             self._protocol.enable_encoder(pe)
         elif command=="name":
             assert len(args)>=3
-            self.session_name = args[2]
-            log.info("session name updated from server: %s", self.session_name)
+            self.server_session_name = args[2]
+            log.info("session name updated from server: %s", self.server_session_name)
             #TODO: reset tray tooltip, session info title, etc..
         elif command=="debug":
             args = packet[2:]
@@ -2246,18 +2277,18 @@ class UIXpraClient(XpraClientBase):
         self.send("bandwidth-limit", self.bandwidth_limit)
 
     def send_sharing_enabled(self):
-        assert self.server_sharing and self.server_supports_sharing_toggle
-        self.send("sharing-toggle", self.client_supports_sharing)
+        assert self.server_sharing and self.server_sharing_toggle
+        self.send("sharing-toggle", self.client_sharing)
 
     def send_lock_enabled(self):
-        assert self.server_supports_lock_toggle
+        assert self.server_lock_toggle
         self.send("lock-toggle", self.client_lock)
 
 
     def init_webcam(self, opts):
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
-        self.server_supports_webcam = False
+        self.server_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
             try:
@@ -2277,7 +2308,7 @@ class UIXpraClient(XpraClientBase):
             self.do_start_sending_webcam(self.webcam_option)
 
     def do_start_sending_webcam(self, device_str):
-        assert self.server_supports_webcam
+        assert self.server_webcam
         device = 0
         virt_devices, all_video_devices, non_virtual = {}, {}, {}
         try:
@@ -2373,7 +2404,7 @@ class UIXpraClient(XpraClientBase):
         if not wd:
             return
         self.send("webcam-stop", self.webcam_device_no)
-        assert self.server_supports_webcam
+        assert self.server_webcam
         self.webcam_device = None
         self.webcam_device_no = -1
         self.webcam_frame_no = 0
@@ -2877,12 +2908,12 @@ class UIXpraClient(XpraClientBase):
 
     def send_bell_enabled(self):
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
-        assert self.server_supports_bell, "cannot toggle bell: the feature is disabled by the server"
+        assert self.server_bell, "cannot toggle bell: the feature is disabled by the server"
         self.send("set-bell", self.bell_enabled)
 
     def send_cursors_enabled(self):
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
-        assert self.server_supports_cursors, "cannot toggle cursors: the feature is disabled by the server"
+        assert self.server_cursors, "cannot toggle cursors: the feature is disabled by the server"
         self.send("set-cursors", self.cursors_enabled)
 
     def send_force_ungrab(self, wid):
@@ -2906,8 +2937,8 @@ class UIXpraClient(XpraClientBase):
             self.emit("clipboard-toggled")
 
     def clipboard_toggled(self, *args):
-        clipboardlog("clipboard_toggled%s clipboard_enabled=%s, server_supports_clipboard=%s", args, self.clipboard_enabled, self.server_supports_clipboard)
-        if self.server_supports_clipboard:
+        clipboardlog("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s", args, self.clipboard_enabled, self.server_clipboard)
+        if self.server_clipboard:
             self.send("set-clipboard-enabled", self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
@@ -2918,8 +2949,8 @@ class UIXpraClient(XpraClientBase):
                 pass    #FIXME: todo!
 
     def send_clipboard_selections(self, selections):
-        clipboardlog("send_clipboard_selections(%s) server_supports_clipboard_enable_selections=%s", selections, self.server_supports_clipboard_enable_selections)
-        if self.server_supports_clipboard_enable_selections:
+        clipboardlog("send_clipboard_selections(%s) server_clipboard_enable_selections=%s", selections, self.server_clipboard_enable_selections)
+        if self.server_clipboard_enable_selections:
             self.send("clipboard-enable-selections", selections)
 
     def send_keyboard_sync_enabled_status(self, *_args):
@@ -3397,7 +3428,7 @@ class UIXpraClient(XpraClientBase):
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
-        notifylog("_process_notify_show(%s) notifier=%s, server_supports_notifications=%s", packet, self.notifier, self.server_supports_notifications)
+        notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", packet, self.notifier, self.server_notifications)
         assert self.notifier
         #TODO: choose more appropriate tray if we have more than one shown?
         tray = self.tray
@@ -3660,6 +3691,7 @@ class UIXpraClient(XpraClientBase):
         XpraClientBase.init_authenticated_packet_handlers(self)
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,
+            "setting-change":       self._process_setting_change,
             "new-window":           self._process_new_window,
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,

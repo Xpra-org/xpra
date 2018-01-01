@@ -399,6 +399,7 @@ class ServerSource(FileTransferHandler):
         self.name = ""
         self.argv = ()
         # client capabilities/options:
+        self.client_setting_change = False
         self.client_type = None
         self.client_version = None
         self.client_revision= None
@@ -778,6 +779,7 @@ class ServerSource(FileTransferHandler):
         self.client_wm_name = c.strget("wm_name")
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
+        self.client_setting_change = c.boolget("setting-change")
         #file transfers and printing:
         self.parse_file_transfer_caps(c)
         #general features:
@@ -1809,6 +1811,11 @@ class ServerSource(FileTransferHandler):
         else:
             v = flatten_dict(info)
         self.send_async("info-response", v)
+
+
+    def send_setting_change(self, setting, value):
+        if self.client_setting_change:
+            self.send("setting-change", setting, value)
 
 
     def send_server_event(self, *args):

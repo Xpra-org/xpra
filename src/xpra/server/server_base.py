@@ -1616,6 +1616,12 @@ class ServerBase(ServerCore):
         server_source.send_hello(capabilities)
 
 
+    def setting_changed(self, setting, value):
+        #tell all the clients (that can) about the new value for this setting
+        for ss in tuple(self._server_sources.values()):
+            ss.send_setting_change(setting, value)
+
+
     def _process_logging(self, proto, packet):
         assert self.remote_logging
         ss = self._server_sources.get(proto)
@@ -1728,13 +1734,16 @@ class ServerBase(ServerCore):
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
     def control_command_toggle_feature(self, feature, state):
-        if feature not in ("bell", "sharing", "randr", "cursors", "notifications", "dbus-proxy", "clipboard"):
+        if feature not in ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+                           "start-new-commands", ):
             msg = "invalid feature '%s'" % feature
             commandlog.warn(msg)
             return msg
-        cur = getattr(self, feature, None)
+        fn = feature.replace("-", "_")
+        cur = getattr(self, fn, None)
         assert cur is not None, "feature '%s' is set to None!"
-        setattr(self, feature, state)
+        setattr(self, fn, state)
+        self.setting_changed(feature, state)
         return "%s set to %s" % (feature, state)
 
 
@@ -1883,6 +1892,7 @@ class ServerBase(ServerCore):
         self.session_name = name
         commandlog.info("changed session name: %s", self.session_name)
         #self.all_send_client_command("name", name)    not supported by any clients, don't bother!
+        self.setting_changed("session_name", name)
         return "session name set to %s" % name
 
     def _control_windowsources_from_args(self, *args):
@@ -1976,6 +1986,7 @@ class ServerBase(ServerCore):
         self._clipboard_helper.set_direction(can_send, can_receive)
         msg = "clipboard direction set to '%s'" % direction
         clipboardlog(msg)
+        self.setting_changed("clipboard_direction", direction)
         return msg
 
     def _control_video_subregions_from_wid(self, wid):
@@ -2028,13 +2039,15 @@ class ServerBase(ServerCore):
 
     def control_command_set_lock(self, lock):
         self.lock = parse_bool("lock", lock)
+        self.setting_changed("lock", lock is not False)
+        self.setting_changed("lock-toggle", lock is None)
         return "lock set to %s" % self.lock
-        #TODO: tell the clients about the change
 
     def control_command_set_sharing(self, sharing):
         self.sharing = parse_bool("sharing", sharing)
+        self.setting_changed("sharing", sharing is not False)
+        self.setting_changed("sharing-toggle", sharing is None)
         return "sharing set to %s" % self.sharing
-        #TODO: tell the clients about the change
 
 
     def control_command_key(self, keycode_str, press = True):

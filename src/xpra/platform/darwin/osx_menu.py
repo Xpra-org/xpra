@@ -237,7 +237,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             #set_sensitive(bool) does not work on OSX,
             #so we only add the menu item if it does something
             def add_ah(*_args):
-                if self.client.start_new_commands:
+                if self.client.server_start_new_commands:
                     server_menu.add(self.make_runcommandmenuitem())
                 if SHOW_SERVER_COMMANDS and self.client.server_commands_info:
                     server_menu.append(self.make_servercommandsmenuitem())

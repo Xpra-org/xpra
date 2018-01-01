@@ -69,7 +69,7 @@ class ServerCommandsWindow(object):
         def btn(label, tooltip, callback, icon_name=None):
             b = self.btn(label, tooltip, callback, icon_name)
             hbox.pack_start(b)
-        if self.client.start_new_commands:
+        if self.client.server_start_new_commands:
             btn("Start New", "Run a command on the server", self.client.show_start_new_command, "forward.png")
         btn("Close", "", self.close, "quit.png")
 
@@ -244,7 +244,7 @@ def main():
             'start-on-connect'         : (),
             }
         client.server_last_info = {"commands" : commands_info}
-        client.start_new_commands = True
+        client.server_start_new_commands = True
         client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
         def noop(*_args):
             pass

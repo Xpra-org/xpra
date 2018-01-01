@@ -288,16 +288,16 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return self.server_commands
 
     def show_start_new_command(self, *args):
-        if not self.start_new_commands:
+        if not self.server_start_new_commands:
             log.warn("Warning: cannot start new commands")
             log.warn(" the feature is currently disabled on the server")
             return
-        log("show_start_new_command%s current start_new_command=%s, flag=%s", args, self.start_new_command, self.start_new_commands)
+        log("show_start_new_command%s current start_new_command=%s, flag=%s", args, self.start_new_command, self.server_start_new_commands)
         if self.start_new_command is None:
             from xpra.client.gtk_base.start_new_command import getStartNewCommand
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
-            self.start_new_command = getStartNewCommand(run_command_cb, self.server_sharing and self.server_supports_window_filters)
+            self.start_new_command = getStartNewCommand(run_command_cb, self.server_sharing and self.server_window_filters)
         self.start_new_command.show()
         return self.start_new_command
 
@@ -1216,7 +1216,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                  "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
                  }
         #only allow translation overrides if we have a way of telling the server about them:
-        if self.server_supports_clipboard_enable_selections:
+        if self.server_clipboard_enable_selections:
             kwargs.update({
                  "clipboard.local"      : self.local_clipboard,         #the local clipboard we want to sync to (with the translated clipboard only)
                  "clipboard.remote"     : self.remote_clipboard})       #the remote clipboard we want to we sync to (with the translated clipboard only)

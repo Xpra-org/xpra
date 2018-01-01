@@ -425,42 +425,50 @@ class GTKTrayMenuBase(object):
         def sharing_toggled(*args):
             v = self.sharing_menuitem.get_active()
             self.client.client_supports_sharing = v
-            if self.client.server_supports_sharing_toggle:
+            if self.client.server_sharing_toggle:
                 self.client.send_sharing_enabled()
             log("sharing_toggled(%s) readonly=%s", args, self.client.readonly)
         self.sharing_menuitem = self.checkitem("Sharing", sharing_toggled)
         self.sharing_menuitem.set_tooltip_text("Allow other clients to connect to this session")
         set_sensitive(self.sharing_menuitem, False)
         def set_sharing_menuitem(*args):
-            log("set_sharing_menuitem%s client_supports_sharing=%s, server_supports_sharing_toggle=%s, server_sharing=%s", args, self.client.client_supports_sharing, self.client.server_supports_sharing_toggle, self.client.server_sharing)
+            log("set_sharing_menuitem%s client_supports_sharing=%s, server_sharing_toggle=%s, server_sharing=%s", args, self.client.client_supports_sharing, self.client.server_sharing_toggle, self.client.server_sharing)
             self.sharing_menuitem.set_active(self.client.server_sharing and self.client.client_supports_sharing)
-            set_sensitive(self.sharing_menuitem, self.client.server_supports_sharing_toggle)
+            set_sensitive(self.sharing_menuitem, self.client.server_sharing_toggle)
             if not self.client.server_sharing:
                 self.sharing_menuitem.set_tooltip_text("Sharing is disabled on the server")
-            elif not self.client.server_supports_sharing_toggle:
+            elif not self.client.server_sharing_toggle:
                 self.sharing_menuitem.set_tooltip_text("Sharing cannot be changed on this server")
+            else:
+                self.sharing_menuitem.set_tooltip_text("")
         self.client.after_handshake(set_sharing_menuitem)
+        self.client.on_server_setting_changed("sharing", set_sharing_menuitem)
+        self.client.on_server_setting_changed("sharing-toggle", set_sharing_menuitem)
         return self.sharing_menuitem
 
     def make_lockmenuitem(self):
         def lock_toggled(*args):
             v = self.lock_menuitem.get_active()
             self.client.client_lock = v
-            if self.client.server_supports_lock_toggle:
+            if self.client.server_lock_toggle:
                 self.client.send_lock_enabled()
             log("lock_toggled(%s) lock=%s", args, self.client.client_lock)
         self.lock_menuitem = self.checkitem("Lock", lock_toggled)
         self.lock_menuitem.set_tooltip_text("Prevent other clients from stealing this session")
         set_sensitive(self.lock_menuitem, False)
         def set_lock_menuitem(*args):
-            log("set_lock_menuitem%s client_lock=%s, server_supports_lock_toggle=%s, server lock=%s", args, self.client.client_lock, self.client.server_supports_lock_toggle, self.client.server_lock)
+            log("set_lock_menuitem%s client_lock=%s, server_lock_toggle=%s, server lock=%s", args, self.client.client_lock, self.client.server_lock_toggle, self.client.server_lock)
             self.lock_menuitem.set_active(self.client.server_lock and self.client.client_lock)
-            set_sensitive(self.lock_menuitem, self.client.server_supports_lock_toggle)
+            set_sensitive(self.lock_menuitem, self.client.server_lock_toggle)
             if not self.client.server_lock:
                 self.lock_menuitem.set_tooltip_text("Session locking is disabled on this server")
-            elif not self.client.server_supports_lock_toggle:
+            elif not self.client.server_lock_toggle:
                 self.lock_menuitem.set_tooltip_text("Session locking cannot be toggled on this server")
+            else:
+                self.lock_menuitem.set_tooltip_text("")
         self.client.after_handshake(set_lock_menuitem)
+        self.client.on_server_setting_changed("lock", set_lock_menuitem)
+        self.client.on_server_setting_changed("lock-toggle", set_lock_menuitem)
         return self.lock_menuitem
 
     def make_readonlymenuitem(self):
@@ -484,7 +492,7 @@ class GTKTrayMenuBase(object):
     def make_bellmenuitem(self):
         c = self.client
         def bell_toggled(*args):
-            can_toggle_bell = c.server_supports_bell and c.client_supports_bell
+            can_toggle_bell = c.server_bell and c.client_supports_bell
             if not can_toggle_bell:
                 return
             v = self.bell_menuitem.get_active()
@@ -497,14 +505,15 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.bell_menuitem, False)
         def set_bell_menuitem(*args):
             log("set_bell_menuitem%s enabled=%s", args, self.client.bell_enabled)
-            self.bell_menuitem.set_active(self.client.bell_enabled)
-            can_toggle_bell = c.server_supports_bell and c.client_supports_bell
+            can_toggle_bell = c.server_bell and c.client_supports_bell
+            self.bell_menuitem.set_active(self.client.bell_enabled and can_toggle_bell)
             set_sensitive(self.bell_menuitem, can_toggle_bell)
             if can_toggle_bell:
                 self.bell_menuitem.set_tooltip_text("Forward system bell")
             else:
                 self.bell_menuitem.set_tooltip_text("Cannot forward the system bell: the feature has been disabled")
         self.client.after_handshake(set_bell_menuitem)
+        self.client.on_server_setting_changed("bell", set_bell_menuitem)
         return  self.bell_menuitem
 
     def make_cursorsmenuitem(self):
@@ -521,15 +530,16 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.cursors_menuitem, False)
         def set_cursors_menuitem(*args):
             log("set_cursors_menuitem%s enabled=%s", args, self.client.cursors_enabled)
-            self.cursors_menuitem.set_active(self.client.cursors_enabled)
             c = self.client
-            can_toggle_cursors = c.server_supports_cursors and c.client_supports_cursors
+            can_toggle_cursors = c.server_cursors and c.client_supports_cursors
+            self.cursors_menuitem.set_active(self.client.cursors_enabled and can_toggle_cursors)
             set_sensitive(self.cursors_menuitem, can_toggle_cursors)
             if can_toggle_cursors:
                 self.cursors_menuitem.set_tooltip_text("Forward custom mouse cursors")
             else:
                 self.cursors_menuitem.set_tooltip_text("Cannot forward mouse cursors: the feature has been disabled")
         self.client.after_handshake(set_cursors_menuitem)
+        self.client.on_server_setting_changed("cursors", set_cursors_menuitem)
         return  self.cursors_menuitem
 
     def make_notificationsmenuitem(self):
@@ -544,8 +554,8 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.notifications_menuitem, False)
         def set_notifications_menuitem(*args):
             log("set_notifications_menuitem%s enabled=%s", args, self.client.notifications_enabled)
-            self.notifications_menuitem.set_active(self.client.notifications_enabled)
             can_notify = self.client.client_supports_notifications
+            self.notifications_menuitem.set_active(self.client.notifications_enabled and can_notify)
             set_sensitive(self.notifications_menuitem, can_notify)
             if can_notify:
                 self.notifications_menuitem.set_tooltip_text("Forward system notifications")
@@ -557,7 +567,7 @@ class GTKTrayMenuBase(object):
 
     def remote_clipboard_changed(self, item, clipboard_submenu):
         c = self.client
-        if not c or not c.server_supports_clipboard or not c.client_supports_clipboard:
+        if not c or not c.server_clipboard or not c.client_supports_clipboard:
             return
         #prevent infinite recursion where ensure_item_selected
         #ends up calling here again
@@ -632,7 +642,7 @@ class GTKTrayMenuBase(object):
         set_sensitive(self.clipboard_menuitem, False)
         def set_clipboard_menu(*args):
             c = self.client
-            if not c.server_supports_clipboard:
+            if not c.server_clipboard:
                 self.clipboard_menuitem.set_tooltip_text("Server does not support clipboard synchronization")
                 return
             if not c.client_supports_clipboard:
@@ -650,7 +660,7 @@ class GTKTrayMenuBase(object):
             try:
                 from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
                 assert TranslatedClipboardProtocolHelper
-                clipboardlog("set_clipboard_menu(%s) helper=%s, server=%s, client=%s", args, ch, c.server_supports_clipboard, c.client_supports_clipboard)
+                clipboardlog("set_clipboard_menu(%s) helper=%s, server=%s, client=%s", args, ch, c.server_clipboard, c.client_supports_clipboard)
                 if issubclass(type(ch), TranslatedClipboardProtocolHelper):
                     clipboard_submenu.append(self.make_translatedclipboard_optionsmenuitem())
                     clipboard_submenu.append(gtk.SeparatorMenuItem())
@@ -779,6 +789,7 @@ class GTKTrayMenuBase(object):
                     if not below_server_limit:
                         c.set_tooltip_text("server set the limit to %sbps" % std_unit_dec(self.client.server_bandwidth_limit))
         self.client.after_handshake(set_bwlimitmenu)
+        self.client.on_server_setting_changed("bandwidth-limit", set_bwlimitmenu)
         return bandwidth_limit_menu_item
 
 
@@ -1200,6 +1211,7 @@ class GTKTrayMenuBase(object):
                 set_sensitive(webcam, False)
                 webcam.set_tooltip_text("Server does not support webcam forwarding")
                 return
+            webcam.set_tooltip_text("")
             set_sensitive(webcam, True)
             webcamlog("webcam_changed%s active device no=%s", args, get_active_device_no())
             menu.ignore_events = True
@@ -1367,18 +1379,23 @@ class GTKTrayMenuBase(object):
             log("enable_servercommands%s server-commands-info=%s", args, self.client.server_commands_info)
             set_sensitive(self.servercommands, self.client.server_commands_info)
             if not self.client.server_commands_info:
-                self.startnewcommand.set_tooltip_text("Not supported by the server")
+                self.servercommands.set_tooltip_text("Not supported by the server")
+            else:
+                self.servercommands.set_tooltip_text("")
         self.client.after_handshake(enable_servercommands)
         return self.servercommands
 
     def make_runcommandmenuitem(self):
         self.startnewcommand = self.menuitem("Run Command", "forward.png", "Run a new command on the server", self.client.show_start_new_command)
         def enable_start_new_command(*args):
-            log("enable_start_new_command%s start_new_command=%s", args, self.client.start_new_commands)
-            set_sensitive(self.startnewcommand, self.client.start_new_commands)
-            if not self.client.start_new_commands:
+            log("enable_start_new_command%s start_new_command=%s", args, self.client.server_start_new_commands)
+            set_sensitive(self.startnewcommand, self.client.server_start_new_commands)
+            if not self.client.server_start_new_commands:
                 self.startnewcommand.set_tooltip_text("Not supported by the server")
+            else:
+                self.startnewcommand.set_tooltip_text("")
         self.client.after_handshake(enable_start_new_command)
+        self.client.on_server_setting_changed("start-new-commands", enable_start_new_command)
         return self.startnewcommand
 
     def make_servertransfersmenuitem(self):
@@ -1394,12 +1411,14 @@ class GTKTrayMenuBase(object):
         return self.transfers
 
     def make_uploadmenuitem(self):
-        self.upload = self.menuitem("Upload File", "upload.png", "Send a file to the server", self.client.show_file_upload)
+        self.upload = self.menuitem("Upload File", "upload.png", cb=self.client.show_file_upload)
         def enable_upload(*args):
             log("enable_upload%s server_file_transfer=%s", args, self.client.remote_file_transfer)
             set_sensitive(self.upload, self.client.remote_file_transfer)
             if not self.client.remote_file_transfer:
                 self.upload.set_tooltip_text("Not supported by the server")
+            else:
+                self.upload.set_tooltip_text("Send a file to the server")
         self.client.after_handshake(enable_upload)
         return self.upload
 
@@ -1416,13 +1435,16 @@ class GTKTrayMenuBase(object):
             dialog.destroy()
             if response == SHUTDOWN:
                 self.client.send_shutdown_server()
-        self.shutdown = self.menuitem("Shutdown Server", "shutdown.png", "Shutdown this server session", ask_shutdown_confirm)
+        self.shutdown = self.menuitem("Shutdown Server", "shutdown.png", cb=ask_shutdown_confirm)
         def enable_shutdown(*args):
-            log("enable_shutdown%s can_shutdown_server=%s", args, self.client.can_shutdown_server)
-            set_sensitive(self.shutdown, self.client.can_shutdown_server)
-            if not self.client.can_shutdown_server:
+            log("enable_shutdown%s can_shutdown_server=%s", args, self.client.server_client_shutdown)
+            set_sensitive(self.shutdown, self.client.server_client_shutdown)
+            if not self.client.server_client_shutdown:
                 self.shutdown.set_tooltip_text("Disabled by the server")
+            else:
+                self.shutdown.set_tooltip_text("Shutdown this server session")
         self.client.after_handshake(enable_shutdown)
+        self.client.on_server_setting_changed("client-shutdown", enable_shutdown)
         return self.shutdown
 
     def make_disconnectmenuitem(self):

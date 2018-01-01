@@ -21,14 +21,14 @@ class FakeClient(FileTransferHandler):
         self.windows_enabled = True
         self.can_scale = True
         self.start_new_commands = True
-        self.server_supports_bell = True
+        self.server_bell = True
         self.client_supports_bell = True
         self.notifications_enabled = True
         self.client_supports_notifications = True
         self.cursors_enabled = True
-        self.server_supports_cursors = True
+        self.server_cursors = True
         self.client_supports_cursors = True
-        self.server_supports_clipboard = True
+        self.server_clipboard = True
         self.client_supports_clipboard = True
         self.client_clipboard_direction = "both"
         self.quality = 80
