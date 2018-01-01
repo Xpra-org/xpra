@@ -1,3 +1,9 @@
+python-lz4 (0.18.1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 01 Jan 2018 19:26:32 +0700
+
 python-lz4 (0.13.0) UNRELEASED; urgency=low
 
   * new upstream release
