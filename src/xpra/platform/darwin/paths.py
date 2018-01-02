@@ -136,6 +136,13 @@ def do_get_download_dir():
     return d
 
 
+def do_get_libexec_dir():
+    from xpra.platform.paths import get_app_dir
+    base = get_app_dir()
+    p = os.path.join(base, "Helpers")
+    return p
+
+
 def do_get_sshpass_command():
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
