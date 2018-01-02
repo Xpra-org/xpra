@@ -24,13 +24,14 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, POSIX
 
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
-HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", True)
+DISPLAY_HAS_SCREEN_INDEX = os.environ.get("DISPLAY").split(":")[-1].find(".")>=0
+HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
 
 try:
     from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
