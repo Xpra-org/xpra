@@ -32,8 +32,8 @@
 
 
 Name:           python2-pillow
-Version:        4.3.0
-Release:        3%{?snap}%{?dist}
+Version:        5.0.0
+Release:        1%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -300,6 +300,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Jan 02 2018 Antoine Martin <antoine@devloop.org.uk> - 5.0.0-1
+- new upstream release
+
 * Thu Nov 23 2017 Antoine Martin <antoine@devloop.org.uk> - 4.3.0-3
 - don't link with webp on CentOS, so we can use our private library in xpra without conflicting
 
