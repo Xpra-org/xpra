@@ -1182,12 +1182,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._client_properties = {}
         self._window_state = {}
         workspace = self.get_window_workspace()
-        workspacelog("process_map_event() wid=%i, workspace=%s, been_mapped=%s", self._id, workspace, self._been_mapped)
+        screen = self.get_screen().get_number()
+        workspacelog("process_map_event() wid=%i, workspace=%s, screen=%i, been_mapped=%s", self._id, workspace, screen, self._been_mapped)
+        if screen!=self._screen:
+            props["screen"] = screen
+            self._screen = screen
         if self._been_mapped:
-            screen = self.get_screen().get_number()
-            if screen!=self._screen:
-                props["screen"] = screen
-                self._screen = screen
             if workspace is None:
                 #not set, so assume it is on the current workspace:
                 workspace = self.get_desktop_workspace()
