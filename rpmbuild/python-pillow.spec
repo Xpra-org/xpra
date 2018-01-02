@@ -39,7 +39,7 @@ Summary:        Python image processing library
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
-Source:         https://pypi.python.org/packages/source/P/Pillow/Pillow-%{version}.tar.gz
+Source:         https://pypi.python.org/packages/0f/57/25be1a4c2d487942c3ed360f6eee7f41c5b9196a09ca71c54d1a33c968d9/Pillow-%{version}.tar.gz
 Provides:       python-pillow
 Obsoletes:      python-pillow
 Conflicts:      python-pillow
