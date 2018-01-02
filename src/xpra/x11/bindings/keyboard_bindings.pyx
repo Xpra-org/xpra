@@ -66,6 +66,9 @@ cdef extern from "X11/Xlib.h":
         unsigned short width, height
 
 
+    Display *XOpenDisplay(char *display_name)
+    int XCloseDisplay(Display *display)
+
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
     int XFree(void * data)
     void XGetErrorText(Display * display, int code, char * buffer_return, int length)
@@ -414,31 +417,49 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             return {}
         cdef XkbRF_VarDefsRec vd
         cdef char *tmp = NULL
-        if XkbRF_GetNamesProp(self.display, &tmp, &vd)==0 or tmp==NULL:
-            log.warn("Error: XkbRF_GetNamesProp failed")
-            return {}
-        v = {}
-        if len(tmp)>0:
-            v["rules"] = s(tmp)
-            XFree(tmp)
-        if vd.model:
-            v["model"]  = s(vd.model)
-            XFree(vd.model)
-        if vd.layout:
-            v["layout"] = s(vd.layout)
-            XFree(vd.layout)
-        if vd.options!=NULL:
-            v["options"] = s(vd.options)
-            XFree(vd.options)
-        #log("vd.num_extra=%s", vd.num_extra)
-        if vd.extra_names:
-            #no idea how to use this!
-            #if vd.num_extra>0:
-            #    for i in range(vd.num_extra):
-            #        v[vd.extra_names[i][:]] = vd.extra_values[] ???
-            XFree(vd.extra_names)
-        log("getXkbProperties()=%s", v)
-        return v
+        cdef Display *display = NULL
+        cdef int r = 0
+        r = XkbRF_GetNamesProp(self.display, &tmp, &vd)
+        try:
+            if r==0 or tmp==NULL:
+                #if the display points to a specific screen (ie: DISPLAY=:20.1)
+                #we may have to connect to the first screen to get the properties:
+                nohost = self.display_name.split(":")[-1]
+                if nohost.find(".")>0:
+                    display_name = self.display_name[:self.display_name.rfind(".")]
+                    log("getXkbProperties retrying on '%s'", display_name)
+                    display = XOpenDisplay(strtobytes(display_name))
+                    if display:
+                        r = XkbRF_GetNamesProp(display, &tmp, &vd)
+            if r==0 or tmp==NULL:
+                log.warn("Error: XkbRF_GetNamesProp failed on %s", self.display_name)
+                return {}
+            v = {}
+            if len(tmp)>0:
+                v["rules"] = s(tmp)
+                XFree(tmp)
+            if vd.model:
+                v["model"]  = s(vd.model)
+                XFree(vd.model)
+            if vd.layout:
+                v["layout"] = s(vd.layout)
+                XFree(vd.layout)
+            if vd.options!=NULL:
+                v["options"] = s(vd.options)
+                XFree(vd.options)
+            #log("vd.num_extra=%s", vd.num_extra)
+            if vd.extra_names:
+                #no idea how to use this!
+                #if vd.num_extra>0:
+                #    for i in range(vd.num_extra):
+                #        v[vd.extra_names[i][:]] = vd.extra_values[] ???
+                XFree(vd.extra_names)
+            log("getXkbProperties()=%s", v)
+            return v
+        finally:
+            if display!=NULL:
+                XCloseDisplay(display)
+
 
     cdef _get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:
