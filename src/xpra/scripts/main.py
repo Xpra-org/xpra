@@ -2449,6 +2449,34 @@ def get_sockpath(display_desc, error_cb):
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
+    if mode in ("attach", "detach") and len(extra_args)==1 and extra_args[0]=="all":
+        #run this command for each display:
+        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        displays = dotxpra.displays(check_uid=getuid(), matching_state=DotXpra.LIVE)
+        if not displays:
+            sys.stdout.write("No xpra sessions found\n")
+            return 1
+        #we have to locate the 'all' command line argument,
+        #so we can replace it with each display we find,
+        #but some other command line arguments can take a value of 'all',
+        #so we have to make sure that the one we find does not belong to the argument before
+        index = None
+        for i, arg in enumerate(sys.argv):
+            if i==0 or arg!="all":
+                continue
+            prevarg = sys.argv[i-1]
+            if prevarg[0]=="-" and (prevarg.find("=")<0 or len(prevarg)==2):
+                #ie: [.., "--csc-modules", "all"] or [.., "-d", "all"]
+                continue
+            index = i
+            break
+        if not index:
+            raise InitException("'all' command line argument could not be located")
+        cmd = sys.argv[:index]+sys.argv[index+1:]
+        for display in displays:
+            dcmd = cmd + [display]
+            Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32, shell=False)
+        return
     app = get_client_app(error_cb, opts, extra_args, mode)
     return do_run_client(app)
 
@@ -2981,7 +3009,6 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                         try:
                             out = stdout.decode()
                         except:
-                            from xpra.os_util import bytestostr
                             out = bytestostr(stdout)
                     found = False
                     display = display_name
