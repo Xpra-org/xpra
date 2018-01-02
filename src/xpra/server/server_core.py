@@ -1705,7 +1705,7 @@ class ServerCore(object):
                 si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
         for socktype, auth_classes in self.auth_classes.items():
             if auth_classes:
-                authenticators = si.setdefault(socktype, {})["authenticator"]
+                authenticators = si.setdefault(socktype, {}).setdefault("authenticator", {})
                 for i, auth_class in enumerate(auth_classes):
                     authenticators[i] = auth_class[0], auth_class[2]
         return si
