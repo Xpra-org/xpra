@@ -467,7 +467,7 @@ class StopXpraClient(HelloRequestClient):
             }
 
     def do_command(self):
-        if not self.can_shutdown_server:
+        if not self.server_client_shutdown:
             log.error("Error: cannot shutdown this server")
             log.error(" the feature is disable on the server")
             self.quit(EXIT_FAILURE)
