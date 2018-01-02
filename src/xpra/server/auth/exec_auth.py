@@ -35,7 +35,7 @@ class Authenticator(SysAuthenticator):
             libexec = get_libexec_dir()
             xpralibexec = os.path.join(libexec, "xpra")
             log("libexec=%s, xpralibexec=%s", libexec, xpralibexec)
-            if os.path.exists(xpralibexec):
+            if os.path.exists(xpralibexec) and os.path.isdir(xpralibexec):
                 libexec = xpralibexec
             auth_dialog = os.path.join(libexec, "auth_dialog")
             if EXECUTABLE_EXTENSION:
