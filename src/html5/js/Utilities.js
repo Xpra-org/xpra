@@ -445,10 +445,10 @@ var Utilities = {
 		if (c.effectiveType) {
 			i["effective-type"] = c.effectiveType;
 		}
-		if (!isNaN(c.downlink) && c.downlink>0) {
+		if (!isNaN(c.downlink) && !isNaN(c.downlink) && c.downlink>0 && isFinite(c.downlink)) {
 			i["downlink"] = Math.round(c.downlink*1000*1000);
 		}
-		if (!isNaN(c.downlinkMax) && c.downlinkMax>0) {
+		if (!isNaN(c.downlinkMax) && !isNaN(c.downlinkMax) && c.downlinkMax>0 && isFinite(c.downlinkMax)) {
 			i["downlink.max"] = Math.round(c.downlinkMax*1000*1000);
 		}
 		if (!isNaN(c.rtt) && c.rtt>0) {
