@@ -1432,7 +1432,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         #to start a new session and connect to it at the same time:
                         app = get_client_app(error_cb, options, args, "request-%s" % mode)
                         r = do_run_client(app)
-                        from xpra.exit_codes import EXIT_OK
+                        from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
                         #OK or got a signal:
                         NO_RETRY = [EXIT_OK] + range(128, 128+16)
                         if app.completed_startup:
@@ -1447,8 +1447,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                                     ]
                         if r in NO_RETRY:
                             return r
-                        #other cases mean we must have failed to start the session
-                        err = EXIT_STR.get(r, r)
+                        elif r==EXIT_FAILURE:
+                            err = "unknown general failure"
+                        else:
+                            err = EXIT_STR.get(r, r)
                     except Exception as e:
                         err = str(e)
                     if start_via_proxy is True:
