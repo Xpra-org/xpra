@@ -4,12 +4,12 @@
 <moduleset>
 
   <repository type="tarball" name="ftp.gnome.org" default="yes"
-	      href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
+              href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
   <repository type="tarball" name="ftp.gnu.org" href="ftp://ftp.gnu.org/gnu/"/>
   <repository type="tarball" name="sourceforge"
-	      href="http://downloads.sourceforge.net/sourceforge/"/>
+              href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository type="tarball" name="jpeg"
-	      href="http://www.ijg.org/files/"/>
+              href="http://www.ijg.org/files/"/>
   <repository type="tarball" name="libtiff"
 	      href="http://download.osgeo.org/"/>
   <repository type="tarball" name="fontconfig"
@@ -28,6 +28,12 @@
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
 
+  <autotools id='readline' autogen-sh="configure">
+    <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
+      version="7.0">
+    </branch>
+  </autotools>
+  
   <autotools id="libpng" autogenargs="--enable-shared" autogen-sh="configure">
     <branch version="1.6.29" module="libpng/libpng-1.6.34.tar.xz"
             repo="sourceforge" hash="sha256:2f1e960d92ce3b3abd03d06dfec9637dfbd22febf107a536b44f7a47c60659f6"/>
@@ -70,7 +76,7 @@
   </autotools>
 
   <autotools id="libxslt" autogen-sh="configure">
-    <branch version="1.1.28" module="libxslt-1.1.28.tar.gz"
+    <branch version="1.1.29" module="libxslt-1.1.29.tar.gz"
 	    repo="xmlsoft.org"/>
     <dependencies>
       <dep package="libxml2"/>
@@ -86,8 +92,8 @@
   </autotools>
 
   <autotools id="yelp-xsl">
-    <branch version="3.16.1" module="yelp-xsl/3.16/yelp-xsl-3.16.1.tar.xz"
-            hash="sha256:3295eecc4b03d2a239f7a1bdf4a1311d34c46c3055e6535c1f72bb5a49b4174a"/>
+    <branch version="3.20.1" module="yelp-xsl/3.20/yelp-xsl-3.20.1.tar.xz"
+            hash="sha256:dc61849e5dca473573d32e28c6c4e3cf9c1b6afe241f8c26e29539c415f97ba0"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -96,8 +102,8 @@
   </autotools>
 
   <autotools id="yelp-tools">
-    <branch version="3.16.1" module="yelp-tools/3.16/yelp-tools-3.16.1.tar.xz"
-            hash="sha256:b4f66c145af1c6448dc51037d305d6844da13dc31d07729b8e29005ee4fef89c"/>
+    <branch version="3.18.0" module="yelp-tools/3.18/yelp-tools-3.18.0.tar.xz"
+            hash="sha256:c6c1d65f802397267cdc47aafd5398c4b60766e0a7ad2190426af6c0d0716932"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -108,8 +114,8 @@
 
   <autotools id="gtk-doc" autogen-sh="configure"
              autogenargs="--with-xml-catalog=$JHBUILD_PREFIX/share/xml/catalog">
-    <branch version="1.21" module="gtk-doc/1.21/gtk-doc-1.21.tar.xz"
-            hash="sha256:5d934d012ee08edd1585544792efa80da271652587ba5b843d2cea8e8b80ee3e"/>
+    <branch version="1.25" module="gtk-doc/1.25/gtk-doc-1.25.tar.xz"
+            hash="sha256:1ea46ed400e6501f975acaafea31479cea8f32f911dca4dff036f59e6464fd42"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="itstool"/>
@@ -119,20 +125,21 @@
 
   <autotools id="icu" autogen-sh="source/configure" autogenargs="--enable-rpath"
              makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
-    <branch repo="icu" version="55.1" checkoutdir="icu"
-            module="icu4c/55.1/icu4c-55_1-src.tgz"/>
+    <branch repo="icu" version="58.2" checkoutdir="icu"
+            module="icu4c/58.2/icu4c-58_2-src.tgz"/>
   </autotools>
 
+
   <autotools id="ragel" autogen-sh='autoreconf'>
-    <branch repo="ragel" module="ragel-6.9.tar.gz" version="6.9">
+    <branch repo="ragel" module="ragel-6.10.tar.gz" version="6.10">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/ragel-6.9-setiosflags.patch" strip="1"/>
     </branch>
   </autotools>
 
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-freetype --with-icu">
-    <branch repo="harfbuzz" module="harfbuzz-0.9.40.tar.bz2" version="0.9.40">
-       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/>
+    <branch repo="harfbuzz" module="harfbuzz-1.4.5.tar.bz2" version="1..45">
+       <!--patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="freetype-no-harfbuzz"/>
@@ -140,14 +147,17 @@
       <dep package="glib"/>
       <dep package="icu"/>
     </dependencies>
+    <after>
+      <dep package="icu55"/>
+    </after>
   </autotools>
 
   <autotools id="freetype-no-harfbuzz" autogen-sh="configure"
              skip-autogen="never"
              autogenargs="--without-bzip2 --without-harfbuzz">
-    <branch module="freetype/freetype-2.5.3.tar.gz" version="2.5.3"
-	    repo="sourceforge">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/>
+    <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
+            repo="sourceforge">
+      <!--patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="zlib"/>
@@ -156,7 +166,7 @@
 
   <autotools id="freetype" autogen-sh="configure" skip-autogen="never"
 	     autogenargs="--without-bzip2">
-    <branch module="freetype/freetype-2.5.3.tar.gz" version="2.5.3"
+    <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
             repo="sourceforge">
     </branch>
     <dependencies>
@@ -166,9 +176,9 @@
   </autotools>
 
   <autotools id="fontconfig" autogen-sh="autoreconf"
-	     autogenargs="--disable-docs">
-    <branch repo="fontconfig" version="2.11.1"
-            module="fontconfig-2.11.1.tar.bz2"/>
+             autogenargs="--disable-docs">
+    <branch repo="fontconfig" version="2.12.1"
+            module="fontconfig-2.12.1.tar.bz2"/>
     <dependencies>
       <dep package="freetype"/>
     </dependencies>
@@ -184,12 +194,6 @@
 	     autogenargs="--without-emacs --disable-java --disable-native-java --disable-libasprintf --disable-csharp">
     <branch repo="ftp.gnu.org" source-subdir="gettext-runtime"
             module="gettext/gettext-0.19.8.tar.xz" version="0.19.8"/>
-  </autotools>
-
-  <autotools id='readline' autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
-      version="7.0">
-    </branch>
   </autotools>
 
   <metamodule id="meta-gtk-osx-bootstrap">

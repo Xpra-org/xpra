@@ -21,13 +21,9 @@
   <repository type="tarball" name="intltool"
               href="http://launchpad.net/intltool/trunk/"/>
 
-  <autotools id="make" bootstrap="true">
-    <branch repo="ftp.gnu.org" module="make/make-3.82.tar.gz" version="3.82"/>
-  </autotools>
-
   <autotools id='readline' autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="readline/readline-6.3.tar.gz"
-      version="6.3">
+    <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
+      version="7.0">
     </branch>
   </autotools>
 
@@ -40,26 +36,18 @@
   </autotools>
 
   <autotools id="xz" autogen-sh="configure" bootstrap="true">
-    <branch repo="tukaani.org" module="xz/xz-5.2.1.tar.bz2" version="5.2.1"/>
+    <branch repo="tukaani.org" module="xz/xz-5.2.3.tar.bz2" version="5.2.3"/>
   </autotools>
 
   <autotools id="apr">
-    <branch repo="apache.org" module="apr/apr-1.4.5.tar.bz2" version="1.4.5"/>
+    <branch repo="apache.org" module="apr/apr-1.5.2.tar.bz2" version="1.5.2"/>
   </autotools>
 
   <autotools id="apr-util" autogenargs="--with-apr=$PREFIX/bin/apr-1-config">
-    <branch repo="apache.org" module="apr/apr-util-1.3.12.tar.bz2"
-            version="1.3.12"/>
-    <dependencies>
+    <branch repo="apache.org" module="apr/apr-util-1.5.4.bz2"
+            version="1.5.4" />
+      <dependencies>
       <dep package="apr"/>
-    </dependencies>
-  </autotools>
-
-  <autotools id="subversion">
-    <branch repo="apache.org" module="subversion/subversion-1.5.9.tar.bz2"
-            version="1.5.9"/>
-    <dependencies>
-      <dep package="apr-util"/>
     </dependencies>
   </autotools>
 
@@ -72,14 +60,8 @@
   <!-- cmakes ./configure is picky about invalid flags so we manually set it -->
   <autotools id="cmake" autogen-sh="bootstrap"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s">
-    <branch repo="cmake" module="v3.2/cmake-3.2.1.tar.gz" version="3.2.1">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/cmake-libnetwork.patch" strip="1"/>
+    <branch repo="cmake" module="v3.10/cmake-3.10.0.tar.gz" version="3.10.0">
     </branch>
-  </autotools>
-
-  <autotools id="m4" autogen-sh="configure" bootstrap="true">
-    <branch repo="ftp.gnu.org"
-            module="m4/m4-1.4.17.tar.xz" version="1.4.17"/>
   </autotools>
 
   <autotools id="autoconf" autogen-sh="configure" bootstrap="true">
@@ -87,14 +69,13 @@
             module="autoconf/autoconf-2.69.tar.xz" version="2.69"/>
     <dependencies>
       <dep package="xz"/>
-      <dep package="m4"/>
     </dependencies>
   </autotools>
 
   <autotools id="autoconf-archive" autogen-sh="configure">
     <branch repo="ftp.gnu.org"
-            module="autoconf-archive/autoconf-archive-2016.09.16.tar.xz"
-            version="2016-09.16"/>
+            module="autoconf-archive/autoconf-archive-2017.03.21.tar.xz"
+            version="2017-03-21"/>
   </autotools>
 
   <autotools id="libtool" autogen-sh="configure" bootstrap="true">
@@ -154,38 +135,38 @@
   <autotools id="pkg-config" autogen-sh="configure"
              autogenargs="--with-internal-glib">
     <branch repo="pkgconfig"
-            module="pkg-config-0.28.tar.gz" version="0.28"/>
+            module="pkg-config-0.29.2.tar.gz" version="0.29.2"/>
   </autotools>
 
-  <!-- 10.5-10.10 have 2.3, gstreamer requires 2.4. -->
+  <!-- MacOS provides 2.3 (presumably the last GPL2 version, gstreamer
+       requires 2.4. -->
   <autotools id="bison" autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="bison/bison-3.0.2.tar.xz"
-            version="3.0.2"/>
+    <branch repo="ftp.gnu.org" module="bison/bison-3.0.4.tar.xz"
+            version="3.0.4">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/bison-3.0.4-vasnprintf.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package='flex'/>
+    </dependencies>
   </autotools>
-
-  <autotools id="bison2" autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="bison/bison-2.7.1.tar.xz"
-            version="2.7.1"/>
-  </autotools>
-
-  <!-- 10.4 has 2.5.4, too old for gstreamer (and probably others as well)
-       10.6-10.10 have 2.5.35, 10.5 2.5.33 -->
+  
+  <!-- MacOS hasn't updated flex since 2012. Since it's BSD-licensed
+       it must be just because Apple doesn't use it and doesn't
+       care. We'll provide something more up-to-date. -->
   <autotools id="flex" autogen-sh="configure">
-    <branch repo="sourceforge" module="flex/flex-2.5.37.tar.bz2"
-            version="2.5.37"/>
+    <branch module="flex/flex-2.6.0.tar.xz" version="2.6.0"
+            repo="sourceforge" />
   </autotools>
-
-  <!-- Expat could be skipped for >= 10.5 since it's is part of the SDK there. -->
+  
   <autotools id="expat" autogen-sh="configure">
-    <branch module="expat/expat-2.2.0.tar.gz" version="2.2.0"
-            hash="sha256:d9e50ff2d19b3538bd2127902a89987474e1a4db8e43a66a4d1a712ab9a504ff"/>
+    <branch module="expat/expat-2.2.0.tar.bz2" version="2.2.0"
             repo="sourceforge"/>
   </autotools>
 
   <perl id="perl-xml-parser" makeargs="EXPATLIBPATH=${prefix}/lib EXPATINCPATH=${prefix}/include">
     <branch repo="cpan"
-            module="authors/id/T/TO/TODDR/XML-Parser-2.41.tar.gz"
-            version="2.41"/>
+            module="authors/id/T/TO/TODDR/XML-Parser-2.44.tar.gz"
+            version="2.44"/>
     <dependencies>
       <dep package="expat"/>
     </dependencies>
@@ -203,8 +184,8 @@
 
   <!-- Needed for building Gnome apps from the repository -->
   <autotools id="gnome-common">
-    <branch module="gnome-common/3.14/gnome-common-3.14.0.tar.xz" version="3.14.0"
-            hash="sha256:4c00242f781bb441289f49dd80ed1d895d84de0c94bfc2c6818a104c9e39262c"/>
+    <branch module="gnome-common/3.18/gnome-common-3.18.0.tar.xz" version="3.18.0"
+            hash="sha256:22569e370ae755e04527b76328befc4c73b62bfd4a572499fde116b8318af8cf"/>
   </autotools>
   <!-- This is generated by tarring up the needed docbook stylesheets
        for gtk-doc to work. If someone wants to work on a setup that
@@ -215,7 +196,7 @@
   -->
   <autotools id="gtk-osx-docbook" autogen-sh="configure"
              supports-non-srcdir-builds="no" >
-    <branch repo="sourceforge" module="gtk-osx/gtk-osx-docbook-1.2.tar.gz"
+    <branch repo="sourceforge" module="gtk-osx/gtk-osx-docbook-1.2.tar.bz2"
             version="1.2"/>
   </autotools>
 
@@ -232,13 +213,10 @@
   <metamodule id="meta-bootstrap">
     <dependencies>
       <dep package="xz"/>
-      <dep package="make"/>     <!-- Needed for Tiger, skipped otherwise -->
-      <dep package="subversion"/>   <!-- Needed for Tiger, skipped otherwise -->
       <dep package="gettext-tools" /> <!-- Needed for 64-bit -->
       <dep package="readline" />
       <dep package="bash" />  <!-- Needed for El Cap and later to work around SIP. -->
       <dep package="cmake"/>
-      <dep package="m4"/>	<!-- Can be skipped for Leopard and later -->
       <dep package="autoconf" />
       <dep package="autoconf-archive" />
       <dep package="libtool" />

@@ -8,15 +8,17 @@
   <repository type="tarball" name="cairographics.org"
               href="http://cairographics.org/releases/"/>
   <repository type="tarball" name="python"
-	      href="https://www.python.org/ftp/python/"/>
+              href="https://www.python.org/ftp/python/"/>
   <repository type="tarball" name="oracle"
 	      href="http://download.oracle.com/"/>
   <repository type="tarball" name="pymodules"
-	      href="http://pypi.python.org/packages/source/"/>
+              href="http://pypi.python.org/packages/"/>
+  <repository type="tarball" name="github-tarball"
+              href="https://github.com"/>
 
   <metamodule id="meta-gtk-osx-python">
     <dependencies>
-      <dep package="py2cairo"/>
+      <dep package="pycairo"/>
       <dep package="pygobject"/>
       <dep package="pygtk"/>
       <dep package="gtk-mac-integration-python"/>
@@ -26,7 +28,7 @@
   <metamodule id="meta-gtk-osx-python-gtk3">
     <dependencies>
       <dep package="meta-gtk-osx-gtk3"/>
-      <dep package="py2cairo"/>
+      <dep package="pycairo"/>
       <dep package="pygobject3"/>
       <dep package="gtk-mac-integration-python"/>
     </dependencies>
@@ -88,6 +90,7 @@
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
     <branch repo="python" module="3.6.4/Python-3.6.4.tar.xz" version="3.6.4">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/Python3.4-stack_size-flag.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gettext-runtime"/>
@@ -96,9 +99,9 @@
   </autotools>
 
   <distutils id="pybsddb">
-	<branch module="8d/9b/c3b01ff14e19254b2e031d8ae5ebe472e5523a47acc6f7d49300960d406d/bsddb3-6.2.4.tar.gz"
-  	    hash="md5:eec77d104c5981366701c6b0de585504" repo="pymodules"
-  	    version="6.2.4"/>
+    <branch module="8d/9b/c3b01ff14e19254b2e031d8ae5ebe472e5523a47acc6f7d49300960d406d/bsddb3-6.2.4.tar.gz"
+	    hash="md5:eec77d104c5981366701c6b0de585504" repo="pymodules"
+	    version="6.2.4"/>
     <dependencies>
       <dep package="python3"/>
     </dependencies>
@@ -108,36 +111,20 @@
     </after>
   </distutils>
 
-<!-- Cairographics have changed the name to py2cairo for python 2 holdouts. -->
-  <waf id="py2cairo">
-    <branch module="py2cairo-1.10.0.tar.bz2" repo="cairographics.org"
-            version="1.10.0"
-	    hash="sha1:2efa8dfafbd6b8e492adaab07231556fec52d6eb">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/py2cairo-python2.6-Dont-try-to-guess-arch.patch"
-             strip="1"/>
-    </branch>
-    <dependencies>
-      <dep package="cairo"/>
-    </dependencies>
-    <after>
-      <dep package="python"/>
-      <dep package="meta-gtk-osx-core"/>
-    </after>
-  </waf>
-
-<!-- Pycairo is for those who've made the leap. -->
-  <waf id="pycairo" autogen-sh="configure" python-command="python3">
-    <branch module="pycairo-1.10.0.tar.bz2" repo="cairographics.org"
-            version="1.10.0"
-	    hash="sha1:b4283aa1cc9aafd12fd72ad371303a486da1d014"/>
+  <distutils id="pycairo" autogen-sh="configure" python-command="python3">
+    <branch module="/pygobject/pycairo/releases/download/v1.12.0/pycairo-1.12.0.tar.gz" repo="github-tarball"
+            version="1.12.0"
+	    hash="sha256:243c351d7abcef41ac1fa984d2c753f3d065336a0fcf4c20fafb191b23423095"/>
     <dependencies>
       <dep package="cairo"/>
     </dependencies>
     <after>
       <dep package="python3"/>
+      <dep package="python"/>
       <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-core"/>
     </after>
-  </waf>
+  </distutils>
 
 <!-- PyGObject 2.28 is the last series for Gtk+-2; for co-installation
      with later versions it installs as pygobject2 and PyGObject 3
@@ -147,9 +134,7 @@
 	     autogenargs="--disable-introspection"
 	     supports-non-srcdir-builds="no">
     <branch version="2.28.6" module="pygobject/2.28/pygobject-2.28.6.tar.bz2"
-            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee">
-		<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygobject-gflags-fix.patch" strip="1"/>
-	</branch>
+            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee"/>
     <dependencies>
       <dep package="meta-gtk-osx-core"/>
     </dependencies>
@@ -160,17 +145,13 @@
 
    <autotools id="pygobject3" autogen-sh="configure" >
     <branch version="3.24.1" module="pygobject/3.24/pygobject-3.24.1.tar.xz"
-	    hash="sha256:a628a95aa0909e13fb08230b1b98fc48adef10b220932f76d62f6821b3fdbffd">
-        <!-- patch file="http://git.gnome.org/browse/gtk-osx/plain/patches/pygi-cache-double-typedef.patch" strip="1" -->
-    </branch>
+	    hash="sha256:a628a95aa0909e13fb08230b1b98fc48adef10b220932f76d62f6821b3fdbffd"/>
     <dependencies>
-      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="pycairo"/>
     </dependencies>
     <after>
       <dep package="python"/>
       <dep package="python3"/>
-      <dep package="pycairo"/>
-      <dep package="py2cairo"/>
     </after>
   </autotools>
 
@@ -184,7 +165,7 @@
     <dependencies>
       <dep package="pygobject"/>
       <dep package="meta-gtk-osx-core"/>
-      <dep package="py2cairo"/>
+      <dep package="pycairo"/>
     </dependencies>
     <after>
       <dep package="libglade"/>
