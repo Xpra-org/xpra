@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from xpra.util import envbool
 from xpra.os_util import PYTHON2
@@ -19,7 +20,7 @@ REINIT_WINDOWS = False
 
 INPUT_DEVICES = ["auto"]
 
-SYSTEM_PROXY_SOCKET = "/run/xpra/system"
+SYSTEM_PROXY_SOCKET = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
 CLIPBOARDS = []
 CLIPBOARD_WANT_TARGETS = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
