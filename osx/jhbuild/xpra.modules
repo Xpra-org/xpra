@@ -983,7 +983,6 @@
   <metamodule id="meta-osx-xpra-python-deps">
     <dependencies>
       <dep package="pygobject3"/>
-      <dep package="meta-gstreamer-1.0"/>
       <dep package="gst-python"/>
       <dep package="setuptools"/>
       <dep package="python-zeroconf"/>
@@ -1041,6 +1040,7 @@
       <dep package="x264"/>
       <dep package="libwebp"/>
       <dep package="ffmpeg"/>
+      <dep package="meta-gstreamer-1.0"/>
       <!--
       sdl doesn't build with newer versions of osx because of missing X header files
       <dep package="sdl"/>
