@@ -30,7 +30,7 @@ from xpra.os_util import strtobytes, POSIX
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
-DISPLAY_HAS_SCREEN_INDEX = os.environ.get("DISPLAY").split(":")[-1].find(".")>=0
+DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
 HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
 
 try:
