@@ -113,6 +113,7 @@ TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
+ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
@@ -3539,7 +3540,7 @@ class UIXpraClient(XpraClientBase):
         #adding the icon overlay (if enabled)
         from PIL import Image
         coding = bytestostr(coding)
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes)", self, width, height, coding, len(data))
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s", self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
         if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
             data = unpremultiply_argb(data)
@@ -3552,20 +3553,29 @@ class UIXpraClient(XpraClientBase):
             assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))
+        icon = img
         if self.overlay_image:
+            if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
+                #paste the application icon in the top-left corner,
+                #shrunk by ICON_SHRINKAGE pct
+                shrunk_width = max(1, width*ICON_SHRINKAGE//100)
+                shrunk_height = max(1, height*ICON_SHRINKAGE//100)
+                icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
+                icon = Image.new("RGBA", (width, height))
+                icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
             assert ICON_OVERLAY>0 and ICON_OVERLAY<=100
             overlay_width = max(1, width*ICON_OVERLAY//100)
             overlay_height = max(1, height*ICON_OVERLAY//100)
-            half = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
+            xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
             xpra_corner = Image.new("RGBA", (width, height))
-            xpra_corner.paste(half, (width-overlay_width, height-overlay_height, width, height))
-            composite = Image.alpha_composite(img, xpra_corner)
-            img = composite
+            xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
+            composite = Image.alpha_composite(icon, xpra_corner)
+            icon = composite
         if SAVE_WINDOW_ICONS:
             filename = "client-window-%i-icon-%i.png" % (wid, int(time.time()))
-            img.save(filename, "png")
+            icon.save(filename, "png")
             iconlog("client window icon saved to %s", filename)
-        return img
+        return icon
         
 
     def _process_configure_override_redirect(self, packet):
