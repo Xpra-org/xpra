@@ -982,7 +982,6 @@
 
   <metamodule id="meta-osx-xpra-python-deps">
     <dependencies>
-      <dep package="pygobject3"/>
       <dep package="gst-python"/>
       <dep package="setuptools"/>
       <dep package="python-zeroconf"/>
@@ -1013,8 +1012,6 @@
       <dep package="python-pyobjc-core"/>
       <dep package="python-pyobjc-framework-cocoa"/>
       <dep package="python-pyobjc-framework-quartz"/>
-      <dep package="gtkglext"/>
-      <dep package="pygtkglext"/>
       <dep package="gtk-mac-bundler"/>
     </dependencies>
   </metamodule>
@@ -1052,6 +1049,9 @@
     <dependencies>
       <dep package="sshpass"/>
       <dep package="python-enum34"/>
+      <dep package="gtkglext"/>
+      <dep package="pygtkglext"/>
+      <dep package="pygobject3"/>
       <dep package="meta-osx-xpra-python-deps"/>
       <dep package="meta-osx-xpra-codec-deps"/>
     </dependencies>
@@ -1060,6 +1060,7 @@
   <metamodule id="meta-osx-python3-xpra-deps">
     <dependencies>
       <dep package="sshpass"/>
+      <dep package="pygobject3"/>
       <dep package="meta-osx-xpra-python-deps"/>
       <dep package="meta-osx-xpra-codec-deps"/>
     </dependencies>
