@@ -3130,7 +3130,11 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if not displays:
             sys.stdout.write("No xpra sessions found\n")
             return 1
-        if len(displays)>1:
+        elif len(displays)==1:
+            #fall through, but use the display we found:
+            extra_args = displays
+        else:
+            assert len(displays)>1
             return multimode(displays)
     elif len(extra_args)>1:
         return multimode(extra_args)
