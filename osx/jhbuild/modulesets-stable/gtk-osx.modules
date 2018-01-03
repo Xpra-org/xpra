@@ -53,7 +53,7 @@
   <include href="gtk-osx-random.modules"/>
   <include href="gtk-osx-themes.modules"/>
   <include href="gtk-osx-unsupported.modules"/>
-  <include href="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
+  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
 
   <metamodule id="meta-gtk-osx-core">
     <dependencies>
@@ -78,14 +78,11 @@
 
   <autotools id="glib" autogen-sh="autoreconf"
              autogenargs="--with-pcre=internal">
-    <branch module="glib/2.48/glib-2.48.0.tar.xz"  version="2.48.0"
-            hash="sha256:744be6931ca914c68af98dc38ff6b0cf8381d65e335060faddfbf04c17147c34">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug747146-Build-cocoanotification-only-if-supported.patch" strip="1"/>
+    <branch module="glib/2.52/glib-2.52.2.tar.xz"  version="2.52.2"
+            hash="sha256:f00e5d9e2a2948b1da25fcba734a6b7a40f556de8bc9f528a53f6569969ac5d0">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-gint64-long-long.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-bug-772454-disable-kqueue.patch" strip="1"/>
+      <!-- Fix should be in glib-2.54.2 -->
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-2.52-Fallback-to-CFStringGetCSTring-if-CFStringGetC.patch" strip="1"/>
     </branch>
     <dependencies>
         <dep package="libffi"/>
