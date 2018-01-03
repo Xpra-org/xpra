@@ -917,9 +917,9 @@
   </autotools>
 
   <autotools id="apr" autogenargs="" autogen-sh="configure">
-	<branch module="/dist/apr/apr-1.5.3.tar.bz2"
+	<branch module="/dist/apr/apr-1.6.3.tar.bz2"
 		hash="sha256:131f06d16d7aabd097fa992a33eec2b6af3962f93e6d570a9bd4d85e95993172"
-		version="1.5.3"
+		version="1.6.3"
 		repo="www.eu.apache.org"/>
   </autotools>
 
