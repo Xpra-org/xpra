@@ -1652,8 +1652,7 @@ class ServerBase(ServerCore):
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
 
-    def _process_command_signal(self, proto, packet):
-        log.info("%s", packet)
+    def _process_command_signal(self, _proto, packet):
         pid = packet[1]
         signame = packet[2]
         if signame not in COMMAND_SIGNALS:
@@ -1671,6 +1670,7 @@ class ServerBase(ServerCore):
         if not sigval:
             log.error("Error: signal '%s' not found!", signame)
             return
+        log.info("sending signal %s to pid %i", signame, pid)
         try:
             os.kill(pid, sigval)
         except Exception as e:
