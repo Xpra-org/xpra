@@ -371,9 +371,9 @@
   <!-- versions newer than this have problems packaging pyobjc -->
   <distutils id="setuptools">
 	<branch repo="pypi.python.org"
-		module="https://pypi.python.org/packages/45/29/8814bf414e7cd1031e1a3c8a4169218376e284ea2553cc0822a6ea1c2d78/setuptools-36.6.0.zip"
-		hash="sha256:62074589522a798da243f47348f38020d55b6c945652e2f2c09d3a96299812b7"
-		version="36.6.0"/>
+		module="/packages/e9/c3/5986db56819bd88e1a250cad2a97249211686b1b7b5d95f9ab64d403a2cb/setuptools-38.2.5.zip"
+		hash="sha256:b080f276cc868670540b2c03cee06cc14d2faf9da7bec0f15058d1b402c94507"
+		version="38.2.5"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
