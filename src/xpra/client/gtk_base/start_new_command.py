@@ -21,8 +21,8 @@ gobject.threads_init()
 pango = import_pango()
 
 
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
-                                    WIN_POS_CENTER, STATE_NORMAL
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, window_defaults, \
+                                    WIN_POS_CENTER
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -41,11 +41,10 @@ class StartNewCommand(object):
     def __init__(self, run_callback=None, can_share=False):
         self.run_callback = run_callback
         self.window = gtk.Window()
+        window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
-        self.window.set_border_width(20)
         self.window.set_title("Start New Command")
-        self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
         icon_pixbuf = self.get_icon("forward.png")
         if icon_pixbuf:

@@ -20,8 +20,8 @@ pango = import_pango()
 glib = import_glib()
 
 
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
-                                    WIN_POS_CENTER, STATE_NORMAL
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, window_defaults, \
+                                    WIN_POS_CENTER
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -39,11 +39,10 @@ class UpdateStatusWindow(object):
 
     def __init__(self):
         self.window = gtk.Window()
+        window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 200)
-        self.window.set_border_width(20)
         self.window.set_title("Xpra Version Check")
-        self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
         icon = self.get_icon("update.png")
         if icon:

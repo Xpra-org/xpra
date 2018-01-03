@@ -981,6 +981,10 @@ def title_box(label_str):
     return eb
 
 
+def window_defaults(window):
+    window.set_border_width(20)
+    #window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
+
 
 #utility method to ensure there is always only one CheckMenuItem
 #selected in a submenu:

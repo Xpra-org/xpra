@@ -23,7 +23,7 @@ pango = import_pango()
 from xpra.os_util import monotonic_time, bytestostr
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, \
-                                    TableBuilder, WIN_POS_CENTER, STATE_NORMAL
+                                    TableBuilder, WIN_POS_CENTER, window_defaults
 from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 log = Logger("util")
@@ -46,11 +46,10 @@ class OpenRequestsWindow(object):
         self.requests = []
         self.expire_labels = {}
         self.window = gtk.Window()
+        window_defaults(self.window)
         self.window.connect("destroy", self.close)
         self.window.set_default_size(400, 150)
-        self.window.set_border_width(20)
         self.window.set_title("Transfers")
-        self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
         icon_pixbuf = self.get_icon("download.png")
         if icon_pixbuf:

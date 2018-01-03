@@ -31,7 +31,7 @@ gui_init()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
-                                    OptionMenu, choose_file, set_use_tray_workaround, \
+                                    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -161,11 +161,10 @@ class ApplicationWindow:
 
     def create_window(self):
         self.window = gtk.Window()
+        window_defaults(self.window)
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(400, 260)
-        self.window.set_border_width(20)
         self.window.set_title("Xpra Launcher")
-        self.window.modify_bg(STATE_NORMAL, gdk.Color(red=65535, green=65535, blue=65535))
 
         self.window.set_position(WIN_POS_CENTER)
 
