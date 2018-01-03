@@ -4,11 +4,11 @@
 <moduleset>
   <repository type="tarball" name="ftp.gnome.org" default="yes"
               href="http://ftp.gnome.org/pub/GNOME/sources/"/>
-  <repository type='tarball' name='ftp.gnupg.org' href="ftp://ftp.gnupg.org/" />
+  <repository type='tarball' name='gnupg.org' href="https://gnupg.org/ftp/" />
   <repository type="tarball" name="iso-codes"
 	      href="http://pkg-isocodes.alioth.debian.org/downloads/"/>
-  <repository type='tarball' name='libproxy.google.com'
-              href='http://libproxy.googlecode.com/files/'/>
+  <repository type='tarball' name='github-tarball'
+              href='https://github.com/'/>
   <repository type="tarball" name="curl.haxx.se"
               href="http://curl.haxx.se/download/"/>
   <repository type="tarball" name="p11-glue"
@@ -29,15 +29,16 @@
     </dependencies>
   </autotools>
 
+  <!-- Iso-codes >= 3.68 requires Python3, a dependency too far. -->
   <autotools id="iso-codes" autogen-sh="configure">
-    <branch module="iso-codes-3.57.tar.xz" version="3.57"
+    <branch module="iso-codes-3.67.tar.xz" version="3.67"
 	    repo="iso-codes"/>
   </autotools>
 
   <autotools id="p11-kit" autogen-sh="configure"
              autogenargs="--without-trust-paths">
-    <branch repo="p11-glue" version="0.22.1"
-	    module="p11-kit-0.22.1.tar.gz">
+    <branch repo="p11-glue" version="0.23.2"
+	    module="p11-kit-0.23.2.tar.gz">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/p11-kit-dirfd.patch"
        strip="1"/>
     </branch>
@@ -47,8 +48,8 @@
   </autotools>
 
   <cmake id='libproxy' cmakeargs="-DWITH_PYTHON=OFF">
-    <branch version='0.4.10' module='libproxy-0.4.10.tar.gz'
-            repo='libproxy.google.com'>
+    <branch version='0.4.14' module='libproxy/libproxy/releases/download/0.4.14/libproxy-0.4.14.tar.xz'
+            repo='github-tarball'>
     </branch>
     <dependencies>
     </dependencies>
@@ -56,8 +57,8 @@
 
   <autotools id="libgnome-keyring" autogenargs="--disable-tests"
 	     autogen-sh="configure">
-    <branch module="libgnome-keyring/3.6/libgnome-keyring-3.6.0.tar.xz"
-	    version="3.6.0" hash="sha256:6dca37fb7b37f800f498031ffe303a567410bec09a9bdd877a18865dafcc9830">
+    <branch module="libgnome-keyring/3.12/libgnome-keyring-3.12.0.tar.xz"
+	    version="3.12.0" hash="sha256:c4c178fbb05f72acc484d22ddb0568f7532c409b0a13e06513ff54b91e947783">
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -70,8 +71,8 @@
   <autotools id="libgpg-error" autogen-sh="autogen.sh"
              autogenargs="--disable-doc"
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
-    <branch repo="ftp.gnupg.org" version="1.17"
-            module="gcrypt/libgpg-error/libgpg-error-1.17.tar.bz2">
+    <branch repo="gnupg.org" version="1.27"
+            module="gcrypt/libgpg-error/libgpg-error-1.27.tar.bz2">
             <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgpg-error-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
@@ -80,8 +81,8 @@
   <autotools id="libgcrypt" autogen-sh="configure"
              autogenargs="--disable-asm --disable-doc"
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
-    <branch repo="ftp.gnupg.org" version="1.6.3"
-            module="gcrypt/libgcrypt/libgcrypt-1.6.3.tar.bz2">
+    <branch repo="gnupg.org" version="1.7.6"
+            module="gcrypt/libgcrypt/libgcrypt-1.7.6.tar.bz2">
             <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
@@ -90,9 +91,15 @@
     </dependencies>
   </autotools>
 
-  <!-- 10.5 has 7.16.3, which is too old for some things, and also doesn't
-  provide a pkgconfig file. Otherwise can be skipped. -->
-  <autotools id="libcurl" autogen-sh="configure">
-    <branch repo="curl.haxx.se" module="curl-7.47.1.tar.bz2" version="7.47.1"/>
+   <autotools id="gnome-keyring"
+	      autogenargs="--disable-pam --without-root-certs">
+     <branch module="gnome-keyring/3.20/gnome-keyring-3.20.0.tar.xz"
+             version="3.20.0"
+             hash="sha256:bc17cecd748a0e46e302171d11c3ae3d76bba5258c441fabec3786f418e7ec99"/>
+    <dependencies>
+      <dep package="gtk+"/>
+      <dep package="libgcrypt"/>
+      <dep package="libtasn1"/>
+    </dependencies>
   </autotools>
 </moduleset>

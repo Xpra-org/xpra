@@ -18,14 +18,8 @@
   </metamodule>
 
   <autotools id="gjs" autogenargs="--enable-installed-tests">
-    <branch version="1.42.0" module="gjs/1.42/gjs-1.42.0.tar.xz"
-            hash="sha256:0c9afb7d5be6ead5b68059596f08eb7c3902b1676ee9c8846aa8df09647dba13">
-      <patch strip="1"
-             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737701-Don-t-error-out-on-missing-cairo-xlib.pc.patch"/>
-      <patch strip="1"
-             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-737702-Use-R-instead-of-rpath.patch"/>
-      <patch strip="1"
-             file="https://git.gnome.org/browse/gtk-osx/plain/patches/gjs-Bug-740696-Use-m4-directory-for-macros.patch"/>
+    <branch version="1.48.1" module="gjs/1.48/gjs-1.48.1.tar.xz"
+            hash="sha256:21198950472c3c8f4a4679b0292c663faed04b07ee5de026bfd19eaa4ed15a84">
     </branch>
     <dependencies>
       <dep package="gobject-introspection"/>
@@ -50,8 +44,8 @@
 
   <autotools id="nspr" autogen-sh="mozilla/nsprpub/configure"
              autogenargs="--enable-64bit" check-target="false">
-    <branch repo="mozilla" version="4.9.2"
-            module="nspr/releases/v4.9.2/src/nspr-4.9.2.tar.gz">
+    <branch repo="mozilla" version="4.14"
+            module="nspr/releases/v4.14/src/nspr-4.14.tar.gz">
       <patch file="nspr.autogen.patch" strip="1"/>
       <patch file="nspr.config_64bits.patch" strip="1"/>
       <patch file="nspr.hostcompiler.patch" strip="1"/>

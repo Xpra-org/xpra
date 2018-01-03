@@ -2,11 +2,11 @@
 <!DOCTYPE moduleset SYSTEM "moduleset.dtd">
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
-  <repository type="tarball" name="ftp.gnome.org" default="yes"
+  <repository type="tarball" name="ftp.gnome.org" default="yes" 
               href="http://ftp.gnome.org/pub/GNOME/sources/"/>
   <repository type="git" name="git.gnome.org"
               href="git://git.gnome.org/"/>
-  <repository type="tarball" name="sourceforge"
+  <repository type="tarball" name="sourceforge" 
 	      href="http://downloads.sourceforge.net/sourceforge/"/>
   <repository type="tarball" name="tango.freedesktop.org"
               href="http://tango.freedesktop.org/releases/"/>
@@ -53,8 +53,8 @@
   </autotools>
 
   <autotools id="adwaita-icon-theme" autogen-sh="configure">
-    <branch module="adwaita-icon-theme/3.16/adwaita-icon-theme-3.16.0.tar.xz"
-            version="3.16.0" hash="sha256:a3c8ad3b099ca571b423811a20ee9a7a43498cfa04d299719ee43cd7af6f6eb1"/>
+    <branch module="adwaita-icon-theme/3.24/adwaita-icon-theme-3.24.0.tar.xz"
+            version="3.24.0" hash="sha256:ccf79ff3bd340254737ce4d28b87f0ccee4b3358cd3cd5cd11dc7b42f41b272a"/>
     <dependencies>
       <dep package="librsvg"/>
       <dep package="hicolor-icon-theme"/>
@@ -64,8 +64,8 @@
 
  <autotools id="gnome-themes-standard" autogen-sh="configure"
 	    autogenargs='--disable-gtk2-engine'>
-    <branch module="gnome-themes-standard/3.16/gnome-themes-standard-3.16.0.tar.xz"
-            version="3.16.0" hash="sha256:4ce9cbac71c74d1426b73ad8ca37a29b3267c66f94d2fb4de5e619fab25bd94f"/>
+    <branch module="gnome-themes-standard/3.22/gnome-themes-standard-3.22.3.tar.xz"
+            version="3.22.3" hash="sha256:61dc87c52261cfd5b94d65e8ffd923ddeb5d3944562f84942eeeb197ab8ab56a"/>
     <dependencies>
       <dep package="librsvg"/>
       <dep package="adwaita-icon-theme"/>
@@ -85,19 +85,27 @@
 	    hash="sha256:e6a2af72674403d06c03e067d915004e8d9cdeec206f3350c7f3ee595b139912"/>
   </autotools>
 
+  <!-- librsvg is converting to the Rust language. This requires
+       substantial infrastructure that's resistant to installing with
+       jhbuild, so we'll freeze at the 2.40 branch. -->
   <autotools id="librsvg" autogenargs="--disable-Bsymbolic">
-    <branch module="librsvg/2.40/librsvg-2.40.5.tar.xz" version="2.40.5"
-	    hash="sha256:d14d7b3e25023ce34302022fd7c9b3a468629c94dff6c177874629686bfc71a7"/>
+    <branch module="librsvg/2.40/librsvg-2.40.17.tar.xz" version="2.40.17"
+	    hash="sha256:e6f6c5cbecc405bb945c7cd15061276035ae3173bbb3bb25e8a916779c7f69cc"/>
     <dependencies>
       <dep package="libcroco"/>
       <dep package="meta-gtk-osx-freetype"/>
     </dependencies>
+    <after>
+<!-- Circular dependency if we depend on meta-gtk-osx or meta-gtk-osx-gtk3 -->
+      <dep package="gtk+"/>
+      <dep package="gtk+-3.0"/>
+    </after>
   </autotools>
 
   <autotools id="libcroco" autogenargs="--disable-Bsymbolic"
 	     autogen-sh="configure">
-    <branch module="libcroco/0.6/libcroco-0.6.8.tar.xz" version="0.6.8"
-	    hash="sha256:ea6e1b858c55219cefd7109756bff5bc1a774ba7a55f7d3ccd734d6b871b8570"/>
+    <branch module="libcroco/0.6/libcroco-0.6.12.tar.xz" version="0.6.12"
+	    hash="sha256:ddc4b5546c9fb4280a5017e2707fbd4839034ed1aba5b7d4372212f34f84f860"/>
   </autotools>
 
   <autotools id="libccss" autogenargs="--disable-examples">
@@ -118,13 +126,4 @@
     </after>
   </autotools>
 
-  <autotools id="gtk-quartz-engine" autogen-sh="autogen.sh">
-    <branch module="gtk-osx/gtk-quartz-engine-0.2.tar.gz"
-            repo="sourceforge" version="0.2">
-       <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/quartz-style-fix.patch" strip="0"/>
-    </branch>
-    <after>
-      <dep package="meta-gtk-osx-core"/>
-    </after>
-  </autotools>
 </moduleset>

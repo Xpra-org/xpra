@@ -2,9 +2,9 @@
 <!DOCTYPE moduleset SYSTEM "moduleset.dtd">
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
-  <repository type="tarball" name="ftp.gnome.org" default="yes"
+  <repository type="tarball" name="ftp.gnome.org" default="yes" 
               href="http://ftp.gnome.org/pub/GNOME/sources/"/>
-  <repository type="tarball" name="doxygen"
+  <repository type="tarball" name="doxygen" 
               href="http://ftp.stack.nl/pub/users/dimitri/"/>
   <repository type="tarball" name="cairographics"
               href="http://cairographics.org/releases/"/>
@@ -21,27 +21,35 @@
     </dependencies>
   </metamodule>
 
+  <autotools id="mm-common" autogen-sh="configure">
+    <branch module="mm-common/0.9/mm-common-0.9.10.tar.xz" version="0.9.10"/>
+  </autotools>
+
   <autotools id="cairomm" autogen-sh="configure">
-    <branch module="cairomm-1.11.2.tar.gz" version="1.11.2"
-	    hash="sha1:35e190a03f760924bece5dc1204cc36b3583c806"
-            repo="cairographics" />
+    <branch module="cairomm-1.12.2.tar.gz" version="1.12.2"
+	    hash="sha1:621546f32221a2ddc079167a13ce5b5409bed704"
+            repo="cairographics">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/cairomm-Bug-100894-Cairomm-compile-failure-if-no-cairo-ft.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="cairo"/>
     </dependencies>
   </autotools>
 
-  <autotools id="glibmm" autogen-sh="configure">
-    <branch module="glibmm/2.42/glibmm-2.42.0.tar.xz" version="2.42.0"
-            hash="sha256:985083d97378d234da27a7243587cc0d186897a4b2d3c1286f794089be1a3397"/>
+  <autotools id="glibmm" autogen-sh="autoreconf">
+    <branch module="glibmm/2.52/glibmm-2.52.1.tar.xz" version="2.52.1"
+            hash="sha256:dc19d20fb6b24d6b6da7cbe1b2190b38ae6ad64e6b93fecdcce71b995f43c975">
+    </branch>
     <dependencies>
       <dep package="glib"/>
       <dep package="libsigc++2"/>
+      <dep package="mm-common"/>
     </dependencies>
   </autotools>
 
   <autotools id="pangomm" autogen-sh="configure">
-    <branch module="pangomm/2.34/pangomm-2.34.0.tar.xz" version="2.34.0"
-            hash="sha256:0e82bbff62f626692a00f3772d8b17169a1842b8cc54d5f2ddb1fec2cede9e41"/>
+    <branch module="pangomm/2.40/pangomm-2.40.1.tar.xz" version="2.40.1"
+            hash="sha256:9762ee2a2d5781be6797448d4dd2383ce14907159b30bc12bf6b08e7227be3af"/>
     <dependencies>
       <dep package="glibmm"/>
       <dep package="cairomm"/>
@@ -50,8 +58,8 @@
   </autotools>
 
   <autotools id="atkmm" autogen-sh="configure">
-    <branch module="atkmm/2.22/atkmm-2.22.7.tar.xz" version="2.22.7"
-	    hash="sha256:bfbf846b409b4c5eb3a52fa32a13d86936021969406b3dcafd4dd05abd70f91b"/>
+    <branch module="atkmm/2.24/atkmm-2.24.2.tar.xz" version="2.24.2"
+	    hash="sha256:ff95385759e2af23828d4056356f25376cfabc41e690ac1df055371537e458bd"/>
     <dependencies>
       <dep package="glibmm"/>
       <dep package="cairomm"/>
@@ -66,14 +74,14 @@
      website. If you want the docs, install it separately and renable
      documentation in your jhbuildrc-custom. -->
   <autotools id="libsigc++2" autogen-sh="configure"
-	     autogen-args="--disable-documentation">
-    <branch module="libsigc++/2.4/libsigc++-2.4.0.tar.xz" version="2.2.0"
-            hash="sha256:7593d5fa9187bbad7c6868dce375ce3079a805f3f1e74236143bceb15a37cd30"/>
+	     autogenargs="--disable-documentation">
+    <branch module="libsigc++/2.10/libsigc++-2.10.0.tar.xz" version="2.10.0"
+            hash="sha256:f843d6346260bfcb4426259e314512b99e296e8ca241d771d21ac64f28298d81"/>
   </autotools>
 
   <autotools id="gtkmm3" autogen-sh="configure">
-    <branch module="gtkmm/3.14/gtkmm-3.14.0.tar.xz" version="3.14.0"
-            hash="sha256:d9f528a62c6ec226fa08287c45c7465b2dce5aae5068e9ac48d30a64a378e48b">
+    <branch module="gtkmm/3.22/gtkmm-3.22.0.tar.xz" version="3.22.0"
+            hash="sha256:05da4d4b628fb20c8384630ddf478a3b5562952b2d6181fe28d58f6cbc0514f5">
     </branch>
     <dependencies>
       <dep package="glibmm"/>
@@ -85,8 +93,8 @@
   </autotools>
 
   <autotools id="gtkmm" autogen-sh="configure">
-    <branch module="gtkmm/2.24/gtkmm-2.24.4.tar.xz" version="2.24.4"
-            hash="sha256:443a2ff3fcb42a915609f1779000390c640a6d7fd19ad8816e6161053696f5ee"/>
+    <branch module="gtkmm/2.24/gtkmm-2.24.5.tar.xz" version="2.24.5"
+            hash="sha256:0680a53b7bf90b4e4bf444d1d89e6df41c777e0bacc96e9c09fc4dd2f5fe6b72"/>
     <dependencies>
       <dep package="glibmm"/>
       <dep package="cairomm"/>
