@@ -733,9 +733,9 @@
 
   <distutils id="python-macholib">
 	<branch repo="pypi.python.org"
-		module="/packages/a0/de/831116fb6cbbe27eadd66ab87a22af74fe445d3b73d6042e12eaf3fdb964/macholib-1.8.tar.gz"
-		hash="sha256:323c9c8b85768244554b3c040808ed6393c783aa6eb1122e04dc8905f442e559"
-		version="1.8"/>
+		module="https://pypi.python.org/packages/70/54/12d547ebb73de8412120a293ab013e61caef36bf712d76c9a574020d2796/macholib-1.9.tar.gz"
+		hash="sha256:9aeec52d7da59912b15445d08b08d95cee48414f01dd035be06f04a825973c08"
+		version="1.9"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -746,9 +746,9 @@
 
   <distutils id="python-modulegraph">
 	<branch repo="pypi.python.org"
-		module="/packages/55/4e/67dff18461839a36fd60b2efdc40907f59578c93b9f89fd32024830a8000/modulegraph-0.15.tar.gz"
-		hash="sha256:732be924d772eed19073b8eeebd9c4cdc2f66ce711e39dd0ea486058fd2655a7"
-		version="0.15"/>
+		module="https://pypi.python.org/packages/de/4e/91327287864f179be193e9d1fcb957b0e3d4d5f2ef38f6ac95897f4e4a4e/modulegraph-0.16.tar.gz"
+		hash="sha256:0ba04a67b65c936f707c76ffd819a52f370ff2bd36664338d53a9b271f23d1e4"
+		version="0.16"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
@@ -759,9 +759,9 @@
 
   <distutils id="python-altgraph">
 	<branch repo="pypi.python.org"
-		module="/packages/02/e8/e3e0bef46dc329afec0614d63e3c17fd799e41f8d235e8bd4c3b0175de91/altgraph-0.14.tar.gz"
-		hash="sha256:481bac8feb1716bb8e485e652ed94002cc11304abccb2911f8f4574fc9dc207b"
-		version="0.14"/>
+		module="/packages/ff/e5/c4d83ca50043951eec43449aa74f4aa4fde1695f901dcf9d213efea3abb1/altgraph-0.15.tar.gz"
+		hash="sha256:fc28b986a68fde8d3ff0e6d6ba3fbdd2cd562d11d45ef7c7735fbd826c9eec2e"
+		version="0.15"/>
         <dependencies>
                 <dep package="python"/>
         </dependencies>
