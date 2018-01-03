@@ -980,39 +980,11 @@
     </dependencies>
   </autotools>
 
-  <metamodule id="meta-osx-xpra-deps">
+  <metamodule id="meta-osx-xpra-python-deps">
     <dependencies>
-      <dep package="yasm"/>
-      <dep package="nasm"/>
-      <dep package="sshpass"/>
-      <dep package="liborc"/>
-      <dep package="libogg"/>
-      <dep package="libtheora"/>
-      <dep package="libvorbis"/>
-      <dep package="speex"/>
-      <dep package="lame"/>
-      <dep package="twolame"/>
-      <dep package="libmad"/>
-      <dep package="faac"/>
-      <dep package="faad2"/>
-      <dep package="flac"/>
-      <dep package="opus"/>
-      <dep package="lzo"/>
-      <dep package="libyuv"/>
-      <dep package="libvpx"/>
-      <dep package="x264"/>
-      <dep package="libwebp"/>
-      <dep package="ffmpeg"/>
-      <!--
-      sdl doesn't build with newer versions of osx because of missing X header files
-      <dep package="sdl"/>
-      -->
       <dep package="pygobject3"/>
       <dep package="meta-gstreamer-1.0"/>
       <dep package="gst-python"/>
-      <dep package="gmplib"/>
-      <dep package="openssl"/>
-      <dep package="mpfr"/>
       <dep package="setuptools"/>
       <dep package="python-zeroconf"/>
       <dep package="python-netifaces"/>
@@ -1027,10 +999,10 @@
       <dep package="python-twisted"/>
       <dep package="python-nose"/>
       <dep package="python-lz4"/>
+      <dep package="lzo"/>
       <dep package="python-lzo"/>
       <dep package="python-ipaddress"/>
       <dep package="python-idna"/>
-      <dep package="python-enum34"/>
       <dep package="python-cryptography"/>
       <dep package="python-rencode"/>
       <dep package="python-yaml"/>
@@ -1045,6 +1017,51 @@
       <dep package="gtkglext"/>
       <dep package="pygtkglext"/>
       <dep package="gtk-mac-bundler"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-osx-xpra-codec-deps">
+    <dependencies>
+      <dep package="yasm"/>
+      <dep package="nasm"/>
+      <dep package="liborc"/>
+      <dep package="libogg"/>
+      <dep package="libtheora"/>
+      <dep package="libvorbis"/>
+      <dep package="speex"/>
+      <dep package="lame"/>
+      <dep package="twolame"/>
+      <dep package="libmad"/>
+      <dep package="faac"/>
+      <dep package="faad2"/>
+      <dep package="flac"/>
+      <dep package="opus"/>
+      <dep package="libyuv"/>
+      <dep package="libvpx"/>
+      <dep package="x264"/>
+      <dep package="libwebp"/>
+      <dep package="ffmpeg"/>
+      <!--
+      sdl doesn't build with newer versions of osx because of missing X header files
+      <dep package="sdl"/>
+      -->
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-osx-xpra-deps">
+    <dependencies>
+      <dep package="sshpass"/>
+      <dep package="python-enum34"/>
+      <dep package="meta-osx-xpra-python-deps"/>
+      <dep package="meta-osx-xpra-codec-deps"/>
+    </dependencies>
+  </metamodule>
+
+  <metamodule id="meta-osx-python3-xpra-deps">
+    <dependencies>
+      <dep package="sshpass"/>
+      <dep package="meta-osx-xpra-python-deps"/>
+      <dep package="meta-osx-xpra-codec-deps"/>
     </dependencies>
   </metamodule>
 
