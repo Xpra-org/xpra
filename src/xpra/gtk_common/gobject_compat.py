@@ -168,11 +168,11 @@ def import_cairo():
     return cairo
 
 def import_gtkosx_application2():
-    from gi.repository import GtkosxApplication #@UnresolvedImport
-    return GtkosxApplication
-def import_gtkosx_application3():
     import gtkosx_application                   #@UnresolvedImport
     return gtkosx_application
+def import_gtkosx_application3():
+    from gi.repository import GtkosxApplication #@UnresolvedImport
+    return GtkosxApplication
 def import_gtkosx_application():
     return _try_import(import_gtkosx_application3, import_gtkosx_application2)
 
