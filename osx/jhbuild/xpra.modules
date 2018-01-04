@@ -503,6 +503,20 @@
     </after>
   </distutils>
 
+  <distutils id="python-asn1crypto">
+	<branch repo="github.com"
+		module="/wbond/asn1crypto/archive/0.24.0.tar.gz"
+		hash="sha256:d2a82bb3c29e1abcb376b59679510b58dd796c813f8983f2db9b45e9ab228190"
+		checkoutdir="asn1crypto-0.24.0"
+		version="0.24.0"/>
+        <dependencies>
+                <dep package="python"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+        </after>
+  </distutils>
+
   <distutils id="python-cryptography">
 	<branch repo="pypi.python.org"
 		module="/packages/78/c5/7188f15a92413096c93053d5304718e1f6ba88b818357d05d19250ebff85/cryptography-2.1.4.tar.gz"
@@ -513,6 +527,7 @@
 		<dep package="openssl"/>
 		<dep package="cffi"/>
 		<dep package="six"/>
+		<dep package="python-asn1crypto"/>
 		<dep package="python-enum34"/>
 		<dep package="pyparsing"/>
 		<dep package="packaging"/>
