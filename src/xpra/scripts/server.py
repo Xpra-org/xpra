@@ -968,6 +968,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 log.error("Xpra 'start' subcommand runs as a compositing manager")
                 log.error(" it cannot use a display which lacks the XComposite extension!")
                 return 1
+            assert not PYTHON3
             if starting:
                 #check for an existing window manager:
                 from xpra.x11.gtk2.wm import wm_check
@@ -977,7 +978,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             from xpra.x11.server import XpraServer
             app = XpraServer(clobber)
         else:
-            assert starting_desktop
+            assert starting_desktop and not PYTHON3
             from xpra.x11.desktop_server import XpraDesktopServer
             app = XpraDesktopServer()
         app.init_virtual_devices(devices)
