@@ -522,26 +522,28 @@ VIEW_TO_WINDOW = weakref.WeakValueDictionary()
 
 def add_window_hooks(window):
     window.connect("focus-in-event", window_focused)
-    global VIEW_TO_WINDOW
-    try:
-        gdkwin = window.get_window()
-        VIEW_TO_WINDOW[gdkwin.nsview] = window
-    except:
-        log("add_window_hooks(%s)", window, exc_info=True)
-        log.error("Error: failed to associate window %s with its nsview", window, exc_info=True)
+    if WHEEL and PYTHON2:
+        global VIEW_TO_WINDOW
+        try:
+            gdkwin = window.get_window()
+            VIEW_TO_WINDOW[gdkwin.nsview] = window
+        except:
+            log("add_window_hooks(%s)", window, exc_info=True)
+            log.error("Error: failed to associate window %s with its nsview", window, exc_info=True)
 
 def remove_window_hooks(window):
     try:
         del window_menus[window]
     except:
         pass
-    global VIEW_TO_WINDOW
-    #this should be redundant as we use weak references:
-    try:
-        gdkwin = window.get_window()
-        del VIEW_TO_WINDOW[gdkwin.nsview]
-    except:
-        pass
+    if WHEEL and PYTHON2:
+        global VIEW_TO_WINDOW
+        #this should be redundant as we use weak references:
+        try:
+            gdkwin = window.get_window()
+            del VIEW_TO_WINDOW[gdkwin.nsview]
+        except:
+            pass
 
 
 def _set_osx_window_menu(add, wid, window, menus, application_action_callback=None, window_action_callback=None):
