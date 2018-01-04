@@ -9,7 +9,6 @@ import math
 import ctypes
 import struct
 import weakref
-import gtkosx_application           #@UnresolvedImport
 
 import objc                         #@UnresolvedImport
 import Quartz                       #@UnresolvedImport
@@ -73,6 +72,8 @@ macapp = None
 def get_OSXApplication():
     global macapp
     if macapp is None:
+        from xpra.gtk_common.gobject_compat import import_gtkosx_application
+        gtkosx_application = import_gtkosx_application()
         macapp = gtkosx_application.Application()
         macapp.connect("NSApplicationWillTerminate", quit_handler)
     return macapp
