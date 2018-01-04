@@ -809,9 +809,9 @@ class XpraClientBase(FileTransferHandler):
             printlog("cleanup_printing=%s", cleanup_printing)
             cleanup_printing()
         except Exception as e:
-            log("cleanup_printing()", exc_info=True)
-            log.warn("Warning: failed to cleanup printing subsystem:")
-            log.warn(" %s", e)
+            printlog("cleanup_printing()", exc_info=True)
+            printlog.warn("Warning: failed to cleanup printing subsystem:")
+            printlog.warn(" %s", e)
 
     def send_printers(self, *args):
         printlog("send_printers%s timer=%s", args, self.send_printers_timer)
