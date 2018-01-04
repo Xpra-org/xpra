@@ -1629,6 +1629,8 @@ else:
         #Note: despite our best efforts, py2app will not copy all the modules we need
         #so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
+        #needed by python-lz4:
+        add_modules("distutils")
         py2app_options = {
             'iconfile'          : '../osx/xpra.icns',
             'plist'             : Plist,
