@@ -901,7 +901,8 @@ class ServerBase(ServerCore):
     def get_full_child_command(self, cmd, use_wrapper=True):
         #make sure we have it as a list:
         if type(cmd) not in (list, tuple):
-            cmd = [str(cmd)]
+            import shlex
+            cmd = shlex.split(str(cmd))
         if not use_wrapper or not self.exec_wrapper:
             return cmd
         return self.exec_wrapper + cmd
