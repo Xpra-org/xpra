@@ -144,7 +144,7 @@ if [ -e "site-packages.zip" ]; then
 	unzip -nq site-packages.zip
 	rm site-packages.zip
 else
-	unzip ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
+	unzip -nq ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
 fi
 popd
 
