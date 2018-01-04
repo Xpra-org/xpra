@@ -26,7 +26,7 @@ clipboardlog = Logger("gtk", "client", "clipboard")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, DEFAULT_METADATA_SUPPORTED
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, csv, DEFAULT_METADATA_SUPPORTED
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
@@ -894,7 +894,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backends found")
                 self.client_supports_opengl = False
-                self.opengl_props["info"] = "disabled: no supported backends - tried: %s" % backends
+                self.opengl_props["info"] = "disabled: no supported backends - tried: %s" % csv(backends)
                 return
             opengllog("init_opengl: found props %s", self.opengl_props)
             self.GLClientWindowClass = gl_client_window_module.GLClientWindow
