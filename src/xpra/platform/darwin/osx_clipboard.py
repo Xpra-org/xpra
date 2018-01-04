@@ -68,7 +68,7 @@ def setup_watcher(get_change_count):
                     log("error in change callback %s: %s", x, e)
 
     from xpra.platform.ui_thread_watcher import get_UI_watcher
-    w = get_UI_watcher()
+    w = get_UI_watcher(glib.timeout_add)
     if w is None:
         log.warn("Warning: no UI watcher instance available")
         log.warn(" cannot detect clipboard change events")

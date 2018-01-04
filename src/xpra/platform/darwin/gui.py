@@ -18,6 +18,7 @@ from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@Unresolve
 from AppKit import NSApp, NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotificationDefaultSoundName #@UnresolvedImport
 
+from xpra.os_util import PYTHON2
 from xpra.util import envbool, envint, roundup
 from xpra.client.notifications.notifier_base import NotifierBase
 
@@ -628,7 +629,7 @@ class Delegate(NSObject):
         log("applicationDidFinishLaunching_(%s)", notification)
         if SLEEP_HANDLER:
             self.register_sleep_handlers()
-        if WHEEL:
+        if WHEEL and PYTHON2:
             from xpra.platform.darwin.gdk_bindings import init_quartz_filter, set_wheel_event_handler   #@UnresolvedImport
             set_wheel_event_handler(self.wheel_event_handler)
             init_quartz_filter()
