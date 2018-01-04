@@ -34,7 +34,7 @@ def do_get_resources_dir():
             if _gtkosx_warning_ is False:
                 _gtkosx_warning_ = True
                 #delayed import to prevent cycles:
-                get_util_logger().error("ERROR: gtkosx_application module is missing - trying to continue anyway")
+                get_util_logger().error("Error: gtkosx_application module is missing - trying to continue anyway")
     else:
         debug("XPRA_SKIP_UI is set, not importing gtkosx_application")
     if rsc is None:
