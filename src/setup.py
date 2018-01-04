@@ -1702,7 +1702,7 @@ toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus"
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 
-if OSX:
+if OSX and not PYTHON3:
     quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
     add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
                     "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/Cocoa.h",
@@ -1803,9 +1803,13 @@ if not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED):
 
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
+    if OSX:
+        pycairo = "py3cairo"
+    else:
+        pycairo = "pycairo"
     cython_add(Extension("xpra.client.gtk3.cairo_workaround",
                 ["xpra/client/gtk3/cairo_workaround.pyx"],
-                **pkgconfig("pycairo")
+                **pkgconfig(pycairo)
                 ))
 
 if client_ENABLED or server_ENABLED:
