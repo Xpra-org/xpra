@@ -124,7 +124,8 @@ fi
 echo
 echo "*******************************************************************************"
 echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
-gtk-mac-bundler Xpra.bundle
+#we have to make sure we use python2 here (not ported yet):
+python2 ~/.local/bin/gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
 	echo "ERROR: gtk-mac-bundler failed"
 	exit 1
