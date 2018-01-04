@@ -21,15 +21,23 @@ python_lz4_version = None
 lz4_version = None
 try:
     import lz4
+    from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
     try:
-        from lz4 import VERSION as python_lz4_version   #@UnresolvedImport
-        from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
+        #using unicode for version numbers is dumb:
+        python_lz4_version = python_lz4_version.encode("latin1")
     except:
-        #older versions (0.7 and older):
-        import pkg_resources
-        lz4_VERSION = pkg_resources.get_distribution("lz4").version
-    has_lz4 = True
-    if hasattr(lz4, "block"):
+        pass
+    #newer versions moved the version information to lz4.version.version
+    #breaking backwards compatibility!
+    try:
+        from lz4.version import version as lz4_version
+    except ImportError as e:
+        log("outdated version of python-lz4: %s", e)
+        try:
+            from lz4 import LZ4_VERSION as lz4_version   #@UnresolvedImport
+        except Exception as e:
+            log("really outdated version of python-lz4: %s", e)
+    try:
         from lz4.block import compress, decompress
         LZ4_uncompress = decompress
         def lz4_compress(packet, level):
@@ -39,7 +47,8 @@ try:
             elif level<=3:
                 return flag, compress(packet, mode="fast", acceleration=8-level*2)
             return flag, compress(packet)
-    else:
+    except ImportError as e:
+        log("outdated version of python-lz4: %s", e)
         from lz4 import LZ4_compress, LZ4_uncompress, compressHC        #@UnresolvedImport
         if hasattr(lz4, "LZ4_compress_fast"):
             from lz4 import LZ4_compress_fast     #@UnresolvedImport
