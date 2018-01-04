@@ -379,7 +379,7 @@ external_excludes = [
                     "curses", "pdb",
                     "urllib2", "tty",
                     "cookielib", "ftplib", "httplib", "fileinput",
-                    "distutils", "setuptools", "doctest"
+                    "setuptools", "doctest"
                     ]
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
@@ -1969,6 +1969,8 @@ else:
         #Note: despite our best efforts, py2app will not copy all the modules we need
         #so the make-app.sh script still has to hack around this problem.
         add_modules(*external_includes)
+        #needed by python-lz4:
+        add_modules("distutils")
         py2app_options = {
             'iconfile'          : '../osx/xpra.icns',
             'plist'             : Plist,
