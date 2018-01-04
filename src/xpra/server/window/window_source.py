@@ -1912,13 +1912,16 @@ class WindowSource(object):
     def record_congestion_event(self, late_pct, ldata, elapsed_ms):
         if not BANDWIDTH_DETECTION:
             return
+        gs = self.global_statistics
+        if not gs:
+            #window cleaned up?
+            return
         #calculate the send speed for the packet we just sent:
         now = monotonic_time()
         last_send_speed = int(ldata*8*1000/elapsed_ms)
         send_speed = last_send_speed
         avg_send_speed = 0
-        gs = self.global_statistics
-        if gs and len(gs.bytes_sent)>=5:
+        if len(gs.bytes_sent)>=5:
             #find a sample more than a second old
             #(hopefully before the congestion started)
             for i in range(1,4):
