@@ -710,11 +710,11 @@
         </after>
   </distutils>
 
-  <distutils id="python-lz4">
+  <distutils id="python-test-runner">
 	<branch repo="pypi.python.org"
-	        module="/packages/2b/88/4a102ae3b0959f0647040b7f8bbc74ed87a0125a2a3439733159f0152fac/lz4-0.18.1.tar.gz"
-	        hash="sha256:e6b90591c5a80573995e90686c5b03a8e612d1ac4b19eae0c7422958c45cdde6"
-	        version="0.18.1"/>
+	        module="/packages/65/b4/ae89338cd2d81e2cc54bd6db2e962bfe948f612303610d68ab24539ac2d1/pytest-runner-3.0.tar.gz"
+	        hash="sha256:0f7c3a3cf5aead13f54baaa01ceb49e5ae92aba5d3ff1928e81e189c40bc6703"
+	        version="3.0"/>
         <dependencies>
                 <dep package="python"/>
                 <dep package="python-pkgconfig"/>
@@ -725,6 +725,27 @@
                 <dep package="python"/>
                 <dep package="python-pkgconfig"/>
                 <dep package="python-deprecation"/>
+                <dep package="python-setuptools-scm"/>
+        </after>
+  </distutils>
+
+  <distutils id="python-lz4">
+	<branch repo="pypi.python.org"
+	        module="/packages/2b/88/4a102ae3b0959f0647040b7f8bbc74ed87a0125a2a3439733159f0152fac/lz4-0.18.1.tar.gz"
+	        hash="sha256:e6b90591c5a80573995e90686c5b03a8e612d1ac4b19eae0c7422958c45cdde6"
+	        version="0.18.1"/>
+        <dependencies>
+                <dep package="python"/>
+                <dep package="python-pkgconfig"/>
+                <dep package="python-deprecation"/>
+                <dep package="python-test-runner"/>
+                <dep package="python-setuptools-scm"/>
+        </dependencies>
+        <after>
+                <dep package="python"/>
+                <dep package="python-pkgconfig"/>
+                <dep package="python-deprecation"/>
+                <dep package="python-test-runner"/>
                 <dep package="python-setuptools-scm"/>
         </after>
   </distutils>
