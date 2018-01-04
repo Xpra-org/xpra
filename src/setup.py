@@ -355,7 +355,7 @@ external_excludes = [
                     #not used:
                     "curses", "pdb",
                     "tty",
-                    "distutils", "setuptools", "doctest"
+                    "setuptools", "doctest"
                     ]
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
