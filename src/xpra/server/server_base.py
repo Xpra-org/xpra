@@ -936,14 +936,13 @@ class ServerBase(ServerCore):
         if not self.session_name and procs:
             self.guess_session_name(procs)
 
-    def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=None, **kwargs):
-        execlog("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs))
+    def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
+        execlog("start_command%s exec_wrapper=%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
         import subprocess
         env = self.get_child_env()
         try:
-            if shell is None:
-                shell = not use_wrapper or not self.exec_wrapper
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
+            execlog("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
             proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             execlog("pid(%s)=%s", real_cmd, proc.pid)
