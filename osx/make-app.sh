@@ -1,6 +1,9 @@
 #!/bin/bash
 
-PYTHON_VERSION="${PYTHON_VERSION:=python2}"
+PYTHON_COMMAND="${PYTHON_COMMAND:=python}"
+PYTHON_MAJOR_VERSION=`python3 -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
+PYTHON_MINOR_VERSION=`python3 -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
+
 
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
@@ -28,7 +31,7 @@ LIBDIR="${RSCDIR}/lib"
 echo "*******************************************************************************"
 echo "Deleting existing xpra modules and temporary directories"
 PYTHON_PREFIX=`python-config --prefix`
-PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/${PYTHON_VERSION}*/site-packages | sort | tail -n 1`
+PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python${PYTHON_MAJOR_VERSION}*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist
 ln -sf ../src/dist ./dist
@@ -135,10 +138,14 @@ echo
 echo "*******************************************************************************"
 echo "unzip site-packages and make python softlink without version number"
 pushd ${LIBDIR} || exit 1
-ln -sf python* python
+ln -sf python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION} python
 cd python
-unzip -nq site-packages.zip
-rm site-packages.zip
+if [ -e "site-packages.zip" ]; then
+	unzip -nq site-packages.zip
+	rm site-packages.zip
+else
+	unzip ../python${PYTHON_MAJOR_VERSION}${PYTHON_MINOR_VERSION}.zip
+fi
 popd
 
 echo
@@ -220,16 +227,19 @@ done
 echo
 echo "*******************************************************************************"
 echo "Hacks"
-#HACKS
 echo " * macos notifications API look for Info.plist in the wrong place"
 cp ${CONTENTS_DIR}/Info.plist ${RSCDIR}/bin/
 #no idea why I have to do this by hand
-echo " * add gtk .so"
-rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
-#add pygtk .py
-PYGTK_LIBDIR="$LIBDIR/pygtk/2.0/"
-rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR
-rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR
+echo " * add pygtk bits, gtk .so"
+if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
+	rsync -rpl $PYTHON_PACKAGES/gtk-2.0/* $LIBDIR/
+	#add pygtk .py
+	PYGTK_LIBDIR="$LIBDIR/pygtk/2.0"
+	mkdir -p $PYGTK_LIBDIR
+	rsync -rpl $JHBUILD_PREFIX/lib/pygtk/2.0/* $PYGTK_LIBDIR/
+	rsync -rpl $PYTHON_PACKAGES/pygtk* $PYGTK_LIBDIR/
+	rsync -rpl $PYTHON_PACKAGES/cairo $PYGTK_LIBDIR/
+fi
 echo " * add all OpenGL"
 rsync -rpl $PYTHON_PACKAGES/OpenGL* $LIBDIR/python/
 if [ "$STRIP_OPENGL" == "1" ]; then
@@ -244,7 +254,12 @@ fi
 echo " * add gobject-introspection (py2app refuses to do it)"
 rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
 mkdir $LIBDIR/girepository-1.0
-for t in Gst GObject GLib GModule; do
+GI_MODULES="Gst GObject GLib GModule"
+if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+	#GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication"
+	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication GL Gio Pango cairo"
+fi
+for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
 if [ "$STRIP_NUMPY" == "1" ]; then
@@ -285,8 +300,8 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 		rm libgst${x}*
 	done
 fi
-#only needed with gstreamer 1.x by gstpbutils, get rid of the 0.10 one:
-rm libgstvideo-0.10.*
+#get rid of any old 0.10 libs:
+rm -f libgst*-0.10.*
 echo "removing extra gstreamer plugins:"
 echo " * GStreamer"
 GST_PLUGIN_DIR="./gstreamer-1.0"
