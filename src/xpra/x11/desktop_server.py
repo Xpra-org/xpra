@@ -9,8 +9,10 @@ import gtk.gdk
 import gobject
 import socket
 
+from xpra.os_util import get_generic_os_name, PYTHON3
+if PYTHON3:
+    raise ImportError("desktop server needs porting to python3 / gtk3")
 from xpra.util import updict, log_screen_sizes
-from xpra.os_util import get_generic_os_name
 from xpra.scripts.config import parse_bool, parse_number
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
