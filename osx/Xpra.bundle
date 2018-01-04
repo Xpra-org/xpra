@@ -125,9 +125,6 @@
 		${prefix}/etc/pango/
 	</data>
 
-	<data>
-		${prefix}/share/themes/Quartz
-	</data>
 	<data dest="${bundle}/Contents/Resources/etc/gtk-2.0/gtkrc">
 		${project}/gtkrc
 	</data>
