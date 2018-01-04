@@ -676,7 +676,7 @@ class Delegate(NSObject):
         add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
         add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
 
-    @objc.signature('B@:#B')
+    @objc.signature(b'B@:#B')
     def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
         log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
         self.delegate_cb("deiconify_callback")
