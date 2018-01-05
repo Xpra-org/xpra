@@ -40,6 +40,16 @@
   <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
 
 
+  <!-- of the many arguments such as prefix and libdir that jhbuild might pass
+  to configure, openssl only understands prefix, and only with =. -->
+  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
+             makeinstallargs="install_sw" supports-non-srcdir-builds="no">
+    <branch module="openssl-1.1.0g.tar.gz" version="1.1.0g"
+    		hash="sha256:de4d501267da39310905cb6dc8c6121f7a2cad45a7707f76df828fe1b85073af" repo="openssl"/>
+  </autotools>
+
+
   <cmake id="brotli" autogen-sh="configure">
 	<branch module="/google/brotli/archive/v1.0.1.tar.gz"
 		version="1.0.1" checkoutdir="brotli-1.0.1"
