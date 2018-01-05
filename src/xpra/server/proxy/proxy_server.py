@@ -195,14 +195,14 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
-        sessions = []
+        sessions = None
         for authenticator in client_proto.authenticators:
             try:
                 auth_sessions = authenticator.get_sessions()
-                #don't add duplicates:
-                for x in auth_sessions:
-                    if x not in sessions:
-                        sessions.append(x)
+                authlog("proxy_auth %s.get_sessions()=%s", authenticator, auth_sessions)
+                if auth_sessions:
+                    sessions = auth_sessions
+                    break
             except Exception as e:
                 authlog("failed to get the list of sessions from %s", authenticator, exc_info=True)
                 authlog.error("Error: failed to get the list of sessions using '%s' authenticator", authenticator)
