@@ -10,7 +10,7 @@
 	<repository type="tarball" name="pyyaml.org" href="http://pyyaml.org"/>
 
 
-	<distutils id="python-setuptools" python3="1">
+	<distutils id="python3-setuptools" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/e9/c3/5986db56819bd88e1a250cad2a97249211686b1b7b5d95f9ab64d403a2cb/setuptools-38.2.5.zip"
 			hash="sha256:b080f276cc868670540b2c03cee06cc14d2faf9da7bec0f15058d1b402c94507"
@@ -23,7 +23,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-enum34" python3="1">
+	<distutils id="python3-enum34" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/bf/3e/31d502c25302814a7c2f1d3959d2a3b3f78e509002ba91aea64993936876/enum34-1.1.6.tar.gz"
 			hash="sha256:8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1"
@@ -36,7 +36,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-enum-compat" python3="1">
+	<distutils id="python3-enum-compat" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/95/6e/26bdcba28b66126f66cf3e4cd03bcd63f7ae330d29ee68b1f6b623550bfa/enum-compat-0.0.2.tar.gz"
 			hash="sha256:939ceff18186a5762ae4db9fa7bfe017edbd03b66526b798dd8245394c8a4192"
@@ -49,7 +49,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-zeroconf" python3="1">
+	<distutils id="python3-zeroconf" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/bf/e3/acc6e2c2938428afa2450143fc4d3953ec60cb4d859db3a58f03d149ef04/zeroconf-0.19.1.tar.gz"
 			hash="sha256:434eab8da9525ae725d6842aae7e59d9ec6580bdc5ae84f3c225240bc6797f7a"
@@ -62,7 +62,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-netifaces" python3="1">
+	<distutils id="python3-netifaces" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/72/01/ba076082628901bca750bf53b322a8ff10c1d757dc29196a8e6082711c9d/netifaces-0.10.6.tar.gz"
 			hash="sha256:0c4da523f36d36f1ef92ee183f2512f3ceb9a9d2a45f7d19cda5a42c6689ebe0"
@@ -75,7 +75,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-cparser" python3="1">
+	<distutils id="python3-cparser" python3="1">
 		<branch repo="github.com"
 			module="/eliben/pycparser/archive/release_v2.18.tar.gz"
 			checkoutdir="pycparser-release_v2.18"
@@ -89,7 +89,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-cffi" python3="1">
+	<distutils id="python3-cffi" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/c9/70/89b68b6600d479034276fed316e14b9107d50a62f5627da37fafe083fde3/cffi-1.11.2.tar.gz"
 			hash="sha256:ab87dd91c0c4073758d07334c1e5f712ce8fe48f007b86f8238773963ee700a6"
@@ -104,7 +104,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-six" python3="1">
+	<distutils id="python3-six" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/16/d8/bc6316cf98419719bd59c91742194c111b6f2e85abac88e496adefaf7afe/six-1.11.0.tar.gz"
 			hash="sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
@@ -117,7 +117,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-parsing" python3="1">
+	<distutils id="python3-parsing" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/3c/ec/a94f8cf7274ea60b5413df054f82a8980523efd712ec55a59e7c3357cf7c/pyparsing-2.2.0.tar.gz"
 			hash="sha256:0832bcf47acd283788593e7a0f542407bd9550a55a8a8435214a1960e04bcb04"
@@ -130,7 +130,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-packaging" python3="1">
+	<distutils id="python3-packaging" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/c6/70/bb32913de251017e266c5114d0a645f262fb10ebc9bf6de894966d124e35/packaging-16.8.tar.gz"
 			hash="sha256:5d50835fdf0a7edf0b55e311b7c887786504efea1177abd7e69329a8e5ea619e"
@@ -143,7 +143,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-asn1crypto" python3="1">
+	<distutils id="python3-asn1crypto" python3="1">
 		<branch repo="github.com"
 			module="/wbond/asn1crypto/archive/0.24.0.tar.gz"
 			hash="sha256:d2a82bb3c29e1abcb376b59679510b58dd796c813f8983f2db9b45e9ab228190"
@@ -157,7 +157,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-cryptography" python3="1">
+	<distutils id="python3-cryptography" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/78/c5/7188f15a92413096c93053d5304718e1f6ba88b818357d05d19250ebff85/cryptography-2.1.4.tar.gz"
 			hash="sha256:e4d967371c5b6b2e67855066471d844c5d52d210c36c28d49a8507b96e2c5291"
@@ -177,7 +177,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyasn1" python3="1">
+	<distutils id="python3-pyasn1" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/3c/a6/4d6c88aa1694a06f6671362cb3d0350f0d856edea4685c300785200d1cd9/pyasn1-0.3.7.tar.gz"
 			hash="sha256:187f2a66d617683f8e82d5c00033b7c8a0287e1da88a9d577aebec321cad4965"
@@ -190,7 +190,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pillow" python3="1">
+	<distutils id="python3-pillow" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/0f/57/25be1a4c2d487942c3ed360f6eee7f41c5b9196a09ca71c54d1a33c968d9/Pillow-5.0.0.tar.gz"
 			hash="sha256:12f29d6c23424f704c66b5b68c02fe0b571504459605cfe36ab8158359b0e1bb"
@@ -210,7 +210,7 @@
 	</distutils>
 
 	<!-- py2app versions newer than this have regressions, see #1404 -->
-	<distutils id="python-py2app" python3="1">
+	<distutils id="python3-py2app" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/65/ea/b8e5a4f41fd65e35c10b41ff68e776baeb07143983f484f1d9005a7ab36a/py2app-0.14.tar.gz"
 			hash="sha256:4dadf15d078a1748acba483c1abbb69a144a059e0c335a5e2a17b070d4cc938a"
@@ -223,7 +223,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-cython" python3="1">
+	<distutils id="python3-cython" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/ee/2a/c4d2cdd19c84c32d978d18e9355d1ba9982a383de87d0fcb5928553d37f4/Cython-0.27.3.tar.gz"
 			hash="sha256:6a00512de1f2e3ce66ba35c5420babaef1fe2d9c43a8faab4080b0dbcc26bc64"
@@ -236,7 +236,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-numpy" python3="1">
+	<distutils id="python3-numpy" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/bf/2d/005e45738ab07a26e621c9c12dc97381f372e06678adf7dc3356a69b5960/numpy-1.13.3.zip"
 			checkoutdir="numpy-1.13.3"
@@ -250,7 +250,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-twisted" python3="1">
+	<distutils id="python3-twisted" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/T/Twisted/Twisted-15.5.0.tar.bz2"
 			hash="md5:0831d7c90d0020062de0f7287530a285"
@@ -264,7 +264,7 @@
 	</distutils>
 
 
-	<distutils id="python-websockify" python3="1">
+	<distutils id="python3-websockify" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/w/websockify/websockify-0.8.0.tar.gz"
 			hash="md5:8fa547ca4de84a96aa3472d55fbcdd59"
@@ -277,7 +277,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-websocket-client" python3="1">
+	<distutils id="python3-websocket-client" python3="1">
 		<branch repo="github.com"
 			module="/websocket-client/websocket-client/archive/v0.46.0.tar.gz"
 			hash="sha256:0fc5d25d5b6ce61fe359ebfb69bf2e16056f0aabc314b0fd6aecaa6fec689c28"
@@ -291,7 +291,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-nose" python3="1">
+	<distutils id="python3-nose" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/n/nose/nose-1.3.7.tar.gz"
 			hash="md5:4d3ad0ff07b61373d2cefc89c5d0b20b"
@@ -304,7 +304,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-setuptools-scm" python3="1">
+	<distutils id="python3-setuptools-scm" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/03/6d/aafdd01edd227ee879b691455bf19895091872af7e48192bea1758c82032/setuptools_scm-1.15.6.tar.gz"
 			hash="sha256:49ab4685589986a42da85706b3311a2f74f1af567d39fee6cb1e088d7a75fb5f"
@@ -317,7 +317,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pkgconfig" python3="1">
+	<distutils id="python3-pkgconfig" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/9d/ba/80910bbed2b4e646a6adab4474d2e506744c260c7002a0e6b41ef8750d8d/pkgconfig-1.2.2.tar.gz"
 			hash="sha256:3685ba02a9b72654a764b728b559f327e1dbd7dc6ebc310a1bd429666ee202aa"
@@ -330,7 +330,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-deprecation" python3="1">
+	<distutils id="python3-deprecation" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/8c/e3/e5c66eba8fa2fd567065fa70ada98b990f449f74fb812b408fa7aafe82c9/deprecation-1.0.1.tar.gz"
 			hash="sha256:b9bff5cc91f601ef2a8a0200bc6cde3f18a48c2ed3d1ecbfc16076b14b3ad935"
@@ -343,7 +343,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-test-runner" python3="1">
+	<distutils id="python3-test-runner" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/65/b4/ae89338cd2d81e2cc54bd6db2e962bfe948f612303610d68ab24539ac2d1/pytest-runner-3.0.tar.gz"
 			hash="sha256:0f7c3a3cf5aead13f54baaa01ceb49e5ae92aba5d3ff1928e81e189c40bc6703"
@@ -358,7 +358,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-lz4" python3="1">
+	<distutils id="python3-lz4" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/2b/88/4a102ae3b0959f0647040b7f8bbc74ed87a0125a2a3439733159f0152fac/lz4-0.18.1.tar.gz"
 			hash="sha256:e6b90591c5a80573995e90686c5b03a8e612d1ac4b19eae0c7422958c45cdde6"
@@ -379,7 +379,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-lzo" python3="1">
+	<distutils id="python3-lzo" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
 			hash="sha256:38a0ea4ceb27cdd8e3526509fe1b7a936e5dfa57c64608fd32085c129e8be386"
@@ -396,7 +396,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-macholib" python3="1">
+	<distutils id="python3-macholib" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/70/54/12d547ebb73de8412120a293ab013e61caef36bf712d76c9a574020d2796/macholib-1.9.tar.gz"
 			hash="sha256:9aeec52d7da59912b15445d08b08d95cee48414f01dd035be06f04a825973c08"
@@ -409,7 +409,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-modulegraph" python3="1">
+	<distutils id="python3-modulegraph" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/de/4e/91327287864f179be193e9d1fcb957b0e3d4d5f2ef38f6ac95897f4e4a4e/modulegraph-0.16.tar.gz"
 			hash="sha256:0ba04a67b65c936f707c76ffd819a52f370ff2bd36664338d53a9b271f23d1e4"
@@ -422,7 +422,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-altgraph" python3="1">
+	<distutils id="python3-altgraph" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/ff/e5/c4d83ca50043951eec43449aa74f4aa4fde1695f901dcf9d213efea3abb1/altgraph-0.15.tar.gz"
 			hash="sha256:fc28b986a68fde8d3ff0e6d6ba3fbdd2cd562d11d45ef7c7735fbd826c9eec2e"
@@ -435,7 +435,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyopengl" python3="1">
+	<distutils id="python3-pyopengl" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/P/PyOpenGL/PyOpenGL-3.1.1a1.tar.gz"
 			hash="md5:77ee6044ceb2cf952aca89a9b2d3d585"
@@ -448,7 +448,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyopengl-accelerate" python3="1">
+	<distutils id="python3-pyopengl-accelerate" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/P/PyOpenGL-accelerate/PyOpenGL-accelerate-3.1.1a1.tar.gz"
 			hash="md5:04e52af352dd078275a2d5720c4afea2"
@@ -461,7 +461,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyobjc-core" python3="1">
+	<distutils id="python3-pyobjc-core" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/a6/af/bde88e81e5428f7561911da2207f5efd3b4b2aa2bd0263b63302b840e23c/pyobjc-core-4.1.tar.gz"
 			hash="sha256:e42d3558b65485f896e272e48e108d4df8ccd7f130f552dddb4a47732dd0ee65"
@@ -474,7 +474,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyobjc-framework-cocoa" python3="1">
+	<distutils id="python3-pyobjc-framework-cocoa" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/8e/39/ef763cbc0825baec366171c4552c53adb38a866bd94922594946869ccb0e/pyobjc-framework-Cocoa-4.1.tar.gz"
 			hash="sha256:9a221f0549067b402b85a9c3425cd962870f94b404e2e3a543fc0029d124fddf"
@@ -487,7 +487,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyobjc-framework-quartz" python3="1">
+	<distutils id="python3-pyobjc-framework-quartz" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/26/95/77a6c495d46b18aa5995ed8215d2ad6fc840e426abfcb2ad9bf07c17cba9/pyobjc-framework-Quartz-4.1.tar.gz"
 			hash="sha256:a0e1e3a3ff2422372c961c1d9384c4734dec715da32b1d9be76a5c237cde1709"
@@ -500,7 +500,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-rencode" python3="1">
+	<distutils id="python3-rencode" python3="1">
 		<branch repo="github.com"
 			module="/aresch/rencode/archive/v1.0.5.tar.gz"
 			checkoutdir="rencode-1.0.5"
@@ -514,7 +514,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-yaml" python3="1">
+	<distutils id="python3-yaml" python3="1">
 		<branch repo="pyyaml.org"
 			module="/download/pyyaml/PyYAML-3.12.tar.gz"
 			checkoutdir="PyYAML-3.12"
@@ -528,7 +528,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pycups" python3="1">
+	<distutils id="python3-pycups" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/source/p/pycups/pycups-1.9.73.tar.bz2"
 			hash="md5:ee0e7204d7a2ae942e2f4c4508afdbfb"
@@ -541,7 +541,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-ipaddress" python3="1">
+	<distutils id="python3-ipaddress" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/4e/13/774faf38b445d0b3a844b65747175b2e0500164b7c28d78e34987a5bfe06/ipaddress-1.0.18.tar.gz"
 			hash="sha256:5d8534c8e185f2d8a1fda1ef73f2c8f4b23264e8e30063feeb9511d492a413e1"
@@ -554,7 +554,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-idna" python3="1">
+	<distutils id="python3-idna" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/f4/bd/0467d62790828c23c47fc1dfa1b1f052b24efdf5290f071c7a91d0d82fd3/idna-2.6.tar.gz"
 			hash="sha256:2c6a5de3089009e3da7c5dde64a141dbc8551d5b7f6cf4ed7c2568d0cc520a8f"
