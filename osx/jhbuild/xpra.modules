@@ -43,7 +43,7 @@
   <!-- of the many arguments such as prefix and libdir that jhbuild might pass
   to configure, openssl only understands prefix, and only with =. -->
   <autotools id="openssl" autogen-sh="./config" autogenargs="shared"
-             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
+             autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl"
              makeinstallargs="install_sw" supports-non-srcdir-builds="no">
     <branch module="openssl-1.1.0g.tar.gz" version="1.1.0g"
     		hash="sha256:de4d501267da39310905cb6dc8c6121f7a2cad45a7707f76df828fe1b85073af" repo="openssl"/>
@@ -379,7 +379,7 @@
   </autotools>
 
   <!-- versions newer than this have problems packaging pyobjc -->
-  <distutils id="setuptools">
+  <distutils id="python-setuptools">
 	<branch repo="pypi.python.org"
 		module="/packages/e9/c3/5986db56819bd88e1a250cad2a97249211686b1b7b5d95f9ab64d403a2cb/setuptools-38.2.5.zip"
 		hash="sha256:b080f276cc868670540b2c03cee06cc14d2faf9da7bec0f15058d1b402c94507"
@@ -1025,7 +1025,7 @@
   <metamodule id="meta-osx-xpra-python-deps">
     <dependencies>
       <dep package="gst-python"/>
-      <dep package="setuptools"/>
+      <dep package="python-setuptools"/>
       <dep package="python-zeroconf"/>
       <dep package="python-netifaces"/>
       <dep package="python-pyasn1"/>
