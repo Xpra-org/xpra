@@ -509,7 +509,7 @@
       <dep package="sshpass"/>
       <dep package="pygobject3"/>
       <dep package="gtk-mac-bundler"/>
-      <dep package="meta-osx-xpra-python-deps"/>
+      <dep package="meta-osx-xpra-python3-deps"/>
       <dep package="meta-osx-xpra-codec-deps"/>
     </dependencies>
   </metamodule>
