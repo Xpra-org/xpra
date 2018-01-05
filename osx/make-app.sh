@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PYTHON_COMMAND="${PYTHON_COMMAND:=python}"
-PYTHON_MAJOR_VERSION=`$PYTHON_COMMAND -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
-PYTHON_MINOR_VERSION=`$PYTHON_COMMAND -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
+PYTHON="${PYTHON:=python}"
+PYTHON_MAJOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
+PYTHON_MINOR_VERSION=`$PYTHON -c 'import sys;sys.stdout.write("%s" % sys.version_info[1])'`
 
 
 STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
@@ -43,13 +43,13 @@ echo "Building and installing locally"
 pushd ../src
 
 svn upgrade ../.. >& /dev/null
-${PYTHON_COMMAND} -c "from add_build_info import record_src_info;record_src_info()"
+${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/* dist/*
-${PYTHON_COMMAND} ./setup.py clean
+${PYTHON} ./setup.py clean
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details - this may take a minute or two)"
-${PYTHON_COMMAND} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
+${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
@@ -59,9 +59,9 @@ if [ "$?" != "0" ]; then
 fi
 #get the version and build info from the python build records:
 export PYTHONPATH="."
-VERSION=`${PYTHON_COMMAND} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON_COMMAND} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-REV_MOD=`${PYTHON_COMMAND} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
+VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
+REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
 echo "OK"
 
 if [ "${DO_TESTS}" == "1" ]; then
@@ -89,7 +89,7 @@ echo "py2app step:"
 PY2APP_LOG=`pwd`/py2app.log
 echo "./setup.py py2app ${BUILD_ARGS}"
 echo " (see ${PY2APP_LOG} for details - this may take a minute or two)"
-${PYTHON_COMMAND} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
+${PYTHON} ./setup.py py2app ${BUILD_ARGS} >& ${PY2APP_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: py2app failed"
 	echo

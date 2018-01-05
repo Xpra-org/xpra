@@ -17,12 +17,12 @@ fi
 
 #get the version and build info from the python build records:
 export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
-PYTHON_COMMAND="${PYTHON_COMMAND:=python}"
-PYTHON_MAJOR_VERSION=`${PYTHON_COMMAND} -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
-VERSION=`${PYTHON_COMMAND} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON_COMMAND} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
-REV_MOD=`${PYTHON_COMMAND} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
-BUILD_BIT=`${PYTHON_COMMAND} -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_BIT))"`
+PYTHON="${PYTHON:=python}"
+PYTHON_MAJOR_VERSION=`${PYTHON} -c 'import sys;sys.stdout.write("%s" % sys.version_info[0])'`
+VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
+REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
+REV_MOD=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])"`
+BUILD_BIT=`${PYTHON} -c "from xpra import build_info;import sys;sys.stdout.write(str(build_info.BUILD_BIT))"`
 BUILD_INFO=""
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	BUILD_INFO="${BUILD_INFO}-Python3"
