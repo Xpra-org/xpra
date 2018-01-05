@@ -38,7 +38,7 @@
   <repository type="tarball" name="ftp.pcre.org" href="https://ftp.pcre.org"/>
   <repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
   <repository type="git" name="chromium.googlesource.com" href="https://chromium.googlesource.com/"/>
-
+  <repository name="openssl" type="tarball" href="https://www.openssl.org/source/"/>
 
   <!-- of the many arguments such as prefix and libdir that jhbuild might pass
   to configure, openssl only understands prefix, and only with =. -->
