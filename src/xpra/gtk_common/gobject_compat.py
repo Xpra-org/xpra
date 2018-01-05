@@ -171,6 +171,8 @@ def import_gtkosx_application2():
     import gtkosx_application                   #@UnresolvedImport
     return gtkosx_application
 def import_gtkosx_application3():
+    import gi
+    gi.require_version('GtkosxApplication', '1.0')
     from gi.repository import GtkosxApplication #@UnresolvedImport
     return GtkosxApplication
 def import_gtkosx_application():
