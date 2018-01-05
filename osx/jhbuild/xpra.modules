@@ -42,7 +42,7 @@
 
   <!-- of the many arguments such as prefix and libdir that jhbuild might pass
   to configure, openssl only understands prefix, and only with =. -->
-  <autotools id="openssl" autogen-sh="Configure" autogenargs="shared"
+  <autotools id="openssl" autogen-sh="./config" autogenargs="shared"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s --openssldir=%(prefix)s/etc/ssl %(autogenargs)s"
              makeinstallargs="install_sw" supports-non-srcdir-builds="no">
     <branch module="openssl-1.1.0g.tar.gz" version="1.1.0g"
@@ -168,7 +168,7 @@
 		version="3.99.5"
 		hash="md5:84835b313d4a8b68f5349816d33e07ce"
 		repo="winswitch.org">
-        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lame-channels.patch" strip="0" />
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lame-channels.patch" strip="1" />
 	</branch>
     <dependencies>
                 <dep package="nasm"/>
