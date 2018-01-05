@@ -577,9 +577,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 except:
                     pass
             stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
-            stderr.write("Entering daemon mode; "
-                     + "any further errors will be reported to:\n"
-                     + ("  %s\n" % log_filename0))
+            try:
+                stderr.write("Entering daemon mode; "
+                         + "any further errors will be reported to:\n"
+                         + ("  %s\n" % log_filename0))
+            except:
+                #we tried our best, logging another error won't help
+                pass
 
     #warn early about this:
     if (starting or starting_desktop) and desktop_display:
