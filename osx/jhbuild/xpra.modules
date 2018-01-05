@@ -1083,7 +1083,7 @@
       <dep package="x264"/>
       <dep package="libwebp"/>
       <dep package="ffmpeg"/>
-      <dep package="meta-gstreamer-1.0"/>
+      <dep package="meta-gstreamer"/>
       <!--
       sdl doesn't build with newer versions of osx because of missing X header files
       <dep package="sdl"/>

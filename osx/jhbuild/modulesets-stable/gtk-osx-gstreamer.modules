@@ -30,7 +30,7 @@
     </branch>
   </autotools>
 
-  <autotools id="gstreamer-1.0" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
+  <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gstreamer/gstreamer-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
             hash="sha256:bc06243600817f637029da29d089d5908d1d266542f68bf6626a10c5f05f1f1d">
@@ -40,50 +40,50 @@
     </after>
   </autotools>
 
-  <autotools id="gst-plugins-base-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-base" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-base/gst-plugins-base-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
             hash="sha256:1c401a79bd1e4521c6ef1b66579bddedd9136e164e54792aab4bfcf3485bf9a7"/>
     <dependencies>
-      <dep package="gstreamer-1.0"/>
+      <dep package="gstreamer"/>
       <dep package="liborc"/>
     </dependencies>
     <after>
     </after>
   </autotools>
 
-  <autotools id="gst-plugins-good-1.0" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-good" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-good/gst-plugins-good-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
             hash="sha256:be053f6ed716eeb517cec148cec637cdce571c6e04d5c21409e2876fb76c7639">
     <!-- <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gst-plugins-good-1.6.4-osx-10.5-fixdefs.patch" strip="1"/> -->
     </branch>
     <dependencies>
-      <dep package="gstreamer-1.0"/>
-      <dep package="gst-plugins-base-1.0"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
     </dependencies>
   </autotools>
 
-  <autotools id="gst-plugins-ugly-1.0" autogenargs="--disable-tests"
+  <autotools id="gst-plugins-ugly" autogenargs="--disable-tests"
              supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
              autogen-sh="configure">
     <branch module="gst-plugins-ugly/gst-plugins-ugly-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
             hash="sha256:d6edc046350809c967f5b058c5c2e534d99d1d69fe1b26acd849e87781a7d7fc"/>
     <dependencies>
-      <dep package="gstreamer-1.0"/>
-      <dep package="gst-plugins-base-1.0"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
       <dep package="x264"/>
     </dependencies>
   </autotools>
 
-  <autotools id="gst-plugins-bad-1.0" supports-non-srcdir-builds="no"
+  <autotools id="gst-plugins-bad" supports-non-srcdir-builds="no"
              autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc --disable-gtk3 --disable-smoothstreaming --disable-hls --disable-dtls --disable-apple_media"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
     <branch module="gst-plugins-bad/gst-plugins-bad-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
             hash="sha256:c5806040bb83b43be86ce592e6a19c5d83d7776f7d9f434eb4b911c4efff3573"/>
     <dependencies>
-      <dep package="gstreamer-1.0"/>
-      <dep package="gst-plugins-base-1.0"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
       <dep package="faad2"/>
     </dependencies>
   </autotools>
@@ -95,18 +95,18 @@
             module="gst-libav/gst-libav-1.10.5.tar.xz"
             hash="sha256:e4d2f315f478d47281fbfdfbd590a63d23704ca37911d7142d5992616f4b28d3"/>
     <dependencies>
-      <dep package="gstreamer-1.0"/>
-      <dep package="gst-plugins-base-1.0"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
     </dependencies>
   </autotools>
 
-  <metamodule id="meta-gstreamer-1.0">
+  <metamodule id="meta-gstreamer">
     <dependencies>
-      <dep package="gstreamer-1.0"/>
-      <dep package="gst-plugins-base-1.0"/>
-      <dep package="gst-plugins-good-1.0"/>
-      <dep package="gst-plugins-ugly-1.0"/>
-      <dep package="gst-plugins-bad-1.0"/>
+      <dep package="gstreamer"/>
+      <dep package="gst-plugins-base"/>
+      <dep package="gst-plugins-good"/>
+      <dep package="gst-plugins-ugly"/>
+      <dep package="gst-plugins-bad"/>
       <dep package="gst-libav"/>
     </dependencies>
   </metamodule>
