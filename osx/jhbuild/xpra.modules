@@ -727,14 +727,10 @@
 	        version="3.0"/>
         <dependencies>
                 <dep package="python"/>
-                <dep package="python-pkgconfig"/>
-                <dep package="python-deprecation"/>
                 <dep package="python-setuptools-scm"/>
         </dependencies>
         <after>
                 <dep package="python"/>
-                <dep package="python-pkgconfig"/>
-                <dep package="python-deprecation"/>
                 <dep package="python-setuptools-scm"/>
         </after>
   </distutils>
@@ -1042,6 +1038,10 @@
       <dep package="python-websocket-client"/>
       <dep package="python-twisted"/>
       <dep package="python-nose"/>
+      <dep package="python-setuptools-scm"/>
+      <dep package="python-test-runner"/>
+      <dep package="python-pkgconfig"/>
+      <dep package="python-deprecation"/>
       <dep package="python-lz4"/>
       <dep package="lzo"/>
       <dep package="python-lzo"/>
