@@ -93,9 +93,6 @@
 	<binary>
 		${prefix}/lib/libcrypto*.dylib
 	</binary>
-	<binary>
-		${prefix}/lib/python2.7/lib-dynload/_ssl.so
-	</binary>
 
 	<binary>
 		${prefix}/lib/gstreamer-1.0/*.so
