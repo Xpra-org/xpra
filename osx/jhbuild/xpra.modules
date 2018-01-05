@@ -33,6 +33,7 @@
 
 
   <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-python.modules"/>
+  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-python3.modules"/>
 
 
   <!-- of the many arguments such as prefix and libdir that jhbuild might pass
