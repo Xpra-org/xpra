@@ -19,6 +19,9 @@
 	<repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
 	<repository type="tarball" name="curl.haxx.se" href="https://curl.haxx.se"/>
 
+	<repository type="tarball" name="apache.org" href="http://www.apache.org/"/>
+	<repository type="tarball" name="sqlite.org" href="http://sqlite.org"/>
+
 
 	<!-- of the many arguments such as prefix and libdir that jhbuild might pass
 		to configure, openssl only understands prefix, and only with =. -->
@@ -164,14 +167,14 @@
 		<branch module="/dist/apr/apr-1.6.3.tar.bz2"
 			hash="sha256:131f06d16d7aabd097fa992a33eec2b6af3962f93e6d570a9bd4d85e95993172"
 			version="1.6.3"
-			repo="www.eu.apache.org"/>
+			repo="apache.org"/>
 	</autotools>
 
 	<autotools id="apr-util" autogenargs="--with-berkeley-db --with-apr=${JHBUILD_PREFIX}/bin/apr-1-config" autogen-sh="configure">
 		<branch module="/dist/apr/apr-util-1.6.1.tar.bz2"
 			hash="sha256:d3e12f7b6ad12687572a3a39475545a072608f4ba03a6ce8a3778f607dd0035b"
 			version="1.6.1"
-			repo="www.eu.apache.org"/>
+			repo="apache.org"/>
 		<dependencies>
 			<dep package="apr"/>
 			<dep package="openssl"/>
@@ -218,7 +221,7 @@
 		<branch module="/dist/subversion/subversion-1.9.7.tar.bz2"
 			hash="sha256:c3b118333ce12e501d509e66bb0a47bcc34d053990acab45559431ac3e491623"
 			version="1.9.7"
-			repo="www.eu.apache.org"/>
+			repo="apache.org"/>
 		<dependencies>
 			<dep package="apr-util"/>
 			<dep package="serf"/>
