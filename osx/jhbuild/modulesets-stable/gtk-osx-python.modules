@@ -137,7 +137,9 @@
 	     autogenargs="--disable-introspection"
 	     supports-non-srcdir-builds="no">
     <branch version="2.28.6" module="pygobject/2.28/pygobject-2.28.6.tar.bz2"
-            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee"/>
+            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee">
+        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygobject-gflags-fix.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="meta-gtk-osx-core"/>
     </dependencies>
