@@ -1456,7 +1456,9 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                     if start_via_proxy is True:
                         raise InitException("failed to start-via-proxy: %s" % err)
                     #warn and fall through to regular server start:
-                    warn("Warning: cannot use the system proxy for '%s' subcommand,\n %s" % (mode, err))
+                    warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
+                    warn(" %s" % (err,))
+                    warn(" more information may be available in your system log")
                     #re-exec itself and disable start-via-proxy:
                     args = sys.argv[:]+["--start-via-proxy=no"]
                     #warn("re-running with: %s" % (args,))
