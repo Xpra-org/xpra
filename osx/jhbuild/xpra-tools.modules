@@ -17,6 +17,7 @@
 	<repository type="tarball" name="oberhumer.com" default="yes" href="http://www.oberhumer.com/"/>
 	<repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
 	<repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
+	<repository type="tarball" name="curl.haxx.se" href="https://curl.haxx.se"/>
 
 
 	<!-- of the many arguments such as prefix and libdir that jhbuild might pass
