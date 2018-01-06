@@ -866,15 +866,15 @@ def main():
         try:
             from xpra.scripts.main import parse_cmdline, fixup_debug_option
             options, args = parse_cmdline(sys.argv)
-    except InitInfo as e:
-        print(str(e))
-        return 0
-    except InitExit as e:
-        return e.status
             debug = fixup_debug_option(options.debug)
             if debug:
                 for x in debug.split(","):
                     enable_debug_for(x)
+        except InitInfo as e:
+            print(str(e))
+            return 0
+        except InitExit as e:
+            return e.status
         except Exception:
             exception_dialog("Error parsing command line")
             return 1
