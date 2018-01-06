@@ -17,7 +17,9 @@
 	</main-binary>
 
 	<!-- We need to pack our own Python to avoid compatibility problems. -->
-	<binary>${prefix}/bin/python</binary>
+	<binary>
+		${prefix}/bin/${env:PYTHON}
+	</binary>
 
 	<data dest="${bundle}/Contents/MacOS/">
 		${project}/Helpers/Xpra

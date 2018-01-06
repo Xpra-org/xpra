@@ -158,14 +158,13 @@ rm ${MACOS_DIR}/Launcher-bin
 
 #ensure that every wrapper has a "python" executable to match:
 #(see PythonExecWrapper for why we need this "exec -a" workaround)
-python_executable="$RSCDIR/bin/python"
 for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 	#replace underscore with space in actual binary filename:
 	target="$RSCDIR/bin/`echo $x | sed 's+_+ +g'`"
 	if [ ! -e "$target" ]; then
 		#symlinks don't work for us here (osx uses the referent as program name)
 		#and hardlinks could cause problems, so we duplicate the file:
-		cp "$python_executable" "$target"
+		cp "$RSCDIR/bin"/python* "$target"
 	fi
 done
 #fix for:
