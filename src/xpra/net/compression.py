@@ -82,6 +82,7 @@ try:
                         #last known security issue:
                         assert LooseVersion(lz4.LZ4_VERSION)>=LooseVersion("r119"), "lz4 version %s is vulnerable and should not be used, see CVE-2014-4715" % lz4.LZ4_VERSION
                 lz4_version = lz4.LZ4_VERSION
+    has_lz4 = True
 except Exception as e:
     log("lz4 not found: %s", e)
     LZ4_uncompress = None
