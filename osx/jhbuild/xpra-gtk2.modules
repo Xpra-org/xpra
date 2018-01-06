@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+
+	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+
+	<include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/modulesets-stable/gtk-osx.modules"/>
+	<include href="xpra-tools.modules"/>
+	<include href="xpra-codecs.modules"/>
+	<include href="xpra-python.modules"/>
+
+
+	<!-- HACK: patch after autoreconf is run -->
+	<autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s %(autogenargs)s">
+	<branch module="/src/gtkglext-1.2.0.tar.bz2"
+		version="1.2.0"
+		checkoutdir="gtkglext-1.2.0"
+		repo="xpra.org">
+		<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/xpra-gtkglext.patch" strip="1"/>
+		<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-depth.patch" strip="1"/>
+		</branch>
+	</autotools>
+
+	<autotools id="pygtkglext" autogenargs="" autogen-sh="autogen.sh">
+		<branch module="/src/pygtkglext-896582f-20100112.tar.bz2"
+			version="896582f-20100112"
+			hash="md5:e831e0b84ece7180985b11032bc3706d"
+			checkoutdir="pygtkglext"
+			repo="xpra.org">
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-osx-v4.patch" strip="1"/>
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygtkglext-fix-gl-osx.patch" strip="0"/>
+		</branch>
+		<dependencies>
+			<dep package="gtkglext"/>
+		</dependencies>
+	</autotools>
+
+
+
+	<metamodule id="meta-osx-xpra-deps">
+		<dependencies>
+			<dep package="meta-gtk-osx-bootstrap"/>
+			<dep package="meta-gtk-osx-core"/>
+			<dep package="meta-gtk-osx-python"/>
+			<dep package="meta-gtk-osx-themes"/>
+			<dep package="gtkglext"/>
+			<dep package="pygtkglext"/>
+			<dep package="meta-osx-xpra-tools-deps"/>
+			<dep package="meta-osx-xpra-python-deps"/>
+			<dep package="meta-osx-xpra-codec-deps"/>
+			<dep package="meta-osx-xpra-pkgtools"/>
+			<dep package="meta-osx-xpra-subversion"/>
+		</dependencies>
+	</metamodule>
+
+</moduleset>

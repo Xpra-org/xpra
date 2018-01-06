@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+
+	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+
+	<include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/modulesets-stable/gtk-osx.modules"/>
+	<include href="xpra-tools.modules"/>
+	<include href="xpra-codecs.modules"/>
+	<include href="xpra-python3.modules"/>
+
+
+	<metamodule id="meta-osx-xpra-deps">
+		<dependencies>
+			<!-- we need some minimum python2 env - but what? -->
+			<dep package="meta-gtk-osx-bootstrap"/>
+			<dep package="meta-gtk-osx-gtk3"/>
+			<dep package="meta-gtk-osx-python3-gtk3"/>
+			<dep package="meta-gtk-osx-themes"/>
+			<dep package="meta-osx-xpra-tools-deps"/>
+			<dep package="meta-osx-xpra-python3-deps"/>
+			<dep package="meta-osx-xpra-codec-deps"/>
+			<dep package="meta-osx-xpra-pkgtools"/>
+			<dep package="meta-osx-xpra-subversion"/>
+		</dependencies>
+	</metamodule>
+
+</moduleset>
