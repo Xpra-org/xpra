@@ -165,6 +165,7 @@
 		<dependencies>
 			<dep package="python"/>
 			<dep package="openssl"/>
+			<dep package="python-cparser"/>
 			<dep package="python-cffi"/>
 			<dep package="python-six"/>
 			<dep package="python-asn1crypto"/>
