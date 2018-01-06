@@ -1,13 +1,13 @@
 --- a/libmp3lame/set_get.c
 +++ b/libmp3lame/set_get.c
 @@ -91,7 +91,7 @@ lame_set_num_channels(lame_global_flags * gfp, int num_channels)
-  {
-      if (is_lame_global_flags_valid(gfp)) {
-          /* default = 2 */
- -        if (2 < num_channels || 0 == num_channels) {
- +        if (1 != num_channels && 2 != num_channels) {
-              return -1;  /* we don't support more than 2 channels */
-          }
-          gfp->num_channels = num_channels;
- @@ -132,7 +132,7 @@ lame_get_scale(const lame_global_flags * gfp)
-  }
+ {
+     if (is_lame_global_flags_valid(gfp)) {
+         /* default = 2 */
+-        if (2 < num_channels || 0 == num_channels) {
++        if (1 != num_channels && 2 != num_channels) {
+             return -1;  /* we don't support more than 2 channels */
+         }
+         gfp->num_channels = num_channels;
+@@ -132,7 +132,7 @@ lame_get_scale(const lame_global_flags * gfp)
+ }
