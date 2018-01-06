@@ -1,0 +1,102 @@
+From efa0e51d721489a34284226ed566d81db337bb6e Mon Sep 17 00:00:00 2001
+From: Misty De Meo <mistydemeo@gmail.com>
+Date: Tue, 22 Apr 2014 08:51:34 -0700
+Subject: [PATCH] Fix g_get_monotonic_time() on non-Intel Darwin
+
+mach_absolute_time() returns "absolute_time_units" of nonspecified
+type. These are documented as being CPU dependent
+(https://developer.apple.com/library/mac/qa/qa1398/_index.html), so a
+mach_timebase_info_data_t struct is provided. This struct provides a
+numerator and denominator which can be used to translate
+mach_absolute_time() into seconds.
+
+However, g_get_monotonic_time() made the assumption that the units are
+actually scaled seconds. This is true on Intel (where the fraction in
+the mach_timebase_info_data_t struct was always 1/1), but not on
+ARM (read: iOS) or PowerPC. Since it's documented as not being stable,
+and that no assumptions should be made about it, it's also possible
+this could change on future Intel Macs.
+
+This reworks the function to support those cases. There's still a
+(simpler) shortcut if the fraction is 1/1; otherwise, the value is
+calculated from the mach_timebase_info_data_t fraction in the way
+recommended by Apple.
+---
+ glib/gmain.c | 54 +++++++++++++++++++++---------------------------------
+ 1 file changed, 21 insertions(+), 33 deletions(-)
+
+diff --git a/glib/gmain.c b/glib/gmain.c
+index 45ed402..3616064 100644
+--- a/glib/gmain.c
++++ b/glib/gmain.c
+@@ -2648,46 +2648,34 @@ gint64
+ g_get_monotonic_time (void)
+ {
+   static mach_timebase_info_data_t timebase_info;
++  static double absolute_to_micro;
+ 
+   if (timebase_info.denom == 0)
+     {
+-      /* This is a fraction that we must use to scale
+-       * mach_absolute_time() by in order to reach nanoseconds.
+-       *
+-       * We've only ever observed this to be 1/1, but maybe it could be
+-       * 1000/1 if mach time is microseconds already, or 1/1000 if
+-       * picoseconds.  Try to deal nicely with that.
++      /* mach_absolute_time() returns "absolute time units", rather than
++         seconds; the mach_timebase_info_data_t struct provides a
++         fraction that can be used to convert these units into seconds.
+        */
+       mach_timebase_info (&timebase_info);
+-
+-      /* We actually want microseconds... */
+-      if (timebase_info.numer % 1000 == 0)
+-        timebase_info.numer /= 1000;
+-      else
+-        timebase_info.denom *= 1000;
+-
+-      /* We want to make the numer 1 to avoid having to multiply... */
+-      if (timebase_info.denom % timebase_info.numer == 0)
+-        {
+-          timebase_info.denom /= timebase_info.numer;
+-          timebase_info.numer = 1;
+-        }
+-      else
+-        {
+-          /* We could just multiply by timebase_info.numer below, but why
+-           * bother for a case that may never actually exist...
+-           *
+-           * Plus -- performing the multiplication would risk integer
+-           * overflow.  If we ever actually end up in this situation, we
+-           * should more carefully evaluate the correct course of action.
+-           */
+-          mach_timebase_info (&timebase_info); /* Get a fresh copy for a better message */
+-          g_error ("Got weird mach timebase info of %d/%d.  Please file a bug against GLib.",
+-                   timebase_info.numer, timebase_info.denom);
+-        }
++      absolute_to_micro = 1e-3 * timebase_info.numer / timebase_info.denom;
+     }
+ 
+-  return mach_absolute_time () / timebase_info.denom;
++  if (timebase_info.denom == 1 && timebase_info.numer == 1)
++    {
++      /* On Intel, the fraction has been 1/1 to date, so we can shortcut
++         the conversion into microseconds.
++       */
++      return mach_absolute_time () / 1000;
++    }
++  else
++    {
++      /* On ARM and PowerPC, the value is unpredictable and is hardware
++         dependent, so we can't guess. Both the units and numer/denom
++         are extremely large, so the conversion number is stored as a
++         double in order to avoid integer overflow.
++       */
++      return mach_absolute_time () * absolute_to_micro;
++    }
+ }
+ #else
+ gint64
+-- 
+1.9.2
+

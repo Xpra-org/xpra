@@ -1,0 +1,84 @@
+diff --git a/configure.ac~ b/configure.ac
+index 05057e9..6ae550b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2954,13 +2954,26 @@ $ac_cv_sizeof_int)
+   guint64_constant='(val)'
+   ;;
+ $ac_cv_sizeof_long)
+-  gint64=long
+-  gint64_modifier='"l"'
+-  gint64_format='"li"'
+-  guint64_format='"lu"'
+-  glib_extension=
+-  gint64_constant='(val##L)'
+-  guint64_constant='(val##UL)'
++  case $host in
++  *-*-darwin*)
++    gint64='long long'
++    gint64_modifier='"ll"'
++    gint64_format='"lli"'
++    guint64_format='"llu"'
++    glib_extension=
++    gint64_constant='(val##LL)'
++    guint64_constant='(val##ULL)'
++    ;;
++  *)
++    gint64=long
++    gint64_modifier='"l"'
++    gint64_format='"li"'
++    guint64_format='"lu"'
++    glib_extension=
++    gint64_constant='(val##L)'
++    guint64_constant='(val##UL)'
++    ;;
++  esac
+   ;;
+ $ac_cv_sizeof_long_long)
+   gint64='long long'
+@@ -3053,12 +3066,23 @@ $ac_cv_sizeof_int)
+   glib_gpui_cast='(guint)'
+   ;;
+ $ac_cv_sizeof_long)
+-  glib_intptr_type_define=long
+-  gintptr_modifier='"l"'
+-  gintptr_format='"li"'
+-  guintptr_format='"lu"'
+-  glib_gpi_cast='(glong)'
+-  glib_gpui_cast='(gulong)'
++  case $host in *-*-darwin*)
++    glib_intptr_type_define='long long'
++    gintptr_modifier='"I64"'
++    gintptr_format='"I64i"'
++    guintptr_format='"I64u"'
++    glib_gpi_cast='(gint64)'
++    glib_gpui_cast='(guint64)'
++    ;;
++  *)
++    glib_intptr_type_define=long
++    gintptr_modifier='"l"'
++    gintptr_format='"li"'
++    guintptr_format='"lu"'
++    glib_gpi_cast='(glong)'
++    glib_gpui_cast='(gulong)'
++    ;;
++  esac
+   ;;
+ $ac_cv_sizeof_long_long)
+   glib_intptr_type_define='long long'
+@@ -3193,7 +3217,14 @@ $ac_cv_sizeof_int)
+   gint64=int
+   ;;
+ $ac_cv_sizeof_long)
+-  gint64=long
++  case $host in
++  *-*-darwin*)
++    gint64='long long'
++    ;;
++  *)
++    gint64=long
++    ;;
++  esac
+   ;;
+ $ac_cv_sizeof_long_long)
+   gint64='long long'

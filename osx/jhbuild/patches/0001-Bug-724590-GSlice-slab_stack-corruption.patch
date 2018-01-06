@@ -1,0 +1,28 @@
+From 1b21a85f1914eecc107319cb94e8c8517291599b Mon Sep 17 00:00:00 2001
+From: John Ralls <jralls@ceridwen.us>
+Date: Mon, 17 Feb 2014 15:51:38 -0800
+Subject: [PATCH] Bug 724590 - GSlice slab_stack corruption
+
+Dereference allocation->contention_counters before trying to take the
+address of an element.
+---
+ glib/gslice.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/glib/gslice.c b/glib/gslice.c
+index 0563d80..2c5f4fb 100644
+--- a/glib/gslice.c
++++ b/glib/gslice.c
+@@ -715,7 +715,8 @@ static ChunkLink*
+ magazine_cache_pop_magazine (guint  ix,
+                              gsize *countp)
+ {
+-  g_mutex_lock_a (&allocator->magazine_mutex, &allocator->contention_counters[ix]);
++  guint *counters = allocator->contention_counters;
++  g_mutex_lock_a (&allocator->magazine_mutex, &counters[ix]);
+   if (!allocator->magazines[ix])
+     {
+       guint magazine_threshold = allocator_get_magazine_threshold (allocator, ix);
+-- 
+1.8.3.rc0
+
