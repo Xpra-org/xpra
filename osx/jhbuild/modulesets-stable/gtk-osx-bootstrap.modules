@@ -46,6 +46,9 @@
     <branch module="project/libjpeg-turbo/1.5.3/libjpeg-turbo-1.5.3.tar.gz" version="1.5.3"
     		hash="sha256:b24890e2bb46e12e72a79f7e965f409f4e16466d00e1dd15d93d73ee6b592523"
             repo="sourceforge" />
+    <dependencies>
+      <dep package="nasm"/>
+    </dependencies>
   </autotools>
 
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
