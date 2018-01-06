@@ -53,7 +53,6 @@
   <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-random.modules"/>
   <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-themes.modules"/>
   <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-unsupported.modules"/>
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra.modules"/> <!--include for simplicity-->
 
   <metamodule id="meta-gtk-osx-core">
     <dependencies>

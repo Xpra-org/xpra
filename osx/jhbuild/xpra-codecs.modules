@@ -1,0 +1,224 @@
+<?xml version="1.0"?>
+<!DOCTYPE moduleset SYSTEM "moduleset.dtd">
+<?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
+<moduleset>
+
+	<repository type="tarball" name="downloads.xiph.org" href="http://downloads.xiph.org"/>
+	<repository type="tarball" name="winswitch.org" href="http://winswitch.org"/>
+	<repository type="tarball" name="download.videolan.org" href="http://download.videolan.org"/>
+	<repository type="tarball" name="downloads.webmproject.org" href="http://downloads.webmproject.org"/>
+	<repository type="tarball" name="ffmpeg.org" href="http://ffmpeg.org"/>
+	<repository type="tarball" name="www.libsdl.org" href="http://www.libsdl.org"/>
+	<repository type="tarball" name="gmplib.org" href="http://gmplib.org/"/>
+	<repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
+	<repository type="tarball" name="download.oracle.com" href="http://download.oracle.com"/>
+	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+	<repository type="tarball" name="storage.googleapis.com" href="http://storage.googleapis.com/"/>
+	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
+	<repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
+	<repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
+
+
+	<autotools id="libogg" autogenargs="" autogen-sh="configure">
+		<branch module="/releases/ogg/libogg-1.3.2.tar.xz"
+			version="1.3.2"
+			hash="md5:5c3a34309d8b98640827e5d0991a4015"
+			repo="downloads.xiph.org"/>
+	</autotools>
+
+	<autotools id="libvorbis" autogenargs="" autogen-sh="configure">
+		<branch module="/releases/vorbis/libvorbis-1.3.5.tar.xz"
+			version="1.3.5"
+			hash="md5:28cb28097c07a735d6af56e598e1c90f"
+			repo="downloads.xiph.org"/>
+	</autotools>
+
+	<autotools id="libtheora" autogenargs="--disable-examples" autogen-sh="configure">
+		<branch module="/releases/theora/libtheora-1.1.1.tar.bz2"
+			version="1.1.1"
+			hash="md5:292ab65cedd5021d6b7ddd117e07cd8e"
+			repo="downloads.xiph.org"/>
+		<dependencies>
+			<dep package="libogg"/>
+			<dep package="libvorbis"/>
+		</dependencies>
+	</autotools>
+
+	<autotools id="speex" autogen-sh="configure">
+		<branch module="/releases/speex/speex-1.2.0.tar.gz"
+			version="1.2.0"
+			hash="sha256:eaae8af0ac742dc7d542c9439ac72f1f385ce838392dc849cae4536af9210094"
+			repo="downloads.xiph.org"/>
+	</autotools>
+
+	<autotools id="lame" autogenargs="" autogen-sh="configure">
+		<branch module="/src/lame-3.99.5.tar.gz"
+			version="3.99.5"
+			hash="md5:84835b313d4a8b68f5349816d33e07ce"
+			repo="winswitch.org">
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lame-channels.patch" strip="1" />
+		</branch>
+		<dependencies>
+			<dep package="nasm"/>
+		</dependencies>
+	</autotools>
+
+	<autotools id="twolame" autogenargs="" autogen-sh="configure">
+		<branch module="/src/twolame-0.3.13.tar.gz"
+			version="0.3.13"
+			hash="md5:4113d8aa80194459b45b83d4dbde8ddb"
+			repo="winswitch.org"/>
+	</autotools>
+
+	<autotools id="libmad" autogen-sh="configure">
+		<branch module="/src/libmad-0.15.1b.tar.gz"
+			version="0.15.1b"
+			hash="md5:1be543bc30c56fb6bea1d7bf6a64e66c"
+			repo="winswitch.org"/>
+	</autotools>
+
+	<autotools id="faac" autogenargs="" autogen-sh="configure">
+		<branch module="/src/faac-1.28.tar.bz2"
+			version="1.28"
+			hash="md5:c5dde68840cefe46532089c9392d1df0"
+			repo="winswitch.org"/>
+	</autotools>
+
+	<autotools id="faad2" autogenargs="" autogen-sh="configure">
+		<branch module="/src/faad2-2.7.tar.bz2"
+			version="2.7"
+			hash="md5:4c332fa23febc0e4648064685a3d4332"
+			repo="winswitch.org"/>
+	</autotools>
+
+	<autotools id="flac" autogenargs="--disable-asm-optimizations" autogen-sh="configure">
+		<branch module="/releases/flac/flac-1.3.2.tar.xz"
+			version="1.3.2"
+			hash="sha256:91cfc3ed61dc40f47f050a109b08610667d73477af6ef36dcad31c31a4a8d53f"
+			repo="downloads.xiph.org"/>
+		<dependencies>
+			<dep package="nasm"/>
+			<dep package="libogg"/>
+		</dependencies>
+	</autotools>
+
+	<autotools id="opus" autogenargs="" autogen-sh="configure">
+		<branch module="/pub/opus/opus-1.2.1.tar.gz"
+			version="1.2.1"
+			hash="sha256:cfafd339ccd9c5ef8d6ab15d7e1a412c054bf4cb4ecbbbcc78c12ef2def70732"
+			repo="archive.mozilla.org"/>
+	</autotools>
+
+	<autotools id="libvpx"
+		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
+		autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv"
+		autogen-sh="configure">
+		<branch module="/downloads.webmproject.org/releases/webm/libvpx-1.6.1.tar.bz2"
+			version="1.6.1"
+			hash="sha256:1c2c0c2a97fba9474943be34ee39337dee756780fc12870ba1dc68372586a819"
+			repo="storage.googleapis.com"/>
+		<dependencies>
+			<dep package="yasm"/>
+		</dependencies>
+	</autotools>
+
+	<autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
+		<branch module="/pub/x264/snapshots/x264-snapshot-20171222-2245-stable.tar.bz2"
+			version="20171222-2245-stable"
+			hash="sha256:420a2d0dc817f2fa7247c30c253f94c041fc4c41a9c04fd39f4a0e6867cb89fb"
+			repo="download.videolan.org"/>
+		<dependencies>
+			<dep package="yasm"/>
+		</dependencies>
+		<after>
+			<dep package="yasm"/>
+		</after>
+	</autotools>
+
+	<autotools id="libwebp" autogenargs="" autogen-sh="configure">
+		 <branch module="/releases/webp/libwebp-0.6.1.tar.gz"
+			 version="0.6.1"
+			 hash="sha256:06503c782d9f151baa325591c3579c68ed700ffc62d4f5a32feead0ff017d8ab"
+			 repo="downloads.webmproject.org"/>
+		 <dependencies>
+			 <dep package="libjpeg"/>
+			 <dep package="libpng"/>
+			 <dep package="libtiff"/>
+		 </dependencies>
+	</autotools>
+
+	<autotools id="ffmpeg"
+		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
+		autogenargs="--enable-runtime-cpudetect --enable-pic
+					--enable-static --enable-shared --enable-gpl
+					--disable-everything
+					--enable-swscale --enable-decoder=h264 --enable-decoder=mpeg4
+					--enable-libvpx --enable-decoder=vp8 --enable-decoder=vp9 --enable-decoder=hevc --enable-decoder=mpeg4
+					--enable-encoder=libvpx_vp8 --enable-encoder=libvpx_vp9 --enable-encoder=mpeg4
+					--enable-muxer=mp4 --enable-muxer=webm --enable-muxer=matroska --enable-muxer=ogg
+					--disable-protocol=tcp --disable-protocol=rtp
+					--disable-filter=aformat --disable-filter=crop --disable-filter=setpts
+					--disable-filter=anull --disable-filter=format --disable-filter=trim
+					--disable-filter=atrim --disable-filter=null
+					--disable-programs --disable-avfilter --disable-doc"
+		autogen-sh="configure">
+		<branch module="/releases/ffmpeg-3.4.1.tar.xz"
+			version="3.4.1"
+			hash="sha256:5a77278a63741efa74e26bf197b9bb09ac6381b9757391b922407210f0f991c0"
+			repo="ffmpeg.org"/>
+		<dependencies>
+			<dep package="x264"/>
+			<dep package="libvpx"/>
+		</dependencies>
+		<after>
+			<dep package="x264"/>
+			<dep package="libvpx"/>
+		</after>
+	</autotools>
+
+	<autotools id="sdl" autogenargs="" autogen-sh="configure">
+		<branch module="/release/SDL-1.2.15.tar.gz"
+			version="1.2.15"
+			hash="md5:9d96df8417572a2afb781a7c4c811a85"
+			repo="www.libsdl.org"/>
+	</autotools>
+
+	<cmake id="libyuv">
+		<branch module="/src/libyuv-cb9a58f25fbdf8382d68680f022959022f746ef2.tar.xz"
+			version="cb9a58f"
+			hash="sha256:eb76578955cfd005fc4964b06374cee0f125472bf433ebf038a377c5b82906d6"
+			repo="xpra.org">
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/libyuv-nojpeg.patch" strip="1" />
+		</branch>
+	</cmake>
+
+	<metamodule id="meta-osx-xpra-codec-deps">
+		<dependencies>
+			<dep package="yasm"/>
+			<dep package="nasm"/>
+			<dep package="liborc"/>
+			<dep package="libogg"/>
+			<dep package="libtheora"/>
+			<dep package="libvorbis"/>
+			<dep package="speex"/>
+			<dep package="lame"/>
+			<dep package="twolame"/>
+			<dep package="libmad"/>
+			<dep package="faac"/>
+			<dep package="faad2"/>
+			<dep package="flac"/>
+			<dep package="opus"/>
+			<dep package="libyuv"/>
+			<dep package="libvpx"/>
+			<dep package="x264"/>
+			<dep package="libwebp"/>
+			<dep package="ffmpeg"/>
+			<dep package="meta-gstreamer"/>
+			<!--
+			sdl doesn't build with newer versions of osx because of missing X header files
+			<dep package="sdl"/>
+			-->
+		</dependencies>
+	</metamodule>
+
+</moduleset>
