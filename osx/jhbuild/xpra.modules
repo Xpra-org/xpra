@@ -5,11 +5,11 @@
 
   <repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/moduleset-stable/gtk-osx.modules"/>
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-tools.modules"/>
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-codecs.modules"/>
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-python.modules"/>
-  <include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/xpra-python3.modules"/>
+  <include href="/moduleset-stable/gtk-osx.modules"/>
+  <include href="xpra-tools.modules"/>
+  <include href="xpra-codecs.modules"/>
+  <include href="xpra-python.modules"/>
+  <include href="xpra-python3.modules"/>
 
 
   <!-- HACK: patch after autoreconf is run -->
