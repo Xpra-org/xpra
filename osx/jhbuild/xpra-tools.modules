@@ -3,6 +3,7 @@
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
 
+	<repository name="openssl" type="tarball" href="https://www.openssl.org/source/"/>
 	<repository type="tarball" name="cpan.org" href="http://www.cpan.org/"/>
 	<repository type="tarball" name="sourceforge.net" href="http://downloads.sourceforge.net"/>
 	<repository type="tarball" name="ftp.gnu.org" href="ftp://ftp.gnu.org"/>
