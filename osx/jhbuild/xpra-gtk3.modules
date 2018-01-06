@@ -31,6 +31,23 @@
 		</after>
 	</autotools>
 
+	<autotools id="gobject-introspection" autogen-sh="configure">
+		<branch module="gobject-introspection/1.52/gobject-introspection-1.52.1.tar.xz"
+						version="1.52.1"
+						hash="sha256:2ed0c38d52fe1aa6fc4def0c868fe481cb87b532fc694756b26d6cfab29faff4">
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gi_cairo_library_path.patch" strip="1"/>
+		</branch>
+		<dependencies>
+			<dep package="glib"/>
+			<dep package="cairo"/>
+		</dependencies>
+		<after>
+			<dep package='python'/>
+			<dep package='python3'/>
+		</after>
+	</autotools>
+
 
 	<metamodule id="meta-osx-xpra-deps">
 		<dependencies>

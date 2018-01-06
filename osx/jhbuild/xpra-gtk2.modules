@@ -15,7 +15,7 @@
 
 	<autotools id="glib" autogen-sh="autoreconf"
 				autogenargs="--with-pcre=internal">
-		<branch module="glib/2.48/glib-2.48.0.tar.xz"  version="2.48.0"
+		<branch module="glib/2.48/glib-2.48.0.tar.xz"	version="2.48.0"
 				hash="sha256:744be6931ca914c68af98dc38ff6b0cf8381d65e335060faddfbf04c17147c34">
 			<patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
 			<patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
@@ -31,6 +31,29 @@
 			<dep package="meta-gtk-osx-bootstrap"/>
 		</after>
 	</autotools>
+
+	<autotools id="gobject-introspection" autogen-sh="configure">
+		<branch module="gobject-introspection/1.48/gobject-introspection-1.48.0.tar.xz"
+						version="1.48.0"
+						hash="sha256:fa275aaccdbfc91ec0bc9a6fd0562051acdba731e7d584b64a277fec60e75877">
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gi_cairo_library_path.patch" strip="1"/>
+		</branch>
+		<dependencies>
+			<dep package="glib"/>
+			<dep package="cairo"/>
+			<if condition-set='64-bit'>
+				<dep package='python'/>
+			</if>
+		</dependencies>
+		<if condition-unset='64-bit'>
+			<after>
+				<dep package='python'/>
+			</after>
+		</if>
+	</autotools>
+
+
 
 	<!-- HACK: patch after autoreconf is run -->
 	<autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s %(autogenargs)s">
