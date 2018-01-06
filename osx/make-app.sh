@@ -164,7 +164,7 @@ for x in `ls "$HELPERS_DIR" | egrep -v "Python|gst-plugin-scanner"`; do
 	if [ ! -e "$target" ]; then
 		#symlinks don't work for us here (osx uses the referent as program name)
 		#and hardlinks could cause problems, so we duplicate the file:
-		cp "$RSCDIR/bin"/python* "$target"
+		cp "$RSCDIR/bin/python" "$target"
 	fi
 done
 #fix for:

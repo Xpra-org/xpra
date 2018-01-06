@@ -17,7 +17,7 @@
 	</main-binary>
 
 	<!-- We need to pack our own Python to avoid compatibility problems. -->
-	<binary>
+	<binary dest="${bundle}/Contents/Resources/bin/Python">
 		${prefix}/bin/${env:PYTHON}
 	</binary>
 
