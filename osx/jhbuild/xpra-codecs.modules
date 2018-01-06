@@ -3,6 +3,9 @@
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
 
+	<repository type="tarball" name="www.tortall.net" href="http://www.tortall.net"/>
+	<repository type="tarball" name="www.nasm.us" href="http://www.nasm.us"/>
+
 	<repository type="tarball" name="downloads.xiph.org" href="http://downloads.xiph.org"/>
 	<repository type="tarball" name="winswitch.org" href="http://winswitch.org"/>
 	<repository type="tarball" name="download.videolan.org" href="http://download.videolan.org"/>
@@ -17,6 +20,23 @@
 	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
 	<repository type="tarball" name="github.com" default="yes" href="https://github.com/"/>
 	<repository type="tarball" name="archive.mozilla.org" href="https://archive.mozilla.org"/>
+
+
+	<autotools id="yasm" autogen-sh="configure">
+		<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
+			version="1.3.0"
+			hash="md5:fc9e586751ff789b34b1f21d572d96af"
+			repo="www.tortall.net"/>
+	</autotools>
+
+	<autotools id="nasm" autogenargs="" autogen-sh="configure">
+		<branch module="/pub/nasm/releasebuilds/2.13/nasm-2.13.tar.xz"
+			version="2.13"
+			hash="sha256:ba854c2f02f34f0d6a4611c05e8cb65d9fae8c2b21a4def7fba91a7d67ffde97"
+			repo="www.nasm.us">
+			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
+		</branch>
+	</autotools>
 
 
 	<autotools id="libogg" autogenargs="" autogen-sh="configure">

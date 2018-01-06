@@ -7,8 +7,6 @@
 	<repository type="tarball" name="sourceforge.net" href="http://downloads.sourceforge.net"/>
 	<repository type="tarball" name="ftp.gnu.org" href="ftp://ftp.gnu.org"/>
 	<repository type="tarball" name="ftp.pcre.org" href="https://ftp.pcre.org"/>
-	<repository type="tarball" name="www.tortall.net" href="http://www.tortall.net"/>
-	<repository type="tarball" name="www.nasm.us" href="http://www.nasm.us"/>
 	<repository type="tarball" name="gmplib.org" href="http://gmplib.org/"/>
 	<repository type="tarball" name="www.mpfr.org" href="http://www.mpfr.org"/>
 	<repository type="tarball" name="download.oracle.com" href="http://download.oracle.com"/>
@@ -92,22 +90,6 @@
 			hash="sha256:6870f9c2c63ef58d7da36e5212a3e1358427572f6ac5a8b5a73a815cf3e0c4a6"
 			repo="github.com"/>
 	</cmake>
-
-	<autotools id="yasm" autogen-sh="configure">
-		<branch module="/projects/yasm/releases/yasm-1.3.0.tar.gz"
-			version="1.3.0"
-			hash="md5:fc9e586751ff789b34b1f21d572d96af"
-			repo="www.tortall.net"/>
-	</autotools>
-
-	<autotools id="nasm" autogenargs="" autogen-sh="configure">
-		<branch module="/pub/nasm/releasebuilds/2.13/nasm-2.13.tar.xz"
-			version="2.13"
-			hash="sha256:ba854c2f02f34f0d6a4611c05e8cb65d9fae8c2b21a4def7fba91a7d67ffde97"
-			repo="www.nasm.us">
-			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
-		</branch>
-	</autotools>
 
 	<autotools id="gmplib" autogen-sh="configure">
 		<branch module="/download/gmp/gmp-6.1.2.tar.xz"
@@ -257,8 +239,6 @@
 
 	<metamodule id="meta-osx-xpra-tools-deps">
 		<dependencies>
-			<dep package="yasm"/>
-			<dep package="nasm"/>
 			<dep package="sshpass"/>
 			<dep package="gtk-mac-bundler"/>
 		</dependencies>
