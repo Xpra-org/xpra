@@ -4,12 +4,33 @@
 <moduleset>
 
 	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
+	<repository type="tarball" name="ftp.gnome.org" default="yes"
+				href="http://ftp.gnome.org/pub/GNOME/sources/"/>
 
 	<include href="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/modulesets-stable/gtk-osx.modules"/>
 	<include href="xpra-tools.modules"/>
 	<include href="xpra-codecs.modules"/>
 	<include href="xpra-python.modules"/>
 
+
+	<autotools id="glib" autogen-sh="autoreconf"
+				autogenargs="--with-pcre=internal">
+		<branch module="glib/2.48/glib-2.48.0.tar.xz"  version="2.48.0"
+				hash="sha256:744be6931ca914c68af98dc38ff6b0cf8381d65e335060faddfbf04c17147c34">
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Fix-g_get_monotonic_time-on-non-Intel-Darwin.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-724590-GSlice-slab_stack-corruption.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gio-in-reserved-in-gcc-48.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug747146-Build-cocoanotification-only-if-supported.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-gint64-long-long.patch" strip="1"/>
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-bug-772454-disable-kqueue.patch" strip="1"/>
+		</branch>
+		<dependencies>
+			<dep package="libffi"/>
+		</dependencies>
+		<after>
+			<dep package="meta-gtk-osx-bootstrap"/>
+		</after>
+	</autotools>
 
 	<!-- HACK: patch after autoreconf is run -->
 	<autotools id="gtkglext" autogenargs="--with-gdktarget=quartz" autogen-template="autoreconf -fiv &amp;&amp; curl -O -k http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtkglext-osx-quartztagfix.patch &amp;&amp; patch -p1 &lt; gtkglext-osx-quartztagfix.patch &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s %(autogenargs)s">
