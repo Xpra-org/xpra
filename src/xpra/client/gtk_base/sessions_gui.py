@@ -198,7 +198,7 @@ class SessionsGUI(gtk.Window):
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             key = (uuid, uuid or i, host, display, platform, dtype)
-            log("populate_table: key[%i]=%s", key)
+            log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
         for key, recs in d.items():
             if type(key)==tuple:
