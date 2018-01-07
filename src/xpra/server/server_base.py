@@ -2164,6 +2164,8 @@ class ServerBase(ServerCore):
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
         assert self.notifications_forwarder and self.notifications
+        if os.path.isabs(str(app_icon)):
+            app_icon = ""
         log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s)", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
         for ss in self._server_sources.values():
             ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
