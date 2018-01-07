@@ -162,6 +162,13 @@ div.windowinfocus {
 	box-shadow: 0 1rem 2rem rgba(21, 36, 48, 0.75);
 	overflow: hidden;
 }
+.notification_icon {
+	max-width: 128px;
+	max-height: 128px;
+	float: left;
+	padding: .4rem;
+	padding-left: 1rem;
+}
 @media screen and (max-width: 600px) {
 	.notifications {
 		bottom: 0;
@@ -174,7 +181,7 @@ div.windowinfocus {
 		border-radius: 10;
 		text-align: center;
 		padding: .5rem;
-		opacity: 1;
+		opacity: 40;
 		margin-top: -2rem;
 		position: relative;
 		transform: translateY(2rem);

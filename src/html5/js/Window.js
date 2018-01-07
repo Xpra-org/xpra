@@ -932,7 +932,7 @@ XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
 	if (encoding=="png") {
 		//move title to the right:
 		$("#title"+ String(this.wid)).css('left', 32);
-		src = "data:image/"+encoding+";base64," + this._arrayBufferToBase64(img_data);
+		src = "data:image/"+encoding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 	}
 	jQuery('#windowicon' + String(this.wid)).attr('src', src);
 	return src;
@@ -965,22 +965,6 @@ XpraWindow.prototype.draw = function() {
 	this.canvas_ctx.drawImage(this.draw_canvas, 0, 0);
 };
 
-XpraWindow.prototype._arrayBufferToBase64 = function(uintArray) {
-	// apply in chunks of 10400 to avoid call stack overflow
-	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
-	var s = "";
-	var skip = 10400;
-	if (uintArray.subarray) {
-		for (var i=0, len=uintArray.length; i<len; i+=skip) {
-			s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
-		}
-	} else {
-		for (var i=0, len=uintArray.length; i<len; i+=skip) {
-			s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
-		}
-	}
-	return window.btoa(s);
-}
 
 /**
  * The following function inits the Broadway h264 decoder
@@ -1268,7 +1252,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				paint_error("failed to load into image tag:", coding);
 				me.may_paint_now();
 			}
-			j.src = "data:image/"+coding+";base64," + this._arrayBufferToBase64(img_data);
+			j.src = "data:image/"+coding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 		}
 		else if (coding=="h264") {
 			var frame = options["frame"] || -1;

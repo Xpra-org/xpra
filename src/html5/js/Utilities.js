@@ -371,6 +371,23 @@ var Utilities = {
 		return c.join("");
 	},
 
+	ArrayBufferToBase64 : function(uintArray) {
+		// apply in chunks of 10400 to avoid call stack overflow
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
+		var s = "";
+		var skip = 10400;
+		if (uintArray.subarray) {
+			for (var i=0, len=uintArray.length; i<len; i+=skip) {
+				s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
+			}
+		} else {
+			for (var i=0, len=uintArray.length; i<len; i+=skip) {
+				s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
+			}
+		}
+		return window.btoa(s);
+	},
+
 	/**
 	 * XmlHttpRequest's getAllResponseHeaders() method returns a string of response
 	 * headers according to the format described here:

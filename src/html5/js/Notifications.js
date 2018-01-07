@@ -9,15 +9,26 @@
 
 $(function() {
 
-	window.doNotification = function(type, nid, title, message, timeout, onTimeOut){
+	window.doNotification = function(type, nid, title, message, timeout, icon, onTimeOut){
 		var nID = 'notification' + nid;
 		var a = $('<div id="' + nID + '" class="alert ' + type + '">'+
+					'<img class="notification_icon" id="notification_icon' + nID + '"></img>'+
 					'<span class="title">'+title+'</span>'+
 					'<span class="message">' + message + '</span>'+
 					'<div class="dismiss">&#215;</div>'+
 				  '</div>');
 		$('.notifications').prepend(a);
-
+		if (icon) {
+			var encoding = icon[0],
+				w = icon[1],
+				h = icon[2],
+				img_data = icon[3];
+			if (encoding=="png") {
+				var src = "data:image/"+encoding+";base64," + window.btoa(img_data);
+				$("#notification_icon"+nID).attr('src', src);
+			}
+		}
+		
 		a.on('click', '.dismiss', function() {
 			a.removeClass('visible').addClass('hidden');
 			a.on('transitionend webkitTransitionEnd', $.debounce(250, function() {

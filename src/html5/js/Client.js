@@ -1939,6 +1939,7 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	var summary = packet[6];
 	var body = packet[7];
 	var expire_timeout = packet[8];
+	var icon = packet[9];
 	if(window.closeNotification) {
 		if (replaces_nid>0) {
 			window.closeNotification(replaces_nid);
@@ -1946,7 +1947,7 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 		window.closeNotification(nid);
 	}
 	if(window.doNotification) {
-		window.doNotification("info", nid, summary, body, expire_timeout);
+		window.doNotification("info", nid, summary, body, expire_timeout, icon);
 	}
 	ctx._new_ui_event();
 }
