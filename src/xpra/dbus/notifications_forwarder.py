@@ -8,7 +8,7 @@ import gtk
 import dbus.service
 
 from xpra.log import Logger
-log = Logger("dbus")
+log = Logger("dbus", "notify")
 
 BUS_NAME="org.freedesktop.Notifications"
 BUS_PATH="/org/freedesktop/Notifications"
