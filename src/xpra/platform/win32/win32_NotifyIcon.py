@@ -70,7 +70,8 @@ if ISWIN7ORHIGHER:
 else:
     MAX_TIP_SIZE = 64
 
-NOTIFYICONDATA_fields= [
+class NOTIFYICONDATA(Structure):
+    _fields_ = [
         ("cbSize",              DWORD),
         ("hWnd",                HWND),
         ("uID",                 UINT),
@@ -87,15 +88,6 @@ NOTIFYICONDATA_fields= [
         ("guidItem",            GUID),
         ("hBalloonIcon",        HICON),
     ]
-
-if ISWIN7ORHIGHER:
-    #full:
-    class NOTIFYICONDATA(Structure):
-        _fields_ = NOTIFYICONDATA_fields[:]
-else:
-    #winxp: V2
-    class NOTIFYICONDATA(Structure):
-        _fields_ = NOTIFYICONDATA_fields[:-2]
 
 shell32 = WinDLL("shell32", use_last_error=True)
 Shell_NotifyIcon = shell32.Shell_NotifyIcon
@@ -207,6 +199,38 @@ BUTTON_MAP = {
             }
 
 
+def image_to_ICONINFO(img):
+    w, h = img.size
+    from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
+    bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", "BGRA")))
+    return make_ICONINFO(w, h, bgra)
+
+def make_ICONINFO(w, h, bgra):
+    bitmap = 0
+    mask = 0
+    try:
+        bitmap = rgba_to_bitmap(bgra, w, h)
+        mask = CreateBitmap(w, h, 1, 1, None)
+
+        iconinfo = ICONINFO()
+        iconinfo.fIcon = True
+        iconinfo.hbmMask = mask
+        iconinfo.hbmColor = bitmap
+        hicon = CreateIconIndirect(byref(iconinfo))
+        log("CreateIconIndirect()=%#x", hicon)
+        if not hicon:
+            raise ctypes.WinError(ctypes.get_last_error())
+        return hicon
+    except Exception:
+        log.error("Error: failed to set tray icon", exc_info=True)
+        return FALLBACK_ICON
+    finally:
+        if mask:
+            DeleteObject(mask)
+        if bitmap:
+            DeleteObject(bitmap)
+
+
 def rgba_to_bitmap(rgba, w, h):
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
@@ -298,16 +322,13 @@ class win32NotifyIcon(object):
         #szInfoTitle
         #dwInfoFlags
         #hBalloonIcon
-        if ISWIN7ORHIGHER:
-            #flags |= NIF_SHOWTIP
-            if self.app_id==XPRA_APP_ID:
-                nid.guidItem = XPRA_GUID
-                flags |= NIF_GUID
-            else:
-                nid.uID = self.app_id
-            nid.uVersion = 4
+        #flags |= NIF_SHOWTIP
+        if self.app_id==XPRA_APP_ID:
+            nid.guidItem = XPRA_GUID
+            flags |= NIF_GUID
         else:
-            nid.uVersion = 3
+            nid.uID = self.app_id
+        nid.uVersion = 4
         nid.uFlags = flags
         log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
@@ -364,30 +385,7 @@ class win32NotifyIcon(object):
             img = img.resize((icon_w, icon_h), Image.ANTIALIAS)
             rowstride = w*4
 
-        bitmap = 0
-        mask = 0
-        try:
-            from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
-            bgra = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", img_format)))
-            bitmap = rgba_to_bitmap(bgra, icon_w, icon_h)
-            mask = CreateBitmap(icon_w, icon_h, 1, 1, None)
-
-            iconinfo = ICONINFO()
-            iconinfo.fIcon = True
-            iconinfo.hbmMask = mask
-            iconinfo.hbmColor = bitmap
-            hicon = CreateIconIndirect(byref(iconinfo))
-            log("CreateIconIndirect()=%#x", hicon)
-            if not hicon:
-                raise ctypes.WinError(ctypes.get_last_error())
-        except Exception:
-            log.error("Error: failed to set tray icon", exc_info=True)
-            hicon = FALLBACK_ICON
-        finally:
-            if mask:
-                DeleteObject(mask)
-            if bitmap:
-                DeleteObject(bitmap)
+        hicon = image_to_ICONINFO(img)
         self.do_set_icon(hicon)
         UpdateWindow(self.hwnd)
         self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
