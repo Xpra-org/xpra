@@ -188,7 +188,9 @@ class SessionsGUI(gtk.Window):
         self.table.resize(1+len(self.records), 5)
         #group them by uuid
         d = OrderedDict()
-        for i, (interface, protocol, name, stype, domain, host, address, port, text) in enumerate(self.records):
+        for i, record in enumerate(self.records):
+            interface, protocol, name, stype, domain, host, address, port, text = record
+            log("populate_table: record[%i]=%s", i, record)
             uuid = text.get("uuid", "")
             display = text.get("display", "")
             platform = text.get("platform", "")
@@ -196,7 +198,7 @@ class SessionsGUI(gtk.Window):
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             key = (uuid, uuid or i, host, display, platform, dtype)
-            log.info("key=%s", key)
+            log("populate_table: key[%i]=%s", key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
         for key, recs in d.items():
             if type(key)==tuple:
