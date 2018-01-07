@@ -38,6 +38,7 @@ from xpra.client.notifications.notifier_base import NotifierBase, log
 class GTK2_Notifier(NotifierBase):
 
     def __init__(self, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
+        NotifierBase.__init__(self)
         """
         Create a new notification stack.  The recommended way to create Popup instances.
           Parameters:

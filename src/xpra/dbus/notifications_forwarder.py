@@ -23,7 +23,7 @@ The generalized callback signatures are:
 """
 class DBUSNotificationsForwarder(dbus.service.Object):
 
-    CAPABILITIES = ["body", "icon-static"]
+    CAPABILITIES = ["body", "icon-static", "actions", "action-icons"]
 
     def __init__(self, bus, notify_callback=None, close_callback=None):
         self.bus = bus

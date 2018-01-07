@@ -12,9 +12,6 @@ log = Logger("notify")
 
 class GTK3_Notifier(NotifierBase):
 
-    def __init__(self):
-        self.temp_files = {}
-
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
