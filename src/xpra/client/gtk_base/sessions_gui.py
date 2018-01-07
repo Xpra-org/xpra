@@ -23,6 +23,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
 from xpra.net.net_util import if_indextoname
+from xpra.util import typedict
 from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 log = Logger("client", "util")
@@ -190,11 +191,12 @@ class SessionsGUI(gtk.Window):
         d = OrderedDict()
         for i, record in enumerate(self.records):
             interface, protocol, name, stype, domain, host, address, port, text = record
+            td = typedict(text)
             log("populate_table: record[%i]=%s", i, record)
-            uuid = text.get("uuid", "")
-            display = text.get("display", "")
-            platform = text.get("platform", "")
-            dtype = text.get("type", "")
+            uuid = td.strget("uuid", "")
+            display = td.strget("display", "")
+            platform = td.strget("platform", "")
+            dtype = td.strget("type", "")
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             key = (uuid, uuid or i, host, display, platform, dtype)
