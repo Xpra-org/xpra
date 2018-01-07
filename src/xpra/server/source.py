@@ -1962,7 +1962,7 @@ class ServerSource(FileTransferHandler):
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon=None):
+    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         if not self.send_notifications:
             notifylog("client %s does not support notifications", self)
             return False
