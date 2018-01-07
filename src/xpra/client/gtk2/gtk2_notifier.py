@@ -18,6 +18,7 @@
 #You should have received a copy of the GNU Lesser General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import gtk
+from gtk import gdk
 import glib
 
 from xpra.os_util import OSX
@@ -25,8 +26,8 @@ DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
 if OSX:
     #black on white fits better with osx
-    DEFAULT_FG_COLOUR = gtk.gdk.Color("black")
-    DEFAULT_BG_COLOUR = gtk.gdk.Color(62000, 62000, 62000)
+    DEFAULT_FG_COLOUR = gdk.Color("black")
+    DEFAULT_BG_COLOUR = gdk.Color(62000, 62000, 62000)
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
@@ -55,8 +56,8 @@ class GTK2_Notifier(NotifierBase):
         These will take effect for every popup created after the change.
             `max_popups` : The maximum number of popups to be shown on the screen
             at one time.
-            `bg_color` : if None default is used (usually grey). set with a gtk.gdk.Color.
-            `fg_color` : if None default is used (usually black). set with a gtk.gdk.Color.
+            `bg_color` : if None default is used (usually grey). set with a gdk.Color.
+            `fg_color` : if None default is used (usually black). set with a gdk.Color.
             `show_timeout : if True, a countdown till destruction will be displayed.
 
         """
@@ -68,7 +69,7 @@ class GTK2_Notifier(NotifierBase):
         self._notify_stack = []
         self._offset = 0
 
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         screen = display.get_default_screen()
         n = screen.get_n_monitors()
         log("screen=%s, monitors=%s", screen, n)
@@ -91,11 +92,18 @@ class GTK2_Notifier(NotifierBase):
     def get_origin_y(self):
         return    self.y
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, may_retry=True):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         """Create a new Popup instance."""
         if len(self._notify_stack) == self.max_popups:
             self._notify_stack[0].hide_notification()
-        popup = Popup(self, summary, body, callback=None, image=None)
+        image = None
+        if icon and icon[0]=="png":
+            img_data = icon[3]
+            loader = gdk.PixbufLoader("png")
+            loader.write(img_data, len(img_data))
+            loader.close()
+            image = loader.get_pixbuf()
+        popup = Popup(self, summary, body, callback=None, image=image)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return popup

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,6 +63,11 @@ def do_get_libexec_dir():
 
 def do_get_mmap_dir():
     return _get_xpra_runtime_dir() or os.getenv("TMPDIR", "/tmp")
+
+def do_get_xpra_tmp_dir():
+    xrd = _get_xpra_runtime_dir()
+    return os.path.join(xrd, "tmp")
+
 
 def do_get_script_bin_dirs():
     #versions before 0.17 only had "~/.xpra/run-xpra"

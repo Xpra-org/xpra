@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1962,7 +1962,7 @@ class ServerSource(FileTransferHandler):
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon=None):
         if not self.send_notifications:
             notifylog("client %s does not support notifications", self)
             return False
@@ -1970,7 +1970,7 @@ class ServerSource(FileTransferHandler):
             notifylog("client %s is suspended, notification not sent", self)
             return False
         if self.hello_sent:
-            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout), icon)
         return True
 
     def notify_close(self, nid):

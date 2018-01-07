@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -88,6 +88,14 @@ def get_mmap_dir():
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
 def do_get_mmap_dir():
     return os.getenv("TMPDIR", "/tmp")
+
+
+def get_xpra_tmp_dir():
+    return env_or_delegate("XPRA_TMP_DIR", do_get_xpra_tmp_dir)
+def do_get_xpra_tmp_dir():
+    import tempfile
+    return tempfile.gettempdir()
+
 
 def get_script_bin_dirs():
     return envaslist_or_delegate("XPRA_SCRIPT_BIN_DIRS", do_get_script_bin_dirs)
@@ -262,6 +270,7 @@ platform_import(globals(), "paths", False,
                 "do_get_download_dir",
                 "do_get_libexec_dir",
                 "do_get_mmap_dir",
+                "do_get_xpra_tmp_dir",
                 "do_get_script_bin_dirs")
 
 def get_info():
@@ -275,6 +284,8 @@ def get_info():
             "download"          : {"dir"    : get_download_dir()},
             "app"               : {"dir"    : get_app_dir()},
             "libexec"           : {"dir"    : get_libexec_dir()},
+            "mmap"              : {"dir"    : get_mmap_dir()},
+            "xpra-tmp"          : {"dir"    : get_xpra_tmp_dir()},
             "app"               : {"default" : {"dir"   : default_get_app_dir()}},
             "resources"         : get_resources_dir(),
             "icons"             : get_icon_dir(),

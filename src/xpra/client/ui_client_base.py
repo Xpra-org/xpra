@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -64,7 +64,7 @@ from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
-from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -3427,13 +3427,17 @@ class UIXpraClient(XpraClientBase):
             return
         self._ui_event()
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
+        if len(packet)>=10:
+            icon = packet[9]
+        else:
+            icon = None
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
-        notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", packet, self.notifier, self.server_notifications)
+        notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
         assert self.notifier
         #TODO: choose more appropriate tray if we have more than one shown?
         tray = self.tray
-        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
 
     def _process_notify_close(self, packet):
         if not self.notifications_enabled:

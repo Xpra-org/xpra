@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -2613,14 +2613,25 @@ class ServerBase(ServerCore):
             self._clipboard_client.send_clipboard(parts)
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
-        assert self.notifications_forwarder and self.notifications
-        log("notify_callback(%s,%s,%s,%s,%s,%s,%s,%s)", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
-        for ss in self._server_sources.values():
-            ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout))
+        try:
+            assert self.notifications_forwarder and self.notifications
+            icon = self.get_notification_icon(str(app_icon))
+            if os.path.isabs(str(app_icon)):
+                app_icon = ""
+            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout), repr_ellipsized(str(icon)))
+            for ss in self._server_sources.values():
+                ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout), icon)
+        except Exception as e:
+            notifylog("notify_callback failed", exc_info=True)
+            notifylog.error("Error processing notification:")
+            notifylog.error(" %s", e)
+
+    def get_notification_icon(self, _icon_string):
+        return []
 
     def notify_close_callback(self, nid):
         assert self.notifications_forwarder and self.notifications
-        log("notify_close_callback(%s)", nid)
+        notifylog("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
 

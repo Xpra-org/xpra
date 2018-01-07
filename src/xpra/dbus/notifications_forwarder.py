@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -36,12 +36,13 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
-        log("Notify(%s,%s,%s,%s,%s,%s,%s,%s)" % (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))
+        log("Notify%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))
         if replaces_nid==0:
             self.counter += 1
             nid = self.counter
         else:
             nid = replaces_nid
+        log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
         if self.notify_callback:
             self.notify_callback(self.dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
         log("Notify returning %s", nid)
@@ -51,7 +52,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def GetServerInformation(self):
         log("GetServerInformation()")
         #name, vendor, version, spec-version
-        return    ["xpra-notification-proxy", "xpra", "0.1", "0.9"]
+        return ["xpra-notification-proxy", "xpra", "0.1", "0.9"]
 
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
@@ -60,7 +61,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, in_signature='u')
     def CloseNotification(self, nid):
-        log("CloseNotification(%s)", nid)
+        log("CloseNotification(%s) callback=%s", nid, self.close_callback)
         if self.close_callback:
             self.close_callback(nid)
 

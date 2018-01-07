@@ -1,9 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+
+from xpra.util import repr_ellipsized
 from xpra.client.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
@@ -44,21 +46,28 @@ class DBUS_Notifier(NotifierBase):
         self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
         log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
         self.may_retry = True
         try:
+            icon_string = self.get_icon_string(nid, app_icon, icon)
+            log("get_icon_string%s=%s", (nid, app_icon, repr_ellipsized(str(icon))), icon_string)
+            if icon_string:
+                #closed(nid) will take care of removing the temporary file
+                #FIXME: register for the closed signal instead of using a timer
+                from xpra.gtk_common.gobject_compat import import_glib
+                import_glib().timeout_add(10*1000, self.clean_notification, nid)
             try:
                 app_str = NOTIFICATION_APP_NAME % app_name
             except:
                 app_str = app_name or "Xpra"
-            self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
-            self.dbusnotify.Notify(app_str, 0, app_icon, summary, body, [], [], expire_timeout,
+            self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
+            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, [], [], expire_timeout,
                  reply_handler = self.cbReply,
                  error_handler = self.cbError)
         except:
-            log.error("dbus notify failed", exc_info=True)
+            log.error("Error: dbus notify failed", exc_info=True)
 
     def cbReply(self, *args):
         log("notification reply: %s", args)
@@ -74,7 +83,8 @@ class DBUS_Notifier(NotifierBase):
                     return False
 
                 if not self.may_retry:
-                    log.error("cannot send notification via dbus, please check that you notification service is operating properly")
+                    log.error("Error: cannot send notification via dbus,")
+                    log.error(" check that you notification service is operating properly")
                     return False
                 self.may_retry = False
 
@@ -85,8 +95,9 @@ class DBUS_Notifier(NotifierBase):
                 self.show_notify(*self.last_notification)
         except:
             pass
-        log.error("notification error: %s", dbus_error)
+        log.error("Error processing notification:")
+        log.error(" %s", dbus_error)
         return False
 
     def close_notify(self, nid):
-        pass
+        self.closed(nid)

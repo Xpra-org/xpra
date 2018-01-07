@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+
+import os.path
 
 from xpra.log import Logger
 log = Logger("server", "gtk")
@@ -15,8 +17,8 @@ cursorlog = Logger("server", "cursor")
 netlog = Logger("network")
 
 from xpra.util import flatten_dict
-from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_gdk, import_glib, import_gobject, is_gtk3
+from xpra.os_util import monotonic_time, BytesIOClass
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_glib, import_gobject, is_gtk3
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
@@ -27,6 +29,7 @@ glib = import_glib()
 glib.threads_init()
 gobject = import_gobject()
 gobject.threads_init()
+gtk = import_gtk()
 gdk = import_gdk()
 
 
@@ -234,3 +237,40 @@ class GTKServerBase(ServerBase):
                 ss.send_clipboard_enabled("probable clipboard loop detected")
             return  False
         return True
+
+
+    def get_notification_icon(self, icon_string):
+        #the string may be:
+        # * a path which we will load using pillow
+        # * a name we lookup in the current them
+        if not icon_string:
+            return ()
+        img = None
+        from PIL import Image
+        if os.path.isabs(icon_string):
+            if os.path.exists(icon_string) and os.path.isfile(icon_string):
+                img = Image.open(icon_string)
+                w, h = img.size
+        else:
+            #try to find it in the theme:
+            theme = gtk.icon_theme_get_default()
+            if theme:
+                icon = theme.load_icon(icon_string, gtk.ICON_SIZE_BUTTON, 0)
+                data = icon.get_pixels()
+                w = icon.get_width()
+                h = icon.get_height()
+                rowstride = icon.get_rowstride()
+                mode = "RGB"
+                if icon.get_has_alpha():
+                    mode = "RGBA"
+                img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
+        if img:
+            if w>256 or h>256:
+                img = img.resize((256, 256), Image.ANTIALIAS)
+                w = h = 256
+            buf = BytesIOClass()
+            img.save(buf, "PNG")
+            cpixels = buf.getvalue()
+            buf.close()
+            return "png", w, h, cpixels
+        return ()
