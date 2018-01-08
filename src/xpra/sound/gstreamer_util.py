@@ -206,8 +206,8 @@ gst = None
 has_gst = None
 gst_vinfo = None
 
-pygst_version = ""
-gst_version = ""
+pygst_version = ()
+gst_version = ()
 
 def get_pygst_version():
     return pygst_version
@@ -224,10 +224,6 @@ def import_gst1():
     from gi.repository import Gst           #@UnresolvedImport
     log("import_gst1() Gst=%s", Gst)
     Gst.init(None)
-    #make it look like pygst (gstreamer-0.10):
-    Gst.registry_get_default = Gst.Registry.get
-    Gst.get_pygst_version = lambda: gi.version_info
-    Gst.get_gst_version = lambda: Gst.version()
     def new_buffer(data):
         buf = Gst.Buffer.new_allocate(None, len(data), None)
         buf.fill(0, data)
@@ -245,8 +241,9 @@ def import_gst1():
     Gst.MESSAGE_DURATION = Gst.MessageType.DURATION_CHANGED
     Gst.FLOW_OK = Gst.FlowReturn.OK
     global gst_version, pygst_version
-    gst_version = Gst.get_gst_version()
-    pygst_version = Gst.get_pygst_version()
+    if hasattr(gi, "version_info"):
+        pygst_version = gi.version_info
+    gst_version = Gst.version()
     return Gst
 
 def import_gst():
@@ -324,7 +321,7 @@ all_plugin_names = []
 def get_all_plugin_names():
     global all_plugin_names, has_gst
     if len(all_plugin_names)==0 and has_gst:
-        registry = gst.registry_get_default()
+        registry = gst.Registry.get()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
         log("found the following plugins: %s", all_plugin_names)

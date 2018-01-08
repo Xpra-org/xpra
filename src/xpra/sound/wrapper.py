@@ -145,7 +145,7 @@ def run_sound(mode, error_cb, options, args):
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
             sinks = [x for x in get_sink_plugins() if x in plugins]
-            from xpra.sound.gstreamer_util import gst_version, pygst_version
+            from xpra.sound.gstreamer_util import get_gst_version, get_pygst_version
             import struct
             bits = struct.calcsize("P")*8
             d = {
@@ -157,8 +157,8 @@ def run_sound(mode, error_cb, options, args):
                  "sink.default"     : get_default_sink() or "",
                  "muxers"           : get_muxers(),
                  "demuxers"         : get_demuxers(),
-                 "gst.version"      : [int(x) for x in gst_version],
-                 "pygst.version"    : pygst_version,
+                 "gst.version"      : [int(x) for x in get_gst_version()],
+                 "pygst.version"    : get_pygst_version(),
                  "plugins"          : plugins,
                  "python.version"   : sys.version_info[:3],
                  "python.bits"      : bits,
