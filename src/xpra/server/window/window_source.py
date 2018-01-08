@@ -423,7 +423,7 @@ class WindowSource(object):
         info.update({
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
-                "content-type"          : self.content_type,
+                "content"               : self.content_type,
                 "bandwidth-limit"       : self.bandwidth_limit,
                 "av-sync"               : {
                                            "enabled"    : self.av_sync,
