@@ -782,6 +782,8 @@ class ClipboardProxy(gtk.Invisible):
             #handle TARGETS using "request_targets"
             def got_targets(c, targets, *args):
                 log("got_targets(%s, %s, %s)", c, targets, args)
+                if is_gtk3():
+                    targets = [x.name() for x in targets]
                 cb("ATOM", 32, targets)
                 self._last_targets = targets or ()
             self._clipboard.request_targets(got_targets)
