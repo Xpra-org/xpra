@@ -35,16 +35,24 @@ def _try_import(import_method_gtk3, import_method_gtk2):
     if "gi" in sys.modules:
         _is_gtk3 = True
     if _is_gtk3 is False:
-        return  import_method_gtk2()
+        return import_method_gtk2()
+    def trygtk3():
+        #if the introspection data is missing,
+        #we can get a ValueError
+        #but this confuses a number of tools that try to load our code (ie: py2app)
+        try:
+            return import_method_gtk3()
+        except ValueError as e:
+            raise ImportError(e)
     if _is_gtk3 is True:
-        return  import_method_gtk3()
+        return trygtk3()
     #python3 sets _is_gtk3 early
     assert sys.version_info[0]<3
     try:
         imported = import_method_gtk2()
         _is_gtk3 = False
     except:
-        imported = import_method_gtk3()
+        imported = trygtk3()
         _is_gtk3 = True
     return imported
 
