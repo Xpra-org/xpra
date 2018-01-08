@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -203,52 +203,20 @@ CODEC_ORDER = [OPUS, OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS, MP3, FLAC_OGG, AA
 
 
 gst = None
-has_gst = None
-gst_vinfo = None
-
-pygst_version = ()
-gst_version = ()
 
 def get_pygst_version():
-    return pygst_version
+    import gi
+    return getattr(gi, "version_info", ())
 
 def get_gst_version():
-    return gst_version
+    if not gst:
+        return ()
+    return gst.version()
 
-
-def import_gst1():
-    log("import_gst1()")
-    import gi
-    log("import_gst1() gi=%s", gi)
-    gi.require_version('Gst', '1.0')
-    from gi.repository import Gst           #@UnresolvedImport
-    log("import_gst1() Gst=%s", Gst)
-    Gst.init(None)
-    def new_buffer(data):
-        buf = Gst.Buffer.new_allocate(None, len(data), None)
-        buf.fill(0, data)
-        return buf
-    Gst.new_buffer = new_buffer
-    Gst.element_state_get_name = Gst.Element.state_get_name
-    #note: we only copy the constants we actually need..
-    for x in ('NULL', 'PAUSED', 'PLAYING', 'READY', 'VOID_PENDING'):
-        setattr(Gst, "STATE_%s" % x, getattr(Gst.State, x))
-    for x in ('EOS', 'ERROR', 'TAG', 'STREAM_STATUS', 'STATE_CHANGED',
-              'LATENCY', 'WARNING', 'ASYNC_DONE', 'NEW_CLOCK', 'STREAM_STATUS',
-              'BUFFERING', 'INFO', 'STREAM_START'
-              ):
-        setattr(Gst, "MESSAGE_%s" % x, getattr(Gst.MessageType, x))
-    Gst.MESSAGE_DURATION = Gst.MessageType.DURATION_CHANGED
-    Gst.FLOW_OK = Gst.FlowReturn.OK
-    global gst_version, pygst_version
-    if hasattr(gi, "version_info"):
-        pygst_version = gi.version_info
-    gst_version = Gst.version()
-    return Gst
 
 def import_gst():
-    global gst, has_gst, gst_vinfo
-    if has_gst is not None:
+    global gst
+    if gst is not None:
         return gst
 
     #hacks to locate gstreamer plugins on win32 and osx:
@@ -286,23 +254,23 @@ def import_gst():
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
 
     try:
-        _gst = import_gst1()
-        v = _gst.version()
-        if v[-1]==0:
-            v = v[:-1]
-        gst_vinfo = ".".join((str(x) for x in v))
-        gst = _gst
+        log("import gi")
+        import gi
+        gi.require_version('Gst', '1.0')
+        from gi.repository import Gst           #@UnresolvedImport
+        log("Gst=%s", Gst)
+        Gst.init(None)
+        gst = Gst
     except Exception as e:
         log("Warning failed to import GStreamer 1.x", exc_info=True)
         log.warn("Warning: failed to import GStreamer 1.x:")
         log.warn(" %s", e)
         return None
-    has_gst = gst is not None
     return gst
 
 def prevent_import():
-    global has_gst, gst, import_gst
-    if has_gst or gst or "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
+    global gst, import_gst
+    if gst or "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
         raise Exception("cannot prevent the import of the GStreamer bindings, already loaded: %s" % gst)
     def fail_import():
         raise Exception("importing of the GStreamer bindings is not allowed!")
@@ -319,8 +287,8 @@ def normv(v):
 
 all_plugin_names = []
 def get_all_plugin_names():
-    global all_plugin_names, has_gst
-    if len(all_plugin_names)==0 and has_gst:
+    global all_plugin_names, gst
+    if len(all_plugin_names)==0 and gst:
         registry = gst.Registry.get()
         all_plugin_names = [el.get_name() for el in registry.get_feature_list(gst.ElementFactory)]
         all_plugin_names.sort()
@@ -365,7 +333,7 @@ def get_decoders():
 
 def init_codecs():
     global CODECS, ENCODERS, DECODERS
-    if CODECS is not None or not has_gst:
+    if CODECS is not None or gst is None:
         return CODECS or {}
     #populate CODECS:
     CODECS = {}
@@ -522,15 +490,16 @@ def plugin_str(plugin, options):
 
 def get_source_plugins():
     sources = []
-    try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa
-        #we have to put pulsesrc first if pulseaudio is installed
-        #because using autoaudiosource does not work properly for us:
-        #it may still choose pulse, but without choosing the right device.
-        if has_pa():
-            sources.append("pulsesrc")
-    except ImportError as e:
-        log("get_source_plugins() no pulsesrc: %s", e)
+    if POSIX and not OSX:
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import has_pa
+            #we have to put pulsesrc first if pulseaudio is installed
+            #because using autoaudiosource does not work properly for us:
+            #it may still choose pulse, but without choosing the right device.
+            if has_pa():
+                sources.append("pulsesrc")
+        except ImportError as e:
+            log("get_source_plugins() no pulsesrc: %s", e)
     if OSX:
         sources.append("osxaudiosrc")
     elif WIN32:
@@ -552,16 +521,17 @@ def get_default_source():
             log.error("invalid default sound source: '%s' is not in %s", source, csv(sources))
         else:
             return source
-    try:
-        from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
-        if has_pa():
-            s = get_pactl_server()
-            if not s:
-                log("cannot connect to pulseaudio server?")
-            else:
-                return "pulsesrc"
-    except ImportError as e:
-        log("get_default_source() no pulsesrc: %s", e)
+    if POSIX and not OSX:
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import has_pa, get_pactl_server
+            if has_pa():
+                s = get_pactl_server()
+                if not s:
+                    log("cannot connect to pulseaudio server?")
+                else:
+                    return "pulsesrc"
+        except ImportError as e:
+            log("get_default_source() no pulsesrc: %s", e)
     for source in sources:
         if has_plugins(source):
             return source
@@ -889,7 +859,6 @@ def loop_warning(mode="speaker", machine_id=""):
 
 
 def main():
-    global pygst_version, gst_version, gst_vinfo
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("GStreamer-Info", "GStreamer Information"):
@@ -897,12 +866,16 @@ def main():
         if "-v" in sys.argv or "--verbose" in sys.argv:
             log.enable_debug()
         import_gst()
+        v = get_gst_version()
+        if v[-1]==0:
+            v = v[:-1]
+        gst_vinfo = ".".join((str(x) for x in v))
         print("Loaded Python GStreamer version %s for Python %s.%s" % (gst_vinfo, sys.version_info[0], sys.version_info[1]))
         apn = get_all_plugin_names()
         print("GStreamer plugins found: %s" % csv(apn))
         print("")
-        print("GStreamer version: %s" % ".".join([str(x) for x in gst_version]))
-        print("PyGStreamer version: %s" % ".".join([str(x) for x in pygst_version]))
+        print("GStreamer version: %s" % ".".join([str(x) for x in get_gst_version()]))
+        print("PyGStreamer version: %s" % ".".join([str(x) for x in get_pygst_version()]))
         print("")
         encs = [x for x in CODEC_ORDER if has_encoder(x)]
         decs = [x for x in CODEC_ORDER if has_decoder(x)]

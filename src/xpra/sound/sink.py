@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -388,7 +388,8 @@ class SoundSink(SoundPipeline):
     def do_add_data(self, data, metadata=None):
         #having a timestamp causes problems with the queue and overruns:
         log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
-        buf = gst.new_buffer(data)
+        buf = gst.Buffer.new_allocate(None, len(data), None)
+        buf.fill(0, data)
         if metadata:
             #having a timestamp causes problems with the queue and overruns:
             #ts = metadata.get("timestamp")
@@ -423,7 +424,7 @@ class SoundSink(SoundPipeline):
         #buf.offset_end = offset_end
         #buf.set_caps(gst.caps_from_string(caps))
         r = self.src.emit("push-buffer", buf)
-        if r!=gst.FLOW_OK:
+        if r!=gst.FlowReturn.OK:
             if self.queue_state != "error":
                 log.error("Error pushing buffer: %s", r)
                 self.update_state("error")

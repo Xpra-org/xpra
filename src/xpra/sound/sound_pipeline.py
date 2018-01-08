@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -111,10 +111,10 @@ class SoundPipeline(gobject.GObject):
     def do_get_state(self, state):
         if not self.pipeline:
             return  "stopped"
-        return {gst.STATE_PLAYING   : "active",
-                gst.STATE_PAUSED    : "paused",
-                gst.STATE_NULL      : "stopped",
-                gst.STATE_READY     : "ready"}.get(state, "unknown")
+        return {gst.State.PLAYING   : "active",
+                gst.State.PAUSED    : "paused",
+                gst.State.NULL      : "stopped",
+                gst.State.READY     : "ready"}.get(state, "unknown")
 
     def get_state(self):
         return self.state
@@ -158,7 +158,7 @@ class SoundPipeline(gobject.GObject):
         log("SoundPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.update_state("active")
-        self.pipeline.set_state(gst.STATE_PLAYING)
+        self.pipeline.set_state(gst.State.PLAYING)
         if self.stream_compressor:
             self.info["stream-compressor"] = self.stream_compressor
         self.emit_info()
@@ -191,7 +191,7 @@ class SoundPipeline(gobject.GObject):
         if self.state not in ("starting", "stopped", "ready", None):
             log.info("stopping")
         self.update_state("stopped")
-        p.set_state(gst.STATE_NULL)
+        p.set_state(gst.State.NULL)
         log("SoundPipeline.stop() done")
 
     def cleanup(self):
@@ -261,13 +261,13 @@ class SoundPipeline(gobject.GObject):
         #log("on_message(%s, %s)", bus, message)
         gstlog("on_message: %s", message)
         t = message.type
-        if t == gst.MESSAGE_EOS:
-            self.pipeline.set_state(gst.STATE_NULL)
+        if t == gst.MessageType.EOS:
+            self.pipeline.set_state(gst.State.NULL)
             self.gstloginfo("EOS")
             self.update_state("stopped")
             self.idle_emit("state-changed", self.state)
-        elif t == gst.MESSAGE_ERROR:
-            self.pipeline.set_state(gst.STATE_NULL)
+        elif t == gst.MessageType.ERROR:
+            self.pipeline.set_state(gst.State.NULL)
             err, details = message.parse_error()
             gstlog.error("pipeline error: %s", err)
             if self.pipeline_str:
@@ -287,7 +287,7 @@ class SoundPipeline(gobject.GObject):
             self.idle_emit("error", str(err))
             #exit
             self.cleanup()
-        elif t == gst.MESSAGE_TAG:
+        elif t == gst.MessageType.TAG:
             try:
                 self.parse_message(message)
             except Exception as e:
@@ -299,34 +299,34 @@ class SoundPipeline(gobject.GObject):
             except Exception as e:
                 self.gstlogwarn("Warning: failed to parse gstreamer element message:")
                 self.gstlogwarn(" %s: %s", type(e), e)
-        elif t == gst.MESSAGE_STREAM_STATUS:
+        elif t == gst.MessageType.STREAM_STATUS:
             gstlog("stream status: %s", message)
             try:
                 gstlog("stream status: %s", message.get_stream_status_object().get_state())
             except:
                 pass
-        elif t == gst.MESSAGE_STREAM_START:
+        elif t == gst.MessageType.STREAM_START:
             log("stream start: %s", message)
             #with gstreamer 1.x, we don't always get the "audio-codec" message..
             #so print the codec from here instead (and assume gstreamer is using what we told it to)
             #after a delay, just in case we do get the real "audio-codec" message!
             self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
-        elif t in (gst.MESSAGE_ASYNC_DONE, gst.MESSAGE_NEW_CLOCK):
+        elif t in (gst.MessageType.ASYNC_DONE, gst.MessageType.NEW_CLOCK):
             gstlog("%s", message)
-        elif t == gst.MESSAGE_STATE_CHANGED:
+        elif t == gst.MessageType.STATE_CHANGED:
             _, new_state, _ = message.parse_state_changed()
-            gstlog("state-changed on %s: %s", message.src, gst.element_state_get_name(new_state))
+            gstlog("state-changed on %s: %s", message.src, gst.Element.state_get_name(new_state))
             state = self.do_get_state(new_state)
             if isinstance(message.src, gst.Pipeline):
                 self.update_state(state)
                 self.idle_emit("state-changed", state)
-        elif t == gst.MESSAGE_DURATION:
+        elif t == gst.MessageType.DURATION_CHANGED:
             gstlog("duration changed: %s", message)
-        elif t == gst.MESSAGE_LATENCY:
+        elif t == gst.MessageType.LATENCY:
             gstlog("latency message from %s: %s", message.src, message)
-        elif t == gst.MESSAGE_INFO:
+        elif t == gst.MessageType.INFO:
             self.gstloginfo("pipeline message: %s", message)
-        elif t == gst.MESSAGE_WARNING:
+        elif t == gst.MessageType.WARNING:
             w = message.parse_warning()
             self.gstlogwarn("pipeline warning: %s", w[0].message)
             for x in w[1:]:
