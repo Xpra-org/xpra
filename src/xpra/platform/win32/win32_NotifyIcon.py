@@ -264,7 +264,7 @@ class win32NotifyIcon(object):
     #this allows us to know which hwnd refers to which instance:
     instances = {}
 
-    def __init__(self, app_id=0, title="", move_callbacks=None, click_callback=None, exit_callback=None, iconPathName=None):
+    def __init__(self, app_id=0, title="", move_callbacks=None, click_callback=None, exit_callback=None, command_callback=None, iconPathName=None):
         log("win32NotifyIcon: app_id=%i, title='%s'", app_id, title)
         self.app_id = app_id
         self.title = title
@@ -282,6 +282,7 @@ class win32NotifyIcon(object):
         self.move_callback = move_callbacks
         self.click_callback = click_callback
         self.exit_callback = exit_callback
+        self.command_callback = command_callback
         self.reset_function = None
 
     def create_tray_window(self):
@@ -426,7 +427,7 @@ class win32NotifyIcon(object):
             log.error(" %s", e)
 
     def OnCommand(self, hwnd, msg, wparam, lparam):
-        cb = getattr(self, "command_callback", None)
+        cb = self.command_callback
         log("OnCommand%s callback=%s", (hwnd, msg, wparam, lparam), cb)
         if cb:
             cid = wparam & 0xFFFF
@@ -503,7 +504,6 @@ log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 def main():
     import os
-    import sys
     from xpra.platform.win32.common import user32
 
     def click_callback(button, pressed):
@@ -536,8 +536,13 @@ def main():
     def win32_quit():
         PostQuitMessage(0) # Terminate the app.
 
-    iconPathName = os.path.abspath(os.path.join( sys.prefix, "pyc.ico"))
-    tray = win32NotifyIcon("test", move_callbacks=None, click_callback=click_callback, exit_callback=win32_quit, command_callback=command_callback, iconPathName=iconPathName)
+    from xpra.platform.paths import get_app_dir
+    idir = os.path.abspath(get_app_dir())
+    wdir = os.path.join(idir, "win32")
+    if os.path.exists(wdir):
+        idir = wdir
+    iconPathName = os.path.join(idir, "xpra.ico")
+    tray = win32NotifyIcon(0, "test", move_callbacks=None, click_callback=click_callback, exit_callback=win32_quit, command_callback=command_callback, iconPathName=iconPathName)
     #pump messages:
     msg = ctypes.wintypes.MSG()
     pMsg = ctypes.pointer(msg)
