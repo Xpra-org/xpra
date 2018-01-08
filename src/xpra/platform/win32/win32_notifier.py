@@ -10,13 +10,14 @@ class Win32_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         if tray is None:
-            log.error("no tray - cannot show notification!")
+            log.warn("Warning: no system tray - cannot show notification!")
             return
         if not hasattr(tray, "getHWND"):
-            log.error("tray class %s does not support getHWND!", type(tray))
+            log.warn("Warning: cannot show notification,")
+            log.warn(" the system tray class %s does not support hwnd", type(tray))
             return
         hwnd = tray.getHWND()
-        notify(hwnd, summary, body, expire_timeout)
+        notify(hwnd, summary, body, expire_timeout, icon)
 
     def close_notify(self, nid):
         pass

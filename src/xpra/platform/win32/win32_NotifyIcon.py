@@ -502,6 +502,7 @@ if NIclassAtom==0:
     raise ctypes.WinError(ctypes.get_last_error())
 log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
+
 def main():
     import os
     from xpra.platform.win32.common import user32
@@ -526,7 +527,21 @@ def main():
     def command_callback(hwnd, cid):
         if cid == 1024:
             from xpra.platform.win32.win32_balloon import notify
-            notify(hwnd, "hello", "world")
+            from xpra.os_util import BytesIOClass
+            try:
+                from PIL import Image
+                img = Image.open("icons\\printer.png")
+                buf = BytesIOClass()
+                img.save(buf, "PNG")
+                data = buf.getvalue()
+                buf.close()
+                icon = (b"png", img.size[0], img.size[1], data)
+            except Exception as e:
+                print("could not find icon: %s" % (e,))
+                icon = None
+            else:
+                pass
+            notify(hwnd, "hello", "world", timeout=1000, icon=icon)
         elif cid == 1025:
             print("Goodbye")
             DestroyWindow(hwnd)
