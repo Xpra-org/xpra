@@ -729,7 +729,7 @@ class ClipboardProxy(gtk.Invisible):
             if targets:
                 for target in targets:
                     selection_add_target(self, self._selection, target, 0)
-                self.selection_owner_set(self._selection)
+                selection_owner_set(self, self._selection)
             if target_data:
                 for text_target in TEXT_TARGETS:
                     if text_target in target_data:
