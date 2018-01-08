@@ -227,9 +227,10 @@ class SessionsGUI(gtk.Window):
 
     def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
         dstr = ""
-        display = text.get("display", "")
-        username = text.get("username", "")
-        mode = text.get("mode", "")
+        tt = typedict(text)
+        display = tt.strget("display", "")
+        username = tt.strget("username", "")
+        mode = tt.strget("mode", "")
         if display.startswith(":"):
             dstr = display[1:]
         #append interface to IPv6 host URI for link local addresses ("fe80:"):
