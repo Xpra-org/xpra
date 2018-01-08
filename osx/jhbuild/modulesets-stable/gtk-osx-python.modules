@@ -75,7 +75,6 @@
     <branch repo="python"
 	    module="2.7.14/Python-2.7.14.tar.xz" version="2.7.14"
 	    hash="sha256:71ffb26e09e78650e424929b2b457b9c912ac216576e6bd9e7d204ed03296a66">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-test_grammar.py-typo.patch" strip="1"/>
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-linkflags.patch" strip="1"/>"/>
     </branch>
     <dependencies>
