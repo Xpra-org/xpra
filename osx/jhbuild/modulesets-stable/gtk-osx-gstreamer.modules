@@ -32,8 +32,8 @@
 
   <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gstreamer/gstreamer-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
-            hash="sha256:bc06243600817f637029da29d089d5908d1d266542f68bf6626a10c5f05f1f1d">
+    <branch module="gstreamer/gstreamer-1.12.4.tar.xz" version="1.12.4" repo="gstreamer"
+            hash="sha256:5a8704aa4c2eeb04da192c4a9942f94f860ac1a585de90d9f914bac26a970674">
     </branch>
     <after>
       <dep package="glib"/>
@@ -42,8 +42,8 @@
 
   <autotools id="gst-plugins-base" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-base/gst-plugins-base-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
-            hash="sha256:1c401a79bd1e4521c6ef1b66579bddedd9136e164e54792aab4bfcf3485bf9a7"/>
+    <branch module="gst-plugins-base/gst-plugins-base-1.12.4.tar.xz" version="1.12.4" repo="gstreamer"
+            hash="sha256:4c306b03df0212f1b8903784e29bb3493319ba19ebebf13b0c56a17870292282"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liborc"/>
@@ -54,8 +54,8 @@
 
   <autotools id="gst-plugins-good" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-good/gst-plugins-good-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
-            hash="sha256:be053f6ed716eeb517cec148cec637cdce571c6e04d5c21409e2876fb76c7639">
+    <branch module="gst-plugins-good/gst-plugins-good-1.12.4.tar.xz" version="1.12.4" repo="gstreamer"
+            hash="sha256:649f49bec60892d47ee6731b92266974c723554da1c6649f21296097715eb957">
     <!-- <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gst-plugins-good-1.6.4-osx-10.5-fixdefs.patch" strip="1"/> -->
     </branch>
     <dependencies>
@@ -67,8 +67,8 @@
   <autotools id="gst-plugins-ugly" autogenargs="--disable-tests"
              supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
              autogen-sh="configure">
-    <branch module="gst-plugins-ugly/gst-plugins-ugly-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
-            hash="sha256:d6edc046350809c967f5b058c5c2e534d99d1d69fe1b26acd849e87781a7d7fc"/>
+    <branch module="gst-plugins-ugly/gst-plugins-ugly-1.12.4.tar.xz" version="1.12.4" repo="gstreamer"
+            hash="sha256:1c165b8d888ed350acd8e6ac9f6fe06508e6fcc0a3afc6ccc9fbeb30df9be522"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
@@ -79,8 +79,8 @@
   <autotools id="gst-plugins-bad" supports-non-srcdir-builds="no"
              autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc --disable-gtk3 --disable-smoothstreaming --disable-hls --disable-dtls --disable-apple_media"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-bad/gst-plugins-bad-1.10.5.tar.xz" version="1.10.5" repo="gstreamer"
-            hash="sha256:c5806040bb83b43be86ce592e6a19c5d83d7776f7d9f434eb4b911c4efff3573"/>
+    <branch module="gst-plugins-bad/gst-plugins-bad-1.12.4.tar.xz" version="1.12.4" repo="gstreamer"
+            hash="sha256:0c7857be16686d5c1ba6e34bd338664d3d4599d32714a8eca5c8a41a101e2d08"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
@@ -91,9 +91,9 @@
   <autotools id="gst-libav" supports-non-srcdir-builds="no"
              autogen-sh="configure"
              autogenargs="--disable-tests">
-    <branch repo="gstreamer" version="1.10.5"
-            module="gst-libav/gst-libav-1.10.5.tar.xz"
-            hash="sha256:e4d2f315f478d47281fbfdfbd590a63d23704ca37911d7142d5992616f4b28d3"/>
+    <branch repo="gstreamer" version="1.12.4"
+            module="gst-libav/gst-libav-1.12.4.tar.xz"
+            hash="sha256:2a56aa5d2d8cd912f2bce17f174713d2c417ca298f1f9c28ee66d4aa1e1d9e62"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
