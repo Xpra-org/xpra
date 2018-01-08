@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
-from xpra.os_util import BytesIOClass
+from xpra.os_util import BytesIOClass, strtobytes
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
@@ -22,15 +22,16 @@ NIIF_INFO = 1
 NIM_MODIFY = 1
 
 
-def visible_command(command, max_len=100, no_nl=True):
+def chop_string(command, max_len=100, no_nl=True):
     assert max_len>3
     if not command:
-        return ""
+        return b""
+    command = strtobytes(command)
     if no_nl:
-        command = command.replace("\n", "").replace("\r", "")
+        command = command.replace(b"\n", b"").replace(b"\r", b"")
     if len(command) < max_len:
         return command
-    return command[:max_len-3] + "..."
+    return command[:max_len-3] + b"..."
 
 
 class PyNOTIFYICONDATA:
@@ -62,14 +63,14 @@ class PyNOTIFYICONDATA:
     uFlags = 0
     uCallbackMessage = 0
     hIcon = 0
-    szTip = ''
+    szTip = b''
     dwState = 0
     dwStateMask = 0
-    szInfo = ''
+    szInfo = b''
     uTimeoutOrVersion = 0
-    szInfoTitle = ''
+    szInfoTitle = b''
     dwInfoFlags = 0
-    guidItem = ''
+    guidItem = b''
     hBalloonIcon = 0
 
     def pack(self):
@@ -102,8 +103,8 @@ def notify(hwnd, title, message, timeout=5000, icon=None):
     nid = PyNOTIFYICONDATA()
     nid.hWnd = hwnd
     nid.uFlags = NIF_INFO
-    nid.szInfo = "%s" % visible_command(message, 255, False)        #prevent overflow
-    nid.szInfoTitle = "%s" % visible_command(title, 63)
+    nid.szInfo = chop_string(message, 255, False)        #prevent overflow
+    nid.szInfoTitle = chop_string(title, 63)
     if timeout<=0:
         timeout = 5000
     nid.uTimeoutOrVersion = timeout
