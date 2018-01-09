@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 from xpra.util import envbool, get_util_logger
 
@@ -152,6 +153,16 @@ def do_get_sshpass_command():
         return p
     return None
 
+def do_get_xpra_command():
+    if sys.argv and sys.argv[0].lower().endswith("/xpra"):
+        return [sys.argv[0]]
+    #try to use the one from the app bundle:
+    from xpra.platform.paths import get_app_dir
+    base = get_app_dir()
+    xpra_cmd = os.path.join(base, "MacOS", "Xpra")
+    if os.path.exists(xpra_cmd):
+        return [xpra_cmd]
+    return ["xpra"]
 
 def do_get_nodock_command():
     #try to use the subapp:
