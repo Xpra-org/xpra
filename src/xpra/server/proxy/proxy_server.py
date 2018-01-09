@@ -21,7 +21,7 @@ authlog = Logger("proxy", "auth")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, typedict
-from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, WIN32, POSIX
+from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, WIN32, POSIX
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -388,6 +388,7 @@ class ProxyServer(ServerCore):
         #allow the client to override some options:
         opts = make_defaults_struct(username=username, uid=uid, gid=gid)
         for k,v in sns.items():
+            k = bytestostr(k)
             if k in ("mode", "display"):
                 continue    #those special attributes have been consumed already
             if k not in PROXY_START_OVERRIDABLE_OPTIONS:
