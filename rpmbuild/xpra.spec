@@ -609,7 +609,7 @@ fi
 
 
 %changelog
-* Sat Dec 30 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Tue Jan 09 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
 - fix client authentication failures with multiple challenges
 - fix system tray menu entries wrongly disabled
 - fix man page for all 'start' command variants
@@ -619,6 +619,9 @@ fi
 - fix packet warnings with large "input-devices" packets
 - fix speed and quality not honoured initially
 - fix typo in file location example
+- fix compatibility with newer versions of python-lz4
+- fix xauth file location
+- don't expose icon absolute paths to clients
 - add missing file to build clean list
 - remove invalid option from configuration file example
 

@@ -8,6 +8,9 @@ xpra (1.0.10-1) UNRELEASED; urgency=low
   * fix packet warnings with large "input-devices" packets
   * fix speed and quality not honoured initially
   * fix typo in file location example
+  * fix compatibility with newer versions of python-lz4
+  * fix xauth file location
+  * don't expose icon absolute paths to clients
   * add missing file to build clean list
   * remove invalid option from configuration file example
 

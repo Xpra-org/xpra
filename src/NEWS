@@ -1,4 +1,4 @@
-v1.0.10 (2017-12-30)
+v1.0.10 (2018-01-09)
 ======================
 	-- fix client authentication failures with multiple challenges
 	-- fix system tray menu entries wrongly disabled
@@ -9,6 +9,9 @@ v1.0.10 (2017-12-30)
 	-- fix packet warnings with large "input-devices" packets
 	-- fix speed and quality not honoured initially
 	-- fix typo in file location example
+	-- fix compatibility with newer versions of python-lz4
+	-- fix xauth file location
+	-- don't expose icon absolute paths to clients
 	-- add missing file to build clean list
 	-- remove invalid option from configuration file example
 
