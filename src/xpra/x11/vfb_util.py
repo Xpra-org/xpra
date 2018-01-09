@@ -114,6 +114,8 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             #trying to continue anyway!
             log.error("Error trying to create XAUTHORITY file %s:", xauthority)
             log.error(" %s", e)
+    else:
+        log("found existing XAUTHORITY file '%s'", xauthority)
     use_display_fd = display_name[0]=='S'
     subs["DISPLAY"] = display_name
     subs["XPRA_LOG_DIR"] = pathexpand(os.environ.get("XPRA_LOG_DIR"))
@@ -221,7 +223,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         log("xvfb_cmd=%s", xvfb_cmd)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=preexec)
-    xauth_add(display_name, xauth_data)
+    xauth_add(xauthority, display_name, xauth_data)
     log("xvfb process=%s", xvfb)
     log("display_name=%s", display_name)
     return xvfb, display_name, cleanups
@@ -257,15 +259,17 @@ def set_initial_resolution(desktop=False):
         log.error(" %s", e)
 
 
-def xauth_add(display_name, xauth_data):
-    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
+def xauth_add(filename, display_name, xauth_data):
+    xauth_cmd = ["xauth", "-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         code = subprocess.call(xauth_cmd)
         if code != 0:
             raise OSError("non-zero exit code: %s" % code)
     except OSError as e:
         #trying to continue anyway!
-        sys.stderr.write("Error running \"%s\": %s\n" % (" ".join(xauth_cmd), e))
+        sys.stderr.write("Error adding xauth entry for %s\n", display_name)
+        sys.stderr.write(" using command \"%s\"\n" % (" ".join(xauth_cmd)))
+        sys.stderr.write(" %s\n" % (e,))
 
 def check_xvfb_process(xvfb=None, cmd="Xvfb"):
     if xvfb is None:
@@ -287,7 +291,7 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(strtobytes(display_name), 3) # 3s timeout
+        wait_for_x_server(strtobytes(display_name), 20) # 3s timeout
     except Exception as e:
         log = _vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
