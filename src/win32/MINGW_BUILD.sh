@@ -221,7 +221,6 @@ if [ "${BUNDLE_OPENGL}" == "1" ]; then
 			pushd "${DIST}" >& /dev/null
 			zip -qmor "library.zip" OpenGL
 			popd >& /dev/null
-			#${PYTHON} win32\move_to_zip.py ${DIST}\library.zip ${DIST} OpenGL
 		fi
 	fi
 fi
