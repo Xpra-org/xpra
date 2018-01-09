@@ -2988,11 +2988,8 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     log("identify_new_socket%s", (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
     start = monotonic_time()
-    match_display_name = None
-    if display_name:
-        match_display_name = "server.display=%s" % display_name
-    PREFIX = "env.XPRA_PROXY_START_UUID="
-    DISPLAY_PREFIX = "server.display="
+    UUID_PREFIX = "uuid="
+    DISPLAY_PREFIX = "display="
     from xpra.platform.paths import get_nodock_command
     while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
@@ -3015,18 +3012,18 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                         except:
                             out = bytestostr(stdout)
                     lines = out.splitlines()
-                    log("id(%s)=%s", socket_path, csv(lines))
+                    log("id(%s): %s", socket_path, csv(lines))
                     found = False
                     display = display_name
                     for line in lines:
-                        if line.startswith(PREFIX):
-                            info_uuid = line[len(PREFIX):]
-                            if info_uuid==new_server_uuid:
+                        if line.startswith(UUID_PREFIX):
+                            this_uuid = line[len(UUID_PREFIX):]
+                            if this_uuid==new_server_uuid:
                                 found = True
                         elif line.startswith(DISPLAY_PREFIX):
                             display = line[len(DISPLAY_PREFIX):]
-                        elif match_display_name and match_display_name==line:
-                            found = True
+                            if display_name and display==display_name:
+                                found = True
                     if found:
                         return socket_path, display
             except Exception as e:
