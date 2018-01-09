@@ -3014,9 +3014,11 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                             out = stdout.decode()
                         except:
                             out = bytestostr(stdout)
+                    lines = out.splitlines()
+                    log("id(%s)=%s", socket_path, csv(lines))
                     found = False
                     display = display_name
-                    for line in out.splitlines():
+                    for line in lines:
                         if line.startswith(PREFIX):
                             info_uuid = line[len(PREFIX):]
                             if info_uuid==new_server_uuid:
