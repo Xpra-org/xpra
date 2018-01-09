@@ -291,7 +291,7 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(strtobytes(display_name), 20) # 3s timeout
+        wait_for_x_server(strtobytes(display_name), 3) # 3s timeout
     except Exception as e:
         log = _vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
