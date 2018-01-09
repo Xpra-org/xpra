@@ -912,13 +912,13 @@ def start_Xvfb(xvfb_str, display_name, cwd):
         xvfb_cmd.append(display_name)
         xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=True,
                                 stdin=subprocess.PIPE, preexec_fn=setsid)
-    xauth_data = xauth_add(display_name)
+    xauth_data = xauth_add(xauthority, display_name)
     return xvfb, display_name, xauth_data
 
-def xauth_add(display_name):
+def xauth_add(filename, display_name):
     from xpra.os_util import get_hex_uuid
     xauth_data = get_hex_uuid()
-    xauth_cmd = ["xauth", "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
+    xauth_cmd = ["xauth", "-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         code = subprocess.call(xauth_cmd)
         if code != 0:
