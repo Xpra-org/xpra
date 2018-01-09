@@ -213,15 +213,15 @@ fi
 
 if [ "${BUNDLE_OPENGL}" == "1" ]; then
 	if [ -e "${DIST}/OpenGL" ]; then
+		pushd "${DIST}" >& /dev/null
 		if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 			echo "* Adding PyOpenGL to lib dir"
 			mv "OpenGL" "lib/"
 		else
 			echo "* Adding PyOpenGL to library.zip"
-			pushd "${DIST}" >& /dev/null
 			zip -qmor "library.zip" OpenGL
-			popd >& /dev/null
 		fi
+		popd >& /dev/null
 	fi
 fi
 
