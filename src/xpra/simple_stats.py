@@ -51,6 +51,8 @@ def values_to_scaled_values(data, scale_unit=10, min_scaled_value=10, num_values
     max_v = max(data)
     #pad with None values so we have at least num_values:
     if len(data)<num_values:
+        if isinstance(data, tuple):
+            data = list(data)
         for _ in range(num_values-len(data)):
             data.insert(0, None)
     scale = 1
