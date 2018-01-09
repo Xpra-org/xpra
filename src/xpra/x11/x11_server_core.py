@@ -166,7 +166,8 @@ class X11ServerCore(GTKServerBase):
             if os.path.exists("/sys/module/%s" % mod):
                 blacklisted_kernel_modules.append(mod)
         if blacklisted_kernel_modules:
-            gllog.warn("Warning: skipped OpenGL probing, found %i blacklisted kernel module%s:", len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
+            gllog.warn("Warning: skipped OpenGL probing,")
+            gllog.warn(" found %i blacklisted kernel module%s:", len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
             gllog.warn(" %s", csv(blacklisted_kernel_modules))
             self.opengl_props["error"] = "VirtualBox guest detected: %s" % csv(blacklisted_kernel_modules)
         else:
