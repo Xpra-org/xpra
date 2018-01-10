@@ -3014,7 +3014,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                     lines = out.splitlines()
                     log("id(%s): %s", socket_path, csv(lines))
                     found = False
-                    display = display_name
+                    display = matching_display
                     for line in lines:
                         if line.startswith(UUID_PREFIX):
                             this_uuid = line[len(UUID_PREFIX):]
@@ -3022,9 +3022,10 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                                 found = True
                         elif line.startswith(DISPLAY_PREFIX):
                             display = line[len(DISPLAY_PREFIX):]
-                            if display_name and display==display_name:
+                            if display and display==matching_display:
                                 found = True
                     if found:
+                        assert display, "display value not found in id output"
                         return socket_path, display
             except Exception as e:
                 warn("error during server process detection: %s" % e)
