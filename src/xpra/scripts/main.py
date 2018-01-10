@@ -2941,7 +2941,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             n = parse_displayfd(buf, displayfd_err)
             if n is not None:
                 matching_display = ":%s" % n
-                log("matching display=%s", matching_display)
+                log("displayfd=%s", matching_display)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 

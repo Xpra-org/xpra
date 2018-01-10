@@ -291,7 +291,7 @@ class ServerCore(object):
 
     def init_uuid(self):
         # Define a server UUID if needed:
-        self.uuid = self.get_uuid()
+        self.uuid = os.environ.get("XPRA_PROXY_START_UUID") or self.get_uuid()
         if not self.uuid:
             self.uuid = bytestostr(get_hex_uuid())
             self.save_uuid()
