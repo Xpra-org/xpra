@@ -118,7 +118,7 @@ class ServerBase(ServerCore):
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.supports_clipboard = False
+        self.clipboard = False
         self.clipboard_direction = "both"
         self.supports_dbus_proxy = False
         self.dbus_helper = None
@@ -237,7 +237,7 @@ class ServerBase(ServerCore):
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
-        self.supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
+        self.clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
@@ -639,12 +639,12 @@ class ServerBase(ServerCore):
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
 
     def init_clipboard(self):
-        clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.supports_clipboard, self.clipboard_filter_file)
+        clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
         self._clipboard_helper = None
         self._clipboard_client = None
         self._clipboards = []
-        if not self.supports_clipboard:
+        if not self.clipboard:
             return
         clipboard_filter_res = []
         if self.clipboard_filter_file:
@@ -1997,7 +1997,7 @@ class ServerBase(ServerCore):
 
     def control_command_clipboard_direction(self, direction, *_args):
         ch = self._clipboard_helper
-        assert self.supports_clipboard and ch
+        assert self.clipboard and ch
         direction = direction.lower()
         DIRECTIONS = ("to-server", "to-client", "both", "disabled")
         assert direction in DIRECTIONS, "invalid direction '%s', must be one of %s" % (direction, csv(DIRECTIONS))
@@ -2393,7 +2393,7 @@ class ServerBase(ServerCore):
                                    },
              "dbus_proxy"       : self.supports_dbus_proxy,
              "rpc-types"        : tuple(self.rpc_handlers.keys()),
-             "clipboard"        : self.supports_clipboard,
+             "clipboard"        : self.clipboard,
              "idle_timeout"     : self.idle_timeout,
              }
         i.update(self.get_server_features())
