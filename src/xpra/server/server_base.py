@@ -1745,11 +1745,14 @@ class ServerBase(ServerCore):
             commandlog.warn(msg)
             return msg
         fn = feature.replace("-", "_")
+        if not hasattr(self, feature):
+            msg = "attribute '%s' not found - bug?" % feature
+            commandlog.warn(msg)
+            return msg
         cur = getattr(self, fn, None)
         if state is None:
             #if the new state is not specified, just negate the value
             state = not cur
-        assert cur is not None, "feature '%s' is set to None!"
         setattr(self, fn, state)
         self.setting_changed(feature, state)
         return "%s set to %s" % (feature, state)
