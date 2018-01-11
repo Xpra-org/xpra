@@ -3,7 +3,7 @@
 #gtkPopupNotify.py
 #
 # Copyright 2009 Daniel Woodhouse
-# Copyright 2013 Antoine Martin <antoine@devloop.org.uk>
+# Copyright 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU Lesser General Public License as published by
@@ -17,9 +17,12 @@
 #
 #You should have received a copy of the GNU Lesser General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import gtk
-from gtk import gdk
-import glib
+
+import os
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk
+gtk = import_gtk()
+gdk = import_gdk()
+glib = import_glib()
 
 from xpra.os_util import OSX
 DEFAULT_FG_COLOUR = None
@@ -31,11 +34,18 @@ if OSX:
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL
 from xpra.client.notifications.notifier_base import NotifierBase, log
 
 
-class GTK2_Notifier(NotifierBase):
+def get_pixbuf(icon_name):
+    from xpra.platform.paths import get_icon_dir
+    icon_filename = os.path.join(get_icon_dir(), icon_name)
+    if os.path.exists(icon_filename):
+        return pixbuf_new_from_file(icon_filename)
+    return None
+
+class GTK_Notifier(NotifierBase):
 
     def __init__(self, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
         NotifierBase.__init__(self)
@@ -70,7 +80,7 @@ class GTK2_Notifier(NotifierBase):
         self._notify_stack = []
         self._offset = 0
 
-        display = gdk.display_get_default()
+        display = display_get_default()
         screen = display.get_default_screen()
         n = screen.get_n_monitors()
         log("screen=%s, monitors=%s", screen, n)
@@ -94,6 +104,9 @@ class GTK2_Notifier(NotifierBase):
         return    self.y
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+        self.new_popup(summary, body, icon)
+
+    def new_popup(self, summary, body, icon):
         """Create a new Popup instance."""
         if len(self._notify_stack) == self.max_popups:
             self._notify_stack[0].hide_notification()
@@ -144,8 +157,9 @@ class Popup(gtk.Window):
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
         if True:
+            icon = get_pixbuf("close.png")
             close_button = gtk.Image()
-            close_button.set_from_stock(gtk.STOCK_CANCEL, gtk.ICON_SIZE_BUTTON)
+            close_button.set_from_pixbuf(icon)
             close_button.set_padding(3, 3)
             close_window = gtk.EventBox()
             close_window.set_visible_window(False)
@@ -162,8 +176,9 @@ class Popup(gtk.Window):
             self.image.set_from_pixbuf(image)
             body_box.pack_start(self.image, False, False, 5)
         self.message = gtk.Label()
-        self.message.set_property("wrap", True)
+        self.message.set_max_width_chars(80)
         self.message.set_size_request(stack.size_x - 90, -1)
+        self.message.set_line_wrap(True)
         self.message.set_alignment(0, 0)
         self.message.set_padding(5, 10)
         self.message.set_text(message)
@@ -190,23 +205,23 @@ class Popup(gtk.Window):
             main_box.pack_start(alignment)
         self.add(main_box)
         if stack.bg_color is not None:
-            self.modify_bg(gtk.STATE_NORMAL, stack.bg_color)
+            self.modify_bg(STATE_NORMAL, stack.bg_color)
         if stack.fg_color is not None:
-            self.message.modify_fg(gtk.STATE_NORMAL, stack.fg_color)
-            self.header.modify_fg(gtk.STATE_NORMAL, stack.fg_color)
-            self.counter.modify_fg(gtk.STATE_NORMAL, stack.fg_color)
+            self.message.modify_fg(STATE_NORMAL, stack.fg_color)
+            self.header.modify_fg(STATE_NORMAL, stack.fg_color)
+            self.counter.modify_fg(STATE_NORMAL, stack.fg_color)
         self.show_timeout = stack.show_timeout
         self.hover = False
         self.show_all()
-        self.w, self.h = self.size_request()
+        self.w, self.h = get_preferred_size(self)
         self.move(self.get_x(self.w), self.get_y(self.h))
         self.wait_timer = None
         self.fade_out_timer = None
         self.fade_in_timer = glib.timeout_add(100, self.fade_in)
         #ensure we dont show it in the taskbar:
-        self.window.set_skip_taskbar_hint(True)
-        self.window.set_skip_pager_hint(True)
         self.realize()
+        self.get_window().set_skip_taskbar_hint(True)
+        self.get_window().set_skip_pager_hint(True)
         add_close_accel(self, self.hide_notification)
 
     def get_x(self, w):
@@ -293,21 +308,21 @@ def main():
     messages = (("Hello", "This is a popup"),
             ("Some Latin", "Quidquid latine dictum sit, altum sonatur."),
             ("A long message", "The quick brown fox jumped over the lazy dog. " * 6))
-    images = ("logo1_64.png", None)
+    #images = ("logo1_64.png", None)
     def notify_factory():
         color = random.choice(color_combos)
-        message = random.choice(messages)
-        image = random.choice(images)
-        notifier.bg_color = gtk.gdk.Color(color[0])
-        notifier.fg_color = gtk.gdk.Color(color[1])
+        title, message = random.choice(messages)
+        icon = None #random.choice(images)
+        notifier.bg_color = color_parse(color[0])
+        notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
-        notifier.new_popup(title=message[0], message=message[1], image=image)
+        notifier.new_popup(title, message, icon)
         return True
     def gtk_main_quit():
         print("quitting")
         gtk.main_quit()
 
-    notifier = GTK2_Notifier(timeout=6)
+    notifier = GTK_Notifier(timeout=6)
     glib.timeout_add(4000, notify_factory)
     glib.timeout_add(20000, gtk_main_quit)
     gtk.main()

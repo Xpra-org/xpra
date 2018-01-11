@@ -170,6 +170,20 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         UIXpraClient.cleanup(self)
 
 
+    def get_notifier_classes(self):
+        #subclasses may add their toolkit specific variants
+        #by overriding this method
+        #use the native ones first:
+        ncs = get_native_notifier_classes()
+        try:
+            from xpra.client.gtk_base.gtk_notifier import GTK_Notifier
+            ncs.append(GTK_Notifier)
+        except Exception as e:
+            log.warn("Warning: cannot load GTK notifier:")
+            log.warn(" %s", e)
+        return ncs
+
+
     def _process_challenge(self, packet):
         if not self.validate_challenge_packet(packet):
             return
