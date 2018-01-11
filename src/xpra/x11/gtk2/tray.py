@@ -172,8 +172,14 @@ class SystemTray(gobject.GObject):
             if opcode==SYSTEM_TRAY_REQUEST_DOCK:
                 xid = event.data[2]
                 log("tray docking request from %#x", xid)
-                with xsync:
-                    self.dock_tray(xid)
+                try:
+                    with xsync:
+                        self.dock_tray(xid)
+                except Exception as e:
+                    log("do_xpra_client_message_event(%s)", event, exc_info=True)
+                    log.warn("Warning: failed to dock tray %#x:", xid)
+                    log.warn(" %s", e)
+                    log.warn(" the application may retry later")
             elif opcode==SYSTEM_TRAY_BEGIN_MESSAGE:
                 timeout = event.data[2]
                 mlen = event.data[3]
