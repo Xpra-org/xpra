@@ -24,18 +24,19 @@ gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
 
+from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL
+from xpra.client.notifications.notifier_base import NotifierBase, log
+
 from xpra.os_util import OSX
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
 if OSX:
     #black on white fits better with osx
-    DEFAULT_FG_COLOUR = gdk.Color("black")
-    DEFAULT_BG_COLOUR = gdk.Color(62000, 62000, 62000)
+    DEFAULT_FG_COLOUR = color_parse("black")
+    DEFAULT_BG_COLOUR = color_parse(62000, 62000, 62000)
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
-from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL
-from xpra.client.notifications.notifier_base import NotifierBase, log
 
 
 def get_pixbuf(icon_name):
