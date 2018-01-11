@@ -197,6 +197,9 @@ class SystemTray(gobject.GObject):
             log.warn("could not find gdk window for tray window %#x", xid)
             return
         w, h = window.get_geometry()[2:4]
+        if w==0 and h==0:
+            log("dock_tray: invalid tray geometry, ignoring this request")
+            return
         event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
