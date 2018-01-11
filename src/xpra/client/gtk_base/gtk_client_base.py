@@ -174,7 +174,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         #subclasses may add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
-        ncs = get_native_notifier_classes()
+        ncs = UIXpraClient.get_notifier_classes(self)
         try:
             from xpra.client.gtk_base.gtk_notifier import GTK_Notifier
             ncs.append(GTK_Notifier)
