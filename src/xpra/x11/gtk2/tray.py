@@ -200,6 +200,9 @@ class SystemTray(gobject.GObject):
         log("dock_tray: root=%s, window=%s", root, window)
         w, h = window.get_geometry()[2:4]
         log("dock_tray: geometry=%s", (w, h))
+        if w==0 and h==0:
+            log("dock_tray: invalid tray geometry, ignoring this request")
+            return
         event_mask = gdk.STRUCTURE_MASK | gdk.EXPOSURE_MASK | gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
