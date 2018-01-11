@@ -14,7 +14,7 @@ from gi.repository import GdkPixbuf             #@UnresolvedImport @UnusedImport
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, WIN32
 from xpra.log import Logger
 log = Logger("gtk", "window")
 paintlog = Logger("paint")
@@ -88,13 +88,19 @@ class ClientWindow(GTKClientWindowBase):
     def enable_alpha(self):
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
+        #we can't do alpha on win32 with plain GTK,
+        #(though we handle it in the opengl backend)
+        if WIN32:
+            l = log
+        else:
+            l = log.error
         if visual is None or not screen.is_composited():
-            log.error("Error: cannot handle window transparency")
+            l("Error: cannot handle window transparency")
             if visual is None:
-                log.error(" no RGBA visual")
+                l(" no RGBA visual")
             else:
                 assert not screen.is_composited()
-                log.error(" screen is not composited")
+                l(" screen is not composited")
             return False
         log("enable_alpha() using rgba visual %s for wid %s", visual, self._id)
         self.set_visual(visual)

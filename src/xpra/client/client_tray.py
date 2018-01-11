@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,6 @@ from xpra.client.window_backing_base import WindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.log import Logger
 log = Logger("tray")
-
 
 
 class ClientTray(ClientWidgetBase):
@@ -34,6 +33,11 @@ class ClientTray(ClientWidgetBase):
         self._backing = None
         self.new_backing(w, h)
         self.idle_add(self.reconfigure)
+
+    def set_alpha(self):
+        #nothing to do,
+        #trays aren't really windows and transparency is always supported
+        pass
 
     def get_backing_class(self):
         return TrayBacking

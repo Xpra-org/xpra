@@ -9,7 +9,7 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, PYTHON2, OSX
+from xpra.os_util import bytestostr, PYTHON2, PYTHON3, OSX, WIN32
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
@@ -276,7 +276,13 @@ class ClientWindowBase(ClientWidgetBase):
         if b"has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha!=self._has_alpha:
-                log.warn("window %s changed its alpha flag from %s to %s (unsupported)", self._id, self._has_alpha, new_alpha)
+                l = metalog
+                if PYTHON3 and not WIN32:
+                    #win32 without opengl can't do transparency,
+                    #so it triggers too many warnings
+                    l = log.warn
+                l("Warning: window %s changed its transparency attribute", self._id)
+                l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
         if b"maximized" in metadata:
