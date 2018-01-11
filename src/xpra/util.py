@@ -14,6 +14,14 @@ import re
 
 XPRA_APP_ID = 0
 
+XPRA_GUID1 = 0x67b3efa2
+XPRA_GUID2 = 0xe470
+XPRA_GUID3 = 0x4a5f
+XPRA_GUID4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
+XPRA_GUID_STR = "67B3EFA2-E470-4A5F-B653-6F6F98FE6081"
+XPRA_GUID_BYTES = binascii.unhexlify("67B3EFA2-E470-4A5F-B653-6F6F98FE6081".replace("-",""))
+
+
 #constants shared between client and server:
 #(do not modify the values, see also disconnect_is_an_error)
 #timeouts:

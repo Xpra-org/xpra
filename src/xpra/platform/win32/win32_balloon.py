@@ -8,6 +8,7 @@
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
 from xpra.os_util import BytesIOClass, strtobytes
+from xpra.util import XPRA_GUID_BYTES
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
@@ -103,6 +104,7 @@ def notify(hwnd, title, message, timeout=5000, icon=None):
     nid = PyNOTIFYICONDATA()
     nid.hWnd = hwnd
     nid.uFlags = NIF_INFO
+    nid.guidItem = XPRA_GUID_BYTES
     nid.szInfo = chop_string(message, 255, False)        #prevent overflow
     nid.szInfoTitle = chop_string(title, 63)
     if timeout<=0:

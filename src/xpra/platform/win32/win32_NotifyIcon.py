@@ -11,7 +11,7 @@ import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
-from xpra.util import csv, nonl, XPRA_APP_ID
+from xpra.util import csv, nonl, XPRA_APP_ID, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
@@ -143,10 +143,10 @@ CreateBitmap.restype = HBITMAP
 CreateBitmap.argtypes = [INT, INT, UINT, UINT, POINTER(c_void_p)]
 
 XPRA_GUID = GUID()
-XPRA_GUID.Data1 = 0x67b3efa2
-XPRA_GUID.Data2 = 0xe470
-XPRA_GUID.Data3 = 0x4a5f
-XPRA_GUID.Data4 = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
+XPRA_GUID.Data1 = XPRA_GUID1
+XPRA_GUID.Data2 = XPRA_GUID2
+XPRA_GUID.Data3 = XPRA_GUID3
+XPRA_GUID.Data4 = XPRA_GUID4
 
 FALLBACK_ICON = LoadIconA(0, win32con.IDI_APPLICATION)
 
