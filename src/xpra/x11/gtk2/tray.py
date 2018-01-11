@@ -203,8 +203,8 @@ class SystemTray(gobject.GObject):
         event_mask = gdk.STRUCTURE_MASK | gdk.EXPOSURE_MASK | gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
-        w = max(1, min(64, w))
-        h = max(1, min(64, h))
+        w = max(1, min(128, w))
+        h = max(1, min(128, h))
         title = prop_get(window, "_NET_WM_NAME", "utf8", ignore_errors=True)
         if title is None:
             title = prop_get(window, "WM_NAME", "latin1", ignore_errors=True)
