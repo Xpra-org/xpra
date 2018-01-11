@@ -23,6 +23,7 @@ framelog = Logger("gtk", "client", "frame")
 menulog = Logger("gtk", "client", "menu")
 filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
+notifylog = Logger("gtk", "notify")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -179,8 +180,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             from xpra.client.gtk_base.gtk_notifier import GTK_Notifier
             ncs.append(GTK_Notifier)
         except Exception as e:
-            log.warn("Warning: cannot load GTK notifier:")
-            log.warn(" %s", e)
+            notifylog("get_notifier_classes()", exc_info=True)
+            notifylog.warn("Warning: cannot load GTK notifier:")
+            notifylog.warn(" %s", e)
         return ncs
 
 
