@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gtk
+from gtk import gdk
 import gobject
 
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -100,7 +100,7 @@ class SystemTray(gobject.GObject):
 
     def cleanup(self):
         log("SystemTray.cleanup()")
-        root = gtk.gdk.get_default_root_window()
+        root = gdk.get_default_root_window()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         if owner==self.tray_window.xid:
             X11Window.XSetSelectionOwner(0, SELECTION)
@@ -121,8 +121,8 @@ class SystemTray(gobject.GObject):
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self):
-        display = gtk.gdk.display_get_default()
-        root = gtk.gdk.get_default_root_window()
+        display = gdk.display_get_default()
+        root = gdk.get_default_root_window()
         screen = root.get_screen()
         if TRANSPARENCY:
             colormap, visual = screen.get_rgba_colormap(), screen.get_rgba_visual()
@@ -134,10 +134,10 @@ class SystemTray(gobject.GObject):
         log("setup tray: current selection owner=%#x", owner)
         if owner!=XNone:
             raise Exception("%s already owned by %s" % (SELECTION, owner))
-        self.tray_window = gtk.gdk.Window(root, width=1, height=1,
-                                           window_type=gtk.gdk.WINDOW_TOPLEVEL,
+        self.tray_window = gdk.Window(root, width=1, height=1,
+                                           window_type=gdk.WINDOW_TOPLEVEL,
                                            event_mask = 0,
-                                           wclass=gtk.gdk.INPUT_OUTPUT,
+                                           wclass=gdk.INPUT_OUTPUT,
                                            title="Xpra-SystemTray",
                                            visual=visual,
                                            colormap=colormap)
@@ -191,13 +191,16 @@ class SystemTray(gobject.GObject):
             log.info("do_xpra_client_message_event(%s)", event)
 
     def dock_tray(self, xid):
-        root = gtk.gdk.get_default_root_window()
-        window = gtk.gdk.window_foreign_new(xid)
+        log("dock_tray(%#x)", xid)
+        root = gdk.get_default_root_window()
+        window = gdk.window_foreign_new(xid)
         if window is None:
             log.warn("could not find gdk window for tray window %#x", xid)
             return
+        log("dock_tray: root=%s, window=%s", root, window)
         w, h = window.get_geometry()[2:4]
-        event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
+        log("dock_tray: geometry=%s", (w, h))
+        event_mask = gdk.STRUCTURE_MASK | gdk.EXPOSURE_MASK | gdk.PROPERTY_CHANGE_MASK
         window.set_events(event_mask=event_mask)
         add_event_receiver(window, self)
         w = max(1, min(64, w))
@@ -208,11 +211,11 @@ class SystemTray(gobject.GObject):
         if title is None:
             title = ""
         log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s, visual.depth=%s", xid, window.xid, window.get_geometry(), title, window.get_visual().depth)
-        event_mask = gtk.gdk.STRUCTURE_MASK | gtk.gdk.EXPOSURE_MASK | gtk.gdk.PROPERTY_CHANGE_MASK
-        tray_window = gtk.gdk.Window(root, width=w, height=h,
-                                           window_type=gtk.gdk.WINDOW_TOPLEVEL,
+        event_mask = gdk.STRUCTURE_MASK | gdk.EXPOSURE_MASK | gdk.PROPERTY_CHANGE_MASK
+        tray_window = gdk.Window(root, width=w, height=h,
+                                           window_type=gdk.WINDOW_TOPLEVEL,
                                            event_mask = event_mask,
-                                           wclass=gtk.gdk.INPUT_OUTPUT,
+                                           wclass=gdk.INPUT_OUTPUT,
                                            title=title,
                                            x=-200, y=-200,
                                            override_redirect=True,
@@ -231,7 +234,7 @@ class SystemTray(gobject.GObject):
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
         log("dock_tray(%#x) new tray container window %#x", xid, xtray)
-        tray_window.invalidate_rect(gtk.gdk.Rectangle(width=w, height=h), True)
+        tray_window.invalidate_rect(gdk.Rectangle(width=w, height=h), True)
         X11Window.send_xembed_message(xwin, XEMBED_EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
     def move_resize(self, window, x, y, w, h):
