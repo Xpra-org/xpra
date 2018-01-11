@@ -1963,14 +1963,25 @@ class ServerSource(FileTransferHandler):
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+        args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
+        notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
             notifylog("client %s does not support notifications", self)
             return False
         if self.suspended:
             notifylog("client %s is suspended, notification not sent", self)
             return False
+        #this is one of the few places where we actually do care about character encoding:
+        try:
+            summary = summary.encode("utf8")
+        except:
+            summary = str(summary)
+        try:
+            body = body.encode("utf8")
+        except:
+            body = str(body)
         if self.hello_sent:
-            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout), icon)
+            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), summary, body, int(expire_timeout), icon)
         return True
 
     def notify_close(self, nid):

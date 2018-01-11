@@ -3436,6 +3436,15 @@ class UIXpraClient(XpraClientBase):
         notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
         assert self.notifier
         #TODO: choose more appropriate tray if we have more than one shown?
+        #this one of the few places where we actually do care about character encoding:
+        try:
+            summary = summary.decode("utf8")
+        except:
+            summary = bytestostr(summary)
+        try:
+            body = body.decode("utf8")
+        except:
+            body = bytestostr(body)
         tray = self.tray
         self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
 
