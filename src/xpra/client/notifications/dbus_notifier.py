@@ -36,6 +36,7 @@ class DBUS_Notifier(NotifierBase):
 
     def __init__(self):
         NotifierBase.__init__(self)
+        self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification = None
         self.setup_dbusnotify()
 
@@ -59,7 +60,7 @@ class DBUS_Notifier(NotifierBase):
                 from xpra.gtk_common.gobject_compat import import_glib
                 import_glib().timeout_add(10*1000, self.clean_notification, nid)
             try:
-                app_str = NOTIFICATION_APP_NAME % app_name
+                app_str = self.app_name_format % app_name
             except:
                 app_str = app_name or "Xpra"
             self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)

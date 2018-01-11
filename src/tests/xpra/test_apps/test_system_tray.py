@@ -40,6 +40,7 @@ class StatusIcon:
     def notify(self, *_args):
         from xpra.client.notifications.dbus_notifier import DBUS_Notifier
         n = DBUS_Notifier()
+        n.app_name_format = "%s"
         n.show_notify("dbus-id", None, 0, self.name, 0, "", "Notification Summary", "Notification Body", 60, "")
         #import pynotify
         #pynotify.init(self.name or "Xpra")
