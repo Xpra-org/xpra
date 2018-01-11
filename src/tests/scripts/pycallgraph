@@ -423,7 +423,7 @@ dialogs = [
             'xpra.client.notifications.*',
             'xpra.*.setup_dbusnotify',
             'xpra.*.can_notify',
-            'xpra.*.gtk2_notifier.*',
+            'xpra.*.gtk_notifier.*',
             '*pynotify.*',
             #tray menu:
             'xpra.*.*tray_menu*',
