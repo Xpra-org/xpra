@@ -33,7 +33,7 @@ DEFAULT_BG_COLOUR = None
 if OSX:
     #black on white fits better with osx
     DEFAULT_FG_COLOUR = color_parse("black")
-    DEFAULT_BG_COLOUR = color_parse(62000, 62000, 62000)
+    DEFAULT_BG_COLOUR = color_parse("#f2f2f2")
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
