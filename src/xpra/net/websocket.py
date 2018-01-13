@@ -22,7 +22,6 @@ from websockify.websocket import WebSocketRequestHandler
 WEBSOCKET_TCP_NODELAY = envbool("WEBSOCKET_TCP_NODELAY", True)
 WEBSOCKET_TCP_KEEPALIVE = envbool("WEBSOCKET_TCP_KEEPALIVE", True)
 WEBSOCKET_DEBUG = envbool("XPRA_WEBSOCKET_DEBUG", False)
-HTTP_NOCACHE = envbool("XPRA_HTTP_NOCACHE", True)
 
 
 class WSRequestHandler(WebSocketRequestHandler):
@@ -103,16 +102,7 @@ class WSRequestHandler(WebSocketRequestHandler):
         WebSocketRequestHandler.end_headers(self)
 
     def get_headers(self):
-        headers = {}
-        if HTTP_NOCACHE:
-            headers.update({
-                "Cache-Control" : "no-cache, no-store, must-revalidate",
-                "Pragma"        : "no-cache",
-                "Expires"       : "0",
-                })
-        dir_headers = self.may_reload_headers(self.http_headers_dir)
-        headers.update(dir_headers)
-        return headers
+        return self.may_reload_headers(self.http_headers_dir)
 
     @classmethod
     def may_reload_headers(cls, http_headers_dir):
