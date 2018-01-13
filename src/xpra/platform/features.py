@@ -56,6 +56,21 @@ else:
     CLIENT_MODULES = ["xpra.client.gtk3.client"]
 
 
+SOCKET_OPTIONS = (
+    "SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+    )
+IP_OPTIONS = (
+    "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
+    "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
+    "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
+    )
+TCP_OPTIONS = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
+
+
 _features_list_ = [
                    "LOCAL_SERVERS_SUPPORTED",
                    "SHADOW_SUPPORTED",
@@ -78,6 +93,9 @@ _features_list_ = [
                    "INPUT_DEVICES",
                    "SYSTEM_PROXY_SOCKET",
                    "OPEN_COMMAND",
+                   "SOCKET_OPTIONS",
+                   "IP_OPTIONS",
+                   "TCP_OPTONS",
                    ]
 from xpra.platform import platform_import
 platform_import(globals(), "features", False,

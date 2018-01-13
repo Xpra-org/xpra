@@ -26,3 +26,18 @@ OPEN_COMMAND = ["start", "''"]
 
 #not implemented:
 SYSTEM_PROXY_SOCKET = "xpra-proxy"
+
+SOCKET_OPTIONS = (
+    #not supported on win32:
+    #"SO_BROADCAST", "SO_RCVLOWAT",
+    "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+    "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+    )
+IP_OPTIONS = (
+    #not supported on win32:
+    #"IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
+    "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
+    "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
+    )
