@@ -470,7 +470,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if POSIX and opts.daemon:
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
-            opts.password_file = os.path.abspath(opts.password_file)
+            opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
         from xpra.server.server_util import daemonize
         daemonize()
 
