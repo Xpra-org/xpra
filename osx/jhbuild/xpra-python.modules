@@ -365,6 +365,7 @@
 			hash="sha256:e6b90591c5a80573995e90686c5b03a8e612d1ac4b19eae0c7422958c45cdde6"
 			version="0.18.1"/>
 		<dependencies>
+			<dep package="lz4"/>
 			<dep package="python"/>
 			<dep package="python-pkgconfig"/>
 			<dep package="python-deprecation"/>
@@ -372,6 +373,7 @@
 			<dep package="python-setuptools-scm"/>
 		</dependencies>
 		<after>
+			<dep package="lz4"/>
 			<dep package="python"/>
 			<dep package="python-pkgconfig"/>
 			<dep package="python-deprecation"/>
