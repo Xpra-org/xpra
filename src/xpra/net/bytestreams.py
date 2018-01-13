@@ -349,8 +349,49 @@ class SocketConnection(Connection):
                         info["speed"] = s
         except:
             pass
+        opts = {
+                "SOCKET" : get_socket_options(self._socket, socket.SOL_SOCKET, (
+                    "SO_BROADCAST", "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
+                    "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
+                    "SO_RCVLOWAT", "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
+                    "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
+                    )),
+                }
+        if self.socktype in ("tcp", "udp", "ws", "wss", "ssl"):
+                opts["IP"] = get_socket_options(self._socket, socket.SOL_IP, (
+                        "IP_DONTFRAG", "IP_MULTICAST_IF", "IP_MULTICAST_LOOP",
+                        "IP_MULTICAST_TTL", "IP_OPTIONS", "IP_RECVLCLIFADDR",
+                        "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
+                        ))
+        if self.socktype in ("tcp", "ws", "wss", "ssl"):
+            opts["TCP"] = get_socket_options(self._socket, socket.IPPROTO_TCP, ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE"))
+        #ipv6:  IPV6_ADDR_PREFERENCES, IPV6_CHECKSUM, IPV6_DONTFRAG, IPV6_DSTOPTS, IPV6_HOPOPTS,
+        # IPV6_MULTICAST_HOPS, IPV6_MULTICAST_IF, IPV6_MULTICAST_LOOP, IPV6_NEXTHOP, IPV6_PATHMTU,
+        # IPV6_PKTINFO, IPV6_PREFER_TEMPADDR, IPV6_RECVDSTOPTS, IPV6_RECVHOPLIMIT, IPV6_RECVHOPOPTS,
+        # IPV6_RECVPATHMTU, IPV6_RECVPKTINFO, IPV6_RECVRTHDR, IPV6_RECVTCLASS, IPV6_RTHDR,
+        # IPV6_RTHDRDSTOPTS, IPV6_TCLASS, IPV6_UNICAST_HOPS, IPV6_USE_MIN_MTU, IPV6_V6ONLY
+        info["options"] = opts
         return info
 
+def get_socket_options(sock, level, options):
+    opts = {}
+    try:
+        for k in options:
+            opt = getattr(socket, k, None)
+            if opt is None:
+                continue
+            try:
+                v = sock.getsockopt(level, opt)
+            except Exception as e:
+                log.warn("Warning: cannot query %s: %s", k, e)
+            else:
+                if v is not None:
+                    opts[k] = v
+    except:
+        log.error("Error querying socket options:")
+        log.error(" %s", e)
+    return opts
+    
 
 SSLSocket = None
 if SSL_PEEK:
