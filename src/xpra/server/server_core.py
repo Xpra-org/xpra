@@ -1679,6 +1679,8 @@ class ServerCore(object):
                    "executable"        : sys.executable,
                    "uuid"              : self.uuid,
                 })
+        if POSIX:
+            si["load"] = tuple(int(x*1000) for x in os.getloadavg())
         if self.original_desktop_display:
             si["original-desktop-display"] = self.original_desktop_display
         up("server", si)
