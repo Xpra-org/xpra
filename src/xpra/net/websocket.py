@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("network", "websocket")
 
 from xpra.util import envbool, std, AdHocStruct
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, PYTHON2
 from xpra.net.bytestreams import SocketConnection
 from websockify.websocket import WebSocketRequestHandler
 
@@ -31,8 +31,12 @@ class WSRequestHandler(WebSocketRequestHandler):
     keep_alive = WEBSOCKET_TCP_KEEPALIVE
     server_version = "Xpra-WebSockify"
 
-    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", script_paths={}, disable_nagle=True):
+    http_headers_cache = {}
+    http_headers_time = {}
+
+    def __init__(self, sock, addr, new_websocket_client, web_root="/usr/share/xpra/www/", http_headers_dir="/usr/share/xpra/http-headers", script_paths={}, disable_nagle=True):
         self.web_root = web_root
+        self.http_headers_dir = http_headers_dir
         self._new_websocket_client = new_websocket_client
         self.script_paths = script_paths
         server = AdHocStruct()
@@ -94,14 +98,54 @@ class WSRequestHandler(WebSocketRequestHandler):
             accept = self.headers.get("Accept-Language")
             if accept:
                 self.send_header("Echo-Accept-Language", std(accept, extras="-,./:;="))
-        if HTTP_NOCACHE:
-            self.send_nocache_headers()
+        for k,v in self.get_headers().items():
+            self.send_header(k, v)
         WebSocketRequestHandler.end_headers(self)
 
-    def send_nocache_headers(self):
-        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-        self.send_header("Pragma", "no-cache")
-        self.send_header("Expires", "0")
+    def get_headers(self):
+        headers = {}
+        if HTTP_NOCACHE:
+            headers.update({
+                "Cache-Control" : "no-cache, no-store, must-revalidate",
+                "Pragma"        : "no-cache",
+                "Expires"       : "0",
+                })
+        dir_headers = self.may_reload_headers(self.http_headers_dir)
+        headers.update(dir_headers)
+        return headers
+
+    @classmethod
+    def may_reload_headers(cls, http_headers_dir):
+        if not os.path.exists(http_headers_dir) or not os.path.isdir(http_headers_dir):
+            cls.http_headers_cache[http_headers_dir] = {}
+            return {}
+        mtime = os.path.getmtime(http_headers_dir)
+        log("may_reload_headers() http headers time=%s, mtime=%s", cls.http_headers_time, mtime)
+        if mtime<=cls.http_headers_time.get(http_headers_dir, -1):
+            #no change
+            return cls.http_headers_cache.get(http_headers_dir, {})
+        if PYTHON2:
+            mode = "rU"
+        else:
+            mode = "r"
+        headers = {}
+        for f in sorted(os.listdir(http_headers_dir)):
+            header_file = os.path.join(http_headers_dir, f)
+            if os.path.isfile(header_file):
+                log("may_reload_headers() loading from '%s'", header_file)
+                with open(header_file, mode) as f:
+                    for line in f:
+                        sline = line.strip().rstrip('\r\n').strip()
+                        if sline.startswith("#") or sline=='':
+                            continue
+                        parts = sline.split("=", 1)
+                        if len(parts)!=2:
+                            continue
+                        headers[parts[0]] = parts[1]
+        log("may_reload_headers() headers=%s, mtime=%s", headers, mtime)
+        cls.http_headers_cache[http_headers_dir] = headers
+        cls.http_headers_time[http_headers_dir] = mtime
+        return headers
 
 
     def do_POST(self):

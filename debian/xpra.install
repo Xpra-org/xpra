@@ -17,6 +17,7 @@ usr/share/mime/packages/application-x-xpraconfig.xml
 usr/share/man/man1/xpra*
 usr/share/xpra/icons/*.png
 usr/share/xpra/www/*
+usr/share/xpra/http-headers/*
 usr/share/xpra/cuda/*
 etc/xpra/*.conf
 etc/xpra/conf.d/*conf

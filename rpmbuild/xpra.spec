@@ -476,6 +476,7 @@ rm -rf $RPM_BUILD_ROOT
 %files html5
 %defattr(-,root,root)
 %{_datadir}/xpra/www
+%{_datadir}/xpra/http-headers
 
 %files common
 %defattr(-,root,root)

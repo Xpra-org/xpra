@@ -193,6 +193,7 @@ class ServerCore(object):
         self.ssl_mode = None
         self._html = False
         self._www_dir = None
+        self._http_headers_dir = None
         self._aliases = {}
         self._reverse_aliases = {}
         self.socket_types = {}
@@ -337,6 +338,7 @@ class ServerCore(object):
         #make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
         self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
+        self._http_headers_dir = os.path.abspath(os.path.join(self._www_dir, "../http-headers"))
         if not os.path.exists(self._www_dir) and self._html:
             log.error("Error: cannot find the html web root")
             log.error(" '%s' does not exist", self._www_dir)
@@ -1027,7 +1029,7 @@ class ServerCore(object):
         start_thread(self.start_websockify, "%s-for-%s" % (tname, frominfo), daemon=True, args=(socktype, conn, is_ssl, req_info, conn.remote))
 
     def start_websockify(self, socktype, conn, is_ssl, req_info, frominfo):
-        wslog("start_websockify(%s, %s, %s, %s, %s) www dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir)
+        wslog("start_websockify(%s, %s, %s, %s, %s) www dir=%s, headers dir=%s", socktype, conn, is_ssl, req_info, frominfo, self._www_dir, self._http_headers_dir)
         from xpra.net.websocket import WebSocketConnection, WSRequestHandler
         try:
             sock = conn._socket
@@ -1053,7 +1055,7 @@ class ServerCore(object):
                 self.make_protocol(newsocktype, wsc)
             scripts = self.get_http_scripts()
             disable_nagle = conn.socktype not in ("unix-domain", "named-pipe")
-            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, scripts, disable_nagle)
+            WSRequestHandler(sock, frominfo, new_websocket_client, self._www_dir, self._http_headers_dir, scripts, disable_nagle)
             return
         except IOError as e:
             wslog("", exc_info=True)
@@ -1686,6 +1688,11 @@ class ServerCore(object):
                    "encryption"     : self.encryption or "",
                    "tcp-encryption" : self.tcp_encryption or "",
                    "bandwidth-limit": self.bandwidth_limit or 0,
+                   "www"    : {
+                       ""                   : self._html,
+                       "dir"                : self._www_dir or "",
+                       "http-headers-dir"   : self._http_headers_dir or "",
+                       }
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))

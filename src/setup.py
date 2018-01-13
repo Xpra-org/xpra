@@ -1444,6 +1444,7 @@ if WIN32:
 
     add_data_files('', glob.glob("win32\\bundle-extra\\*"))
     add_data_files('', ["bell.wav"])
+    add_data_files('http-headers', glob.glob("http-headers\\*"))
 
     #END OF win32
 #*******************************************************************************
@@ -1471,6 +1472,7 @@ else:
     add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
     add_data_files('share/xpra/',         ["bell.wav"])
+    add_data_files('share/xpra/http-headers', glob.glob("http-headers/*"))
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
