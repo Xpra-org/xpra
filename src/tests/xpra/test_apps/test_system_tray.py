@@ -57,8 +57,10 @@ def main():
     tooltip = "StatusIcon Example"
     if len(sys.argv)>=3:
         tooltip = sys.argv[2]
-    StatusIcon(name, tooltip)
-    gtk.main()
+    from xpra.platform import program_context
+    with program_context(name, name):
+        StatusIcon(name, tooltip)
+        gtk.main()
 
 
 if __name__ == "__main__":
