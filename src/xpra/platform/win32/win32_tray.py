@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -50,8 +50,8 @@ class Win32Tray(TrayBase):
 
     def getHWND(self):
         if self.tray_widget is None:
-            return    None
-        return    self.tray_widget.hwnd
+            return None
+        return self.tray_widget.hwnd
 
     def cleanup(self):
         log("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)

@@ -460,10 +460,11 @@ class UIXpraClient(XpraClientBase):
             if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
                 icon_filename = get_icon_filename("xpra")
                 try:
-                    from PIL import Image
+                    from PIL import Image   #@UnresolvedImport
                     self.overlay_image = Image.open(icon_filename)
                 except Exception as e:
-                    log("init_ui failed to load overlay icon '%s': %s", icon_filename, e)
+                    log.warn("Warning: failed to load overlay icon '%s':", icon_filename)
+                    log.warn(" %s", e)
 
         notifylog("client_supports_notifications=%s", self.client_supports_notifications)
         if self.client_supports_notifications:
@@ -922,7 +923,7 @@ class UIXpraClient(XpraClientBase):
         traylog("get_tray_title()=%s (items=%s)", nonl(v), t)
         return v
 
-    def setup_system_tray(self, client, wid, w, h, title):
+    def setup_system_tray(self, client, app_id, wid, w, h, title):
         tray_widget = None
         #this is a tray forwarded for a remote application
         def tray_click(button, pressed, time=0):
@@ -964,14 +965,11 @@ class UIXpraClient(XpraClientBase):
                 self.idle_add(do_tray_geometry, *args)
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
-        #TODO: use the pid instead?
-        app_id = wid
         tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
-        traylog("setup_system_tray%s tray_widget=%s", (client, wid, w, h, title), tray_widget)
+        traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
-        return ClientTray(client, wid, w, h, tray_widget, self.mmap_enabled, self.mmap)
-
+        return ClientTray(client, wid, w, h, title, tray_widget, self.mmap_enabled, self.mmap)
 
     def desktops_changed(self, *args):
         workspacelog("desktops_changed%s", args)
@@ -3268,10 +3266,12 @@ class UIXpraClient(XpraClientBase):
         if len(packet)>=5:
             metadata = self.cook_metadata(True, packet[4])
         assert wid not in self._id_to_window, "we already have a window %s" % wid
-        tray = self.setup_system_tray(self, wid, w, h, metadata.get("title", ""))
+        app_id = wid
+        tray = self.setup_system_tray(self, app_id, wid, w, h, metadata.strget("title", ""))
         traylog("process_new_tray(%s) tray=%s", packet, tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
+
 
     def _process_window_move_resize(self, packet):
         wid, x, y, w, h = packet[1:6]
@@ -3445,7 +3445,9 @@ class UIXpraClient(XpraClientBase):
             body = body.decode("utf8")
         except:
             body = bytestostr(body)
-        tray = self.tray
+        app_name = bytestostr(app_name)
+        tray = self.get_tray_window(app_name)
+        traylog("get_tray_window(%s)=%s", app_name, tray)
         self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
 
     def _process_notify_close(self, packet):
@@ -3455,6 +3457,21 @@ class UIXpraClient(XpraClientBase):
         nid = packet[1]
         log("_process_notify_close(%s)", nid)
         self.notifier.close_notify(nid)
+
+    def get_tray_window(self, app_name):
+        #try to identify the application tray that generated this notification,
+        #so we can show it as coming from the correct systray icon
+        #on platforms that support it (ie: win32)
+        if app_name and app_name.lower()!="xpra":
+            #exact match:
+            for window in self._id_to_window.values():
+                #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
+                if window.is_tray() and window.title==app_name:
+                    return window.tray_widget
+            for window in self._id_to_window.values():
+                if window.is_tray() and window.title.find(app_name)>=0:
+                    return window.tray_widget
+        return self.tray
 
 
     def _process_raise_window(self, packet):

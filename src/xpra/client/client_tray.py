@@ -20,9 +20,10 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY = DEFAULT_LOCATION + DEFAULT_SIZE
 
-    def __init__(self, client, wid, w, h, tray_widget, mmap_enabled, mmap_area):
+    def __init__(self, client, wid, w, h, title, tray_widget, mmap_enabled, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
         ClientWidgetBase.__init__(self, client, 0, wid, True)
+        self.title = title
         self.tray_widget = tray_widget
         self._geometry = None
         self._window_alpha = True
@@ -173,7 +174,7 @@ class ClientTray(ClientWidgetBase):
             tw.cleanup()
 
     def __repr__(self):
-        return "ClientTray(%s)" % self._id
+        return "ClientTray(%i:%s)" % (self._id, self.title)
 
 
 class TrayBacking(WindowBackingBase):

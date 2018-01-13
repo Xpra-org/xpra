@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,6 +31,9 @@ class TrayBase(object):
         self.geometry_guess = None
         self.tray_event_locations = deque(maxlen=512)
         self.default_icon_extension = "png"
+
+    def __repr__(self):
+        return "Tray(%i:%s)" % (self.app_id, self.tooltip)
 
     def cleanup(self):
         if self.tray_widget:

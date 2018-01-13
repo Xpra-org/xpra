@@ -14,7 +14,7 @@ log = Logger("notify")
 
 class GTK3_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_id, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)

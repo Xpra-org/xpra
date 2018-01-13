@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -317,6 +317,9 @@ class win32NotifyIcon(object):
         sprintf(byref(nid,NOTIFYICONDATA.szTip.offset), title)
         nid.dwState = 0
         nid.dwStateMask = 0
+        nid.guidItem = XPRA_GUID
+        nid.uID = self.app_id
+        flags |= NIF_GUID
         #balloon notification bits:
         #szInfo
         #uTimeout
@@ -324,11 +327,6 @@ class win32NotifyIcon(object):
         #dwInfoFlags
         #hBalloonIcon
         #flags |= NIF_SHOWTIP
-        if self.app_id==XPRA_APP_ID:
-            nid.guidItem = XPRA_GUID
-            flags |= NIF_GUID
-        else:
-            nid.uID = self.app_id
         nid.uVersion = 4
         nid.uFlags = flags
         log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
@@ -541,7 +539,7 @@ def main():
                 icon = None
             else:
                 pass
-            notify(hwnd, "hello", "world", timeout=1000, icon=icon)
+            notify(hwnd, 0, "hello", "world", timeout=1000, icon=icon)
         elif cid == 1025:
             print("Goodbye")
             DestroyWindow(hwnd)

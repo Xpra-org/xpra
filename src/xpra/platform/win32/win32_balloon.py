@@ -100,9 +100,10 @@ class PyNOTIFYICONDATA:
         self.__dict__[name] = value
 
 
-def notify(hwnd, title, message, timeout=5000, icon=None):
+def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     nid = PyNOTIFYICONDATA()
     nid.hWnd = hwnd
+    nid.uID = app_id
     nid.uFlags = NIF_INFO
     nid.guidItem = XPRA_GUID_BYTES
     nid.szInfo = chop_string(message, 255, False)        #prevent overflow

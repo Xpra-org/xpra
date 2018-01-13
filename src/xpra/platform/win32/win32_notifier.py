@@ -17,7 +17,8 @@ class Win32_Notifier(NotifierBase):
             log.warn(" the system tray class %s does not support hwnd", type(tray))
             return
         hwnd = tray.getHWND()
-        notify(hwnd, summary, body, expire_timeout, icon)
+        app_id = tray.app_id
+        notify(hwnd, app_id, summary, body, expire_timeout, icon)
 
     def close_notify(self, nid):
         pass
