@@ -11,7 +11,7 @@ import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
 
-from xpra.util import csv, nonl, XPRA_APP_ID, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.util import csv, nonl, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
@@ -527,7 +527,7 @@ def main():
             from xpra.platform.win32.win32_balloon import notify
             from xpra.os_util import BytesIOClass
             try:
-                from PIL import Image
+                from PIL import Image   #@UnresolvedImport
                 img = Image.open("icons\\printer.png")
                 buf = BytesIOClass()
                 img.save(buf, "PNG")
