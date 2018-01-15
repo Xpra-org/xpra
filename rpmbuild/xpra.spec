@@ -609,7 +609,8 @@ fi
 
 
 %changelog
-* Tue Jan 09 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Mon Jan 15 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+- fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix system tray menu entries wrongly disabled
 - fix man page for all 'start' command variants
