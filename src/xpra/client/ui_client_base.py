@@ -452,6 +452,9 @@ class UIXpraClient(XpraClientBase):
                 self.tray = self.setup_xpra_tray(opts.tray_icon or "xpra")
                 if self.tray:
                     self.tray.show()
+                #re-set the icon after a short delay,
+                #seems to help with buggy tray geometries:
+                self.timeout_add(1000, self.tray.set_icon)
             if opts.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
