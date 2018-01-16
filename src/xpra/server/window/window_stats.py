@@ -139,7 +139,7 @@ class WindowPerformanceStatistics(object):
             #calculate how much bandwith we have used in the last second (in bps):
             #encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
             cutoff = monotonic_time()-1
-            used = sum(v[4] for v in self.encoding_stats if v[0]>cutoff) * 8
+            used = sum(v[4] for v in tuple(self.encoding_stats) if v[0]>cutoff) * 8
             info = {
                 "budget"  : bandwidth_limit,
                 "used"    : used,
