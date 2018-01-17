@@ -2280,7 +2280,7 @@ class UIXpraClient(XpraClientBase):
 
     def send_sharing_enabled(self):
         assert self.server_sharing and self.server_sharing_toggle
-        self.send("sharing-toggle", self.client_sharing)
+        self.send("sharing-toggle", self.client_supports_sharing)
 
     def send_lock_enabled(self):
         assert self.server_lock_toggle
