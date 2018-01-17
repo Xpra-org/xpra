@@ -1406,7 +1406,7 @@ class GTKTrayMenuBase(object):
             has_ask = (self.client.remote_file_transfer_ask or
                        self.client.remote_printing_ask or
                        self.client.remote_open_files_ask or 
-                       self.remote_open_url_ask)
+                       self.client.remote_open_url_ask)
             set_sensitive(self.transfers, has_ask)
         self.client.after_handshake(enable_transfers)
         return self.transfers
