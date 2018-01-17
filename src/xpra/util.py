@@ -259,7 +259,7 @@ class typedict(dict):
         return v
 
     def capsget(self, key, default=None):
-        v = self.rawget(key)
+        v = self.rawget(key, default)
         if sys.version >= '3' and type(v)==bytes:
             from xpra.os_util import bytestostr
             v = bytestostr(v)
