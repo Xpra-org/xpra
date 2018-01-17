@@ -1233,13 +1233,22 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     return info
 
 def configure_logging(options, mode):
-    to = sys.stderr
     if mode in ("showconfig", "info", "id", "control", "list", "list-mdns", "sessions", "mdns-gui", "attach", "stop", "print", "opengl", "test-connect"):
-        to = sys.stdout
+        s = sys.stdout
+    else:
+        s = sys.stderr
+    try:
+        import codecs, locale
+        #python3 has a buffer attribute,
+        #which we must use if we want to be able to write bytes:
+        sbuf = getattr(s, "buffer", s)
+        to = codecs.getwriter(locale.getpreferredencoding())(sbuf)
+    except:
+        to = logging.StreamHandler(s)
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
     from xpra.log import setloghandler, enable_color, enable_format, LOG_FORMAT, NOPREFIX_FORMAT
-    setloghandler(logging.StreamHandler(to))
+    setloghandler(to)
     if mode in ("start", "start-desktop", "upgrade", "attach", "shadow", "proxy", "_sound_record", "_sound_play", "stop", "print", "showconfig", "request-start", "request-start-desktop", "request-shadow"):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             info = show_sound_codec_help(mode!="attach", options.speaker_codec, options.microphone_codec)
