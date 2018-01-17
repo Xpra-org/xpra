@@ -208,7 +208,7 @@ class ServerCore(object):
         self.dbus_server = None
         self.unix_socket_paths = []
 
-        self.session_name = ""
+        self.session_name = u""
 
         #Features:
         self.encryption = None
@@ -239,7 +239,7 @@ class ServerCore(object):
 
     def init(self, opts):
         log("ServerCore.init(%s)", opts)
-        self.session_name = opts.session_name
+        self.session_name = bytestostr(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
 
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
@@ -1591,7 +1591,7 @@ class ServerCore(object):
             if mid:
                 capabilities["machine_id"] = mid
         if self.session_name:
-            capabilities["session_name"] = self.session_name
+            capabilities["session_name"] = self.session_name.encode("utf-8")
         return capabilities
 
 

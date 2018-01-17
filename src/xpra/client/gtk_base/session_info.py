@@ -109,9 +109,9 @@ class SessionInfo(gtk.Window):
         self.is_closed = False
         self.get_pixbuf = get_pixbuf
         if not self.session_name or self.session_name=="Xpra":
-            title = "Session Info"
+            title = u"Session Info"
         else:
-            title = "%s: Session Info" % self.session_name
+            title = u"%s: Session Info" % self.session_name
         self.set_title(title)
         self.set_destroy_with_parent(True)
         self.set_resizable(True)

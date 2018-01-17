@@ -250,12 +250,16 @@ class typedict(dict):
     def _warn(self, msg, *args, **kwargs):
         get_util_logger().warn(msg, *args, **kwargs)
 
-    def capsget(self, key, default=None):
+    def rawget(self, key, default=None):
         v = self.get(key)
         #py3k and bytes as keys...
         if v is None and type(key)==str:
             from xpra.os_util import strtobytes
             v = self.get(strtobytes(key), default)
+        return v
+
+    def capsget(self, key, default=None):
+        v = self.rawget(key)
         if sys.version >= '3' and type(v)==bytes:
             from xpra.os_util import bytestostr
             v = bytestostr(v)

@@ -167,7 +167,7 @@ class UIXpraClient(XpraClientBase):
         self._id_to_window = {}
         self._ui_events = 0
         self.title = ""
-        self.session_name = ""
+        self.session_name = u""
         self.auto_refresh_delay = -1
         self.max_window_size = 0, 0
         self.dpi = 0
@@ -358,7 +358,7 @@ class UIXpraClient(XpraClientBase):
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.title = opts.title
-        self.session_name = opts.session_name
+        self.session_name = bytestostr(opts.session_name)
         self.auto_refresh_delay = opts.auto_refresh_delay
         if opts.max_size:
             try:
@@ -1831,7 +1831,7 @@ class UIXpraClient(XpraClientBase):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
         c = self.server_capabilities
-        self.server_session_name = c.strget("session_name", "")
+        self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
         from xpra.platform import set_name
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.window_configure_pointer = c.boolget("window.configure.pointer")
