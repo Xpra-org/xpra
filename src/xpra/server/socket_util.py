@@ -119,6 +119,8 @@ def create_tcp_socket(host, iport):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sockaddr = (host, iport)
     else:
+        if host.startswith("[") and host.endswith("]"):
+            host = host[1:-1]
         assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
         log = get_network_logger()
@@ -127,6 +129,7 @@ def create_tcp_socket(host, iport):
         sockaddr = res[0][-1]
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     listener.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
+    log("%s.bind(%s)", listener, sockaddr)
     listener.bind(sockaddr)
     return listener
 
