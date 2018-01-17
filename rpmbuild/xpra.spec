@@ -261,6 +261,8 @@ Recommends:			python2-xpra-audio
 Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
+%else
+Recommends:			python-websockify
 %endif
 %if 0%{?el7}
 Requires:			python-cups
