@@ -876,7 +876,7 @@ class UIXpraClient(XpraClientBase):
                 if v:
                     return v
             except:
-                log("make_instance(%s, %s)", class_options, args, exc_info=True)
+                log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
                 log.error("Error: cannot instantiate %s:", c)
                 log.error(" with arguments %s", tuple(args))
         return None
@@ -919,11 +919,11 @@ class UIXpraClient(XpraClientBase):
         if self.session_name or self.server_session_name:
             t.append(self.session_name or self.server_session_name)
         if self._protocol and self._protocol._conn:
-            t.append(self._protocol._conn.target)
+            t.append(bytestostr(self._protocol._conn.target))
         if len(t)==0:
-            t.insert(0, "Xpra")
-        v = "\n".join(t)
-        traylog("get_tray_title()=%s (items=%s)", nonl(v), t)
+            t.insert(0, u"Xpra")
+        v = u"\n".join(t)
+        traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
         return v
 
     def setup_system_tray(self, client, app_id, wid, w, h, title):
