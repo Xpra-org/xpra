@@ -114,6 +114,7 @@ def has_dual_stack():
         return False
 
 def create_tcp_socket(host, iport):
+    log = get_network_logger()
     from xpra.net.bytestreams import TCP_NODELAY
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -123,7 +124,6 @@ def create_tcp_socket(host, iport):
             host = host[1:-1]
         assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
-        log = get_network_logger()
         log("socket.getaddrinfo(%s, %s, AF_INET6, SOCK_STREAM, 0, SOL_TCP)=%s", host, iport, res)
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
