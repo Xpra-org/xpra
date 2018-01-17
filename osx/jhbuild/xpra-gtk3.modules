@@ -55,7 +55,7 @@
 			<dep package="meta-gtk-osx-bootstrap"/>
 			<dep package="meta-gtk-osx-gtk3"/>
 			<dep package="meta-gtk-osx-python3-gtk3"/>
-			<dep package="meta-gtk-osx-themes"/>
+			<dep package="meta-gtk-osx-gtk3-core-themes"/>
 			<dep package="meta-osx-xpra-tools-deps"/>
 			<dep package="meta-osx-xpra-python3-deps"/>
 			<dep package="meta-osx-xpra-codec-deps"/>
