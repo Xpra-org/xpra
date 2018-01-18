@@ -681,7 +681,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     for cid, iport in bind_vsock:
         socket = setup_vsock_socket(cid, iport)
         sockets.append(socket)
-        add_mdns("vsock", host, iport)
+        #add_mdns("vsock", str(cid), iport)
 
     # systemd socket activation:
     try:
