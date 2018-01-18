@@ -235,14 +235,20 @@ class InfoXpraClient(CommandConnectClient):
                         #FIXME: this is a nasty and horrible python3 workaround (yet again)
                         #we want to print bytes as strings without the ugly 'b' prefix..
                         #it assumes that all the strings are raw or in (possibly nested) lists or tuples only
+                        #we assume that all strings we get are utf-8,
+                        #and fallback to the bytestostr hack if that fails
                         def fixvalue(w):
                             if type(w)==bytes:
-                                return bytestostr(w)
+                                try:
+                                    return w.decode("utf-8")
+                                except:
+                                    return bytestostr(w)
                             elif type(w) in (tuple,list):
                                 return type(w)([fixvalue(x) for x in w])
                             return w
                         v = fixvalue(v)
-                    log.info("%s=%s", bytestostr(k), nonl(v))
+                        k = fixvalue(k)
+                    log.info("%s=%s", k, nonl(v))
             else:
                 print_nested_dict(self.server_capabilities)
         self.quit(EXIT_OK)
