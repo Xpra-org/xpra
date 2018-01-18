@@ -112,8 +112,6 @@ Recommends:
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 Suggests: openssh-server
-# optional - only really useful with GPU opencl implementations:
-        ,python-pyopencl
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
