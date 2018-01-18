@@ -102,6 +102,10 @@ Requires:			xpra-common = %{version}-%{build_no}%{dist}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
+%if 0%{?fedora}
+#without this, the system tray is unusable!
+Recommends:			gnome-shell-extension-topicons-plus
+%endif
 %description common-client
 This package contains the files which are shared between all the xpra client packages.
 
