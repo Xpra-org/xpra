@@ -1240,12 +1240,12 @@ def configure_logging(options, mode):
     to = s
     if sys.version_info[0]==3:
         try:
-            import codecs, locale
+            import codecs
             #print("locale.getpreferredencoding()=%s" % (locale.getpreferredencoding(),))
             #python3 has a buffer attribute,
             #which we must use if we want to be able to write bytes:
             sbuf = getattr(s, "buffer", s)
-            to = codecs.getwriter(locale.getpreferredencoding())(sbuf, "replace")
+            to = codecs.getwriter("utf-8")(sbuf, "replace")
         except:
             pass
     #a bit naughty here, but it's easier to let xpra.log initialize
