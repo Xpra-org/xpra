@@ -267,7 +267,7 @@ def xauth_add(filename, display_name, xauth_data):
             raise OSError("non-zero exit code: %s" % code)
     except OSError as e:
         #trying to continue anyway!
-        sys.stderr.write("Error adding xauth entry for %s\n", display_name)
+        sys.stderr.write("Error adding xauth entry for %s\n" % display_name)
         sys.stderr.write(" using command \"%s\"\n" % (" ".join(xauth_cmd)))
         sys.stderr.write(" %s\n" % (e,))
 
