@@ -38,16 +38,23 @@ class StatusIcon:
         menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
 
     def notify(self, *_args):
-        from xpra.client.notifications.dbus_notifier import DBUS_Notifier
-        n = DBUS_Notifier()
-        n.app_name_format = "%s"
-        n.show_notify("dbus-id", None, 0, self.name, 0, "", "Notification Summary", "Notification Body", 60, "")
-        #import pynotify
-        #pynotify.init(self.name or "Xpra")
-        #n = pynotify.Notification("Test Notification", "The message goes here", "close")
-        #n.set_urgency(pynotify.URGENCY_LOW)
-        #n.set_timeout(60)
-        #n.show()
+        if False:
+            from xpra.client.notifications.dbus_notifier import DBUS_Notifier
+            n = DBUS_Notifier()
+            n.app_name_format = "%s"
+            actions = ["0", "Hello", "1", "Goodbye"]
+            hints = {}
+            n.show_notify("dbus-id", None, 0, self.name, 0, "", "Notification Summary", "Notification Body", actions, hints, 60, "")
+        else:
+            import pynotify
+            pynotify.init(self.name or "Xpra")
+            n = pynotify.Notification("Test Notification", "The message goes here", "close")
+            n.set_urgency(pynotify.URGENCY_LOW)
+            n.set_timeout(60)
+            def foo_action(*_args):
+                pass
+            n.add_action("foo", "Foo!", foo_action)
+            n.show()
 
 
 def main():

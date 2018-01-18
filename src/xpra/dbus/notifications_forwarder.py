@@ -4,14 +4,20 @@
 # later version. See the file COPYING for details.
 
 import os
-import gtk
 import dbus.service
 
+from xpra.dbus.helper import dbus_to_native
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("dbus", "notify")
 
 BUS_NAME="org.freedesktop.Notifications"
 BUS_PATH="/org/freedesktop/Notifications"
+
+CAPABILITIES = ["body", "icon-static"]
+if envbool("XPRA_NOTIFICATIONS_ACTIONS", False):
+    CAPABILITIES += ["actions", "action-icons"]
+
 
 """
 We register this class as handling notifications on the session dbus,
@@ -22,8 +28,6 @@ The generalized callback signatures are:
  close_callback(nid)
 """
 class DBUSNotificationsForwarder(dbus.service.Object):
-
-    CAPABILITIES = ["body", "icon-static", "actions", "action-icons"]
 
     def __init__(self, bus, notify_callback=None, close_callback=None):
         self.bus = bus
@@ -44,7 +48,17 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             nid = replaces_nid
         log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
         if self.notify_callback:
-            self.notify_callback(self.dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+            try:
+                actions = tuple(str(x) for x in actions)
+                hints = dbus_to_native(hints)
+                args = self.dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), actions, hints, int(expire_timeout)
+            except Exception as e:
+                log.error("Error: failed to parse Notify arguments:")
+                log.error(" %s", e)
+            try:
+                self.notify_callback(*args)
+            except Exception as e:
+                log.error("Error calling notification handler", exc_info=True)
         log("Notify returning %s", nid)
         return nid
 
@@ -57,7 +71,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
         log("GetCapabilities()")
-        return DBUSNotificationsForwarder.CAPABILITIES
+        return CAPABILITIES
 
     @dbus.service.method(BUS_NAME, in_signature='u')
     def CloseNotification(self, nid):
@@ -86,9 +100,13 @@ def register(notify_callback=None, close_callback=None, replace=False):
     log("notifications: bus name '%s', request=%s" % (BUS_NAME, request))
     return DBUSNotificationsForwarder(bus, notify_callback, close_callback)
 
+
 def main():
     register()
-    gtk.main()
+    from xpra.gtk_common.gobject_compat import import_glib
+    glib = import_glib()
+    mainloop = glib.MainLoop()
+    mainloop.run()
 
 if __name__ == "__main__":
     main()

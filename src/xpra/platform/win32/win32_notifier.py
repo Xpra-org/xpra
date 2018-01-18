@@ -8,7 +8,7 @@ from xpra.platform.win32.win32_balloon import notify
 
 class Win32_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         if tray is None:
             log.warn("Warning: no system tray - cannot show notification!")
             return

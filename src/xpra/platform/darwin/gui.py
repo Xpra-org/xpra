@@ -110,7 +110,7 @@ class OSX_Notifier(NotifierBase):
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         notification = NSUserNotification.alloc().init()
         notification.setTitle_(summary)
         notification.setInformativeText_(body)
@@ -133,7 +133,7 @@ class OSX_Notifier(NotifierBase):
 
 
 class OSX_Subprocess_Notifier(NotifierBase):
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         from xpra.platform.darwin import osx_notifier
         osx_notifier_file = osx_notifier.__file__
         if osx_notifier_file.endswith("pyc"):

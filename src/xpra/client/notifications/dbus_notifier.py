@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util import repr_ellipsized
+from xpra.util import repr_ellipsized, csv
 from xpra.client.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
@@ -46,8 +46,9 @@ class DBUS_Notifier(NotifierBase):
         self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
         self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
         log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
+        log("capabilities=%s", csv(str(x) for x in self.dbusnotify.GetCapabilities()))
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
         self.may_retry = True
@@ -64,7 +65,7 @@ class DBUS_Notifier(NotifierBase):
             except:
                 app_str = app_name or "Xpra"
             self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
-            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, [], [], expire_timeout,
+            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, hints, expire_timeout,
                  reply_handler = self.cbReply,
                  error_handler = self.cbError)
         except:

@@ -15,6 +15,7 @@ screenlog = Logger("server", "screen")
 clipboardlog = Logger("server", "clipboard")
 cursorlog = Logger("server", "cursor")
 netlog = Logger("network")
+notifylog = Logger("notify")
 
 from xpra.util import flatten_dict
 from xpra.os_util import monotonic_time, BytesIOClass
@@ -255,15 +256,19 @@ class GTKServerBase(ServerBase):
             #try to find it in the theme:
             theme = gtk.icon_theme_get_default()
             if theme:
-                icon = theme.load_icon(icon_string, gtk.ICON_SIZE_BUTTON, 0)
-                data = icon.get_pixels()
-                w = icon.get_width()
-                h = icon.get_height()
-                rowstride = icon.get_rowstride()
-                mode = "RGB"
-                if icon.get_has_alpha():
-                    mode = "RGBA"
-                img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
+                try:
+                    icon = theme.load_icon(icon_string, gtk.ICON_SIZE_BUTTON, 0)
+                except Exception as e:
+                    notifylog("failed to load icon '%s' from default theme: %s", icon_string, e)
+                else:
+                    data = icon.get_pixels()
+                    w = icon.get_width()
+                    h = icon.get_height()
+                    rowstride = icon.get_rowstride()
+                    mode = "RGB"
+                    if icon.get_has_alpha():
+                        mode = "RGBA"
+                    img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
         if img:
             if w>256 or h>256:
                 img = img.resize((256, 256), Image.ANTIALIAS)

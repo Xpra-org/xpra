@@ -1962,8 +1962,8 @@ class ServerSource(FileTransferHandler):
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
-        args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
+    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+        args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
             notifylog("client %s does not support notifications", self)
@@ -1981,7 +1981,8 @@ class ServerSource(FileTransferHandler):
         except:
             body = str(body)
         if self.hello_sent:
-            self.send_async("notify_show", dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), summary, body, int(expire_timeout), icon)
+            #Warning: actions and hints are send last because they were added later (in version 2.3)
+            self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon, actions, hints)
         return True
 
     def notify_close(self, nid):

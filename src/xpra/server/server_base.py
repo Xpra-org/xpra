@@ -1115,7 +1115,7 @@ class ServerBase(ServerCore):
     def idle_grace_timeout_cb(self, source):
         log("idle_grace_timeout_cb(%s)", source)
         timeout_nid = 2**16 + 2**8 + 1
-        source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", 10)
+        source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", [], {}, 10, "")
         source.go_idle()
 
     def _log_disconnect(self, proto, *args):
@@ -1784,7 +1784,7 @@ class ServerBase(ServerCore):
         notifylog("control_command_send_notification(%i, %s, %s, %s) will send to sources %s (matching %s)", nid, title, message, client_uuids, sources, client_uuids)
         count = 0
         for source in sources:
-            if source.notify(0, nid, "control channel", 0, "", title, message, 10, ()):
+            if source.notify(0, nid, "control channel", 0, "", title, message, [], {}, 10, ""):
                 count += 1
         msg = "notification id %i: message sent to %i clients" % (nid, count)
         notifylog(msg)
@@ -2615,15 +2615,15 @@ class ServerBase(ServerCore):
         if self._clipboard_client:
             self._clipboard_client.send_clipboard(parts)
 
-    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout):
+    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
         try:
             assert self.notifications_forwarder and self.notifications
             icon = self.get_notification_icon(str(app_icon))
             if os.path.isabs(str(app_icon)):
                 app_icon = ""
-            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout), repr_ellipsized(str(icon)))
+            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), repr_ellipsized(str(icon)))
             for ss in self._server_sources.values():
-                ss.notify(dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), int(expire_timeout), icon)
+                ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         except Exception as e:
             notifylog("notify_callback failed", exc_info=True)
             notifylog.error("Error processing notification:")

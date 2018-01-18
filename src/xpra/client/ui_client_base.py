@@ -41,6 +41,7 @@ webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
+metalog = Logger("metadata")
 
 
 from xpra.gtk_common.gobject_compat import import_glib
@@ -926,7 +927,7 @@ class UIXpraClient(XpraClientBase):
         traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
         return v
 
-    def setup_system_tray(self, client, app_id, wid, w, h, title):
+    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
         tray_widget = None
         #this is a tray forwarded for a remote application
         def tray_click(button, pressed, time=0):
@@ -968,11 +969,12 @@ class UIXpraClient(XpraClientBase):
                 self.idle_add(do_tray_geometry, *args)
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
+        title = metadata.strget("title", "")
         tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
         traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
-        return ClientTray(client, wid, w, h, title, tray_widget, self.mmap_enabled, self.mmap)
+        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
 
     def desktops_changed(self, *args):
         workspacelog("desktops_changed%s", args)
@@ -3012,7 +3014,7 @@ class UIXpraClient(XpraClientBase):
         wid, x, y, w, h = packet[1:6]
         assert w>=0 and h>=0 and w<32768 and h<32768
         metadata = self.cook_metadata(True, packet[6])
-        windowlog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
+        metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         if w<1 or h<1:
             windowlog.error("window dimensions are wrong: %sx%s", w, h)
@@ -3268,9 +3270,10 @@ class UIXpraClient(XpraClientBase):
         metadata = typedict()
         if len(packet)>=5:
             metadata = self.cook_metadata(True, packet[4])
+        metalog("tray %i metadata=%s", wid, metadata)
         assert wid not in self._id_to_window, "we already have a window %s" % wid
         app_id = wid
-        tray = self.setup_system_tray(self, app_id, wid, w, h, metadata.strget("title", ""))
+        tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
         traylog("process_new_tray(%s) tray=%s", packet, tray)
         self._id_to_window[wid] = tray
         self._window_to_id[tray] = wid
@@ -3430,15 +3433,16 @@ class UIXpraClient(XpraClientBase):
             return
         self._ui_event()
         dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
+        icon, actions, hints = None, [], {}
         if len(packet)>=10:
             icon = packet[9]
-        else:
-            icon = None
+        if len(packet)>=12:
+            actions, hints = packet[10], packet[11]
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
         notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
+        notifylog("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
-        #TODO: choose more appropriate tray if we have more than one shown?
         #this one of the few places where we actually do care about character encoding:
         try:
             summary = summary.decode("utf8")
@@ -3449,9 +3453,9 @@ class UIXpraClient(XpraClientBase):
         except:
             body = bytestostr(body)
         app_name = bytestostr(app_name)
-        tray = self.get_tray_window(app_name)
+        tray = self.get_tray_window(app_name, hints)
         traylog("get_tray_window(%s)=%s", app_name, tray)
-        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
+        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
 
     def _process_notify_close(self, packet):
         if not self.notifications_enabled:
@@ -3461,19 +3465,32 @@ class UIXpraClient(XpraClientBase):
         log("_process_notify_close(%s)", nid)
         self.notifier.close_notify(nid)
 
-    def get_tray_window(self, app_name):
+    def get_tray_window(self, app_name, hints):
         #try to identify the application tray that generated this notification,
         #so we can show it as coming from the correct systray icon
         #on platforms that support it (ie: win32)
-        if app_name and app_name.lower()!="xpra":
-            #exact match:
-            for window in self._id_to_window.values():
-                #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
-                if window.is_tray() and window.title==app_name:
-                    return window.tray_widget
-            for window in self._id_to_window.values():
-                if window.is_tray() and window.title.find(app_name)>=0:
-                    return window.tray_widget
+        trays = tuple(w for w in self._id_to_window.values() if w.is_tray())
+        if trays:
+            try:
+                pid = int(hints.get("pid") or 0)
+            except (TypeError, ValueError):
+                pass
+            else:
+                if pid:
+                    for tray in trays:
+                        metadata = getattr(tray, "_metadata", typedict())
+                        if metadata.intget("pid")==pid:
+                            notifylog("tray window: matched pid=%i", pid)
+                            return tray.tray_widget
+            if app_name and app_name.lower()!="xpra":
+                #exact match:
+                for tray in trays:
+                    #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
+                    if tray.title==app_name:
+                        return tray.tray_widget
+                for tray in trays:
+                    if tray.title.find(app_name)>=0:
+                        return tray.tray_widget
         return self.tray
 
 
@@ -3518,6 +3535,7 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_metadata(self, packet):
         wid, metadata = packet[1:3]
+        metalog("metadata update for window %i: %s", wid, metadata)
         window = self._id_to_window.get(wid)
         if window:
             metadata = self.cook_metadata(False, metadata)

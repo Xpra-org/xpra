@@ -25,7 +25,7 @@ class NotifierBase(object):
             for nid in self.temp_files.keys():
                 self.clean_notification(nid)
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         pass
 
     def get_icon_string(self, nid, app_icon, icon):
