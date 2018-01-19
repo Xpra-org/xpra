@@ -112,6 +112,8 @@ Recommends:
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 Suggests: openssh-server
+# to make the system tray work again (sigh):
+		,gnome-shell-extension-top-icons-plus
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
