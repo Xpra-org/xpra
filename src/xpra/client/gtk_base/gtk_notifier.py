@@ -48,8 +48,8 @@ def get_pixbuf(icon_name):
 
 class GTK_Notifier(NotifierBase):
 
-    def __init__(self, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
-        NotifierBase.__init__(self)
+    def __init__(self, closed_cb=None, action_cb=None, size_x=DEFAULT_WIDTH, size_y=DEFAULT_HEIGHT, timeout=5):
+        NotifierBase.__init__(self, closed_cb, action_cb)
         """
         Create a new notification stack.  The recommended way to create Popup instances.
           Parameters:

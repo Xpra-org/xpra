@@ -820,7 +820,17 @@ class UIXpraClient(XpraClientBase):
     def make_notifier(self):
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
-        return self.make_instance(nc)
+        return self.make_instance(nc, self.notification_closed, self.notification_action)
+
+    def notification_closed(self, nid, reason, text):
+        notifylog("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
+        if self.server_notifications_close:
+            self.send("notification-close", nid, reason, text)
+
+    def notification_action(self, nid, action_id):
+        notifylog("notification_action(%i, %s) server notifications.actions=%s", nid, action_id, self.server_notifications_actions)
+        if self.server_notifications_actions:
+            self.send("notification-action", nid, action_id)
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
@@ -1840,6 +1850,8 @@ class UIXpraClient(XpraClientBase):
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
         self.server_notifications = c.boolget("notifications")
+        self.server_notifications_close = c.boolget("notifications.close")
+        self.server_notifications_actions = c.boolget("notifications.actions")
         self.server_sharing = c.boolget("sharing")
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")

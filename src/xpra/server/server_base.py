@@ -492,6 +492,23 @@ class ServerBase(ServerCore):
                 log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
                 log.warn(" use the 'notifications=no' option")
 
+    def _process_notification_close(self, _proto, packet):
+        assert self.notifications
+        nid, reason, text = packet[1:4]
+        active = self.notifications_forwarder.is_notification_active(nid)
+        notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
+        if active:
+            self.notifications_forwarder.NotificationClosed(nid, reason)
+
+    def _process_notification_action(self, _proto, packet):
+        assert self.notifications
+        nid, action_key = packet[1:3]
+        active = self.notifications_forwarder.is_notification_active(nid)
+        notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
+        if active:
+            self.notifications_forwarder.ActionInvoked(nid, action_key)
+
+
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
@@ -791,6 +808,9 @@ class ServerBase(ServerCore):
             "start-command":                        self._process_start_command,
             "print":                                self._process_print,
             "input-devices":                        self._process_input_devices,
+            #notifications:
+            "notification-close":                   self._process_notification_close,
+            "notification-action":                  self._process_notification_action,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 
@@ -1558,6 +1578,8 @@ class ServerBase(ServerCore):
                  "clipboards"                   : self._clipboards,
                  "clipboard-direction"          : self.clipboard_direction,
                  "notifications"                : self.notifications,
+                 "notifications.close"          : self.notifications,
+                 "notifications.actions"        : self.notifications,
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,

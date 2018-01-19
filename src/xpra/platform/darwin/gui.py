@@ -105,7 +105,8 @@ def do_ready():
 
 class OSX_Notifier(NotifierBase):
 
-    def __init__(self):
+    def __init__(self, closed_cb=None, action_cb=None):
+        NotifierBase.__init__(self, closed_cb, action_cb)
         self.notifications = {}
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center

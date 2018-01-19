@@ -7,7 +7,7 @@ import os
 import dbus.service
 
 from xpra.dbus.helper import dbus_to_native
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.log import Logger
 log = Logger("dbus", "notify")
 
@@ -15,7 +15,7 @@ BUS_NAME="org.freedesktop.Notifications"
 BUS_PATH="/org/freedesktop/Notifications"
 
 CAPABILITIES = ["body", "icon-static"]
-if envbool("XPRA_NOTIFICATIONS_ACTIONS", False):
+if envbool("XPRA_NOTIFICATIONS_ACTIONS", True):
     CAPABILITIES += ["actions", "action-icons"]
 
 
@@ -24,7 +24,7 @@ We register this class as handling notifications on the session dbus,
 optionally replacing an existing instance if one exists.
 
 The generalized callback signatures are:
- notify_callback(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout)
+ notify_callback(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout)
  close_callback(nid)
 """
 class DBUSNotificationsForwarder(dbus.service.Object):
@@ -33,6 +33,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.bus = bus
         self.notify_callback = notify_callback
         self.close_callback = close_callback
+        self.active_notifications = set()
         self.counter = 0
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
@@ -47,6 +48,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         else:
             nid = replaces_nid
         log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
+        self.active_notifications.add(nid)
         if self.notify_callback:
             try:
                 actions = tuple(str(x) for x in actions)
@@ -64,20 +66,39 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, out_signature='ssss')
     def GetServerInformation(self):
-        log("GetServerInformation()")
         #name, vendor, version, spec-version
-        return ["xpra-notification-proxy", "xpra", "0.1", "0.9"]
+        from xpra import __version__
+        v = ["xpra-notification-proxy", "xpra", __version__, "0.9"]
+        log("GetServerInformation()=%s", v)
+        return v
 
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
-        log("GetCapabilities()")
+        log("GetCapabilities()=%s", csv(CAPABILITIES))
         return CAPABILITIES
 
     @dbus.service.method(BUS_NAME, in_signature='u')
     def CloseNotification(self, nid):
         log("CloseNotification(%s) callback=%s", nid, self.close_callback)
+        try:
+            self.active_notifications.remove(nid)
+        except KeyError:
+            return
         if self.close_callback:
             self.close_callback(nid)
+        self.NotificationClosed(nid, 3)     #3="The notification was closed by a call to CloseNotification"
+
+    def is_notification_active(self, nid):
+        return nid in self.active_notifications
+
+    @dbus.service.signal(BUS_NAME, signature='uu')
+    def NotificationClosed(self, nid, reason):
+        pass
+
+    @dbus.service.signal(BUS_NAME, signature='us')
+    def ActionInvoked(self, nid, action_key):
+        pass
+    
 
     def release(self):
         try:
@@ -87,6 +108,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     def __str__(self):
         return  "DBUS-NotificationsForwarder(%s)" % BUS_NAME
+
 
 def register(notify_callback=None, close_callback=None, replace=False):
     from xpra.dbus.common import init_session_bus

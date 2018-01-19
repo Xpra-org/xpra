@@ -13,10 +13,12 @@ log = Logger("notify")
 
 class NotifierBase(object):
 
-    def __init__(self):
+    def __init__(self, closed_cb=None, action_cb=None):
         #posix only - but degrades ok on non-posix:
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         self.temp_files = {}
+        self.closed_cb = closed_cb
+        self.action_cb = action_cb
 
     def cleanup(self):
         tf = self.temp_files
@@ -46,12 +48,12 @@ class NotifierBase(object):
         return ""
 
     def clean_notification(self, nid):
-        log("closed(%s)", nid)
         try:
             temp_file = self.temp_files.pop(nid)
         except KeyError:
-            pass
-        else:
+            temp_file = None
+        log("clean_notification(%s) temp_file=%s", nid, temp_file)
+        if temp_file:
             try:
                 os.unlink(temp_file)
             except Exception as e:
