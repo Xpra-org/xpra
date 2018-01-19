@@ -24,10 +24,10 @@ gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
 
-from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL
+from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL
 from xpra.client.notifications.notifier_base import NotifierBase, log
 
-from xpra.os_util import OSX
+from xpra.os_util import OSX, bytestostr
 DEFAULT_FG_COLOUR = None
 DEFAULT_BG_COLOUR = None
 if OSX:
@@ -204,7 +204,7 @@ class Popup(gtk.Window):
 
         body_box.pack_start(self.message, True, False, 5)
         body_box.pack_end(self.counter, False, False, 5)
-        main_box.pack_start(body_box)
+        main_box.pack_start(body_box, False, False, 5)
 
         if len(actions)>=2:
             buttons_box = gtk.HBox(True)
@@ -238,8 +238,11 @@ class Popup(gtk.Window):
         add_close_accel(self, self.user_closed)
 
     def action_button(self, action_id, action_text):
-        button = gtk.Button(action_text)
-        button.set_relief(gtk.RELIEF_NORMAL)
+        try:
+            button = gtk.Button(action_text.decode("utf-8"))
+        except:
+            button = gtk.Button(bytestostr(action_text))
+        button.set_relief(RELIEF_NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()
             log("popup_cb_clicked%s", args)
