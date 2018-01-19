@@ -688,10 +688,13 @@ class WindowModel(BaseWindowModel):
             iconlog("%s.lookup_icon(%s)=%s", it, icon_name, i)
             if not i:
                 continue
-            p = i.load_icon()
-            iconlog("%s.load_icon()=%s", i, p)
-            if p:
-                break
+            try:
+                p = i.load_icon()
+                iconlog("%s.load_icon()=%s", i, p)
+                if p:
+                    break
+            except Exception:
+                iconlog("%s.load_icon()", i, exc_info=True)
         if p is None:
             return None
         #to make it consistent with the "icon" property,
