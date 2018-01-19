@@ -16,6 +16,15 @@ class StatusIcon:
         self.statusicon.set_tooltip(tooltip)
         #build list of stock icons:
         self.stock = {}
+        try:
+            from xpra.client.notifications.dbus_notifier import DBUS_Notifier
+            self.notifier = DBUS_Notifier(self.notification_closed, self.notification_action)
+            self.notifier.app_name_format = "%s"
+        except Exception as e:
+            import traceback
+            traceback.print_stack()
+            print("Failed to instantiate the dbus notifier: %s" % e)
+        self.nid = 1
         for x in dir(gtk):
             if x.startswith("STOCK_"):
                 self.stock[x[len("STOCK_"):]] = getattr(gtk, x)
@@ -37,24 +46,17 @@ class StatusIcon:
         menu.show_all()
         menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
 
+    def notification_closed(self, nid, reason, text):
+        print("notification_closed(%i, %i, %s)" % (nid, reason, text))
+
+    def notification_action(self, nid, action):
+        print("notification_action(%s, %s)" % (nid, action))
+
     def notify(self, *_args):
-        try:
-            import pynotify
-            pynotify.init(self.name or "Xpra")
-            n = pynotify.Notification("Test Notification", "The message goes here", "close")
-            n.set_urgency(pynotify.URGENCY_LOW)
-            n.set_timeout(60*1000)
-            def foo_action(*_args):
-                pass
-            n.add_action("foo", "Foo!", foo_action)
-            n.show()
-        except ImportError:
-            from xpra.client.notifications.dbus_notifier import DBUS_Notifier
-            n = DBUS_Notifier()
-            n.app_name_format = "%s"
-            actions = ["0", "Hello", "1", "Goodbye"]
-            hints = {}
-            n.show_notify("dbus-id", None, 0, self.name, 0, "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
+        actions = ["0", "Hello", "1", "Goodbye"]
+        hints = {}
+        self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0, "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
+        self.nid += 1
 
 
 def main():
