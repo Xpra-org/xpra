@@ -105,12 +105,14 @@ class GTK_Notifier(NotifierBase):
         return    self.y
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
-        self.new_popup(summary, body, icon)
+        self.new_popup(nid, summary, body, actions, icon)
 
-    def new_popup(self, summary, body, icon):
+    def new_popup(self, nid, summary, body, actions, icon):
         """Create a new Popup instance."""
         if len(self._notify_stack) == self.max_popups:
-            self._notify_stack[0].hide_notification()
+            oldest = self._notify_stack[0]
+            oldest.hide_notification()
+            self.popup_closed(oldest.nid, 4)
         image = None
         if icon and icon[0]=="png":
             img_data = icon[3]
@@ -118,7 +120,7 @@ class GTK_Notifier(NotifierBase):
             loader.write(img_data, len(img_data))
             loader.close()
             image = loader.get_pixbuf()
-        popup = Popup(self, summary, body, callback=None, image=image)
+        popup = Popup(self, nid, summary, body, actions, image=image)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return popup
@@ -132,11 +134,21 @@ class GTK_Notifier(NotifierBase):
                 offset = note.reposition(offset, self)
             self._offset = offset
 
+    def popup_closed(self, nid, reason, text=""):
+        if self.closed_cb:
+            self.closed_cb(nid, reason, text)
+
+    def popup_action(self, nid, action_id):
+        if self.action_cb:
+            self.action_cb(nid, action_id)
+
+
 
 class Popup(gtk.Window):
-    def __init__(self, stack, title, message, callback, image):
-        log("Popup%s", (stack, title, message, callback, image))
+    def __init__(self, stack, nid, title, message, actions, image):
+        log("Popup%s", (stack, nid, title, message, actions, image))
         self.stack = stack
+        self.nid = nid
         gtk.Window.__init__(self)
 
         self.set_size_request(stack.size_x, -1)
@@ -149,6 +161,8 @@ class Popup(gtk.Window):
         self.set_opacity(0.2)
         self.set_keep_above(True)
         self.destroy_cb = stack.destroy_popup_cb
+        self.popup_closed = stack.popup_closed
+        self.action_cb = stack.popup_action
 
         main_box = gtk.VBox()
         header_box = gtk.HBox()
@@ -164,7 +178,7 @@ class Popup(gtk.Window):
             close_button.set_padding(3, 3)
             close_window = gtk.EventBox()
             close_window.set_visible_window(False)
-            close_window.connect("button-press-event", self.hide_notification)
+            close_window.connect("button-press-event", self.user_closed)
             close_window.add(close_button)
             header_box.pack_end(close_window, False, False)
         main_box.pack_start(header_box)
@@ -192,17 +206,15 @@ class Popup(gtk.Window):
         body_box.pack_end(self.counter, False, False, 5)
         main_box.pack_start(body_box)
 
-        if callback:
-            cb_text, cb = callback
-            button = gtk.Button(cb_text)
-            button.set_relief(gtk.RELIEF_NORMAL)
-            def popup_cb_clicked(*args):
-                self.hide_notification()
-                log("popup_cb_clicked%s", args)
-                cb()
-            button.connect("clicked", popup_cb_clicked)
+        if len(actions)>=2:
+            buttons_box = gtk.HBox(True)
+            while len(actions)>=2:
+                action_id, action_text = actions[:2]
+                actions = actions[2:]
+                button = self.action_button(action_id, action_text)
+                buttons_box.add(button)
             alignment = gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            alignment.add(button)
+            alignment.add(buttons_box)
             main_box.pack_start(alignment)
         self.add(main_box)
         if stack.bg_color is not None:
@@ -223,7 +235,17 @@ class Popup(gtk.Window):
         self.realize()
         self.get_window().set_skip_taskbar_hint(True)
         self.get_window().set_skip_pager_hint(True)
-        add_close_accel(self, self.hide_notification)
+        add_close_accel(self, self.user_closed)
+
+    def action_button(self, action_id, action_text):
+        button = gtk.Button(action_text)
+        button.set_relief(gtk.RELIEF_NORMAL)
+        def popup_cb_clicked(*args):
+            self.hide_notification()
+            log("popup_cb_clicked%s", args)
+            self.action_cb(self.nid, action_id)
+        button.connect("clicked", popup_cb_clicked)
+        return button
 
     def get_x(self, w):
         x =    self.stack.get_origin_x() - w/2
@@ -280,6 +302,7 @@ class Popup(gtk.Window):
             self.in_progress = False
             self.hide_notification()
             self.fade_out_timer = None  #redundant
+            self.popup_closed(self.nid, 1)
             return False
         self.set_opacity(opacity)
         return True
@@ -288,10 +311,14 @@ class Popup(gtk.Window):
         """Starts/Stops the notification timer on a mouse in/out event"""
         self.hover = hover
 
-    def hide_notification(self, *args):
+    def user_closed(self, *_args):
+        self.hide_notification()
+        self.popup_closed(self.nid, 2)
+
+    def hide_notification(self):
         """Destroys the notification and tells the stack to move the
         remaining notification windows"""
-        log("hide_notification%s", args)
+        log("hide_notification()")
         for timer in ("fade_in_timer", "fade_out_timer", "wait_timer"):
             v = getattr(self, timer)
             if v:
@@ -317,7 +344,7 @@ def main():
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
-        notifier.new_popup(title, message, icon)
+        notifier.new_popup(title, message, [], icon)
         return True
     def gtk_main_quit():
         print("quitting")
