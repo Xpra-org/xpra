@@ -787,7 +787,7 @@ def get_display_info():
             "root-size"             : get_root_size(),
             "screens"               : display.get_n_screens(),
             "name"                  : display.get_name(),
-            "pointer"               : display.get_pointer()[1:3],
+            "pointer"               : display.get_pointer()[-3:-1],
             "devices"               : len(display.list_devices()),
             "default_cursor_size"   : display.get_default_cursor_size(),
             "maximal_cursor_size"   : display.get_maximal_cursor_size(),
