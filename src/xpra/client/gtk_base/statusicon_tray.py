@@ -49,9 +49,9 @@ class GTKStatusIconTray(TrayBase):
             self.recalculate_geometry(x, y, w, h)
 
     def activate_menu(self, widget):
-        modifiers_mask = get_default_root_window().get_pointer()[-3:-1]
+        modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
-        if modifiers_mask & SHIFT_MASK:
+        if (modifiers_mask & SHIFT_MASK) ^ OSX:
             self.handle_click(2)
         else:
             self.handle_click(1)
@@ -59,7 +59,7 @@ class GTKStatusIconTray(TrayBase):
     def popup_menu(self, widget, button, time, *args):
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, time, args, modifiers_mask)
-        if modifiers_mask & SHIFT_MASK:
+        if (modifiers_mask & SHIFT_MASK) ^ OSX:
             self.handle_click(1)
         else:
             self.handle_click(2)
