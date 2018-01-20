@@ -1366,6 +1366,10 @@ class ServerBase(ServerCore):
             self.parse_hello_ui_clipboard(ss, c)
             key_repeat = self.parse_hello_ui_keyboard(ss, c)
             self.parse_hello_ui_window_settings(ss, c)
+            if self.notifications_forwarder:
+                client_notification_actions = dict((s.uuid,s.send_notifications_actions) for s in self._server_sources.values())
+                notifylog("client_notification_actions=%s", client_notification_actions)
+                self.notifications_forwarder.support_actions = any(v for v in client_notification_actions.values())
         else:
             root_w, root_h = self.get_root_window_size()
             key_repeat = (0, 0)

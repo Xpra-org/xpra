@@ -51,7 +51,7 @@ def native_to_dbus(value):
         return dbus.types.String(value)
     elif isinstance(value, float):
         return dbus.types.Double(value)
-    elif isinstance(value, list):
+    elif isinstance(value, (tuple, list, bytearray)):
         if not value:
             return dbus.Array(signature="s")
         keytypes = set([type(x) for x in value])

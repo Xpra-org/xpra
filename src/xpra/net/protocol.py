@@ -158,7 +158,7 @@ class Protocol(object):
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = 256*1024
         self.abs_max_packet_size = 256*1024*1024
-        self.large_packets = ["hello", "window-metadata", "sound-data"]
+        self.large_packets = ["hello", "window-metadata", "sound-data", "notify_show"]
         self.send_aliases = {}
         self.receive_aliases = {}
         self._log_stats = None          #None here means auto-detect

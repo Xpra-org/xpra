@@ -6,6 +6,8 @@
 import os
 
 from xpra.util import repr_ellipsized, csv
+from xpra.os_util import bytestostr, BytesIOClass
+from xpra.dbus.helper import native_to_dbus
 from xpra.client.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
@@ -69,7 +71,8 @@ class DBUS_Notifier(NotifierBase):
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[nid] = int(notification_id)
-            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, hints, expire_timeout,
+            dbus_hints = self.parse_hints(hints)
+            self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                  reply_handler = NotifyReply,
                  error_handler = self.NotifyError)
         except:
@@ -81,6 +84,40 @@ class DBUS_Notifier(NotifierBase):
             if v==aid:
                 return k
         return None
+
+    def noparse_hints(self, h):
+        return h
+
+    def parse_hints(self, h):
+        hints = {}
+        for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
+            v = h.get(x)
+            if v is not None:
+                hints[x] = native_to_dbus(v)
+        image_data = h.get("image-data")
+        if image_data and bytestostr(image_data[0])=="png":
+            try:
+                img_data = image_data[3]
+                from PIL import Image
+                buf = BytesIOClass(img_data)
+                img = Image.open(buf)
+                w, h = img.size
+                channels = len(img.mode)
+                rowstride = w*channels
+                has_alpha = img.mode=="RGBA"
+                pixel_data = bytearray(img.tobytes("raw", img.mode))
+                log.info("pixel_data=%s", type(pixel_data))
+                args = w, h, rowstride, has_alpha, 8, channels, pixel_data
+                hints["image-data"] = tuple(native_to_dbus(x) for x in args)
+                #hints["image-data"] = args
+            except Exception as e:
+                log("parse_hints(%s) error on image-data=%s", h, image_data, exc_info=True)
+                log.error("Error parsing notification image:")
+                log.error(" %s", e)
+        log("parse_hints(%s)=%s", h, hints)
+        #return dbus.types.Dictionary(hints, signature="sv")
+        return hints
+
 
     def NotificationClosed(self, actual_id, reason):
         nid = self._find_nid(actual_id)

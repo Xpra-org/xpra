@@ -8,15 +8,14 @@ import dbus.service
 
 from xpra.dbus.helper import dbus_to_native
 from xpra.util import envbool, csv
+from xpra.os_util import BytesIOClass
 from xpra.log import Logger
 log = Logger("dbus", "notify")
 
 BUS_NAME="org.freedesktop.Notifications"
 BUS_PATH="/org/freedesktop/Notifications"
 
-CAPABILITIES = ["body", "icon-static"]
-if envbool("XPRA_NOTIFICATIONS_ACTIONS", True):
-    CAPABILITIES += ["actions", "action-icons"]
+ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
 
 """
@@ -35,6 +34,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.close_callback = close_callback
         self.active_notifications = set()
         self.counter = 0
+        self.support_actions = True
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
         dbus.service.Object.__init__(self, bus_name, BUS_PATH)
@@ -52,7 +52,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         if self.notify_callback:
             try:
                 actions = tuple(str(x) for x in actions)
-                hints = dbus_to_native(hints)
+                hints = self.parse_hints(hints)
                 args = self.dbus_id, int(nid), str(app_name), int(replaces_nid), str(app_icon), str(summary), str(body), actions, hints, int(expire_timeout)
             except Exception as e:
                 log.error("Error: failed to parse Notify arguments:")
@@ -64,6 +64,74 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         log("Notify returning %s", nid)
         return nid
 
+    def parse_hints(self, dbus_hints):
+        hints = {}
+        h = dbus_to_native(dbus_hints)
+        for x in ("image-data", "icon_data"):
+            try:
+                data = h.pop(x)
+            except KeyError:
+                pass
+            else:
+                v = self.parse_image_data(data)
+                if v:
+                    hints["image-data"] = v
+                    break
+        if "image-data" not in hints:
+            try:
+                image_path = h.pop("image-path")
+            except KeyError:
+                pass
+            else:
+                v = self.parse_image_path(image_path)
+                if v:
+                    hints["image-data"] = v
+        for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
+            v = h.get(x)
+            if v is not None:
+                hints[x] = v
+        log("parse_hints(%s)=%s", dbus_hints, hints)
+        return hints
+
+    def parse_image_data(self, data):
+        try:
+            width, height, rowstride, has_alpha, bpp, channels, image_data = data
+            log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)", width, height, rowstride, bool(has_alpha), bpp, channels, len(image_data))
+            from PIL import Image
+            if channels==4:
+                if has_alpha:
+                    rgb_format = "RGBA"
+                else:
+                    rgb_format = "RGBX"
+            elif channels==3:
+                rgb_format = "RGB"
+            img = Image.frombuffer("RGBA", (width, height), image_data, "raw", rgb_format, rowstride)
+            return self.image_data(img)
+        except Exception as e:
+            log("parse_image_data(%s)", data, exc_info=True)
+            log.error("Error parsing icon data for notification:")
+            log.error(" %s", e)
+        return None
+
+    def parse_image_path(self, path):
+        try:
+            from PIL import Image
+            img = Image.open(path)
+            return self.image_data(img)
+        except Exception as e:
+            log.error("Error parsing image path '%s' for notification:", path)
+            log.error(" %s", e)
+        return None
+
+    def image_data(self, img):
+        buf = BytesIOClass()
+        img.save(buf, "png")
+        data = buf.getvalue()
+        buf.close()
+        w,h = img.size
+        return ("png", w, h, data)
+
+
     @dbus.service.method(BUS_NAME, out_signature='ssss')
     def GetServerInformation(self):
         #name, vendor, version, spec-version
@@ -74,8 +142,11 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
-        log("GetCapabilities()=%s", csv(CAPABILITIES))
-        return CAPABILITIES
+        caps = ["body", "icon-static"]
+        if ACTIONS and self.support_actions:
+            caps += ["actions", "action-icons"]
+        log("GetCapabilities()=%s", csv(caps))
+        return caps
 
     @dbus.service.method(BUS_NAME, in_signature='u')
     def CloseNotification(self, nid):

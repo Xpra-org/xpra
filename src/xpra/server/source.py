@@ -418,6 +418,7 @@ class ServerSource(FileTransferHandler):
         self.cursor_encodings = ()
         self.send_bell = False
         self.send_notifications = False
+        self.send_notifications_actions = False
         self.send_windows = True
         self.pointer_grabs = False
         self.randr_notify = False
@@ -793,6 +794,7 @@ class ServerSource(FileTransferHandler):
         self.cursor_encodings = c.strlistget("encodings.cursor")
         self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
+        self.send_notifications_actions = c.boolget("notifications.actions")
         self.randr_notify = c.boolget("randr_notify")
         self.mouse_show = c.boolget("mouse.show")
         self.mouse_last_position = c.intpair("mouse.initial-position")

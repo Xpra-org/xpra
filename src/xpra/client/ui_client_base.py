@@ -1525,6 +1525,8 @@ class UIXpraClient(XpraClientBase):
             "double_click.distance"     : get_double_click_distance(),
             #features:
             "notifications"             : self.client_supports_notifications,
+            "notifications.close"       : self.client_supports_notifications,
+            "notifications.actions"     : self.client_supports_notifications,
             "bell"                      : self.client_supports_bell,
             "vrefresh"                  : get_vrefresh(),
             "share"                     : self.client_supports_sharing,
