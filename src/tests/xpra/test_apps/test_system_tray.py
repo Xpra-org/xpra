@@ -21,15 +21,17 @@ class StatusIcon:
         #build list of stock icons:
         self.stock = {}
         try:
-            from xpra.client.notifications.dbus_notifier import DBUS_Notifier
-            self.notifier = DBUS_Notifier(self.notification_closed, self.notification_action)
+            from xpra.platform.gui import get_native_notifier_classes
+            nc = get_native_notifier_classes()
+            self.notifier = nc[0](self.notification_closed, self.notification_action)
             self.notifier.app_name_format = "%s"
-            #ensure we can send the image-path hint:
-            self.notifier.parse_hints = self.notifier.noparse_hints
+            #ensure we can send the image-path hint with the dbus backend:
+            if hasattr(self.notifier, "noparse_hints"):
+                self.notifier.parse_hints = self.notifier.noparse_hints
         except Exception as e:
             import traceback
             traceback.print_stack()
-            print("Failed to instantiate the dbus notifier: %s" % e)
+            print("Failed to instantiate the notifier: %s" % e)
         self.nid = 1
         for x in dir(gtk):
             if x.startswith("STOCK_"):
