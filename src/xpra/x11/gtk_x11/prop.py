@@ -156,13 +156,15 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
                 log("Missing property %s (%s)", key, etype)
             return None
     except XError:
+        log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
         if raise_xerrors:
             raise
-        log.info("Missing window %s or wrong property type %s (%s)", target, key, etype, exc_info=True)
+        log.info("Missing window %s or wrong property type %s (%s)", target, key, etype)
         return None
     except PropertyError:
+        log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
         if not ignore_errors:
-            log.info("Missing property or wrong property type %s (%s)", key, etype, exc_info=True)
+            log.info("Missing property or wrong property type %s (%s)", key, etype)
         return None
     try:
         return prop_decode(target, etype, data)
