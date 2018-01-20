@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import sys
-import gtk
 
+from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
+gtk = import_gtk()
 
 class StatusIcon:
     def __init__(self, name="test", tooltip="StatusIcon Example"):
@@ -13,7 +14,10 @@ class StatusIcon:
         self.statusicon.set_from_stock(gtk.STOCK_HOME)
         self.statusicon.connect("popup-menu", self.popup_menu)
         self.statusicon.connect("activate", self.activate)
-        self.statusicon.set_tooltip(tooltip)
+        try:
+            self.statusicon.set_tooltip_text(tooltip)
+        except AttributeError:
+            self.statusicon.set_tooltip(tooltip)
         #build list of stock icons:
         self.stock = {}
         try:
@@ -46,7 +50,10 @@ class StatusIcon:
         notify_menu.connect("activate", self.notify)
         menu.append(notify_menu)
         menu.show_all()
-        menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
+        if is_gtk3():
+            menu.popup(None, None, gtk.StatusIcon.position_menu, self.statusicon, button, time)
+        else:
+            menu.popup(None, None, gtk.status_icon_position_menu, button, time, self.statusicon)
 
     def notification_closed(self, nid, reason, text):
         print("notification_closed(%i, %i, %s)" % (nid, reason, text))
