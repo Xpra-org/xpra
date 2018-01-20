@@ -405,6 +405,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
                 self._add_new_or_window(window)
 
+    def _lookup_window(self, wid):
+        assert isinstance(wid, int), "window id value '%s' is a %s and not a number" % (wid, type(wid))
+        return self._id_to_window.get(wid)
+
 
     def parse_hello_ui_window_settings(self, ss, _caps):
         framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
@@ -770,15 +774,15 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_map_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        window = self._id_to_window.get(wid)
+        window = self._lookup_window(wid)
         if not window:
-            windowlog("cannot map window %s: already removed!", wid)
+            windowlog("cannot map window %i: not found, already removed?", wid)
             return
         assert not window.is_OR()
         ss = self._server_sources.get(proto)
         if ss is None:
             return
-        geomlog("client %s mapped window %s - %s, at: %s", ss, wid, window, (x, y, w, h))
+        geomlog("client %s mapped window %i - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
@@ -795,9 +799,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
-        window = self._id_to_window.get(wid)
+        window = self._lookup_window(wid)
         if not window:
-            log("cannot map window %s: already removed!", wid)
+            log("cannot unmap window %i: not found, already removed?", wid)
             return
         assert not window.is_OR()
         ss = self._server_sources.get(proto)
@@ -839,9 +843,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        window = self._id_to_window.get(wid)
+        window = self._lookup_window(wid)
         if not window:
-            geomlog("cannot map window %s: already removed!", wid)
+            geomlog("cannot configure window %i: not found, already removed?", wid)
             return
         ss = self._server_sources.get(proto)
         if not ss:
@@ -921,7 +925,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 del self.configure_damage_timers[wid]
             except:
                 pass
-            window = self._id_to_window.get(wid)
+            window = self._lookup_window(wid)
             if window and window.is_managed():
                 w, h = window.get_dimensions()
                 self._damage(window, 0, 0, w, h)
@@ -962,7 +966,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos, *args):
         if wid>=0:
-            window = self._id_to_window.get(wid)
+            window = self._lookup_window(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
@@ -974,7 +978,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _process_close_window(self, proto, packet):
         assert proto in self._server_sources
         wid = packet[1]
-        window = self._id_to_window.get(wid, None)
+        window = self._lookup_window(wid)
         windowlog("client closed window %s - %s", wid, window)
         if window:
             window.request_close()
@@ -990,7 +994,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if sig not in WINDOW_SIGNALS:
             log.warn("Warning: window signal '%s' not handled", sig)
             return
-        w = self._id_to_window.get(wid)
+        w = self._lookup_window(wid)
         if not w:
             log.warn("Warning: window %s not found", wid)
             return
@@ -1181,7 +1185,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             menulog("menu rpc: err_back%s", args)
             ss.rpc_reply("menu", rpcid, False, native(args))
         try:
-            window = self._id_to_window[wid]
+            window = self._lookup_window(wid)
+            assert window, "window %i not found" % wid
             window.activate_menu(action_type, action, state, pdata)
             ok_back("done")
         except Exception as e:
