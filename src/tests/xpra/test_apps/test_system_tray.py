@@ -2,8 +2,10 @@
 
 import sys
 
+from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, is_gtk3
 gtk = import_gtk()
+
 
 class StatusIcon:
     def __init__(self, name="test", tooltip="StatusIcon Example"):
@@ -21,8 +23,12 @@ class StatusIcon:
         #build list of stock icons:
         self.stock = {}
         try:
-            from xpra.platform.gui import get_native_notifier_classes
-            nc = get_native_notifier_classes()
+            nc = []
+            if envbool("XPRA_NATIVE_NOTIFIER", True):
+                from xpra.platform.gui import get_native_notifier_classes
+                nc += get_native_notifier_classes()
+            from xpra.client.gtk_base.gtk_notifier import GTK_Notifier
+            nc.append(GTK_Notifier)
             self.notifier = nc[0](self.notification_closed, self.notification_action)
             self.notifier.app_name_format = "%s"
             #ensure we can send the image-path hint with the dbus backend:
