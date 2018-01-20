@@ -14,7 +14,7 @@ gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.client.tray_base import TrayBase, log
-from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, INTERP_HYPER
+from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, get_default_root_window, INTERP_HYPER, SHIFT_MASK
 
 ORIENTATION = {}
 if not is_gtk3():
@@ -44,19 +44,28 @@ class GTKStatusIconTray(TrayBase):
     def may_guess(self):
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
         if GUESS_GEOMETRY:
-            x, y = gdk.get_default_root_window().get_pointer()[:2]
+            x, y = get_default_root_window().get_pointer()[:2]
             w, h = self.get_size()
             self.recalculate_geometry(x, y, w, h)
 
-    def activate_menu(self, widget, *args):
-        log("activate_menu(%s, %s)", widget, args)
-        self.may_guess()
-        if self.click_cb:
-            self.click_cb(1, 1)
-            self.click_cb(1, 0)
+    def activate_menu(self, widget):
+        modifiers_mask = get_default_root_window().get_pointer()[-1]
+        log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
+        if modifiers_mask & SHIFT_MASK:
+            self.handle_click(2)
+        else:
+            self.handle_click(1)
 
     def popup_menu(self, widget, button, time, *args):
-        log("popup_menu(%s, %s, %s, %s)", widget, button, time, args)
+        modifiers_mask = get_default_root_window().get_pointer()[-1]
+        log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, time, args, modifiers_mask)
+        if modifiers_mask & SHIFT_MASK:
+            self.handle_click(1)
+        else:
+            self.handle_click(2)
+
+    def handle_click(self, button, time=0):
+        log("handle_click(%i, %i)", button, time)
         self.may_guess()
         if self.click_cb:
             self.click_cb(button, 1, time)
