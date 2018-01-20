@@ -1104,6 +1104,8 @@ XpraClient.prototype._make_hello = function() {
 		"clipboard.greedy"			: true,
 		"clipboard.selections"		: ["CLIPBOARD", "PRIMARY"],
 		"notifications"				: true,
+		"notifications.close"		: true,
+		"notifications.actions"		: true,
 		"cursors"					: true,
 		"bell"						: true,
 		"system_tray"				: true,
@@ -1940,6 +1942,8 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	var body = packet[7];
 	var expire_timeout = packet[8];
 	var icon = packet[9];
+	var actions = packet[10];
+	var hints = packet[11];
 	if(window.closeNotification) {
 		if (replaces_nid>0) {
 			window.closeNotification(replaces_nid);
@@ -1947,7 +1951,13 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 		window.closeNotification(nid);
 	}
 	if(window.doNotification) {
-		window.doNotification("info", nid, summary, body, expire_timeout, icon);
+		window.doNotification("info", nid, summary, body, expire_timeout, icon, actions, hints,
+				function(nid, action_id) {
+					ctx.send(["notification-action", nid, action_id]);
+				},
+				function(nid, reason, text) {
+					ctx.send(["notification-close", nid, reason, text || ""]);
+				});
 	}
 	ctx._new_ui_event();
 }

@@ -169,6 +169,26 @@ div.windowinfocus {
 	padding: .4rem;
 	padding-left: 1rem;
 }
+.notification_buttons {
+	clear: both;
+	float: right;
+	font-weight: 500;
+	font-size: 1.2rem;
+}
+.notification_button {
+	cursor: pointer;
+	float: left;
+	margin: 5px;
+	padding: 5px;
+	border: 1px solid black;
+	border-radius: 5px;
+	background-color: #f8f8f8;
+	color: #000;
+}
+.notification_button:hover {
+	background-color: #000;
+	color: #ffffff;
+}
 @media screen and (max-width: 600px) {
 	.notifications {
 		bottom: 0;

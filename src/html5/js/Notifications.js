@@ -1,6 +1,6 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
  * Copyright (c) 2016 Spikes, Inc.
  * Licensed under MPL 2.0, see:
  * http://www.mozilla.org/MPL/2.0/
@@ -9,7 +9,8 @@
 
 $(function() {
 
-	window.doNotification = function(type, nid, title, message, timeout, icon, onTimeOut){
+	window.doNotification = function(type, nid, title, message, timeout, icon, actions, hints, onAction, onClose){
+		console.debug("doNotification", type, nid, title, message, timeout, icon, actions, hints, onAction, onClose);
 		var nID = 'notification' + nid;
 		var a = $('<div id="' + nID + '" class="alert ' + type + '">'+
 					'<img class="notification_icon" id="notification_icon' + nID + '"></img>'+
@@ -17,6 +18,17 @@ $(function() {
 					'<span class="message">' + message + '</span>'+
 					'<div class="dismiss">&#215;</div>'+
 				  '</div>');
+		$('.notifications').prepend(a);
+		if (actions) {
+			var notification_buttons = $('<div class="notification_buttons"></div>');
+			a.append(notification_buttons);
+			for (var i = 0; i < actions.length; i+=2) {
+				var action_id = actions[i];
+				var action_label = actions[i+1];
+				var notification_button = window._notification_button(nid, action_id, action_label, onAction, onClose);
+				notification_buttons.append(notification_button);
+			}
+		}
 		$('.notifications').prepend(a);
 		if (icon) {
 			var encoding = icon[0],
@@ -28,12 +40,15 @@ $(function() {
 				$("#notification_icon"+nID).attr('src', src);
 			}
 		}
-		
+
 		a.on('click', '.dismiss', function() {
 			a.removeClass('visible').addClass('hidden');
 			a.on('transitionend webkitTransitionEnd', $.debounce(250, function() {
 					a.trigger('dismissed');
 					a.remove();
+					if (onClose) {
+						onClose(nid, 3, "user clicked dismiss");
+					}
 			}));
 		});
 
@@ -46,10 +61,9 @@ $(function() {
 			var it = setInterval(function() {
 				var tleft = a.data('timeLeft') - 1;
 				if (a.data('timeLeft') === 0) {
-					if (onTimeOut) {
-						onTimeOut(a);
-					} else {
-						a.find('.dismiss').trigger('click');
+					a.find('.dismiss').trigger('click');
+					if (onClose) {
+						onClose(nid, 1, "timeout");
 					}
 				} else {
 					a.find('sec').text(tleft);
@@ -59,6 +73,21 @@ $(function() {
 		}
 		return a;
 	};
+
+	window._notification_button = function(nid, action_id, action_label, onAction, onClose) {
+		var notification_button = $('<div class="notification_button" id=notification"'+action_id+'">'+action_label+'</div>');
+		notification_button.on("click", function() {
+			window.closeNotification(nid);
+			if (onAction) {
+				onAction(nid, action_id);
+			}
+			if (onClose) {
+				onClose(nid, 3, "user clicked action");
+			}
+		});
+		return notification_button;
+	}
+	
 
 	window.closeNotification = function(nid) {
 		var nID = 'notification' + nid;
