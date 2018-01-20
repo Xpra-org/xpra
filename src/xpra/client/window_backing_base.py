@@ -227,7 +227,7 @@ class WindowBackingBase(object):
         assert PIL.Image, "PIL.Image not found"
         buf = BytesIOClass(img_data)
         img = PIL.Image.open(buf)
-        assert img.mode in ("L", "P", "RGB", "RGBA"), "invalid image mode: %s" % img.mode
+        assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
         transparency = options.intget("transparency", -1)
         if img.mode=="P":
             if transparency>=0:
@@ -268,15 +268,21 @@ class WindowBackingBase(object):
             else:
                 rgb_format = "RGB"
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
-        elif img.mode=="RGBA":
+        elif img.mode in ("RGBA", "RGBX"):
             rowstride = width*4
             rgb_format = options.strget("rgb_format", "")
             #the webp encoder only takes BGRX input,
             #so we have to swap things around if it was fed "RGBA":
             if rgb_format=="RGBA":
                 rgb_format = "BGRA"
-            else:
+            elif rgb_format=="RGBX":
+                rgb_format = "BGRX"
+            elif rgb_format=="BGRA":
                 rgb_format = "RGBA"
+            elif rgb_format=="BGRX":
+                rgb_format = "RGBX"
+            else:
+                log.warn("Warning: unexpected RGB format '%s'", rgb_format)
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
         else:
             raise Exception("invalid image mode: %s" % img.mode)
