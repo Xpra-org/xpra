@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,18 +9,18 @@
 import os
 from xpra.os_util import WIN32, OSX, POSIX, PYTHON3
 from xpra.util import envbool
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
 gdk = import_gdk()
 
 from xpra.client.tray_base import TrayBase, log
-from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, get_default_root_window, INTERP_HYPER, SHIFT_MASK
+from xpra.gtk_common.gtk_util import get_icon_from_file, get_pixbuf_from_data, get_default_root_window, \
+    INTERP_HYPER, SHIFT_MASK, ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL
 
-ORIENTATION = {}
-if not is_gtk3():
-    #where was this moved to??
-    ORIENTATION[gtk.ORIENTATION_HORIZONTAL] = "HORIZONTAL"
-    ORIENTATION[gtk.ORIENTATION_VERTICAL]   = "VERTICAL"
+ORIENTATION = {
+    ORIENTATION_HORIZONTAL  : "HORIZONTAL",
+    ORIENTATION_VERTICAL    : "VERTICAL",
+    }
 
 GUESS_GEOMETRY = WIN32 or OSX
 GUESS_GEOMETRY = envbool("XPRA_GUESS_ICON_GEOMETRY", GUESS_GEOMETRY)

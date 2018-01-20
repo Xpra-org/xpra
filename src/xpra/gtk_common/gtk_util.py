@@ -216,6 +216,9 @@ if is_gtk3():
     SCROLL_LEFT     = gdk.ScrollDirection.LEFT
     SCROLL_RIGHT    = gdk.ScrollDirection.RIGHT
 
+    ORIENTATION_HORIZONTAL = gtk.Orientation.HORIZONTAL
+    ORIENTATION_VERTICAL = gtk.Orientation.VERTICAL
+
     mt = gdk.ModifierType
     SHIFT_MASK      = mt.SHIFT_MASK
     LOCK_MASK       = mt.LOCK_MASK
@@ -419,6 +422,9 @@ else:
     SCROLL_DOWN     = gdk.SCROLL_DOWN
     SCROLL_LEFT     = gdk.SCROLL_LEFT
     SCROLL_RIGHT    = gdk.SCROLL_RIGHT
+
+    ORIENTATION_HORIZONTAL = gtk.ORIENTATION_HORIZONTAL
+    ORIENTATION_VERTICAL = gtk.ORIENTATION_VERTICAL
 
     SHIFT_MASK      = gdk.SHIFT_MASK
     LOCK_MASK       = gdk.LOCK_MASK
