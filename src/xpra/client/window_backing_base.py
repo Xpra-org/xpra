@@ -270,7 +270,7 @@ class WindowBackingBase(object):
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
         elif img.mode in ("RGBA", "RGBX"):
             rowstride = width*4
-            rgb_format = options.strget("rgb_format", "")
+            rgb_format = options.strget("rgb_format", img.mode)
             #the webp encoder only takes BGRX input,
             #so we have to swap things around if it was fed "RGBA":
             if rgb_format=="RGBA":
@@ -324,7 +324,7 @@ class WindowBackingBase(object):
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
             bpp = len(rgb_format)*8
-            assert bpp in (24, 32), "invalid rgb format %s" % rgb_format
+            assert bpp in (24, 32), "invalid rgb format '%s'" % rgb_format
             paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
             options[b"rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
