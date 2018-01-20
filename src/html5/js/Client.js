@@ -319,6 +319,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'hello': this._process_hello,
 		'ping': this._process_ping,
 		'ping_echo': this._process_ping_echo,
+		'new-tray': this._process_new_tray,
 		'new-window': this._process_new_window,
 		'new-override-redirect': this._process_new_override_redirect,
 		'window-metadata': this._process_window_metadata,
@@ -1108,7 +1109,7 @@ XpraClient.prototype._make_hello = function() {
 		"notifications.actions"		: true,
 		"cursors"					: true,
 		"bell"						: true,
-		"system_tray"				: false,
+		"system_tray"				: true,
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
 		// printing
@@ -1149,6 +1150,7 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 	var win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
 		metadata,
 		override_redirect,
+		false,
 		client_properties,
 		this._window_geometry_changed,
 		this._window_mouse_move,
@@ -1201,7 +1203,7 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 	var geom = win.get_internal_geometry();
 	var wid = win.wid;
 
-	if (!win.override_redirect) {
+	if (!win.override_redirect && !win.tray) {
 		win.client._window_set_focus(win);
 	}
 	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
@@ -1226,7 +1228,7 @@ XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, 
 
 XpraClient.prototype._window_set_focus = function(win) {
 	// don't send focus packet for override_redirect windows!
-	if (win.override_redirect) {
+	if (win.override_redirect || win.tray) {
 		return;
 	}
 	var client = win.client;
@@ -1811,6 +1813,55 @@ XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 	ctx._check_server_echo(0);
 }
 
+XpraClient.prototype._process_new_tray = function(packet, ctx) {
+    var wid = packet[1],
+    	w = packet[2],
+    	h = packet[3],
+        metadata = packet[4];
+	var mydiv = document.createElement("div");
+	mydiv.id = String(wid);
+	var mycanvas = document.createElement("canvas");
+	mydiv.appendChild(mycanvas);
+	var top_bar = document.getElementById("top_bar");
+	top_bar.appendChild(mydiv);
+	var x = 100;
+	var y = 0;
+	w = 48;
+	h = 48;
+	mycanvas.width = w;
+	mycanvas.height = h;
+	var win = new XpraWindow(ctx, mycanvas, wid, x, y, w, h,
+		metadata,
+		false,
+		true,
+		{},
+		ctx._tray_geometry_changed,
+		ctx._window_mouse_move,
+		ctx._window_mouse_click,
+		ctx._tray_set_focus,
+		ctx._tray_closed,
+		);
+	ctx.id_to_window[wid] = win;
+	ctx.send_tray_configure(wid);
+}
+XpraClient.prototype.send_tray_configure = function(wid) {
+	var div = jQuery("#" + String(wid));
+	var x = Math.round(div.offset().left);
+	var y = Math.round(div.offset().top);
+	var w = 48, h = 48;
+	console.log("tray", wid, "position:", x, y);
+	this.send(["configure-window", Number(wid), x, y, w, h, {}]);
+}
+XpraClient.prototype._tray_geometry_changed = function(win) {
+	ctx.debug("main", "tray geometry changed (ignored)");
+}
+XpraClient.prototype._tray_set_focus = function(win) {
+	ctx.debug("main", "tray set focus (ignored)");
+}
+XpraClient.prototype._tray_closed = function(win) {
+	ctx.debug("main", "tray closed (ignored)");
+}
+
 XpraClient.prototype._process_new_window = function(packet, ctx) {
 	ctx._new_window_common(packet, false);
 }
@@ -1855,6 +1906,19 @@ XpraClient.prototype._process_lost_window = function(packet, ctx) {
 	catch (e) {}
 	if (win!=null) {
 		win.destroy();
+		console.log("lost window, was tray=", win.tray);
+		if (win.tray) {
+			//other trays may have moved:
+			for (var twid in ctx.id_to_window) {
+				console.log("testing", twid);
+				var twin = ctx.id_to_window[twid];
+				console.log("testing", twin);
+				if (twin && twin.tray) {
+					console.log("is tray!");
+					ctx.send_tray_configure(twid);
+				}
+			}
+		}
 	}
 	console.log("lost window", wid, ", remaining: ", Object.keys(ctx.id_to_window));
 	if (Object.keys(ctx.id_to_window).length==0) {

@@ -10,6 +10,16 @@ body.desktop {
 	background-color: #555;
 }
 
+div#top_bar {
+	background-color: #444;
+	width: 100%;
+	height: 48px;
+}
+div#top_bar img {
+	width: 48px;
+	height: 48px;
+}
+
 div#connect_form {
 	display: none;
 }
@@ -23,6 +33,7 @@ div#disconnect_form {
 	opacity: 0.5;
 	z-index: 100000;
 	text-align: center;
+	padding-top: 3em;
 }
 #progress-label {
 	font-size: 1.4em;
@@ -53,14 +64,18 @@ canvas {
 	padding: 0;
 	overflow: hidden;
 }
-.override-redirect {
-}
 .window {
 	border: 1px;
 	position: absolute;
 	box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.5);
 	padding: 0;
 	overflow: hidden; /* required for radius clip */
+}
+.window.override-redirect {
+}
+.window.tray {
+	position: relative;
+	float: left;
 }
 .window.desktop {
 	border-radius: 0;

@@ -20,7 +20,7 @@
  * The contents of the window is an image, which gets updated
  * when we receive pixels from the server.
  */
-function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, client_properties, geometry_cb, mouse_move_cb, mouse_click_cb, set_focus_cb, window_closed_cb, htmldiv) {
+function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, tray, client_properties, geometry_cb, mouse_move_cb, mouse_click_cb, set_focus_cb, window_closed_cb, htmldiv) {
 	// use me in jquery callbacks as we lose 'this'
 	var me = this;
 	// there might be more than one client
@@ -54,6 +54,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.wid = wid;
 	this.metadata = {};
 	this.override_redirect = override_redirect;
+	this.tray = tray;
 	this.client_properties = client_properties;
 
 	//window attributes:
@@ -117,6 +118,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	if (this.client.server_is_desktop) {
 		jQuery(this.div).addClass("desktop");
 		this.resizable = false;
+	}
+	else if(this.tray) {
+		jQuery(this.div).addClass("tray");
 	}
 	else if(this.override_redirect) {
 		jQuery(this.div).addClass("override-redirect");
@@ -432,7 +436,10 @@ XpraWindow.prototype.toString = function() {
 
 XpraWindow.prototype.update_zindex = function() {
 	var z = 5000 + this.stacking_layer;
-	if (this.override_redirect || this.client.server_is_desktop) {
+	if (this.tray) {
+		z = 0;
+	}
+	else if (this.override_redirect || this.client.server_is_desktop) {
 		z = 15000;
 	}
 	else if (this.windowtype=="DROPDOWN" || this.windowtype=="TOOLTIP" ||
