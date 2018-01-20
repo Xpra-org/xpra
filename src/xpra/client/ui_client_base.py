@@ -112,6 +112,7 @@ RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
+NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
@@ -822,7 +823,7 @@ class UIXpraClient(XpraClientBase):
         notifylog("make_notifier() notifier classes: %s", nc)
         return self.make_instance(nc, self.notification_closed, self.notification_action)
 
-    def notification_closed(self, nid, reason, text):
+    def notification_closed(self, nid, reason=3, text=""):
         notifylog("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
         if self.server_notifications_close:
             self.send("notification-close", nid, reason, text)
@@ -836,6 +837,8 @@ class UIXpraClient(XpraClientBase):
         #subclasses will generally add their toolkit specific variants
         #by overriding this method
         #use the native ones first:
+        if not NATIVE_NOTIFIER:
+            return []
         return get_native_notifier_classes()
 
 
