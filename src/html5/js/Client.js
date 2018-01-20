@@ -1039,7 +1039,7 @@ XpraClient.prototype._make_hello = function() {
         "metadata.supported"		: [
         								"fullscreen", "maximized", "above", "below",
         								//"set-initial-position", "group-leader",
-        								"title", "size-hints", "class-instance", "transient-for", "window-type",
+        								"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
         								"decorations", "override-redirect", "tray", "modal", "opacity",
         								//"shadow", "desktop",
         								],

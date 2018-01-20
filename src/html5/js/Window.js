@@ -55,6 +55,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.metadata = {};
 	this.override_redirect = override_redirect;
 	this.tray = tray;
+	this.has_alpha = false;
 	this.client_properties = client_properties;
 
 	//window attributes:
@@ -492,6 +493,9 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	if ("title" in metadata) {
 		this.title = metadata["title"];
 		jQuery('#title' + this.wid).html(decodeURIComponent(escape(this.title)));
+	}
+	if ("has-alpha" in metadata) {
+		this.has_alpha = metadata["has-alpha"];
 	}
 	if ("window-type" in metadata) {
 		this.windowtype = metadata["window-type"][0];
@@ -969,6 +973,9 @@ XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data)
  */
 XpraWindow.prototype.draw = function() {
 	//pass the 'buffer' canvas directly to visible canvas context
+	if (this.has_alpha || this.tray) {
+		this.canvas_ctx.clearRect(0, 0, this.draw_canvas.width, this.draw_canvas.height);
+	}
 	this.canvas_ctx.drawImage(this.draw_canvas, 0, 0);
 };
 
