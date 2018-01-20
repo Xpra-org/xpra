@@ -121,7 +121,6 @@ def encode(coding, image, quality, speed, supports_transparency):
     except Exception:
         log.error("PIL_encode%s converting %s pixels from %s to %s failed", (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), type(pixels), pixel_format, rgb, exc_info=True)
         raise
-    buf = BytesIOClass()
     client_options = {}
     if coding in ("jpeg", "webp", "jpeg2000"):
         #newer versions of pillow require explicit conversion to non-alpha:
@@ -190,6 +189,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         #kwargs["compress_type"] = Image.DEFAULT_STRATEGY
         pil_fmt = "PNG"
+    buf = BytesIOClass()
     im.save(buf, pil_fmt, **kwargs)
     if SAVE_TO_FILE:
         filename = "./%s.%s" % (time.time(), pil_fmt)
