@@ -44,12 +44,12 @@ class GTKStatusIconTray(TrayBase):
     def may_guess(self):
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
         if GUESS_GEOMETRY:
-            x, y = get_default_root_window().get_pointer()[:2]
+            x, y = get_default_root_window().get_pointer()[-3:-1]
             w, h = self.get_size()
             self.recalculate_geometry(x, y, w, h)
 
     def activate_menu(self, widget):
-        modifiers_mask = get_default_root_window().get_pointer()[-1]
+        modifiers_mask = get_default_root_window().get_pointer()[-3:-1]
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
         if modifiers_mask & SHIFT_MASK:
             self.handle_click(2)
