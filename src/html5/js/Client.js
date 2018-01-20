@@ -1108,7 +1108,7 @@ XpraClient.prototype._make_hello = function() {
 		"notifications.actions"		: true,
 		"cursors"					: true,
 		"bell"						: true,
-		"system_tray"				: true,
+		"system_tray"				: false,
 		//we cannot handle this (GTK only):
 		"named_cursors"				: false,
 		// printing
