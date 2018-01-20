@@ -96,7 +96,7 @@ class TrayBase(object):
         raise Exception("override me!")
 
     def recalculate_geometry(self, x, y, width, height):
-        log("recalculate_geometry%s tray event locations: %s", (x, y, width, height), len(self.tray_event_locations))
+        log("recalculate_geometry%s guess=%s, tray event locations: %s", (x, y, width, height), self.geometry_guess, len(self.tray_event_locations))
         if x is None or y is None:
             return
         if self.geometry_guess is None:
@@ -104,6 +104,7 @@ class TrayBase(object):
             self.geometry_guess = x, y, width, height
         if len(self.tray_event_locations)>0 and self.tray_event_locations[-1]==(x,y):
             #unchanged
+            log("tray event location unchanged")
             return
         self.tray_event_locations.append((x, y))
         #sets of locations that can fit together within (size,size) distance of each other:
@@ -134,6 +135,6 @@ class TrayBase(object):
         miny -= pady//2
         oldgeom = self.geometry_guess
         self.geometry_guess = max(0, minx), max(0, miny), width, height
-        log("recalculate_geometry() geometry guess=%s", self.geometry_guess)
+        log("recalculate_geometry() geometry guess=%s (old guess=%s)", self.geometry_guess, oldgeom)
         if self.size_changed_cb and self.geometry_guess!=oldgeom:
             self.size_changed_cb()
