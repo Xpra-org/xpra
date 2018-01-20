@@ -42,6 +42,7 @@ class DBUS_Notifier(NotifierBase):
         self.last_notification = None
         self.actual_notification_id = {}
         self.setup_dbusnotify()
+        self.handles_actions = True
 
     def setup_dbusnotify(self):
         self.dbus_session = dbus.SessionBus()
@@ -53,7 +54,9 @@ class DBUS_Notifier(NotifierBase):
         #connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="com.example.TestService", arg0="Hello")
         self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
         log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
-        log("capabilities=%s", csv(str(x) for x in self.dbusnotify.GetCapabilities()))
+        caps = tuple(str(x) for x in self.dbusnotify.GetCapabilities())
+        log("capabilities=%s", csv(caps))
+        self.handles_actions = "actions" in caps
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):

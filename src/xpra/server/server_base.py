@@ -2379,6 +2379,8 @@ class ServerBase(ServerCore):
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
         info.setdefault("commands", self.get_commands_info())
+        if self.notifications_forwarder:
+            info.setdefault("notifications", {}).update(self.notifications_forwarder.get_info())
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 

@@ -1526,7 +1526,7 @@ class UIXpraClient(XpraClientBase):
             #features:
             "notifications"             : self.client_supports_notifications,
             "notifications.close"       : self.client_supports_notifications,
-            "notifications.actions"     : self.client_supports_notifications,
+            "notifications.actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
             "bell"                      : self.client_supports_bell,
             "vrefresh"                  : get_vrefresh(),
             "share"                     : self.client_supports_sharing,

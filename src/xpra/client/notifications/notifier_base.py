@@ -19,6 +19,7 @@ class NotifierBase(object):
         self.temp_files = {}
         self.closed_cb = closed_cb
         self.action_cb = action_cb
+        self.handles_actions = False
 
     def cleanup(self):
         tf = self.temp_files
