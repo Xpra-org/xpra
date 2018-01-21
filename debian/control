@@ -12,7 +12,10 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libx264-dev
               ,python-all-dev
-              ,python-gobject-dev
+#xenial:         ,python-gobject-dev
+#artful:        ,python-gobject-dev
+#bionic:        ,python-gobject-2-dev
+#stretch:         ,python-gobject-dev
               ,python-gtk2-dev
               ,dh-python
               ,dh-systemd
@@ -31,12 +34,10 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-gtk2
         ,x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
-#jessie:        ,xserver-xorg-video-dummy
 #stretch:        ,xserver-xorg-video-dummy
 #xenial:        ,xvfb
-#yakkety:        ,xserver-xorg-video-dummy
-#zesty:        ,xserver-xorg-video-dummy
 #artful:        ,xserver-xorg-video-dummy
+#bionic:        ,xserver-xorg-video-dummy
 # for opengl support:
         ,python-gtkglext1
         ,python-opengl
@@ -46,10 +47,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-pil
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
-#yakkety:         ,libturbojpeg
-#zesty:         ,libturbojpeg
 #artful:        ,libturbojpeg
-#sid:         ,libturbojpeg0
+#bionic:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 # packet encoder:
         ,python-rencode
@@ -57,18 +56,17 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-lz4
 # if you use Ubuntu, you will "want" this mess:
 #xenial:        ,python-appindicator
-#yakkety:        ,python-appindicator
-#zesty:        ,python-appindicator
 Recommends:
 # ffmpeg based codecs:
-        ,ffmpeg-xpra
+#stretch:        ,ffmpeg-xpra
+#xenial:        ,ffmpeg-xpra
+#artful:        ,ffmpeg-xpra
+#bionic:        ,ffmpeg-xpra
 # x264:
-#jessie:        ,libx264-142
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
-#yakkety:        ,libx264-148
-#zesty:        ,libx264-148
 #artful:        ,libx264-148
+#bionic:        ,libx264-148
 # for notifications forwarding and dbus server / proxying:
         ,python-dbus
 # for the proxy server:
@@ -78,8 +76,8 @@ Recommends:
 #webp
 #stretch:        ,libwebp6
 #xenial:        ,libwebp5
-#zesty:        ,libwebp6
 #artful:        ,libwebp6
+#bionic:        ,libwebp6
         ,python-cryptography
 # audio-related:
         ,gstreamer1.0-pulseaudio
@@ -102,8 +100,6 @@ Recommends:
         ,v4l2loopback-dkms
         ,openssh-client
         ,ssh-askpass
-#recommend the alternative (those that recommend lz4 usually don't have it available at all):
-        ,python-lzo
 #for html5 support:
         ,websockify
         ,libjs-jquery
@@ -125,6 +121,8 @@ Suggests: openssh-server
 #nvenc support requires pycuda (and its huge list of dependencies!)
 #and the nvencode library:
         ,python-pycuda, libnvidia-encode1
+#python-lz4 is better and available everywhere now, alternatively use:
+        ,python-lzo
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
