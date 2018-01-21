@@ -1,3 +1,5 @@
+%{!?python2_sitearch: %define python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 %global with_python3 1
 
@@ -8,7 +10,7 @@
 
 Name:           python2-uinput
 Version:        0.11.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 
 License:        GPLv3
@@ -25,11 +27,13 @@ BuildRequires:  libudev-devel
 
 %if %{?with_python3}
 BuildRequires:  python3-devel
-%endif # if with_python3
+%endif
 
 
-%filter_provides_in %{python_sitearch}/.*\.so$
+%filter_provides_in %{python2_sitearch}/.*\.so$
+%if %{?with_python3}
 %filter_provides_in %{python3_sitearch}/.*\.so$
+%endif
 %filter_setup
 
 
@@ -83,19 +87,18 @@ pushd %{py3dir}
 popd
 %endif # with_python3
 
-%{__python} setup.py install --skip-build --root %{buildroot}
+%{__python2} setup.py install --skip-build --root %{buildroot}
 
 chmod a-x examples/*
 
 
 %files
 %doc COPYING NEWS README examples
-%{python_sitearch}/python_uinput-%{version}-py?.?.egg-info
-%{python_sitearch}/_libsuinput.so
-%{python_sitearch}/uinput
+%{python2_sitearch}/python_uinput-%{version}-py?.?.egg-info
+%{python2_sitearch}/_libsuinput.so
+%{python2_sitearch}/uinput
+
 %if 0%{?with_python3}
-
-
 %files -n python3-uinput
 %doc COPYING NEWS README examples
 %{python3_sitearch}/python_uinput-%{version}-py?.?.egg-info
@@ -105,6 +108,9 @@ chmod a-x examples/*
 
 
 %changelog
+* Mon Jan 22 2018 Antoine Martin <antoine@devloop.org.uk> - 0.11.2-2
+- more explicit python version, sitearch paths
+
 * Fri Aug 11 2017 Miro Hrončok <mhroncok@redhat.com> - 0.11.2-1
 - new upstream release
 
