@@ -422,7 +422,10 @@ done
 popd
 
 #fix permissions on shared objects
-find %{buildroot}%{python_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
+find %{buildroot}%{python2_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
+%if 0%{?fedora}
+find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
+%endif
 
 # Ensure all .js files are not executeable
 find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
