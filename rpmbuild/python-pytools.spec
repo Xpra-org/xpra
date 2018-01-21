@@ -1,4 +1,4 @@
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python2-pytools
 Version:        2016.2.1
@@ -40,12 +40,12 @@ Small tool functions such as ::
 
 
 %build
-%{__python} setup.py build
+%{__python2} setup.py build
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{__python} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{__python2} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 
 
 %clean
@@ -55,7 +55,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc README PKG-INFO
-%{python_sitelib}/*
+%{python2_sitelib}/*
 
 
 %changelog
