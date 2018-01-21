@@ -28,6 +28,7 @@ This package provides a fake Xinerama library which can be used
 to return pre-defined screen layout information to X11 client applications
 which use the Xinerama extension.
 
+%global debug_package %{nil}
 
 %prep
 %setup -q
