@@ -652,7 +652,7 @@ class ServerBase(ServerCore):
                 pulse = os.path.join(self.pulseaudio_private_dir, "pulse")
                 native = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
                 for x in (native, pulse, self.pulseaudio_private_dir):
-                    soundlog.warn("removing private directory '%s'", x)
+                    soundlog("removing private directory '%s'", x)
                     if os.path.exists(x) and os.path.isdir(x):
                         os.rmdir(x)
         except Exception as e:
