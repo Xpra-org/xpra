@@ -98,7 +98,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
 
     def get_notification_tray(self):
-        return self.tray
+        return self.tray_widget
 
     def get_notifier_classes(self):
         ncs = ShadowServerBase.get_notifier_classes(self)
