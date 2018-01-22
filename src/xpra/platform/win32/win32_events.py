@@ -194,7 +194,7 @@ class Win32EventListener(object):
                     l = log.info
                 else:
                     ut = "/ unexpected"
-                l("unknown %s message: %s / %s / %s", ut, event_name, wParam, lParam)
+                l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
         elif self.hwnd and hWnd!=None:
             log.warn("invalid hwnd: %s (expected %s)", hWnd, self.hwnd)
         if msg==win32con.WM_DESTROY:
