@@ -15,11 +15,14 @@ Build-Depends: debhelper (>= 8)
 #artful:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
 #stretch:              ,python-gobject-dev
+#buster:              ,python-gobject-2-dev
 #xenial:              ,ffmpeg-xpra
 #artful:              ,ffmpeg-xpra
 #bionic:              ,libavcodec-dev
 #bionic:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
+#buster:              ,libavcodec-dev
+#buster:              ,libswscale-dev
               ,python-gtk2-dev
               ,dh-python
               ,dh-systemd
@@ -39,6 +42,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,x11-xserver-utils
 #we need a vfb: either Xdummy (Debian) or Xvfb (Ubuntu breaks Xorg tty access)
 #stretch:        ,xserver-xorg-video-dummy
+#buster:        ,xserver-xorg-video-dummy
 #xenial:        ,xvfb
 #artful:        ,xserver-xorg-video-dummy
 #bionic:        ,xserver-xorg-video-dummy
@@ -54,6 +58,7 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #artful:        ,libturbojpeg
 #bionic:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
+#buster:         ,libturbojpeg0
 # packet encoder:
         ,python-rencode
 # depend on lz4 for those that have it, lzo otherwise:
@@ -72,11 +77,14 @@ Recommends:
 #artful:        ,libswscale4
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
+#buster:        ,libavcodec57
+#buster:        ,libswscale4
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
 #artful:        ,libx264-148
 #bionic:        ,libx264-148
+#buster:        ,libx264-148
 # for notifications forwarding and dbus server / proxying:
         ,python-dbus
 # for the proxy server:
@@ -88,6 +96,7 @@ Recommends:
 #xenial:        ,libwebp5
 #artful:        ,libwebp6
 #bionic:        ,libwebp6
+#buster:        ,libwebp6
         ,python-cryptography
 # audio-related:
         ,gstreamer1.0-pulseaudio
