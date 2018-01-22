@@ -4,7 +4,6 @@ Priority: optional
 Maintainer: Antoine Martin <antoine@devloop.org.uk>
 Build-Depends: debhelper (>= 8)
               ,cython (>= 0.23)
-              ,ffmpeg-xpra
               ,libx11-dev
               ,libvpx-dev
               ,libxcomposite-dev
@@ -12,10 +11,15 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libx264-dev
               ,python-all-dev
-#xenial:         ,python-gobject-dev
-#artful:        ,python-gobject-dev
-#bionic:        ,python-gobject-2-dev
-#stretch:         ,python-gobject-dev
+#xenial:              ,python-gobject-dev
+#artful:              ,python-gobject-dev
+#bionic:              ,python-gobject-2-dev
+#stretch:              ,python-gobject-dev
+#xenial:              ,ffmpeg-xpra
+#artful:              ,ffmpeg-xpra
+#bionic:              ,libavcodec-dev
+#bionic:              ,libswscale-dev
+#stretch:              ,ffmpeg-xpra
               ,python-gtk2-dev
               ,dh-python
               ,dh-systemd
@@ -56,12 +60,18 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
         ,python-lz4
 # if you use Ubuntu, you will "want" this mess:
 #xenial:        ,python-appindicator
+#newer distros should use the system ffmpeg,
+#so make sure that we don't install our private library:
+#bionic:Conflicts: ffmpeg-xpra
+#bionic:Replaces: ffmpeg-xpra
 Recommends:
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
-#artful:        ,ffmpeg-xpra
-#bionic:        ,ffmpeg-xpra
+#artful:        ,libavcodec57
+#artful:        ,libswscale4
+#bionic:        ,libavcodec57
+#bionic:        ,libswscale4
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
