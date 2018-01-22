@@ -41,8 +41,10 @@ DEFAULT_PULSEAUDIO_COMMAND = ["pulseaudio", "--start", "-n", "--daemonize=false"
                                     "--exit-idle-time=-1", "--load=module-suspend-on-idle",
                                     "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
                                     "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
-                                    "--load=module-native-protocol-unix",
+                                    "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
+                                    "--enable-memfd=no",
                                     "--load=module-dbus-protocol",
+                                    "--load=module-x11-publish",
                                     "--log-level=2", "--log-target=stderr"]
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = [
                                          ["pactl", "set-default-sink", "Xpra-Speaker"],

@@ -39,7 +39,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
+from xpra.os_util import BytesIOClass, thread, livefds, load_binary_file, pollwait, monotonic_time, bytestostr, osexpand, OSX, WIN32, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, detect_leaks, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
@@ -55,6 +55,7 @@ if PYTHON3:
     unicode = str           #@ReservedAssignment
 
 
+PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", POSIX and not OSX)
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
@@ -163,6 +164,8 @@ class ServerBase(ServerCore):
         self.pulseaudio_command = None
         self.pulseaudio_configure_commands = []
         self.pulseaudio_proc = None
+        self.pulseaudio_private_dir = None
+        self.pulseaudio_private_socket = None
         self.sound_properties = typedict()
 
         #encodings:
@@ -513,21 +516,45 @@ class ServerBase(ServerCore):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
             return
-        #make sure that the sound subprocess will use the devices
-        #we define in the pulseaudio command
-        #(it is too difficult to parse the pulseaudio_command,
-        # so we just hope that it matches this):
-        #Note: speaker is the source and microphone the sink,
-        # because things are reversed on the server.
+        if not self.pulseaudio_command:
+            soundlog.warn("Warning: pulseaudio command is not defined")
+            return
+        #environment initialization:
+        # 1) make sure that the sound subprocess will use the devices
+        #    we define in the pulseaudio command
+        #    (it is too difficult to parse the pulseaudio_command,
+        #    so we just hope that it matches this):
+        #    Note: speaker is the source and microphone the sink,
+        #    because things are reversed on the server.
         os.environ.update({
             "XPRA_PULSE_SOURCE_DEVICE_NAME" : "Xpra-Speaker",
             "XPRA_PULSE_SINK_DEVICE_NAME"   : "Xpra-Microphone",
             })
-        if not self.pulseaudio_command:
-            soundlog.warn("Warning: pulseaudio command is not defined")
-            return
+        # 2) whitelist the env vars that pulseaudio may use:
+        PA_ENV_WHITELIST = ("DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
+                            "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
+                            "PWD", "SHELL", "XAUTHORITY",
+                            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
+                            "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
+                            )
+        env = dict((k,v) for k,v in self.get_child_env().items() if k in PA_ENV_WHITELIST)
+        # 3) use a private pulseaudio server, so each xpra
+        #    session can have its own server,
+        #    create a directory for each display:
+        if PRIVATE_PULSEAUDIO:
+            from xpra.platform.xposix.paths import _get_xpra_runtime_dir
+            xpra_rd = _get_xpra_runtime_dir()
+            if xpra_rd:
+                display = os.environ.get("DISPLAY")
+                self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, "pulse-%s" % display))
+                if not os.path.exists(self.pulseaudio_private_dir):
+                    os.mkdir(self.pulseaudio_private_dir, 0o700)
+                env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
+                self.pulseaudio_private_socket = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
+                os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_private_socket
         import shlex
         cmd = shlex.split(self.pulseaudio_command)
+        cmd = list(osexpand(x) for x in cmd)
         #find the absolute path to the command:
         pa_cmd = cmd[0]
         if not os.path.isabs(pa_cmd):
@@ -564,9 +591,10 @@ class ServerBase(ServerCore):
                 soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
         import subprocess
-        env = self.get_child_env()
         try:
-            self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, shell=True, close_fds=True)
+            log.info("cmd=%s", " ".join(cmd))
+            log.info("env=%s", env)
+            self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, shell=False, close_fds=True)
         except Exception as e:
             soundlog("Popen(%s)", cmd, exc_info=True)
             soundlog.error("Error: failed to start pulseaudio:")
@@ -575,6 +603,10 @@ class ServerBase(ServerCore):
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
+            if self.pulseaudio_private_socket:
+                soundlog.info(" private server socket path:")
+                soundlog.info(" '%s'", self.pulseaudio_private_socket)
+                os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_private_socket
             def configure_pulse():
                 p = self.pulseaudio_proc
                 if p is None or p.poll() is not None:
@@ -588,7 +620,7 @@ class ServerBase(ServerCore):
         proc = self.pulseaudio_proc
         if not proc:
             return
-        soundlog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
+        soundlog.warn("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
         if self.is_child_alive(proc):
             self.pulseaudio_proc = None
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
@@ -601,14 +633,30 @@ class ServerBase(ServerCore):
                 r = pollwait(proc)
                 #warning: pactl will return 0 whether it succeeds or not...
                 #but we can't kill the process because Ubuntu starts a new one
-                if r!=0:
+                if r!=0 and self.is_child_alive(proc):
                     #fallback to using SIGINT:
                     proc.terminate()
             except Exception as e:
-                soundlog("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
+                soundlog.warn("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
                 #only log the full stacktrace if the process failed to terminate:
                 if self.is_child_alive(proc):
                     soundlog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
+        try:
+            if self.pulseaudio_private_socket and os.path.exists(self.pulseaudio_private_socket):
+                try:
+                    os.unlink(self.pulseaudio_private_socket)
+                except Exception as e:
+                    soundlog("failed to remove private socket '%s'", self.pulseaudio_private_socket, exc_info=True)
+            if self.pulseaudio_private_dir:
+                pulse = os.path.join(self.pulseaudio_private_dir, "pulse")
+                native = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
+                for x in (native, pulse, self.pulseaudio_private_dir):
+                    soundlog.warn("removing private directory '%s'", x)
+                    if os.path.exists(x) and os.path.isdir(x):
+                        os.rmdir(x)
+        except Exception as e:
+            soundlog("cleanup_pulseaudio() error cleaning up private directory", exc_info=True)
+            
 
     def init_sound_options(self, opts):
         self.supports_speaker = sound_option(opts.speaker) in ("on", "off")
@@ -2379,10 +2427,23 @@ class ServerBase(ServerCore):
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("sound", self.sound_properties)
         info.setdefault("commands", self.get_commands_info())
+        if self.pulseaudio:
+            info.setdefault("pulseaudio", {}).update(self.get_pulseaudio_info())
         if self.notifications_forwarder:
             info.setdefault("notifications", {}).update(self.notifications_forwarder.get_info())
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
+
+    def get_pulseaudio_info(self):
+        info = {
+            "command"               : self.pulseaudio_command,
+            "configure-commands"    : self.pulseaudio_configure_commands,
+            }
+        if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
+            info["pid"] = self.pulseaudio_proc.pid
+        if self.pulseaudio_private_dir and self.pulseaudio_private_socket:
+            info["private-directory"] = self.pulseaudio_private_dir
+            info["private-socket"] = self.pulseaudio_private_socket
 
     def get_printing_info(self):
         d = {
