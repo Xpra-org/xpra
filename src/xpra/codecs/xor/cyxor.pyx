@@ -6,14 +6,14 @@
 #cython: wraparound=False
 from __future__ import absolute_import
 
-from libc.stdint cimport uint64_t
+from libc.stdint cimport uint32_t
 from xpra.buffers.membuf cimport getbuf, object_as_buffer, MemBuf
 
 
 def xor_str(a, b):
     assert len(a)==len(b), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b))
-    cdef uint64_t *abuf
-    cdef uint64_t *bbuf
+    cdef uint32_t *abuf
+    cdef uint32_t *bbuf
     cdef Py_ssize_t alen = 0, blen = 0
     assert object_as_buffer(a, <const void**> &abuf, &alen)==0, "cannot get buffer pointer for %s" % type(a)
     assert object_as_buffer(b, <const void**> &bbuf, &blen)==0, "cannot get buffer pointer for %s" % type(b)
@@ -21,13 +21,13 @@ def xor_str(a, b):
     cdef MemBuf out_buf = getbuf(alen)
     cdef uint64_t *obuf = <uint64_t*> out_buf.get_mem()
     #64 bits at a time (8 bytes):
-    cdef unsigned int steps = alen//8
+    cdef unsigned int steps = alen//4
     cdef unsigned int i,j
     if steps>0:
         for 0 <= i < steps:
             obuf[i] = abuf[i] ^ bbuf[i]
     #only used for the few remaining bytes at the end:
-    cdef unsigned int char_steps = alen % 8
+    cdef unsigned int char_steps = alen % 4
     cdef unsigned char *acbuf
     cdef unsigned char *bcbuf
     cdef unsigned char *ocbuf
@@ -36,6 +36,6 @@ def xor_str(a, b):
         bcbuf = <unsigned char *> bbuf
         ocbuf = <unsigned char *> obuf
         for 0 <= i < char_steps:
-            j = steps*8 + i
+            j = steps*4 + i
             ocbuf[j] = acbuf[j] ^ bcbuf[j]
     return memoryview(out_buf)
