@@ -19,7 +19,7 @@ def xor_str(a, b):
     assert object_as_buffer(b, <const void**> &bbuf, &blen)==0, "cannot get buffer pointer for %s" % type(b)
     assert alen == blen, "python or cython bug? buffers don't have the same length?"
     cdef MemBuf out_buf = getbuf(alen)
-    cdef uint64_t *obuf = <uint64_t*> out_buf.get_mem()
+    cdef uint32_t *obuf = <uint32_t*> out_buf.get_mem()
     #64 bits at a time (8 bytes):
     cdef unsigned int steps = alen//4
     cdef unsigned int i,j
