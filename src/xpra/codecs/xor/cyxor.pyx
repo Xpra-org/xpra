@@ -23,8 +23,9 @@ def xor_str(a, b):
     #64 bits at a time (8 bytes):
     cdef unsigned int steps = alen//8
     cdef unsigned int i,j
-    for 0 <= i < steps:
-        obuf[i] = abuf[i] ^ bbuf[i]
+    if steps>0:
+        for 0 <= i < steps:
+            obuf[i] = abuf[i] ^ bbuf[i]
     #only used for the few remaining bytes at the end:
     cdef unsigned int char_steps = alen % 8
     cdef unsigned char *acbuf
