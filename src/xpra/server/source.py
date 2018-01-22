@@ -2529,7 +2529,7 @@ class ServerSource(FileTransferHandler):
                 bcount = svalue1-svalue2
                 avg_send_speed = int(bcount*8/t)
                 send_speed = (avg_send_speed + last_send_speed)//2
-        statslog.warn("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        statslog("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
         gs.congestion_send_speed.append((now, late_pct, send_speed))
         gs.last_congestion_time = now
 
