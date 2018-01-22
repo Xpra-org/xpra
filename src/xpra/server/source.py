@@ -64,7 +64,7 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
-DETECT_BANDWIDTH_LIMIT = envbool("XPRA_DETECT_BANDWIDTH_LIMIT", True)
+BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -525,7 +525,7 @@ class ServerSource(FileTransferHandler):
             return
         #calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0
-        if DETECT_BANDWIDTH_LIMIT:
+        if BANDWIDTH_DETECTION:
             bandwidth_limit = self.statistics.avg_congestion_send_speed
             statslog("avg_congestion_send_speed=%s", bandwidth_limit)
             if bandwidth_limit>20*1024*1024:
@@ -2440,7 +2440,7 @@ class ServerSource(FileTransferHandler):
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
-                              self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
+                              self.record_congestion_event, self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               self.av_sync, self.av_sync_delay,
@@ -2492,6 +2492,48 @@ class ServerSource(FileTransferHandler):
 #
 # Methods used by WindowSource:
 #
+    def record_congestion_event(self, late_pct, ldata, elapsed_ms):
+        if not BANDWIDTH_DETECTION:
+            return
+        gs = self.statistics
+        if not gs:
+            #window cleaned up?
+            return
+        #calculate the send speed for the packet we just sent:
+        now = monotonic_time()
+        last_send_speed = int(ldata*8*1000/elapsed_ms)
+        send_speed = last_send_speed
+        avg_send_speed = 0
+        if len(gs.bytes_sent)>=5:
+            #find a sample more than a second old
+            #(hopefully before the congestion started)
+            for i in range(1,4):
+                stime1, svalue1 = gs.bytes_sent[-i]
+                if now-stime1>1:
+                    break
+            i += 1
+            #find a sample more than 4 seconds earlier,
+            #with at least 64KB sent in between:
+            t = 0
+            while i<len(gs.bytes_sent):
+                stime2, svalue2 = gs.bytes_sent[-i]
+                t = stime1-stime2
+                if t>10:
+                    #too far back, not enough data sent in 10 seconds
+                    break
+                if t>=4 and (svalue1-svalue2)>=65536:
+                    break
+                i += 1
+            if t>=4 and t<=10:
+                #calculate the send speed over that interval:
+                bcount = svalue1-svalue2
+                avg_send_speed = int(bcount*8/t)
+                send_speed = (avg_send_speed + last_send_speed)//2
+        statslog.warn("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        gs.congestion_send_speed.append((now, late_pct, send_speed))
+        gs.last_congestion_time = now
+
+    
     def queue_size(self):
         return self.encode_work_queue.qsize()
 

@@ -42,7 +42,6 @@ MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
-BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
@@ -91,7 +90,7 @@ class WindowSource(object):
     def __init__(self,
                     idle_add, timeout_add, source_remove,
                     ww, wh,
-                    queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
+                    record_congestion_event, queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
@@ -112,6 +111,7 @@ class WindowSource(object):
 
         self.ui_thread = threading.current_thread()
 
+        self.record_congestion_event = record_congestion_event  #callback for send latency problems
         self.queue_size   = queue_size                  #callback to get the size of the damage queue
         self.call_in_encode_thread = call_in_encode_thread  #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
@@ -1909,46 +1909,6 @@ class WindowSource(object):
             self.idle_add(self.damage, x, y, width, height)
         return resend
 
-    def record_congestion_event(self, late_pct, ldata, elapsed_ms):
-        if not BANDWIDTH_DETECTION:
-            return
-        gs = self.global_statistics
-        if not gs:
-            #window cleaned up?
-            return
-        #calculate the send speed for the packet we just sent:
-        now = monotonic_time()
-        last_send_speed = int(ldata*8*1000/elapsed_ms)
-        send_speed = last_send_speed
-        avg_send_speed = 0
-        if len(gs.bytes_sent)>=5:
-            #find a sample more than a second old
-            #(hopefully before the congestion started)
-            for i in range(1,4):
-                stime1, svalue1 = gs.bytes_sent[-i]
-                if now-stime1>1:
-                    break
-            i += 1
-            #find a sample more than 4 seconds earlier,
-            #with at least 64KB sent in between:
-            t = 0
-            while i<len(gs.bytes_sent):
-                stime2, svalue2 = gs.bytes_sent[-i]
-                t = stime1-stime2
-                if t>10:
-                    #too far back, not enough data sent in 10 seconds
-                    break
-                if t>=4 and (svalue1-svalue2)>=65536:
-                    break
-                i += 1
-            if t>=4 and t<=10:
-                #calculate the send speed over that interval:
-                bcount = svalue1-svalue2
-                avg_send_speed = int(bcount*8/t)
-                send_speed = (avg_send_speed + last_send_speed)//2
-        statslog("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
-        gs.congestion_send_speed.append((now, late_pct, send_speed))
-        gs.last_congestion_time = now
 
     def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
         """
