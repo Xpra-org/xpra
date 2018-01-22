@@ -12,7 +12,7 @@ from xpra.sound.common import FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OG
                                 VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, \
                                 MPEG4, MKA, OGG
 
-from xpra.os_util import WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, bytestostr
 from xpra.util import csv, engs, parse_simple_dict, envint, envbool
 from xpra.log import Logger
 log = Logger("sound", "gstreamer")
@@ -704,8 +704,8 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
                 dtype = "audio output"
             log.warn("Warning: found %i %s devices:", len(devices), dtype)
             for k,v in devices.items():
-                log.warn(" * %s", v)
-                log.warn("   %s", k)
+                log.warn(" * %s", bytestostr(v))
+                log.warn("   %s", bytestostr(k))
             if not env_device: #used already!
                 log.warn(" to select a specific one,")
                 log.warn(" use the environment variable '%s'", env_device_name)
