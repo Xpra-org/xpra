@@ -1701,6 +1701,7 @@ toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.notifications")
 
 #cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
 if dbus_ENABLED and server_ENABLED:
@@ -1853,7 +1854,7 @@ if crypto_ENABLED and (OSX or WIN32):
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
-    add_modules("xpra.client", "xpra.client.notifications")
+    add_modules("xpra.client")
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
