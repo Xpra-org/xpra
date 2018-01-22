@@ -553,6 +553,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -n python2-xpra
 %{python2_sitearch}/xpra/buffers
 %{python2_sitearch}/xpra/clipboard
+%{python2_sitearch}/xpra/notifications
 %{python2_sitearch}/xpra/codecs
 %{python2_sitearch}/xpra/dbus
 %{python2_sitearch}/xpra/gtk_common
@@ -579,6 +580,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/__pycache__
 %{python3_sitearch}/xpra/buffers
 %{python3_sitearch}/xpra/clipboard
+%{python3_sitearch}/xpra/notifications
 %{python3_sitearch}/xpra/codecs
 %{python3_sitearch}/xpra/dbus
 %{python3_sitearch}/xpra/gtk_common
