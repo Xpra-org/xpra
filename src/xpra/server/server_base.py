@@ -593,8 +593,8 @@ class ServerBase(ServerCore):
             self.pulseaudio_proc = None
         import subprocess
         try:
-            log.info("cmd=%s", " ".join(cmd))
-            log.info("env=%s", env)
+            soundlog("pulseaudio cmd=%s", " ".join(cmd))
+            soundlog("pulseaudio env=%s", env)
             self.pulseaudio_proc = subprocess.Popen(cmd, stdin=None, env=env, shell=False, close_fds=True)
         except Exception as e:
             soundlog("Popen(%s)", cmd, exc_info=True)
