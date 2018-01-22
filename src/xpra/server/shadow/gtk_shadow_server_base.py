@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ import os
 from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
+notifylog = Logger("notify")
 
 from xpra.util import envint
 from xpra.gtk_common.gobject_compat import is_gtk3
@@ -94,6 +95,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             for ss in self._server_sources.values():
                 ss.update_mouse(wid, x, y, x, y)
         return True
+
+
+    def get_notifier_classes(self):
+        ncs = ShadowServerBase.get_notifier_classes(self)
+        try:
+            from xpra.gtk_common.gtk_notifier import GTK_Notifier
+            ncs.append(GTK_Notifier)
+        except Exception as e:
+            notifylog("get_notifier_classes()", exc_info=True)
+            notifylog.warn("Warning: cannot load GTK notifier:")
+            notifylog.warn(" %s", e)
+        return ncs
 
 
     ############################################################################

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.notifications.notifier_base import NotifierBase, log
+from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.platform.win32.win32_balloon import notify
 
 class Win32_Notifier(NotifierBase):

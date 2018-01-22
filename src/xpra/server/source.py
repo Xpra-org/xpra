@@ -403,15 +403,22 @@ class ServerSource(FileTransferHandler):
         self.client_type = None
         self.client_version = None
         self.client_revision= None
+        self.client_bits = 0
         self.client_platform = None
         self.client_machine = None
         self.client_processor = None
         self.client_release = None
+        self.client_linux_distribution = None
         self.client_proxy = False
         self.client_wm_name = None
         self.client_session_type = None
         self.client_session_type_full = None
         self.client_connection_data = {}
+        self.proxy_hostname = None
+        self.proxy_platform = None
+        self.proxy_release = None
+        self.proxy_version = None
+        self.proxy_version = None
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -774,13 +781,21 @@ class ServerSource(FileTransferHandler):
         self.client_machine = c.strget("platform.machine")
         self.client_processor = c.strget("platform.processor")
         self.client_release = c.strget("platform.sysrelease")
+        self.client_linux_distribution = c.strlistget("platform.linux_distribution")
         self.client_version = c.strget("version")
         self.client_revision = c.strget("build.revision")
+        self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
         self.client_wm_name = c.strget("wm_name")
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
         self.client_setting_change = c.boolget("setting-change")
+        self.proxy_hostname = c.strget("proxy.hostname")
+        self.proxy_platform = c.strget("proxy.platform")
+        self.proxy_release = c.strget("proxy.platform.sysrelease")
+        self.proxy_version = c.strget("proxy.version")
+        self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
+        
         #file transfers and printing:
         self.parse_file_transfer_caps(c)
         #general features:
@@ -858,40 +873,13 @@ class ServerSource(FileTransferHandler):
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
-        pinfo = ""
-        if self.client_platform:
-            pinfo = " %s" % platform_name(self.client_platform, c.strlistget("platform.linux_distribution") or self.client_release)
-        if self.client_session_type:
-            pinfo += " %s" % self.client_session_type
-        revinfo = ""
-        if self.client_revision:
-            revinfo="-r%s" % self.client_revision
-        bits = c.intget("python.bits")
-        bitsstr = ""
-        if bits:
-            bitsstr = " %i-bit" % bits
-        log.info("%s%s client version %s%s%s", std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr)
-        msg = ""
-        if self.hostname:
-            msg += " connected from '%s'" % std(self.hostname)
-        if self.username:
-            msg += " as '%s'" % std(self.username)
-            if self.name and self.name!=self.username:
-                msg += " - '%s'" % std(self.name)
-        if msg:
-            log.info(msg)
-        if c.boolget("proxy"):
-            proxy_hostname = c.strget("proxy.hostname")
-            proxy_platform = c.strget("proxy.platform")
-            proxy_release = c.strget("proxy.platform.sysrelease")
-            proxy_version = c.strget("proxy.version")
-            proxy_version = c.strget("proxy.build.version", proxy_version)
-            msg = "via %s proxy version %s" % (platform_name(proxy_platform, proxy_release), std(proxy_version or "unknown"))
-            if proxy_hostname:
-                msg += " on '%s'" % std(proxy_hostname)
-            proxylog.info(msg)
+
+        cinfo = self.get_connect_info()
+        for i,ci in enumerate(cinfo):
+            log.info("%s%s", ["", " "][int(i>0)], ci)
+        if self.client_proxy:
             from xpra.version_util import version_compat_check
-            msg = version_compat_check(proxy_version)
+            msg = version_compat_check(self.proxy_version)
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
         self.update_connection_data(c.dictget("connection-data"))
@@ -904,10 +892,9 @@ class ServerSource(FileTransferHandler):
         self.core_encodings = c.strlistget("encodings.core", self.encodings)
         if self.send_windows and not self.core_encodings:
             raise Exception("client failed to specify any supported encodings")
-        self.window_icon_encodings = ["premult_argb32"]
         if "png" in self.core_encodings:
             self.window_icon_encodings.append("png")
-        self.window_icon_encodings = c.strlistget("encodings.window-icon", self.window_icon_encodings)
+        self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
         self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
         #skip all other encoding related settings if we don't send pixels:
         if not self.send_windows:
@@ -926,6 +913,37 @@ class ServerSource(FileTransferHandler):
         #adjust max packet size if file transfers are enabled:
         if self.file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
+
+
+    def get_connect_info(self):
+        cinfo = []
+        pinfo = ""
+        if self.client_platform:
+            pinfo = " %s" % platform_name(self.client_platform, self.client_linux_distribution or self.client_release)
+        if self.client_session_type:
+            pinfo += " %s" % self.client_session_type
+        revinfo = ""
+        if self.client_revision:
+            revinfo="-r%s" % self.client_revision
+        bitsstr = ""
+        if self.client_bits:
+            bitsstr = " %i-bit" % self.client_bits
+        cinfo.append("%s%s client version %s%s%s" % (std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr))
+        msg = ""
+        if self.hostname:
+            msg += "connected from '%s'" % std(self.hostname)
+        if self.username:
+            msg += " as '%s'" % std(self.username)
+            if self.name and self.name!=self.username:
+                msg += " - '%s'" % std(self.name)
+        if msg:
+            cinfo.append(msg)
+        if self.client_proxy:
+            msg = "via %s proxy version %s" % (platform_name(self.proxy_platform, self.proxy_release), std(self.proxy_version or "unknown"))
+            if self.proxy_hostname:
+                msg += " on '%s'" % std(self.proxy_hostname)
+            cinfo.append(msg)
+        return cinfo
 
 
     def parse_encoding_caps(self, c, min_mmap_size):

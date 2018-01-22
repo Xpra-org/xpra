@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,14 +8,20 @@ import os
 
 from xpra.log import Logger
 log = Logger("shadow")
+notifylog = Logger("notify")
 
 from xpra.net.compression import Compressed
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.rfb.rfb_server import RFBServer
-from xpra.util import envint, DONE
+from xpra.notifications.common import parse_image_path
+from xpra.platform.gui import get_native_notifier_classes
+from xpra.platform.paths import get_icon_dir
+from xpra.util import envint, envbool, DONE
+
 
 REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
+NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 
 
 class ShadowServerBase(RFBServer):
@@ -28,12 +34,17 @@ class ShadowServerBase(RFBServer):
         self.sharing = True
         self.refresh_delay = REFRESH_DELAY
         self.timer = None
+        self.notifications = False
+        self.notifier = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
         RFBServer.init(self)
 
     def init(self, opts):
         self._rfb_upgrade = int(opts.rfb_upgrade)
+        self.notifications = bool(opts.notifications)
+        if self.notifications:
+            self.make_notifier()
 
     def cleanup(self):
         self.stop_refresh()
@@ -41,6 +52,10 @@ class ShadowServerBase(RFBServer):
         if rwm:
             rwm.cleanup()
             self.root_window_model = None
+        n = self.notifier
+        if n:
+            n.cleanup()
+            self.notifier = None
 
 
     def get_server_mode(self):
@@ -56,6 +71,7 @@ class ShadowServerBase(RFBServer):
             log.info(" on display %s of size %ix%i", display, w, h)
         else:
             log.info(" on display of size %ix%i", w, h)
+
 
     def make_hello(self, _source):
         return {"shadow" : True}
@@ -83,6 +99,48 @@ class ShadowServerBase(RFBServer):
     def source_remove(self, *args):
         #usually done via gobject
         raise NotImplementedError("subclasses should define this method!")
+
+
+    ############################################################################
+    # notifications
+
+    def make_notifier(self):
+        nc = self.get_notifier_classes()
+        notifylog("make_notifier() notifier classes: %s", nc)
+        for x in nc:
+            try:
+                self.notifier = x()
+                notifylog("notifier=%s", self.notifier)
+                break
+            except:
+                notifylog("failed to instantiate %s", x, exc_info=True)
+
+    def get_notifier_classes(self):
+        #subclasses will generally add their toolkit specific variants
+        #by overriding this method
+        #use the native ones first:
+        if not NATIVE_NOTIFIER:
+            return []
+        return get_native_notifier_classes()
+
+    def notify_new_user(self, ss):
+        #overriden here so we can show the notification
+        #directly on the screen we shadow
+        notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
+        if self.notifier:
+            #TODO: use xpra's tray!
+            tray = None
+            nid = 0
+            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+            body = "\n".join(ss.get_connect_info())
+            actions = []
+            hints = {}
+            icon = None
+            icon_filename = os.path.join(get_icon_dir(), "user.png")
+            if os.path.exists(icon_filename):
+                icon = parse_image_path(icon_filename)
+            self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)
+
 
     ############################################################################
     # refresh

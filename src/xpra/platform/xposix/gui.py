@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -78,12 +78,12 @@ def get_native_tray_classes():
 def get_native_notifier_classes():
     ncs = []
     try:
-        from xpra.client.notifications.dbus_notifier import DBUS_Notifier_factory
+        from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
     except Exception as e:
         dbuslog("cannot load dbus notifier: %s", e)
     try:
-        from xpra.client.notifications.pynotify_notifier import PyNotify_Notifier
+        from xpra.notifications.pynotify_notifier import PyNotify_Notifier
         ncs.append(PyNotify_Notifier)
     except Exception as e:
         log("cannot load pynotify notifier: %s", e)

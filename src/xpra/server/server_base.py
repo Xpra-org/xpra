@@ -44,7 +44,8 @@ from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_scree
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
-from xpra.platform.paths import get_icon_filename
+from xpra.platform.paths import get_icon_filename, get_icon_dir
+from xpra.notifications.common import parse_image_path
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option, parse_env
@@ -1364,10 +1365,30 @@ class ServerBase(ServerCore):
             #close it already
             ss.close()
             raise
+        log.info("notify_new_user=%s", self.notify_new_user)
+        self.notify_new_user(ss)
         self._server_sources[proto] = ss
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def notify_new_user(self, ss):
+        #tell other users:
+        notifylog("notify_new_user(%s) sources=%s", ss, self._server_sources)
+        if self._server_sources:
+            dbus_id = ""
+            nid = int(monotonic_time())
+            icon = ""
+            if self.notifications_forwarder:
+                dbus_id = self.notifications_forwarder.dbus_id
+                user_icon = os.path.join(get_icon_dir(), "user.png")
+                if os.path.exists(user_icon):
+                    icon = parse_image_path(user_icon)
+            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+            body = "\n".join(ss.get_connect_info())
+            for s in self._server_sources.values():
+                s.notify(dbus_id, nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+        
 
     def get_client_bandwidth_limit(self, proto):
         if self.bandwidth_limit is None:

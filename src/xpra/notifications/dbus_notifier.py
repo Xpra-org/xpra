@@ -8,7 +8,7 @@ import os
 from xpra.util import repr_ellipsized, csv
 from xpra.os_util import bytestostr, BytesIOClass
 from xpra.dbus.helper import native_to_dbus
-from xpra.client.notifications.notifier_base import NotifierBase, log
+from xpra.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
     from dbus.mainloop.glib import DBusGMainLoop

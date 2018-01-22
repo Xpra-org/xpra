@@ -20,7 +20,7 @@ from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotif
 
 from xpra.os_util import PYTHON2
 from xpra.util import envbool, envint, roundup
-from xpra.client.notifications.notifier_base import NotifierBase
+from xpra.notifications.notifier_base import NotifierBase
 
 from xpra.log import Logger
 log = Logger("osx", "events")

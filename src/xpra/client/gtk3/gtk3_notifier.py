@@ -6,7 +6,7 @@
 import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify            #@UnresolvedImport
-from xpra.client.notifications.notifier_base import NotifierBase
+from xpra.notifications.notifier_base import NotifierBase
 
 from xpra.log import Logger
 log = Logger("notify")

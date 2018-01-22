@@ -6,9 +6,9 @@
 import os
 import dbus.service
 
+from xpra.notifications.common import parse_image_data, parse_image_path
 from xpra.dbus.helper import dbus_to_native
 from xpra.util import envbool, csv
-from xpra.os_util import BytesIOClass
 from xpra.log import Logger
 log = Logger("dbus", "notify")
 
@@ -50,12 +50,15 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             "capabilities"  : self.GetCapabilities(),
             }
 
+    def next_id(self):
+        self.counter += 1
+        return self.counter
+
     @dbus.service.method(BUS_NAME, in_signature='susssasa{sv}i', out_signature='u')
     def Notify(self, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
         log("Notify%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout))
         if replaces_nid==0:
-            self.counter += 1
-            nid = self.counter
+            nid = self.next_id()
         else:
             nid = replaces_nid
         log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
@@ -84,7 +87,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             except KeyError:
                 pass
             else:
-                v = self.parse_image_data(data)
+                v = parse_image_data(data)
                 if v:
                     hints["image-data"] = v
                     break
@@ -94,7 +97,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             except KeyError:
                 pass
             else:
-                v = self.parse_image_path(image_path)
+                v = parse_image_path(image_path)
                 if v:
                     hints["image-data"] = v
         for x in ("action-icons", "category", "desktop-entry", "resident", "transient", "x", "y", "urgency"):
@@ -103,44 +106,6 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                 hints[x] = v
         log("parse_hints(%s)=%s", dbus_hints, hints)
         return hints
-
-    def parse_image_data(self, data):
-        try:
-            width, height, rowstride, has_alpha, bpp, channels, image_data = data
-            log("parse_image_data(%i, %i, %i, %s, %i, %i, %i bytes)", width, height, rowstride, bool(has_alpha), bpp, channels, len(image_data))
-            from PIL import Image
-            if channels==4:
-                if has_alpha:
-                    rgb_format = "RGBA"
-                else:
-                    rgb_format = "RGBX"
-            elif channels==3:
-                rgb_format = "RGB"
-            img = Image.frombuffer("RGBA", (width, height), image_data, "raw", rgb_format, rowstride)
-            return self.image_data(img)
-        except Exception as e:
-            log("parse_image_data(%s)", data, exc_info=True)
-            log.error("Error parsing icon data for notification:")
-            log.error(" %s", e)
-        return None
-
-    def parse_image_path(self, path):
-        try:
-            from PIL import Image
-            img = Image.open(path)
-            return self.image_data(img)
-        except Exception as e:
-            log.error("Error parsing image path '%s' for notification:", path)
-            log.error(" %s", e)
-        return None
-
-    def image_data(self, img):
-        buf = BytesIOClass()
-        img.save(buf, "png")
-        data = buf.getvalue()
-        buf.close()
-        w,h = img.size
-        return ("png", w, h, data)
 
 
     @dbus.service.method(BUS_NAME, out_signature='ssss')
@@ -166,9 +131,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             self.active_notifications.remove(nid)
         except KeyError:
             return
-        if self.close_callback:
-            self.close_callback(nid)
-        self.NotificationClosed(nid, 3)     #3="The notification was closed by a call to CloseNotification"
+        else:
+            if self.close_callback:
+                self.close_callback(nid)
+            self.NotificationClosed(nid, 3)     #3="The notification was closed by a call to CloseNotification"
 
     def is_notification_active(self, nid):
         return nid in self.active_notifications
