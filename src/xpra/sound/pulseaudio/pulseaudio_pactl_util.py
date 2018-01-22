@@ -82,9 +82,10 @@ def get_pactl_info_line(prefix):
         return ""
     code, out, err = pactl_output(False, "info")
     if code!=0:
-        log.warn("Warning: failed to query pulseaudio using 'pactl list'")
+        log.warn("Warning: failed to query pulseaudio using 'pactl info'")
         if err:
-            log.warn(" %s", nonl(err))
+            for x in err.splitlines():
+                log.warn(" %s", bytestostr(x))
         return    ""
     stat = ""
     for line in strtobytes(out).splitlines():
