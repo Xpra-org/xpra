@@ -1365,7 +1365,6 @@ class ServerBase(ServerCore):
             #close it already
             ss.close()
             raise
-        log.info("notify_new_user=%s", self.notify_new_user)
         self.notify_new_user(ss)
         self._server_sources[proto] = ss
         #process ui half in ui thread:
