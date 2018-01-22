@@ -77,9 +77,12 @@ class ShadowServerBase(RFBServer):
         return {"shadow" : True}
 
     def get_info(self, _proto=None):
+        info = {
+            "notifications" : self.notifications,
+            }
         if self.root_window_model:
-            return {"root-window" : self.root_window_model.get_info()}
-        return {}
+            info["root-window"] = self.root_window_model.get_info()
+        return info
 
 
     def get_window_position(self, _window):
@@ -128,8 +131,7 @@ class ShadowServerBase(RFBServer):
         #directly on the screen we shadow
         notifylog("notify_new_user(%s) notifier=%s", ss, self.notifier)
         if self.notifier:
-            #TODO: use xpra's tray!
-            tray = None
+            tray = self.get_notification_tray()
             nid = 0
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
@@ -140,6 +142,9 @@ class ShadowServerBase(RFBServer):
             if os.path.exists(icon_filename):
                 icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)
+
+    def get_notification_tray(self):
+        return None
 
 
     ############################################################################
