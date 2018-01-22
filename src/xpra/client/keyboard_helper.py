@@ -12,7 +12,7 @@ log = Logger("keyboard")
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.util import nonl, csv, std, envbool, print_nested_dict, repr_ellipsized
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, bytestostr
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
@@ -355,7 +355,7 @@ class KeyboardHelper(object):
             self.query_xkbmap()
 
     def layout_str(self):
-        return " / ".join([x for x in (self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
+        return " / ".join([bytestostr(x) for x in (self.layout_option or self.xkbmap_layout, self.variant_option or self.xkbmap_variant) if bool(x)])
 
 
     def send_layout(self):
