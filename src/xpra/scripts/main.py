@@ -1704,7 +1704,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 port_str = host[epos+1:]        #ie: ":22"
                 if port_str.startswith(":"):
                     port_str = port_str[1:]     #ie: "22"
-                host = host[1:epos]                 #ie: "HOST"
+                host = host[:epos+1]            #ie: "[HOST]"
             else:
                 devsep = host.split("%")        #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
                 if len(devsep)==2:
