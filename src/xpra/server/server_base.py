@@ -2384,7 +2384,7 @@ class ServerBase(ServerCore):
             if categories:
                 info = dict((k,v) for k,v in info.items() if k in categories)
             ss.send_info_response(info)
-        self.get_all_info(info_callback, proto, window_ids)
+        self.get_all_info(info_callback, proto, None, window_ids)
 
     def send_hello_info(self, proto, flatten=True):
         start = monotonic_time()
