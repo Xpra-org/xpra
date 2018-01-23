@@ -47,7 +47,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             "dbus-id"       : self.dbus_id,
             "bus-name"      : BUS_NAME,
             "bus-path"      : BUS_PATH,
-            "capabilities"  : self.GetCapabilities(),
+            "capabilities"  : self.do_get_capabilities(),
             }
 
     def next_id(self):
@@ -118,10 +118,14 @@ class DBUSNotificationsForwarder(dbus.service.Object):
 
     @dbus.service.method(BUS_NAME, out_signature='as')
     def GetCapabilities(self):
+        caps = self.do_get_capabilities()
+        log("GetCapabilities()=%s", csv(caps))
+        return caps
+
+    def do_get_capabilities(self):
         caps = ["body", "icon-static"]
         if ACTIONS and self.support_actions:
             caps += ["actions", "action-icons"]
-        log("GetCapabilities()=%s", csv(caps))
         return caps
 
     @dbus.service.method(BUS_NAME, in_signature='u')
