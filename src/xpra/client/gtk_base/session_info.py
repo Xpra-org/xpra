@@ -861,7 +861,8 @@ class SessionInfo(gtk.Window):
             for wid in self.client._window_to_id.values():
                 for window_prop in window_props:
                     #Warning: this is ugly...
-                    v = self.client.server_last_info.get("window[%s].%s.%s" % (wid, window_prop, suffix))
+                    proppath = "window[%s].%s.%s" % (wid, window_prop, suffix)
+                    v = self.client.server_last_info.get(proppath)
                     if v is None:
                         wprop = window_prop.split(".")              #ie: "encoding.speed" -> ["encoding", "speed"]
                         newpath = ["window", wid]+wprop+[suffix]    #ie: ["window", 1, "encoding", "speed", "cur"]
@@ -869,10 +870,12 @@ class SessionInfo(gtk.Window):
                     if v is not None:
                         values.append(v)
                         break
+            if not values:
+                return ""
             try:
                 return op(values)
             except:
-                #no values?
+                log("%s(%s)", op, values, exc_info=True)
                 return ""
         return getv("cur", avg), getv("min", min), getv("avg", avg), getv("90p", avg), getv("max", max)
 
@@ -1060,11 +1063,11 @@ class SessionInfo(gtk.Window):
             datasets.append(in_pixels)
             labels.append("%s pixels/s" % unit(pixel_scale))
         if SHOW_SOUND_STATS and self.sound_in_bitcount:
-            sound_in_scale, sound_in_data =  values_to_diff_scaled_values(tuple(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            sound_in_scale, sound_in_data = values_to_diff_scaled_values(tuple(self.sound_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_in_data)
             labels.append("Speaker %sb/s" % unit(sound_in_scale))
         if SHOW_SOUND_STATS and self.sound_out_bitcount:
-            sound_out_scale, sound_out_data =  values_to_diff_scaled_values(tuple(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            sound_out_scale, sound_out_data = values_to_diff_scaled_values(tuple(self.sound_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             datasets.append(sound_out_data)
             labels.append("Mic %sb/s" % unit(sound_out_scale))
 
