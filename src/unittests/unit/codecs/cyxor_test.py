@@ -28,24 +28,28 @@ class TestHMAC(unittest.TestCase):
     def check_xor(self, in1, in2, expected):
         out = xor_str(in1, in2)
         #print("xor_str(%s, %s)=%s" % (h(in1), h(in2), h(out)))
-        assert out==expected
+        assert out==expected, "expected %s got %s" % (h(expected), h(out))
 
     def test_xor_str(self):
-        zeroes  = strtobytes(chr(0)*16)
-        ones    = strtobytes(chr(1)*16)
-        ff      = strtobytes(chr(255)*16)
-        fe      = strtobytes(chr(254)*16)
-        empty   = b""
-        lstr    = b"\0x80"*64
-        self.check_xor(zeroes, zeroes, zeroes)
-        self.check_xor(ones, ones, zeroes)
-        self.check_xor(ff, ones, fe)
-        self.check_xor(fe, ones, ff)
-        #feed some invalid data:
-        self.fail_xor(ones, empty)
-        self.fail_xor(empty, zeroes)
-        self.fail_xor(lstr, ff)
-        self.fail_xor(bool, int)
+        for i in range(10):
+            l = 16+i
+            zeroes  = memoryview(strtobytes(chr(0)*l))
+            ones    = memoryview(strtobytes(chr(1)*l))
+            ff      = memoryview(strtobytes(chr(255)*l))
+            fe      = memoryview(strtobytes(chr(254)*l))
+            empty   = b""
+            lstr    = b"\0x80"*64
+            self.check_xor(zeroes, zeroes, zeroes)
+            self.check_xor(zeroes[i:], zeroes[i:], zeroes[i:])
+            self.check_xor(ones, ones, zeroes)
+            self.check_xor(ff, ones, fe)
+            self.check_xor(fe, ones, ff)
+            self.check_xor(fe[i:], ones[i:], ff[i:])
+            #feed some invalid data:
+            self.fail_xor(ones, empty)
+            self.fail_xor(empty, zeroes)
+            self.fail_xor(lstr, ff)
+            self.fail_xor(bool, int)
 
 
     def test_large_xor_speed(self):
