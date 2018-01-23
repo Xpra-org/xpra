@@ -30,8 +30,8 @@ License: MIT-X11
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Files: xpra/client/gtk_base/gtk_notifier
-Copyright: 2013 Antoine Martin <antoine@devloop.org.uk>
+Files: xpra/gtk_common/gtk_notifier
+Copyright: 2013-2018 Antoine Martin <antoine@devloop.org.uk>
            2009 Daniel Woodhouse
 License: LGPL-3+
  This program is free software: you can redistribute it and/or modify
