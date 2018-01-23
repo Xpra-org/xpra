@@ -686,6 +686,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                       dest="mmap", default=defaults.mmap,
                       help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
+    replace_option("--enable-sharing", "--sharing=yes")
     legacy_bool_parse("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                       dest="sharing", default=defaults.sharing,
