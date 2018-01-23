@@ -745,8 +745,16 @@ fi
 
 
 %changelog
-* Tue Dec 12 2017 Antoine Martin <antoine@devloop.org.uk> 2.3-1
-- TODO
+* Tue Jan 23 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
+- stackable authentication modules
+- tcp wrappers authentication module
+- notifications actions forwarding, custom icons
+- forward signals sent to windows client side
+- forward requests to open URLs or files on the server side
+- custom http headers, support content security policy
+- start a pulseaudio server per session
+- file transfer dialog: reject, accept or open
+
 
 * Mon Dec 11 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1
 - support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options

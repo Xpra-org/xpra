@@ -1,7 +1,14 @@
 xpra (2.3-1) UNRELEASED; urgency=low
-  * TODO
+  * stackable authentication modules
+  * tcp wrappers authentication module
+  * notifications actions forwarding, custom icons
+  * forward signals sent to windows client side
+  * forward requests to open URLs or files on the server side
+  * custom http headers, support content security policy
+  * start a pulseaudio server per session
+  * file transfer dialog: reject, accept or open
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 12 Dec 2017 00:00:55 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 23 Jan 2018 08:19:12 +0700
 
 xpra (2.2-1) UNRELEASED; urgency=low
   * support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options

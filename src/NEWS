@@ -1,6 +1,14 @@
-v2.3 (2017-12-11)
+v2.3 (2017-01-23)
 ======================
-	-- TODO
+	-- stackable authentication modules
+	-- tcp wrappers authentication module
+	-- notifications actions forwarding, custom icons
+	-- forward signals sent to windows client side
+	-- forward requests to open URLs or files on the server side
+	-- custom http headers, support content security policy
+	-- start a pulseaudio server per session
+	-- file transfer dialog: reject, accept or open
+
 
 v2.2 (2017-12-11)
 ======================
