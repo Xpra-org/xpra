@@ -86,7 +86,10 @@ def newdictlook(d, parts, fallback=None):
     v = d
     for p in parts:
         try:
-            v = v.get(p) or v.get(bytestostr(p))
+            newv = v.get(p)
+            if newv is None:
+                newv = v.get(strtobytes(p))
+            v = newv
         except:
             return fallback
     return v
