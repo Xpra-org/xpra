@@ -6,7 +6,7 @@ nid = 1
 
 def notify(*_args):
     global nid
-    from xpra.client.notifications.dbus_notifier import DBUS_Notifier, log
+    from xpra.notifications.dbus_notifier import DBUS_Notifier, log
     log.enable_debug()
     notifier = DBUS_Notifier()
     notifier.app_name_format = "%s"
