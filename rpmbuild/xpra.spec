@@ -612,7 +612,7 @@ fi
 
 
 %changelog
-* Mon Jan 15 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
+* Tue Jan 23 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix system tray menu entries wrongly disabled
@@ -625,11 +625,17 @@ fi
 - fix typo in file location example
 - fix compatibility with newer versions of python-lz4
 - fix xauth file location
+- fix win32 MSI config build scripts
+- fix py2app packaging issues with missing gi bindings
+- fix rare server failure when some theme icons are missing
+- fix HTML5 client wrongly claiming to support system trays
+- fix RPM permissions on shared libraries
+- ffmpeg 3.5 compatibility
 - don't expose icon absolute paths to clients
 - add missing file to build clean list
 - remove invalid option from configuration file example
 
-* Tue Oct 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
+* Tue Oct 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.9-1
 - fix authentication weaknesses in client salt handling
 - fix window icons going back to default on window re-initialization
 - fix stop command on MS Windows servers via named-pipe connections
