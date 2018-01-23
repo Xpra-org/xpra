@@ -2409,7 +2409,8 @@ class ServerBase(ServerCore):
         return get_thread_info(proto, tuple(self._server_sources.keys()))
 
 
-    def get_info(self, proto=None, client_uuids=None, wids=None, *_args):
+    def get_info(self, proto=None, client_uuids=None, wids=None, *args):
+        log("ServerBase.get_info%s", (proto, client_uuids, wids, args))
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})

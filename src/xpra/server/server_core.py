@@ -1635,6 +1635,7 @@ class ServerCore(object):
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
 
     def _get_info_in_thread(self, callback, ui_info, proto, args):
+        log("get_info_in_thread%s", (callback, {}, proto, args))
         start = monotonic_time()
         #this runs in a non-UI thread
         try:
