@@ -98,7 +98,7 @@ class Keyboard(KeyboardBase):
         options = ""
         try:
             from AppKit import NSTextInputContext, NSTextView       #@UnresolvedImport
-            text_input_context = NSTextInputContext.new()
+            text_input_context = NSTextInputContext.alloc()
             view = NSTextView.new()
             text_input_context.initWithClient_(view)
             current_keyboard = text_input_context.selectedKeyboardInputSource()
