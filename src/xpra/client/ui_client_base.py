@@ -125,6 +125,7 @@ WM_CLASS_CLOSEEXIT = os.environ.get("XPRA_WM_CLASS_CLOSEEXIT", "Xephyr").split("
 TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
+REVERSE_HORIZONTAL_SCROLLING = envbool("XPRA_REVERSE_HORIZONTAL_SCROLLING", OSX)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -1254,6 +1255,8 @@ class UIXpraClient(XpraClientBase):
         #this is a different entry point for mouse wheel events,
         #which provides finer grained deltas (if supported by the server)
         #accumulate deltas:
+        if REVERSE_HORIZONTAL_SCROLLING:
+            deltax = -deltax
         self.wheel_deltax += deltax
         self.wheel_deltay += deltay
         button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
@@ -1262,7 +1265,7 @@ class UIXpraClient(XpraClientBase):
         button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
         if button>0:
             self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
-        log("wheel_delta%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
+        log("wheel_event%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
 
     def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
         pressed_state = self._button_state.get(button, False)
