@@ -1986,7 +1986,7 @@ class WindowSource(object):
         netlatency = int(1000*gs.min_client_latency)
         sendlatency = self.estimate_send_delay(bytecount)
         decode = 15+pixels//100000      #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-        tolerance = 25                  #25ms jitter
+        tolerance = 50                  #50ms jitter
         latency = netlatency + sendlatency + decode + tolerance
         eta = end_send_at + latency/1000.0
         now = monotonic_time()
@@ -1995,7 +1995,7 @@ class WindowSource(object):
         if late_pct>0:
             send_time_ms = int(1000*(now-end_send_at))-(netlatency+sendlatency+decode)
             assert send_time_ms>=tolerance, "bug: calculate send time (%i) lower than tolerance (%i)" % (send_time_ms, tolerance)
-            send_speed = bytecount*8*1000//send_time_ms
+            send_speed = max(100000, bytecount*8*1000//send_time_ms)
             self.record_congestion_event("late-ack", late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
