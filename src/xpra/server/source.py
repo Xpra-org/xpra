@@ -2492,48 +2492,21 @@ class ServerSource(FileTransferHandler):
 #
 # Methods used by WindowSource:
 #
-    def record_congestion_event(self, late_pct, ldata, elapsed_ms):
+    def record_congestion_event(self, source, late_pct, send_speed):
         if not BANDWIDTH_DETECTION:
             return
         gs = self.statistics
         if not gs:
             #window cleaned up?
             return
-        #calculate the send speed for the packet we just sent:
+        #zero values would cause errors in stats calculations
+        assert late_pct>0, "invalid lateness: %s" % (late_pct,)
         now = monotonic_time()
-        last_send_speed = int(ldata*8*1000/elapsed_ms)
-        send_speed = last_send_speed
-        avg_send_speed = 0
-        if len(gs.bytes_sent)>=5:
-            #find a sample more than a second old
-            #(hopefully before the congestion started)
-            for i in range(1,4):
-                stime1, svalue1 = gs.bytes_sent[-i]
-                if now-stime1>1:
-                    break
-            i += 1
-            #find a sample more than 4 seconds earlier,
-            #with at least 64KB sent in between:
-            t = 0
-            while i<len(gs.bytes_sent):
-                stime2, svalue2 = gs.bytes_sent[-i]
-                t = stime1-stime2
-                if t>10:
-                    #too far back, not enough data sent in 10 seconds
-                    break
-                if t>=4 and (svalue1-svalue2)>=65536:
-                    break
-                i += 1
-            if t>=4 and t<=10:
-                #calculate the send speed over that interval:
-                bcount = svalue1-svalue2
-                avg_send_speed = int(bcount*8/t)
-                send_speed = (avg_send_speed + last_send_speed)//2
-        statslog("record_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
         gs.congestion_send_speed.append((now, late_pct, send_speed))
         gs.last_congestion_time = now
 
-    
+
     def queue_size(self):
         return self.encode_work_queue.qsize()
 

@@ -1872,13 +1872,7 @@ class WindowSource(object):
         ack_pending = [0, coding, 0, 0, 0, width*height]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
-        #how long it should take to send this packet (in milliseconds):
-        bl = self.bandwidth_limit
-        if bl>0:
-            #estimate based on current bandwidth limit:
-            max_send_delay = 1+ldata*8//bl//1000
-        else:
-            max_send_delay = int(5*logp(ldata/1024.0))
+        max_send_delay = 5 + self.estimate_send_delay(ldata)
         def start_send(bytecount):
             ack_pending[0] = monotonic_time()
             ack_pending[2] = bytecount
@@ -1891,7 +1885,7 @@ class WindowSource(object):
             elapsed_ms = int((now-ack_pending[0])*1000)
             #if this packet completed late, record congestion send speed:
             if elapsed_ms>max_send_delay and ldata>1024:
-                self.record_congestion_event((elapsed_ms*100/max_send_delay)-100, ldata, elapsed_ms)
+                self.networksend_congestion_event((elapsed_ms*100/max_send_delay)-100, ldata, elapsed_ms)
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
@@ -1899,6 +1893,44 @@ class WindowSource(object):
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet))
+
+    def networksend_congestion_event(self, late_pct, ldata, elapsed_ms):
+        gs = self.global_statistics
+        if not gs:
+            return
+        #calculate the send speed for the packet we just sent:
+        now = monotonic_time()
+        last_send_speed = int(ldata*8*1000/elapsed_ms)
+        send_speed = last_send_speed
+        avg_send_speed = 0
+        if len(gs.bytes_sent)>=5:
+            #find a sample more than a second old
+            #(hopefully before the congestion started)
+            for i in range(1,4):
+                stime1, svalue1 = gs.bytes_sent[-i]
+                if now-stime1>1:
+                    break
+            i += 1
+            #find a sample more than 4 seconds earlier,
+            #with at least 64KB sent in between:
+            t = 0
+            while i<len(gs.bytes_sent):
+                stime2, svalue2 = gs.bytes_sent[-i]
+                t = stime1-stime2
+                if t>10:
+                    #too far back, not enough data sent in 10 seconds
+                    break
+                if t>=4 and (svalue1-svalue2)>=65536:
+                    break
+                i += 1
+            if t>=4 and t<=10:
+                #calculate the send speed over that interval:
+                bcount = svalue1-svalue2
+                avg_send_speed = int(bcount*8/t)
+                send_speed = (avg_send_speed + last_send_speed)//2
+        statslog.info("networksend_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        self.record_congestion_event("network-send", late_pct, send_speed)
+
 
     def get_fail_cb(self, packet):
         def resend():
@@ -1908,6 +1940,15 @@ class WindowSource(object):
             self.damage_packet_acked(damage_packet_sequence, width, height, 0, "")
             self.idle_add(self.damage, x, y, width, height)
         return resend
+
+    def estimate_send_delay(self, bytecount):
+        #how long it should take to send this packet (in milliseconds)
+        #based on the bandwidth available (if we know it):
+        bl = self.bandwidth_limit
+        if bl>0:
+            #estimate based on current bandwidth limit:
+            return 1000*bytecount*8//bl
+        return int(10*logp(bytecount/1024.0))
 
 
     def damage_packet_acked(self, damage_packet_sequence, width, height, decode_time, message):
@@ -1930,14 +1971,32 @@ class WindowSource(object):
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
+        gs = self.global_statistics
+        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels = pending
+        bytecount = end_bytes-start_bytes
         if decode_time>0:
-            start_send_at, _, start_bytes, end_send_at, end_bytes, pixels = pending
-            bytecount = end_bytes-start_bytes
             #it is possible, though very unlikely,
             #that we get the ack before we've had a chance to call
             #damage_packet_sent, so we must validate the data:
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
+        #reasonable latency we can expect:
+        #the minimum could be too low,
+        #the average could be too high if we're struggling already
+        netlatency = int(1000*gs.min_client_latency)
+        sendlatency = self.estimate_send_delay(bytecount)
+        decode = 15+pixels//100000      #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
+        tolerance = 25                  #25ms jitter
+        latency = netlatency + sendlatency + decode + tolerance
+        eta = end_send_at + latency/1000.0
+        now = monotonic_time()
+        late_pct = int(100*1000*(now-eta))//latency
+        #log("ack late-pct=%3i%%, bandwidth-limit=%s, latency=%i, latencies=%s, eta=%s, now=%s, delta=%ims", late_pct, self.bandwidth_limit, latency, (netlatency, sendlatency, decode, tolerance), eta, now, (now-eta)*1000)
+        if late_pct>0:
+            send_time_ms = int(1000*(now-end_send_at))-(netlatency+sendlatency+decode)
+            assert send_time_ms>=tolerance, "bug: calculate send time (%i) lower than tolerance (%i)" % (send_time_ms, tolerance)
+            send_speed = bytecount*8*1000//send_time_ms
+            self.record_congestion_event("late-ack", late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
