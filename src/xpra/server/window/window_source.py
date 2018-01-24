@@ -1947,7 +1947,7 @@ class WindowSource(object):
         bl = self.bandwidth_limit
         if bl>0:
             #estimate based on current bandwidth limit:
-            return 1000*bytecount*8//bl
+            return 1000*bytecount*8//max(200000, bl)
         return int(10*logp(bytecount/1024.0))
 
 
