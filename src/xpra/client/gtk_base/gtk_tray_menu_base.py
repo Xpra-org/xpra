@@ -49,7 +49,7 @@ WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 BANDWIDTH_MENU_OPTIONS = []
 for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
     try:
-        BANDWIDTH_MENU_OPTIONS.append(float(x)*1000*1000)
+        BANDWIDTH_MENU_OPTIONS.append(int(float(x)*1000*1000))
     except ValueError:
         log.warn("Warning: invalid bandwidth menu option '%s'", x)
 
