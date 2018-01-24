@@ -30,7 +30,8 @@ def xor_str(a, b):
     cdef unsigned int i, j, steps, char_steps
     if (ap % 4)!=0 or (bp % 4!=0):
         #unaligned access, use byte at a time slow path:
-        for 0 <= i < alen:
+        char_steps = alen
+        for 0 <= i < char_steps:
             ocbuf[i] = acbuf[i] ^ bcbuf[i]
     else:
         #do 4 bytes at a time:
