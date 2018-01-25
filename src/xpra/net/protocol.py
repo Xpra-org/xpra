@@ -349,7 +349,6 @@ class Protocol(object):
                 gpc = self._get_packet_cb
                 if self._closed or not gpc:
                     return
-                self._source_has_more.clear()
                 self._add_packet_to_queue(*gpc())
         except Exception as e:
             if self._closed:
@@ -357,8 +356,8 @@ class Protocol(object):
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False):
-        if has_more:
-            self._source_has_more.set()
+        if not has_more:
+            self._source_has_more.clear()
         if packet is None:
             return
         log("add_packet_to_queue(%s ...)", packet[0])
