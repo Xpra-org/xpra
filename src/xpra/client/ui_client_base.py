@@ -3329,7 +3329,9 @@ class UIXpraClient(XpraClientBase):
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time, message=""):
-        self.send_now("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
+        packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
+        drawlog("sending ack: %s", packet)
+        self.send_now(*packet)
 
     def _draw_thread_loop(self):
         while self.exit_code is None:
@@ -3371,7 +3373,7 @@ class UIXpraClient(XpraClientBase):
             options = packet[10]
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
-        drawlog("process_draw: %7i %8s for window %3i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s", len(data), dtype, wid, width, height, x, y, bytestostr(coding), options)
+        drawlog("process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s", len(data), dtype, wid, packet_sequence, width, height, x, y, bytestostr(coding), options)
         start = monotonic_time()
         def record_decode_time(success, message=""):
             if success>0:
