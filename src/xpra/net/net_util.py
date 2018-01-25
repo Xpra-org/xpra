@@ -304,11 +304,11 @@ def get_net_sys_config():
 
 def get_net_config():
     try:
-        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, TCP_NODELAY
+        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
         return {
                 "vsocket.timeout"    : VSOCK_TIMEOUT,
-                "socket.timeout"    : SOCKET_TIMEOUT,
-                "tcp.nodelay"        : TCP_NODELAY,
+                "socket.timeout"     : SOCKET_TIMEOUT,
+                "socket.nodelay"     : SOCKET_NODELAY,
                 }
     except:
         return {}

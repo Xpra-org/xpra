@@ -662,7 +662,7 @@ class WindowSource(object):
         assert wrapper.datatype in ("premult_argb32", "png"), "invalid wrapper datatype %s" % wrapper.datatype
         packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         iconlog("queuing window icon update: %s", packet)
-        self.queue_packet(packet)
+        self.queue_packet(packet, wait_for_more=True)
 
 
     def set_scaling(self, scaling):
@@ -1868,6 +1868,7 @@ class WindowSource(object):
         coding = packet[6]
         ldata = len(packet[7])
         damage_packet_sequence = packet[8]
+        client_options = packet[10]
         actual_batch_delay = process_damage_time-damage_time
         ack_pending = [0, coding, 0, 0, 0, width*height]
         statistics = self.statistics
@@ -1892,7 +1893,7 @@ class WindowSource(object):
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
-        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet))
+        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet), client_options.get("flush", 0))
 
     def networksend_congestion_event(self, late_pct, ldata, elapsed_ms):
         gs = self.global_statistics
@@ -1991,7 +1992,7 @@ class WindowSource(object):
         eta = end_send_at + latency/1000.0
         now = monotonic_time()
         late_pct = int(100*1000*(now-eta))//latency
-        #log("ack late-pct=%3i%%, bandwidth-limit=%s, latency=%i, latencies=%s, eta=%s, now=%s, delta=%ims", late_pct, self.bandwidth_limit, latency, (netlatency, sendlatency, decode, tolerance), eta, now, (now-eta)*1000)
+        #log("ack seq=%5i, late-pct=%3i%%, bandwidth-limit=%s, latency=%i, latencies=%s, eta=%s, now=%s, delta=%ims", damage_packet_sequence, late_pct, self.bandwidth_limit, latency, (netlatency, sendlatency, decode, tolerance), eta, now, (now-eta)*1000)
         if late_pct>0:
             send_time_ms = int(1000*(now-end_send_at))-(netlatency+sendlatency+decode)
             assert send_time_ms>=tolerance, "bug: calculate send time (%i) lower than tolerance (%i)" % (send_time_ms, tolerance)

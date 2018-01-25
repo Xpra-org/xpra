@@ -2008,7 +2008,7 @@ def ssh_connect_failed(message):
 
 
 def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):
-    from xpra.net.bytestreams import TCP_NODELAY, SOCKET_TIMEOUT, VSOCK_TIMEOUT
+    from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT
     from xpra.net.common import ConnectionClosedException
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
@@ -2248,7 +2248,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_f
         else:
             sock = socket.socket(family, socket.SOCK_STREAM)
             sock.settimeout(SOCKET_TIMEOUT)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
         strict_host_check = display_desc.get("strict-host-check")
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"

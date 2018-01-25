@@ -1177,7 +1177,7 @@ class ServerSource(FileTransferHandler):
 
     def send_eos(self, codec, sequence=0):
         #tell the client this is the end:
-        self.send("sound-data", codec, "", {"end-of-stream" : True,
+        self.send_more("sound-data", codec, "", {"end-of-stream" : True,
                                             "sequence"      : sequence})
 
 
@@ -1254,7 +1254,7 @@ class ServerSource(FileTransferHandler):
                 #or synchronization point to ensure the stream recovers
                 soundlog("a sound data buffer was not received and will not be resent")
             fail_cb = sound_data_fail_cb
-        self._send(fail_cb, False, "sound-data", *packet_data)
+        self.send("sound-data", *packet_data, synchronous=False, fail_cb=fail_cb, will_have_more=True)
 
     def stop_receiving_sound(self):
         ss = self.sound_sink
@@ -1519,29 +1519,32 @@ class ServerSource(FileTransferHandler):
 #
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more = None, None, None, None, True, False
+        packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more = None, None, None, None, True, False, False
         if not self.is_closed():
             if len(self.ordinary_packets)>0:
-                packet, synchronous, fail_cb = self.ordinary_packets.pop(0)
+                packet, synchronous, fail_cb, will_have_more = self.ordinary_packets.pop(0)
             elif len(self.packet_queue)>0:
-                packet, _, _, start_send_cb, end_send_cb, fail_cb = self.packet_queue.popleft()
+                packet, _, _, start_send_cb, end_send_cb, fail_cb, will_have_more = self.packet_queue.popleft()
             have_more = packet is not None and (len(self.ordinary_packets)>0 or len(self.packet_queue)>0)
-        return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more
+        return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
-    def send(self, *parts):
+    def send(self, *parts, **kwargs):
         """ This method queues non-damage packets (higher priority) """
-        self._send(None, True, *parts)
-
-    def send_async(self, *parts):
-        self._send(None, False, *parts)
-
-    def _send(self, fail_cb=None, synchronous=True, *parts):
-        """ This method queues non-damage packets (higher priority) """
-        #log.info("_send%s", (fail_cb, synchronous, parts))
+        synchronous = kwargs.get("synchronous", True)
+        will_have_more = kwargs.get("will_have_more", not synchronous)
+        fail_cb = kwargs.get("fail_cb", None)
         p = self.protocol
         if p:
-            self.ordinary_packets.append((parts, synchronous, fail_cb))
+            self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))
             p.source_has_more()
+
+    def send_more(self, *parts, **kwargs):
+        kwargs["will_have_more"] = True
+        self.send(*parts, **kwargs)
+
+    def send_async(self, *parts, **kwargs):
+        kwargs["synchronous"] = False
+        self.send(*parts, **kwargs)
 
 
     #client tells us about network connection status:
@@ -1835,12 +1838,12 @@ class ServerSource(FileTransferHandler):
 
     def send_setting_change(self, setting, value):
         if self.client_setting_change:
-            self.send("setting-change", setting, value)
+            self.send_more("setting-change", setting, value)
 
 
     def send_server_event(self, *args):
         if self.wants_events:
-            self.send("server-event", *args)
+            self.send_more("server-event", *args)
 
 
     def send_clipboard_enabled(self, reason=""):
@@ -1865,7 +1868,7 @@ class ServerSource(FileTransferHandler):
             if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
                 clipboardlog("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
-                self.send("clipboard-pending-requests", self.clipboard_notifications_current)
+                self.send_more("clipboard-pending-requests", self.clipboard_notifications_current)
         delay = (count==0)*100
         self.clipboard_progress_timer = self.timeout_add(delay, may_send_progress_update)
 
@@ -1974,7 +1977,7 @@ class ServerSource(FileTransferHandler):
             cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
             args = [""]
             self.last_cursor_sent = None
-        self.send("cursor", *args)
+        self.send_more("cursor", *args)
 
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
@@ -2008,7 +2011,7 @@ class ServerSource(FileTransferHandler):
     def notify_close(self, nid):
         if not self.send_notifications or self.suspended  or not self.hello_sent:
             return
-        self.send("notify_close", nid)
+        self.send_more("notify_close", nid)
 
     def set_deflate(self, level):
         self.send("set_deflate", level)
@@ -2132,7 +2135,7 @@ class ServerSource(FileTransferHandler):
 
     def send_client_command(self, *args):
         if self.hello_sent:
-            self.send("control", *args)
+            self.send_more("control", *args)
 
 
     def rpc_reply(self, *args):
@@ -2144,7 +2147,7 @@ class ServerSource(FileTransferHandler):
         #NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000*monotonic_time())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send_async("ping", now_ms)
+        self.send_async("ping", now_ms, will_have_more=False)
         timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
 
@@ -2176,7 +2179,7 @@ class ServerSource(FileTransferHandler):
             if len(self.statistics.client_ping_latency)>0:
                 _, cl = self.statistics.client_ping_latency[-1]
                 cl = int(1000.0*cl)
-        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl)
+        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, will_have_more=False)
         #if the client is pinging us, ping it too:
         if not self.ping_timer:
             self.ping_timer = self.timeout_add(500, self.ping)
@@ -2518,7 +2521,7 @@ class ServerSource(FileTransferHandler):
         self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_work_queue.qsize()))
         self.encode_work_queue.put(fn_and_args)
 
-    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None):
+    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
         """
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
@@ -2527,7 +2530,7 @@ class ServerSource(FileTransferHandler):
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
             self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb))
+        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
         p = self.protocol
         if p:
             p.source_has_more()

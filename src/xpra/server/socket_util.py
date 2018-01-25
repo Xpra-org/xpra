@@ -115,7 +115,6 @@ def has_dual_stack():
 
 def create_tcp_socket(host, iport):
     log = get_network_logger()
-    from xpra.net.bytestreams import TCP_NODELAY
     if host.find(":")<0:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sockaddr = (host, iport)
@@ -128,7 +127,6 @@ def create_tcp_socket(host, iport):
         listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    listener.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, TCP_NODELAY)
     log("%s.bind(%s)", listener, sockaddr)
     listener.bind(sockaddr)
     return listener

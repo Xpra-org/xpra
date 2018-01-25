@@ -425,7 +425,7 @@ class UDPProtocol(Protocol):
                 self.start_write_thread()
             self._write_queue.put((header_and_data, None, None, fail_cb, sync))
 
-    def raw_write(self, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True):
+    def raw_write(self, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, _more=False):
         """ make sure we don't enable asynchronous mode until the other end is read """
         if not self.asynchronous_send_enabled:
             synchronous = True
