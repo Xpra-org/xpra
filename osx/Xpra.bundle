@@ -54,6 +54,9 @@
  		${prefix}/lib/libjpeg.*.dylib
 	</binary>
 	<binary>
+ 		${prefix}/lib/libturbojpeg.*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libtiff.*.dylib
 	</binary>
 	<binary>

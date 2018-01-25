@@ -116,7 +116,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-svn revert Info.plist
+svn revert Info.plist Xpra.bundle
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
@@ -128,6 +128,9 @@ fi
 echo
 echo "*******************************************************************************"
 echo "calling 'gtk-mac-bundler Xpra.bundle' in `pwd`"
+if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+	sed -i '' -e "s+gtk2+gtk3+g" "./Xpra.bundle"
+fi
 #we have to make sure we use python2 here (not ported yet):
 python2 ~/.local/bin/gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
@@ -257,7 +260,7 @@ mkdir $LIBDIR/girepository-1.0
 GI_MODULES="Gst GObject GLib GModule"
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication"
-	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication GL Gio Pango cairo"
+	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication GL Gio Pango cairo Atk"
 fi
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
@@ -377,4 +380,4 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-svn revert Info.plist
+svn revert Info.plist Xpra.bundle
