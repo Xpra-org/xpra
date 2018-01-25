@@ -303,15 +303,19 @@ def get_net_sys_config():
     return net_sys_config
 
 def get_net_config():
+    config = {}
     try:
         from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
-        return {
+        config = {
                 "vsocket.timeout"    : VSOCK_TIMEOUT,
                 "socket.timeout"     : SOCKET_TIMEOUT,
-                "socket.nodelay"     : SOCKET_NODELAY,
                 }
-    except:
-        return {}
+        if SOCKET_NODELAY is not None:
+            config["socket.nodelay"] = SOCKET_NODELAY
+    except Exception:
+        log("get_net_config()", exc_info=True)
+    return config
+
 
 def get_ssl_info():
     try:

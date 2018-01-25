@@ -17,7 +17,7 @@ from xpra.os_util import WIN32, PYTHON2
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 
 
-SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", True)
+SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 SSL_PEEK = PYTHON2 and envbool("XPRA_SSL_PEEK", True)
@@ -278,9 +278,15 @@ class SocketConnection(Connection):
         self.nodelay = None
         if type(remote)==str:
             self.filename = remote
+        if SOCKET_NODELAY is not None:
+            self.do_set_nodelay(SOCKET_NODELAY)
 
     def set_nodelay(self, nodelay):
-        if self.socktype in ("tcp", "ssl") and self.nodelay!=nodelay:
+        if SOCKET_NODELAY is None and self.socktype in ("tcp", "ssl") and self.nodelay!=nodelay:
+            self.do_set_nodelay(nodelay)
+
+    def do_set_nodelay(self, nodelay):
+        if SOCKET_NODELAY is None and self.socktype in ("tcp", "ssl") and self.nodelay!=nodelay:
             self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
             self.nodelay = nodelay
             log("changed %s socket to nodelay=%s", self.socktype, nodelay)
