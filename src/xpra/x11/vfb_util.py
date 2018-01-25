@@ -187,8 +187,12 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
             close_fds([0, 1, 2, r_pipe, w_pipe])
-        xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
-                                stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
+        try:
+            xvfb = subprocess.Popen(xvfb_cmd, executable=xvfb_executable, close_fds=False,
+                                    stdin=subprocess.PIPE, preexec_fn=preexec, cwd=cwd)
+        except OSError as e:
+            log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
+            raise InitException("failed to execute xvfb command %s: %s" % (xvfb_cmd, e))
         # Read the display number from the pipe we gave to Xvfb
         buf = read_displayfd(r_pipe)
         os.close(r_pipe)
