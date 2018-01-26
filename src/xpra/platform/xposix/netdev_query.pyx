@@ -66,7 +66,11 @@ def get_interface_speed(int sockfd, char *ifname):
     edata.cmd = ETHTOOL_GSET
     cdef int r = ioctl(sockfd, SIOCETHTOOL, &ifr)
     if r < 0:
-        log.warn("Warning: failed to query %s device properties with SIOCETHTOOL", ifname)
-        log.warn(" error %i", r)
+        l = log.warn
+        pyifname = ifname
+        if pyifname.startswith("wlan"):
+            l = log
+        l("Warning: failed to query %s device properties with SIOCETHTOOL", ifname)
+        l(" error %i", r)
         return 0
     return edata.speed*1000*1000
