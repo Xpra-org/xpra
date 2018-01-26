@@ -157,6 +157,13 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
         scorelog("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
         return None
 
+    if enc_width<encoder_spec.min_w or enc_height<encoder_spec.min_h:
+        scorelog("video size %ix%i out of range for %s, min %ix%i", enc_width, enc_height, encoder_spec.codec_type, encoder_spec.min_w, encoder_spec.min_h)
+        return None
+    elif enc_width>encoder_spec.max_w or enc_height>encoder_spec.max_h:
+        scorelog("video size %ix%i out of range for %s, max %ix%i", enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
+        return None
+
     ee_score = 100
     if current_ve is None or current_ve.get_type()!=encoder_spec.codec_type or \
        current_ve.get_src_format()!=enc_in_format or \
