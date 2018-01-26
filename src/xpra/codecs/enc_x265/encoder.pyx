@@ -308,7 +308,12 @@ def get_spec(encoding, colorspace):
                       min_w=64, min_h=64,
                       setup_cost=70, width_mask=0xFFFE, height_mask=0xFFFE)
 
-log_level = X265_LOG_INFO
+
+if envbool("XPRA_X265_DEBUG", False):
+    log_level = X265_LOG_INFO
+else:
+    log_level = X265_LOG_WARNING
+
 
 cdef class Encoder:
     cdef x265_param *param
@@ -409,7 +414,7 @@ cdef class Encoder:
             self.param.internalCsp = X265_CSP_I444
         self.context = x265_encoder_open(self.param)
         log("init_encoder() x265 context=%#x", <uintptr_t> self.context)
-        assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
+        assert self.context!=NULL,  "context initialization failed for format %s and size %ix%i" % (self.src_format, self.width, self.height)
 
     def clean(self):                        #@DuplicatedSignature
         log("clean() x265 param=%#x, context=%#x", <uintptr_t> self.param, <uintptr_t> self.context)
