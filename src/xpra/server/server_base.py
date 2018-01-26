@@ -1727,7 +1727,12 @@ class ServerBase(ServerCore):
         if ss is None:
             return
         level, msg = packet[1:3]
-        prefix = "client %i: " % ss.counter
+        prefix = "client "
+        if len(self._server_sources)>1:
+            prefix += "%3i " % ss.counter
+        if len(packet)>=4:
+            dtime = packet[3]
+            prefix += "@%06i " % (dtime % 1000000)
         if isinstance(msg, (tuple, list)):
             msg = " ".join(bytestostr(x) for x in msg)
         for x in bytestostr(msg).splitlines():
