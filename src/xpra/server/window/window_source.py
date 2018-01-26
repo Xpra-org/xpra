@@ -1312,8 +1312,11 @@ class WindowSource(object):
     def must_batch(self, delay):
         if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
             return True
-        ldet = self.statistics.last_damage_event_time
         now = monotonic_time()
+        gs = self.global_statistics
+        if gs and now-gs.last_congestion_time<60:
+            return True
+        ldet = self.statistics.last_damage_event_time
         if ldet and now-ldet<self.batch_config.min_delay:
             #last damage event was recent,
             #avoid swamping the encode queue / connection / client paint handler
@@ -1890,7 +1893,7 @@ class WindowSource(object):
             elapsed_ms = int((now-ack_pending[0])*1000)
             #if this packet completed late, record congestion send speed:
             if elapsed_ms>max_send_delay and ldata>1024:
-                self.networksend_congestion_event((elapsed_ms*100/max_send_delay)-100, ldata, elapsed_ms)
+                self.networksend_congestion_event("slow send", (elapsed_ms*100/max_send_delay)-100, int(ldata*8*1000/elapsed_ms))
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
@@ -1899,14 +1902,13 @@ class WindowSource(object):
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent, self.get_fail_cb(packet), client_options.get("flush", 0))
 
-    def networksend_congestion_event(self, late_pct, ldata, elapsed_ms):
+    def networksend_congestion_event(self, source, late_pct, cur_send_speed=0):
         gs = self.global_statistics
         if not gs:
             return
         #calculate the send speed for the packet we just sent:
         now = monotonic_time()
-        last_send_speed = int(ldata*8*1000/elapsed_ms)
-        send_speed = last_send_speed
+        send_speed = cur_send_speed
         avg_send_speed = 0
         if len(gs.bytes_sent)>=5:
             #find a sample more than a second old
@@ -1932,9 +1934,14 @@ class WindowSource(object):
                 #calculate the send speed over that interval:
                 bcount = svalue1-svalue2
                 avg_send_speed = int(bcount*8/t)
-                send_speed = (avg_send_speed + last_send_speed)//2
-        statslog("networksend_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
-        self.record_congestion_event("network-send", late_pct, send_speed)
+                if cur_send_speed:
+                    #weighted average,
+                    #when we're very late, the value is much more likely to be correct
+                    send_speed = (avg_send_speed*100 + cur_send_speed*late_pct)//2//(100+late_pct)
+                else:
+                    send_speed = avg_send_speed
+        statslog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps)", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024)
+        self.record_congestion_event(source, late_pct, send_speed)
 
 
     def get_fail_cb(self, packet):
@@ -1986,7 +1993,7 @@ class WindowSource(object):
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
         netlatency = int(1000*gs.min_client_latency)
-        sendlatency = self.estimate_send_delay(bytecount)
+        sendlatency = min(200, self.estimate_send_delay(bytecount))
         decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
         latency = netlatency + sendlatency + decode + ACK_TOLERANCE
         eta = end_send_at + latency/1000.0
@@ -1996,17 +2003,18 @@ class WindowSource(object):
         #   as we have to create a decoder context
         # * when flushing multiple updates at once (network layer aggregation),
         #   only the last one (flush=0) is relevant
-        #warning: we fail to detect frame=0 when it is sent as part of multiple updates...
         if now>eta and client_options.get("frame", None)!=0 and client_options.get("flush", 0)==0:
-            actual = int(1000*(now-end_send_at))
-            actual_send_latency = actual-netlatency-decode-ACK_TOLERANCE
-            send_speed = pixels*8*1000/(1+actual_send_latency)
-            statslog("send latency: expected %i, got %i, send latency=%i, send_speed=%i", latency, actual, actual_send_latency, send_speed)
+            actual = int(1000*(now-start_send_at))
+            actual_send_latency = actual-netlatency-decode
+            late_pct = actual_send_latency*100//(1+sendlatency)
             if pixels<=4096:
                 #small packets can really skew things, don't bother
-                #(also filters out scroll packets)
+                #(this also filters out scroll packets which are tiny)
                 send_speed = 0
-            self.record_congestion_event("late-ack for sequence %6i: target latency=%3i (%s), late by %3ims" % (damage_packet_sequence, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE), (now-eta)*1000))
+            else:
+                send_speed = bytecount*8*1000//actual_send_latency
+            #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
+            self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE)), late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
