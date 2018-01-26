@@ -1732,7 +1732,7 @@ class ServerBase(ServerCore):
             prefix += "%3i " % ss.counter
         if len(packet)>=4:
             dtime = packet[3]
-            prefix += "@%06i " % (dtime % 1000000)
+            prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
         if isinstance(msg, (tuple, list)):
             msg = " ".join(bytestostr(x) for x in msg)
         for x in bytestostr(msg).splitlines():
