@@ -1989,7 +1989,7 @@ class WindowSource(object):
         eta = end_send_at + latency/1000.0
         now = monotonic_time()
         if now>eta:
-            self.record_congestion_event("late-ack: target latency=%i, late by %ims", latency, (now-eta)//1000)
+            self.record_congestion_event("late-ack: target latency=%i, late by %ims" % (latency, (now-eta)*1000))
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
