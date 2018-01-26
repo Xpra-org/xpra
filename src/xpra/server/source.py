@@ -2495,19 +2495,19 @@ class ServerSource(FileTransferHandler):
 #
 # Methods used by WindowSource:
 #
-    def record_congestion_event(self, source, late_pct, send_speed):
+    def record_congestion_event(self, source, late_pct=0, send_speed=0):
         if not BANDWIDTH_DETECTION:
             return
         gs = self.statistics
         if not gs:
             #window cleaned up?
             return
-        #zero values would cause errors in stats calculations
-        assert late_pct>0, "invalid lateness: %s" % (late_pct,)
         now = monotonic_time()
-        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
-        gs.congestion_send_speed.append((now, late_pct, send_speed))
         gs.last_congestion_time = now
+        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
+        if late_pct>0 and send_speed:
+            #warning: zero values would cause errors in stats calculations
+            gs.congestion_send_speed.append((now, late_pct, send_speed))
 
 
     def queue_size(self):
