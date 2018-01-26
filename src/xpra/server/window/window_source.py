@@ -1213,7 +1213,6 @@ class WindowSource(object):
             self.statistics.last_damage_events.append((now, x,y,w,h))
         self.global_statistics.damage_events_count += 1
         self.statistics.damage_events_count += 1
-        self.statistics.last_damage_event_time = now
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
@@ -1221,6 +1220,7 @@ class WindowSource(object):
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
         self.do_damage(ww, wh, x, y, w, h, options)
+        self.statistics.last_damage_event_time = now
 
     def do_damage(self, ww, wh, x, y, w, h, options):
         now = monotonic_time()
@@ -1289,6 +1289,7 @@ class WindowSource(object):
             if self.must_encode_full_frame(actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
+            delay = max(delay, self.batch_config.min_delay)
             self.batch_config.last_delays.append((now, delay))
             self.batch_config.last_actual_delays.append((now, delay))
             def damage_now():
@@ -1310,6 +1311,12 @@ class WindowSource(object):
 
     def must_batch(self, delay):
         if FORCE_BATCH or self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
+            return True
+        ldet = self.statistics.last_damage_event_time
+        now = monotonic_time()
+        if ldet and now-ldet<self.batch_config.min_delay:
+            #last damage event was recent,
+            #avoid swamping the encode queue / connection / client paint handler
             return True
         try:
             t, _ = self.batch_config.last_delays[-5]
@@ -1926,7 +1933,7 @@ class WindowSource(object):
                 bcount = svalue1-svalue2
                 avg_send_speed = int(bcount*8/t)
                 send_speed = (avg_send_speed + last_send_speed)//2
-        statslog.info("networksend_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
+        statslog("networksend_congestion_event(%i, %i, %ims) %iKbps (average=%iKbps, last packet=%iKbps)", late_pct, ldata, elapsed_ms, send_speed//1024, avg_send_speed//1024, last_send_speed//1024)
         self.record_congestion_event("network-send", late_pct, send_speed)
 
 
@@ -1994,7 +2001,7 @@ class WindowSource(object):
             actual = int(1000*(now-end_send_at))
             actual_send_latency = actual-netlatency-decode-ACK_TOLERANCE
             send_speed = pixels*8*1000/(1+actual_send_latency)
-            log("send latency: expected %i, got %i, send latency=%i, send_speed=%i", latency, actual, actual_send_latency, send_speed)
+            statslog("send latency: expected %i, got %i, send latency=%i, send_speed=%i", latency, actual, actual_send_latency, send_speed)
             if pixels<=4096:
                 #small packets can really skew things, don't bother
                 #(also filters out scroll packets)

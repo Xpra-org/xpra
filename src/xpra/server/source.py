@@ -761,14 +761,6 @@ class ServerSource(FileTransferHandler):
         self.wants_features = c.boolget("wants_features", True)
         self.wants_default_cursor = c.boolget("wants_default_cursor", False)
 
-        self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
-        self.default_batch_config.min_delay = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
-        self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
-        self.default_batch_config.max_events = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
-        self.default_batch_config.max_pixels = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
-        self.default_batch_config.time_unit = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
-        self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
-        log("default batch config: %s", self.default_batch_config)
         #client uuid:
         self.uuid = c.strget("uuid")
         self.machine_id = c.strget("machine_id")
@@ -834,6 +826,16 @@ class ServerSource(FileTransferHandler):
         else:
             self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
         netlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
+
+        default_min_delay = max(DamageBatchConfig.MIN_DELAY, 1000//(self.vrefresh or 60))
+        self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
+        self.default_batch_config.min_delay = batch_value("min_delay", default_min_delay, 0, 1000)
+        self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
+        self.default_batch_config.max_events = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
+        self.default_batch_config.max_pixels = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
+        self.default_batch_config.time_unit = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
+        self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
+        log("default batch config: %s", self.default_batch_config)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
