@@ -42,6 +42,7 @@ MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
+ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 100)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
@@ -1984,8 +1985,7 @@ class WindowSource(object):
         netlatency = int(1000*gs.min_client_latency)
         sendlatency = self.estimate_send_delay(bytecount)
         decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-        tolerance = 50                  #50ms
-        latency = netlatency + sendlatency + decode + tolerance
+        latency = netlatency + sendlatency + decode + ACK_TOLERANCE
         eta = end_send_at + latency/1000.0
         now = monotonic_time()
         #we can ignore some packets:
@@ -1993,8 +1993,9 @@ class WindowSource(object):
         #   as we have to create a decoder context
         # * when flushing multiple updates at once (network layer aggregation),
         #   only the last one (flush=0) is relevant
+        #warning: we fail to detect frame=0 when it is sent as part of multiple updates...
         if now>eta and client_options.get("frame", None)!=0 and client_options.get("flush", 0)==0:
-            self.record_congestion_event("late-ack for sequence %6i: target latency=%3i, late by %3ims" % (damage_packet_sequence, latency, (now-eta)*1000))
+            self.record_congestion_event("late-ack for sequence %6i: target latency=%3i (%s), late by %3ims" % (damage_packet_sequence, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE), (now-eta)*1000))
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
