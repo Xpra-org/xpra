@@ -248,8 +248,10 @@ def import_gst():
         if bundle_contents:
             os.environ["GST_PLUGIN_PATH"]       = os.path.join(bundle_contents, "Resources", "lib", "gstreamer-1.0")
             os.environ["GST_PLUGIN_SCANNER"]    = os.path.join(bundle_contents, "Resources", "bin", "gst-plugin-scanner-1.0")
-            gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
-            os.environ["GI_TYPELIB_PATH"]       = gi_dir
+            #typelib path should have been set in PythonExecWrapper
+            if not os.environ.get("GI_TYPELIB_PATH"):
+                gi_dir = os.path.join(bundle_contents, "Resources", "lib", "girepository-1.0")
+                os.environ["GI_TYPELIB_PATH"]       = gi_dir
     log("GStreamer 1.x environment: %s", dict((k,v) for k,v in os.environ.items() if (k.startswith("GST") or k.startswith("GI") or k=="PATH")))
     log("GStreamer 1.x sys.path=%s", csv(sys.path))
 
