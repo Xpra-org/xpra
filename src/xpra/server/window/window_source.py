@@ -1864,12 +1864,8 @@ class WindowSource(object):
             - damage latency (via a callback once the packet is actually sent)
         """
         #packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
-        width = packet[4]
-        height = packet[5]
-        coding = packet[6]
-        ldata = len(packet[7])
-        damage_packet_sequence = packet[8]
-        client_options = packet[10]
+        width, height, coding, data, damage_packet_sequence, _, client_options = packet[4:11]
+        ldata = len(data)
         actual_batch_delay = process_damage_time-damage_time
         ack_pending = [0, coding, 0, 0, 0, width*height, client_options]
         statistics = self.statistics
@@ -1995,6 +1991,14 @@ class WindowSource(object):
         #   only the last one (flush=0) is relevant
         #warning: we fail to detect frame=0 when it is sent as part of multiple updates...
         if now>eta and client_options.get("frame", None)!=0 and client_options.get("flush", 0)==0:
+            actual = int(1000*(now-end_send_at))
+            actual_send_latency = actual-netlatency-decode-ACK_TOLERANCE
+            send_speed = pixels*8*1000/(1+actual_send_latency)
+            log("send latency: expected %i, got %i, send latency=%i, send_speed=%i", latency, actual, actual_send_latency, send_speed)
+            if pixels<=4096:
+                #small packets can really skew things, don't bother
+                #(also filters out scroll packets)
+                send_speed = 0
             self.record_congestion_event("late-ack for sequence %6i: target latency=%3i (%s), late by %3ims" % (damage_packet_sequence, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE), (now-eta)*1000))
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
