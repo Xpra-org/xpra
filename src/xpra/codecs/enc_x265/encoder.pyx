@@ -103,6 +103,7 @@ cdef extern from "x265.h":
         int         bframes                         #Max number of consecutive B-frames
         int         bBPyramid                       #use some B frames as a motion reference for the surrounding B frames
         int         lookaheadDepth                  #Number of frames to use for lookahead, determines encoder latency
+        int         lookaheadSlices                 #Use multiple worker threads to measure the estimated cost of each frame within the lookahead
         int         bFrameAdaptive                  #0 - none, 1 - fast, 2 - full (trellis) adaptive B frame scheduling
         int         bFrameBias                      #value which is added to the cost estimate of B frames
         int         scenecutThreshold               #how aggressively to insert extra I frames
@@ -370,6 +371,8 @@ cdef class Encoder:
         self.param.bframes = 0
         self.param.bFrameAdaptive = 0
         self.param.lookaheadDepth = 0
+        if self.height<720 or self.width<1024:
+            self.param.lookaheadSlices = 0
         if False:
             #unused settings:
             self.param.internalBitDepth = 8
