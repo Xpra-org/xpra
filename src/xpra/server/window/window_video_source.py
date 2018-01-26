@@ -1380,7 +1380,7 @@ class WindowVideoSource(WindowSource):
             except:
                 if self.is_cancelled():
                     return False
-                videolog.warn("setup_pipeline failed for %s", option, exc_info=True)
+                videolog.warn("Warning: failed to setup video pipeline %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:
             csce = self._csc_encoder
             if csce:
@@ -1500,7 +1500,7 @@ class WindowVideoSource(WindowSource):
         start = monotonic_time()
         try:
             del options["av-sync"]
-        except:
+        except KeyError:
             pass
         #tells make_data_packet not to invalidate the scroll data:
         ww, wh = self.window_dimensions
@@ -1537,7 +1537,7 @@ class WindowVideoSource(WindowSource):
             client_options = options.copy()
             try:
                 del client_options["scroll"]
-            except:
+            except KeyError:
                 pass
             if flush>0 and self.supports_flush:
                 client_options["flush"] = flush
