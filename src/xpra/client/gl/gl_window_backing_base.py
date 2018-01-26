@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -556,8 +556,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
             glDisable(target)
             self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
-            self.present_fbo(0, 0, bw, bh, flush)
             fire_paint_callbacks(callbacks, True)
+            self.present_fbo(0, 0, bw, bh, flush)
 
     def present_fbo(self, x, y, w, h, flush=0):
         log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s", (x, y, w, h), len(self.pending_fbo_paint), flush, self.paint_screen)
@@ -941,11 +941,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBindTexture(target, 0)
                 glDisable(target)
                 self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, width, height)
-
+                fire_paint_callbacks(callbacks)
                 # Present update to screen
                 self.present_fbo(x, y, width, height, options.intget("flush", 0))
                 # present_fbo has reset state already
-            fire_paint_callbacks(callbacks)
             return
         except GLError as e:
             message = "OpenGL %s paint failed: %r" % (rgb_format, e)
@@ -982,10 +981,10 @@ class GLWindowBackingBase(WindowBackingBase):
                     y_scale = float(height)/enc_height
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
                 self.paint_box(encoding, False, x, y, width, height)
+                fire_paint_callbacks(callbacks, True)
                 # Present it on screen
                 self.present_fbo(x, y, width, height, flush)
             img.free()
-            fire_paint_callbacks(callbacks, True)
             return
         except GLError as e:
             message = "OpenGL %s paint failed: %r" % (encoding, e)
