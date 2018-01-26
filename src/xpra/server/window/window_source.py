@@ -1870,7 +1870,7 @@ class WindowSource(object):
         damage_packet_sequence = packet[8]
         client_options = packet[10]
         actual_batch_delay = process_damage_time-damage_time
-        ack_pending = [0, coding, 0, 0, 0, width*height]
+        ack_pending = [0, coding, 0, 0, 0, width*height, client_options]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
         max_send_delay = 5 + self.estimate_send_delay(ldata)
@@ -1973,7 +1973,7 @@ class WindowSource(object):
             return
         del self.statistics.damage_ack_pending[damage_packet_sequence]
         gs = self.global_statistics
-        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels = pending
+        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, client_options = pending
         bytecount = end_bytes-start_bytes
         if decode_time>0:
             #it is possible, though very unlikely,
@@ -1988,8 +1988,13 @@ class WindowSource(object):
         latency = netlatency + sendlatency + decode + tolerance
         eta = end_send_at + latency/1000.0
         now = monotonic_time()
-        if now>eta:
-            self.record_congestion_event("late-ack: target latency=%i, late by %ims" % (latency, (now-eta)*1000))
+        #we can ignore some packets:
+        # * the first frame (frame=0) of video encoders can take longer to decode
+        #   as we have to create a decoder context
+        # * when flushing multiple updates at once (network layer aggregation),
+        #   only the last one (flush=0) is relevant
+        if now>eta and client_options.get("frame", None)!=0 and client_options.get("flush", 0)==0:
+            self.record_congestion_event("late-ack for sequence %6i: target latency=%3i, late by %3ims" % (damage_packet_sequence, latency, (now-eta)*1000))
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()

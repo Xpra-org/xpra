@@ -223,7 +223,7 @@ class WindowPerformanceStatistics(object):
             sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
-            for sequence, (start_send_at, _, start_bytes, end_send_at, end_bytes, pixels) in self.damage_ack_pending.items():
+            for sequence, (start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, _) in self.damage_ack_pending.items():
                 if end_send_at==0 or start_send_at>sent_before:
                     continue
                 if start_send_at<dropped_acks_time:
@@ -252,7 +252,7 @@ class WindowPerformanceStatistics(object):
         packets_backlog = 0
         if len(self.damage_ack_pending)>0:
             sent_before = monotonic_time()-((self.target_latency+0.020)*100.0/latency_tolerance_pct)
-            for _, (start_send_at, _, _, end_send_at, _, _) in self.damage_ack_pending.items():
+            for _, (start_send_at, _, _, end_send_at, _, _, _) in self.damage_ack_pending.items():
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
         return packets_backlog
