@@ -134,7 +134,7 @@
 		autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv"
 		autogen-sh="configure">
 		<branch module="/webmproject/libvpx/archive/v1.7.0.tar.gz"
-			version="1.6.1"
+			version="1.7.0" checkoutdir="libvpx-1.7.0"
 			hash="sha256:1fec931eb5c94279ad219a5b6e0202358e94a93a90cfb1603578c326abfc1238"
 			repo="github.com"/>
 		<dependencies>
