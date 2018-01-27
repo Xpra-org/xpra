@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -53,6 +53,7 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 5)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
@@ -112,6 +113,9 @@ class XpraClientBase(FileTransferHandler):
         self._priority_packets = []
         self._ordinary_packets = []
         self._mouse_position = None
+        self._mouse_position_pending = None
+        self._mouse_position_send_time = 0
+        self._mouse_position_timer = 0
         self._aliases = {}
         self._reverse_aliases = {}
         #server state and caps:
@@ -466,11 +470,34 @@ class XpraClientBase(FileTransferHandler):
     def send_positional(self, packet):
         self._ordinary_packets.append(packet)
         self._mouse_position = None
+        self._mouse_position_pending = None
+        self.cancel_send_mouse_position_timer()
         self.have_more()
 
     def send_mouse_position(self, packet):
-        self._mouse_position = packet
+        if self._mouse_position_timer:
+            self._mouse_position_pending = packet
+            return
+        self._mouse_position_pending = packet
+        now = monotonic_time()
+        elapsed = int(1000*(now-self._mouse_position_send_time))
+        if elapsed<MOUSE_DELAY:
+            self._mouse_position_timer = self.timeout_add(MOUSE_DELAY-elapsed, self.do_send_mouse_position)
+        else:
+            self.do_send_mouse_position()
+
+    def do_send_mouse_position(self):
+        self._mouse_position_timer = 0
+        self._mouse_position_send_time = monotonic_time()
+        self._mouse_position = self._mouse_position_pending
         self.have_more()
+
+    def cancel_send_mouse_position_timer(self):
+        mpt = self._mouse_position_timer
+        if mpt:
+            self._mouse_position_timer = 0
+            self.source_remove(mpt)
+
 
     def have_more(self):
         #this function is overridden in setup_protocol()
@@ -509,6 +536,7 @@ class XpraClientBase(FileTransferHandler):
             p.close()
             self._protocol = None
         log("cleanup done")
+        self.cancel_send_mouse_position_timer()
         dump_all_frames()
 
 
