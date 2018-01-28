@@ -42,6 +42,7 @@ MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
+ACK_JITTER = envint("XPRA_ACK_JITTER", 20)
 ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 100)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
@@ -1999,7 +2000,7 @@ class WindowSource(object):
             #damage_packet_sent, so we must validate the data:
             if bytecount>0 and end_send_at>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
-        netlatency = int(1000*gs.min_client_latency)
+        netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
         sendlatency = min(200, self.estimate_send_delay(bytecount))
         decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
         latency = netlatency + sendlatency + decode + ACK_TOLERANCE
