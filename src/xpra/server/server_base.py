@@ -621,7 +621,7 @@ class ServerBase(ServerCore):
         proc = self.pulseaudio_proc
         if not proc:
             return
-        soundlog.warn("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
+        soundlog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
         if self.is_child_alive(proc):
             self.pulseaudio_proc = None
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
