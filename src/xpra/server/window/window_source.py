@@ -1026,7 +1026,7 @@ class WindowSource(object):
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %i seconds ago", self.wid, self.batch_config.delay, elapsed)
-        if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.statistics.get_packets_backlog()==0:
+        if self.batch_config.delay<=2*DamageBatchConfig.START_DELAY and lr>0 and elapsed<60 and self.get_packets_backlog()==0:
             #delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
             if len(lde)==0:
@@ -1265,6 +1265,9 @@ class WindowSource(object):
         if now-self.statistics.last_resized<0.250:
             #recently resized, batch more
             delay = max(50, delay+25)
+        gs = self.global_statistics
+        if gs and now-gs.last_congestion_time<1:
+            delay = int(delay * (2-(now-gs.last_congestion_time)))
         qsize = self.queue_size()
         if qsize>4:
             #the queue is getting big, try to slow down progressively:
@@ -1272,7 +1275,7 @@ class WindowSource(object):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
-        packets_backlog = self.statistics.get_packets_backlog()
+        packets_backlog = self.get_packets_backlog()
         pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
         #only send without batching when things are going well:
         # - no packets backlog from the client
@@ -1329,6 +1332,10 @@ class WindowSource(object):
             #probably not enough events to grab -10
             return False
 
+    def get_packets_backlog(self):
+        now = monotonic_time()
+        latency_tolerance_pct = int(min(self._damage_packet_sequence, 10)*min(now-self.global_statistics.last_congestion_time, 10))
+        return self.statistics.get_packets_backlog(latency_tolerance_pct)
 
     def expire_delayed_region(self, delay):
         """ mark the region as expired so damage_packet_acked can send it later,
@@ -1413,7 +1420,7 @@ class WindowSource(object):
             log("window %s delayed region already sent", self.wid)
             return
         damage_time = dd[0]
-        packets_backlog = self.statistics.get_packets_backlog()
+        packets_backlog = self.get_packets_backlog()
         now = monotonic_time()
         actual_delay = int(1000.0 * (now-damage_time))
         if packets_backlog>0:

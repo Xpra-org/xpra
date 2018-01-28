@@ -251,7 +251,7 @@ class WindowPerformanceStatistics(object):
     def get_packets_backlog(self, latency_tolerance_pct=100):
         packets_backlog = 0
         if len(self.damage_ack_pending)>0:
-            sent_before = monotonic_time()-((self.target_latency+0.020)*100.0/latency_tolerance_pct)
+            sent_before = monotonic_time()-((self.target_latency+0.020)*latency_tolerance_pct/100.0)
             for _, (start_send_at, _, _, end_send_at, _, _, _) in self.damage_ack_pending.items():
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
