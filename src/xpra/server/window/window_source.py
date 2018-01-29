@@ -471,13 +471,14 @@ class WindowSource(object):
             info["pixel-format"] = self.pixel_format
         idata = self.window_icon_data
         if idata:
-            pixel_data, pixel_format, stride, w, h = idata
+            pixel_data, pixel_format, stride, w, h, isdefault = idata
             info["icon"] = {
                 "pixel_format"  : pixel_format,
                 "width"         : w,
                 "height"        : h,
                 "stride"        : stride,
                 "bytes"         : len(pixel_data),
+                "default"       : bool(isdefault),
                 }
         return info
 
@@ -589,23 +590,27 @@ class WindowSource(object):
                 #try to load the icon for this class-instance from the theme:
                 surf = self.window.get_default_window_icon()
                 iconlog("send_window_icon window %s using default window icon=%s", self.window, surf)
+        #TODO: clients could expose a "default-icon" capabitlity,
+        # then we wouldn't even need to send any icon data, just the flag
+        isdefault = False
         if not surf and self.window_icon_greedy:
             #client does not set a default icon, so we must provide one every time
             #to make sure that the window icon does get set to something
             #(our icon is at least better than the window manager's default)
             surf = WindowSource.get_fallback_window_icon_surface()
+            isdefault = True
             iconlog("using fallback window icon")
         if surf:
             if hasattr(surf, "get_pixels"):
                 #looks like a gdk.Pixbuf:
-                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height())
+                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height(), isdefault)
             else:
                 #for debugging, save to a file so we can see it:
                 #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
                 #extract the data from the cairo surface
                 import cairo
                 assert surf.get_format() == cairo.FORMAT_ARGB32
-                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height())
+                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height(), isdefault)
             if not self.send_window_icon_due:
                 self.send_window_icon_due = True
                 #call compress_clibboard via the work queue
@@ -620,7 +625,7 @@ class WindowSource(object):
         idata = self.window_icon_data
         if not idata:
             return
-        pixel_data, pixel_format, stride, w, h = idata
+        pixel_data, pixel_format, stride, w, h, isdefault = idata
         PIL = get_codec("PIL")
         max_w, max_h = self.window_icon_max_size
         if stride!=w*4:
@@ -662,7 +667,7 @@ class WindowSource(object):
             iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
             return
         assert wrapper.datatype in ("premult_argb32", "png"), "invalid wrapper datatype %s" % wrapper.datatype
-        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
+        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper, isdefault)
         iconlog("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)
 

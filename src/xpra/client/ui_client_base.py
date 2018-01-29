@@ -3566,7 +3566,8 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_icon(self, packet):
         wid, w, h, coding, data = packet[1:6]
-        img = self._window_icon_image(wid, w, h, coding, data)
+        isdefault = len(packet)>=7 and packet[6]
+        img = self._window_icon_image(wid, w, h, coding, data, isdefault)
         window = self._id_to_window.get(wid)
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
         if window and img:
@@ -3609,7 +3610,7 @@ class UIXpraClient(XpraClientBase):
         traylog("set_tray_icon() using default icon")
         self.tray.set_icon()
 
-    def _window_icon_image(self, wid, width, height, coding, data):
+    def _window_icon_image(self, wid, width, height, coding, data, isdefault):
         #convert the data into a pillow image,
         #adding the icon overlay (if enabled)
         from PIL import Image
@@ -3628,7 +3629,7 @@ class UIXpraClient(XpraClientBase):
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))
         icon = img
-        if self.overlay_image:
+        if self.overlay_image and not isdefault:
             if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
                 #paste the application icon in the top-left corner,
                 #shrunk by ICON_SHRINKAGE pct
