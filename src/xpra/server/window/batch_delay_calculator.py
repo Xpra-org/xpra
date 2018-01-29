@@ -176,7 +176,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     #combine factors: use the highest one:
     target = min(1.0, max_speed, max(dam_lat_abs, dam_lat_rel, dec_lat, pps, 0.0))
     #discount for congestion:
-    target /= (1.0 + global_statistics.congestion_value*5)
+    target /= (1.0 + global_statistics.congestion_value*20)
 
     #scale target between min_speed and 100:
     ms = min(100.0, max(min_speed, 0.0))
@@ -292,7 +292,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         if pixl5<pixn5:
             target = sqrt(target)
     #discount for congestion:
-    target /= (1.0 + global_statistics.congestion_value*2)
+    target /= (1.0 + global_statistics.congestion_value*10)
     #apply min-quality:
     mq = min(100.0, max(min_quality, 0.0))
     target_quality = mq + (100.0-mq) * target
