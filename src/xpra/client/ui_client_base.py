@@ -764,7 +764,7 @@ class UIXpraClient(XpraClientBase):
         return e
 
     def get_window_icon_encodings(self):
-        e = ["premult_argb32"]
+        e = ["premult_argb32", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
         return e
@@ -3566,8 +3566,7 @@ class UIXpraClient(XpraClientBase):
 
     def _process_window_icon(self, packet):
         wid, w, h, coding, data = packet[1:6]
-        isdefault = len(packet)>=7 and packet[6]
-        img = self._window_icon_image(wid, w, h, coding, data, isdefault)
+        img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
         if window and img:
@@ -3610,13 +3609,15 @@ class UIXpraClient(XpraClientBase):
         traylog("set_tray_icon() using default icon")
         self.tray.set_icon()
 
-    def _window_icon_image(self, wid, width, height, coding, data, isdefault):
+    def _window_icon_image(self, wid, width, height, coding, data):
         #convert the data into a pillow image,
         #adding the icon overlay (if enabled)
         from PIL import Image
         coding = bytestostr(coding)
         iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s", self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
-        if coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
+        if coding=="default":
+            img = self.overlay_image
+        elif coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
             from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
             data = unpremultiply_argb(data)
             rowstride = width*4
@@ -3629,7 +3630,7 @@ class UIXpraClient(XpraClientBase):
             has_alpha = img.mode=="RGBA"
             rowstride = width * (3+int(has_alpha))
         icon = img
-        if self.overlay_image and not isdefault:
+        if self.overlay_image and self.overlay_image!=img:
             if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
                 #paste the application icon in the top-left corner,
                 #shrunk by ICON_SHRINKAGE pct

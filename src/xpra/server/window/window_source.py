@@ -471,14 +471,13 @@ class WindowSource(object):
             info["pixel-format"] = self.pixel_format
         idata = self.window_icon_data
         if idata:
-            pixel_data, pixel_format, stride, w, h, isdefault = idata
+            pixel_data, pixel_format, stride, w, h = idata
             info["icon"] = {
                 "pixel_format"  : pixel_format,
                 "width"         : w,
                 "height"        : h,
                 "stride"        : stride,
                 "bytes"         : len(pixel_data),
-                "default"       : bool(isdefault),
                 }
         return info
 
@@ -590,33 +589,39 @@ class WindowSource(object):
                 #try to load the icon for this class-instance from the theme:
                 surf = self.window.get_default_window_icon()
                 iconlog("send_window_icon window %s using default window icon=%s", self.window, surf)
-        #TODO: clients could expose a "default-icon" capabitlity,
-        # then we wouldn't even need to send any icon data, just the flag
-        isdefault = False
-        if not surf and self.window_icon_greedy:
-            #client does not set a default icon, so we must provide one every time
+        if not surf:
+            if not self.window_icon_greedy:
+                return
+            #"greedy": client does not set a default icon, so we must provide one every time
             #to make sure that the window icon does get set to something
             #(our icon is at least better than the window manager's default)
+            if "default" in self.window_icon_encodings:
+                #client will set the default itself,
+                #send a mostly empty packet:
+                packet = ("window-icon", self.wid, 0, 0, "default", "")
+                iconlog("queuing window icon update: %s", packet)
+                #this is cheap, so don't use the encode thread:
+                self.queue_packet(packet, wait_for_more=True)
+                return
             surf = WindowSource.get_fallback_window_icon_surface()
-            isdefault = True
             iconlog("using fallback window icon")
         if surf:
             if hasattr(surf, "get_pixels"):
                 #looks like a gdk.Pixbuf:
-                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height(), isdefault)
+                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height())
             else:
                 #for debugging, save to a file so we can see it:
                 #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
                 #extract the data from the cairo surface
                 import cairo
                 assert surf.get_format() == cairo.FORMAT_ARGB32
-                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height(), isdefault)
+                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height())
             if not self.send_window_icon_due:
                 self.send_window_icon_due = True
                 #call compress_clibboard via the work queue
                 #and delay sending it by a bit to allow basic icon batching:
                 delay = max(50, int(self.batch_config.delay))
-                iconlog("send_window_icon() window=%s, wid=%s, icon=%s, compression scheduled in %sms", self.window, self.wid, surf, delay)
+                iconlog("send_window_icon() window=%s, wid=%s, compression scheduled in %sms", self.window, self.wid, delay)
                 self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):
@@ -625,7 +630,7 @@ class WindowSource(object):
         idata = self.window_icon_data
         if not idata:
             return
-        pixel_data, pixel_format, stride, w, h, isdefault = idata
+        pixel_data, pixel_format, stride, w, h = idata
         PIL = get_codec("PIL")
         max_w, max_h = self.window_icon_max_size
         if stride!=w*4:
@@ -667,7 +672,7 @@ class WindowSource(object):
             iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
             return
         assert wrapper.datatype in ("premult_argb32", "png"), "invalid wrapper datatype %s" % wrapper.datatype
-        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper, isdefault)
+        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
         iconlog("queuing window icon update: %s", packet)
         self.queue_packet(packet, wait_for_more=True)
 
