@@ -413,7 +413,8 @@ class GTK2WindowBase(GTKClientWindowBase):
     def queue_draw(self, x, y, width, height):
         window = self.get_window()
         if not window:
-            log.warn("ignoring draw received for a window which is not realized yet!")
+            log.warn("Warning: ignoring draw packet,")
+            log.warn(" received for a window which is not realized yet or gone already")
             return
         rect = gdk.Rectangle(x, y, width, height)
         if not FORCE_IMMEDIATE_PAINT:
