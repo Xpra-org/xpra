@@ -111,7 +111,7 @@ class GlobalPerformanceStatistics(object):
         if len(css)<=2:
             self.avg_congestion_send_speed = 0
         else:
-            self.avg_congestion_send_speed = int(calculate_size_weighted_average(tuple(self.congestion_send_speed))[0])
+            self.avg_congestion_send_speed = int(calculate_size_weighted_average(css)[0])
         #how often we get congestion events:
         #first chunk it into second intervals
         now = monotonic_time()
