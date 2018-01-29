@@ -33,7 +33,7 @@ from xpra.scripts.config import InitException, parse_bool, python_platform, pars
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.platform import set_name
-from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, OSX, POSIX, PYTHON3
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choose_digest, \
@@ -995,9 +995,13 @@ class ServerCore(object):
             c = ord(v[0])
         except:
             c = int(v[0])
+        import binascii
+        netlog("guess_header_protocol(%s)", binascii.hexlify(strtobytes(v)))
         if c==0x16:
             return "ssl", "SSL packet?"
         s = bytestostr(v)
+        if s[:4]=="SSH-":
+            return "ssh", "SSH packet"
         if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
             return "HTTP", "HTTP %s request" % s.split(" ")[0]
         return None, "character %#x, not an xpra client?" % c
