@@ -394,16 +394,17 @@ class WindowVideoSource(WindowSource):
             #raise the quality as the areas around video tend to not be graphics
             return nonvideo(quality+30, "not the video region")
 
-        lde = tuple(self.statistics.last_damage_events)
-        lim = now-4
-        pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_4secs<3*videomin:
-            return nonvideo(quality+30, "not enough frames")
-        lim = now-1
-        pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
-        if pixels_last_sec<pixels_last_4secs//8:
-            #framerate is dropping?
-            return nonvideo(quality+30, "framerate lowered")
+        if now-self.global_statistics.last_congestion_time>5:
+            lde = tuple(self.statistics.last_damage_events)
+            lim = now-4
+            pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
+            if pixels_last_4secs<3*videomin:
+                return nonvideo(quality+30, "not enough frames")
+            lim = now-1
+            pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
+            if pixels_last_sec<pixels_last_4secs//8:
+                #framerate is dropping?
+                return nonvideo(quality+30, "framerate lowered")
 
         #calculate the threshold for using video vs small regions:
         factors = (max(1, (speed-75)/5.0),                      #speed multiplier
@@ -540,12 +541,15 @@ class WindowVideoSource(WindowSource):
         #callback from video subregion to trigger a refresh of some areas
         regionrefreshlog("refresh_subregion(%s)", regions)
         if not regions or not self.can_refresh():
-            return
-        self.flush_video_encoder_now()
+            return False
         now = monotonic_time()
+        if now-self.global_statistics.last_congestion_time<5:
+            return False
+        self.flush_video_encoder_now()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
         WindowSource.do_send_delayed_regions(self, now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
+        return True
 
     def get_refresh_subregion_encoding(self, *_args):
         ww, wh = self.window_dimensions
@@ -1633,6 +1637,9 @@ class WindowVideoSource(WindowSource):
             if not encoding:
                 return None
         encode_fn = self._encoders[encoding]
+        #switching to non-video encoding can use a lot more bandwidth,
+        #try to avoid this by lowering the quality:
+        options["quality"] = max(5, self._current_quality-50)
         return encode_fn(encoding, image, options)
 
     def video_encode(self, encoding, image, options):
@@ -1868,6 +1875,7 @@ class WindowVideoSource(WindowSource):
             self._video_encoder = None
             ve.clean()
             if self.non_video_encodings:
+                log("do_flush_video_encoder() scheduling novideo refresh")
                 self.idle_add(self.refresh, {"novideo" : True})
                 videolog("flushed frame 0, novideo refresh requested")
             return

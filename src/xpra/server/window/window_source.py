@@ -1511,7 +1511,7 @@ class WindowSource(object):
 
         def send_full_window_update():
             actual_encoding = get_encoding(ww*wh)
-            log("send_delayed_regions: using full window update %sx%s with %s", ww, wh, actual_encoding)
+            log("send_delayed_regions: using full window update %sx%s as %5s, from %s", ww, wh, actual_encoding, get_best_encoding)
             assert actual_encoding is not None
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
 
@@ -1741,21 +1741,21 @@ class WindowSource(object):
             # so the value may be greater than the size of the window)
             pixels = sum(rect.width*rect.height for rect in self.refresh_regions)
             ww, wh = self.window_dimensions
-            pct = min(100, 100*pixels//(ww*wh))
+            pct = int(min(100, 100*pixels//(ww*wh)) * (1+self.global_statistics.congestion_value))
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
                 self.refresh_event_time = monotonic_time()
                 sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) / 10.0))
                 self.refresh_target_time = now + sched_delay/1000.0
                 self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
-                msg += ", scheduling refresh in %sms (pct=%s, batch=%s)" % (sched_delay, pct, self.batch_config.delay)
+                msg += ", scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay)
             else:
                 #add to the target time,
                 #but don't use sqrt() so this will not move it forwards for small updates following bigger ones:
                 sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct / 100.0))
                 target_time = self.refresh_target_time
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
-                msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%s, batch=%s)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
+                msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
         self.last_auto_refresh_message = monotonic_time(), msg
         refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)", encoding, actual_quality, lossy, msg, region, self.refresh_regions)
 
@@ -1949,6 +1949,10 @@ class WindowSource(object):
                 else:
                     send_speed = avg_send_speed
         statslog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps)", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024)
+        rtt = self.refresh_target_time
+        if rtt:
+            #a refresh now would really hurt us!
+            self.refresh_target_time = max(rtt, now+2)
         self.record_congestion_event(source, late_pct, send_speed)
 
 
