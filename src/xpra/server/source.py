@@ -555,7 +555,7 @@ class ServerSource(FileTransferHandler):
         for wid, ws in self.window_sources.items():
             weight = window_weight.get(wid)
             if weight is not None:
-                ws.bandwidth_limit = max(1, bandwidth_limit*weight/total_weight)
+                ws.bandwidth_limit = max(1, bandwidth_limit*weight//total_weight)
 
     def recalculate_delays(self):
         """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
@@ -2504,12 +2504,10 @@ class ServerSource(FileTransferHandler):
         if not gs:
             #window cleaned up?
             return
+        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
         now = monotonic_time()
         gs.last_congestion_time = now
-        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
-        if late_pct>0 and send_speed:
-            #warning: zero values would cause errors in stats calculations
-            gs.congestion_send_speed.append((now, late_pct, send_speed))
+        gs.congestion_send_speed.append((now, late_pct, send_speed))
 
 
     def queue_size(self):

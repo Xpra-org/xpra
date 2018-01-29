@@ -106,15 +106,19 @@ class GlobalPerformanceStatistics(object):
             self.min_server_ping_latency = min([x for _,x in data])
             self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
         #set to 0 if we have less than 2 events in the last 60 seconds:
-        min_time = monotonic_time()-60
+        now = monotonic_time()
+        min_time = now-60
         css = tuple(x for x in self.congestion_send_speed if x[0]>min_time)
-        if len(css)<=2:
-            self.avg_congestion_send_speed = 0
-        else:
-            self.avg_congestion_send_speed = int(calculate_size_weighted_average(css)[0])
+        acss = 0
+        if len(css)>=2:
+            #weighted average of the send speed over the last minute:
+            acss = int(calculate_size_weighted_average(css)[0])
+            latest_ctime = self.congestion_send_speed[-1][0]
+            #as the last event recedes in the past, increase limit:
+            acss *= 1+now-latest_ctime
+        self.avg_congestion_send_speed = int(acss)
         #how often we get congestion events:
         #first chunk it into second intervals
-        now = monotonic_time()
         min_time = now-10
         cst = tuple(x[0] for x in css)
         cps = []

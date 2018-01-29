@@ -59,7 +59,7 @@ class WindowPerformanceStatistics(object):
         self.encoding_pending = {}                          #damage regions waiting to be picked up by the encoding thread:
                                                             #for each sequence no: (damage_time, w, h)
         self.last_damage_events = deque(maxlen=4*NRECS)     #every time we get a damage event, we record: time,x,y,w,h
-        self.last_damage_event_time = None
+        self.last_damage_event_time = 0
         self.last_recalculate = 0
         self.damage_events_count = 0
         self.packet_count = 0

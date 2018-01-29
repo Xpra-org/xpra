@@ -121,6 +121,8 @@ def calculate_size_weighted_average(data):
         Data format: (event_time, size, value)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
+    if size_avg<=0:
+        size_avg = 1
     cdef double now = monotonic_time()              #@DuplicatedSignature
     cdef double tv = 0.0                            #@DuplicatedSignature
     cdef double tw = 0.0                            #@DuplicatedSignature
@@ -145,6 +147,10 @@ def calculate_size_weighted_average(data):
         w = pw/(0.1+delta**2)
         rv += w*size_ps
         rw += w*size
+    if tw<=0:
+        tw = 1
+    if rw<=0:
+        rw = 1
     return float(tv / tw), float(rv / rw)
 
 def calculate_for_target(metric, float target_value, float avg_value, float recent_value, float aim=0.5, float div=1.0, float slope=0.1, smoothing=logp, float weight_multiplier=1.0):
