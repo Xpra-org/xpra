@@ -3690,7 +3690,7 @@ class ServerBase(ServerCore):
         if not ss:
             return
         bandwidth_limit = packet[1]
-        if self.bandwidth_limit>0:
+        if self.bandwidth_limit:
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         ss.bandwidth_limit = bandwidth_limit
         bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
