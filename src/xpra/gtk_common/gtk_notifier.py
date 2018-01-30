@@ -108,7 +108,7 @@ class GTK_Notifier(NotifierBase):
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, timeout, icon):
         self.new_popup(nid, summary, body, actions, icon, timeout, timeout>0 and timeout<=600)
 
-    def new_popup(self, nid, summary, body, actions, icon, timeout=10, show_timeout=False):
+    def new_popup(self, nid, summary, body, actions, icon, timeout=10*1000, show_timeout=False):
         """Create a new Popup instance."""
         if len(self._notify_stack) == self.max_popups:
             oldest = self._notify_stack[0]
@@ -121,7 +121,7 @@ class GTK_Notifier(NotifierBase):
             loader.write(img_data, len(img_data))
             loader.close()
             image = loader.get_pixbuf()
-        popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout, show_timeout=show_timeout)
+        popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout//1000, show_timeout=show_timeout)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return popup

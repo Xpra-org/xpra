@@ -1218,7 +1218,7 @@ class ServerBase(ServerCore):
         summary += " is about to timeout"
         body = "Unless this session sees some activity,\n" + \
                "it will be terminated soon."
-        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration, icon, user_callback=idle_notification_action)
+        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration*1000, icon, user_callback=idle_notification_action)
         source.go_idle()
 
 

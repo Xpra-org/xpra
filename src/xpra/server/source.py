@@ -46,7 +46,7 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, bytestostr, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
-from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID
+from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -702,6 +702,13 @@ class ServerSource(FileTransferHandler):
         self.schedule_idle_timeout()
         if self.idle:
             self.no_idle()
+        try:
+            self.notification_callbacks.pop(XPRA_IDLE_NOTIFICATION_ID)
+        except KeyError:
+            pass
+        else:
+            self.notify_close(XPRA_IDLE_NOTIFICATION_ID)
+        
 
     def schedule_idle_timeout(self):
         timeoutlog("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
