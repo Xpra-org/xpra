@@ -1464,7 +1464,7 @@ class WindowSource(object):
             return
         if self.bandwidth_limit>0:
             used = self.statistics.get_bitrate()
-            bandwidthlog("may_send_delayed() bandwidth limit=%i, used=%i : %i%%", self.bandwidth_limit, used, 100*used//self.bandwidth_limit)
+            bandwidthlog("may_send_delayed() wid=%3i : bandwidth limit=%i, used=%i : %i%%", self.wid, self.bandwidth_limit, used, 100*used//self.bandwidth_limit)
             if used>=self.bandwidth_limit:
                 check_again(50)
                 return
