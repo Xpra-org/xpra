@@ -1183,6 +1183,21 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 	var client_properties = {}
 	if (packet.length>=8)
 		client_properties = packet[7];
+	if (x==0 && y==0 && !metadata["set-initial-position"]) {
+		//find a good position for it
+		var l = Object.keys(this.id_to_window).length;
+		if (l==0) {
+			//first window: center it
+			x = Math.round((this.desktop_width-w)/2);
+			if (w<this.desktop_height) {
+				y = Math.round((this.desktop_height-h)/2);
+			}
+		}
+		else {
+			x = Math.min(l*10, Math.max(0, this.desktop_width-100));
+			y = 96;
+		}
+	}
 	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
 	this._new_ui_event();
 }

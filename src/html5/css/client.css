@@ -168,7 +168,7 @@ div.windowinfocus {
 	position: absolute;
 	left: auto;
 	right: 0;
-	top: 0;
+	top: 96px;
 	bottom: auto;
 	width: 600px;
 	height: auto;
