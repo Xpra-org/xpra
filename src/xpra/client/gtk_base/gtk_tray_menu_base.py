@@ -738,20 +738,11 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(menu)
         menuitems = {}
 
-        def bwitem(bwlimit=0):
-            if bwlimit<=0:
-                label = "None"
-            elif bwlimit>=10*1000*1000:
-                label = "%iMbps" % (bwlimit//(1000*1000))
-            else:
-                label = "%sbps" % std_unit_dec(bwlimit)
-            c = CheckMenuItem(label)
-            c.set_draw_as_radio(True)
-            c.set_active(False)
-            set_sensitive(c, False)
-            c.show()
+        def bwitem(bwlimit):
+            c = self.bwitem(bwlimit)
             menuitems[bwlimit] = c
             return c
+
         menu.append(bwitem(0))
         bandwidth_limit_menu_item.set_submenu(menu)
         bandwidth_limit_menu_item.show_all()
@@ -776,10 +767,6 @@ class GTKTrayMenuBase(object):
 
                 for bwlimit, c in menuitems.items():
                     c.set_active(initial_value==bwlimit)
-                    def activate_cb(_item, *_args):
-                        self.client.bandwidth_limit = bwlimit
-                        self.client.send_bandwidth_limit()
-                    c.connect("toggled", activate_cb)
                     #disable any values higher than what the server allows:
                     if bwlimit==0:
                         below_server_limit = self.client.server_bandwidth_limit==0
@@ -791,6 +778,23 @@ class GTKTrayMenuBase(object):
         self.client.after_handshake(set_bwlimitmenu)
         self.client.on_server_setting_changed("bandwidth-limit", set_bwlimitmenu)
         return bandwidth_limit_menu_item
+    def bwitem(self, bwlimit=0):
+        if bwlimit<=0:
+            label = "None"
+        elif bwlimit>=10*1000*1000:
+            label = "%iMbps" % (bwlimit//(1000*1000))
+        else:
+            label = "%sbps" % std_unit_dec(bwlimit)
+        c = CheckMenuItem(label)
+        c.set_draw_as_radio(True)
+        c.set_active(False)
+        set_sensitive(c, False)
+        def activate_cb(_item, *_args):
+            self.client.bandwidth_limit = bwlimit
+            self.client.send_bandwidth_limit()
+        c.connect("toggled", activate_cb)
+        c.show()
+        return c
 
 
     def make_encodingsmenuitem(self):
