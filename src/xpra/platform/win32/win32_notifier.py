@@ -19,6 +19,7 @@ class Win32_Notifier(NotifierBase):
         NotifierBase.__init__(self, *args)
         self.handles_actions = GTK_Notifier is not None
         self.gtk_notifier = None
+        self.gtk_notifications = set()
 
     def get_gtk_notifier(self):
         if self.gtk_notifier is None:
@@ -34,6 +35,7 @@ class Win32_Notifier(NotifierBase):
             gtk_notifier = self.get_gtk_notifier()
             if gtk_notifier:
                 gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+                self.gtk_notifications.add(nid)
                 return
         if tray is None:
             log.warn("Warning: no system tray - cannot show notification!")
@@ -43,4 +45,10 @@ class Win32_Notifier(NotifierBase):
         notify(hwnd, app_id, summary, body, expire_timeout, icon)
 
     def close_notify(self, nid):
-        pass
+        try:
+            self.gtk_notifications.remove(nid)
+        except KeyError:
+            #TODO: implement remove for win32 notifications
+            pass
+        else:
+            self.get_gtk_notifier().close_notify(nid)
