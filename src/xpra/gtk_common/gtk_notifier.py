@@ -177,8 +177,8 @@ class Popup(gtk.Window):
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
-        if True:
-            icon = get_pixbuf("close.png")
+        icon = get_pixbuf("close.png")
+        if icon:
             close_button = gtk.Image()
             close_button.set_from_pixbuf(icon)
             close_button.set_padding(3, 3)
@@ -186,6 +186,7 @@ class Popup(gtk.Window):
             close_window.set_visible_window(False)
             close_window.connect("button-press-event", self.user_closed)
             close_window.add(close_button)
+            close_window.set_size_request(icon.get_width(), icon.get_height())
             header_box.pack_end(close_window, False, False)
         main_box.pack_start(header_box)
 
