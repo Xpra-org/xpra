@@ -18,6 +18,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 authlog = Logger("auth")
+bandwidthlog = Logger("bandwdith")
 
 from xpra.scripts.config import InitExit, parse_with_unit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
@@ -140,6 +141,7 @@ class XpraClientBase(FileTransferHandler):
         self.password = opts.password
         self.password_file = opts.password_file
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        bandwidthlog("init bandwidth_limit=%i", self.bandwidth_limit)
         self.encryption = opts.encryption or opts.tcp_encryption
         if self.encryption:
             crypto_backend_init()
@@ -400,13 +402,14 @@ class XpraClientBase(FileTransferHandler):
         if socket_speed:
             capabilities["connection-data"] = {"speed" : socket_speed}
         bandwidth_limit = self.bandwidth_limit
-        log("bandwidth-limit=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
+        bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
         if bandwidth_limit is None:
             if socket_speed:
                 #auto: use 80% of socket speed if we have it:
                 bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
             else:
                 bandwidth_limit = 0
+        bandwidthlog("bandwidth-limit capability=%s", bandwidth_limit)
         if bandwidth_limit>0:
             capabilities["bandwidth-limit"] = bandwidth_limit
 

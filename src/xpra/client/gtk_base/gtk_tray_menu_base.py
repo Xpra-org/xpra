@@ -32,6 +32,7 @@ log = Logger("menu")
 clipboardlog = Logger("menu", "clipboard")
 webcamlog = Logger("menu", "webcam")
 avsynclog = Logger("menu", "av-sync")
+bandwidthlog = Logger("bandwidth", "network")
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
@@ -756,11 +757,12 @@ class GTKTrayMenuBase(object):
                 set_sensitive(bandwidth_limit_menu_item, False)
             else:
                 initial_value = self.client.server_bandwidth_limit or self.client.bandwidth_limit or 0
-                log("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s", self.client.server_bandwidth_limit, self.client.bandwidth_limit, initial_value)
+                bandwidthlog("set_bwlimitmenu() server_bandwidth_limit=%s, bandwidth_limit=%s, initial value=%s", self.client.server_bandwidth_limit, self.client.bandwidth_limit, initial_value)
 
                 options = BANDWIDTH_MENU_OPTIONS
                 if initial_value and initial_value not in options:
                     options.append(initial_value)
+                bandwidthlog("bandwidth options=%s", options)
                 menu.append(gtk.SeparatorMenuItem())
                 for v in sorted(options):
                     menu.append(bwitem(v))
@@ -779,6 +781,7 @@ class GTKTrayMenuBase(object):
         self.client.on_server_setting_changed("bandwidth-limit", set_bwlimitmenu)
         return bandwidth_limit_menu_item
     def bwitem(self, bwlimit=0):
+        bandwidthlog("bwitem(%i)", bwlimit)
         if bwlimit<=0:
             label = "None"
         elif bwlimit>=10*1000*1000:
@@ -789,7 +792,8 @@ class GTKTrayMenuBase(object):
         c.set_draw_as_radio(True)
         c.set_active(False)
         set_sensitive(c, False)
-        def activate_cb(_item, *_args):
+        def activate_cb(item, *args):
+            bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
             self.client.bandwidth_limit = bwlimit
             self.client.send_bandwidth_limit()
         c.connect("toggled", activate_cb)

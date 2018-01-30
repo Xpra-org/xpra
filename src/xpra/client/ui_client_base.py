@@ -42,6 +42,7 @@ notifylog = Logger("notify")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
 metalog = Logger("metadata")
+bandwidthlog = Logger("bandwidth")
 
 
 from xpra.gtk_common.gobject_compat import import_glib
@@ -1947,7 +1948,7 @@ class UIXpraClient(XpraClientBase):
         self.server_av_sync = c.boolget("av-sync.enabled")
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
-        log("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
+        bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         e = c.strget("encoding")
         if e:
@@ -2300,6 +2301,7 @@ class UIXpraClient(XpraClientBase):
 
 
     def send_bandwidth_limit(self):
+        bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
         assert self.server_bandwidth_limit_change
         self.send("bandwidth-limit", self.bandwidth_limit)
 

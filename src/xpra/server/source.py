@@ -31,6 +31,7 @@ statslog = Logger("stats")
 notifylog = Logger("notify")
 clipboardlog = Logger("clipboard")
 netlog = Logger("network")
+bandwidthlog = Logger("bandwidth")
 
 
 from xpra.server.source_stats import GlobalPerformanceStatistics
@@ -533,7 +534,7 @@ class ServerSource(FileTransferHandler):
         bandwidth_limit = 0
         if BANDWIDTH_DETECTION:
             bandwidth_limit = self.statistics.avg_congestion_send_speed
-            statslog("avg_congestion_send_speed=%s", bandwidth_limit)
+            bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
             if bandwidth_limit>20*1024*1024:
                 #ignore congestion speed if greater 20Mbps
                 bandwidth_limit = 0
@@ -541,7 +542,7 @@ class ServerSource(FileTransferHandler):
             #command line options could overrule what we detect?
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
-        statslog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
+        bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
         if self.soft_bandwidth_limit<=0:
             return
         #figure out how to distribute the bandwidth amongst the windows,
@@ -556,7 +557,7 @@ class ServerSource(FileTransferHandler):
                 #and add the number of pixels damaged:
                 weight = ww*wh + ws.statistics.get_damage_pixels()
             window_weight[wid] = weight
-        log("update_bandwidth_limits() window weights=%s", window_weight)
+        bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
         total_weight = sum(window_weight.values())
         for wid, ws in self.window_sources.items():
             weight = window_weight.get(wid)
@@ -831,7 +832,7 @@ class ServerSource(FileTransferHandler):
             self.bandwidth_limit = bandwidth_limit
         else:
             self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
-        netlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
+        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
 
         default_min_delay = max(DamageBatchConfig.MIN_DELAY, 1000//(self.vrefresh or 60))
         self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))

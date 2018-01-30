@@ -32,6 +32,7 @@ dbuslog = Logger("dbus")
 webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 httplog = Logger("http")
+bandwidthlog = Logger("bandwidth")
 
 from xpra.platform.features import COMMAND_SIGNALS, CLIPBOARDS
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -1412,10 +1413,13 @@ class ServerBase(ServerCore):
             socket_speed = pinfo.get("socket", {}).get("speed")
             if socket_speed:
                 #auto: use 80% of socket speed if we have it:
-                return socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+                v = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
             else:
-                return 0
-        return self.bandwidth_limit
+                v = 0
+        else:
+            v = self.bandwidth_limit
+        bandwidthlog("get_client_bandwidth_limit(%s)=%s", proto, v)            
+        return v
 
 
     def get_server_source_class(self):
@@ -3672,7 +3676,7 @@ class ServerBase(ServerCore):
         if self.bandwidth_limit>0:
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         ss.bandwidth_limit = bandwidth_limit
-        netlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
+        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
 
 
     def _process_sharing_toggle(self, proto, packet):
