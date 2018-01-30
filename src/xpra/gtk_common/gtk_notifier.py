@@ -99,11 +99,20 @@ class GTK_Notifier(NotifierBase):
         self.y = self.max_height - 64        #space for a panel
         log("our reduced dimensions: %dx%d", self.x, self.y)
 
+    def cleanup(self):
+        popups = tuple(self._notify_stack)
+        self._notify_stack = []
+        for x in popups:
+            x.hide_notification()
+        NotifierBase.cleanup(self)
+
+
     def get_origin_x(self):
-        return    self.x
+        return self.x
 
     def get_origin_y(self):
-        return    self.y
+        return self.y
+
 
     def close_notify(self, nid):
         for x in self._notify_stack:

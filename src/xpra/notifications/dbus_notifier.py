@@ -59,6 +59,14 @@ class DBUS_Notifier(NotifierBase):
         self.handles_actions = "actions" in caps
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
+    def cleanup(self):
+        nids = list(self.actual_notification_id.items())
+        self.actual_notification_id = {}
+        for nid, actual_id in nids:
+            self.do_close(nid, actual_id)
+        NotifierBase.cleanup(self)
+
+
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
         if not self.dbus_check(dbus_id):
             return
@@ -179,6 +187,10 @@ class DBUS_Notifier(NotifierBase):
             log("close_notify(%i) actual notification not found, already closed?", nid)
             return
         log("close_notify(%i) actual id=%s", nid, actual_id)
+        self.do_close(nid, actual_id)
+
+    def do_close(self, nid, actual_id):
+        log("do_close_notify(%i)", actual_id)
         def CloseNotificationReply():
             try:
                 self.actual_notification_id.pop(nid)
