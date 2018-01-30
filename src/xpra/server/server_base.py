@@ -1205,7 +1205,9 @@ class ServerBase(ServerCore):
     def idle_grace_timeout_cb(self, source):
         timeoutlog("idle_grace_timeout_cb(%s)", source)
         nid = XPRA_IDLE_NOTIFICATION_ID
-        actions = ["cancel", "Cancel Timeout"]
+        actions = ()
+        if source.send_notifications_actions:
+            actions = ("cancel", "Cancel Timeout")
         user_icon = os.path.join(get_icon_dir(), "timer.png")
         icon = parse_image_path(user_icon) or ()
         def idle_notification_action(nid, action_id):
