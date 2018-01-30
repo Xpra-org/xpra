@@ -496,27 +496,37 @@ class ServerBase(ServerCore):
                 log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
                 log.warn(" use the 'notifications=no' option")
 
-    def _process_notification_close(self, _proto, packet):
+    def _process_notification_close(self, proto, packet):
         assert self.notifications
         nid, reason, text = packet[1:4]
-        active = self.notifications_forwarder.is_notification_active(nid)
-        notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
-        if active:
-            self.notifications_forwarder.NotificationClosed(nid, reason)
+        ss = self._server_sources.get(proto)
+        assert ss
+        try:
+            #remove client callback if we have one:
+            ss.notification_callbacks.pop(nid)
+        except KeyError:
+            #regular notification forwarding:
+            active = self.notifications_forwarder.is_notification_active(nid)
+            notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
+            if active:
+                self.notifications_forwarder.NotificationClosed(nid, reason)
 
     def _process_notification_action(self, proto, packet):
         assert self.notifications
         nid, action_key = packet[1:3]
         ss = self._server_sources.get(proto)
         assert ss
-        client_callback = ss.notification_callbacks.get(nid)
-        if client_callback:
-            client_callback(nid, action_key)
-        else:
+        try:
+            #special client callback notification:
+            client_callback = ss.notification_callbacks.pop(nid)
+        except KeyError:
+            #regular notification forwarding:
             active = self.notifications_forwarder.is_notification_active(nid)
             notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
             if active:
                 self.notifications_forwarder.ActionInvoked(nid, action_key)
+        else:
+            client_callback(nid, action_key)
 
 
     def init_pulseaudio(self):
