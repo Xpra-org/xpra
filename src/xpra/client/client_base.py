@@ -18,7 +18,7 @@ printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 authlog = Logger("auth")
-bandwidthlog = Logger("bandwdith")
+bandwidthlog = Logger("bandwidth")
 
 from xpra.scripts.config import InitExit, parse_with_unit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
