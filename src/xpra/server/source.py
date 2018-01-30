@@ -2545,7 +2545,7 @@ class ServerSource(FileTransferHandler):
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
                 hints = {}
-                expire_timeout = 10
+                expire_timeout = 10*1000
                 icon = ""
                 try:
                     icon_filename = os.path.join(get_icon_dir(), "connect.png")
