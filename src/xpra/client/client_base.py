@@ -141,7 +141,7 @@ class XpraClientBase(FileTransferHandler):
         self.password = opts.password
         self.password_file = opts.password_file
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
-        bandwidthlog("init bandwidth_limit=%i", self.bandwidth_limit)
+        bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
         self.encryption = opts.encryption or opts.tcp_encryption
         if self.encryption:
             crypto_backend_init()
