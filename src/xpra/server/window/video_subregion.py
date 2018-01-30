@@ -121,7 +121,7 @@ class VideoSubregion(object):
 
     def set_auto_refresh_delay(self, d):
         refreshlog("subregion auto-refresh delay: %s", d)
-        assert isinstance(d, int)
+        assert isinstance(d, int),"delay is not an int: %s (%s)" % (d, type(d))
         self.auto_refresh_delay = d
 
     def cancel_refresh_timer(self):

@@ -1183,6 +1183,7 @@ class WindowSource(object):
         self.refresh_speed = rs
 
     def do_set_auto_refresh_delay(self, min_delay, delay):
+        refreshlog("do_set_auto_refresh_delay%s", (min_delay, delay))
         self.min_auto_refresh_delay = min_delay
         self.base_auto_refresh_delay = delay
 

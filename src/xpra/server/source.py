@@ -45,6 +45,7 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, bytestostr, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
+from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
 def no_legacy_names(v):
@@ -65,6 +66,7 @@ NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
+CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -230,7 +232,7 @@ class ServerSource(FileTransferHandler):
     and added to the damage_packet_queue.
     """
 
-    def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove,
+    def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
                  socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
@@ -247,7 +249,7 @@ class ServerSource(FileTransferHandler):
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
-        log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove,
+        log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
                  socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus,
@@ -274,6 +276,7 @@ class ServerSource(FileTransferHandler):
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
+        self.setting_changed = setting_changed
         self.idle = False
         self.idle_timeout = idle_timeout
         self.idle_timeout_cb = idle_timeout_cb
@@ -426,6 +429,7 @@ class ServerSource(FileTransferHandler):
         self.send_bell = False
         self.send_notifications = False
         self.send_notifications_actions = False
+        self.notification_callbacks = {}
         self.send_windows = True
         self.pointer_grabs = False
         self.randr_notify = False
@@ -455,6 +459,8 @@ class ServerSource(FileTransferHandler):
         self.double_click_distance = -1, -1
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
+        self.bandwidth_warnings = True
+        self.bandwidth_warning_time = 0
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -1987,7 +1993,7 @@ class ServerSource(FileTransferHandler):
             return
         self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon, user_callback=None):
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
         if not self.send_notifications:
@@ -1996,6 +2002,8 @@ class ServerSource(FileTransferHandler):
         if self.suspended:
             notifylog("client %s is suspended, notification not sent", self)
             return False
+        if user_callback:
+            self.notification_callbacks[nid] = user_callback
         #this is one of the few places where we actually do care about character encoding:
         try:
             summary = summary.encode("utf8")
@@ -2508,6 +2516,54 @@ class ServerSource(FileTransferHandler):
         now = monotonic_time()
         gs.last_congestion_time = now
         gs.congestion_send_speed.append((now, late_pct, send_speed))
+        if self.bandwidth_warnings and now-self.bandwidth_warning_time>60:
+            #enough congestion events?
+            min_time = now-10
+            count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
+            if count>CONGESTION_WARNING_EVENT_COUNT:
+                self.bandwidth_warning_time = now
+                dbus_id = ""
+                nid = 2**31
+                summary = "Network Performance Issue"
+                body = "Your network connection is struggling to keep up,\n" + \
+                        "consider lowering the bandwidth limit,\n" + \
+                        "or lowering the picture quality"
+                actions = []
+                if self.bandwidth_limit==0 or self.bandwidth_limit>1*1000*1000:
+                    actions += ["lower-bandwidth", "Lower bandwidth limit"]
+                #if self.default_min_quality>10:
+                #    actions += ["lower-quality", "Lower quality"]
+                actions += ["ignore", "Ignore"]
+                hints = {}
+                expire_timeout = 10
+                icon = ""
+                try:
+                    icon_filename = os.path.join(get_icon_dir(), "connect.png")
+                    if os.path.exists(icon_filename):
+                        from xpra.notifications.common import parse_image_path
+                        icon = parse_image_path(icon_filename) or ""
+                except Exception:
+                    notifylog.error("Error: failed to load network notification icon", exc_info=True)
+                self.notify(dbus_id, nid, "Xpra", 0, "", summary, body, actions, hints, expire_timeout, icon, user_callback=self.congestion_notification_callback)
+
+    def congestion_notification_callback(self, nid, action_id):
+        log("congestion_notification_callback(%i, %s)", nid, action_id)
+        if action_id=="lower-bandwidth":
+            bandwidth_limit = 50*1024*1024
+            if self.bandwidth_limit>256*1024:
+                bandwidth_limit = self.bandwidth_limit//2
+            css = 50*1024*1024
+            if self.statistics.avg_congestion_send_speed>256*1024:
+                #round up:
+                css = int(1+self.statistics.avg_congestion_send_speed//16/1024)*16*1024
+            self.bandwidth_limit = min(bandwidth_limit, css)
+            self.setting_changed("bandwidth-limit", self.bandwidth_limit)
+        #elif action_id=="lower-quality":
+        #    self.default_min_quality = max(1, self.default_min_quality-15)
+        #    self.set_min_quality(self.default_min_quality)
+        #    self.setting_changed("min-quality", self.default_min_quality)
+        elif action_id=="ignore":
+            self.bandwidth_warnings = False
 
 
     def queue_size(self):

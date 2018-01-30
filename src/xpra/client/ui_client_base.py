@@ -2114,12 +2114,14 @@ class UIXpraClient(XpraClientBase):
 
     def _process_setting_change(self, packet):
         setting, value = packet[1:3]
+        setting = bytestostr(setting)
         #convert "hello" / "setting" variable names to client variables:
         if setting in (
             "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
             "clipboard-direction", "session_name",
             "sharing", "sharing-toggle", "lock", "lock-toggle",
             "start-new-commands", "client-shutdown", "webcam",
+            "bandwidth-limit",
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:

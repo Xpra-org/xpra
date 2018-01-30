@@ -504,13 +504,19 @@ class ServerBase(ServerCore):
         if active:
             self.notifications_forwarder.NotificationClosed(nid, reason)
 
-    def _process_notification_action(self, _proto, packet):
+    def _process_notification_action(self, proto, packet):
         assert self.notifications
         nid, action_key = packet[1:3]
-        active = self.notifications_forwarder.is_notification_active(nid)
-        notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
-        if active:
-            self.notifications_forwarder.ActionInvoked(nid, action_key)
+        ss = self._server_sources.get(proto)
+        assert ss
+        client_callback = ss.notification_callbacks.get(nid)
+        if client_callback:
+            client_callback(nid, action_key)
+        else:
+            active = self.notifications_forwarder.is_notification_active(nid)
+            notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
+            if active:
+                self.notifications_forwarder.ActionInvoked(nid, action_key)
 
 
     def init_pulseaudio(self):
@@ -1341,7 +1347,7 @@ class ServerBase(ServerCore):
         bandwidth_limit = self.get_client_bandwidth_limit(proto)
         ServerSourceClass = self.get_server_source_class()
         ss = ServerSourceClass(proto, drop_client,
-                          self.idle_add, self.timeout_add, self.source_remove,
+                          self.idle_add, self.timeout_add, self.source_remove, self.setting_changed,
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
                           self._socket_dir, self.unix_socket_paths, not is_request, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
