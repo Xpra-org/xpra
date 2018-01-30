@@ -5,18 +5,40 @@
 
 from xpra.notifications.notifier_base import NotifierBase, log
 from xpra.platform.win32.win32_balloon import notify
+from xpra.gtk_common import gtk_notifier
+
+try:
+    from xpra.gtk_common.gtk_notifier import GTK_Notifier
+except ImportError:
+    GTK_Notifier = None
+
 
 class Win32_Notifier(NotifierBase):
 
+    def __init__(self, *args):
+        NotifierBase.__init__(self, *args)
+        self.handles_actions = GTK_Notifier is not None
+        self.gtk_notifier = None
+
+    def get_gtk_notifier(self):
+        if self.gtk_notifier is None:
+            try:
+                self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
+            except:
+                log("failed to load GTK Notifier fallback", exc_info=True)
+        return self.gtk_notifier
+
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+        getHWND = getattr(tray, "getHWND", None)
+        if tray is None or getHWND is None or actions:
+            gtk_notifier = self.get_gtk_notifier()
+            if gtk_notifier:
+                gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+                return
         if tray is None:
             log.warn("Warning: no system tray - cannot show notification!")
             return
-        if not hasattr(tray, "getHWND"):
-            log.warn("Warning: cannot show notification,")
-            log.warn(" the system tray class %s does not support hwnd", type(tray))
-            return
-        hwnd = tray.getHWND()
+        hwnd = getHWND()
         app_id = tray.app_id
         notify(hwnd, app_id, summary, body, expire_timeout, icon)
 
