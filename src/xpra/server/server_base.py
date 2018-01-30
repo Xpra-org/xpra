@@ -507,11 +507,12 @@ class ServerBase(ServerCore):
             #remove client callback if we have one:
             ss.notification_callbacks.pop(nid)
         except KeyError:
-            #regular notification forwarding:
-            active = self.notifications_forwarder.is_notification_active(nid)
-            notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
-            if active:
-                self.notifications_forwarder.NotificationClosed(nid, reason)
+            if self.notifications_forwarder:
+                #regular notification forwarding:
+                active = self.notifications_forwarder.is_notification_active(nid)
+                notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
+                if active:
+                    self.notifications_forwarder.NotificationClosed(nid, reason)
 
     def _process_notification_action(self, proto, packet):
         assert self.notifications
@@ -523,11 +524,12 @@ class ServerBase(ServerCore):
             #special client callback notification:
             client_callback = ss.notification_callbacks.pop(nid)
         except KeyError:
-            #regular notification forwarding:
-            active = self.notifications_forwarder.is_notification_active(nid)
-            notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
-            if active:
-                self.notifications_forwarder.ActionInvoked(nid, action_key)
+            if self.notifications_forwarder:
+                #regular notification forwarding:
+                active = self.notifications_forwarder.is_notification_active(nid)
+                notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
+                if active:
+                    self.notifications_forwarder.ActionInvoked(nid, action_key)
         else:
             client_callback(nid, action_key)
 
