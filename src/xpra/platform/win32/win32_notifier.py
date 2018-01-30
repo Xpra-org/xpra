@@ -20,6 +20,7 @@ class Win32_Notifier(NotifierBase):
         self.handles_actions = GTK_Notifier is not None
         self.gtk_notifier = None
         self.gtk_notifications = set()
+        self.notification_handles = {}
 
     def get_gtk_notifier(self):
         if self.gtk_notifier is None:
@@ -42,13 +43,20 @@ class Win32_Notifier(NotifierBase):
             return
         hwnd = getHWND()
         app_id = tray.app_id
+        log("show_notify%s hwnd=%i, app_id=%i", (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon), hwnd, app_id)
+        #FIXME: remove handles when notification is closed
+        self.notification_handles[nid] = (hwnd, app_id)
         notify(hwnd, app_id, summary, body, expire_timeout, icon)
 
     def close_notify(self, nid):
         try:
             self.gtk_notifications.remove(nid)
         except KeyError:
-            #TODO: implement remove for win32 notifications
-            pass
+            try:
+                hwnd, app_id = self.notification_handles.pop(nid)
+            except KeyError:
+                return
+            log("close_notify(%i) hwnd=%i, app_id=%i", nid, hwnd, app_id)
+            notify(hwnd, app_id, "", "", 0, None)
         else:
             self.get_gtk_notifier().close_notify(nid)
