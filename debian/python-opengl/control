@@ -1,0 +1,18 @@
+Source: pyopengl
+Section: python
+Priority: optional
+Maintainer: Antoine Martin <antoine@devloop.org.uk>
+Build-Depends: debhelper (>= 9), dh-python, python-all (>= 2.6.6-3~), python-setuptools
+Standards-Version: 3.9.5
+Homepage: http://pyopengl.sourceforge.net
+
+Package: python-opengl
+Architecture: all
+Depends: ${python:Depends}, python-ctypes, libgl1-mesa-glx | libgl1, libglu1-mesa | libglu1, freeglut3, ${misc:Depends}
+Suggests: python-tk, python-numpy, libgle3
+Description: Python bindings to OpenGL (Python 2)
+ PyOpenGL is a cross-platform open source Python binding to the standard
+ OpenGL API providing 2D and 3D graphic drawing. PyOpenGL supports the
+ GL, GLU, GLE, and GLUT libraries. The library can be used with the Tkinter,
+ wxPython, FxPy, and Win32GUI windowing libraries (or almost any Python
+ windowing library which can provide an OpenGL context).

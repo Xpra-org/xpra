@@ -1,0 +1,5 @@
+#!/usr/bin/make -f
+export PYBUILD_NAME=opengl
+
+%:
+	dh $@ --with python2 --buildsystem=pybuild

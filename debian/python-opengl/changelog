@@ -1,0 +1,5 @@
+pyopengl (3.1.1a1) UNRELEASED; urgency=low
+
+  * initial xpra packaging
+
+ -- Antoine Martin <antoine@devloop.org.uk>  Tue, 30 Jan 2018 20:52:15 +0700
