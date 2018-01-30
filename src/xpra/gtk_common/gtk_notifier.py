@@ -105,10 +105,10 @@ class GTK_Notifier(NotifierBase):
     def get_origin_y(self):
         return    self.y
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
-        self.new_popup(nid, summary, body, actions, icon)
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, timeout, icon):
+        self.new_popup(nid, summary, body, actions, icon, timeout, timeout>0 and timeout<=600)
 
-    def new_popup(self, nid, summary, body, actions, icon):
+    def new_popup(self, nid, summary, body, actions, icon, timeout=10, show_timeout=False):
         """Create a new Popup instance."""
         if len(self._notify_stack) == self.max_popups:
             oldest = self._notify_stack[0]
@@ -121,7 +121,7 @@ class GTK_Notifier(NotifierBase):
             loader.write(img_data, len(img_data))
             loader.close()
             image = loader.get_pixbuf()
-        popup = Popup(self, nid, summary, body, actions, image=image)
+        popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout, show_timeout=show_timeout)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
         return popup
@@ -146,8 +146,8 @@ class GTK_Notifier(NotifierBase):
 
 
 class Popup(gtk.Window):
-    def __init__(self, stack, nid, title, message, actions, image):
-        log("Popup%s", (stack, nid, title, message, actions, image))
+    def __init__(self, stack, nid, title, message, actions, image, timeout=5, show_timeout=False):
+        log("Popup%s", (stack, nid, title, message, actions, image, timeout, show_timeout))
         self.stack = stack
         self.nid = nid
         gtk.Window.__init__(self)
@@ -201,7 +201,7 @@ class Popup(gtk.Window):
         self.counter = gtk.Label()
         self.counter.set_alignment(1, 1)
         self.counter.set_padding(3, 3)
-        self.timeout = stack.timeout
+        self.timeout = timeout
 
         body_box.pack_start(self.message, True, False, 5)
         body_box.pack_end(self.counter, False, False, 5)
@@ -224,7 +224,7 @@ class Popup(gtk.Window):
             self.message.modify_fg(STATE_NORMAL, stack.fg_color)
             self.header.modify_fg(STATE_NORMAL, stack.fg_color)
             self.counter.modify_fg(STATE_NORMAL, stack.fg_color)
-        self.show_timeout = stack.show_timeout
+        self.show_timeout = show_timeout
         self.hover = False
         self.show_all()
         self.w, self.h = get_preferred_size(self)

@@ -46,6 +46,7 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
 from xpra.os_util import platform_name, Queue, get_machine_id, get_user_uuid, monotonic_time, BytesIOClass, strtobytes, bytestostr, WIN32, POSIX
 from xpra.server.background_worker import add_work_item
+from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
@@ -282,6 +283,8 @@ class ServerSource(FileTransferHandler):
         self.idle_timeout = idle_timeout
         self.idle_timeout_cb = idle_timeout_cb
         self.idle_grace_timeout_cb = idle_grace_timeout_cb
+        #grace duration is at least 10 seconds:
+        self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
         self.idle_timer = None
         self.idle_grace_timer = None
         self.schedule_idle_grace_timeout()
@@ -714,9 +717,8 @@ class ServerSource(FileTransferHandler):
             self.source_remove(self.idle_grace_timer)
             self.idle_grace_timer = None
         if self.idle_timeout>0 and not self.is_closed():
-            #grace timer is 90% of real timer:
-            grace = int(self.idle_timeout*1000*GRACE_PERCENT/100)
-            self.idle_grace_timer = self.timeout_add(grace, self.idle_grace_timedout)
+            grace = self.idle_timeout - self.idle_grace_duration
+            self.idle_grace_timer = self.timeout_add(max(0, int(grace*1000)), self.idle_grace_timedout)
 
     def idle_grace_timedout(self):
         self.idle_grace_timer = None
@@ -2524,7 +2526,7 @@ class ServerSource(FileTransferHandler):
             if count>CONGESTION_WARNING_EVENT_COUNT:
                 self.bandwidth_warning_time = now
                 dbus_id = ""
-                nid = 2**31
+                nid = XPRA_BANDWIDTH_NOTIFICATION_ID
                 summary = "Network Performance Issue"
                 body = "Your network connection is struggling to keep up,\n" + \
                         "consider lowering the bandwidth limit,\n" + \

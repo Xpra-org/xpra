@@ -3,9 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os.path
 from xpra.os_util import BytesIOClass
 from xpra.log import Logger
 log = Logger("dbus", "notify")
+
+XPRA_NOTIFICATIONS_OFFSET = 2**31
+XPRA_BANDWIDTH_NOTIFICATION_ID = XPRA_NOTIFICATIONS_OFFSET+1
+XPRA_IDLE_NOTIFICATION_ID = XPRA_NOTIFICATIONS_OFFSET+2
 
 
 def parse_image_data(data):
@@ -29,13 +34,14 @@ def parse_image_data(data):
     return None
 
 def parse_image_path(path):
-    try:
-        from PIL import Image
-        img = Image.open(path)
-        return image_data(img)
-    except Exception as e:
-        log.error("Error parsing image path '%s' for notification:", path)
-        log.error(" %s", e)
+    if os.path.exists(path):
+        try:
+            from PIL import Image
+            img = Image.open(path)
+            return image_data(img)
+        except Exception as e:
+            log.error("Error parsing image path '%s' for notification:", path)
+            log.error(" %s", e)
     return None
 
 def image_data(img):

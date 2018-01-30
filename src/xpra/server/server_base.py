@@ -33,6 +33,7 @@ webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 httplog = Logger("http")
 bandwidthlog = Logger("bandwidth")
+timeoutlog = Logger("timeout")
 
 from xpra.platform.features import COMMAND_SIGNALS, CLIPBOARDS
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -46,7 +47,7 @@ from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_scree
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename, get_icon_dir
-from xpra.notifications.common import parse_image_path
+from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.scripts.main import sound_option, parse_env
@@ -517,6 +518,7 @@ class ServerBase(ServerCore):
         nid, action_key = packet[1:3]
         ss = self._server_sources.get(proto)
         assert ss
+        ss.user_event()
         try:
             #special client callback notification:
             client_callback = ss.notification_callbacks.pop(nid)
@@ -1193,16 +1195,32 @@ class ServerBase(ServerCore):
 
 
     def idle_timeout_cb(self, source):
-        log("idle_timeout_cb(%s)", source)
+        timeoutlog("idle_timeout_cb(%s)", source)
         p = source.protocol
         if p:
             self.disconnect_client(p, IDLE_TIMEOUT)
 
     def idle_grace_timeout_cb(self, source):
-        log("idle_grace_timeout_cb(%s)", source)
-        timeout_nid = 2**16 + 2**8 + 1
-        source.notify(0, timeout_nid, "xpra", 0, "", "This Xpra session will timeout soon", "Activate one of the windows to avoid this timeout", [], {}, 10, "")
+        timeoutlog("idle_grace_timeout_cb(%s)", source)
+        nid = XPRA_IDLE_NOTIFICATION_ID
+        actions = ["cancel", "Cancel Timeout"]
+        user_icon = os.path.join(get_icon_dir(), "timer.png")
+        icon = parse_image_path(user_icon) or ()
+        def idle_notification_action(nid, action_id):
+            timeoutlog("idle_notification_action(%i, %s)", nid, action_id)
+            if action_id=="cancel":
+                source.user_event()
+                source.no_idle()
+        if self.session_name!="Xpra":
+            summary = "The Xpra session %s" % self.session_name
+        else:
+            summary = "Xpra session"
+        summary += " is about to timeout"
+        body = "Unless this session sees some activity,\n" + \
+               "it will be terminated soon."
+        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration, icon, user_callback=idle_notification_action)
         source.go_idle()
+
 
     def _log_disconnect(self, proto, *args):
         #skip logging of disconnection events for server sources
@@ -1398,8 +1416,7 @@ class ServerBase(ServerCore):
             if self.notifications_forwarder:
                 dbus_id = self.notifications_forwarder.dbus_id
                 user_icon = os.path.join(get_icon_dir(), "user.png")
-                if os.path.exists(user_icon):
-                    icon = parse_image_path(user_icon)
+                icon = parse_image_path(user_icon) or ()
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
