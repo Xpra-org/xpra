@@ -105,6 +105,11 @@ class GTK_Notifier(NotifierBase):
     def get_origin_y(self):
         return    self.y
 
+    def close_notify(self, nid):
+        for x in self._notify_stack:
+            if x.nid==nid:
+                x.hide_notification()
+
     def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, timeout, icon):
         self.new_popup(nid, summary, body, actions, icon, timeout, timeout>0 and timeout<=600)
 
