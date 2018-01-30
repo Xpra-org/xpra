@@ -298,8 +298,8 @@ class Popup(gtk.Window):
         if not self.hover:
             self.timeout -= 1
         if self.show_timeout:
-            self.counter.set_markup(str("<b>%s</b>" % self.timeout))
-        if self.timeout == 0:
+            self.counter.set_markup(str("<b>%s</b>" % max(0, self.timeout)))
+        if self.timeout <= 0:
             self.fade_out_timer = glib.timeout_add(100, self.fade_out)
             self.wait_timer = None
             return False
