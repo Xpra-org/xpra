@@ -585,7 +585,7 @@ class ClipboardProxy(gtk.Invisible):
     def init_uuid(self):
         self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
         log("init_uuid() %s set_text(%s)", self._selection, self._loop_uuid)
-        self._clipboard.set_text(self._loop_uuid)
+        self._clipboard.set_text(self._loop_uuid, -1)
 
     def set_direction(self, can_send, can_receive):
         self._can_send = can_send
