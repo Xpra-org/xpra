@@ -224,18 +224,18 @@ SBFirst = {
            LSBFirst : "LSBFirst"
            }
 
-cdef const char *RLE8 = "RLE8"
-cdef const char *RGB565 = "RGB565"
-cdef const char *BGR565 = "BGR565"
-cdef const char *XRGB = "XRGB"
-cdef const char *BGRX = "BGRX"
-cdef const char *ARGB = "ARGB"
-cdef const char *BGRA = "BGRA"
-cdef const char *RGB = "RGB"
-cdef const char *RGBA = "RGBA"
-cdef const char *RGBX = "RGBX"
-cdef const char *R210 = "R210"
-cdef const char *r210 = "r210"
+RLE8    = "RLE8"
+RGB565  = "RGB565"
+BGR565  = "BGR565"
+XRGB    = "XRGB"
+BGRX    = "BGRX"
+ARGB    = "ARGB"
+BGRA    = "BGRA"
+RGB     = "RGB"
+RGBA    = "RGBA"
+RGBX    = "RGBX"
+R210    = "R210"
+r210    = "r210"
 
 RGB_FORMATS = [XRGB, BGRX, ARGB, BGRA, RGB, RGBA, RGBX, R210, r210, RGB565, BGR565, RLE8]
 
