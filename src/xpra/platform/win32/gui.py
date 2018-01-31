@@ -417,7 +417,7 @@ def apply_maxsize_hints(window, hints):
         if workarea:
             workw, workh = workarea[2:4]
     minw = hints.get("min_width", 0)
-    minh = hints.get("min_width", 0)
+    minh = hints.get("min_height", 0)
     maxw = hints.get("max_width", 0)
     maxh = hints.get("max_height", 0)
     if workw>0 and workh>0:
