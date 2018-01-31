@@ -744,13 +744,22 @@ class ClientExtras(object):
         log("ClientExtras.__init__(%s, %s) swap_keys=%s", client, opts, swap_keys)
         self.client = client
         self.event_loop_started = False
+        self.check_display_timer = 0
+        self.display_is_asleep = False
         if opts and client:
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
                 log("%s.swap_keys=%s", client.keyboard_helper.keyboard, swap_keys)
                 client.keyboard_helper.keyboard.swap_keys = swap_keys
+        if client:
+            self.check_display_timer = client.timeout_add(60*1000, self.check_display)
 
     def cleanup(self):
+        cdt = self.check_display_timer
+        client = self.client
+        if cdt and client:
+            client.source_remove(cdt)
+            self.check_display_timer = 0
         self.client = None
 
     def ready(self):
@@ -776,7 +785,26 @@ class ClientExtras(object):
             self.delegate.deiconify_callback = self.client.deiconify_windows
         self.shared_app.setDelegate_(self.delegate)
         log("setup_event_listener() the application delegate has been registered")
+        #watch for screen going asleep:
 
+    def check_display(self):
+        log("check_display()")
+        try:
+            did = CG.CGMainDisplayID()
+            log("check_display() CGMainDisplayID()=%#x", did)
+            if did and self.client:
+                asleep = bool(CG.CGDisplayIsAsleep(did))
+                log("check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
+                if self.display_is_asleep!=asleep:
+                    self.display_is_asleep = asleep
+                    if asleep:
+                        self.client.suspend()
+                    else:
+                        self.client.resume()
+        except Exception:
+            log.error("Error checking display sleep status", exc_info=True)
+            self.check_display_timer = 0
+            return False
 
     def run(self):
         #this is for running standalone
