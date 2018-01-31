@@ -794,7 +794,7 @@ class GTKTrayMenuBase(object):
         set_sensitive(c, False)
         def activate_cb(item, *args):
             bandwidthlog("activate_cb(%s, %s) bwlimit=%s", item, args, bwlimit)
-            if self.client.bandwidth_limit!=bwlimit:
+            if (self.client.bandwidth_limit or 0)!=bwlimit:
                 self.client.bandwidth_limit = bwlimit
                 self.client.send_bandwidth_limit()
         c.connect("toggled", activate_cb)
