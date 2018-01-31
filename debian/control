@@ -20,6 +20,7 @@ Build-Depends: debhelper (>= 8)
 #artful:              ,ffmpeg-xpra
 #bionic:              ,libavcodec-dev
 #bionic:              ,libswscale-dev
+#stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libswscale-dev
               ,python-gtk2-dev
