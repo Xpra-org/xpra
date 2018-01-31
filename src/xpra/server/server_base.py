@@ -1714,6 +1714,8 @@ class ServerBase(ServerCore):
                  "server-commands-signals"      : COMMAND_SIGNALS,
                  "server-commands-info"         : not WIN32 and not OSX,
                  })
+            if self._clipboard_helper:
+                capabilities["clipboard.loop-uuids"] = self._clipboard_helper.get_loop_uuids()
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features()))
         #this is a feature, but we would need the hello request

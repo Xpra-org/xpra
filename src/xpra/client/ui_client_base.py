@@ -1872,6 +1872,7 @@ class UIXpraClient(XpraClientBase):
         self.server_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
         self.server_clipboard = c.boolget("clipboard")
+        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
         if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
             if self.client_clipboard_direction=="disabled":
@@ -1992,6 +1993,8 @@ class UIXpraClient(XpraClientBase):
                 #(could have been translated, or limited if the client only has one, etc)
                 clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
                 self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
+            if self.clipboard_enabled and self.server_clipboard_loop_uuids:
+                self.send_clipboard_loop_uuids()
         self.set_max_packet_size()
         self.send_deflate_level()
         c = self.server_capabilities
@@ -2981,6 +2984,13 @@ class UIXpraClient(XpraClientBase):
         clipboardlog("send_clipboard_selections(%s) server_clipboard_enable_selections=%s", selections, self.server_clipboard_enable_selections)
         if self.server_clipboard_enable_selections:
             self.send("clipboard-enable-selections", selections)
+
+    def send_clipboard_loop_uuids(self):
+        uuids = self.clipboard_helper.get_loop_uuids()
+        clipboardlog("send_clipboard_loop_uuid() uuids=%s", uuids)
+        if self.server_clipboard_loop_uuids:
+            self.send("clipboard-loop-uuids", uuids)
+        
 
     def send_keyboard_sync_enabled_status(self, *_args):
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)

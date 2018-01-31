@@ -1230,6 +1230,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                  "clipboards.remote"    : self.server_clipboards,       #all the remote clipboards supported
                  "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
                  "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
+                 "remote-loop-uuids"    : self.server_clipboard_loop_uuids,
                  }
         #only allow translation overrides if we have a way of telling the server about them:
         if self.server_clipboard_enable_selections:

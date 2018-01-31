@@ -21,8 +21,8 @@ from xpra.gtk_common.gobject_util import no_arg_signal, SIGNAL_RUN_LAST
 from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selection_add_target, selectiondata_get_selection, selectiondata_get_target, selectiondata_get_data, selectiondata_get_data_type, selectiondata_get_format, selectiondata_set, clipboard_request_contents, PROPERTY_CHANGE_MASK
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
-from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr
-from xpra.util import csv, envint, envbool, repr_ellipsized
+from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
+from xpra.util import csv, envint, envbool, repr_ellipsized, nonl, typedict
 from xpra.platform.features import CLIPBOARD_GREEDY
 
 
@@ -41,6 +41,9 @@ del CLIPBOARDS_ENV
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 STORE_ON_EXIT = envbool("XPRA_CLIPBOARD_STORE_ON_EXIT", True)
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
+
+LOOP_DISABLE = envbool("XPRA_CLIPBOARD_LOOP_DISABLE", True)
+LOOP_PREFIX = os.environ.get("XPRA_CLIPBOARD_LOOP_PREFIX", "Xpra-Clipboard-Loop-Detection:")
 
 _discard_target_strs_ = os.environ.get("XPRA_DISCARD_TARGETS")
 if _discard_target_strs_ is not None:
@@ -98,25 +101,30 @@ def _filter_targets(targets):
 
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+        d = typedict(kwargs)
         self.send = send_packet_cb
         self.progress_cb = progress_cb
-        self.can_send = kwargs.get("can-send", True)
-        self.can_receive = kwargs.get("can-receive", True)
+        self.can_send = d.boolget("can-send", True)
+        self.can_receive = d.boolget("can-receive", True)
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
         self.filter_res = []
-        filter_res = kwargs.get("filters")
+        filter_res = d.strlistget("filters")
         if filter_res:
             for x in filter_res:
                 try:
                     self.filter_res.append(re.compile(x))
-                except:
-                    log.error("invalid regular expression '%s' in clipboard filter")
+                except Exception as e:
+                    log.error("Error: invalid clipboard filter regular expression")
+                    log.error(" '%s': %s", x, e)
         self._clipboard_request_counter = 0
         self._clipboard_outstanding_requests = {}
         self._want_targets = False
         self.init_packet_handlers()
-        self.init_proxies(kwargs.get("clipboards.local", CLIPBOARDS))
-        self.remote_clipboards = kwargs.get("clipboards.remote", CLIPBOARDS)
+        self.init_proxies(d.strlistget("clipboards.local", CLIPBOARDS))
+        remote_loop_uuids = d.dictget("remote-loop-uuids", {})
+        self.verify_remote_loop_uuids(remote_loop_uuids)
+        self.remote_clipboards = d.strlistget("clipboards.remote", CLIPBOARDS)
+        self.init_proxies_uuid()
 
     def __repr__(self):
         return "ClipboardProtocolHelperBase"
@@ -144,6 +152,34 @@ class ClipboardProtocolHelperBase(object):
         for x in self._clipboard_proxies.values():
             x.cleanup()
         self._clipboard_proxies = {}
+
+
+    def get_loop_uuids(self):
+        uuids = {}
+        for proxy in self._clipboard_proxies.values():
+            uuids[proxy._selection] = proxy._loop_uuid
+        log("get_loop_uuids()=%s", uuids)
+        return uuids
+
+    def verify_remote_loop_uuids(self, uuids):
+        log("verify_remote_loop_uuids(%s)", uuids)
+        for proxy in self._clipboard_proxies.values():
+            proxy._clipboard.request_text(self._verify_remote_loop_uuids, (proxy, uuids))
+
+    def _verify_remote_loop_uuids(self, clipboard, value, user_data):
+        log("_verify_remote_loop_uuids(%s)", (clipboard, value, user_data))
+        proxy, uuids = user_data
+        if value:
+            for selection, rvalue in uuids.items():
+                if rvalue and value==rvalue:
+                    if selection==proxy._selection:
+                        log.warn("Warning: loop detected for %s clipboard", selection)
+                    else:
+                        log.warn("Warning: loop detected")
+                        log.warn(" local %s clipboard matches remote %s clipboard", proxy._selection, selection)
+                    if LOOP_DISABLE:
+                        log.warn(" synchronization has been disabled")
+                        proxy._enabled = False
 
     def set_direction(self, can_send, can_receive):
         self.can_send = can_send
@@ -175,6 +211,7 @@ class ClipboardProtocolHelperBase(object):
             b"clipboard-contents-none"      : self._process_clipboard_contents_none,
             b"clipboard-pending-requests"   : self._process_clipboard_pending_requests,
             b"clipboard-enable-selections"  : self._process_clipboard_enable_selections,
+            b"clipboard-loop-uuids"         : self._process_clipboard_loop_uuids,
             }
 
     def make_proxy(self, clipboard):
@@ -190,6 +227,11 @@ class ClipboardProtocolHelperBase(object):
             proxy.show()
             self._clipboard_proxies[clipboard] = proxy
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
+
+    def init_proxies_uuid(self):
+        for proxy in self._clipboard_proxies.values():
+            proxy.init_uuid()
+
 
     def local_to_remote(self, selection):
         #overriden in some subclasses (see: translated_clipboard)
@@ -451,6 +493,10 @@ class ClipboardProtocolHelperBase(object):
         selections = packet[1]
         self.enable_selections(selections)
 
+    def _process_clipboard_loop_uuids(self, packet):
+        loop_uuids = packet[1]
+        self.verify_remote_loop_uuids(loop_uuids)
+
 
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]
@@ -509,7 +555,13 @@ class ClipboardProxy(gtk.Invisible):
         except ImportError:
             self.prop_get = None
 
+        self._loop_uuid = ""
         self._clipboard.connect("owner-change", self.do_owner_changed)
+
+    def init_uuid(self):
+        self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
+        log("init_uuid() %s set_text(%s)", self._selection, self._loop_uuid)
+        self._clipboard.set_text(self._loop_uuid)
 
     def set_direction(self, can_send, can_receive):
         self._can_send = can_send
@@ -522,6 +574,7 @@ class ClipboardProxy(gtk.Invisible):
                 "greedy_client"         : self._greedy_client,
                 "blocked_owner_change"  : self._block_owner_change,
                 "last-targets"          : self._last_targets,
+                "loop-uuid"             : self._loop_uuid,
                 "event"         : {
                                    "selection_request"     : self._selection_request_events,
                                    "selection_get"         : self._selection_get_events,
@@ -801,11 +854,16 @@ class ClipboardProxy(gtk.Invisible):
             dtype = selectiondata_get_data_type(selection_data)
             dformat = selectiondata_get_format(selection_data)
             log("unpack(..) type=%s, format=%s, data=%s:%s", dtype, dformat, type(data), len(data or ""))
-            if self._strip_nullbyte and dtype in (b"UTF8_STRING", b"STRING") and dformat==8:
-                #we may have to strip the nullbyte:
-                if data and data[-1]=='\0':
-                    log("stripping end of string null byte")
-                    data = data[:-1]
+            isstring = dtype in (b"UTF8_STRING", b"STRING") and dformat==8
+            if isstring:
+                if self._strip_nullbyte:
+                    #we may have to strip the nullbyte:
+                    if data and data[-1]=='\0':
+                        log("stripping end of string null byte")
+                        data = data[:-1]
+                if data and data==self._loop_uuid:
+                    log("not sending loop uuid value '%s', returning an empty string instead", data)
+                    data= ""
             cb(str(dtype), dformat, data)
         #some applications (ie: firefox, thunderbird) can request invalid targets,
         #when that happens, translate it to something the application can handle (if any)
