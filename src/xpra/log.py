@@ -360,7 +360,7 @@ class Logger(object):
         if kwargs.get("exc_info") is True:
             ei = sys.exc_info()
             if ei!=(None, None, None):
-                kwargs["exc_info"] = sys.exc_info()
+                kwargs["exc_info"] = ei
         global global_logging_handler
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
