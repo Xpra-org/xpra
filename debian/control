@@ -20,7 +20,6 @@ Build-Depends: debhelper (>= 8)
 #artful:              ,ffmpeg-xpra
 #bionic:              ,libavcodec-dev
 #bionic:              ,libswscale-dev
-#stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libswscale-dev
               ,python-gtk2-dev
@@ -69,6 +68,8 @@ Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 #so make sure that we don't install our private library:
 #bionic:Conflicts: ffmpeg-xpra
 #bionic:Replaces: ffmpeg-xpra
+#buster:Conflicts: ffmpeg-xpra
+#buster:Replaces: ffmpeg-xpra
 Recommends:
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
