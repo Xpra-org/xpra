@@ -292,7 +292,7 @@ class typedict(dict):
         if v is None:
             return default_value
         if type(v)!=dict:
-            self._warn("dictget(%s, %s)", k, default_value, exc_info=True)
+            self._warn("dictget(%s, %s)", k, default_value)
             self._warn("Warning: expected a dict value for %s but got %s", k, type(v))
             return default_value
         return v
