@@ -1268,6 +1268,20 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 self.remote_clipboard_requests = 0
                 self.clipboard_notify(0)
             self.connect("clipboard-toggled", clipboard_toggled)
+            def loop_disabled_notify():
+                if self.clipboard_helper.disabled_by_loop and self.notifier:
+                    icon = None
+                    try:
+                        from xpra.notifications.common import parse_image_path
+                        icon = parse_image_path(get_icon_filename("clipboard"))
+                    except ImportError:
+                        pass
+                    summary = "Clipboard Synchronization Error"
+                    body = "A synchronization loop has been detected,\n" + \
+                            "to prevent further issues clipboard synchronization has been disabled."
+                    self.notifier.show_notify("", self.tray, 0, "Xpra", 0, "", summary, body, [], {}, 10*10000, icon)
+                return False
+            self.timeout_add(5*1000, loop_disabled_notify)
         self.after_handshake(register_clipboard_toggled)
         return helperClass(clipboard_send, clipboard_progress, **kwargs)
 

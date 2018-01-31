@@ -1244,8 +1244,10 @@ class ServerBase(ServerCore):
 
     def _process_connection_lost(self, proto, packet):
         ServerCore._process_connection_lost(self, proto, packet)
-        if self._clipboard_client and self._clipboard_client.protocol==proto:
+        ch = self._clipboard_helper
+        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
             self._clipboard_client = None
+            ch.client_reset()
         self.cleanup_protocol(proto)
 
 

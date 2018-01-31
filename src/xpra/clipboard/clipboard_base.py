@@ -22,7 +22,7 @@ from xpra.gtk_common.gtk_util import GetClipboard, selection_owner_set, selectio
 from xpra.gtk_common.nested_main import NestedMainLoop
 from xpra.net.compression import Compressible
 from xpra.os_util import WIN32, POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
-from xpra.util import csv, envint, envbool, repr_ellipsized, nonl, typedict
+from xpra.util import csv, envint, envbool, repr_ellipsized, typedict
 from xpra.platform.features import CLIPBOARD_GREEDY
 
 
@@ -124,6 +124,7 @@ class ClipboardProtocolHelperBase(object):
         remote_loop_uuids = d.dictget("remote-loop-uuids", {})
         self.verify_remote_loop_uuids(remote_loop_uuids)
         self.remote_clipboards = d.strlistget("clipboards.remote", CLIPBOARDS)
+        self.disabled_by_loop = []
         self.init_proxies_uuid()
 
     def __repr__(self):
@@ -154,6 +155,16 @@ class ClipboardProtocolHelperBase(object):
         self._clipboard_proxies = {}
 
 
+    def client_reset(self):
+        #if the client disconnects,
+        #we can re-enable the clipboards it had problems with:
+        l = self.disabled_by_loop
+        self.disabled_by_loop = []
+        for x in l:
+            proxy = self._clipboard_proxies.get(x)
+            proxy.set_enabled(True)
+
+
     def get_loop_uuids(self):
         uuids = {}
         for proxy in self._clipboard_proxies.values():
@@ -163,6 +174,8 @@ class ClipboardProtocolHelperBase(object):
 
     def verify_remote_loop_uuids(self, uuids):
         log("verify_remote_loop_uuids(%s)", uuids)
+        if not uuids:
+            return
         for proxy in self._clipboard_proxies.values():
             proxy._clipboard.request_text(self._verify_remote_loop_uuids, (proxy, uuids))
 
@@ -171,7 +184,10 @@ class ClipboardProtocolHelperBase(object):
         proxy, uuids = user_data
         if value:
             for selection, rvalue in uuids.items():
+                if rvalue==proxy._loop_uuid:
+                    clipboard.set_text("")
                 if rvalue and value==rvalue:
+                    clipboard.set_text("")
                     if selection==proxy._selection:
                         log.warn("Warning: loop detected for %s clipboard", selection)
                     else:
@@ -180,6 +196,8 @@ class ClipboardProtocolHelperBase(object):
                     if LOOP_DISABLE:
                         log.warn(" synchronization has been disabled")
                         proxy._enabled = False
+                        if selection not in self.disabled_by_loop:
+                            self.disabled_by_loop.append(selection)
 
     def set_direction(self, can_send, can_receive):
         self.can_send = can_send
@@ -259,7 +277,10 @@ class ClipboardProtocolHelperBase(object):
             l("ignoring token for clipboard proxy name '%s' (no proxy)", name)
             return
         if not proxy.is_enabled():
-            log.warn("ignoring token for clipboard proxy name '%s' (disabled)", name)
+            l = log
+            if name not in self.disabled_by_loop:
+                l = log.warn
+            l("ignoring token for clipboard proxy name '%s' (disabled)", name)
             return
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
@@ -439,7 +460,10 @@ class ClipboardProtocolHelperBase(object):
             no_contents()
             return
         if not proxy.is_enabled():
-            log.warn("Warning: ignoring clipboard request for '%s' (disabled)", name)
+            l = log
+            if selection not in self.disabled_by_loop:
+                l = log.warn
+            l("Warning: ignoring clipboard request for '%s' (disabled)", name)
             no_contents()
             return
         if TEST_DROP_CLIPBOARD_REQUESTS>0 and (request_id % TEST_DROP_CLIPBOARD_REQUESTS)==0:
