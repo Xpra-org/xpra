@@ -679,6 +679,7 @@ class ClientExtras(object):
         self._xsettings_watcher = None
         self._root_props_watcher = None
         self.system_bus = None
+        self.session_bus = None
         self.upower_resuming_match = None
         self.upower_sleeping_match = None
         self.login1_match = None
