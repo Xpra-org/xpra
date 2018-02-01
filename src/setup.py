@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1625,7 +1625,7 @@ else:
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
                 },
-            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2017 http://xpra.org/" % (XPRA_VERSION, REVISION),
+            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2018 http://xpra.org/" % (XPRA_VERSION, REVISION),
             "CFBundleIdentifier"            : "org.xpra.xpra",
             }
         #Note: despite our best efforts, py2app will not copy all the modules we need
