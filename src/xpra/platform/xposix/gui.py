@@ -36,6 +36,7 @@ RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
+DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
 def get_native_system_tray_classes():
@@ -798,23 +799,24 @@ class ClientExtras(object):
             except Exception as e:
                 dbuslog("failed to setup login1 event listener: %s", e)
 
-        try:
-            session_bus = init_session_bus()
-            self.session_bus = session_bus
-            dbuslog("setup_dbus_signals() session bus=%s", session_bus)
-        except Exception as e:
-            dbuslog("setup_dbus_signals()", exc_info=True)
-            dbuslog.error("Error setting up dbus signals:")
-            dbuslog.error(" %s", e)
-        else:
-            #screensaver signals:
+        if DBUS_SCREENSAVER:
             try:
-                bus_name = "org.freedesktop.ScreenSaver"
-                iface_name = bus_name
-                self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged, "ActiveChanged", iface_name, bus_name)
-                dbuslog("listening for 'ActiveChanged' signal on %s", iface_name)
+                session_bus = init_session_bus()
+                self.session_bus = session_bus
+                dbuslog("setup_dbus_signals() session bus=%s", session_bus)
             except Exception as e:
-                dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
+                dbuslog("setup_dbus_signals()", exc_info=True)
+                dbuslog.error("Error setting up dbus signals:")
+                dbuslog.error(" %s", e)
+            else:
+                #screensaver signals:
+                try:
+                    bus_name = "org.gnome.ScreenSaver"
+                    iface_name = bus_name
+                    self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged, "ActiveChanged", iface_name, bus_name)
+                    dbuslog("listening for 'ActiveChanged' signal on %s", iface_name)
+                except Exception as e:
+                    dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
 
     def ActiveChanged(self, active):
         log("ActiveChanged(%s)", active)

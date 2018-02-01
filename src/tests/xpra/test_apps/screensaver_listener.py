@@ -15,8 +15,10 @@ except:
 import dbus #@Reimport
 
 
-NAME = "org.freedesktop.ScreenSaver"
-PATH = "/org/freedesktop/ScreenSaver"
+#NAME = "org.freedesktop.ScreenSaver"
+#PATH = "/org/freedesktop/ScreenSaver"
+NAME = "org.gnome.ScreenSaver"
+PATH = "/org/gnome/ScreenSaver"
 
 def main():
     from xpra.platform import program_context
