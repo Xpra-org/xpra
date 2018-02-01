@@ -681,6 +681,7 @@ class ClientExtras(object):
         self.upower_resuming_match = None
         self.upower_sleeping_match = None
         self.login1_match = None
+        self.screensaver_match = None
         self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
@@ -721,10 +722,17 @@ class ClientExtras(object):
             self.system_bus = None
             if self.upower_resuming_match:
                 bus._clean_up_signal_match(self.upower_resuming_match)
+                self.upower_resuming_match = None
             if self.upower_sleeping_match:
                 bus._clean_up_signal_match(self.upower_sleeping_match)
+                self.upower_sleeping_match = None
             if self.login1_match:
                 bus._clean_up_signal_match(self.login1_match)
+                self.login1_match = None
+        if self.session_bus:
+            if self.screensaver_match:
+                self.session_bus._clean_up_signal_match(self.screensaver_match)
+                self.screensaver_match = None
         global WINDOW_METHOD_OVERRIDES
         WINDOW_METHOD_OVERRIDES = {}
 
@@ -747,7 +755,15 @@ class ClientExtras(object):
             dbuslog.info(" no support for power events")
             return
         try:
-            from xpra.dbus.common import init_system_bus
+            from xpra.dbus.common import init_system_bus, init_session_bus
+        except ImportError as e:
+            dbuslog("setup_dbus_signals()", exc_info=True)
+            dbuslog.error("Error: dbus bindings are missing,")
+            dbuslog.error(" cannot setup event listeners:")
+            dbuslog.error(" %s", e)
+            return
+
+        try:
             bus = init_system_bus()
             self.system_bus = bus
             dbuslog("setup_dbus_signals() system bus=%s", bus)
@@ -755,33 +771,58 @@ class ClientExtras(object):
             dbuslog("setup_dbus_signals()", exc_info=True)
             dbuslog.error("Error setting up dbus signals:")
             dbuslog.error(" %s", e)
-            return
+        else:
+            #the UPower signals:
+            try:
+                bus_name    = 'org.freedesktop.UPower'
+                dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
+                iface_name  = 'org.freedesktop.UPower'
+                self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
+                self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
+                dbuslog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
+            except Exception as e:
+                dbuslog("failed to setup UPower event listener: %s", e)
 
-        #the UPower signals:
-        try:
-            bus_name    = 'org.freedesktop.UPower'
-            dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
-            iface_name  = 'org.freedesktop.UPower'
-            self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback, 'Resuming', iface_name, bus_name)
-            self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback, 'Sleeping', iface_name, bus_name)
-            dbuslog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
-        except Exception as e:
-            dbuslog("failed to setup UPower event listener: %s", e)
+            #the "logind" signals:
+            try:
+                bus_name    = 'org.freedesktop.login1'
+                dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
+                def sleep_event_handler(suspend):
+                    if suspend:
+                        self.sleeping_callback()
+                    else:
+                        self.resuming_callback()
+                iface_name  = 'org.freedesktop.login1.Manager'
+                self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
+                dbuslog("listening for 'PrepareForSleep' signal on %s", iface_name)
+            except Exception as e:
+                dbuslog("failed to setup login1 event listener: %s", e)
 
-        #the "logind" signals:
         try:
-            bus_name    = 'org.freedesktop.login1'
-            dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
-            def sleep_event_handler(suspend):
-                if suspend:
-                    self.sleeping_callback()
-                else:
-                    self.resuming_callback()
-            iface_name  = 'org.freedesktop.login1.Manager'
-            self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
-            dbuslog("listening for 'PrepareForSleep' signal on %s", iface_name)
+            session_bus = init_session_bus()
+            self.session_bus = session_bus
+            dbuslog("setup_dbus_signals() session bus=%s", session_bus)
         except Exception as e:
-            dbuslog("failed to setup login1 event listener: %s", e)
+            dbuslog("setup_dbus_signals()", exc_info=True)
+            dbuslog.error("Error setting up dbus signals:")
+            dbuslog.error(" %s", e)
+        else:
+            #screensaver signals:
+            try:
+                bus_name = "org.freedesktop.ScreenSaver"
+                iface_name = bus_name
+                self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged, "ActiveChanged", iface_name, bus_name)
+                dbuslog("listening for 'ActiveChanged' signal on %s", iface_name)
+            except Exception as e:
+                dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
+
+    def ActiveChanged(self, active):
+        log("ActiveChanged(%s)", active)
+        if active:
+            self.client.suspend()
+        else:
+            self.client.resume()
+
 
     def setup_xprops(self):
         #wait for handshake to complete:
