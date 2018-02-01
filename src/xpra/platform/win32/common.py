@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar
+from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar, byref
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
 #imported from this module but not used here:
@@ -218,6 +218,13 @@ def EnumDisplayMonitors():
     callback = MonitorEnumProc(_callback)
     _EnumDisplayMonitors(0, 0, callback, 0)
     return results
+
+def GetIntSystemParametersInfo(key):
+    rv = INT()
+    r = SystemParametersInfoA(key, 0, byref(rv), 0)
+    if r==0:
+        return None
+    return rv.value
 
 
 WNDPROC = WINFUNCTYPE(LRESULT, HWND, UINT, WPARAM, LPARAM)

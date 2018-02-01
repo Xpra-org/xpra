@@ -31,12 +31,14 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
                                         SetConsoleCtrlHandler,
                                         GetDeviceCaps,
+                                        GetIntSystemParametersInfo,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
 from xpra.os_util import PYTHON2, PYTHON3
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
+SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
 
 
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
@@ -631,10 +633,9 @@ FE_FONTSMOOTHING_STR = {
 
 
 def _add_SPI(info, constant, name, convert, default=None):
-    SystemParametersInfo = user32.SystemParametersInfoA
-    i = ctypes.c_uint32()
-    if SystemParametersInfo(constant, 0, byref(i), 0):
-        info[name] = convert(i.value)
+    v = GetIntSystemParametersInfo(constant)
+    if v is not None:
+        info[name] = convert(v)
     elif default is not None:
         info[name] = default
 
@@ -900,6 +901,20 @@ class ClientExtras(object):
         self.client = client
         self._kh_warning = False
         self._console_handler_added = False
+        self._screensaver_state = False
+        self._screensaver_timer = 0
+        if SCREENSAVER_LISTENER_POLL_DELAY>0:
+            def log_screensaver():
+                v = bool(GetIntSystemParametersInfo(win32con.SPI_GETSCREENSAVERRUNNING))
+                log("SPI_GETSCREENSAVERRUNNING=%s", v)
+                if self._screensaver_state!=v:
+                    self._screensaver_state = v
+                    if v:
+                        self.client.suspend()
+                    else:
+                        self.client.resume()
+                return True
+            self._screensaver_timer = client.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY*1000, log_screensaver)
         if CONSOLE_EVENT_LISTENER:
             self._console_handler_added = self.setup_console_event_listener(True)
         from xpra.platform.win32.win32_events import get_win32_event_listener
@@ -938,6 +953,10 @@ class ClientExtras(object):
         if khid:
             self.keyboard_hook_id = None
             UnhookWindowsHookEx(khid)
+        sst = self._screensaver_timer
+        if sst:
+            self._screensaver_timer = 0
+            self.client.source_remove(sst)
         log("ClientExtras.cleanup() ended")
         #self.client = None
 

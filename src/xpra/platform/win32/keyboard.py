@@ -7,7 +7,7 @@
 import ctypes
 from ctypes.wintypes import HANDLE
 
-from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, SystemParametersInfoA
+from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, GetIntSystemParametersInfo
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS
@@ -27,11 +27,6 @@ def _GetKeyboardLayoutList():
     for i in range(count):
         layouts.append(int(handle_list[i]))
     return layouts
-
-def GetIntSystemParametersInfo(key):
-    rv = ctypes.wintypes.INT()
-    SystemParametersInfoA(key, 0, ctypes.byref(rv), 0)
-    return rv.value
 
 
 EMULATE_ALTGR = envbool("XPRA_EMULATE_ALTGR", True)
