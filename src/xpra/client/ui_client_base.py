@@ -437,8 +437,6 @@ class UIXpraClient(XpraClientBase):
 
     def init_ui(self, opts, extra_args=[]):
         """ initialize user interface """
-        self.init_opengl(opts.opengl)
-
         if not self.readonly:
             def noauto(v):
                 if not v:
@@ -478,6 +476,8 @@ class UIXpraClient(XpraClientBase):
             self.notifier = self.make_notifier()
             notifylog("using notifier=%s", self.notifier)
             self.client_supports_notifications = self.notifier is not None
+
+        self.init_opengl(opts.opengl)
 
         #audio tagging:
         self.init_audio_tagging(opts.tray_icon)
@@ -844,10 +844,9 @@ class UIXpraClient(XpraClientBase):
         return get_native_notifier_classes()
 
     def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
-        if not self.notifications_enabled:
-            return
+        notifylog("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
         n = self.notifier
-        if not n:
+        if not self.client_supports_notifications or not n:
             return
         from xpra.notifications.common import parse_image_path
         icon_filename = get_icon_filename(icon_name)
