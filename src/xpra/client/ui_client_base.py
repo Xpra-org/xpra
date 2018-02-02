@@ -2489,7 +2489,7 @@ class UIXpraClient(XpraClientBase):
             assert self.webcam_device, "no webcam device to capture from"
             from xpra.codecs.pillow.encode import get_encodings
             client_webcam_encodings = get_encodings()
-            common_encodings = tuple(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
+            common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
             webcamlog("common encodings (server=%s, client=%s): %s", csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
             if not common_encodings:
                 webcamlog.error("Error: cannot send webcam image, no common formats")
