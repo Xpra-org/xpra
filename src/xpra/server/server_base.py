@@ -1563,6 +1563,7 @@ class ServerBase(ServerCore):
             clipboardlog("another client already owns the clipboard")
             return
         self._clipboard_client = ss
+        self._clipboard_helper.init_proxies_uuid()
         #deal with buggy win32 clipboards:
         if "clipboard.greedy" not in c:
             #old clients without the flag: take a guess based on platform:

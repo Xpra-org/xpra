@@ -99,6 +99,25 @@ def _filter_targets(targets):
     return f
 
 
+def set_string(clipboard, thestring):
+    if is_gtk3():
+        #no other way?
+        clipboard.set_text(thestring, len(thestring))
+        return
+    value = [thestring]
+    def get_func(clipboard, selection, info, targets):
+        log("get_func%s value=%s", (clipboard, selection, info, targets), value[0])
+        s = value[0]
+        if s:
+            selection.set("STRING", 8, s)
+        else:
+            clipboard.clear()
+    def clear_func(*args):
+        log("clear_func%s value=%s", args, value[0])
+        value[0] = ""
+    clipboard.set_with_data([("STRING", 0, 0)], get_func, clear_func)
+
+
 class ClipboardProtocolHelperBase(object):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         d = typedict(kwargs)
@@ -107,6 +126,7 @@ class ClipboardProtocolHelperBase(object):
         self.can_send = d.boolget("can-send", True)
         self.can_receive = d.boolget("can-receive", True)
         self.max_clipboard_packet_size = MAX_CLIPBOARD_PACKET_SIZE
+        self.disabled_by_loop = []
         self.filter_res = []
         filter_res = d.strlistget("filters")
         if filter_res:
@@ -124,8 +144,6 @@ class ClipboardProtocolHelperBase(object):
         remote_loop_uuids = d.dictget("remote-loop-uuids", {})
         self.verify_remote_loop_uuids(remote_loop_uuids)
         self.remote_clipboards = d.strlistget("clipboards.remote", CLIPBOARDS)
-        self.disabled_by_loop = []
-        self.init_proxies_uuid()
 
     def __repr__(self):
         return "ClipboardProtocolHelperBase"
@@ -184,10 +202,11 @@ class ClipboardProtocolHelperBase(object):
         proxy, uuids = user_data
         if value:
             for selection, rvalue in uuids.items():
+                log("%s=%s", proxy._selection, value)
                 if rvalue==proxy._loop_uuid:
-                    clipboard.set_text("")
+                    set_string(clipboard, "")
                 if rvalue and value==rvalue:
-                    clipboard.set_text("")
+                    set_string(clipboard, "")
                     if selection==proxy._selection:
                         log.warn("Warning: loop detected for %s clipboard", selection)
                     else:
@@ -584,8 +603,8 @@ class ClipboardProxy(gtk.Invisible):
 
     def init_uuid(self):
         self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
-        log("init_uuid() %s set_text(%s)", self._selection, self._loop_uuid)
-        self._clipboard.set_text(self._loop_uuid, -1)
+        log("init_uuid() %s uuid=%s", self._selection, self._loop_uuid)
+        set_string(self._clipboard, self._loop_uuid)
 
     def set_direction(self, can_send, can_receive):
         self._can_send = can_send
@@ -763,9 +782,7 @@ class ClipboardProxy(gtk.Invisible):
         if is_gtk3() and dtype in (b"UTF8_STRING", b"STRING") and dformat==8:
             s = bytestostr(data)
             self._clipboard.set_text(s, len(s))
-            #problem here is that we know own the selection...
-            #this doesn't work either:
-            #selection_data.set_text(s, len(s))
+            #problem here is that we now own the selection...
         else:
             boc = self._block_owner_change
             self._block_owner_change = True
@@ -812,7 +829,7 @@ class ClipboardProxy(gtk.Invisible):
                     if text_target in target_data:
                         text_data = target_data.get(text_target)
                         log("clipboard %s set to '%s'", self._selection, repr_ellipsized(text_data))
-                        self._clipboard.set_text(text_data, len=len(text_data))
+                        set_string(self._clipboard, text_data)
         if not claim:
             log("token packet without claim, not setting the token flag")
             #the other end is just telling us to send the token again next time something changes,
@@ -869,7 +886,8 @@ class ClipboardProxy(gtk.Invisible):
             log("unpack %s: %s", clipboard, type(selection_data))
             global sanitize_gtkselectiondata
             if selection_data and sanitize_gtkselectiondata(selection_data):
-                self._clipboard.set_text("")
+                selection_data = None
+                return
             if selection_data is None:
                 cb(None, None, None)
                 return

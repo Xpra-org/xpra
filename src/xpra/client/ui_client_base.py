@@ -1993,8 +1993,6 @@ class UIXpraClient(XpraClientBase):
                 #(could have been translated, or limited if the client only has one, etc)
                 clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
                 self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
-            if self.clipboard_enabled and self.server_clipboard_loop_uuids:
-                self.send_clipboard_loop_uuids()
         self.set_max_packet_size()
         self.send_deflate_level()
         c = self.server_capabilities
@@ -2082,7 +2080,6 @@ class UIXpraClient(XpraClientBase):
         if self.server_clipboard:
             #from now on, we will send a message to the server whenever the clipboard flag changes:
             self.connect("clipboard-toggled", self.clipboard_toggled)
-            self.clipboard_toggled()
         self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
         if self.pings>0:

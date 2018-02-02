@@ -667,13 +667,17 @@ class GTKTrayMenuBase(object):
                     clipboard_submenu.append(gtk.SeparatorMenuItem())
             except:
                 clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
+            items = []
             for label in CLIPBOARD_DIRECTION_LABELS:
                 direction_item = CheckMenuItem(label)
                 d = CLIPBOARD_DIRECTION_LABEL_TO_NAME.get(label)
                 direction_item.set_active(d==self.client.client_clipboard_direction)
-                direction_item.connect("toggled", self.clipboard_direction_changed, clipboard_submenu)
                 clipboard_submenu.append(direction_item)
+                items.append(direction_item)
             clipboard_submenu.show_all()
+            #connect signals:
+            for direction_item in items:
+                direction_item.connect("toggled", self.clipboard_direction_changed, clipboard_submenu)
         self.client.after_handshake(set_clipboard_menu)
         return self.clipboard_menuitem
 
