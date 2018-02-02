@@ -843,12 +843,16 @@ class UIXpraClient(XpraClientBase):
             return []
         return get_native_notifier_classes()
 
-    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon=None):
+    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
         if not self.notifications_enabled:
             return
         n = self.notifier
-        if n:
-            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
+        if not n:
+            return
+        from xpra.notifications.common import parse_image_path
+        icon_filename = get_icon_filename(icon_name)
+        icon = parse_image_path(icon_filename)
+        n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
 
 
     def make_system_tray(self, *args):
@@ -2537,16 +2541,14 @@ class UIXpraClient(XpraClientBase):
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
             try:
-                from xpra.notifications.common import XPRA_WEBCAM_NOTIFICATION_ID, parse_image_path
+                from xpra.notifications.common import XPRA_WEBCAM_NOTIFICATION_ID
             except ImportError:
                 log("no notifications")
             else:
                 summary = "Webcam forwarding has failed"
                 body = "The system encountered the following error:\n" + \
                     ("%s\n" % e)
-                icon_filename = get_icon_filename("webcam")
-                icon = parse_image_path(icon_filename)
-                self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon=icon)
+                self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon_name="webcam")
             return False
         finally:
             self.webcam_lock.release()
@@ -2620,6 +2622,22 @@ class UIXpraClient(XpraClientBase):
         soundlog("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
         return matching_codecs
 
+    def may_notify_audio(self, summary, body):
+        try:
+            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID
+        except ImportError:
+            log("no notifications")
+        else:
+            self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
+
+    def no_matching_codec_error(self, forwarding="speaker", server_codecs=[], client_codecs=[]):
+        summary = "Failed to start %s forwarding" % forwarding
+        body = "No matching codecs between client and server"
+        self.may_notify_audio(summary, body)
+        log.error("Error: %s", summary)
+        log.error(" server supports: %s", csv(server_codecs))
+        log.error(" client supports: %s", csv(client_codecs))
+
     def start_sending_sound(self, device=None):
         """ (re)start a sound source and emit client signal """
         soundlog("start_sending_sound(%s)", device)
@@ -2657,9 +2675,7 @@ class UIXpraClient(XpraClientBase):
         matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_sound_decoders)
         soundlog("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if len(matching_codecs)==0:
-            log.error("Error: no matching codecs between client and server")
-            log.error(" server supports: %s", csv(self.server_sound_decoders))
-            log.error(" client supports: %s", csv(self.microphone_codecs))
+            self.no_matching_codec_error("microphone", self.server_sound_decoders, self.microphone_codecs)
             return False
         try:
             from xpra.sound.wrapper import start_sending_sound
@@ -2675,7 +2691,8 @@ class UIXpraClient(XpraClientBase):
             soundlog("start_sound_source(%s) sound source %s started", device, ss)
             return True
         except Exception as e:
-            log.error("Error setting up sound:")
+            self.may_notify_audio("Failed to start microphone forwarding", "%s" % e)
+            log.error("Error setting up microphone forwarding:")
             log.error(" %s", e)
             return False
 
@@ -2726,9 +2743,7 @@ class UIXpraClient(XpraClientBase):
             matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_sound_encoders)
             soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
             if len(matching_codecs)==0:
-                log.error("Error: no matching codecs between client and server")
-                log.error(" server supports: %s", csv(self.server_sound_encoders))
-                log.error(" client supports: %s", csv(self.speaker_codecs))
+                self.no_matching_codec_error("speaker", self.server_sound_encoders, self.speaker_codecs)
                 return
             codec = matching_codecs[0]
             if not self.server_ogg_latency_fix and codec in ("flac", "opus", "speex"):
@@ -2790,6 +2805,7 @@ class UIXpraClient(XpraClientBase):
         if sound_sink!=self.sound_sink:
             soundlog("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
             return
+        self.may_notify_audio("Speaker forwarding error", error)
         soundlog.warn("Error: stopping speaker:")
         soundlog.warn(" %s", str(error).replace("gst-resource-error-quark: ", ""))
         self.stop_receiving_sound()
