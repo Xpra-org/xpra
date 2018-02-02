@@ -29,12 +29,16 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
     mmap_filename = filename
     mmap_temp_file = None
     delete = True
+    def validate_size(size):
+        assert size>=1024*1024, "mmap size is too small: %sB (minimum is 1MB)" % std_unit(size)
+        assert size<=1024*1024*1024, "mmap is too big: %sB (maximum is 1GB)" % std_unit(size)
     try:
         import mmap
         unit = max(4096, mmap.PAGESIZE)
         #add 8 bytes for the mmap area control header zone:
         mmap_size = roundup(size + 8, unit)
         if WIN32:
+            validate_size(mmap_size)
             if not filename:
                 from xpra.net.crypto import get_hex_uuid
                 filename = "xpra-%s" % get_hex_uuid()
@@ -49,10 +53,12 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 if os.path.exists(filename):
                     fd = os.open(filename, os.O_EXCL | os.O_RDWR)
                     mmap_size = os.path.getsize(mmap_filename)
+                    validate_size(mmap_size)
                     #mmap_size = 4*1024*1024    #size restriction needed with ivshmem
                     delete = False
                     log.info("Using existing mmap file '%s': %sMB", mmap_filename, mmap_size//1024//1024)
                 else:
+                    validate_size(mmap_size)
                     import errno
                     flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
                     try:
@@ -65,6 +71,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                             return rerr()
                         raise
             else:
+                validate_size(mmap_size)
                 import tempfile
                 from xpra.platform.paths import get_mmap_dir
                 mmap_dir = get_mmap_dir()
@@ -97,8 +104,6 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
                 s = os.stat(socket_filename)
                 os.fchown(fd, -1, s.st_gid)
                 os.fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
-            assert mmap_size>=1024*1024, "mmap size is too small: %sB (minimum is 1MB)" % std_unit(mmap_size)
-            assert mmap_size<=1024*1024*1024, "mmap is too big: %sB (maximum is 1GB)" % std_unit(mmap_size)
             log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
             os.lseek(fd, mmap_size-1, os.SEEK_SET)
             assert os.write(fd, b'\x00')
