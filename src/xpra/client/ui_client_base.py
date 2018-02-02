@@ -48,7 +48,7 @@ bandwidthlog = Logger("bandwidth")
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
-from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE)
+from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE, EXIT_INTERNAL_ERROR)
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.paths import get_icon_filename
@@ -1141,9 +1141,21 @@ class UIXpraClient(XpraClientBase):
         scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
         if not self.server_is_desktop and (sw>(maxw+1) or sh>(maxh+1)):
             #would overflow..
-            scalinglog.warn("Warning: cannot scale by %i%% x %i%% or lower", (100*xscale), (100*yscale))
-            scalinglog.warn(" the scaled client screen %i x %i -> %i x %i", root_w, root_h, sw, sh)
-            scalinglog.warn(" would overflow the server's screen: %i x %i", maxw, maxh)
+            summary = "Invalid Scale Factor"
+            messages = [
+                "cannot scale by %i%% x %i%% or lower" % ((100*xscale), (100*yscale)),
+                "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
+                " would overflow the server's screen: %i x %i" % (maxw, maxh),
+                ]    
+            try:
+                from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
+            except ImportError:
+                pass
+            else:
+                self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
+            scalinglog.warn("Warning: %s", summary)
+            for m in messages:
+                scalinglog.warn(" %s", m)
             return
         self.xscale = xscale
         self.yscale = yscale
@@ -3788,9 +3800,22 @@ class UIXpraClient(XpraClientBase):
         #to use the same scale for both axes:
         #self.xscale = mint(max(x, y))
         #self.yscale = self.xscale
-        scalinglog.warn("Warning: adjusting scaling to accomodate server")
-        scalinglog.warn(" server desktop size is %ix%i", max_w, max_h)
-        scalinglog.warn(" using scaling factor %s x %s", self.xscale, self.yscale)
+        summary = "Desktop scaling adjusted to accomodate the server"
+        xstr = ("%.3f" % self.xscale).rstrip("0")
+        ystr = ("%.3f" % self.yscale).rstrip("0")
+        messages = [
+            "server desktop size is %ix%i" % (max_w, max_h),
+            "using scaling factor %s x %s" % (xstr, ystr),
+            ]
+        try:
+            from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
+        except:
+            pass
+        else:
+            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
+        scalinglog.warn("Warning: %s", summary)
+        for m in messages:
+            scalinglog.warn(" %s", m)
         self.emit("scaling-changed")
 
 
@@ -3803,7 +3828,11 @@ class UIXpraClient(XpraClientBase):
             maxh = max(root_h, server_h)
         except:
             pass
-        assert maxw>0 and maxh>0 and maxw<32768 and maxh<32768, "invalid maximum desktop size: %ix%i" % (maxw, maxh)
+        if maxw<=0 or maxh<=0 or maxw>=32768 or maxh>=32768:
+            message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
+            log(message)
+            self.quit(EXIT_INTERNAL_ERROR)
+            raise SystemExit(message)
         if maxw>=16384 or maxh>=16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
         #max packet size to accomodate:
