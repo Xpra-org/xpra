@@ -843,6 +843,13 @@ class UIXpraClient(XpraClientBase):
             return []
         return get_native_notifier_classes()
 
+    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon=None):
+        if not self.notifications_enabled:
+            return
+        n = self.notifier
+        if n:
+            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
+
 
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
@@ -2503,7 +2510,8 @@ class UIXpraClient(XpraClientBase):
             start = monotonic_time()
             import cv2
             ret, frame = self.webcam_device.read()
-            assert ret and frame.ndim==3
+            assert ret, "capture failed"
+            assert frame.ndim==3, "invalid frame data"
             h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -2528,6 +2536,17 @@ class UIXpraClient(XpraClientBase):
             webcamlog.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
             webcamlog.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
+            try:
+                from xpra.notifications.common import XPRA_WEBCAM_NOTIFICATION_ID, parse_image_path
+            except ImportError:
+                log("no notifications")
+            else:
+                summary = "Webcam forwarding has failed"
+                body = "The system encountered the following error:\n" + \
+                    ("%s\n" % e)
+                icon_filename = get_icon_filename("webcam")
+                icon = parse_image_path(icon_filename)
+                self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon=icon)
             return False
         finally:
             self.webcam_lock.release()
