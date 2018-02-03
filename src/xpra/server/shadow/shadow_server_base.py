@@ -15,7 +15,7 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.rfb.rfb_server import RFBServer
 from xpra.notifications.common import parse_image_path
-from xpra.platform.gui import get_native_notifier_classes
+from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.util import envint, envbool, DONE
 
@@ -57,6 +57,9 @@ class ShadowServerBase(RFBServer):
             n.cleanup()
             self.notifier = None
 
+
+    def guess_session_name(self, _procs):
+        self.session_name = get_wm_name()
 
     def get_server_mode(self):
         return "shadow"

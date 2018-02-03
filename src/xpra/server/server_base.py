@@ -1025,7 +1025,7 @@ class ServerBase(ServerCore):
                     if proc:
                         started.append(proc)
         procs = tuple(x for x in started if x is not None)
-        if not self.session_name and procs:
+        if not self.session_name:
             self.guess_session_name(procs)
 
     def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
@@ -1090,6 +1090,8 @@ class ServerBase(ServerCore):
 
 
     def guess_session_name(self, procs):
+        if not procs:
+            return
         #use the commands to define the session name:
         self.child_reaper.poll()
         cmd_names = []
