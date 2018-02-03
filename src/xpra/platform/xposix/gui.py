@@ -59,6 +59,7 @@ def get_wm_name():
             traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
             wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
             traylog("_NET_WM_NAME=%s", wm_name)
+            return wm_name.decode("utf-8")
     except Exception as e:
         traylog.error("Error accessing window manager information:")
         traylog.error(" %s", e)
