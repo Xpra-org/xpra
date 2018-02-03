@@ -380,8 +380,9 @@ class ServerBase(ServerCore):
         nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
         printlog("local sockets we can use for printing: %s", nontcpsockets)
         if not nontcpsockets and self.file_transfer.printing:
-            log.warn("Warning: no local sockets defined,")
-            log.warn(" disabling printer forwarding")
+            if not WIN32:
+                log.warn("Warning: no local sockets defined,")
+                log.warn(" disabling printer forwarding")
             self.file_transfer.printing = False
 
 
