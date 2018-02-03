@@ -1421,18 +1421,19 @@ class ServerBase(ServerCore):
     def notify_new_user(self, ss):
         #tell other users:
         notifylog("notify_new_user(%s) sources=%s", ss, self._server_sources)
-        if self._server_sources:
-            dbus_id = ""
-            nid = int(monotonic_time())
-            icon = ""
-            if self.notifications_forwarder:
-                dbus_id = self.notifications_forwarder.dbus_id
-                user_icon = os.path.join(get_icon_dir(), "user.png")
-                icon = parse_image_path(user_icon) or ()
+        if not self._server_sources:
+            return
+        try:
+            from xpra.notifications.common import XPRA_NEW_USER_ID
+        except ImportError as e:
+            return
+        else:
+            nid = XPRA_NEW_USER_ID
+            icon = parse_image_path(get_icon_filename("user"))
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
             for s in self._server_sources.values():
-                s.notify(dbus_id, nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+                s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         
 
     def get_client_bandwidth_limit(self, proto):
