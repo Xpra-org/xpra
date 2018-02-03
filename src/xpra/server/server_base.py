@@ -1426,7 +1426,7 @@ class ServerBase(ServerCore):
         try:
             from xpra.notifications.common import XPRA_NEW_USER_ID
         except ImportError as e:
-            return
+            notifylog("notify_new_user(%s) %s", ss, e)
         else:
             nid = XPRA_NEW_USER_ID
             icon = parse_image_path(get_icon_filename("user"))
