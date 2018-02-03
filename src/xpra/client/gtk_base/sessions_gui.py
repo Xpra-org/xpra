@@ -89,8 +89,8 @@ class SessionsGUI(gtk.Window):
         self.local_info_cache = {}
         self.dotxpra = DotXpra(options.socket_dir, options.socket_dirs, username)
         self.poll_local_sessions()
-        glib.timeout_add(5*1000, self.poll_local_sessions)
-        self.populate_table()
+        self.populate()
+        glib.timeout_add(5*1000, self.update)
         self.vbox.show()
         self.show()
 
@@ -107,6 +107,20 @@ class SessionsGUI(gtk.Window):
         log("app_signal(%s, %s) exit_code=%i", signum, frame, self.exit_code)
         self.do_quit()
 
+
+    def update(self):
+        if self.poll_local_sessions():
+            self.populate()
+        return True
+
+    def populate(self):
+        if self.local_info_cache:
+            self.password_entry.show()
+            self.password_label.show()
+        else:
+            self.password_entry.hide()
+            self.password_label.hide()
+        self.populate_table()
 
     def poll_local_sessions(self):
         #TODO: run in a thread so we don't block the UI thread!
@@ -156,15 +170,10 @@ class SessionsGUI(gtk.Window):
             if key not in self.local_info_cache:
                 display, sockpath = key
                 self.records.append(("", "socket", "", "", "local", socket.gethostname(), sockpath, 0, make_text(info)))
-        if self.local_info_cache!=info_cache:
-            self.local_info_cache = info_cache
-            if info_cache:
-                self.password_entry.show()
-                self.password_label.show()
-            else:
-                self.password_entry.hide()
-                self.password_label.hide()
-        return True
+        log("poll_local_sessions() info_cache=%s", info_cache)
+        changed = self.local_info_cache!=info_cache
+        self.local_info_cache = info_cache
+        return changed
 
     def get_session_info(self, sockpath):
         #the lazy way using a subprocess
