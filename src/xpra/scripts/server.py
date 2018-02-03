@@ -987,22 +987,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             app = XpraDesktopServer()
         app.init_virtual_devices(devices)
 
-    #publish mdns records:
-    if opts.mdns:
-        from xpra.platform.info import get_username
-        from xpra.server.socket_util import mdns_publish
-        mdns_info = {
-                     "display"  : display_name,
-                     "username" : get_username(),
-                     "uuid"     : strtobytes(app.uuid),
-                     "platform" : sys.platform,
-                     "type"     : app.session_type,
-                     }
-        if opts.session_name:
-            mdns_info["session"] = opts.session_name
-        for mode, listen_on in mdns_recs.items():
-            mdns_publish(display_name, mode, listen_on, mdns_info)
-
     try:
         app._ssl_wrap_socket = wrap_socket_fn
         app.original_desktop_display = desktop_display
@@ -1030,6 +1014,23 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app.start_on_connect            = opts.start_on_connect
         app.start_child_on_connect      = opts.start_child_on_connect
         app.exec_start_commands()
+
+    #publish mdns records:
+    if opts.mdns:
+        from xpra.platform.info import get_username
+        from xpra.server.socket_util import mdns_publish
+        mdns_info = {
+                     "display"  : display_name,
+                     "username" : get_username(),
+                     "uuid"     : strtobytes(app.uuid),
+                     "platform" : sys.platform,
+                     "type"     : app.session_type,
+                     }
+        if app.session_name:
+            mdns_info["session"] = app.session_name
+        for mode, listen_on in mdns_recs.items():
+            mdns_publish(display_name, mode, listen_on, mdns_info)
+
     del opts
 
     log("%s(%s)", app.init_sockets, sockets)
