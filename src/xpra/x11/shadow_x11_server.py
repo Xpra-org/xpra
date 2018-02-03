@@ -152,6 +152,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         X11ServerCore.__init__(self)
+        self.session_type = "shadow"
         self.cursor_poll_timer = None
 
     def init(self, opts):
