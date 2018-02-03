@@ -276,7 +276,7 @@ class X11ServerCore(GTKServerBase):
         return get_uuid()
 
     def save_uuid(self):
-        save_uuid(unicode(self.uuid))
+        save_uuid(str(self.uuid))
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:
