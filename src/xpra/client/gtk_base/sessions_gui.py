@@ -21,7 +21,7 @@ from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_comma
 from xpra.platform.dotxpra import DotXpra
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
-from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL
+from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, pixbuf_new_from_file, TableBuilder, scaled_image, color_parse, imagebutton, STATE_NORMAL, WIN_POS_CENTER
 from xpra.net.net_util import if_indextoname
 from xpra.util import typedict
 from xpra.os_util import bytestostr, WIN32
@@ -38,6 +38,7 @@ class SessionsGUI(gtk.Window):
         self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
+        self.set_position(WIN_POS_CENTER)
         icon = self.get_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
@@ -85,9 +86,6 @@ class SessionsGUI(gtk.Window):
         glib.timeout_add(5*1000, self.poll_local_sessions)
         self.populate_table()
 
-        import signal
-        signal.signal(signal.SIGINT, self.app_signal)
-        signal.signal(signal.SIGTERM, self.app_signal)
         self.show_all()
 
     def quit(self, *args):
@@ -98,9 +96,9 @@ class SessionsGUI(gtk.Window):
         log("do_quit()")
         gtk.main_quit()
 
-    def app_signal(self, signum, _frame):
+    def app_signal(self, signum, frame):
         self.exit_code = 128 + signum
-        log("app_signal(%s, %s) exit_code=%i", signum, _frame, self.exit_code)
+        log("app_signal(%s, %s) exit_code=%i", signum, frame, self.exit_code)
         self.do_quit()
 
 
@@ -333,6 +331,9 @@ def do_main(opts):
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
         enable_color()
         gui = SessionsGUI(opts)
+        import signal
+        signal.signal(signal.SIGINT, gui.app_signal)
+        signal.signal(signal.SIGTERM, gui.app_signal)
         gtk_main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
