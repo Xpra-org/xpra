@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -152,7 +152,8 @@ class SessionsGUI(gtk.Window):
                 "platform"       : "platform",
                 "uuid"           : "uuid",
                 "display"        : "display",
-                "session-type"   : "type"
+                "session-type"   : "type",
+                "session-name"   : "name",
                 }.items():
                 v = info.get(k)
                 if v is not None:
@@ -189,6 +190,7 @@ class SessionsGUI(gtk.Window):
             parts = line.split("=", 1)
             if len(parts)==2:
                 info[parts[0]] = parts[1]
+        log("get_sessions_info(%s)=%s", sockpath, info)
         return info
 
 
@@ -203,7 +205,7 @@ class SessionsGUI(gtk.Window):
             self.table.show()
             return
         tb = TableBuilder(1, 6, False)
-        tb.add_row(gtk.Label("Host"), gtk.Label("Session"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"))
+        tb.add_row(gtk.Label("Host"), gtk.Label("Display"), gtk.Label("Name"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"))
         self.table = tb.get_table()
         self.vbox.add(self.table)
         self.table.resize(1+len(self.records), 5)
@@ -217,17 +219,19 @@ class SessionsGUI(gtk.Window):
             display = td.strget("display", "")
             platform = td.strget("platform", "")
             dtype = td.strget("type", "")
+            #older servers expose the "session-name" as "session":
+            session_name = td.strget("name", "") or td.strget("session", "")
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
-            key = (uuid, uuid or i, host, display, platform, dtype)
+            key = (uuid, uuid or i, host, display, session_name, platform, dtype)
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
         for key, recs in d.items():
             if type(key)==tuple:
-                uuid, _, host, display, platform, dtype = key
+                uuid, _, host, display, name, platform, dtype = key
             else:
                 display = key
-                uuid, host, platform, dtype = None, None, sys.platform, None
+                uuid, host, name, platform, dtype = None, None, "", sys.platform, None
             title = uuid
             if display:
                 title = display
@@ -242,7 +246,7 @@ class SessionsGUI(gtk.Window):
             else:
                 pwidget = gtk.Label(platform)
             w, c = self.make_connect_widgets(recs, address, port, display)
-            tb.add_row(gtk.Label(host), label, pwidget, gtk.Label(dtype), w, c)
+            tb.add_row(gtk.Label(host), label, gtk.Label(name), pwidget, gtk.Label(dtype), w, c)
         self.table.show_all()
 
     def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):

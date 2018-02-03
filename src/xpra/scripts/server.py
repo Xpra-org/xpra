@@ -1026,8 +1026,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                      "platform" : sys.platform,
                      "type"     : app.session_type,
                      }
-        if app.session_name:
-            mdns_info["session"] = app.session_name
+        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
+        if MDNS_EXPOSE_NAME and app.session_name:
+            mdns_info["name"] = app.session_name
         for mode, listen_on in mdns_recs.items():
             mdns_publish(display_name, mode, listen_on, mdns_info)
 
