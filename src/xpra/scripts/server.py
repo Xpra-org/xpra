@@ -1022,7 +1022,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         mdns_info = {
                      "display"  : display_name,
                      "username" : get_username(),
-                     "uuid"     : strtobytes(app.uuid),
+                     "uuid"     : app.uuid,
                      "platform" : sys.platform,
                      "type"     : app.session_type,
                      }
