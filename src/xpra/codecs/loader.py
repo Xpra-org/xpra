@@ -23,7 +23,7 @@ if PYTHON3:
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", ]
+NOWARN = ["nvenc", "enc_x265", "enc_ffmpeg"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
