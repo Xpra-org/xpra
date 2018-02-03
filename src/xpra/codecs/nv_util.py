@@ -214,7 +214,7 @@ def validate_driver_yuv444lossless():
             l(" (this encoder has been tested with versions up to %s.x only)", MAX_TESTED)
         if not envbool("XPRA_NVENC_YUV444P", False):
             l(" disabling YUV444P and lossless mode")
-            l(" use XPRA_NVENC_YUV444P=0 to force enable")
+            l(" use XPRA_NVENC_YUV444P=1 to force enable")
             return False
         l(" force enabling YUV444P and lossless mode")
     return True
