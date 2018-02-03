@@ -45,6 +45,8 @@ class SessionsGUI(gtk.Window):
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
 
+        self.clients = {}
+        self.clients_disconnecting = set()
         self.child_reaper = getChildReaper()
 
         self.vbox = gtk.VBox(False, 20)
@@ -245,7 +247,7 @@ class SessionsGUI(gtk.Window):
                 pwidget.set_tooltip_text(platform)
             else:
                 pwidget = gtk.Label(platform)
-            w, c = self.make_connect_widgets(recs, address, port, display)
+            w, c = self.make_connect_widgets(key, recs, address, port, display)
             tb.add_row(gtk.Label(host), label, gtk.Label(name), pwidget, gtk.Label(dtype), w, c)
         self.table.show_all()
 
@@ -276,19 +278,39 @@ class SessionsGUI(gtk.Window):
                 uri += "%s" % dstr
         return uri
 
-    def attach(self, uri):
+    def attach(self, key, uri):
         self.warning.set_text("")
         cmd = get_xpra_command() + ["attach", uri]
         proc = subprocess.Popen(cmd)
-        log.info("attach() Popen(%s)=%s", cmd, proc)
+        log("attach() Popen(%s)=%s", cmd, proc)
         def proc_exit(*args):
             log("proc_exit%s", args)
             c = proc.poll()
-            if c not in (0, None):
+            if key in self.clients_disconnecting:
+                self.clients_disconnecting.remove(key)
+            elif c not in (0, None):
                 self.warning.set_text(EXIT_STR.get(c, "exit code %s" % c).replace("_", " "))
+            try:
+                del self.clients[key]
+            except:
+                pass
+            else:
+                self.populate()
         self.child_reaper.add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
+        self.clients[key] = proc
+        self.populate()
 
-    def make_connect_widgets(self, recs, address, port, display):
+    def make_connect_widgets(self, key, recs, address, port, display):
+        proc = self.clients.get(key)
+        if proc and proc.poll() is None:
+            icon = self.get_pixbuf("disconnected.png")
+            def disconnect_client(btn):
+                log("disconnect_client(%s) proc=%s", btn, proc)
+                self.clients_disconnecting.add(key)
+                proc.terminate()
+                self.populate()
+            btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
+            return gtk.Label("Already connected with pid=%i" % proc.pid), btn
         icon = self.get_pixbuf("connect.png")
         if len(recs)==1:
             #single record, single uri:
@@ -296,14 +318,14 @@ class SessionsGUI(gtk.Window):
             def clicked(*_args):
                 password = self.password_entry.get_text()
                 uri = self.get_uri(password, *recs[0])
-                self.attach(uri)
+                self.attach(key, uri)
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
             return gtk.Label(uri), btn
         #multiple modes / uris
         uri_menu = gtk.combo_box_new_text()
         d = {}
         #sort by protocol so TCP comes first
-        order = {"socket" : 0, "ssl" : 2, "tcp" : 4, "ssh" : 6}
+        order = {"socket" : 0, "ssl" :2, "wss" : 3, "tcp" : 4, "ssh" : 6, "ws" : 8}
         if WIN32:
             #on MS Windows, prefer ssh which has a GUI for accepting keys
             #and entering the password:
@@ -326,7 +348,7 @@ class SessionsGUI(gtk.Window):
             rec = d[uri]
             password = self.password_entry.get_text()
             uri = self.get_uri(password, *rec)
-            self.attach(uri)
+            self.attach(key, uri)
         uri_menu.set_active(0)
         btn = imagebutton("Connect", icon, clicked_callback=connect)
         #btn = gtk.Button(">")
