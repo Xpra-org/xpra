@@ -34,7 +34,7 @@ from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl,
                        MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
                        MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
 
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, import_pixbufloader, get_xid
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT)
