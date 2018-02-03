@@ -25,9 +25,12 @@ from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import StringIOClass, monotonic_time
+from xpra.os_util import StringIOClass, monotonic_time, PYTHON3
 from xpra.util import engs, csv
 from xpra.net.compression import Compressed
+
+if PYTHON3:
+    unicode = str           #@ReservedAssignment
 
 
 from xpra.log import Logger
@@ -276,7 +279,7 @@ class X11ServerCore(GTKServerBase):
         return get_uuid()
 
     def save_uuid(self):
-        save_uuid(str(self.uuid))
+        save_uuid(unicode(self.uuid))
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:
