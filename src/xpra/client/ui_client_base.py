@@ -848,11 +848,16 @@ class UIXpraClient(XpraClientBase):
         n = self.notifier
         if not self.client_supports_notifications or not n:
             return
-        from xpra.notifications.common import parse_image_path
-        icon_filename = get_icon_filename(icon_name)
-        icon = parse_image_path(icon_filename)
-        n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
-
+        try:
+            from xpra.notifications.common import parse_image_path
+            icon_filename = get_icon_filename(icon_name)
+            icon = parse_image_path(icon_filename)
+            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
+        except Exception as e:
+            notifylog("failed to show notification", exc_info=True)
+            notifylog.error("Error: cannot show notification")
+            notifylog.error(" '%s'", summary)
+            notifylog.error(" %s", e)
 
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
@@ -2375,7 +2380,7 @@ class UIXpraClient(XpraClientBase):
         webcamlog("do_start_sending_webcam(%s)", device_str)
         if device_str in ("auto", "on", "yes", "off", "false", "true"):
             if len(non_virtual)>0:
-                device = non_virtual.keys()[0]
+                device = tuple(non_virtual.keys())[0]
         else:
             webcamlog("device_str: %s", device_str)
             try:
