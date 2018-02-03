@@ -31,7 +31,7 @@ gui_init()
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
-                                    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, \
+                                    OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
@@ -93,6 +93,18 @@ def set_history_from_active(optionmenu):
         optionmenu.set_history(i)
 
 
+def has_mdns():
+    try:
+        from xpra.net.mdns import get_listener_class
+        lc = get_listener_class()
+        log("mdns listener class: %s", lc)
+        if lc:
+            return True
+    except ImportError as e:
+        log("no mdns support: %s", e)
+    return False
+
+
 class ApplicationWindow:
 
     def    __init__(self):
@@ -135,29 +147,10 @@ class ApplicationWindow:
         return {"mode"              : lambda x : validate_in_list(x, modes)}
 
 
-    def has_mdns(self):
-        try:
-            from xpra.net.mdns import get_listener_class
-            lc = get_listener_class()
-            log("mdns listener class: %s", lc)
-            if lc:
-                return True
-        except ImportError as e:
-            log("no mdns support: %s", e)
-        return False
-
-
     def image_button(self, label="", tooltip="", icon_pixbuf=None, clicked_cb=None):
-        button = gtk.Button(label)
-        settings = button.get_settings()
-        settings.set_property('gtk-button-images', True)
-        button.connect("clicked", clicked_cb)
-        button.set_tooltip_text(tooltip)
-        if icon_pixbuf:
-            image = gtk.Image()
-            image.set_from_pixbuf(icon_pixbuf)
-            button.set_image(image)
-        return button
+        icon = gtk.Image()
+        icon.set_from_pixbuf(icon_pixbuf)
+        return imagebutton(label, icon, tooltip, clicked_cb, icon_size=None)
 
     def create_window(self):
         self.window = gtk.Window()
@@ -194,7 +187,7 @@ class ApplicationWindow:
         # Session browser link:
         icon_pixbuf = self.get_icon("mdns.png")
         self.mdns_gui = None
-        if icon_pixbuf and self.has_mdns():
+        if icon_pixbuf and has_mdns():
             def mdns(*_args):
                 if self.mdns_gui==None:
                     from xpra.client.gtk_base.mdns_gui import mdns_sessions
@@ -390,13 +383,15 @@ class ApplicationWindow:
             self.button.set_image(scaled_image(connect_icon, 24))
         hbox.pack_start(self.button)
 
-        def accel_close(*_args):
-            gtk.main_quit()
-        add_close_accel(self.window, accel_close)
+        add_close_accel(self.window, self.accel_close)
         vbox.show_all()
         self.encoding_options_toggled()
         self.window.vbox = vbox
         self.window.add(vbox)
+
+    def accel_close(self, *args):
+        log.info("accel_close%s", args)
+        gtk.main_quit()
 
     def validate(self, *args):
         ssh = self.mode_combo.get_active_text()=="SSH"
@@ -804,11 +799,15 @@ class ApplicationWindow:
         self.port_entry.set_text(get_port(self.config.port))
         self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
-    def destroy(self, *_args):
+    def close_window(self, *_args):
         w = self.window
         if w:
             self.window = None
             w.destroy()
+
+    def destroy(self, *args):
+        log.info("destroy%s", args)
+        self.close_window()
         gtk.main_quit()
 
     def update_options_from_URL(self, url):

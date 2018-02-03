@@ -908,7 +908,9 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32, 
     settings = button.get_settings()
     settings.set_property('gtk-button-images', True)
     if icon:
-        button.set_image(scaled_image(icon, icon_size))
+        if icon_size:
+            icon = scaled_image(icon, icon_size)
+        button.set_image(icon)
     if tooltip:
         button.set_tooltip_text(tooltip)
     if min_size:
@@ -947,6 +949,11 @@ def menuitem(title, image=None, tooltip=None, cb=None):
 
 
 def add_close_accel(window, callback):
+    add_window_accel(window, '<control>F4', callback)
+    add_window_accel(window, '<Alt>F4', callback)
+    add_window_accel(window, 'Escape', callback)
+
+def add_window_accel(window, accel, callback):
     if is_gtk3():
         def connect(ag, *args):
             ag.connect(*args)
@@ -954,14 +961,8 @@ def add_close_accel(window, callback):
         def connect(ag, *args):
             ag.connect_group(*args)
     accel_group = gtk.AccelGroup()
-    key, mod = gtk.accelerator_parse('<control>F4')
+    key, mod = gtk.accelerator_parse(accel)
     connect(accel_group, key, mod, ACCEL_LOCKED, callback)
-    window.add_accel_group(accel_group)
-    accel_group = gtk.AccelGroup()
-    key, mod = gtk.accelerator_parse('<Alt>F4')
-    connect(accel_group, key, mod, ACCEL_LOCKED, callback)
-    escape_key, modifier = gtk.accelerator_parse('Escape')
-    connect(accel_group, escape_key, modifier, ACCEL_LOCKED |  ACCEL_VISIBLE, callback)
     window.add_accel_group(accel_group)
 
 
