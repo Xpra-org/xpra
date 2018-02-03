@@ -1407,7 +1407,12 @@ class ServerBase(ServerCore):
             #close it already
             ss.close()
             raise
-        self.notify_new_user(ss)
+        try:
+            self.notify_new_user(ss)
+        except Exception as e:
+            notifylog("%s(%s)", self.notify_new_user, ss, exc_info=True)
+            notifylog.error("Error: failed to show notification of user login:")
+            notifylog.error(" %s", e)
         self._server_sources[proto] = ss
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
