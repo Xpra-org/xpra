@@ -1994,6 +1994,9 @@ class TXTRecord(object):
             if value is None:
                 item = name
             else:
+                if sys.version_info[0]==3 and isinstance(value, bytes):
+                    #bytes are utf8
+                    value = value.decode("utf-8")
                 item = '%s=%s' % (name, value)
             if (not self.strict) and (len(item) > 255):
                 item = item[:255]
