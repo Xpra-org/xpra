@@ -146,7 +146,12 @@ OpenDesktopW.argtypes = [LPWSTR, DWORD, BOOL, ACCESS_MASK]
 CloseDesktop = user32.CloseDesktop
 CloseDesktop.restype = BOOL
 CloseDesktop.argtypes = [HDESK]
-
+OpenInputDesktop = user32.OpenInputDesktop
+OpenInputDesktop.restype = HDESK
+OpenInputDesktop.argtypes = [DWORD, BOOL, ACCESS_MASK] 
+GetUserObjectInformationA = user32.GetUserObjectInformationA
+GetUserObjectInformationA.restype = BOOL
+GetUserObjectInformationA.argtypes = [HANDLE, INT, LPVOID, DWORD, LPDWORD]
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC

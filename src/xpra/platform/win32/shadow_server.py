@@ -24,6 +24,7 @@ from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
+from xpra.platform.win32.gui import get_desktop_name
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.win32_events import get_win32_event_listener
 from xpra.platform.win32.gdi_screen_capture import GDICapture
@@ -301,6 +302,12 @@ class ShadowServer(GTKShadowServerBase):
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         GTKShadowServerBase.init(self, opts)
+
+
+    def guess_session_name(self, _procs):
+        desktop_name = get_desktop_name()
+        if desktop_name:
+            self.session_name = desktop_name
 
 
     def print_screen_info(self):
