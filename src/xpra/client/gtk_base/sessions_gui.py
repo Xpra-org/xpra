@@ -52,16 +52,20 @@ class SessionsGUI(gtk.Window):
 
         title_label = gtk.Label(title)
         title_label.modify_font(pango.FontDescription("sans 14"))
+        title_label.show()
         self.vbox.add(title_label)
 
         self.warning = gtk.Label(" ")
         red = color_parse("red")
         self.warning.modify_fg(STATE_NORMAL, red)
+        self.warning.show()
         self.vbox.add(self.warning)
 
         hbox = gtk.HBox(False, 10)
+        self.password_label = gtk.Label("Password:")
         al = gtk.Alignment(xalign=1, yalign=0.5)
-        al.add(gtk.Label("Password:"))
+        al.add(self.password_label)
+        al.show()
         hbox.add(al)
         self.password_entry = gtk.Entry()
         self.password_entry.set_max_length(128)
@@ -69,7 +73,9 @@ class SessionsGUI(gtk.Window):
         self.password_entry.set_visibility(False)
         al = gtk.Alignment(xalign=0, yalign=0.5)
         al.add(self.password_entry)
+        al.show()
         hbox.add(al)
+        hbox.show()
         self.vbox.add(hbox)
 
         self.table = None
@@ -85,8 +91,8 @@ class SessionsGUI(gtk.Window):
         self.poll_local_sessions()
         glib.timeout_add(5*1000, self.poll_local_sessions)
         self.populate_table()
-
-        self.show_all()
+        self.vbox.show()
+        self.show()
 
     def quit(self, *args):
         log("quit%s", args)
@@ -150,7 +156,14 @@ class SessionsGUI(gtk.Window):
             if key not in self.local_info_cache:
                 display, sockpath = key
                 self.records.append(("", "socket", "", "", "local", socket.gethostname(), sockpath, 0, make_text(info)))
-        self.local_info_cache = info_cache
+        if self.local_info_cache!=info_cache:
+            self.local_info_cache = info_cache
+            if info_cache:
+                self.password_entry.show()
+                self.password_label.show()
+            else:
+                self.password_entry.hide()
+                self.password_label.hide()
         return True
 
     def get_session_info(self, sockpath):
