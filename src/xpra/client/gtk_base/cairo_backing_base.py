@@ -1,14 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_pixbufloader, import_cairo, import_glib
+from xpra.gtk_common.gobject_compat import import_gdk, import_gobject, import_cairo, import_glib
 gdk             = import_gdk()
 gobject         = import_gobject()
 cairo           = import_cairo()
-PixbufLoader    = import_pixbufloader()
 glib            = import_glib()
 
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -46,7 +46,6 @@ from xpra.platform.gui import add_window_hooks, remove_window_hooks
 gtk     = import_gtk()
 gdk     = import_gdk()
 cairo   = import_cairo()
-PixbufLoader = import_pixbufloader()
 
 CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False

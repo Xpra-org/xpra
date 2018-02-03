@@ -19,10 +19,11 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_gdk, import_pixbufloader
 gtk = import_gtk()
 gdk = import_gdk()
 glib = import_glib()
+pixbuf_loader = import_pixbufloader()
 
 from xpra.gtk_common.gtk_util import add_close_accel, display_get_default, color_parse, get_preferred_size, pixbuf_new_from_file, STATE_NORMAL, RELIEF_NORMAL
 from xpra.notifications.notifier_base import NotifierBase, log
@@ -131,8 +132,8 @@ class GTK_Notifier(NotifierBase):
         image = None
         if icon and icon[0]=="png":
             img_data = icon[3]
-            loader = gdk.PixbufLoader("png")
-            loader.write(img_data, len(img_data))
+            loader = pixbuf_loader()
+            loader.write(img_data)
             loader.close()
             image = loader.get_pixbuf()
         popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout//1000, show_timeout=show_timeout)
