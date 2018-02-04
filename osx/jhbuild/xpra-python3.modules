@@ -503,6 +503,21 @@
 		</after>
 	</distutils>
 
+
+	<distutils id="python-pyobjc-framework-avfoundation">
+		<branch repo="pypi.python.org"
+			module="https://pypi.python.org/packages/53/59/191f0195309b28701e00ade44db07d882cebaf3dcab9609ff10aff1ef04e/pyobjc-framework-AVFoundation-4.1.tar.gz"
+			hash="sha256:5b41d0e5943a9ad12ebf144e6e117ae768b80245ccc92be97c00153c5c34ac15"
+			version="4.1"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+
 	<distutils id="python3-rencode" python3="1">
 		<branch repo="github.com"
 			module="/aresch/rencode/archive/v1.0.5.tar.gz"
@@ -605,6 +620,7 @@
 		  <dep package="python3-pyobjc-core"/>
 		  <dep package="python3-pyobjc-framework-cocoa"/>
 		  <dep package="python3-pyobjc-framework-quartz"/>
+		  <dep package="python3-pyobjc-framework-avfoundation"/>
 		</dependencies>
 	</metamodule>
 
