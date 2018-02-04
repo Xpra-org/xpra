@@ -11,20 +11,25 @@ def main():
     with program_context("Webcam", "Webcam"):
         from xpra.log import Logger, add_debug_category
         log = Logger("webcam")
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            add_debug_category("webcam")
-            log.enable_debug()
+        for x in list(sys.argv):
+            if x in ("-v", "--verbose"):
+                sys.argv.remove(x)
+                add_debug_category("webcam")
+                log.enable_debug()
+        log("importing opencv")
         try:
             import cv2
         except ImportError as e:
             command_error("Error: no opencv support module: %s" % e)
             return 1
+        log("cv2=%s", cv2)
         device = 0
         if len(sys.argv)==2:
             try:
                 device = int(sys.argv[1])
             except:
                 command_error("Warning: failed to parse value as a device number: '%s'" % sys.argv[1])
+        log("opening %s with device=%s", cv2.VideoCapture, device)
         try:
             cap = cv2.VideoCapture(device)
         except Exception as e:

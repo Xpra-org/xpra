@@ -46,7 +46,8 @@ platform_import(globals(), "webcam", False,
 def main():
     import sys
     if "-v" in sys.argv or "--verbose" in sys.argv:
-        from xpra.log import add_debug_category
+        from xpra.log import add_debug_category, enable_debug_for
+        enable_debug_for("webcam")
         add_debug_category("webcam")
     run = "-r" in sys.argv or "--run" in sys.argv
     if run:
