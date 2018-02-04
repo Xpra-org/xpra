@@ -131,7 +131,7 @@
 
 	<autotools id="libvpx"
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
-		autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv --disable-avx512"
+		autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv --disable-avx512 --disable-unit-tests"
 		autogen-sh="configure">
 		<branch module="/webmproject/libvpx/archive/v1.7.0.tar.gz"
 			version="1.7.0" checkoutdir="libvpx-1.7.0"
