@@ -23,6 +23,9 @@ import shutil
 if sys.version<'2.6':
     raise Exception("xpra no longer supports Python versions older than 2.6")
 
+import struct
+BITS = struct.calcsize("P")*8
+
 from hashlib import md5
 
 print(" ".join(sys.argv))
@@ -189,7 +192,7 @@ pillow_ENABLED          = DEFAULT
 webp_ENABLED            = False
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.3", "vpx", fallback=WIN32)
 enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("56", "libavcodec")
-webcam_ENABLED          = DEFAULT and not OSX
+webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not sys.platform.startswith("freebsd"))
 #ffmpeg 2 onwards:
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("56", "libavcodec", fallback=WIN32)
@@ -1805,6 +1808,8 @@ if WIN32:
 
     if webcam_ENABLED:
         external_includes.append("cv2")
+    else:
+        remove_packages("cv2")
 
     if opengl_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
