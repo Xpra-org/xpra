@@ -191,7 +191,7 @@ jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = False
 #opencv currently broken on 32-bit windows (crashes on load):
-webcam_ENABLED          = DEFAULT and not OSX
+webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
@@ -1412,6 +1412,8 @@ if WIN32:
 
     if webcam_ENABLED:
         external_includes.append("cv2")
+    else:
+        remove_packages("cv2")
 
     if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
         #we need numpy for opengl or as a fallback for the Cython xor module
