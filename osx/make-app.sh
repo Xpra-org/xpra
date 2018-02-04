@@ -97,6 +97,8 @@ if [ "$?" != "0" ]; then
 	tail -n 20 ${PY2APP_LOG}
 	exit 1
 fi
+echo "py2app forgets AVFoundation, do it by hand:"
+rsync -rplogt ${JHBUILD_PREFIX}/lib/python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python${PYTHON_MAJOR_VERSION}.${PYTHON_MINOR_VERSION}/
 echo "OK"
 popd
 
