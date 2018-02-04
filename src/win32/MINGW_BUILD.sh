@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 ARGS=$@
-DO_CLEAN=${DO_CLEAN:-0}
+DO_CLEAN=${DO_CLEAN:-1}
 DO_CUDA=${DO_CUDA:-1}
 DO_ZIP=${DO_ZIP:-0}
 DO_INSTALLER=${DO_INSTALLER:-1}
