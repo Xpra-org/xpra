@@ -612,7 +612,7 @@ fi
 
 
 %changelog
-* Tue Jan 23 2017 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
+* Mon Feb 05 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix system tray menu entries wrongly disabled
@@ -630,6 +630,8 @@ fi
 - fix rare server failure when some theme icons are missing
 - fix HTML5 client wrongly claiming to support system trays
 - fix RPM permissions on shared libraries
+- fix video encoder setup errors with invalid size requests
+- disable webcam support in 32-bit MS Windows builds (broken library)
 - ffmpeg 3.5 compatibility
 - don't expose icon absolute paths to clients
 - add missing file to build clean list
