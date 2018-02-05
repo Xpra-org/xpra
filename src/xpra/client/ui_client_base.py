@@ -65,7 +65,7 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, WIN32, BITS, is_Ubuntu
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 try:
@@ -157,9 +157,7 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
-        import struct
-        bits = struct.calcsize("P") * 8
-        log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), bits)
+        log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -2353,9 +2351,12 @@ class UIXpraClient(XpraClientBase):
                 assert cv2 and Image
             except ImportError as e:
                 webcamlog("init webcam failure", exc_info=True)
-                webcamlog.warn("Warning: failed to import opencv:")
-                webcamlog.warn(" %s", e)
-                webcamlog.warn(" webcam forwarding is disabled")
+                if WIN32 and BITS==32:
+                    pass
+                else:
+                    webcamlog.warn("Warning: failed to import opencv:")
+                    webcamlog.warn(" %s", e)
+                    webcamlog.warn(" webcam forwarding is disabled")
                 self.webcam_forwarding = False
         webcamlog("webcam forwarding: %s", self.webcam_forwarding)
 

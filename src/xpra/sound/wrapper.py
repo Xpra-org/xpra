@@ -12,7 +12,7 @@ from xpra.sound.gstreamer_util import parse_sound_source, get_source_plugins, ge
                             can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.os_util import WIN32, OSX, POSIX, monotonic_time, bytestostr
+from xpra.os_util import WIN32, OSX, POSIX, BITS, monotonic_time, bytestostr
 from xpra.util import typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
@@ -146,8 +146,6 @@ def run_sound(mode, error_cb, options, args):
             sources = [x for x in get_source_plugins() if x in plugins]
             sinks = [x for x in get_sink_plugins() if x in plugins]
             from xpra.sound.gstreamer_util import get_gst_version, get_pygst_version
-            import struct
-            bits = struct.calcsize("P")*8
             d = {
                  "encoders"         : can_encode(),
                  "decoders"         : can_decode(),
@@ -161,7 +159,7 @@ def run_sound(mode, error_cb, options, args):
                  "pygst.version"    : get_pygst_version(),
                  "plugins"          : plugins,
                  "python.version"   : sys.version_info[:3],
-                 "python.bits"      : bits,
+                 "python.bits"      : BITS,
                 }
             if BUNDLE_METADATA:
                 d["bundle-metadata"] = True

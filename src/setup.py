@@ -68,8 +68,6 @@ NETBSD = sys.platform.startswith("netbsd")
 FREEBSD = sys.platform.startswith("freebsd")
 PYTHON3 = sys.version_info[0] == 3
 POSIX = os.name=="posix"
-import struct
-BITS = struct.calcsize("P")*8
 
 
 if "pkg-info" in sys.argv:
@@ -94,7 +92,7 @@ print("Xpra version %s" % XPRA_VERSION)
 # only the default values are specified here:
 #*******************************************************************************
 from xpra.os_util import get_status_output, is_Ubuntu, is_Debian, is_Raspbian, getUbuntuVersion,\
-    PYTHON3
+    PYTHON3, BITS
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False

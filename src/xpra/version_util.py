@@ -11,7 +11,7 @@ import os
 
 import xpra
 from xpra.util import updict, envbool
-from xpra.os_util import get_linux_distribution, PYTHON3
+from xpra.os_util import get_linux_distribution, PYTHON3, BITS
 from xpra.log import Logger
 log = Logger("util")
 
@@ -46,15 +46,13 @@ def get_host_info():
     #this function is for non UI thread info
     info = {}
     try:
-        import struct
-        bits = struct.calcsize("P") * 8
         import socket
         info.update({
                     "pid"                   : os.getpid(),
                     "byteorder"             : sys.byteorder,
                     "hostname"              : socket.gethostname(),
                     "python"                : {
-                                               "bits"                  : bits,
+                                               "bits"                  : BITS,
                                                "full_version"          : sys.version,
                                                "version"               : ".".join(str(x) for x in sys.version_info[:3]),
                                                },

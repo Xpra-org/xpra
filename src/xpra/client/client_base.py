@@ -29,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS
 from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
 from xpra.net.file_transfer import FileTransferHandler
 
@@ -370,8 +370,6 @@ class XpraClientBase(FileTransferHandler):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
-        import struct
-        bits = struct.calcsize("P") * 8
         capabilities.update({
                 "version"               : XPRA_VERSION,
                 "encoding.generic"      : True,
@@ -382,7 +380,7 @@ class XpraClientBase(FileTransferHandler):
                 "name"                  : get_name(),
                 "client_type"           : self.client_type(),
                 "python.version"        : sys.version_info[:3],
-                "python.bits"           : bits,
+                "python.bits"           : BITS,
                 "compression_level"     : self.compression_level,
                 "argv"                  : sys.argv,
                 })
