@@ -27,20 +27,26 @@
 
   <metamodule id="meta-gtk-osx-python-gtk3">
     <dependencies>
-      <dep package="meta-gtk-osx-gtk3"/>
       <dep package="pycairo"/>
       <dep package="pygobject3"/>
       <dep package="gtk-mac-integration-python"/>
     </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-gtk3.14"/>
+    </after>
   </metamodule>
 
   <metamodule id="meta-gtk-osx-python3-gtk3">
     <dependencies>
-      <dep package="meta-gtk-osx-gtk3"/>
       <dep package="pycairo"/>
       <dep package="pygobject3"/>
       <dep package="gtk-mac-integration-python"/>
     </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-gtk3.14"/>
+    </after>
   </metamodule>
 
 <!--Note the leading ; in autogen-template. It's there on purpose in case the user has set nice_build so that the nice prepended to the command doesn't eat the cd. -->
@@ -73,17 +79,16 @@
   <autotools id="python" autogenargs="--enable-shared"
 	     autogen-sh="configure" supports-non-srcdir-builds="no">
     <branch repo="python"
-	    module="2.7.14/Python-2.7.14.tar.xz" version="2.7.14"
-	    hash="sha256:71ffb26e09e78650e424929b2b457b9c912ac216576e6bd9e7d204ed03296a66">
+           module="2.7.14/Python-2.7.14.tar.xz" version="2.7.14"
+           hash="sha256:71ffb26e09e78650e424929b2b457b9c912ac216576e6bd9e7d204ed03296a66">
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/python2-linkflags.patch" strip="1"/>"/>
     </branch>
     <dependencies>
-      <dep package="openssl"/>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
+      <dep package="openssl"/> <!-- For hashlib -->
     </dependencies>
     <after>
-      <dep package="openssl"/>
       <dep package="berkeleydb"/>
       <dep package="berkeleydb-nonsrctree"/>
     </after>
@@ -94,9 +99,9 @@
       <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/Python3.4-stack_size-flag.patch" strip="1"/>
     </branch>
     <dependencies>
-      <dep package="openssl"/>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
+      <dep package="openssl"/> <!-- For hashlib -->
     </dependencies>
   </autotools>
 
@@ -124,6 +129,7 @@
       <dep package="python3"/>
       <dep package="python"/>
       <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-gtk3.14"/>
       <dep package="meta-gtk-osx-core"/>
     </after>
   </distutils>
@@ -136,9 +142,7 @@
 	     autogenargs="--disable-introspection"
 	     supports-non-srcdir-builds="no">
     <branch version="2.28.6" module="pygobject/2.28/pygobject-2.28.6.tar.bz2"
-            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee">
-        <patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/pygobject-gflags-fix.patch" strip="1"/>
-    </branch>
+            hash="sha256:e4bfe017fa845940184c82a4d8949db3414cb29dfc84815fb763697dc85bdcee"/>
     <dependencies>
       <dep package="meta-gtk-osx-core"/>
     </dependencies>

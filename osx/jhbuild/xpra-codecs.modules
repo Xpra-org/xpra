@@ -6,6 +6,7 @@
 	<repository type="tarball" name="www.tortall.net" href="http://www.tortall.net"/>
 	<repository type="tarball" name="www.nasm.us" href="http://www.nasm.us"/>
 
+	<repository type="tarball" name="liboil" href="http://liboil.freedesktop.org/download/"/>
 	<repository type="tarball" name="downloads.xiph.org" href="http://downloads.xiph.org"/>
 	<repository type="tarball" name="winswitch.org" href="http://winswitch.org"/>
 	<repository type="tarball" name="download.videolan.org" href="http://download.videolan.org"/>
@@ -35,6 +36,14 @@
 			hash="sha256:ba854c2f02f34f0d6a4611c05e8cb65d9fae8c2b21a4def7fba91a7d67ffde97"
 			repo="www.nasm.us">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/nasm-makefile-destdir.patch" strip="0" />
+		</branch>
+	</autotools>
+
+
+	<autotools id="liboil" autogen-template="autoreconf -fis &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s"
+		makeargs=' CFLAGS="$CFLAGS -DHAVE_SYMBOL_UNDERSCORE"'>
+		<branch repo="liboil" module="liboil-0.3.17.tar.gz" version="0.3.17">
+			<patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/liboil-use-ac-config-headers-macro.patch" strip="1"/>
 		</branch>
 	</autotools>
 

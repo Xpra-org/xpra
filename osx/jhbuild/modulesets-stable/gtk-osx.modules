@@ -46,13 +46,13 @@
 
   <include href="gtk-osx-bootstrap.modules"/>
   <include href="gtk-osx-gstreamer.modules"/>
-  <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-gtkmm.modules"/>
-  <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-javascript.modules"/>
+  <include href="gtk-osx-gtkmm.modules"/>
+  <include href="gtk-osx-javascript.modules"/>
   <include href="gtk-osx-network.modules"/>
   <include href="gtk-osx-python.modules"/>
-  <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-random.modules"/>
-  <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-themes.modules"/>
-  <include href="https://raw.githubusercontent.com/GNOME/gtk-osx/master/modulesets-stable/gtk-osx-unsupported.modules"/>
+  <include href="gtk-osx-random.modules"/>
+  <include href="gtk-osx-themes.modules"/>
+  <include href="gtk-osx-unsupported.modules"/>
 
   <metamodule id="meta-gtk-osx-core">
     <dependencies>

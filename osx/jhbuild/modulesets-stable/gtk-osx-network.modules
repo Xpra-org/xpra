@@ -9,7 +9,7 @@
   <repository name="ftp.gnu.org" type="tarball" href="ftp://ftp.gnu.org/gnu/"/>
   <repository name="sourceforge" type="tarball"
               href="http://downloads.sourceforge.net/sourceforge/"/>
-  <repository name="gnutls" type="tarball" href="ftp://ftp.gnutls.org/"/>
+  <repository name="gnutls" type="tarball" href="https://www.gnupg.org/ftp/"/>
   <repository name="webm" type="tarball"
               href="http://downloads.webmproject.org/releases/"/>
   <repository name="webkit.org" type="tarball"
@@ -59,7 +59,8 @@
   <autotools id="libtasn1" supports-non-srcdir-builds="no"
              autogen-sh="configure">
     <branch repo="ftp.gnu.org" version="4.12"
-            module="/libtasn1/libtasn1-4.12.tar.gz"/>
+            module="libtasn1/libtasn1-4.12.tar.gz"
+            hash="sha256:6753da2e621257f33f5b051cc114d417e5206a0818fe0b1ecfd6153f70934753" />
   </autotools>
 
   <autotools id="zlib" autogen-sh="configure" skip-autogen="never"
@@ -177,6 +178,7 @@
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-gtk3.14"/>
       <dep package="meta-gstreamer"/>
     </after>
   </autotools>
@@ -215,6 +217,7 @@
     </dependencies>
     <after>
       <dep package="meta-gtk-osx-gtk3"/>
+      <dep package="meta-gtk-osx-gtk3.14"/>
       <dep package="meta-gstreamer"/>
     </after>
   </cmake>
