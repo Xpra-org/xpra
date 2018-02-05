@@ -361,9 +361,9 @@
 
 	<distutils id="python-lz4">
 		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/c0/86/311d4a279106d6477170714e4545692d7782b90816ca32957613a956adb0/lz4-0.19.2.tar.gz"
-			hash="sha256:2e6bce0379eca0eb9eeb306ca60f507f355b3c7853b2826fd7b2e4fc08a67f91"
-			version="0.19.2"/>
+			module="https://pypi.python.org/packages/b8/22/4e5cff49209da0b95407569a0a447dc7fb75226acf38e98ecf23cbba2f42/lz4-0.21.6.tar.gz"
+			hash="sha256:7c1e9908e6aa3a4f15ddacd82cdbd0d029e826c75df3205abd382d0168fd970f"
+			version="0.21.6"/>
 		<dependencies>
 			<dep package="lz4"/>
 			<dep package="python"/>
