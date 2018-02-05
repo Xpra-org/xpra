@@ -295,7 +295,10 @@ class SessionsGUI(gtk.Window):
             except:
                 pass
             else:
-                self.populate()
+                def update():
+                    self.update()
+                    self.populate()
+                glib.idle_add(update)
         self.child_reaper.add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
         self.clients[key] = proc
         self.populate()
