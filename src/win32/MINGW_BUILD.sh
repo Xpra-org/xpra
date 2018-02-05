@@ -13,6 +13,7 @@ DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
 DO_SERVICE=${DO_SERVICE:-0}
+CLIENT_ONLY=${CLIENT_ONLY:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
@@ -26,9 +27,7 @@ KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 
-CLIENT_ONLY="0"
-if [ "$1" == "CLIENT" ]; then
-	CLIENT_ONLY="1"
+if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
 	DO_SERVICE="0"
 	shift
