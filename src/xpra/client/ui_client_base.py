@@ -2352,7 +2352,7 @@ class UIXpraClient(XpraClientBase):
             except ImportError as e:
                 webcamlog("init webcam failure", exc_info=True)
                 if WIN32 and BITS==32:
-                    pass
+                    webcamlog.info("32-bit builds do not support webcam forwarding")
                 else:
                     webcamlog.warn("Warning: failed to import opencv:")
                     webcamlog.warn(" %s", e)
