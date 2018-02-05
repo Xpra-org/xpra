@@ -2247,7 +2247,10 @@ cdef class Encoder:
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
             log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(target_buffer), len(target_buffer))
             #log("target: %s, %s, %s", buf.shape, buf.size, buf.dtype)
-            tmp = numpy.frombuffer(pixels, numpy.int8)
+            if isinstance(pixels, memoryview):
+                tmp = numpy.asarray(pixels, numpy.int8)
+            else:
+                tmp = numpy.frombuffer(pixels, numpy.int8)
             buf[:copy_len] = tmp[:copy_len]
         else:
             #ouch, we need to copy the source pixels into the smaller buffer
