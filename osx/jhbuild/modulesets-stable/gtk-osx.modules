@@ -75,12 +75,56 @@
     </after>
   </metamodule>
 
+  <metamodule id="meta-gtk-osx-gtk3.14">
+    <dependencies>
+      <dep package="gtk+-3.14"/>
+      <dep package="gtk-mac-integration"/>
+      <dep package="meta-gtk-osx-gtk3-core-themes"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </metamodule>
+
+  <autotools id="glib" autogen-sh="autoreconf"
+             autogenargs="--with-pcre=internal">
+    <branch module="glib/2.52/glib-2.52.2.tar.xz"  version="2.52.2"
+            hash="sha256:f00e5d9e2a2948b1da25fcba734a6b7a40f556de8bc9f528a53f6569969ac5d0">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-gint64-long-long.patch" strip="1"/>
+      <!-- Fix should be in glib-2.54.2 -->
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/glib-2.52-Fallback-to-CFStringGetCSTring-if-CFStringGetC.patch" strip="1"/>
+    </branch>
+    <dependencies>
+        <dep package="libffi"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </autotools>
+
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
     <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
             version="3.2.1"/>
   </autotools>
 
+
+  <autotools id="gobject-introspection" autogen-sh="configure">
+    <branch module="gobject-introspection/1.52/gobject-introspection-1.52.1.tar.xz"
+            version="1.52.1"
+            hash="sha256:2ed0c38d52fe1aa6fc4def0c868fe481cb87b532fc694756b26d6cfab29faff4">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/girscanner-objc.patch" strip="1"/>
+            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gi_cairo_library_path.patch" strip="1"/>
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="cairo"/>
+    </dependencies>
+      <after>
+        <dep package='python'/>
+        <dep package='python3'/>
+      </after>
+  </autotools>
 
  <autotools id="pango"  autogen-sh="autoreconf">
     <branch version="1.40.12" module="pango/1.40/pango-1.40.12.tar.xz"
@@ -152,6 +196,29 @@
     </dependencies>
   </autotools>
 
+  <autotools id="gtk+-3.14" autogen-sh="autogen.sh"
+             autogenargs="--enable-quartz-backend --enable-quartz-relocation">
+    <branch module="gtk+/3.14/gtk+-3.14.15.tar.xz" version="3.14.15"
+            hash="sha256:3ac87659112ced9e5ee5bd55d055faa881aafd040f26ca40b0d8ba0fa6509c83">
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/0001-Bug-707945-GTK2-Quartz-typeahead-find-in-GtkTreeView.patch" strip="1"/>
+      <!-- https://bugzilla.gnome.org/show_bug.cgi?id=763779 -->
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk-quartz-fix-pixelated-image-surfaces-in-retina-hidpi-.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk3-14-get-scale-factor.patch" strip="1"/>
+      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/gtk3-14-gtkdesktop.patch" strip="1"/>      
+    </branch>
+    <dependencies>
+      <dep package="glib"/>
+      <dep package="pango"/>
+      <dep package="atk"/>
+      <dep package="cairo"/>
+      <dep package="gdk-pixbuf"/>
+      <dep package="gobject-introspection"/>
+    </dependencies>
+    <after>
+      <dep package="meta-gtk-osx-bootstrap"/>
+    </after>
+  </autotools>
+
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
     <branch module="gtk+/3.22/gtk+-3.22.20.tar.xz" version="3.22.20"
@@ -210,6 +277,7 @@
     <after>
       <dep package="gtk+"/>
       <dep package="gtk+-3.0"/>
+      <dep package="gtk+-3.14"/>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
   </autotools>
