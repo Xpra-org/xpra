@@ -58,7 +58,7 @@ cdef extern from "sys/ioctl.h":
 
 
 def get_interface_speed(int sockfd, char *ifname):
-    """ returns the ethtool speed in Mbps, or 0 """
+    """ returns the ethtool speed in bps, or 0 """
     cdef ifreq ifr
     cdef ethtool_cmd edata
     ifr.ifr_ifrn.ifrn_name = ifname
@@ -66,11 +66,6 @@ def get_interface_speed(int sockfd, char *ifname):
     edata.cmd = ETHTOOL_GSET
     cdef int r = ioctl(sockfd, SIOCETHTOOL, &ifr)
     if r < 0:
-        l = log.warn
-        pyifname = ifname
-        if pyifname.startswith("wlan"):
-            l = log
-        l("Warning: failed to query %s device properties with SIOCETHTOOL", ifname)
-        l(" error %i", r)
+        log.info("no ethtool interface speed available for %s", ifname)
         return 0
     return edata.speed*1000*1000
