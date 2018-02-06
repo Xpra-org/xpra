@@ -867,7 +867,8 @@ class ClientExtras(object):
     def setup_xi(self):
         if self.client.server_input_devices not in ("xi", "uinput"):
             log.info("server does not support xi input devices")
-            log.info(" server uses: %s", self.client.server_input_devices)
+            if self.client.server_input_devices:
+                log.info(" server uses: %s", self.client.server_input_devices)
             return
         try:
             from xpra.gtk_common.error import xsync
