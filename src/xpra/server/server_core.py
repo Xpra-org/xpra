@@ -864,7 +864,7 @@ class ServerCore(object):
             return
 
         #not sure why python3 fails to set the timeout here:
-        if not PYTHON3 or socktype!="ssl":
+        if not PYTHON3 or conn.socktype!="ssl":
             sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn)
