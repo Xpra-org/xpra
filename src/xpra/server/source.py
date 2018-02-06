@@ -1087,7 +1087,7 @@ class ServerSource(FileTransferHandler):
                 elog.info(" %s, also available:", s)
                 elog.info("  %s", ", ".join(others))
             else:
-                elog.warn(" %s")
+                elog.warn(" %s", s)
                 elog.warn("  no other encodings are available!")
 
     def parse_proxy_video(self):
