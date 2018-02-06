@@ -17,7 +17,7 @@ fpslog = Logger("opengl", "fps")
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
-JPEG_YUV = envbool("XPRA_JPEG_YUV", False)
+JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
 WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
