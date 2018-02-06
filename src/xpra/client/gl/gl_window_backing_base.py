@@ -368,7 +368,10 @@ class GLWindowBackingBase(WindowBackingBase):
         # Create and assign fragment programs
         self.shaders = [ 1, 2 ]
         glGenProgramsARB(2, self.shaders)
-        for name, progid, progstr in (("YUV2RGB", YUV2RGB_SHADER, YUV2RGB_shader), ("RGBP2RGB", RGBP2RGB_SHADER, RGBP2RGB_shader)):
+        for name, progid, progstr in (
+            ("YUV2RGB",     YUV2RGB_SHADER,         YUV2RGB_shader),
+            ("RGBP2RGB",    RGBP2RGB_SHADER,        RGBP2RGB_shader),
+            ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
             glProgramStringARB(GL_FRAGMENT_PROGRAM_ARB, GL_PROGRAM_FORMAT_ASCII_ARB, len(progstr), progstr)
             err = glGetString(GL_PROGRAM_ERROR_STRING_ARB)
@@ -979,7 +982,11 @@ class GLWindowBackingBase(WindowBackingBase):
                 if width!=enc_width or height!=enc_height:
                     x_scale = float(width)/enc_width
                     y_scale = float(height)/enc_height
-                self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale)
+                if self.pixel_format=="GBRP":
+                    shader = RGBP2RGB_SHADER
+                else:
+                    shader = YUV2RGB_SHADER
+                self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
                 # Present it on screen
@@ -1041,14 +1048,12 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
-    def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1):
-        log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale), self.pixel_format)
+    def render_planar_update(self, rx, ry, rw, rh, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
+        log("%s.render_planar_update%s pixel_format=%s", self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
         if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
             #not ready to render yet
             return
-        if self.pixel_format == "GBRP":
-            # Set GL state for planar RGB: change fragment program
-            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[RGBP2RGB_SHADER])
+        glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[shader])
         self.gl_marker("painting planar update, format %s", self.pixel_format)
         divs = get_subsampling_divs(self.pixel_format)
         glEnable(GL_FRAGMENT_PROGRAM_ARB)
@@ -1071,9 +1076,6 @@ class GLWindowBackingBase(WindowBackingBase):
             glActiveTexture(texture)
             glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0)
         glDisable(GL_FRAGMENT_PROGRAM_ARB)
-        if self.pixel_format == "GBRP":
-            # Reset state to our default (YUV painting)
-            glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[YUV2RGB_SHADER])
         glActiveTexture(GL_TEXTURE0)
 
 
