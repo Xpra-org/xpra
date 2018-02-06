@@ -38,7 +38,7 @@ from xpra.client.window_backing_base import fire_paint_callbacks, WEBP_PILLOW
 from xpra.client.spinner import cv
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.client.gl.gl_check import GL_ALPHA_SUPPORTED, is_pyopengl_memoryview_safe
-from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, RGBP2RGB_shader
+from xpra.client.gl.gl_colorspace_conversions import YUV2RGB_shader, YUV2RGB_FULL_shader, RGBP2RGB_shader
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
 from OpenGL.GL import \
@@ -199,6 +199,7 @@ else:
 # Shader number assignment
 YUV2RGB_SHADER = 0
 RGBP2RGB_SHADER = 1
+YUV2RGB_FULL_SHADER = 2
 
 """
 The logic is as follows:
@@ -366,10 +367,11 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_init_shaders(self):
         assert self.shaders is None
         # Create and assign fragment programs
-        self.shaders = [ 1, 2 ]
-        glGenProgramsARB(2, self.shaders)
+        self.shaders = [ 1, 2, 3 ]
+        glGenProgramsARB(3, self.shaders)
         for name, progid, progstr in (
             ("YUV2RGB",     YUV2RGB_SHADER,         YUV2RGB_shader),
+            ("YUV2RGBFULL", YUV2RGB_FULL_SHADER,    YUV2RGB_FULL_shader),
             ("RGBP2RGB",    RGBP2RGB_SHADER,        RGBP2RGB_shader),
             ):
             glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, self.shaders[progid])
@@ -879,7 +881,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if JPEG_YUV:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
@@ -888,7 +890,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if WEBP_YUV and self.webp_decoder and not WEBP_PILLOW:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
             return
         WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 
@@ -959,9 +961,14 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
         #copy so the data will be usable (usually a str)
         img.clone_pixel_data()
-        self.idle_add(self.gl_paint_planar, options.intget("flush", 0), options.strget("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
+        pixel_format = img.get_pixel_format()
+        if pixel_format=="GBRP":
+            shader = RGBP2RGB_SHADER
+        else:
+            shader = YUV2RGB_SHADER
+        self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img, x, y, enc_width, enc_height, width, height, callbacks)
 
-    def gl_paint_planar(self, flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
+    def gl_paint_planar(self, shader, flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
         log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
         try:
@@ -982,10 +989,6 @@ class GLWindowBackingBase(WindowBackingBase):
                 if width!=enc_width or height!=enc_height:
                     x_scale = float(width)/enc_width
                     y_scale = float(height)/enc_height
-                if self.pixel_format=="GBRP":
-                    shader = RGBP2RGB_SHADER
-                else:
-                    shader = YUV2RGB_SHADER
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
                 self.paint_box(encoding, False, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
