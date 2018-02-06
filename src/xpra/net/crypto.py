@@ -137,13 +137,14 @@ def gendigest(digest, password, salt):
     password = strtobytes(password)
     if digest=="des":
         from xpra.net.d3des import generate_response
-        password = password.ljust(8, "\x00")[:8]
-        salt = salt.ljust(16, "\x00")[:16]
+        password = password.ljust(8, b"\x00")[:8]
+        salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)
         return hexstr(v)
     elif digest=="xor":
-        salt = salt.ljust(16, "\x00")[:len(password)]
-        return memoryview_to_bytes(xor(password, salt))
+        salt = salt.ljust(16, b"\x00")[:len(password)]
+        v = xor(password, salt)
+        return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
     if not digestmod:
         log("invalid digest module '%s': %s", digest)

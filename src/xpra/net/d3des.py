@@ -53,7 +53,7 @@ def decrypt_passwd(data):
     return desfunc(data, dk)
 
 def generate_response(passwd, challange):
-    ek = deskey((passwd+'\x00'*8)[:8], False)
+    ek = deskey((passwd+b'\x00'*8)[:8], False)
     return desfunc(challange[:8], ek) + desfunc(challange[8:], ek)
 
 ###

@@ -104,7 +104,7 @@ def memoryview_to_bytes(v):
         return bytes(v)
     if isinstance(v, bytearray):
         return bytes(v)
-    return v
+    return strtobytes(v)
 
 
 def setsid():
