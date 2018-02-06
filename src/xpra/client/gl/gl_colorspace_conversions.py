@@ -61,11 +61,11 @@ YUV2RGB_FULL_shader = b"""!!ARBfp1.0
 #var float4 IN.color : $vin.COLOR0 : COL0 : 0 : 1
 #var float4 main.color : $vout.COLOR0 : COL : -1 : 1
 #const c[0] = 1 1.732 0 0.5
-#const c[1] = 1 -0.336 -0.69800001
-#const c[2] = 1 0 1.3710001
+#const c[1] = 1 -0.344136 -0.714136
+#const c[2] = 1 0 1.402
 PARAM c[3] = { { 1, 1.732, 0, 0.5 },
-        { 1, -0.336, -0.69800001 },
-        { 1, 0, 1.3710001 } };
+        { 1, -0.344136, -0.714136 },
+        { 1, 0, 1.402 } };
 TEMP R0;
 TEMP R1;
 TEX R0.x, fragment.texcoord[2], texture[2], RECT;
