@@ -244,9 +244,10 @@ def decompress_yuv(data, has_alpha=False):
     log("webp decompress_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
 
     config.output.colorspace = MODE_YUV
-    cdef alpha = has_alpha and config.input.has_alpha
+    cdef int alpha = has_alpha and config.input.has_alpha
     if alpha:
         log.warn("Warning: webp YUVA colorspace not supported yet")
+        alpha = 0
         #config.output.colorspace = MODE_YUVA
 
     cdef int w = config.input.width
@@ -268,24 +269,33 @@ def decompress_yuv(data, has_alpha=False):
     YUVA.v_size = v_size
     YUVA.a_size = a_size
     #allocate a buffer big enough for all planes with 1 stride of padding after each:
-    cdef uint8_t *buf = <uint8_t*> memalign(y_size + u_size + v_size + a_size + 4*w)
+    cdef uint8_t *buf = <uint8_t*> memalign(y_size + u_size + v_size + a_size + YUVA.y_stride + YUVA.u_stride + YUVA.v_stride + YUVA.a_stride)
     YUVA.y = buf
-    YUVA.u = <uint8_t*> (<uintptr_t> buf + y_size + w)
-    YUVA.v = <uint8_t*> (<uintptr_t> buf + y_size + u_size + 2*w)
+    YUVA.u = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride)
+    YUVA.v = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride)
     if alpha:
-        YUVA.a = <uint8_t*> (<uintptr_t> buf + y_size + u_size + v_size + 3*w)
+        YUVA.a = <uint8_t*> (<uintptr_t> buf + y_size + YUVA.y_stride + u_size + YUVA.u_stride + v_size + YUVA.v_stride)
+        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride, YUVA.a_stride)
     else:
         YUVA.a = NULL
+        strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
     config.output.is_external_memory = 1
-    log("WebPDecode: image size %ix%i : buffer=%#x", w, h, <uintptr_t> buf)
+    log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s", w, h, <uintptr_t> buf, strides)
     webp_check(WebPDecode(data, len(data), &config))
-    planes = (
-        memory_as_pybuffer(<void *> YUVA.y, y_size, True),
-        memory_as_pybuffer(<void *> YUVA.u, u_size, True),
-        memory_as_pybuffer(<void *> YUVA.v, v_size, True),
-        )
-    strides = (YUVA.y_stride, YUVA.u_stride, YUVA.v_stride)
-    img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", 24, strides, ImageWrapper._3_PLANES)
+    if alpha:
+        planes = (
+            memory_as_pybuffer(<void *> YUVA.y, y_size, True),
+            memory_as_pybuffer(<void *> YUVA.u, u_size, True),
+            memory_as_pybuffer(<void *> YUVA.v, v_size, True),
+            memory_as_pybuffer(<void *> YUVA.a, a_size, True),
+            )
+    else:
+        planes = (
+            memory_as_pybuffer(<void *> YUVA.y, y_size, True),
+            memory_as_pybuffer(<void *> YUVA.u, u_size, True),
+            memory_as_pybuffer(<void *> YUVA.v, v_size, True),
+            )
+    img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper._3_PLANES+alpha)
     img.cython_buffer = <uintptr_t> buf
     return img
 

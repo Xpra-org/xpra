@@ -18,7 +18,7 @@ OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
-WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
+WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 TEXTURE_CURSOR = envbool("XPRA_OPENGL_TEXTURE_CURSOR", False)
@@ -887,10 +887,12 @@ class GLWindowBackingBase(WindowBackingBase):
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        if WEBP_YUV and self.webp_decoder and not WEBP_PILLOW:
+        subsampling = options.strget("subsampling")
+        has_alpha = options.boolget("has_alpha")
+        if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
             return
         WindowBackingBase.paint_webp(self, img_data, x, y, width, height, options, callbacks)
 

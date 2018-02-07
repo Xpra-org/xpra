@@ -17,6 +17,8 @@ from xpra.util import envbool, envint
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 75)
+cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 40)
+assert SUBSAMPLING_THRESHOLD<=LOSSLESS_THRESHOLD, "lossless threshold must be higher than subsampling threshold"
 assert LOSSLESS_THRESHOLD>=0 and LOSSLESS_THRESHOLD<=100, "invalid lossless threshold: %i" % LOSSLESS_THRESHOLD
 
 cdef inline int MIN(int a, int b):
@@ -419,13 +421,14 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
 
     cdef int i
     cdef int alpha_int = int(supports_alpha and pixel_format.find("A")>=0)
+    cdef int use_argb = int(quality>=SUBSAMPLING_THRESHOLD)
     if alpha_int==0 and Bpp==4:
         #ensure webp will not decide to encode the alpha channel
         #(this is stupid: we should be able to pass a flag instead)
         i = 3
         while i<size:
             pic_buf[i] = 0xff
-            i += Bpp
+            i += 4
 
     ret = WebPConfigInit(&config)
     if not ret:
@@ -478,9 +481,12 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     if not ret:
         raise Exception("failed to initialise webp picture")
 
-    #TODO: custom writer that over-allocates memory
-    cdef WebPMemoryWriter memory_writer
-    WebPMemoryWriterInit(&memory_writer)
+    client_options = {
+        #no need to expose speed
+        #(not used for anything downstream)
+        #"speed"       : speed,
+        "rgb_format"  : pixel_format,
+        }
 
     memset(&pic, 0, sizeof(WebPPicture))
     pic.width = width
@@ -488,6 +494,17 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     pic.use_argb = 1
     pic.argb = <uint32_t*> pic_buf
     pic.argb_stride = stride//Bpp
+    if not use_argb:
+        if WebPPictureARGBToYUVA(&pic, WEBP_YUV420A):
+            client_options["subsampling"] = "YUV420P"
+            #redundant (changed by WebPPictureARGBToYUVA):
+            #pic.use_argb = 0
+        else:
+            raise Exception("failed to convert picture to YUV")
+
+    #TODO: custom writer that over-allocates memory
+    cdef WebPMemoryWriter memory_writer
+    WebPMemoryWriterInit(&memory_writer)
     pic.writer = <WebPWriterFunction> WebPMemoryWrite
     pic.custom_ptr = <void*> &memory_writer
     ret = WebPEncode(&config, &pic)
@@ -497,21 +514,15 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     cdata = memory_writer.mem[:memory_writer.size]
     free(memory_writer.mem)
     WebPPictureFree(&pic)
-    log("webp.compress ratio=%i%%", 100*memory_writer.size//size)
-    if LOG_CONFIG>0:
-        log("webp.compress used config: %s", get_config_info(&config))
-    client_options = {
-        #no need to expose speed
-        #(not used for anything downstream)
-        #"speed"       : speed,
-        "rgb_format"  : pixel_format,
-        }
     if config.lossless:
         client_options["quality"] = 100
     elif quality>=0 and quality<=100:
         client_options["quality"] = quality
     if alpha_int:
         client_options["has_alpha"] = True
+    log("webp.compress ratio=%i%%, client-options=%s", 100*memory_writer.size//size, client_options)
+    if LOG_CONFIG>0:
+        log("webp.compress used config: %s", get_config_info(&config))
     return cdata, client_options
 
 
@@ -522,7 +533,8 @@ def selftest(full=False):
     pixels = bytearray(b"\0" * w*h*4)
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
-        r = compress(img, quality=50, speed=50, supports_alpha=has_alpha)
-        assert len(r)>0
+        for q in (10, 50, 90):
+            r = compress(img, quality=q, speed=50, supports_alpha=has_alpha)
+            assert len(r)>0
         #import binascii
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
