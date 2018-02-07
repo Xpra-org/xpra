@@ -778,7 +778,7 @@ class WindowSource(object):
 
 
     def set_new_encoding(self, encoding, strict):
-        if strict is not None:
+        if strict is not None or STRICT_MODE:
             self.strict = strict or STRICT_MODE
         if self.encoding==encoding:
             return
