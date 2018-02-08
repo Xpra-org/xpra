@@ -924,7 +924,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             self.GLClientWindowClass = gl_client_window_module.GLClientWindow
             self.client_supports_opengl = True
             #only enable opengl by default if force-enabled or if safe to do so:
-            self.opengl_enabled = (enable_opengl is True) or self.opengl_props.get("safe", False)
+            self.opengl_enabled = (enable_option in (TRUE_OPTIONS+["auto"])) or self.opengl_props.get("safe", False)
             self.gl_texture_size_limit = self.opengl_props.get("texture-size-limit", 16*1024)
             self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims", (self.gl_texture_size_limit, self.gl_texture_size_limit))
             if min(self.gl_max_viewport_dims)<4*1024:
