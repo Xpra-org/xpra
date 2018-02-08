@@ -22,9 +22,6 @@ from gi.repository import GObject               #@UnresolvedImport
 cdef extern from "gtk-3.0/gdk/gdk.h":
     ctypedef struct GdkWindow:
         pass
-    ctypedef struct GdkDisplay:
-        pass
-    int gdk_window_get_accept_focus(GdkWindow *window);
 
 cdef extern from "glib-2.0/glib-object.h":
     ctypedef struct cGObject "GObject":
