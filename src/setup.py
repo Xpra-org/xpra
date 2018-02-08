@@ -1708,17 +1708,27 @@ toggle_packages(client_ENABLED or server_ENABLED, "xpra.notifications")
 if dbus_ENABLED and server_ENABLED:
     add_packages("xpra.server.dbus")
 
-if OSX and not PYTHON3:
-    quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
-    add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
-                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/Cocoa.h",
-                    '-ObjC',
-                    '-mmacosx-version-min=10.10')
-    add_to_keywords(quartz_pkgconfig, 'extra_link_args',
+if OSX:
+    if PYTHON3:
+        quartz_pkgconfig = pkgconfig("gtk+-3.0", "pygobject-3.0")
+        add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
+                    "-ObjC",
+                    "-framework", "AppKit",
+                    "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
+        cython_add(Extension("xpra.platform.darwin.gdk_bindings",
+                ["xpra/platform/darwin/gdk3_bindings.pyx"],
+                language="objc",
+                **quartz_pkgconfig
+                ))
+    else:
+        quartz_pkgconfig = pkgconfig(*PYGTK_PACKAGES)
+        add_to_keywords(quartz_pkgconfig, 'extra_compile_args',
+                    '-mmacosx-version-min=10.10',
                     '-framework', 'Foundation',
                     '-framework', 'AppKit',
-                    )
-    cython_add(Extension("xpra.platform.darwin.gdk_bindings",
+                    '-ObjC',
+                    "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/Cocoa.h")
+        cython_add(Extension("xpra.platform.darwin.gdk_bindings",
                 ["xpra/platform/darwin/gdk_bindings.pyx", "xpra/platform/darwin/nsevent_glue.m"],
                 language="objc",
                 **quartz_pkgconfig
