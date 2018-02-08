@@ -955,9 +955,10 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         except GLError as e:
             message = "OpenGL %s paint failed: %r" % (rgb_format, e)
+            log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         except Exception as e:
             message = "OpenGL %s paint error: %s" % (rgb_format, e)
-        log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
+            log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 
     def do_video_paint(self, img, x, y, enc_width, enc_height, width, height, options, callbacks):
@@ -1000,9 +1001,10 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         except GLError as e:
             message = "OpenGL %s paint failed: %r" % (encoding, e)
+            log.error("Error painting planar update", exc_info=True)
         except Exception as e:
             message = "OpenGL %s paint failed: %s" % (encoding, e)
-        log.error("Error: %s", e, exc_info=True)
+            log.error("Error painting planar update", exc_info=True)
         log.error(" flush=%i, image=%s, coords=%s, size=%ix%i", flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
