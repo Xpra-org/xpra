@@ -900,6 +900,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/gtk_common/gtk2/gdk_atoms.c",
                    "xpra/gtk_common/gtk2/gdk_bindings.c",
                    "xpra/gtk_common/gtk3/gdk_atoms.c",
+                   "xpra/gtk_common/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
@@ -1800,10 +1801,15 @@ if gtk_x11_ENABLED:
                     ))
 
 toggle_packages(not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED), "xpra.gtk_common.gtk2")
-if not PYTHON3 and (gtk2_ENABLED or gtk_x11_ENABLED):
+if gtk2_ENABLED or (gtk_x11_ENABLED and not PYTHON3):
     cython_add(Extension("xpra.gtk_common.gtk2.gdk_bindings",
                 ["xpra/gtk_common/gtk2/gdk_bindings.pyx"],
                 **pkgconfig(*PYGTK_PACKAGES, ignored_tokens=gtk2_ignored_tokens)
+                ))
+elif gtk3_ENABLED or (gtk_x11_ENABLED and PYTHON3):
+    cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
+                ["xpra/gtk_common/gtk3/gdk_bindings.pyx"],
+                **pkgconfig("gtk+-3.0", "pygobject-3.0")
                 ))
 
 if client_ENABLED and gtk3_ENABLED:
