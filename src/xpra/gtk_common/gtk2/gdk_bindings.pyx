@@ -6,16 +6,9 @@
 
 from __future__ import absolute_import
 
-import os
-import traceback
-
 import gobject
 import gtk
 from gtk import gdk
-
-from xpra.gtk_common.quit import gtk_main_quit_really
-from xpra.monotonic_time cimport monotonic_time
-from xpra.util import csv
 
 from xpra.log import Logger
 log = Logger("bindings", "gtk")
