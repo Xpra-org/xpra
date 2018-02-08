@@ -847,7 +847,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             if enable_opengl in ("native", "gtk") or enable_opengl.find(",")>0:
                 backends = enable_opengl.split(",")
             elif PYTHON3:
-                backends = "native", "gtk"
+                backends = "native",
             else:
                 backends = "gtk", "native"
         if enable_option in FALSE_OPTIONS:
