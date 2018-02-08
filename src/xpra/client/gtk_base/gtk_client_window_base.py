@@ -169,6 +169,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             window_type = WINDOW_POPUP
         else:
             window_type = WINDOW_TOPLEVEL
+        self.on_realize_cb = {}
         self.do_init_window(window_type)
         self.set_decorated(self._is_decorated(metadata))
         self.set_app_paintable(True)
@@ -182,7 +183,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.moveresize_event = None
         self.window_offset = None   #actual vs reported coordinates
         #add platform hooks
-        self.on_realize_cb = {}
         self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
         self.add_events(self.WINDOW_EVENT_MASK)
