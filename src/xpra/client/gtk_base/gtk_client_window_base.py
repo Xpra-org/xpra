@@ -5,9 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import time
 import math
+import os.path
 
 from xpra.log import Logger
 focuslog = Logger("focus")
@@ -23,21 +23,24 @@ mouselog = Logger("mouse")
 geomlog = Logger("geometry")
 menulog = Logger("menu")
 grablog = Logger("grab")
+draglog = Logger("dragndrop")
 
 
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX, PYTHON3
-from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl,
+from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv,
                        WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
                        MOVERESIZE_CANCEL,
                        MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
                        MOVERESIZE_SIZE_RIGHT,
                        MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
                        MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
-
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default,
-    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT)
+from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default, drag_status,
+    newTargetEntry, drag_context_targets, drag_context_actions, drag_dest_window, drag_widget_get_data,
+    gio_File, query_info_async, load_contents_async, load_contents_finish,
+    WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
+    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY)
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -83,6 +86,7 @@ MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
 HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
+DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -191,7 +195,114 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
         self.add_events(self.WINDOW_EVENT_MASK)
+        if DRAGNDROP:
+            self.init_dragndrop()
         ClientWindowBase.init_window(self, metadata)
+
+
+    ######################################################################
+    # drag and drop:
+    def init_dragndrop(self):
+        targets = [
+            newTargetEntry("text/uri-list", 0, 80),
+            ]
+        flags = DEST_DEFAULT_MOTION | DEST_DEFAULT_HIGHLIGHT
+        actions = ACTION_COPY   # | gdk.ACTION_LINK
+        self.drag_dest_set(flags, targets, actions)
+        self.connect('drag_drop', self.drag_drop_cb)
+        self.connect('drag_motion', self.drag_motion_cb)
+        self.connect('drag_data_received', self.drag_got_data_cb)
+
+    def drag_drop_cb(self, widget, context, x, y, time):
+        targets = drag_context_targets(context)
+        draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
+        if "text/uri-list" not in targets:
+            draglog("Warning: cannot handle targets:")
+            draglog(" %s", csv(targets))
+            return
+        drag_widget_get_data(self, context, "text/uri-list", time)
+
+    def drag_motion_cb(self, wid, context, x, y, time):
+        draglog("drag_motion_cb%s", (wid, context, x, y, time))
+        drag_status(context, ACTION_COPY, time)
+        return True #accept this data
+
+    def drag_got_data_cb(self, wid, context, x, y, selection, info, time):
+        draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
+        #draglog("%s: %s", type(selection), dir(selection))
+        #draglog("%s: %s", type(context), dir(context))
+        targets = drag_context_targets(context)
+        actions = drag_context_actions(context)
+        def xid(w):
+            if w:
+                return get_xid(w)
+            return 0
+        dest_window = xid(drag_dest_window(context))
+        source_window = xid(context.get_source_window())
+        suggested_action = context.get_suggested_action()
+        draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x, suggested_action=%s, actions=%s, targets=%s", source_window, dest_window, suggested_action, actions, targets)
+        dtype = selection.get_data_type()
+        fmt = selection.get_format()
+        l = selection.get_length()
+        target = selection.get_target()
+        text = selection.get_text()
+        uris = selection.get_uris()
+        draglog("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s", dtype, fmt, l, target, text, uris)
+        if not uris:
+            return
+        filelist = []
+        for uri in uris:
+            if not uri:
+                continue
+            if not uri.startswith("file://"):
+                draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
+                continue
+            filename = (uri[len("file://"):].rstrip("\n\r")).encode()
+            abspath = os.path.abspath(filename)
+            if not os.path.isfile(abspath):
+                draglog.warn("Warning: '%s' is not a file", abspath)
+                continue
+            filelist.append(abspath)
+        draglog("drag_got_data_cb: will try to upload: %s", csv(x.decode() for x in filelist))
+        pending = set(filelist)
+        #when all the files have been loaded / failed,
+        #finish the drag and drop context so the source knows we're done with them:
+        def file_done(filename):
+            if not pending:
+                return
+            try:
+                pending.remove(filename)
+            except:
+                pass
+            if not pending:
+                context.finish(True, False, time)
+        for filename in filelist:
+            def got_file_info(gfile, result, arg=None):
+                draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
+                file_info = gfile.query_info_finish(result)
+                basename = gfile.get_basename()
+                ctype = file_info.get_content_type()
+                size = file_info.get_size()
+                draglog("file_info(%s)=%s ctype=%s, size=%s", bytestostr(filename), file_info, ctype, size)
+                def got_file_data(gfile, result, user_data=None):
+                    data, filesize, entity = load_contents_finish(gfile, result)
+                    draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
+                    file_done(filename)
+                    openit = self._client.remote_open_files
+                    draglog.info("sending file %s (%i bytes)", basename, filesize)
+                    self._client.send_file(str(filename.decode()), "", data, filesize=filesize, openit=openit)
+                load_contents_async(gfile, got_file_data, user_data=(filename, True))
+            try:
+                gfile = gio_File(filename)
+                #basename = gf.get_basename()
+                FILE_QUERY_INFO_NONE = 0
+                query_info_async(gfile, "standard::*", got_file_info, flags=FILE_QUERY_INFO_NONE)
+            except Exception as e:
+                draglog("file upload for %s:", filename, exc_info=True)
+                draglog.error("Error: cannot upload '%s':", filename)
+                draglog.error(" %s", e)
+                del e
+                file_done(filename)
 
 
     def init_max_window_size(self, metadata):
@@ -1196,7 +1307,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 #root is a gdk window, so we need to ensure we have one
                 #backing our gtk window to be able to call set_transient_for on it
                 log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s", self, wid, self.get_window(), self.is_mapped())
-                self.get_window().set_transient_for(gtk.gdk.get_default_root_window())
+                self.get_window().set_transient_for(get_default_root_window())
             self.when_realized("transient-for-root", set_root_transient)
         else:
             #gtk window is easier:

@@ -278,6 +278,24 @@ if is_gtk3():
     GRAB_NOT_VIEWABLE   = gdk.GrabStatus.NOT_VIEWABLE
     GRAB_FROZEN         = gdk.GrabStatus.FROZEN
 
+    DEST_DEFAULT_MOTION     = gtk.DestDefaults.MOTION
+    DEST_DEFAULT_HIGHLIGHT  = gtk.DestDefaults.HIGHLIGHT
+    DEST_DEFAULT_DROP       = gtk.DestDefaults.DROP
+    DEST_DEFAULT_ALL        = gtk.DestDefaults.ALL
+    ACTION_COPY = gdk.DragAction.COPY
+    newTargetEntry = gtk.TargetEntry.new
+    def drag_status(context, action, time):
+        gdk.drag_status(context, action, time)
+    def drag_context_targets(context):
+        return list(x.name() for x in context.list_targets())
+    def drag_context_actions(context):
+        return context.get_actions()
+    def drag_dest_window(context):
+        return context.get_dest_window()
+    def drag_widget_get_data(widget, context, target, time):
+        atom = gdk.Atom.intern(target, False)
+        widget.drag_get_data(context, atom, time)
+
     from gi.repository.Gtk import Clipboard     #@UnresolvedImport
     CLIPBOARD_SELECTION = {}
     #gtk2: uses strings:
@@ -335,6 +353,21 @@ if is_gtk3():
             gtk.main()
         finally:
             gdk.threads_leave()
+
+    def gio_File(path):
+        from gi.repository import Gio   #@UnresolvedImport
+        return Gio.File.new_for_path(path)
+
+    def query_info_async(gfile, attributes, callback, flags=0, cancellable=None):
+        G_PRIORITY_DEFAULT = 0
+        gfile.query_info_async(attributes, flags, G_PRIORITY_DEFAULT, cancellable, callback, None)
+
+    def load_contents_async(gfile, callback, cancellable=None, user_data=None):
+        gfile.load_contents_async(cancellable, callback, user_data)
+
+    def load_contents_finish(gfile, res):
+        _, data, etag = gfile.load_contents_finish(res)
+        return data, len(data), etag
 
 else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
@@ -484,6 +517,24 @@ else:
     GRAB_NOT_VIEWABLE   = gdk.GRAB_NOT_VIEWABLE
     GRAB_FROZEN         = gdk.GRAB_FROZEN
 
+    DEST_DEFAULT_MOTION     = gtk.DEST_DEFAULT_MOTION
+    DEST_DEFAULT_HIGHLIGHT  = gtk.DEST_DEFAULT_HIGHLIGHT
+    DEST_DEFAULT_DROP       = gtk.DEST_DEFAULT_DROP
+    DEST_DEFAULT_ALL        = gtk.DEST_DEFAULT_ALL
+    ACTION_COPY = gdk.ACTION_COPY
+    def newTargetEntry(*args):
+        return tuple(args)
+    def drag_status(context, action, time):
+        context.drag_status(action, time)
+    def drag_context_targets(context):
+        return context.targets
+    def drag_context_actions(context):
+        return context.actions
+    def drag_dest_window(context):
+        return context.dest_window
+    def drag_widget_get_data(widget, context, target, time):
+        widget.drag_get_data(context, target, time)
+
     OptionMenu  = gtk.OptionMenu
 
     def GetClipboard(selection):
@@ -556,6 +607,20 @@ else:
     if WIN32:
         def gtk_main():
             gtk.main()
+
+    def gio_File(path):
+        import gio
+        return gio.File(path=path)
+
+    def query_info_async(gfile, attributes, callback, flags=0, cancellable=None):
+        gfile.query_info_async(attributes, callback, flags, cancellable=cancellable)
+
+    def load_contents_async(gfile, callback, cancellable=None, user_data=None):
+        gfile.load_contents_async(callback, cancellable, user_data)
+
+    def load_contents_finish(gfile, res):
+        return gfile.load_contents_finish(res)
+
 
 GRAB_STATUS_STRING = {
                       GRAB_SUCCESS          : "SUCCESS",
