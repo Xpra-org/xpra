@@ -23,11 +23,10 @@ from collections import namedtuple
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool, envint
+from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool
 from xpra.os_util import strtobytes, POSIX
 
 
-CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
@@ -86,8 +85,6 @@ class GTK2WindowBase(GTKClientWindowBase):
 
     def do_init_window(self, window_type=gtk.WINDOW_TOPLEVEL):
         gtk.Window.__init__(self, window_type)
-        self.remove_pointer_overlay_timer = None
-        self.show_pointer_overlay_timer = None
         self.recheck_focus_timer = 0
         # tell KDE/oxygen not to intercept clicks
         # see: https://bugs.kde.org/show_bug.cgi?id=274485
@@ -352,61 +349,6 @@ class GTK2WindowBase(GTKClientWindowBase):
         workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, target.xid, wn(default_value))
         return  default_value
 
-
-    ######################################################################
-    # pointer overlay handling
-    def cancel_remove_pointer_overlay_timer(self):
-        rpot = self.remove_pointer_overlay_timer
-        if rpot:
-            self.remove_pointer_overlay_timer = None
-            self.source_remove(rpot)
-
-    def cancel_show_pointer_overlay_timer(self):
-        rsot = self.show_pointer_overlay_timer
-        if rsot:
-            self.show_pointer_overlay_timer = None
-            self.source_remove(rsot)
-
-    def show_pointer_overlay(self, pos):
-        #schedule do_show_pointer_overlay if needed
-        b = self._backing
-        if not b:
-            return
-        prev = b.pointer_overlay
-        if pos is None:
-            value = None
-        else:
-            #store both scaled and unscaled value:
-            #(the opengl client uses the raw value)
-            value = pos[:2]+self._client.sp(*pos[:2])+pos[2:]
-        mouselog("show_pointer_overlay(%s) previous value=%s, new value=%s", pos, prev, value)
-        if prev==value:
-            return
-        b.pointer_overlay = value
-        if not self.show_pointer_overlay_timer:
-            self.show_pointer_overlay_timer = self.timeout_add(10, self.do_show_pointer_overlay, prev)
-
-    def do_show_pointer_overlay(self, prev):
-        #queue a draw event at the previous and current position of the pointer
-        #(so the backend will repaint / overlay the cursor image there)
-        self.show_pointer_overlay_timer = None
-        b = self._backing
-        if not b:
-            return
-        value = b.pointer_overlay
-        if value:
-            #repaint the scale value (in window coordinates):
-            x, y, size = value[2:5]
-            self.queue_draw(x-size, y-size, size*2, size*2)
-            #clear it shortly after:
-            self.cancel_remove_pointer_overlay_timer()
-            def remove_pointer_overlay():
-                self.remove_pointer_overlay_timer = None
-                self.show_pointer_overlay(None)
-            self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
-        if prev:
-            px, py, psize = prev[2:5]
-            self.queue_draw(px-psize, py-psize, psize*2, psize*2)
 
     ######################################################################
 
