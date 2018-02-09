@@ -234,7 +234,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         targets = drag_context_targets(context)
         actions = drag_context_actions(context)
         def xid(w):
-            if w:
+            #TODO: use a generic window handle function
+            #this only used for debugging for now
+            if w and POSIX:
                 return get_xid(w)
             return 0
         dest_window = xid(drag_dest_window(context))
