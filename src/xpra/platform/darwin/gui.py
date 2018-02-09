@@ -13,7 +13,8 @@ import weakref
 import objc                         #@UnresolvedImport
 import Quartz                       #@UnresolvedImport
 import Quartz.CoreGraphics as CG    #@UnresolvedImport
-from Quartz import CGWindowListCopyWindowInfo, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
+from Quartz import CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly, kCGNullWindowID, kCGWindowListOptionAll #@UnresolvedImport
+from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisplayRemoveReconfigurationCallback #@UnresolvedImport
 from AppKit import NSAppleEventManager, NSScreen, NSObject, NSBeep   #@UnresolvedImport
 from AppKit import NSApp, NSApplication, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification, NSWorkspaceWillSleepNotification, NSWorkspaceDidWakeNotification     #@UnresolvedImport
 from Foundation import NSUserNotification, NSUserNotificationCenter, NSUserNotificationDefaultSoundName #@UnresolvedImport
@@ -733,6 +734,7 @@ def disable_focus_workaround():
 def enable_focus_workaround():
     NSApp.activateIgnoringOtherApps_(True)
 
+
 class ClientExtras(object):
     def __init__(self, client, opts):
         if OSX_FOCUS_WORKAROUND:
@@ -760,6 +762,15 @@ class ClientExtras(object):
         if cdt and client:
             client.source_remove(cdt)
             self.check_display_timer = 0
+        try:
+            r = CGDisplayRemoveReconfigurationCallback(self.display_change, self)
+        except ValueError as e:
+            log("CGDisplayRemoveReconfigurationCallback: %s", e)
+            #if we exit from a signal, this may fail
+            r = 1
+        if r!=0:
+            #don't bother logging this as a warning since we are terminating anyway:
+            log("failed to unregister display reconfiguration callback")
         self.client = None
 
     def ready(self):
@@ -785,7 +796,17 @@ class ClientExtras(object):
             self.delegate.deiconify_callback = self.client.deiconify_windows
         self.shared_app.setDelegate_(self.delegate)
         log("setup_event_listener() the application delegate has been registered")
-        #watch for screen going asleep:
+        r = CGDisplayRegisterReconfigurationCallback(self.display_change, self)
+        if r!=0:
+            log.warn("Warning: failed to register display reconfiguration callback")
+
+    def display_change(self, display, flags, userinfo):
+        log("display_change%s", (display, flags, userinfo))
+        c = self.client
+        #The display mode has changed
+        #opengl windows may need to be re-created since the GPU may have changed:
+        if (flags & kCGDisplaySetModeFlag) and c and c.opengl_enabled:
+            c.reinit_windows()
 
     def check_display(self):
         log("check_display()")
