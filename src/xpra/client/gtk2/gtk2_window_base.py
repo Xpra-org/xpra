@@ -23,7 +23,7 @@ from collections import namedtuple
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool
+from xpra.util import csv, envbool
 from xpra.os_util import strtobytes
 
 
@@ -36,8 +36,6 @@ try:
 except:
     add_event_receiver = None
 
-def wn(w):
-    return WORKSPACE_NAMES.get(w, w)
 
 DrawEvent = namedtuple("DrawEvent", "area")
 
