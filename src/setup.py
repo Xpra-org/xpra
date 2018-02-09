@@ -1715,7 +1715,7 @@ if OSX:
                     "-ObjC",
                     "-framework", "AppKit",
                     "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
-        cython_add(Extension("xpra.platform.darwin.gdk_bindings",
+        cython_add(Extension("xpra.platform.darwin.gdk3_bindings",
                 ["xpra/platform/darwin/gdk3_bindings.pyx"],
                 language="objc",
                 **quartz_pkgconfig

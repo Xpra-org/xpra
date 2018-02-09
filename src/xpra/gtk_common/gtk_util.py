@@ -93,6 +93,17 @@ if is_gtk3():
     def is_realized(widget):
         return widget.get_realized()
 
+    def make_temp_window(title):
+        attributes = gdk.WindowAttr()
+        attributes.width = 1
+        attributes.height = 1
+        attributes.title = title
+        attributes.window_type = gdk.WindowType.TOPLEVEL
+        attributes.wclass = gdk.WindowWindowClass.INPUT_OUTPUT
+        attributes.event_mask = 0
+        attributes_mask = gdk.WindowAttributesType.TITLE | gdk.WindowAttributesType.WMCLASS
+        return gdk.Window(None, attributes, attributes_mask)
+
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         data = array.array('B', strtobytes(rgb_data))
         return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
@@ -328,6 +339,9 @@ if is_gtk3():
 else:
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
         return gdk.pixbuf_new_from_data(rgb_data, gdk.COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
+
+    def make_temp_window(title):
+        return gdk.Window(None, 1, 1, gdk.WINDOW_TOPLEVEL, 0, gdk.INPUT_OUTPUT, title)
 
     def get_pixbuf_from_window(window, x, y, w, h):
         pixbuf = gdk.Pixbuf(gdk.COLORSPACE_RGB, False, 8, w, h)
