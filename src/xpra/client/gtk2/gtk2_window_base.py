@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -24,13 +24,12 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, WINDOW_EVENT_MASK, BUTTON_MASK
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_NAMES, csv, envbool
-from xpra.os_util import strtobytes, POSIX
+from xpra.os_util import strtobytes
 
 
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 FORCE_IMMEDIATE_PAINT = envbool("XPRA_FORCE_IMMEDIATE_PAINT", False)
-DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
-HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
+
 
 try:
     from xpra.x11.gtk2.gdk_bindings import add_event_receiver       #@UnresolvedImport
@@ -97,20 +96,6 @@ class GTK2WindowBase(GTKClientWindowBase):
             self.source_remove(self.recheck_focus_timer)
             self.recheck_focus_timer = -1
         GTKClientWindowBase.destroy(self)
-
-
-    def setup_window(self, *args):
-        #preserve screen:
-        if HONOUR_SCREEN_MAPPING and not self._override_redirect:
-            display = gtk.gdk.display_get_default()
-            screen_num = self._client_properties.get("screen", -1)
-            n = display.get_n_screens()
-            log("setup_window%s screen=%s, nscreens=%s", args, screen_num, n)
-            if screen_num>=0 and screen_num<n and n>0:
-                screen = display.get_screen(screen_num)
-                if screen:
-                    self.set_screen(screen)
-        GTKClientWindowBase.setup_window(self, *args)
 
 
     def on_realize(self, widget):
@@ -286,13 +271,6 @@ class GTK2WindowBase(GTKClientWindowBase):
         statelog("enable_alpha() using rgba colormap %s for wid %s", rgba, self._id)
         self.set_colormap(rgba)
         return True
-
-    def set_modal(self, modal):
-        #with gtk2 setting the window as modal would prevent
-        #all other windows we manage from receiving input
-        #including other unrelated applications
-        #what we want is "window-modal"
-        statelog("set_modal(%s) swallowed", modal)
 
     def xget_u32_property(self, target, name):
         try:

@@ -36,7 +36,7 @@ from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl,
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized,
+from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT)
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
@@ -81,6 +81,8 @@ if POSIX and USE_X11_BINDINGS:
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
+DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
+HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
 
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -297,6 +299,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             type_hint = self.get_type_hint()
             if transient_for is not None and type_hint in self.OR_TYPE_HINTS:
                 transient_for._override_redirect_windows.append(self)
+        #preserve screen:
+        if HONOUR_SCREEN_MAPPING:
+            display = display_get_default()
+            screen_num = self._client_properties.get("screen", -1)
+            n = display.get_n_screens()
+            log("setup_window%s screen=%s, nscreens=%s", args, screen_num, n)
+            if screen_num>=0 and screen_num<n:
+                screen = display.get_screen(screen_num)
+                if screen:
+                    self.set_screen(screen)
 
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
@@ -677,6 +689,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 prop_set(self.get_window(), "_NET_WM_STRUT_PARTIAL", ["u32"], values)
             prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
         self.when_realized("strut", do_set_strut)
+
+
+    def set_modal(self, modal):
+        #with gtk2 setting the window as modal would prevent
+        #all other windows we manage from receiving input
+        #including other unrelated applications
+        #what we want is "window-modal"
+        statelog("set_modal(%s) swallowed", modal)
 
 
     def set_fullscreen_monitors(self, fsm):
