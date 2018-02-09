@@ -85,9 +85,9 @@ class GTK2WindowBase(GTKClientWindowBase):
         self.set_data("_kde_no_window_grab", 1)
 
     def destroy(self):
-        if self.recheck_focus_timer>0:
+        if self.recheck_focus_timer:
             self.source_remove(self.recheck_focus_timer)
-            self.recheck_focus_timer = -1
+            self.recheck_focus_timer = 0
         GTKClientWindowBase.destroy(self)
 
 
