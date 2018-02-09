@@ -584,7 +584,7 @@ class FileTransferHandler(FileTransferAttributes):
             return None
         self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options)
         self.pending_send_data_timers[send_id] = self.timeout_add(self.remote_file_ask_timeout*1000, self.send_data_ask_timeout, send_id)
-        filelog("sending data request for %s '%s' with send-id=%s", dtype, url, send_id)
+        filelog("sending data request for %s '%s' with send-id=%s", bytestostr(dtype), url, send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
         return send_id
 
@@ -639,7 +639,7 @@ class FileTransferHandler(FileTransferAttributes):
             except KeyError:
                 pass
             self.source_remove(timer)
-        v = self.pending_send_data.get(send_id)
+        v = self.pending_send_data.get(bytestostr(send_id))
         if not v:
             filelog.warn("Warning: cannot find send-file entry")
             return
@@ -650,7 +650,7 @@ class FileTransferHandler(FileTransferAttributes):
         dtype = v[0]
         url = v[1]
         if accept==DENY:
-            filelog.info("the request to send %s '%s' has been denied", dtype, url)
+            filelog.info("the request to send %s '%s' has been denied", bytestostr(dtype), url)
             return
         else:
             assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
