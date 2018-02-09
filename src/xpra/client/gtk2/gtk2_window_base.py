@@ -93,8 +93,6 @@ class GTK2WindowBase(GTKClientWindowBase):
             self.init_dragndrop()
 
     def destroy(self):
-        self.cancel_show_pointer_overlay_timer()
-        self.cancel_remove_pointer_overlay_timer()
         if self.recheck_focus_timer>0:
             self.source_remove(self.recheck_focus_timer)
             self.recheck_focus_timer = -1

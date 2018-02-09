@@ -1464,6 +1464,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log.warn("Warning: window destroy called twice!")
 
     def destroy(self):
+        self.cancel_show_pointer_overlay_timer()
+        self.cancel_remove_pointer_overlay_timer()
         if self._client._set_window_menu:
             self._client.set_window_menu(False, self._id, {})
         mrt = self.moveresize_timer
