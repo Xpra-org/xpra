@@ -819,6 +819,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if state_updates:
                 self.update_window_state(state_updates)
 
+
+    ######################################################################
+    # workspace
     def workspace_changed(self):
         #on X11 clients, this fires from the root window property watcher
         ClientWindowBase.workspace_changed(self)
@@ -861,12 +864,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_workspace = window_workspace
         self._desktop_workspace = desktop_workspace
 
-
     def get_workspace_count(self):
         if not self._can_set_workspace:
             return None
         return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-
 
     def set_workspace(self, workspace):
         workspacelog("set_workspace(%s)", workspace)
@@ -906,6 +907,32 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", get_xid(gdkwin), self.is_mapped(), gdkwin.is_visible())
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
+
+    def get_desktop_workspace(self):
+        window = self.get_window()
+        if window:
+            root = window.get_screen().get_root_window()
+        else:
+            #if we are called during init.. we don't have a window
+            root = get_default_root_window()
+        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
+
+    def get_window_workspace(self):
+        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
+
+    def do_get_workspace(self, target, prop, default_value=None):
+        if not self._can_set_workspace:
+            workspacelog("do_get_workspace: not supported, returning %s", wn(default_value))
+            return default_value        #windows and OSX do not have workspaces
+        if target is None:
+            workspacelog("do_get_workspace: target is None, returning %s", wn(default_value))
+            return default_value        #window is not realized yet
+        value = self.xget_u32_property(target, prop)
+        if value is not None:
+            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), get_xid(target))
+            return value
+        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, get_xid(target), wn(default_value))
+        return  default_value
 
 
     def keyboard_ungrab(self, *args):
@@ -954,6 +981,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.pointer_ungrab()
         else:
             self.pointer_grab()
+
 
     def toggle_fullscreen(self):
         geomlog("toggle_fullscreen()")

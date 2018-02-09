@@ -298,35 +298,6 @@ class GTK2WindowBase(GTKClientWindowBase):
 
 
     ######################################################################
-    # workspace
-    def get_desktop_workspace(self):
-        window = self.get_window()
-        if window:
-            root = window.get_screen().get_root_window()
-        else:
-            #if we are called during init.. we don't have a window
-            root = gtk.gdk.get_default_root_window()
-        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
-
-    def get_window_workspace(self):
-        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
-
-    def do_get_workspace(self, target, prop, default_value=None):
-        if not self._can_set_workspace:
-            workspacelog("do_get_workspace: not supported, returning %s", wn(default_value))
-            return default_value        #windows and OSX do not have workspaces
-        if target is None:
-            workspacelog("do_get_workspace: target is None, returning %s", wn(default_value))
-            return default_value        #window is not realized yet
-        value = self.xget_u32_property(target, prop)
-        if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), target.xid)
-            return value
-        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, target.xid, wn(default_value))
-        return  default_value
-
-
-    ######################################################################
 
     def queue_draw(self, x, y, width, height):
         window = self.get_window()
