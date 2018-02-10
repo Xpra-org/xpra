@@ -216,7 +216,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def drag_drop_cb(self, widget, context, x, y, time):
         targets = drag_context_targets(context)
         draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
-        if "text/uri-list" not in targets:
+        if not targets:
+            #this happens on macos, but we can still get the data..
+            draglog("Warning: no targets provided, continuing anyway")
+        elif "text/uri-list" not in targets:
             draglog("Warning: cannot handle targets:")
             draglog(" %s", csv(targets))
             return
