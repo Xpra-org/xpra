@@ -600,7 +600,10 @@ def should_rebuild(src_file, bin_file):
 def make_constants(*paths, **kwargs):
     base = os.path.join(os.getcwd(), *paths)
     constants_file = "%s.txt" % base
-    pxi_file = "%s.pxi" % base
+    try:
+        pxi_file = kwargs.pop("pxi_file")
+    except KeyError:
+        pxi_file = "%s.pxi" % base
     reason = should_rebuild(constants_file, pxi_file)
     if reason:
         if verbose_ENABLED:
@@ -904,6 +907,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/x11/gtk2/constants.pxi",
                    "xpra/x11/gtk2/gdk_bindings.c",
                    "xpra/x11/gtk2/gdk_display_source.c",
+                   "xpra/x11/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_display_source.c",
                    "xpra/x11/bindings/constants.pxi",
                    "xpra/x11/bindings/wait_for_x_server.c",
@@ -1747,7 +1751,10 @@ cython_add(Extension("xpra.monotonic_time",
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
     make_constants("xpra", "x11", "bindings", "constants")
-    make_constants("xpra", "x11", "gtk2", "constants")
+    if gtk2_ENABLED:
+        make_constants("xpra", "x11", "constants", pxi_file="xpra/x11/gtk2/constants.pxi")
+    if gtk3_ENABLED:
+        make_constants("xpra", "x11", "constants", pxi_file="xpra/x11/gtk3/constants.pxi")
 
     cython_add(Extension("xpra.x11.bindings.wait_for_x_server",
                 ["xpra/x11/bindings/wait_for_x_server.pyx"],
@@ -1797,6 +1804,10 @@ if gtk_x11_ENABLED:
         #GTK3 display source:
         cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
                     ["xpra/x11/gtk3/gdk_display_source.pyx"],
+                    **pkgconfig("gdk-3.0")
+                    ))
+        cython_add(Extension("xpra.x11.gtk3.gdk_bindings",
+                    ["xpra/x11/gtk3/gdk_bindings.pyx"],
                     **pkgconfig("gdk-3.0")
                     ))
     else:
