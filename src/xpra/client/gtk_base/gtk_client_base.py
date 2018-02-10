@@ -765,9 +765,12 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if fw>0 and fh>0 and (w!=fw or h!=fh):
             #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
             if w<=fw and h<=fh:
-                cursorlog("pasting cursor of size %ix%i onto clear pixbuf of size %ix%i", w, h, fw, fh)
-                cursor_pixbuf = get_pixbuf_from_data("\0"*fw*fh*4, True, fw, fh, fw*4)
-                pixbuf.copy_area(0, 0, w, h, cursor_pixbuf, 0, 0)
+                from PIL import Image
+                img = Image.frombytes("RGBA", (w, h), pixels, "raw", "BGRA", w*4, 1)
+                target = Image.new("RGBA", (fw, fh))
+                target.paste(img, (0, 0, w, h))
+                pixels = img.tobytes("raw", "BGRA")
+                cursor_pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
             else:
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, INTERP_BILINEAR)

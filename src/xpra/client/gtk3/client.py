@@ -76,11 +76,6 @@ class XpraClient(GTKXpraClient):
         return tmhc
 
 
-    def set_windows_cursor(self, windows, cursor_data):
-        #avoid buggy win32 version:
-        if not WIN32:
-            GTKXpraClient.set_windows_cursor(self, windows, cursor_data)
-
     def get_mouse_position(self):
         #with GTK3, we can get None values!
         p = self.get_root_window().get_pointer()[-3:-1]
