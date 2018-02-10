@@ -1176,6 +1176,7 @@ if WIN32:
                    "GObject-2.0")
         if gtk3_ENABLED:
             add_gi("Atk-1.0",
+                   "Notify-0.7",
                    "fontconfig-2.0", "freetype2-2.0",
                    "GDesktopEnums-3.0", "Soup-2.4",
                    "GdkPixbuf-2.0", "Gdk-3.0", "Gtk-3.0",
