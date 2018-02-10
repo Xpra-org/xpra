@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 cdef extern from "gtk-3.0/gdk/gdk.h":
+    ctypedef struct GdkDisplay:
+        pass
     ctypedef struct GdkWindow:
         pass
 
@@ -12,7 +14,11 @@ cdef extern from "glib-2.0/glib-object.h":
     ctypedef struct cGObject "GObject":
         pass
 
+cdef object wrap(cGObject * contents)
 cdef cGObject *unwrap(box, pyclass) except? NULL
-cdef void * pyg_boxed_get(v)
+cdef void *pyg_boxed_get(v)
+
+cpdef get_display_for(obj)
+cdef GdkDisplay *get_raw_display_for(obj) except? NULL
 
 cdef GdkWindow *get_gdkwindow(pywindow)

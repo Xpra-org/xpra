@@ -15,12 +15,16 @@ log = Logger("bindings", "gtk")
 
 import gi
 gi.require_version('Gdk', '3.0')
+gi.require_version('Gtk', '3.0')
 from gi.repository import Gdk                   #@UnresolvedImport
+from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import GObject               #@UnresolvedImport
 
 
 cdef extern from "gtk-3.0/gdk/gdk.h":
     ctypedef struct GdkWindow:
+        pass
+    ctypedef struct GdkDisplay:
         pass
 
 cdef extern from "glib-2.0/glib-object.h":
@@ -37,6 +41,30 @@ cdef extern from "pygobject-3.0/pygobject.h":
         #PyObject_HEAD
         gpointer boxed
         GType gtype
+
+
+cpdef get_display_for(obj):
+    if obj is None:
+        raise TypeError("Cannot get a display: instance is None!")
+    if isinstance(obj, Gdk.Display):
+        return obj
+    elif isinstance(obj, (Gdk.Window,
+                          Gtk.Widget,
+                          Gtk.Clipboard,
+                          Gtk.SelectionData,
+                          )):
+        return obj.get_display()
+    else:
+        raise TypeError("Don't know how to get a display from %r" % (obj,))
+
+
+cdef GdkDisplay * get_raw_display_for(obj) except? NULL:
+    return <GdkDisplay*> unwrap(get_display_for(obj), Gdk.Display)
+
+
+cdef object wrap(cGObject * contents):
+    # Put a raw GObject* into a PyGObject wrapper.
+    return pygobject_new(contents)
 
 
 cdef cGObject *unwrap(box, pyclass) except? NULL:
