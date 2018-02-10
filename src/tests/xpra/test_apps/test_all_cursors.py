@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-
-import gtk
-from gtk import gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+gtk = import_gtk()
+gdk = import_gdk()
 from xpra.gtk_common.cursor_names import cursor_types
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
 
 width = 400
 height = 200
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 
 	cursor_combo = gtk.combo_box_new_text()
 	cursor_combo.append_text("")
