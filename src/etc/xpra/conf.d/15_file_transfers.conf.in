@@ -8,7 +8,7 @@ file-transfer = auto
 
 # Open URL
 #open-url = no
-open-url = ask
+open-url = auto
 
 # Location where files are received:
 #download-path = ~/Downloads
@@ -23,4 +23,5 @@ file-size-limit = 100
 
 # Open files
 #open-files = no
+#open-files = yes
 open-files = auto

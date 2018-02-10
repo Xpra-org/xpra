@@ -262,7 +262,7 @@ class ServerBase(ServerCore):
         self.start_env = parse_env(opts.start_env)
         self.pings = opts.pings
         #printing and file transfer:
-        self.file_transfer.init_opts(opts)
+        self.file_transfer.init_opts(opts, can_ask=False)
         self.lpadmin = opts.lpadmin
         self.lpinfo = opts.lpinfo
         self.add_printer_options = opts.add_printer_options

@@ -865,9 +865,9 @@ def get_defaults():
                     "mousewheel"        : "on",
                     "input-devices"     : "auto",
                     "shortcut-modifiers": "auto",
-                    "open-files"        : "ask",
-                    "open-url"          : "ask",
-                    "file-transfer"     : "yes",
+                    "open-files"        : "auto",
+                    "open-url"          : "auto",
+                    "file-transfer"     : "auto",
                     "printing"          : "yes",
                     #ssl options:
                     "ssl"               : "auto",
@@ -990,7 +990,7 @@ NO_FILE_OPTIONS = ["daemon"]
 
 TRUE_OPTIONS = ["yes", "true", "1", "on", True]
 FALSE_OPTIONS = ["no", "false", "0", "off", False]
-def parse_bool(k, v):
+def parse_bool(k, v, auto=None):
     if type(v)==str:
         v = v.lower().strip()
     if v in TRUE_OPTIONS:
@@ -999,7 +999,7 @@ def parse_bool(k, v):
         return False
     elif v in ["auto", None]:
         #keep default - which may be None!
-        return None
+        return auto
     else:
         try:
             return bool(int(v))

@@ -79,24 +79,31 @@ class FileTransferAttributes(object):
                       "file_ask_timeout", "open_command"):
                 setattr(self, x, getattr(attrs, x))
 
-    def init_opts(self, opts):
+    def init_opts(self, opts, can_ask=True):
         #get the settings from a config object
-        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_url, opts.open_command)
+        self.init_attributes(opts.file_transfer, opts.file_size_limit, opts.printing, opts.open_files, opts.open_url, opts.open_command, can_ask)
 
-    def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None):
-        filelog("file transfer: init_attributes%s", (file_transfer, file_size_limit, printing, open_files, open_url, open_command))
-        #printing and file transfer:
-        self.file_transfer_ask = file_transfer.lower() in ("ask", "auto")
-        self.file_transfer = self.file_transfer_ask or parse_bool("file-transfer", file_transfer)
+    def init_attributes(self, file_transfer="yes", file_size_limit=10, printing="yes", open_files="no", open_url="yes", open_command=None, can_ask=True):
+        filelog("file transfer: init_attributes%s", (file_transfer, file_size_limit, printing, open_files, open_url, open_command, can_ask))
+        def pbool(name, v):
+            return parse_bool(name, v, True)
+        def pask(v):
+            return v.lower() in ("ask", "auto")
+        fta = pask(file_transfer)
+        self.file_transfer_ask = fta and can_ask
+        self.file_transfer = fta or pbool("file-transfer", file_transfer)
         self.file_size_limit = file_size_limit
         self.file_chunks = min(self.file_size_limit*1024*1024, FILE_CHUNKS_SIZE)
-        self.printing_ask = printing.lower() in ("ask", "auto")
-        self.printing = self.printing_ask or parse_bool("printing", printing)
-        self.open_files_ask = open_files.lower() in ("ask", "auto")
-        self.open_files = self.open_files_ask or parse_bool("open-files", open_files)
+        pa = pask(printing)
+        self.printing_ask = pa and can_ask
+        self.printing = pa or pbool("printing", printing)
+        ofa = pask(open_files)
+        self.open_files_ask = ofa and can_ask
+        self.open_files = ofa or pbool("open-files", open_files)
         #FIXME: command line options needed here:
-        self.open_url_ask = open_url.lower() in ("ask", "auto")
-        self.open_url = self.open_url_ask or parse_bool("open-url", open_url)
+        oua = pask(open_url)
+        self.open_url_ask = oua and can_ask
+        self.open_url = oua or pbool("open-url", open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
@@ -296,9 +303,11 @@ class FileTransferHandler(FileTransferAttributes):
         t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False, args=(filename, mimetype, printit, openit, filesize, options))
         filelog("started process-download thread: %s", t)
 
-    def accept_data(self, _send_id, _dtype, _basefilename, printit, openit):
+    def accept_data(self, send_id, dtype, basefilename, printit, openit):
         #subclasses should check the flags,
         #and if ask is True, verify they have accepted this specific send_id
+        filelog("accept_data%s printing=%s, printing-ask=%s, file-transfer=%s, file-transfer-ask=%s, open-files=%s, open-files-ask=%s",
+                (send_id, dtype, basefilename, printit, openit), self.printing, self.printing_ask, self.file_transfer, self.file_transfer_ask, self.open_files, self.open_files_ask)
         if printit:
             return self.printing and not self.printing_ask
         if not self.file_transfer or self.file_transfer_ask:
@@ -627,7 +636,8 @@ class FileTransferHandler(FileTransferAttributes):
     def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         #subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
-        cb_answer(False)
+        v = self.accept_data(send_id, dtype, url, printit, openit)
+        cb_answer(v)
 
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
