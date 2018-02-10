@@ -260,6 +260,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
                 continue
             filename = (uri[len("file://"):].rstrip("\n\r")).encode()
+            if WIN32:
+                filename = filename.lstrip(b"/")
             abspath = os.path.abspath(filename)
             if not os.path.isfile(abspath):
                 draglog.warn("Warning: '%s' is not a file", abspath)
