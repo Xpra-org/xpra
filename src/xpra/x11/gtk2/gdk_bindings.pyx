@@ -10,7 +10,6 @@ import os
 import traceback
 
 import gobject
-import gtk
 from gtk import gdk
 
 from xpra.gtk_common.quit import gtk_main_quit_really
