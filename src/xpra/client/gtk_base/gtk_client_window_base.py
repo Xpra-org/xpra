@@ -262,15 +262,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if not uri.startswith("file://"):
                 draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
                 continue
-            filename = (uri[len("file://"):].rstrip("\n\r")).encode()
+            filename = uri[len("file://"):].rstrip("\n\r")
             if WIN32:
-                filename = filename.lstrip(b"/")
+                filename = filename.lstrip("/")
             abspath = os.path.abspath(filename)
             if not os.path.isfile(abspath):
                 draglog.warn("Warning: '%s' is not a file", abspath)
                 continue
             filelist.append(abspath)
-        draglog("drag_got_data_cb: will try to upload: %s", csv(x.decode() for x in filelist))
+        draglog("drag_got_data_cb: will try to upload: %s", csv(filelist))
         pending = set(filelist)
         #when all the files have been loaded / failed,
         #finish the drag and drop context so the source knows we're done with them:
@@ -290,14 +290,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 basename = gfile.get_basename()
                 ctype = file_info.get_content_type()
                 size = file_info.get_size()
-                draglog("file_info(%s)=%s ctype=%s, size=%s", bytestostr(filename), file_info, ctype, size)
+                draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
                 def got_file_data(gfile, result, user_data=None):
                     data, filesize, entity = load_contents_finish(gfile, result)
                     draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
                     file_done(filename)
                     openit = self._client.remote_open_files
                     draglog.info("sending file %s (%i bytes)", basename, filesize)
-                    self._client.send_file(str(filename.decode()), "", data, filesize=filesize, openit=openit)
+                    self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
                 load_contents_async(gfile, got_file_data, user_data=(filename, True))
             try:
                 gfile = gio_File(filename)
