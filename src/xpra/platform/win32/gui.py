@@ -494,25 +494,7 @@ def add_window_hooks(window):
         gdk_window.set_group = noop
     except:
         gdk_window = None
-    #window handle:
-    try:
-        handle = gdk_window.handle
-    except:
-        handle = None
-    if not handle:
-        from xpra.gtk_common.gobject_compat import is_gtk3
-        if is_gtk3():
-            #access the missing gdk_win32_window_get_handle function using ctypes:
-            try:
-                ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-                ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object]
-                gdkwin_gpointer = ctypes.pythonapi.PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-                gdkdll = ctypes.CDLL("libgdk-3-0.dll")
-                handle = gdkdll.gdk_win32_window_get_handle(gdkwin_gpointer)
-            except Exception as e:
-                log("failed to get window handle", exc_info=True)
-                log.error("Error: failed to access the window handle for %s", gdk_window)
-                log.error(" %s", e)
+    handle = get_window_handle(gdk_window)
     if not handle:
         log.warn("Warning: cannot add window hooks without a window handle!")
         return
