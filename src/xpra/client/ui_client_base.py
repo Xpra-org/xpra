@@ -55,7 +55,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
-                               get_native_tray_menu_helper_classes, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
+                               get_native_tray_menu_helper_class, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.main import sound_option, full_version_str
@@ -885,20 +885,16 @@ class UIXpraClient(XpraClientBase):
 
     def make_tray_menu_helper(self):
         """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
-        mhc = self.get_tray_menu_helper_classes()
+        mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
         traylog("make_tray_menu_helper() tray menu helper classes: %s", mhc)
         return self.make_instance(mhc, self)
 
-    def get_tray_menu_helper_classes(self):
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
-        return get_native_tray_menu_helper_classes()
-
 
     def make_instance(self, class_options, *args):
-        log("make_instance%s", [class_options]+list(args))
+        log("make_instance%s", tuple([class_options]+list(args)))
         for c in class_options:
+            if c is None:
+                continue
             try:
                 v = c(*args)
                 log("make_instance(..) %s()=%s", c, v)

@@ -56,10 +56,8 @@ class XpraClient(GTKXpraClient):
         return Gdk.Screen.get_default().get_resolution()
 
 
-    def get_tray_menu_helper_classes(self):
-        tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
-        tmhc.append(GTK3TrayMenu)
-        return tmhc
+    def get_tray_menu_helper_class(self):
+        return GTK3TrayMenu
 
 
     def get_mouse_position(self):

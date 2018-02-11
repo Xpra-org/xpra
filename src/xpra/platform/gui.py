@@ -32,10 +32,10 @@ def do_ready():
 
 
 #defaults:
-def get_native_tray_menu_helper_classes():
+def get_native_tray_menu_helper_class():
     #classes that generate menus for xpra's system tray
     #let the toolkit classes use their own
-    return []
+    return None
 def get_native_tray_classes(*_args):
     #the classes we can use for our system tray:
     #let the toolkit classes use their own
@@ -218,7 +218,7 @@ def get_info_base():
     def fnames(l):
         return [fname(x) for x in l]
     return {
-            "native_tray_menu_helpers"      : fnames(get_native_tray_menu_helper_classes()),
+            "native_tray_menu_helper"       : fname(get_native_tray_menu_helper_class()),
             "native_trays"                  : fnames(get_native_tray_classes()),
             "native_system_trays"           : fnames(get_native_system_tray_classes()),
             "system_bell"                   : fname(system_bell),
@@ -261,7 +261,7 @@ platform_import(globals(), "gui", False,
                 "ClientExtras",
                 "take_screenshot",
                 "get_menu_support_function",
-                "get_native_tray_menu_helper_classes",
+                "get_native_tray_menu_helper_class",
                 "get_native_tray_classes",
                 "get_native_system_tray_classes",
                 "get_native_notifier_classes",
