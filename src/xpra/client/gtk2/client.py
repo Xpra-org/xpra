@@ -46,7 +46,6 @@ class XpraClient(GTKXpraClient):
 
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
-        capabilities["encoding.supports_delta"] = [x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()]
         capabilities["pointer.grabs"] = True
         return capabilities
 

@@ -1576,6 +1576,7 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),
             "encodings.cursor"          : self.get_cursor_encodings(),
+            "encoding.supports_delta"   : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings())
             #sound:
             "sound.server_driven"       : True,
             "sound.ogg-latency-fix"     : True,
