@@ -86,17 +86,6 @@ class XpraClient(GTKXpraClient):
         self.UI_watcher.add_fail_callback(UI_failed)
 
 
-    def _process_raise_window(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        log("going to raise window %s - %s", wid, window)
-        if window:
-            if window.has_toplevel_focus():
-                log("window already has top level focus")
-                return
-            window.present()
-
-
     def window_grab(self, window):
         mask = gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gdk.POINTER_MOTION_MASK  | gdk.POINTER_MOTION_HINT_MASK | gdk.ENTER_NOTIFY_MASK | gdk.LEAVE_NOTIFY_MASK
         gdk.pointer_grab(window.get_window(), owner_events=True, event_mask=mask)
