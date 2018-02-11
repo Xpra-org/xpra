@@ -3,11 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
-
 from gi.repository import GObject               #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
 
+from xpra.os_util import OSX
+from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk3.client_window import ClientWindow
 from xpra.client.gtk3.tray_menu import GTK3TrayMenu
 from xpra.log import Logger
@@ -29,12 +29,13 @@ class XpraClient(GTKXpraClient):
 
     def get_notifier_classes(self):
         ncs = GTKXpraClient.get_notifier_classes(self)
-        try:
-            from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
-            ncs.append(GTK3_Notifier)
-        except Exception as e:
-            log.warn("Warning: failed to load the GTK3 notification class")
-            log.warn(" %s", e)
+        if not OSX:
+            try:
+                from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier
+                ncs.append(GTK3_Notifier)
+            except Exception as e:
+                log.warn("Warning: failed to load the GTK3 notification class")
+                log.warn(" %s", e)
         return ncs
 
 
