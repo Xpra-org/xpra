@@ -610,9 +610,6 @@ else:
         traylog("popup_menu_workaround: adding events callbacks")
         menu.connect("enter-notify-event", enter_menu)
         menu.connect("leave-notify-event", leave_menu)
-    if WIN32:
-        def gtk_main():
-            gtk.main()
 
     def gio_File(path):
         import gio
@@ -626,6 +623,12 @@ else:
 
     def load_contents_finish(gfile, res):
         return gfile.load_contents_finish(res)
+
+#no idea why, but trying to use the threads_init / threads_enter
+#causes deadlocks on win32:
+if WIN32:
+    def gtk_main():
+        gtk.main()
 
 
 GRAB_STATUS_STRING = {
