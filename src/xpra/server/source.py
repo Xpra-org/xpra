@@ -69,6 +69,7 @@ PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
+SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -79,6 +80,8 @@ counter = AtomicInteger()
 
 
 def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
+    if propname in SKIP_METADATA:
+        return {}
     #note: some of the properties handled here aren't exported to the clients,
     #but we do expose them via xpra info
     def raw():
