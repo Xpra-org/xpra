@@ -610,7 +610,7 @@ def register_URL_handler(handler):
     class GURLHandler(NSObject):
         def handleEvent_withReplyEvent_(self, event, reply_event):
             log("GURLHandler.handleEvent(%s, %s)", event, reply_event)
-            url = event.descriptorForKeyword_(fourCharToInt('----')).stringValue()
+            url = event.descriptorForKeyword_(fourCharToInt(b'----')).stringValue()
             log("URL=%s", url)
             handler(url.encode())
 
@@ -624,7 +624,7 @@ def register_URL_handler(handler):
     manager = NSAppleEventManager.sharedAppleEventManager()
     manager.setEventHandler_andSelector_forEventClass_andEventID_(
         urlh, 'handleEvent:withReplyEvent:',
-        fourCharToInt('GURL'), fourCharToInt('GURL')
+        fourCharToInt(b'GURL'), fourCharToInt(b'GURL')
         )
 
 
