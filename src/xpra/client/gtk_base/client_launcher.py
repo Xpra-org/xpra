@@ -662,13 +662,13 @@ class ApplicationWindow:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
-        self.client.setup_connection(conn)
         #we have already initialized it,
         #but calling client.init will do it again - so we have to clear it:
         from xpra.codecs.video_helper import getVideoHelper
         getVideoHelper().cleanup()
         self.client.init(self.config)
         self.client.init_ui(self.config)
+        self.client.setup_connection(conn)
         log("start_XpraClient() client initialized")
 
         if self.config.password:
