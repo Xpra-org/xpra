@@ -7,8 +7,6 @@
 
 import gobject
 gobject.threads_init()
-from gtk import gdk
-
 
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
@@ -42,28 +40,6 @@ class XpraClient(GTKXpraClient):
         tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
         tmhc.append(GTK2TrayMenu)
         return tmhc
-
-
-    def make_hello(self):
-        capabilities = GTKXpraClient.make_hello(self)
-        capabilities["pointer.grabs"] = True
-        return capabilities
-
-    def init_packet_handlers(self):
-        GTKXpraClient.init_packet_handlers(self)
-        self._ui_packet_handlers["pointer-grab"] = self._process_pointer_grab
-        self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
-
-
-    def window_grab(self, window):
-        mask = gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK | gdk.POINTER_MOTION_MASK  | gdk.POINTER_MOTION_HINT_MASK | gdk.ENTER_NOTIFY_MASK | gdk.LEAVE_NOTIFY_MASK
-        gdk.pointer_grab(window.get_window(), owner_events=True, event_mask=mask)
-        #also grab the keyboard so the user won't Alt-Tab away:
-        gdk.keyboard_grab(window.get_window(), owner_events=False)
-
-    def window_ungrab(self):
-        gdk.pointer_ungrab()
-        gdk.keyboard_ungrab()
 
 
 gobject.type_register(XpraClient)

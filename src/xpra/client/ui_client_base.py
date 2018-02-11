@@ -1365,6 +1365,20 @@ class UIXpraClient(XpraClientBase):
                 self.timeout_add(20, send_lost_focus)
                 self._focused = None
 
+
+    ######################################################################
+    # grabs:
+    def init_packet_handlers(self):
+        XpraClientBase.init_packet_handlers(self)
+        self._ui_packet_handlers["pointer-grab"] = self._process_pointer_grab
+        self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
+
+    def window_grab(self, window):
+        log.warn("Warning: window grab not implemented in %s", self.client_type())
+
+    def window_ungrab(self):
+        log.warn("Warning: window ungrab not implemented in %s", self.client_type())
+
     def do_force_ungrab(self, wid):
         grablog("do_force_ungrab(%s)", wid)
         #ungrab via dedicated server packet:
@@ -1378,10 +1392,6 @@ class UIXpraClient(XpraClientBase):
             self.window_grab(window)
             self._window_with_grab = wid
 
-    def window_grab(self, window):
-        #subclasses should implement this method
-        pass
-
     def _process_pointer_ungrab(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
@@ -1389,9 +1399,6 @@ class UIXpraClient(XpraClientBase):
         self.window_ungrab()
         self._window_with_grab = None
 
-    def window_ungrab(self):
-        #subclasses should implement this method
-        pass
 
     def window_close_event(self, wid):
         windowlog("window_close_event(%s) close window action=%s", wid, self.window_close_action)
@@ -1576,7 +1583,7 @@ class UIXpraClient(XpraClientBase):
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),
             "encodings.cursor"          : self.get_cursor_encodings(),
-            "encoding.supports_delta"   : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings())
+            "encoding.supports_delta"   : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
             #sound:
             "sound.server_driven"       : True,
             "sound.ogg-latency-fix"     : True,

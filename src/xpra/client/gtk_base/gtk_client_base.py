@@ -24,6 +24,7 @@ menulog = Logger("gtk", "client", "menu")
 filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
+grablog = Logger("client", "grab")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
@@ -40,7 +41,8 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
-            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON
+            INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
+            BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.client_base import PASSWORD_PROMPT
@@ -613,8 +615,10 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     def cook_metadata(self, new_window, metadata):
         metadata = UIXpraClient.cook_metadata(self, new_window, metadata)
         #ensures we will call set_window_menu for this window when we create it:
-        if new_window and b"menu" not in metadata and self._set_window_menu:
-            metadata[b"menu"] = {}
+        if new_window and self._set_window_menu:
+            menu = metadata.dictget("menu")
+            if menu is None:
+                metadata["menu"] = {}
         return metadata
 
 
@@ -693,6 +697,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 pass
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
+        capabilities["pointer.grabs"] = True
         updict(capabilities, "window", {
                "initiate-moveresize"    : True,
                "configure.pointer"      : True,
@@ -847,6 +852,21 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 screen = display.get_screen(i)
                 screen.connect("size-changed", self.screen_size_changed)
                 i += 1
+
+
+    def window_grab(self, window):
+        event_mask = BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_MASK  | POINTER_MOTION_HINT_MASK | ENTER_NOTIFY_MASK | LEAVE_NOTIFY_MASK
+        confine_to = None
+        cursor = None
+        r = gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, 0)
+        grablog("pointer_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
+        #also grab the keyboard so the user won't Alt-Tab away:
+        r = gdk.keyboard_grab(window.get_window(), False, 0)
+        grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
+
+    def window_ungrab(self):
+        gdk.pointer_ungrab(0)
+        gdk.keyboard_ungrab(0)
 
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):

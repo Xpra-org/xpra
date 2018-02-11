@@ -40,7 +40,8 @@ from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_win
     newTargetEntry, drag_context_targets, drag_context_actions, drag_dest_window, drag_widget_get_data,
     gio_File, query_info_async, load_contents_async, load_contents_finish,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
-    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY)
+    DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
+    BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK , POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK)
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
@@ -1060,12 +1061,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if gdkwin:
             d = gdkwin.get_display()
             if d:
-                d.keyboard_ungrab()
+                d.keyboard_ungrab(0)
         return True
 
     def keyboard_grab(self, *args):
         grablog("keyboard_grab%s", args)
-        r = gdk.keyboard_grab(self.get_window(), True)
+        r = gdk.keyboard_grab(self.get_window(), True, 0)
         self._client.keyboard_grabbed = r==GRAB_SUCCESS
         grablog("keyboard_grab%s gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s", args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
 
@@ -1078,8 +1079,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.keyboard_grab()
 
     def pointer_grab(self, *args):
-        self._client.pointer_grabbed = True
-        r = gdk.pointer_grab(self.get_window(), True, confine_to=self.get_window())
+        gdkwin = self.get_window()
+        event_mask = BUTTON_PRESS_MASK | BUTTON_RELEASE_MASK | POINTER_MOTION_MASK  | POINTER_MOTION_HINT_MASK | ENTER_NOTIFY_MASK | LEAVE_NOTIFY_MASK
+        r = gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
         self._client.pointer_grabbed = r==GRAB_SUCCESS
         grablog("pointer_grab%s gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s", args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
@@ -1090,7 +1092,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if gdkwin:
             d = gdkwin.get_display()
             if d:
-                d.pointer_ungrab()
+                d.pointer_ungrab(0)
         return True
 
     def toggle_pointer_grab(self):
