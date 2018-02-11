@@ -95,6 +95,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         self._group_leader_wids = {}
         self._set_window_menu = get_menu_support_function()
         self.connect("scaling-changed", self.reset_windows_cursors)
+        #detect when the UI thread isn't responding:
+        self.UI_watcher = None
+        self.connect("first-ui-received", self.start_UI_watcher)
 
 
     def init(self, opts):
@@ -169,7 +172,23 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         if self.server_commands:
             self.server_commands.destroy()
             self.server_commands = None
+        uw = self.UI_watcher
+        if uw:
+            self.UI_watcher = None
+            uw.stop()
         UIXpraClient.cleanup(self)
+
+    def start_UI_watcher(self, _client):
+        from xpra.platform.ui_thread_watcher import get_UI_watcher
+        self.UI_watcher = get_UI_watcher(self.timeout_add)
+        self.UI_watcher.start()
+        #if server supports it, enable UI thread monitoring workaround when needed:
+        def UI_resumed():
+            self.send("resume", True, tuple(self._id_to_window.keys()))
+        def UI_failed():
+            self.send("suspend", True, tuple(self._id_to_window.keys()))
+        self.UI_watcher.add_resume_callback(UI_resumed)
+        self.UI_watcher.add_fail_callback(UI_failed)
 
 
     def get_notifier_classes(self):

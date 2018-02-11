@@ -22,24 +22,11 @@ from xpra.client.gtk2.client_window import ClientWindow
 
 class XpraClient(GTKXpraClient):
 
-    def __init__(self):
-        GTKXpraClient.__init__(self)
-        self.UI_watcher = None
-
     def init(self, opts):
         GTKXpraClient.init(self, opts)
         self.ClientWindowClass = ClientWindow
         log("init(..) ClientWindowClass=%s", self.ClientWindowClass)
-        from xpra.platform.ui_thread_watcher import get_UI_watcher
-        self.UI_watcher = get_UI_watcher(self.timeout_add)
 
-
-    def cleanup(self):
-        uw = self.UI_watcher
-        if uw:
-            self.UI_watcher = None
-            uw.stop()
-        GTKXpraClient.cleanup(self)
 
     def __repr__(self):
         return "gtk2.client"
@@ -67,18 +54,6 @@ class XpraClient(GTKXpraClient):
         GTKXpraClient.init_packet_handlers(self)
         self._ui_packet_handlers["pointer-grab"] = self._process_pointer_grab
         self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
-
-
-    def process_ui_capabilities(self):
-        GTKXpraClient.process_ui_capabilities(self)
-        self.UI_watcher.start()
-        #if server supports it, enable UI thread monitoring workaround when needed:
-        def UI_resumed():
-            self.send("resume", True, self._id_to_window.keys())
-        def UI_failed():
-            self.send("suspend", True, self._id_to_window.keys())
-        self.UI_watcher.add_resume_callback(UI_resumed)
-        self.UI_watcher.add_fail_callback(UI_failed)
 
 
     def window_grab(self, window):
