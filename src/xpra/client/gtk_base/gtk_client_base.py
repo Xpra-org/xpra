@@ -1063,7 +1063,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
         #win32 opengl doesn't do alpha (not sure why):
         alpha = metadata.boolget("has-alpha", False)
-        if self.GLClientWindowClass is None or not self.opengl_enabled or w>ms or h>ms or (alpha and WIN32):
+        if self.GLClientWindowClass is None or not self.opengl_enabled or w>ms or h>ms or (WIN32 and (alpha or override_redirect)):
             return [self.ClientWindowClass]
         return [self.GLClientWindowClass, self.ClientWindowClass]
 
