@@ -51,11 +51,6 @@ class XpraClient(GTKXpraClient):
         return "gtk2"
 
 
-    def _process_startup_complete(self, *args):
-        GTKXpraClient._process_startup_complete(self, *args)
-        gdk.notify_startup_complete()
-
-
     def get_tray_menu_helper_classes(self):
         tmhc = GTKXpraClient.get_tray_menu_helper_classes(self)
         tmhc.append(GTK2TrayMenu)

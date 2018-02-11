@@ -187,6 +187,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return ncs
 
 
+    def _process_startup_complete(self, *args):
+        UIXpraClient._process_startup_complete(self, *args)
+        gdk.notify_startup_complete()
+
+
     def _process_challenge(self, packet):
         if not self.validate_challenge_packet(packet):
             return
