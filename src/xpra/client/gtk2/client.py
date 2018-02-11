@@ -10,7 +10,6 @@ gobject.threads_init()
 from gtk import gdk
 
 
-from xpra.gtk_common.gtk_util import gtk_main
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 from xpra.client.gtk2.tray_menu import GTK2TrayMenu
 from xpra.log import Logger
@@ -34,9 +33,6 @@ class XpraClient(GTKXpraClient):
         from xpra.platform.ui_thread_watcher import get_UI_watcher
         self.UI_watcher = get_UI_watcher(self.timeout_add)
 
-
-    def gtk_main(self):
-        gtk_main()
 
     def cleanup(self):
         uw = self.UI_watcher

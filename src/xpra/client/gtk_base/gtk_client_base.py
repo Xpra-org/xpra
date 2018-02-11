@@ -36,7 +36,7 @@ from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.window_border import WindowBorder
 from xpra.gtk_common.cursor_names import cursor_types
-from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, color_parse, \
+from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_default_cursor, color_parse, gtk_main, \
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
@@ -128,7 +128,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         return  self.exit_code
 
     def gtk_main(self):
-        raise NotImplementedError()
+        gtk_main()
+
 
     def quit(self, exit_code=0):
         log("GTKXpraClient.quit(%s) current exit_code=%s", exit_code, self.exit_code)

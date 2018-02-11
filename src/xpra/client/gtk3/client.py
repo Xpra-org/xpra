@@ -6,7 +6,6 @@
 from xpra.client.gtk_base.gtk_client_base import GTKXpraClient
 
 from gi.repository import GObject               #@UnresolvedImport
-from gi.repository import Gtk                   #@UnresolvedImport
 from gi.repository import Gdk                   #@UnresolvedImport
 
 from xpra.client.gtk3.client_window import ClientWindow
@@ -18,9 +17,6 @@ log = Logger("gtk", "client")
 class XpraClient(GTKXpraClient):
 
     ClientWindowClass = ClientWindow
-
-    def gtk_main(self):
-        Gtk.main()
 
     def make_hello(self):
         capabilities = GTKXpraClient.make_hello(self)
