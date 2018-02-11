@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import gtk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+gtk = import_gtk()
+gdk = import_gdk()
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 
 class CursorWindow(gtk.Window):
 
@@ -17,9 +20,9 @@ def colored_cursor():
 	#first get a colormap and then allocate the colors
 	#black and white for drawing on the bitmaps:
 	size = 64
-	pm = gtk.gdk.Pixmap(None, size, size, 1)
-	mask = gtk.gdk.Pixmap(None, size, size, 1)
-	colormap = gtk.gdk.colormap_get_system()
+	pm = gdk.Pixmap(None, size, size, 1)
+	mask = gdk.Pixmap(None, size, size, 1)
+	colormap = gdk.colormap_get_system()
 	black = colormap.alloc_color('black')
 	white = colormap.alloc_color('white')
 	# Create two GCs - one each for black and white:
@@ -32,20 +35,21 @@ def colored_cursor():
 	pm.draw_arc(wgc,True,0,2,size,size/2,0,360*64)
 	mask.draw_rectangle(wgc,True,0,0,size,size)
 	# Then create and set the cursor using unallocated colors:
-	green = gtk.gdk.color_parse('green')
-	red = gtk.gdk.color_parse('red')
-	return gtk.gdk.Cursor(pm,mask,green,red,5,5)
+	green = gdk.color_parse('green')
+	red = gdk.color_parse('red')
+	return gdk.Cursor(pm,mask,green,red,5,5)
 
 def small_empty_cursor():
 	#same as xterm when pressing a modifier key
 	w, h = 6, 13
-	pixbuf = gtk.gdk.pixbuf_new_from_data("\0"*w*h*4, gtk.gdk.COLORSPACE_RGB, True, 8, w, h, w*4)
-	return gtk.gdk.Cursor(gtk.gdk.display_get_default(), pixbuf, 0, 11)
+	rgb_data = b"\0"*w*h*4
+	pixbuf = get_pixbuf_from_data(rgb_data, True, w, h, w*4)
+	return gdk.Cursor(gdk.display_get_default(), pixbuf, 0, 11)
 
 
 def main():
 	CursorWindow(title="colored cursor", cursor=colored_cursor()).show_all()
-	CursorWindow(title="X cursor", cursor=gtk.gdk.Cursor(gtk.gdk.X_CURSOR)).show_all()
+	CursorWindow(title="X cursor", cursor=gdk.Cursor(gdk.X_CURSOR)).show_all()
 	CursorWindow(title="small empty cursor", cursor=small_empty_cursor()).show_all()
 	gtk.main()
 	return 0
