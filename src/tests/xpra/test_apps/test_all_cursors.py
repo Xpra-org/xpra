@@ -21,9 +21,12 @@ def main():
 
 	def change_cursor(*args):
 		name = cursor_combo.get_active_text()
-		print(name)
-		gdk_cursor = cursor_types.get(name)
-		cursor = gdk.Cursor(gdk_cursor)
+		print("new cursor: %s" % name)
+		if name:
+			gdk_cursor = cursor_types.get(name)
+			cursor = gdk.Cursor(gdk_cursor)
+		else:
+			cursor = None
 		window.get_window().set_cursor(cursor)
 
 	cursor_combo.connect("changed", change_cursor)
