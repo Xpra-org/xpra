@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 import os
 import traceback
+from weakref import WeakKeyDictionary
 
 import gi
 gi.require_version('GdkX11', '3.0')
@@ -558,37 +559,41 @@ cdef extern from "gtk-3.0/gdk/gdkevents.h":
 # client that owns the window they are sent to, otherwise they go to any
 # clients that are selecting for that mask they are sent with.
 
-_ev_receiver_key = "xpra-route-events-to"
+window_event_receivers = WeakKeyDictionary()
+
 def add_event_receiver(window, receiver, max_receivers=3):
-    receivers = window.get_data(_ev_receiver_key)
+    receivers = window_event_receivers.get(window)
     if receivers is None:
         receivers = set()
-        window.set_data(_ev_receiver_key, receivers)
+        window_event_receivers[window] = receivers
     if max_receivers>0 and len(receivers)>max_receivers:
         log.warn("already too many receivers for window %s: %s, adding %s to %s", window, len(receivers), receiver, receivers)
         traceback.print_stack()
-    if receiver not in receivers:
-        receivers.add(receiver)
+    receivers.add(receiver)
 
 def remove_event_receiver(window, receiver):
-    receivers = window.get_data(_ev_receiver_key)
+    receivers = window_event_receivers.get(window)
     if receivers is None:
         return
     receivers.discard(receiver)
     if not receivers:
-        window.set_data(_ev_receiver_key, None)
+        del window_event_receivers[window]
 
 #only used for debugging:
 def get_event_receivers(window):
-    return window.get_data(_ev_receiver_key)
+    return window_event_receivers.get(window)
 
 def cleanup_all_event_receivers():
     root = Gdk.get_default_root_window()
-    root.set_data(_ev_receiver_key, None)
+    try:
+        del window_event_receivers[root]
+    except KeyError:
+        pass
     for window in get_children(root):
-        receivers = window.get_data(_ev_receiver_key)
-        if receivers is not None:
-            window.set_data(_ev_receiver_key, None)
+        try:
+            del window_event_receivers[window]
+        except KeyError:
+            pass
 
 
 cdef int CursorNotify = -1
@@ -883,18 +888,18 @@ cdef _route_event(int etype, event, signal, parent_signal):
         if signal is not None:
             window = event.window
             if DEBUG:
-                log.info("  delivering event to window itself: %#x  (signal=%s)", window.xid, signal)
-            handlers = window.get_data(_ev_receiver_key)
-            _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window.xid)
+                log.info("  delivering event to window itself: %#x  (signal=%s)", window.get_xid(), signal)
+            handlers = get_event_receivers(window)
+            _maybe_send_event(DEBUG, handlers, signal, event, "window %#x" % window.get_xid())
         elif DEBUG:
             log.info("  received event on window itself but have no signal for that")
     else:
         if parent_signal is not None:
             window = event.delivered_to
             if DEBUG:
-                log.info("  delivering event to parent window: %#x (signal=%s)", window.xid, parent_signal)
-            handlers = window.get_data(_ev_receiver_key)
-            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.xid)
+                log.info("  delivering event to parent window: %#x (signal=%s)", window.get_xid(), parent_signal)
+            handlers = get_event_receivers(window)
+            _maybe_send_event(DEBUG, handlers, parent_signal, event, "parent window %#x" % window.get_xid())
         else:
             if DEBUG:
                 log.info("  received event on a parent window but have no parent signal")
@@ -915,7 +920,7 @@ cdef object _gw(display, Window xwin):
     gdk_error_trap_push()
     try:
         disp = get_display_for(display)
-        win = GdkX11.Window.foreign_new_for_display(disp, xwin)
+        win = GdkX11.X11Window.foreign_new_for_display(disp, xwin)
         gdk_flush()
         error = gdk_error_trap_pop()
     except Exception as e:
@@ -978,14 +983,15 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     cdef object d
     cdef object pyev
     cdef int etype = e.type
-
     global x_event_type_names, x_event_signals
     event_type = x_event_type_names.get(etype, etype)
     if e.xany.send_event and etype not in (ClientMessage, UnmapNotify):
         log("x_event_filter ignoring %s send_event", event_type)
         return None
 
-    d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
+    #FIXME: this crashes!
+    d = None #wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
+    d = Gdk.Display.get_default()
 
     if etype == GenericEvent:
         global x_event_parsers
@@ -1008,7 +1014,10 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     # Unmarshal:
     try:
         if etype != XKBNotify:
-            pyev.delivered_to = _gw(d, e.xany.window)
+            try:
+                pyev.delivered_to = _gw(d, e.xany.window)
+            except XError:
+                return None
 
         if etype == DamageNotify:
             damage_e = <XDamageNotifyEvent*>e

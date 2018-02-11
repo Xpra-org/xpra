@@ -701,16 +701,24 @@ class ClientExtras(object):
         if self.x11_filter:
             return
         try:
-            from xpra.x11.gtk2.gdk_bindings import init_x11_filter  #@UnresolvedImport
+            if is_gtk3():
+                from xpra.x11.gtk3.gdk_bindings import init_x11_filter  #@UnresolvedImport, @UnusedImport
+            else:
+                from xpra.x11.gtk2.gdk_bindings import init_x11_filter  #@UnresolvedImport, @Reimport
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
-        except:
+        except Exception:
+            log.error("Error: failed to initialize X11 GDK filter:")
+            log.error(" %s", e)
             self.x11_filter = None
 
     def cleanup(self):
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self.x11_filter:
-            from xpra.x11.gtk2.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport
+            if is_gtk3():
+                from xpra.x11.gtk3.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @UnusedImport
+            else:
+                from xpra.x11.gtk2.gdk_bindings import cleanup_x11_filter   #@UnresolvedImport, @Reimport
             self.x11_filter = None
             cleanup_x11_filter()
         if self._xsettings_watcher:
@@ -834,12 +842,12 @@ class ClientExtras(object):
 
     def do_setup_xprops(self, *args):
         log("do_setup_xprops(%s)", args)
-        if is_gtk3():
-            log("x11 root properties and XSETTINGS are not supported yet with GTK3")
-            return
         ROOT_PROPS = ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         try:
             self.init_x11_filter()
+            if is_gtk3():
+                #xsettings still need porting
+                return
             from xpra.gtk_common.gtk_util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
@@ -854,6 +862,7 @@ class ClientExtras(object):
                 #ensure we get the initial value:
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
         except ImportError as e:
+            log("do_setup_xprops%s", args, exc_info=True)
             log.error("failed to load X11 properties/settings bindings: %s - root window properties will not be propagated", e)
 
 

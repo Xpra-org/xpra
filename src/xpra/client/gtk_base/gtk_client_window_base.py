@@ -34,7 +34,7 @@ from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv,
                        MOVERESIZE_SIZE_RIGHT,
                        MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
                        MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid, is_gtk3
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default, drag_status,
     newTargetEntry, drag_context_targets, drag_context_actions, drag_dest_window, drag_widget_get_data,
@@ -198,6 +198,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.add_events(self.WINDOW_EVENT_MASK)
         if DRAGNDROP:
             self.init_dragndrop()
+        self.init_focus()
         ClientWindowBase.init_window(self, metadata)
 
 
@@ -311,6 +312,88 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 draglog.error(" %s", e)
                 del e
                 file_done(filename)
+
+    ######################################################################
+    # focus:
+    def init_focus(self):
+        self.recheck_focus_timer = 0
+        self.when_realized("init-focus", self.do_init_focus)
+
+    def do_init_focus(self):
+        #hook up the X11 gdk event notifications so we can get focus-out when grabs are active:
+        if POSIX and not OSX:
+            try:
+                if is_gtk3():
+                    from xpra.x11.gtk3.gdk_bindings import add_event_receiver   #@UnresolvedImport
+                else:
+                    from xpra.x11.gtk2.gdk_bindings import add_event_receiver   #@UnresolvedImport, @Reimport
+            except ImportError as e:
+                log.warn("Warning: missing gdk bindings:")
+                log.warn(" %s", e)
+            else:
+                self._focus_latest = None
+                grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
+                add_event_receiver(self.get_window(), self)
+        #other platforms should bet getting regular focus events instead:
+        def focus_in(_window, event):
+            grablog("focus-in-event for wid=%s", self._id)
+            self.do_xpra_focus_in_event(event)
+        def focus_out(_window, event):
+            grablog("focus-out-event for wid=%s", self._id)
+            self.do_xpra_focus_out_event(event)
+        self.connect("focus-in-event", focus_in)
+        self.connect("focus-out-event", focus_out)
+        if not self._override_redirect:
+            self.connect("notify::has-toplevel-focus", self._focus_change)
+
+    def _focus_change(self, *args):
+        assert not self._override_redirect
+        htf = self.has_toplevel_focus()
+        focuslog("%s focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
+        if self._been_mapped:
+            self._client.update_focus(self._id, htf)
+
+    def recheck_focus(self):
+        self.recheck_focus_timer = 0
+        #we receive pairs of FocusOut + FocusIn following a keyboard grab,
+        #so we recheck the focus status via this timer to skip unnecessary churn
+        focused = self._client._focused
+        grablog("recheck_focus() wid=%i, focused=%s, latest=%s", self._id, focused, self._focus_latest)
+        hasfocus = focused==self._id
+        if not focused:
+            #we should never own the grab if we don't have focus
+            self.keyboard_ungrab()
+            self.pointer_ungrab()
+            return
+        if hasfocus==self._focus_latest:
+            #we're already up to date
+            return
+        if not self._focus_latest:
+            self.keyboard_ungrab()
+            self.pointer_ungrab()
+            self._client.update_focus(self._id, False)
+        else:
+            self._client.update_focus(self._id, True)
+
+    def cancel_focus_timer(self):
+        if self.recheck_focus_timer:
+            self.source_remove(self.recheck_focus_timer)
+            self.recheck_focus_timer = 0
+
+    def schedule_recheck_focus(self):
+        if self.recheck_focus_timer==0:
+            self.recheck_focus_timer = self.idle_add(self.recheck_focus)
+        return True
+
+    def do_xpra_focus_out_event(self, event):
+        grablog("do_xpra_focus_out_event(%s)", event)
+        self._focus_latest = False
+        return self.schedule_recheck_focus()
+
+    def do_xpra_focus_in_event(self, event):
+        grablog("do_xpra_focus_in_event(%s)", event)
+        self._focus_latest = True
+        return self.schedule_recheck_focus()
 
 
     def init_max_window_size(self, metadata):
@@ -429,14 +512,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if screen:
                     self.set_screen(screen)
 
-        if not self._override_redirect:
-            self.connect("notify::has-toplevel-focus", self._focus_change)
-        def focus_in(*_args):
-            focuslog("focus-in-event for wid=%s", self._id)
-        def focus_out(*_args):
-            focuslog("focus-out-event for wid=%s", self._id)
-        self.connect("focus-in-event", focus_in)
-        self.connect("focus-out-event", focus_out)
         self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
 
@@ -1634,6 +1709,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def destroy(self):
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()
+        self.cancel_focus_timer()
         if self._client._set_window_menu:
             self._client.set_window_menu(False, self._id, {})
         mrt = self.moveresize_timer
@@ -1707,14 +1783,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def do_key_release_event(self, event):
         key_event = self.parse_key_event(event, False)
         self._client.handle_key_action(self, key_event)
-
-
-    def _focus_change(self, *args):
-        assert not self._override_redirect
-        htf = self.has_toplevel_focus()
-        focuslog("%s focus_change(%s) has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
-        if self._been_mapped:
-            self._client.update_focus(self._id, htf)
 
 
     def get_mouse_event_wid(self, x, y):
