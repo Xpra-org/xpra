@@ -17,7 +17,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
 
-from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes, hexstr
+from xpra.os_util import PYTHON3, Queue, memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, csv, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -927,7 +927,7 @@ class Protocol(object):
                 packet_size = 0
 
                 self.input_packetcount += 1
-                log("processing packet %s", packet_type)
+                log("processing packet %s", bytestostr(packet_type))
                 self._process_packet_cb(self, packet)
                 packet = None
 
