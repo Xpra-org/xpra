@@ -776,8 +776,8 @@ class UIXpraClient(XpraClientBase):
             where extra encodings can be added (generally just 'rgb32' for transparency),
             or removed if the toolkit implementation class is more limited.
         """
-        #we always support rgb24:
-        core_encodings = ["rgb24"]
+        #we always support rgb:
+        core_encodings = ["rgb24", "rgb32"]
         for codec in ("dec_pillow", "dec_webp"):
             if has_codec(codec):
                 c = get_codec(codec)

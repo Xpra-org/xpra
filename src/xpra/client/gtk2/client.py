@@ -54,15 +54,6 @@ class XpraClient(GTKXpraClient):
     def client_toolkit(self):
         return "gtk2"
 
-    def do_get_core_encodings(self):
-        encodings = GTKXpraClient.do_get_core_encodings(self)
-        #we can handle rgb32 format (but not necessarily transparency!)
-        def add(x):
-            if x in self.allowed_encodings and x not in encodings:
-                encodings.append(x)
-        add("rgb32")
-        return encodings
-
 
     def _process_startup_complete(self, *args):
         GTKXpraClient._process_startup_complete(self, *args)

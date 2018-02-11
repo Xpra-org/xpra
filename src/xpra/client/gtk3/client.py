@@ -46,11 +46,6 @@ class XpraClient(GTKXpraClient):
             log.warn(" %s", e)
         return ncs
 
-    def do_get_core_encodings(self):
-        cencs = GTKXpraClient.do_get_core_encodings(self)
-        #we can now paint with alpha via pixbufs:
-        cencs.append("rgb32")
-        return cencs
 
     def get_xdpi(self):
         xdpi = GTKXpraClient.get_xdpi(self)
