@@ -1,4 +1,4 @@
-v1.0.10 (2018-02-05)
+v1.0.10 (2018-02-12)
 ======================
 	-- fix crash with invalid tray docking requests
 	-- fix client authentication failures with multiple challenges
@@ -18,6 +18,7 @@ v1.0.10 (2018-02-05)
 	-- fix HTML5 client wrongly claiming to support system trays
 	-- fix RPM permissions on shared libraries
 	-- fix video encoder setup errors with invalid size requests
+	-- fix unreliable unit tests (use relative time in sample data)
 	-- disable webcam support in 32-bit MS Windows builds (broken library)
 	-- ffmpeg 3.5 compatibility
 	-- don't expose icon absolute paths to clients
