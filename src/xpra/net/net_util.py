@@ -395,11 +395,13 @@ def get_info():
 def main():
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, add_debug_category, enable_debug_for
     with program_context("Network-Info", "Network Info"):
         enable_color()
         verbose = "-v" in sys.argv or "--verbose" in sys.argv
         if verbose:
+            enable_debug_for("network")
+            add_debug_category("network")
             log.enable_debug()
 
         print("Network interfaces found:")
