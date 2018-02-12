@@ -1310,7 +1310,7 @@ if WIN32:
             add_exe(script, icon, base_name, base="Win32Service")
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
-        if client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):
+        if (client_ENABLED or server_ENABLED) and (gtk2_ENABLED or gtk3_ENABLED):
             add_gui_exe("scripts/xpra",                         "xpra_txt.ico",     "Xpra")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
