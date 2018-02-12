@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
-import gtk.gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+gtk = import_gtk()
+gdk = import_gdk()
+from xpra.gtk_common.gtk_util import (WINDOW_TOPLEVEL,
+	WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
+	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
 
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(320, 500)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 	vbox = gtk.VBox(False, 0)
 
 	def add_buttons(t1, cb1, t2, cb2):
@@ -82,13 +87,13 @@ def main():
 
 	def window_state(widget, event):
 		STATES = {
-				gtk.gdk.WINDOW_STATE_WITHDRAWN	: "withdrawn",
-				gtk.gdk.WINDOW_STATE_ICONIFIED	: "iconified",
-				gtk.gdk.WINDOW_STATE_MAXIMIZED	: "maximized",
-				gtk.gdk.WINDOW_STATE_STICKY		: "sticky",
-				gtk.gdk.WINDOW_STATE_FULLSCREEN	: "fullscreen",
-				gtk.gdk.WINDOW_STATE_ABOVE		: "above",
-				gtk.gdk.WINDOW_STATE_BELOW		: "below",
+				WINDOW_STATE_WITHDRAWN	: "withdrawn",
+				WINDOW_STATE_ICONIFIED	: "iconified",
+				WINDOW_STATE_MAXIMIZED	: "maximized",
+				WINDOW_STATE_STICKY		: "sticky",
+				WINDOW_STATE_FULLSCREEN	: "fullscreen",
+				WINDOW_STATE_ABOVE		: "above",
+				WINDOW_STATE_BELOW		: "below",
 				}
 		print("window_state(%s, %s)" % (widget, event))
 		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
