@@ -1,6 +1,7 @@
 xpra (1.0.10-1) UNRELEASED; urgency=low
   * fix crash with invalid tray docking requests
   * fix client authentication failures with multiple challenges
+  * fix errors with some unauthenticated connections
   * fix system tray menu entries wrongly disabled
   * fix man page for all 'start' command variants
   * fix handling of encodings with uppercase characters (ie: png/L and png/P)
@@ -24,7 +25,7 @@ xpra (1.0.10-1) UNRELEASED; urgency=low
   * add missing file to build clean list
   * remove invalid option from configuration file example
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 12 Feb 2018 14:38:54 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 12 Feb 2018 18:56:27 +0700
 
 xpra (1.0.9-1) UNRELEASED; urgency=low
   * fix authentication weaknesses in client salt handling

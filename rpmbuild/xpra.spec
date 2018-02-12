@@ -615,6 +615,7 @@ fi
 * Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
+- fix errors with some unauthenticated connections
 - fix system tray menu entries wrongly disabled
 - fix man page for all 'start' command variants
 - fix handling of encodings with uppercase characters (ie: png/L and png/P)
