@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
-gtk = import_gtk()
-gdk = import_gdk()
 from xpra.gtk_common.gtk_util import (WINDOW_TOPLEVEL,
 	WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
 	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
+
+gtk = import_gtk()
+gdk = import_gdk()
+
 
 def main():
 	window = gtk.Window(WINDOW_TOPLEVEL)

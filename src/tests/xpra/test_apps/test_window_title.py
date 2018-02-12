@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 
-import gtk
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
+
+gtk = import_gtk()
+
 
 def change_callback(self, window, entry):
 	print("text=%s" % entry.get_text())
 	window.set_title(entry.get_text())
 
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(400, 100)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 	entry = gtk.Entry()
 	entry.set_max_length(50)
 	entry.connect("changed", change_callback, window, entry)

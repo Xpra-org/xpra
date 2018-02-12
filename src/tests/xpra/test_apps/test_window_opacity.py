@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-import pygtk
-pygtk.require('2.0')
-import gtk
+from xpra.gtk_common.gobject_compat import import_gtk
+gtk = import_gtk()
 
 opacity = 50
 

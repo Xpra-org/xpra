@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
-import gtk
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gtk_util import WINDOW_POPUP
+
+gtk = import_gtk()
+
 
 class TestWindow(gtk.Window):
 	def __init__(self, window_type, x=100, y=100, w=100, h=100):
 		gtk.Window.__init__(self, window_type)
 		self.move(x, y)
 		self.set_size_request(100, 100)
-		self.connect("delete_event", gtk.mainquit)
+		self.connect("delete_event", gtk.main_quit)
 		def hello(*args):
 			print("hello!")
 		btn = gtk.Button("hello")
@@ -29,7 +33,7 @@ def main():
 	h = intarg(4, 100)
 
 	#TestWindow(gtk.WINDOW_TOPLEVEL, x, y, w, h)
-	TestWindow(gtk.WINDOW_POPUP, x, y, w, h)
+	TestWindow(WINDOW_POPUP, x, y, w, h)
 	gtk.main()
 
 

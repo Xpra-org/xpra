@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 
 import os
-import gtk
+
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL
+
+gtk = import_gtk()
+
 
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(400, 200)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 	for x in ("/usr/share/icons/gnome/48x48/emblems/emblem-important.png", "/opt/share/icons/xpra.png"):
 		if os.path.exists(x):
 			print("using %s" % x)

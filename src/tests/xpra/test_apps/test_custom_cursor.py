@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 gtk = import_gtk()
 gdk = import_gdk()
-from xpra.gtk_common.gtk_util import get_pixbuf_from_data
+
 
 class CursorWindow(gtk.Window):
 

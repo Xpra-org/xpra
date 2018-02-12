@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import gtk
+from xpra.gtk_common.gobject_compat import import_gtk
+from xpra.gtk_common.gtk_util import WINDOW_TOPLEVEL, get_root_size
+
+gtk = import_gtk()
 
 def change_callback(self, window, entry):
 	print("text=%s" % entry.get_text())
@@ -9,17 +12,17 @@ def change_callback(self, window, entry):
 width = 400
 height = 200
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(width, height)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 	vbox = gtk.VBox(False, 0)
 	hbox = gtk.HBox(False, 0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)
 	btn = gtk.Button("move me")
 	hbox.pack_start(btn, expand=False, fill=False, padding=10)
-	def move(*args):
+	def move(*_args):
 		x, y = window.get_position()
-		maxx, maxy = gtk.gdk.get_default_root_window().get_geometry()[2:4]
+		maxx, maxy = get_root_size()
 		new_x = (x+100) % maxx
 		new_y = (y+100) % maxy
 		print("moving to %s x %s" % (new_x, new_y))
