@@ -39,19 +39,20 @@ frozen = getattr(sys, 'frozen', False)
 REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", frozen is True and GetConsoleCP()==0)
 if frozen:
     #cx_freeze paths:
-    def jedir(relpathname):
-        return os.path.join(os.path.dirname(sys.executable), relpathname)
-    def addsyspath(relpathname):
-        v = jedir(relpathname)
+    edir = os.path.dirname(sys.executable)
+    def jedir(*paths):
+        return "\\".join([edir]+list(paths))
+    def addsyspath(*paths):
+        v = jedir(*paths)
         if os.path.exists(v):
             sys.path.append(v)
     addsyspath('')
     addsyspath('bin')
-    addsyspath('bin\\etc')
-    addsyspath('bin\\lib')
-    addsyspath('bin\\share')
-    addsyspath('bin\\library.zip')
-    os.environ['GI_TYPELIB_PATH'] = jedir('lib\\girepository-1.0')
+    addsyspath('bin', 'etc')
+    addsyspath('bin', 'lib')
+    addsyspath('bin', 'share')
+    addsyspath('bin', 'library.zip')
+    os.environ['GI_TYPELIB_PATH'] = jedir('lib', 'girepository-1.0')
 
 #don't know why this breaks with Python 3 yet...
 FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", not REDIRECT_OUTPUT and PYTHON2)
@@ -77,8 +78,9 @@ def set_prgname(name):
     prg_name = name
     try:
         SetConsoleTitleA(name)
-        import glib
-        glib.set_prgname(name)
+        if PYTHON2:
+            import glib     #@UnresolvedImport
+            glib.set_prgname(name)
     except:
         pass
 
