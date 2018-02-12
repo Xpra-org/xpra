@@ -89,6 +89,8 @@ def newdictlook(d, parts, fallback=None):
             newv = v.get(p)
             if newv is None:
                 newv = v.get(strtobytes(p))
+                if newv is None:
+                    return fallback
             v = newv
         except:
             return fallback
@@ -192,8 +194,8 @@ class SessionInfo(gtk.Window):
                                  slabel(make_datetime(server_info("build_date", "build.date"), server_info("build.time"))))
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
-            k = "%s.version" % prop
-            return slabel(make_version_str(dictlook(gtk_version_info, k, fallback)))
+            s = make_version_str(newdictlook(gtk_version_info, (prop, "version"), fallback))
+            return slabel(s)
         def server_vinfo(prop):
             k = "%s.version" % prop
             return slabel(server_version_info(k))
