@@ -390,7 +390,7 @@ class ApplicationWindow:
         self.window.add(vbox)
 
     def accel_close(self, *args):
-        log.info("accel_close%s", args)
+        log("accel_close%s", args)
         gtk.main_quit()
 
     def validate(self, *args):
