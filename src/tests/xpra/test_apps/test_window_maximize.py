@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
-import gtk.gdk
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, get_xid
+gtk = import_gtk()
+gdk = import_gdk()
+from xpra.gtk_common.gtk_util import (WINDOW_TOPLEVEL,
+	WINDOW_STATE_WITHDRAWN, WINDOW_STATE_ICONIFIED, WINDOW_STATE_MAXIMIZED, WINDOW_STATE_STICKY,
+	WINDOW_STATE_FULLSCREEN, WINDOW_STATE_ABOVE, WINDOW_STATE_BELOW)
 
 def main():
-	window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+	window = gtk.Window(WINDOW_TOPLEVEL)
 	window.set_size_request(220, 120)
-	window.connect("delete_event", gtk.mainquit)
+	window.connect("delete_event", gtk.main_quit)
 	vbox = gtk.VBox(False, 0)
 
 	def add_buttons(t1, cb1, t2, cb2):
@@ -25,7 +30,6 @@ def main():
 	def send_maximized_wm_state(mode):
 		from xpra.x11.gtk2 import gdk_display_source
 		assert gdk_display_source
-		from xpra.gtk_common.gobject_compat import get_xid
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = window.get_window().get_screen().get_root_window()
@@ -43,18 +47,19 @@ def main():
 		send_maximized_wm_state(2)	#REMOVE
 
 	add_buttons("maximize", window.maximize, "unmaximize", window.unmaximize)
-	add_buttons("maximize X11", maximize_X11, "unmaximize X11", unmaximize_X11)
+	if not is_gtk3():
+		add_buttons("maximize X11", maximize_X11, "unmaximize X11", unmaximize_X11)
 	add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
 
 	def window_state(widget, event):
 		STATES = {
-				gtk.gdk.WINDOW_STATE_WITHDRAWN	: "withdrawn",
-				gtk.gdk.WINDOW_STATE_ICONIFIED	: "iconified",
-				gtk.gdk.WINDOW_STATE_MAXIMIZED	: "maximized",
-				gtk.gdk.WINDOW_STATE_STICKY		: "sticky",
-				gtk.gdk.WINDOW_STATE_FULLSCREEN	: "fullscreen",
-				gtk.gdk.WINDOW_STATE_ABOVE		: "above",
-				gtk.gdk.WINDOW_STATE_BELOW		: "below",
+				WINDOW_STATE_WITHDRAWN	: "withdrawn",
+				WINDOW_STATE_ICONIFIED	: "iconified",
+				WINDOW_STATE_MAXIMIZED	: "maximized",
+				WINDOW_STATE_STICKY		: "sticky",
+				WINDOW_STATE_FULLSCREEN	: "fullscreen",
+				WINDOW_STATE_ABOVE		: "above",
+				WINDOW_STATE_BELOW		: "below",
 				}
 		print("window_state(%s, %s)" % (widget, event))
 		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
