@@ -856,7 +856,7 @@ def build_xpra_conf(install_dir):
             'postscript_printer'    : postscript,
             'webcam'                : ["no", "auto"][webcam],
             'mousewheel'            : "on",
-            'printing'              : printing_ENABLED,
+            'printing'              : bstr(printing_ENABLED),
             'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(True),
             }
