@@ -1260,7 +1260,7 @@ def configure_logging(options, mode):
         fmt = LOG_FORMAT
         if mode in ("stop", "showconfig"):
             fmt = NOPREFIX_FORMAT
-        if (hasattr(to, "fileno") and os.isatty(to.fileno())) or envbool("XPRA_FORCE_COLOR_LOG", False):
+        if envbool("XPRA_COLOR_LOG", hasattr(to, "fileno") and os.isatty(to.fileno())):
             enable_color(to, fmt)
         else:
             enable_format(fmt)
