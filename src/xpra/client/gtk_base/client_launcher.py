@@ -757,9 +757,14 @@ class ApplicationWindow:
 
 
     def update_options_from_gui(self):
+        def pint(v):
+            try:
+                return int(v)
+            except ValueError:
+                return 0
         self.config.host = self.host_entry.get_text()
-        self.config.ssh_port = self.ssh_port_entry.get_text()
-        self.config.port = self.port_entry.get_text()
+        self.config.ssh_port = pint(self.ssh_port_entry.get_text())
+        self.config.port = pint(self.port_entry.get_text())
         self.config.username = self.username_entry.get_text()
         self.config.encoding = self.get_selected_encoding() or self.config.encoding
         mode_enc = self.mode_combo.get_active_text().upper()
