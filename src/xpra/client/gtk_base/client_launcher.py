@@ -793,7 +793,7 @@ class ApplicationWindow:
         self.username_entry.set_text(self.config.username)
         self.password_entry.set_text(self.config.password)
         self.host_entry.set_text(self.config.host)
-        def get_port(v, default_port=DEFAULT_PORT):
+        def get_port(v, default_port=""):
             try:
                 iport = int(v)
                 if iport>0 and iport<2**16:
@@ -806,7 +806,7 @@ class ApplicationWindow:
             #not required, so don't specify one
             dport = ""
         self.port_entry.set_text(get_port(self.config.port, dport))
-        self.ssh_port_entry.set_text(get_port(self.config.ssh_port, 22))
+        self.ssh_port_entry.set_text(get_port(self.config.ssh_port))
 
     def close_window(self, *_args):
         w = self.window
