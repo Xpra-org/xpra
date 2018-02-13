@@ -805,7 +805,7 @@ def get_defaults():
         ssl_protocol = "SSLv23"
 
     GLOBAL_DEFAULTS = {
-                    "encoding"          : "",
+                    "encoding"          : "auto",
                     "title"             : "@title@ on @client-machine@",
                     "username"          : username,
                     "password"          : "",
