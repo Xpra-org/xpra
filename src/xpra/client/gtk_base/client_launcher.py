@@ -788,6 +788,10 @@ class ApplicationWindow:
         if self.config.encoding and self.encoding_combo:
             index = self.encoding_combo.get_menu().encoding_to_index.get(self.config.encoding, -1)
             log("setting encoding combo to %s / %s", self.config.encoding, index)
+            #make sure the right one is the only one selected:
+            for i,item in enumerate(self.encoding_combo.get_menu().get_children()):
+                item.set_active(i==index)
+            #then select it in the combo:
             if index>=0:
                 self.encoding_combo.set_history(index)
         self.username_entry.set_text(self.config.username)
@@ -980,6 +984,7 @@ def do_main():
                 #wait a little bit for the "openFile" signal
                 app.__osx_open_signal = False
                 def do_open_file(filename):
+                    log.info("do_open_file(%s)", filename)
                     app.update_options_from_file(filename)
                     #the compressors and packet encoders cannot be changed from the UI
                     #so apply them now:
@@ -991,9 +996,10 @@ def do_main():
                     else:
                         force_show()
                 def open_file(_, filename):
-                    log("open_file(%s)", filename)
+                    log.info("open_file(%s)", filename)
                     glib.idle_add(do_open_file, filename)
                 def do_open_URL(url):
+                    log.info("do_open_URL(%s)", url)
                     app.__osx_open_signal = True
                     app.update_options_from_URL(url)
                     #the compressors and packet encoders cannot be changed from the UI
@@ -1002,7 +1008,7 @@ def do_main():
                     app.update_gui_from_config()
                     glib.idle_add(app.do_connect)
                 def open_URL(url):
-                    log("open_URL(%s)", url)
+                    log.info("open_URL(%s)", url)
                     glib.idle_add(do_open_URL, url)
                 from xpra.platform.darwin.gui import get_OSXApplication, register_URL_handler
                 register_URL_handler(open_URL)
