@@ -132,8 +132,7 @@ MODE_STRS = {
     }
 
 def get_MODE_names(mode):
-    global FRIENDLY_MODE_NAMES
-    friendly_modes = [v for k,v in FRIENDLY_MODE_NAMES.items() if k>0 and (k&mode)==k]
+    friendly_modes = [v for k,v in MODE_STRS.items() if k>0 and (k&mode)==k]
     #special case for single (value is zero!)
     if not (mode&MODE_DOUBLE==MODE_DOUBLE):
         friendly_modes.append("SINGLE")
