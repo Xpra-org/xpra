@@ -106,7 +106,7 @@ class AGLContext(object):
         #do it again but for each screen:
         if nscreens>1:
             for screen in range(nscreens):
-                si = i.setdefault("screen-%i" % screen)
+                si = i.setdefault("screen-%i" % screen, {})
                 for name,vdef in attr_name.items():
                     conv, const_val = vdef              #ie (bool, NSOpenGLPFAAlphaSize)
                     v = self._get_pfa(const_val, screen)#ie: NSOpenGLPFAAlphaSize=8
