@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -107,3 +107,34 @@ def GLDrawingArea(glconfig):
     # Set OpenGL-capability to the widget
     gtkgl.widget_set_gl_capability(glarea, glconfig, None, True, RGBA_TYPE)
     return glarea
+
+
+def get_DISPLAY_MODE(want_alpha=True, double_buffered=True):
+    #MODE_DEPTH
+    if want_alpha:
+        mode = MODE_RGBA | MODE_ALPHA
+    else:
+        mode = MODE_RGB
+    if double_buffered:
+        mode = mode | MODE_DOUBLE
+    else:
+        mode = mode | MODE_SINGLE
+    return mode
+
+
+MODE_STRS = {
+    MODE_RGB         : "RGB",
+    MODE_RGBA        : "RGBA",
+    MODE_ALPHA       : "ALPHA",
+    MODE_DEPTH       : "DEPTH",
+    MODE_DOUBLE      : "DOUBLE",
+    MODE_SINGLE      : "SINGLE",
+    }
+
+def get_MODE_names(mode):
+    global FRIENDLY_MODE_NAMES
+    friendly_modes = [v for k,v in FRIENDLY_MODE_NAMES.items() if k>0 and (k&mode)==k]
+    #special case for single (value is zero!)
+    if not (mode&MODE_DOUBLE==MODE_DOUBLE):
+        friendly_modes.append("SINGLE")
+    return friendly_modes

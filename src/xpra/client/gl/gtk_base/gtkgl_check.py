@@ -1,51 +1,33 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.client.gl.gl_check import check_PyOpenGL_support, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER, DOUBLE_BUFFERED, gl_check_error
+from xpra.gtk_common.gtk_util import VISUAL_NAMES, BYTE_ORDER_NAMES
+from xpra.client.gl.gtk_base.gtk_compat import get_DISPLAY_MODE, get_MODE_names
+from xpra.client.gl.gl_check import check_PyOpenGL_support, gl_check_error, GL_ALPHA_SUPPORTED, CAN_DOUBLE_BUFFER
 
 from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("opengl")
 
 
-TEST_GTKGL_RENDERING = envbool("XPRA_TEST_GTKGL_RENDERING", 1)
-
-from xpra.gtk_common.gtk_util import STATIC_GRAY, GRAYSCALE, STATIC_COLOR, PSEUDO_COLOR, TRUE_COLOR, DIRECT_COLOR
-VISUAL_NAMES = {
-                STATIC_GRAY      : "STATIC_GRAY",
-                GRAYSCALE        : "GRAYSCALE",
-                STATIC_COLOR     : "STATIC_COLOR",
-                PSEUDO_COLOR     : "PSEUDO_COLOR",
-                TRUE_COLOR       : "TRUE_COLOR",
-                DIRECT_COLOR     : "DIRECT_COLOR",
-                }
-
-from xpra.gtk_common.gtk_util import LSB_FIRST, MSB_FIRST
-VISUAL_TYPES = {
-                LSB_FIRST   : "LSB",
-                MSB_FIRST   : "MSB",
-                }
-
-from xpra.client.gl.gtk_base.gtk_compat import MODE_RGBA, MODE_ALPHA, MODE_RGB, MODE_DOUBLE, MODE_SINGLE, MODE_DEPTH
+TEST_GTKGL_RENDERING = envbool("XPRA_TEST_GTKGL_RENDERING", True)
 
 
 def get_visual_name(visual):
     if not visual:
         return ""
-    global VISUAL_NAMES
     return VISUAL_NAMES.get(visual.type, "unknown")
 
 def get_visual_byte_order(visual):
     if not visual:
         return ""
-    global VISUAL_TYPES
-    return VISUAL_TYPES.get(visual.byte_order, "unknown")
+    return BYTE_ORDER_NAMES.get(visual.byte_order, "unknown")
 
 def visual_to_str(visual):
     if not visual:
@@ -57,79 +39,6 @@ def visual_to_str(visual):
     for k in ("bits_per_rgb", "depth"):
         d[k] = getattr(visual, k)
     return str(d)
-
-def get_DISPLAY_MODE(want_alpha=GL_ALPHA_SUPPORTED):
-    #MODE_DEPTH
-    if want_alpha:
-        mode = MODE_RGBA | MODE_ALPHA
-    else:
-        mode = MODE_RGB
-    if DOUBLE_BUFFERED:
-        mode = mode | MODE_DOUBLE
-    else:
-        mode = mode | MODE_SINGLE
-    return mode
-
-FRIENDLY_MODE_NAMES = {
-                       MODE_RGB         : "RGB",
-                       MODE_RGBA        : "RGBA",
-                       MODE_ALPHA       : "ALPHA",
-                       MODE_DEPTH       : "DEPTH",
-                       MODE_DOUBLE      : "DOUBLE",
-                       MODE_SINGLE      : "SINGLE",
-                       }
-
-def get_MODE_names(mode):
-    global FRIENDLY_MODE_NAMES
-    friendly_modes = [v for k,v in FRIENDLY_MODE_NAMES.items() if k>0 and (k&mode)==k]
-    #special case for single (value is zero!)
-    if not (mode&MODE_DOUBLE==MODE_DOUBLE):
-        friendly_modes.append("SINGLE")
-    return friendly_modes
-
-
-_version_warning_shown = False
-#support for memory views requires Python 2.7 and PyOpenGL 3.1
-def is_pyopengl_memoryview_safe(pyopengl_version, accel_version):
-    if accel_version is not None and pyopengl_version!=accel_version:
-        #mismatch is not safe!
-        return False
-    vsplit = pyopengl_version.split('.')
-    if vsplit[:2]<['3','1']:
-        #requires PyOpenGL >= 3.1, earlier versions will not work
-        return False
-    if vsplit[:2]>=['3','2']:
-        #assume that newer versions are OK too
-        return True
-    #at this point, we know we have a 3.1.x version, but which one?
-    if len(vsplit)<3:
-        #not enough parts to know for sure, assume it's not supported
-        return False
-    micro = vsplit[2]
-    #ie: '0', '1' or '0b2'
-    if micro=='0':
-        return True     #3.1.0 is OK
-    if micro>='1':
-        return True     #3.1.1 onwards should be too
-    return False        #probably something like '0b2' which is broken
-
-
-def check_functions(*functions):
-    missing = []
-    available = []
-    for x in functions:
-        try:
-            name = x.__name__
-        except:
-            name = str(x)
-        if not bool(x):
-            missing.append(name)
-        else:
-            available.append(name)
-    if len(missing)>0:
-        gl_check_error("some required OpenGL functions are not available: %s" % (", ".join(missing)))
-    else:
-        log("All the required OpenGL functions are available: %s " % (", ".join(available)))
 
 
 #sanity checks: OpenGL version and fragment program support:
@@ -152,16 +61,19 @@ def check_support(force_enable=False, check_colormap=False):
     #this will import gtk.gtkgl / gdkgl or gi.repository.GtkGLExt / GdkGLExt:
     try:
         from xpra.client.gl.gtk_base.gtk_compat import get_info, gdkgl, Config_new_by_mode, GLDrawingArea
+        assert GLDrawingArea
     except RuntimeError as e:
         gl_check_error(str(e))
         return {}
     props.update(get_info())
-    display_mode = get_DISPLAY_MODE()
-    glconfig = Config_new_by_mode(display_mode)
-    if glconfig is None and CAN_DOUBLE_BUFFER:
-        log("trying to toggle double-buffering")
-        display_mode &= ~MODE_DOUBLE
-        glconfig = Config_new_by_mode(display_mode)
+    for want_alpha in (GL_ALPHA_SUPPORTED, not GL_ALPHA_SUPPORTED):
+        for double_buffered in (CAN_DOUBLE_BUFFER, not CAN_DOUBLE_BUFFER):
+            display_mode = get_DISPLAY_MODE(want_alpha, double_buffered)
+            log("get_DISPLAY_MODE(%s, %s)=%s", want_alpha, double_buffered)
+            glconfig = Config_new_by_mode(display_mode)
+            log("Config_new_by_mode(%s)=%s", display_mode, glconfig)
+            if glconfig:
+                break
     if not glconfig:
         gl_check_error("cannot setup an OpenGL context")
         return {}
@@ -197,64 +109,69 @@ def check_support(force_enable=False, check_colormap=False):
     log("GL props=%s", props)
 
     if TEST_GTKGL_RENDERING:
-        log("testing gtkgl rendering")
-        from xpra.client.gl.gl_window_backing_base import paint_context_manager
-        try:
-            with paint_context_manager:
-                from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
-                gtk = import_gtk()
-                assert gdkgl.query_extension()
-                glext, w = None, None
-                try:
-                    #ugly code for win32 and others (virtualbox broken GL drivers)
-                    #for getting a GL drawable and context: we must use a window...
-                    #(which we do not even show on screen)
-                    #
-                    #here is the old simpler alternative which does not work on some platforms:
-                    # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
-                    # gldrawable = glext.set_gl_capability(glconfig)
-                    # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
-                    w = gtk.Window()
-                    w.set_decorated(False)
-                    vbox = gtk.VBox()
-                    glarea = GLDrawingArea(glconfig)
-                    glarea.set_size_request(32, 32)
-                    vbox.add(glarea)
-                    vbox.show_all()
-                    w.add(vbox)
-                    #we don't need to actually show the window!
-                    #w.show_all()
-                    glarea.realize()
-                    gdk_window_process_all_updates()
-
-                    gl_props = check_GL_support(glarea, force_enable)
-
-                    if check_colormap:
-                        s = w.get_screen()
-                        for x in ("rgb_visual", "rgba_visual", "system_visual"):
-                            try:
-                                visual = getattr(s, "get_%s" % x)()
-                                gl_props[x] = visual_to_str(visual)
-                            except:
-                                pass
-                        #i = 0
-                        #for v in s.list_visuals():
-                        #    gl_props["visual[%s]" % i] = visual_to_str(v)
-                        #    i += 1
-                finally:
-                    if w:
-                        w.destroy()
-                    del glext, glconfig
-        except Exception as e:
-            log("check_support failed", exc_info=True)
-            log.error("Error: gtkgl rendering failed its sanity checks:")
-            log.error(" %s", e)
-            return {}
-        else:
-            props.update(gl_props)
+        gl_props = test_gtkgl_rendering(gdkgl, glconfig, force_enable, check_colormap)
+        props.update(gl_props)
     else:
         log("gtkgl rendering test skipped")
     return props
+
+def test_gtkgl_rendering(gdkgl, glconfig, force_enable=False, check_colormap=False):
+    log("testing gtkgl rendering")
+    from xpra.client.gl.gl_window_backing_base import paint_context_manager
+    from xpra.client.gl.gtk_base.gtk_compat import gdkgl, GLDrawingArea
+    gl_props = {}
+    try:
+        with paint_context_manager:
+            from xpra.gtk_common.gtk_util import import_gtk, gdk_window_process_all_updates
+            gtk = import_gtk()
+            assert gdkgl.query_extension()
+            glext, w = None, None
+            try:
+                #ugly code for win32 and others (virtualbox broken GL drivers)
+                #for getting a GL drawable and context: we must use a window...
+                #(which we do not even show on screen)
+                #
+                #here is the old simpler alternative which does not work on some platforms:
+                # glext = gtk.gdkgl.ext(gdk.Pixmap(gdk.get_default_root_window(), 1, 1))
+                # gldrawable = glext.set_gl_capability(glconfig)
+                # glcontext = gtk.gdkgl.Context(gldrawable, direct=True)
+                w = gtk.Window()
+                w.set_decorated(False)
+                vbox = gtk.VBox()
+                glarea = GLDrawingArea(glconfig)
+                glarea.set_size_request(32, 32)
+                vbox.add(glarea)
+                vbox.show_all()
+                w.add(vbox)
+                #we don't need to actually show the window!
+                #w.show_all()
+                glarea.realize()
+                gdk_window_process_all_updates()
+
+                gl_props = check_GL_support(glarea, force_enable)
+
+                if check_colormap:
+                    s = w.get_screen()
+                    for x in ("rgb_visual", "rgba_visual", "system_visual"):
+                        try:
+                            visual = getattr(s, "get_%s" % x)()
+                            gl_props[x] = visual_to_str(visual)
+                        except:
+                            pass
+                    #i = 0
+                    #for v in s.list_visuals():
+                    #    gl_props["visual[%s]" % i] = visual_to_str(v)
+                    #    i += 1
+            finally:
+                if w:
+                    w.destroy()
+                del glext, glconfig
+    except Exception as e:
+        log("check_support failed", exc_info=True)
+        log.error("Error: gtkgl rendering failed its sanity checks:")
+        log.error(" %s", e)
+        return {}
+    return gl_props
 
 
 def main(force_enable=False):
