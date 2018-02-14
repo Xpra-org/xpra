@@ -55,7 +55,7 @@ PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
-HTTP_UNSUPORTED = """<head>
+HTTP_UNSUPORTED = b"""<head>
 <title>Error response</title>
 </head>
 <body>
@@ -745,7 +745,7 @@ class ServerCore(object):
         try:
             sock.settimeout(1)
             #default to plain text:
-            packet_data = "disconnect: connection failed, %s?\n" % msg
+            packet_data = b"disconnect: connection failed, %s?\n" % strtobytes(msg)
             if network_protocol=="xpra":
                 #try xpra packet format:
                 packet_data = pack_one_packet(["disconnect", "invalid protocol for this port"]) or packet_data
