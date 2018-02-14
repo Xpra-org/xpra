@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -353,7 +353,10 @@ if is_gtk3():
     gtk.combo_box_new_text = gtk.ComboBoxText
 
     class OptionMenu(gtk.MenuButton):
-        pass
+        def set_menu(self, menu):
+            return self.set_popup(menu)
+        def get_menu(self):
+            return self.get_popup()
 
     gdk_window_process_all_updates = gdk.Window.process_all_updates
     def gtk_main():
@@ -652,6 +655,21 @@ GRAB_STATUS_STRING = {
                       GRAB_NOT_VIEWABLE     : "NOT_VIEWABLE",
                       GRAB_FROZEN           : "FROZEN",
                       }
+
+VISUAL_NAMES = {
+    STATIC_GRAY      : "STATIC_GRAY",
+    GRAYSCALE        : "GRAYSCALE",
+    STATIC_COLOR     : "STATIC_COLOR",
+    PSEUDO_COLOR     : "PSEUDO_COLOR",
+    TRUE_COLOR       : "TRUE_COLOR",
+    DIRECT_COLOR     : "DIRECT_COLOR",
+    }
+
+BYTE_ORDER_NAMES = {
+                LSB_FIRST   : "LSB",
+                MSB_FIRST   : "MSB",
+                }
+
 
 
 class TrayCheckMenuItem(gtk.CheckMenuItem):
