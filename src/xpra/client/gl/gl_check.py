@@ -8,7 +8,7 @@
 import sys
 import logging
 from xpra.util import envbool
-from xpra.os_util import OSX, WIN32, PYTHON3
+from xpra.os_util import OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST
 log = Logger("opengl")
@@ -110,8 +110,8 @@ def check_PyOpenGL_support(force_enable):
         if gl_version_str is None:
             gl_check_error("OpenGL version is missing - cannot continue")
             return  {}
-        gl_major = int(gl_version_str[0])
-        gl_minor = int(gl_version_str[2])
+        gl_major = int(bytestostr(gl_version_str)[0])
+        gl_minor = int(bytestostr(gl_version_str)[2])
         props["opengl"] = gl_major, gl_minor
         MIN_VERSION = (1,1)
         if (gl_major, gl_minor) < MIN_VERSION:
