@@ -3158,78 +3158,83 @@ class UIXpraClient(XpraClientBase):
             log("fake_send%s", args)
         #now replace all the windows with new ones:
         for wid, window in self._id_to_window.items():
-            if not window:
-                continue
-            if window.is_tray():
-                #trays are never GL enabled, so don't bother re-creating them
-                #might cause problems anyway if we did
-                #just send a configure event in case they are moved / scaled
-                window.send_configure()
-                continue
-            #ignore packets from old window:
-            window.send = fake_send
-            #copy attributes:
-            x, y = window._pos
-            ww, wh = window._size
-            if new_size_fn:
-                ww, wh = new_size_fn(ww, wh)
-            try:
-                bw, bh = window._backing.size
-            except:
-                bw, bh = ww, wh
-            client_properties = window._client_properties
-            resize_counter = window._resize_counter
-            metadata = window._metadata
-            override_redirect = window._override_redirect
-            backing = window._backing
-            current_icon = window._current_icon
-            delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
-            try:
-                if backing:
-                    delta_pixel_data = backing._delta_pixel_data
-                    video_decoder = backing._video_decoder
-                    csc_decoder = backing._csc_decoder
-                    decoder_lock = backing._decoder_lock
-                    if decoder_lock:
-                        decoder_lock.acquire()
-                        windowlog("reinit_windows() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
-                        backing._video_decoder = None
-                        backing._csc_decoder = None
-                        backing._decoder_lock = None
-
-                #now we can unmap it:
-                self.destroy_window(wid, window)
-                #explicitly tell the server we have unmapped it:
-                #(so it will reset the video encoders, etc)
-                if not window.is_OR():
-                    self.send("unmap-window", wid)
-                try:
-                    del self._id_to_window[wid]
-                except:
-                    pass
-                try:
-                    del self._window_to_id[window]
-                except:
-                    pass
-                #create the new window,
-                #which should honour the new state of the opengl_enabled flag if that's what we changed,
-                #or the new dimensions, etc
-                window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
-                window._resize_counter = resize_counter
-                #if we had a backing already,
-                #restore the attributes we had saved from it
-                if backing:
-                    backing = window._backing
-                    backing._delta_pixel_data = delta_pixel_data
-                    backing._video_decoder = video_decoder
-                    backing._csc_decoder = csc_decoder
-                    backing._decoder_lock = decoder_lock
-                if current_icon:
-                    window.update_icon(current_icon)
-            finally:
-                if decoder_lock:
-                    decoder_lock.release()
+            if window:
+                self.reinit_window(wid, window, new_size_fn)
         self.send_refresh_all()
+
+    def reinit_window(self, wid, window, new_size_fn=None):
+        geomlog("reinit_window%s", (wid, window, new_size_fn))
+        def fake_send(*args):
+            log("fake_send%s", args)
+        if window.is_tray():
+            #trays are never GL enabled, so don't bother re-creating them
+            #might cause problems anyway if we did
+            #just send a configure event in case they are moved / scaled
+            window.send_configure()
+            return
+        #ignore packets from old window:
+        window.send = fake_send
+        #copy attributes:
+        x, y = window._pos
+        ww, wh = window._size
+        if new_size_fn:
+            ww, wh = new_size_fn(ww, wh)
+        try:
+            bw, bh = window._backing.size
+        except:
+            bw, bh = ww, wh
+        client_properties = window._client_properties
+        resize_counter = window._resize_counter
+        metadata = window._metadata
+        override_redirect = window._override_redirect
+        backing = window._backing
+        current_icon = window._current_icon
+        delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
+        try:
+            if backing:
+                delta_pixel_data = backing._delta_pixel_data
+                video_decoder = backing._video_decoder
+                csc_decoder = backing._csc_decoder
+                decoder_lock = backing._decoder_lock
+                if decoder_lock:
+                    decoder_lock.acquire()
+                    windowlog("reinit_windows() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
+                    backing._video_decoder = None
+                    backing._csc_decoder = None
+                    backing._decoder_lock = None
+
+            #now we can unmap it:
+            self.destroy_window(wid, window)
+            #explicitly tell the server we have unmapped it:
+            #(so it will reset the video encoders, etc)
+            if not window.is_OR():
+                self.send("unmap-window", wid)
+            try:
+                del self._id_to_window[wid]
+            except:
+                pass
+            try:
+                del self._window_to_id[window]
+            except:
+                pass
+            #create the new window,
+            #which should honour the new state of the opengl_enabled flag if that's what we changed,
+            #or the new dimensions, etc
+            window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+            window._resize_counter = resize_counter
+            #if we had a backing already,
+            #restore the attributes we had saved from it
+            if backing:
+                backing = window._backing
+                backing._delta_pixel_data = delta_pixel_data
+                backing._video_decoder = video_decoder
+                backing._csc_decoder = csc_decoder
+                backing._decoder_lock = decoder_lock
+            if current_icon:
+                window.update_icon(current_icon)
+        finally:
+            if decoder_lock:
+                decoder_lock.release()
 
 
     def get_group_leader(self, _wid, _metadata, _override_redirect):
