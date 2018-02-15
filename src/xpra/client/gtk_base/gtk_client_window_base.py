@@ -1030,12 +1030,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._window_workspace==window_workspace and self._desktop_workspace==desktop_workspace:
             #no change
             return
-        #we can tell the server using a "buffer-refresh" packet instead
-        #and also take care of tweaking the batch config
-        client_properties = {}
-        if window_workspace is not None:
-            client_properties = {"workspace" : window_workspace}
-        options = {"refresh-now" : False}               #no need to refresh it
         suspend_resume = None
         if desktop_workspace<0 or window_workspace is None:
             #maybe the property has been cleared? maybe the window is being scrubbed?
@@ -1054,9 +1048,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             assert desktop_workspace==window_workspace
             workspacelog("window was on a different workspace, resetting its batch delay (was desktop: %s, window: %s, now both on %s)", wn(self._window_workspace), wn(self._desktop_workspace), wn(desktop_workspace))
             suspend_resume = False
-        self._client.control_refresh(self._id, suspend_resume, refresh=False, options=options, client_properties=client_properties)
         self._window_workspace = window_workspace
         self._desktop_workspace = desktop_workspace
+        client_properties = {}
+        if window_workspace is not None:
+            client_properties = {"workspace" : window_workspace}
+        self.send_control_refresh(suspend_resume, client_properties)
+
+    def send_control_refresh(self, suspend_resume, client_properties={}, refresh=False):
+        statelog("send_control_refresh%s", (suspend_resume, client_properties, refresh))
+        #we can tell the server using a "buffer-refresh" packet instead
+        #and also take care of tweaking the batch config
+        options = {"refresh-now" : refresh}            #no need to refresh it
+        self._client.control_refresh(self._id, suspend_resume, refresh=refresh, options=options, client_properties=client_properties)
 
     def get_workspace_count(self):
         if not self._can_set_workspace:

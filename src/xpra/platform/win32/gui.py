@@ -407,6 +407,18 @@ def fixup_window_style(self, *_args):
             SetWindowLongW(hwnd, win32con.GWL_STYLE, style)
         else:
             log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
+        ws_visible = bool(style & win32con.WS_VISIBLE)
+        cur_ws_visible = getattr(self, "_ws_visible", True)
+        iconified = getattr(self, "_iconified", False)
+        if not iconified and ws_visible!=cur_ws_visible:
+            log("window changed visibility to: %s", ws_visible)
+            setattr(self, "_ws_visible", ws_visible)
+            if ws_visible:
+                #with opengl, we need a buffer refresh
+                #(just do it in all cases, easier):
+                self.send_control_refresh(False, refresh=True)
+            else:
+                self.send_control_refresh(True)
     except:
         log.warn("failed to fixup window style", exc_info=True)
 
