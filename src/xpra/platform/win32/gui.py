@@ -39,6 +39,7 @@ from xpra.os_util import PYTHON2, PYTHON3
 
 CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
+REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
 
 
@@ -408,15 +409,19 @@ def fixup_window_style(self, *_args):
         else:
             log("fixup_window_style() unchanged style %s (%#x) on window %#x", style_str(style), style, hwnd)
         ws_visible = bool(style & win32con.WS_VISIBLE)
+        client = self._client
         cur_ws_visible = getattr(self, "_ws_visible", True)
         iconified = getattr(self, "_iconified", False)
-        if not iconified and ws_visible!=cur_ws_visible:
+        been_mapped = getattr(self, "_been_mapped", False)
+        log("fixup_window_style() ws_visible=%s (was %s), iconified=%s, been_mapped=%s", ws_visible, cur_ws_visible, iconified, been_mapped)
+        if client and been_mapped and not iconified and ws_visible!=cur_ws_visible:
             log("window changed visibility to: %s", ws_visible)
             setattr(self, "_ws_visible", ws_visible)
             if ws_visible:
-                #with opengl, we need a buffer refresh
-                #(just do it in all cases, easier):
-                self.send_control_refresh(False, refresh=True)
+                #with opengl, we need to re-create the window (PITA):
+                if REINIT_VISIBLE_WINDOWS:
+                    client.reinit_window(self._id, self)
+                self.send_control_refresh(False)
             else:
                 self.send_control_refresh(True)
     except:
