@@ -13,7 +13,12 @@ from Cocoa import (
     NSOpenGLPFAAccumSize, NSOpenGLPFAStencilSize, NSOpenGLPFAAuxBuffers) #@UnresolvedImport
 
 from xpra.gtk_common.gtk_util import make_temp_window
-from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr   #@UnresolvedImport
+from xpra.gtk_common.gobject_compat import is_gtk3
+if is_gtk3():
+    from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr   #@UnresolvedImport
+else:
+    def get_nsview_ptr(window):
+        return window.nsview
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 
 
