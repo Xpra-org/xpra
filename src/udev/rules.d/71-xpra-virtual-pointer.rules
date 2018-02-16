@@ -1,3 +1,3 @@
 # allow xpra to use fine grained scrolling
 
-ACTION=="add|change", ATTRS{name}=="Xpra Virtual Pointer*", PROGRAM="/bin/udev_product_version", ENV{MOUSE_WHEEL_CLICK_ANGLE}="1", ENV{MOUSE_WHEEL_CLICK_COUNT}="360", MODE="0660", OWNER="%c", GROUP="xpra"
+ACTION=="add|change", ATTRS{name}=="Xpra Virtual Pointer*", PROGRAM="/bin/xpra_udev_product_version", ENV{MOUSE_WHEEL_CLICK_ANGLE}="1", ENV{MOUSE_WHEEL_CLICK_COUNT}="360", MODE="0660", OWNER="%c", GROUP="xpra"

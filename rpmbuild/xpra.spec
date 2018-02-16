@@ -523,7 +523,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common-server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
-%{_bindir}/udev_product_version
+%{_bindir}/xpra_udev_product_version
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder

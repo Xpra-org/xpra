@@ -1456,7 +1456,7 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/udev_product_version", "scripts/xpra_signal_listener"]
+    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
     if POSIX and not OSX:
         libexec_scripts = []
         from xpra.os_util import is_Fedora, is_CentOS

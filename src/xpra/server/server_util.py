@@ -338,7 +338,7 @@ def create_uinput_pointer_device(uuid, uid):
     #BUS_VIRTUAL = 0x06
     VENDOR = 0xffff
     PRODUCT = 0x1000
-    #our udev_product_version script will use the version attribute to set
+    #our xpra_udev_product_version script will use the version attribute to set
     #the udev OWNER value
     VERSION = uid
     name = "Xpra Virtual Pointer %s" % uuid
