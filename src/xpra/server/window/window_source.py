@@ -941,7 +941,7 @@ class WindowSource(object):
             return "png"
         if "jpeg" in self.common_encodings and ww>=2 and wh>=2:
             return "jpeg"
-        if "jpeg2000" in self.common_encodings and ww>=32 and ww>=2 and wh>=2:
+        if "jpeg2000" in self.common_encodings and ww>=32 and wh>=32:
             return "jpeg2000"
         return [x for x in self.common_encodings if x!="rgb"][0]
 
