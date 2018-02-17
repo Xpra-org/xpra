@@ -114,8 +114,11 @@ class GlobalPerformanceStatistics(object):
             #weighted average of the send speed over the last minute:
             acss = int(calculate_size_weighted_average(css)[0])
             latest_ctime = self.congestion_send_speed[-1][0]
-            #as the last event recedes in the past, increase limit:
-            acss *= 1+now-latest_ctime
+            elapsed = now-latest_ctime
+            #require at least one recent event:
+            if elapsed<30:
+                #as the last event recedes in the past, increase limit:
+                acss *= 1+elapsed
         self.avg_congestion_send_speed = int(acss)
         #how often we get congestion events:
         #first chunk it into second intervals
