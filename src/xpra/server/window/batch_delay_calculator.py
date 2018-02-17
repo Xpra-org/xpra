@@ -286,7 +286,7 @@ def get_target_quality(window_dimensions, batch, global_statistics, statistics, 
         pixl5 = sum(v for lim,v in damage_pixel_count.items() if lim<=5)
         pixn5 = sum(v for lim,v in damage_pixel_count.items() if lim>5)
         pctpixdamaged = float(pixl5)/(ww*wh)
-        log("get_target_quality: target=%s (window %ix%i) pctpixdamaged=%i%%, dpc=%s", target, ww, wh, pctpixdamaged*100, damage_pixel_count)
+        log("get_target_quality: target=%i%% (window %ix%i) pctpixdamaged=%i%%, dpc=%s", 100*target, ww, wh, pctpixdamaged*100, damage_pixel_count)
         if pctpixdamaged<=0.5:
             target = min(1.0, target + (1.0-pctpixdamaged*2))
         if pixl5<pixn5:
