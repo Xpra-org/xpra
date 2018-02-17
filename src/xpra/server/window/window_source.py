@@ -1375,7 +1375,7 @@ class WindowSource(object):
             self.soft_timer = self.timeout_add(int(self.soft_expired*delay), self.delayed_region_soft_timeout)
         else:
             late_pct = 2*100*self.soft_expired
-            self.networksend_congestion_event("soft-expire limit", late_pct)
+            self.networksend_congestion_event("soft-expire limit: %ims, 2/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
