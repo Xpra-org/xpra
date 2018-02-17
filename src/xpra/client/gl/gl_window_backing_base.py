@@ -1037,21 +1037,27 @@ class GLWindowBackingBase(WindowBackingBase):
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
         assert len(rowstrides)==3 and len(img_data)==3
-        for texture, index in ((GL_TEXTURE0, TEX_Y), (GL_TEXTURE1, TEX_U), (GL_TEXTURE2, TEX_V)):
+        for texture, index, tex_name in ((GL_TEXTURE0, TEX_Y, "Y"), (GL_TEXTURE1, TEX_U, "U"), (GL_TEXTURE2, TEX_V, "V")):
             (div_w, div_h) = divs[index]
+            w = width//div_w
+            h = height//div_h
+            if w==0 or h==0:
+                log.error("Error: zero dimension %ix%i for %s planar texture %s", w, h, pixel_format, tex_name)
+                log.error(" screen update %s dropped", (x, y, width, height))
+                continue
             glActiveTexture(texture)
 
             target = GL_TEXTURE_RECTANGLE_ARB
             glBindTexture(target, self.textures[index])
-            self.set_alignment(width//div_w, rowstrides[index], "YUV"[index])
+            self.set_alignment(w, rowstrides[index], tex_name)
             upload, pixel_data = self.pixels_for_upload(img_data[index])
-            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], width//div_w, height//div_h, len(pixel_data), upload)
+            log("texture %s: div=%s, rowstride=%s, %sx%s, data=%s bytes, upload=%s", index, divs[index], rowstrides[index], w, h, len(pixel_data), upload)
             glTexParameteri(target, GL_TEXTURE_BASE_LEVEL, 0)
             try:
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except:
                 pass
-            glTexSubImage2D(target, 0, 0, 0, width//div_w, height//div_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
+            glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
