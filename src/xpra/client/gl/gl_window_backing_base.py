@@ -878,7 +878,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        if JPEG_YUV:
+        if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
             self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
@@ -889,7 +889,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         subsampling = options.strget("subsampling")
         has_alpha = options.boolget("has_alpha")
-        if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha:
+        if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
             self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
