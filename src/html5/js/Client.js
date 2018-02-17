@@ -1217,10 +1217,6 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 	// so use win.client instead of `this` to refer to the client
 	var geom = win.get_internal_geometry();
 	var wid = win.wid;
-
-	if (!win.override_redirect && !win.tray) {
-		win.client._window_set_focus(win);
-	}
 	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
 }
 
