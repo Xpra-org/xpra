@@ -1381,7 +1381,7 @@ class WindowSource(object):
             celapsed = monotonic_time()-self.global_statistics.last_congestion_time
             if celapsed<10:
                 late_pct = 2*100*self.soft_expired
-                self.networksend_congestion_event("soft-expire limit: %ims, 2/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
+                self.networksend_congestion_event("soft-expire limit: %ims, %i/%i" % (delay, self.soft_expired, self.max_soft_expired), late_pct)
             #NOTE: this should never happen...
             #the region should now get sent when we eventually receive the pending ACKs
             #but if somehow they go missing... clean it up from a timeout:
