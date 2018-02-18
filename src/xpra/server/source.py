@@ -480,6 +480,7 @@ class ServerSource(FileTransferHandler):
         self.wants_default_cursor = False
         #sound props:
         self.pulseaudio_id = None
+        self.pulseaudio_cookie_hash = None
         self.pulseaudio_server = None
         self.sound_decoders = ()
         self.sound_encoders = ()
@@ -872,6 +873,7 @@ class ServerSource(FileTransferHandler):
 
         #sound stuff:
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
+        self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash")
         self.pulseaudio_server = c.strget("sound.pulseaudio.server")
         self.codec_full_names = c.boolget("sound.codec-full-names")
         try:
@@ -889,8 +891,8 @@ class ServerSource(FileTransferHandler):
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         av_sync = c.boolget("av-sync")
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
-        soundlog("pulseaudio id=%s, server=%s, full-names=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
-                 self.pulseaudio_id, self.pulseaudio_server, self.codec_full_names, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
+        soundlog("pulseaudio id=%s, cookie-hash=%s, server=%s, full-names=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
+                 self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server, self.codec_full_names, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -1112,44 +1114,84 @@ class ServerSource(FileTransferHandler):
         log("startup_complete()")
         self.send("startup-complete")
 
+
+    ######################################################################
+    # audio:
+    def audio_loop_check(self, mode="speaker"):
+        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
+        if ALLOW_SOUND_LOOP:
+            return True
+        if self.machine_id:
+            if self.machine_id!=get_machine_id():
+                #not the same machine, so OK
+                return True
+            if self.uuid!=get_user_uuid():
+                #different user, assume different pulseaudio server
+                return True
+        #check pulseaudio id if we have it
+        pulseaudio_id = self.sound_properties.get("pulseaudio", {}).get("id")
+        pulseaudio_cookie_hash = self.sound_properties.get("pulseaudio", {}).get("cookie-hash")
+        if pulseaudio_id and self.pulseaudio_id:
+            if self.pulseaudio_id!=pulseaudio_id:
+                return True
+        elif pulseaudio_cookie_hash and self.pulseaudio_cookie_hash:
+            if self.pulseaudio_cookie_hash!=pulseaudio_cookie_hash:
+                return True
+        else:
+            #no cookie or id, so probably not a pulseaudio setup,
+            #hope for the best:
+            return True
+        msgs = loop_warning_messages(mode)
+        summary = msgs[0]
+        body = "\n".join(msgs[1:])
+        try:
+            from xpra.platform.paths import get_icon_filename
+            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID, parse_image_path
+        except ImportError as e:
+            notifylog("audio_loop_warning(%s) %s", mode, e)
+        else:
+            nid = XPRA_AUDIO_NOTIFICATION_ID
+            icon = parse_image_path(get_icon_filename(mode))
+            self.notify("", nid, "Xpra", 0, "", summary, body, [], {}, 10*1000, icon)
+        log.warn("Warning: %s", summary)
+        for x in msgs[1:]:
+            log.warn(" %s", x)
+        return False
+        
     def start_sending_sound(self, codec=None, volume=1.0, new_stream=None, new_buffer=None, skip_client_codec_check=False):
         assert self.hello_sent
         soundlog("start_sending_sound(%s)", codec)
-        if self.suspended:
-            soundlog.warn("Warning: not starting sound whilst in suspended state")
-            return None
-        if not self.supports_speaker:
-            soundlog.error("Error sending sound: support not enabled on the server")
-            return None
-        if self.sound_source:
-            soundlog.error("Error sending sound: forwarding already in progress")
-            return None
-        if not self.sound_receive:
-            soundlog.error("Error sending sound: support is not enabled on the client")
-            return None
-        if not self.codec_full_names:
-            codec = NEW_CODEC_NAMES.get(codec, codec)
-        if codec is None:
-            codecs = [x for x in self.sound_decoders if x in self.speaker_codecs]
-            if not codecs:
-                soundlog.error("Error sending sound: no codecs in common")
-                return None
-            codec = codecs[0]
-        elif codec not in self.speaker_codecs:
-            soundlog.warn("Warning: invalid codec specified: %s", codec)
-            return None
-        elif (codec not in self.sound_decoders) and not skip_client_codec_check:
-            soundlog.warn("Error sending sound: invalid codec '%s'", codec)
-            soundlog.warn(" is not in the list of decoders supported by the client: %s", csv(self.sound_decoders))
-            return None
         ss = None
         try:
-            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
-            if self.machine_id and self.machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
-                #looks like we're on the same machine, verify it's a different user:
-                if self.uuid==get_user_uuid():
-                    loop_warning("speaker", self.uuid)
+            if self.suspended:
+                soundlog.warn("Warning: not starting sound whilst in suspended state")
+                return None
+            if not self.supports_speaker:
+                soundlog.error("Error sending sound: support not enabled on the server")
+                return None
+            if self.sound_source:
+                soundlog.error("Error sending sound: forwarding already in progress")
+                return None
+            if not self.sound_receive:
+                soundlog.error("Error sending sound: support is not enabled on the client")
+                return None
+            if not self.codec_full_names:
+                codec = NEW_CODEC_NAMES.get(codec, codec)
+            if codec is None:
+                codecs = [x for x in self.sound_decoders if x in self.speaker_codecs]
+                if not codecs:
+                    soundlog.error("Error sending sound: no codecs in common")
                     return None
+                codec = codecs[0]
+            elif codec not in self.speaker_codecs:
+                soundlog.warn("Warning: invalid codec specified: %s", codec)
+                return None
+            elif (codec not in self.sound_decoders) and not skip_client_codec_check:
+                soundlog.warn("Error sending sound: invalid codec '%s'", codec)
+                soundlog.warn(" is not in the list of decoders supported by the client: %s", csv(self.sound_decoders))
+                return None
+            if not self.audio_loop_check("speaker"):
+                return None
             from xpra.sound.wrapper import start_sending_sound
             plugins = self.sound_properties.strlistget("plugins", [])
             ss = start_sending_sound(plugins, self.sound_source_plugin, None, codec, volume, True, [codec], self.pulseaudio_server, self.pulseaudio_id)
@@ -1396,6 +1438,16 @@ class ServerSource(FileTransferHandler):
             self.stop_receiving_sound()
             return
         if not self.sound_sink:
+            if not self.audio_loop_check("microphone"):
+                #make a fake object so we don't fire the audio loop check warning repeatedly
+                from xpra.util import AdHocStruct
+                self.sound_sink = AdHocStruct()
+                self.sound_sink.codec = codec
+                def noop(*args):
+                    pass
+                self.sound_sink.add_data = noop
+                self.sound_sink.cleanup = noop
+                return
             try:
                 def sound_sink_error(*args):
                     soundlog("sound_sink_error%s", args)
@@ -1422,6 +1474,8 @@ class ServerSource(FileTransferHandler):
         self.sound_sink.add_data(data, metadata, packet_metadata)
 
 
+    ######################################################################
+    # a/v sync:
     def set_av_sync_delta(self, delta):
         avsynclog("set_av_sync_delta(%i)", delta)
         self.av_sync_delta = delta

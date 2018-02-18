@@ -1609,12 +1609,7 @@ class UIXpraClient(XpraClientBase):
                                "send"       : self.microphone_allowed,
                                "receive"    : self.speaker_allowed,
                                })
-            try:
-                from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
-                sound_caps.update(get_pa_info())
-            except Exception:
-                pass
-            updict(capabilities, "sound", sound_caps)
+            updict(capabilities, "sound", sound_caps, flatten_dicts=True)
             soundlog("sound capabilities: %s", sound_caps)
         #batch options:
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
@@ -2240,6 +2235,8 @@ class UIXpraClient(XpraClientBase):
         self.send("lock-toggle", self.client_lock)
 
 
+    ######################################################################
+    # webcam:
     def init_webcam(self, opts):
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
@@ -2471,7 +2468,8 @@ class UIXpraClient(XpraClientBase):
         finally:
             self.webcam_lock.release()
 
-
+    ######################################################################
+    # audio:
     def init_audio_tagging(self, tray_icon):
         if not POSIX:
             return
@@ -2534,6 +2532,18 @@ class UIXpraClient(XpraClientBase):
         soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         soundlog("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         soundlog("av-sync=%s", self.av_sync)
+        if POSIX:
+            try:
+                from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
+                pa_info = get_pa_info()
+                soundlog("pulseaudio info=%s", pa_info)
+                self.sound_properties.update(pa_info)
+            except ImportError as e:
+                soundlog.warn("Warning: no pulseaudio information available")
+                soundlog.warn(" %s", e)
+            except Exception:
+                soundlog.error("failed to add pulseaudio info", exc_info=True)
+
 
     def get_matching_codecs(self, local_codecs, server_codecs):
         matching_codecs = [x for x in local_codecs if x in server_codecs]
@@ -2547,6 +2557,34 @@ class UIXpraClient(XpraClientBase):
             log("no notifications")
         else:
             self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
+
+    def audio_loop_check(self, mode="speaker"):
+        from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
+        if ALLOW_SOUND_LOOP:
+            return True
+        if self._remote_machine_id:
+            if self._remote_machine_id!=get_machine_id():
+                #not the same machine, so OK
+                return True
+            if self._remote_uuid!=get_user_uuid():
+                #different user, assume different pulseaudio server
+                return True
+        #check pulseaudio id if we have it
+        pulseaudio_id = self.sound_properties.get("pulseaudio", {}).get("id")
+        if not pulseaudio_id or not self.server_pulseaudio_id:
+            #not available, assume no pulseaudio so no loop?
+            return True
+        if self.server_pulseaudio_id!=pulseaudio_id:
+            #different pulseaudio server
+            return True
+        msgs = loop_warning_messages(mode)
+        summary = msgs[0]
+        body = "\n".join(msgs[1:])
+        self.may_notify_audio(summary, body)
+        log.warn("Warning: %s", summary)
+        for x in msgs[1:]:
+            log.warn(" %s", x)
+        return False
 
     def no_matching_codec_error(self, forwarding="speaker", server_codecs=[], client_codecs=[]):
         summary = "Failed to start %s forwarding" % forwarding
@@ -2563,12 +2601,8 @@ class UIXpraClient(XpraClientBase):
         try:
             assert self.microphone_allowed, "microphone forwarding is disabled"
             assert self.server_sound_receive, "client support for receiving sound is disabled"
-            from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning
-            if self._remote_machine_id and self._remote_machine_id==get_machine_id() and not ALLOW_SOUND_LOOP:
-                #looks like we're on the same machine, verify it's a different user:
-                if self._remote_uuid==get_user_uuid():
-                    loop_warning("microphone", self._remote_uuid)
-                    return
+            if not self.audio_loop_check("microphone"):
+                return
             ss = self.sound_source
             if ss:
                 if ss.get_state()=="active":
@@ -2656,6 +2690,8 @@ class UIXpraClient(XpraClientBase):
                 return
             elif not self.server_sound_send:
                 log.error("Error receiving sound: support not enabled on the server")
+                return
+            if not self.audio_loop_check("speaker"):
                 return
             #choose a codec:
             matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_sound_encoders)
@@ -3144,14 +3180,6 @@ class UIXpraClient(XpraClientBase):
         for window in self._id_to_window.values():
             window.deiconify()
 
-
-    def reinit_window_icons(self):
-        #make sure the window icons are the ones we want:
-        iconlog("reinit_window_icons()")
-        for window in self._id_to_window.values():
-            reset_icon = getattr(window, "reset_icon", None)
-            if reset_icon:
-                reset_icon()
 
     def reinit_windows(self, new_size_fn=None):
         def fake_send(*args):

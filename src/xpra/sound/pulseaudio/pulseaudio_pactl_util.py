@@ -101,6 +101,14 @@ def get_default_sink():
 def get_pactl_server():
     return get_pactl_info_line(b"Server String:")
 
+def get_pulse_cookie_hash():
+    v = get_pactl_info_line(b"Cookie:")
+    try:
+        import hashlib
+        return strtobytes(hashlib.sha256(v).hexdigest())
+    except:
+        pass
+    return ""
 
 def get_pulse_server(may_start_it=True):
     xp = get_pulse_server_x11_property()
@@ -185,6 +193,7 @@ def get_info():
                                "found"     : bool(has_pa()),
                                "id"        : get_pulse_id(),
                                "server"    : get_pulse_server(False),
+                               "cookie-hash" : get_pulse_cookie_hash(),
                                }
             }
     log("pulseaudio_pactl_util.get_info()=%s", info)

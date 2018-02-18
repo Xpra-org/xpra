@@ -29,6 +29,9 @@ def get_pulse_server():
 def get_pulse_id():
     return ""
 
+def get_pulse_cookie_hash():
+    return ""
+
 def get_pactl_server():
     return ""
 

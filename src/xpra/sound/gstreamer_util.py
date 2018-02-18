@@ -720,7 +720,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
     #default to first one:
     device, device_name = tuple(devices.items())[0]
     log.info("using pulseaudio device:")
-    log.info(" '%s'", device_name)
+    log.info(" '%s'", bytestostr(device_name))
     return device
 
 def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None):
@@ -853,13 +853,13 @@ def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_de
     return gst_sound_source_plugin, options
 
 
-def loop_warning(mode="speaker", machine_id=""):
-    log.warn("Warning: cannot start %s forwarding:", mode)
-    log.warn(" user and server environment are identical,")
-    log.warn(" this would create a sound loop")
-    log.warn(" use XPRA_ALLOW_SOUND_LOOP=1 to force enable it")
-    if machine_id:
-        log(" '%s'", machine_id)
+def loop_warning_messages(mode="speaker"):
+    return [
+        "Cannot start %s forwarding:" % mode,
+        "client and server environment are identical,",
+        "this would be likely to create an audio feedback loop",
+        #" use XPRA_ALLOW_SOUND_LOOP=1 to force enable it",
+        ]
 
 
 def main():
