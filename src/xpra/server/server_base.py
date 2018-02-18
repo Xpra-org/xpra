@@ -716,7 +716,9 @@ class ServerBase(ServerCore):
         if bool(self.sound_properties):
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
-                self.sound_properties.update(get_pa_info())
+                pa_info = get_pa_info()
+                soundlog("pulseaudio info=%s", pa_info)
+                self.sound_properties.update(pa_info)
                 set_icon_path(get_icon_filename("xpra.png"))
             except ImportError as e:
                 if POSIX and not OSX:
