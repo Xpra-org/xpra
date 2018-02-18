@@ -1636,7 +1636,7 @@ class ServerSource(FileTransferHandler):
                                 "send"      : self.supports_speaker and len(self.speaker_codecs)>0,
                                 "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
                                 })
-            updict(capabilities, "sound", sound_props)
+            updict(capabilities, "sound", sound_props, flatten_dicts=True)
         if self.wants_encodings and self.encoding:
             capabilities["encoding"] = self.encoding
         if self.wants_features:
