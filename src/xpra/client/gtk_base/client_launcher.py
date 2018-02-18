@@ -33,7 +33,7 @@ from xpra.codecs.loader import PREFERED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, color_parse, \
                                     OptionMenu, choose_file, set_use_tray_workaround, window_defaults, imagebutton, \
                                     WIN_POS_CENTER, STATE_NORMAL, \
-                                    DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
+                                    DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
 from xpra.util import DEFAULT_PORT
 from xpra.os_util import thread, WIN32, OSX, PYTHON3
@@ -879,7 +879,7 @@ class ApplicationWindow:
 #on some platforms like win32, we don't have stdout
 #and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title):
-    md = gtk.MessageDialog(None, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
+    md = gtk.MessageDialog(None, DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
     def close_dialog(*_args):
