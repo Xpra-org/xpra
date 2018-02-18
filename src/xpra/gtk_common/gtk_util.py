@@ -1011,8 +1011,8 @@ def scaled_image(pixbuf, icon_size=None):
 def get_icon_from_file(filename):
     try:
         if not os.path.exists(filename):
-            log.warn("%s does not exist", filename)
-            return    None
+            log.warn("Warning: cannot load icon, '%s' does not exist", filename)
+            return None
         with open(filename, mode='rb') as f:
             data = f.read()
         loader = PixbufLoader()
