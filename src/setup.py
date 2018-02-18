@@ -1200,7 +1200,7 @@ if WIN32:
                 "gdk-pixbuf-2.0":    {
                     "2.10.0"    :   {
                         "loaders"   :
-                            ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp")]
+                            ["libpixbufloader-%s.dll" % x for x in ("ico", "jpeg", "svg", "bmp", "png",)]
                         },
                     },
                 })
