@@ -41,6 +41,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             new_Cursor_for_display, new_Cursor_from_pixbuf, icon_theme_get_default, \
             pixbuf_new_from_file, display_get_default, screen_get_default, get_pixbuf_from_data, \
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
+            DIALOG_MODAL, DESTROY_WITH_PARENT, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
             BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
 from xpra.client.ui_client_base import UIXpraClient
@@ -228,11 +229,14 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             return
         dialog = gtk.Dialog("Server Authentication",
                None,
-               gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-               (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,
-                gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+               DIALOG_MODAL | DIALOG_DESTROY_WITH_PARENT)
+        RESPONSE_REJECT = 1
+        RESPONSE_ACCEPT = 2
+        dialog.add_button(gtk.STOCK_CANCEL, RESPONSE_REJECT)
+        dialog.add_button(gtk.STOCK_OK,     RESPONSE_ACCEPT)
         def add(widget, padding=0):
-            a = gtk.Alignment(0.5, 0.5, 1, 1)
+            a = gtk.Alignment()
+            a.set(0.5, 0.5, 1, 1)
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
@@ -243,7 +247,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             password = password_input.get_text()
             dialog.hide()
             dialog.destroy()
-            if response!=gtk.RESPONSE_ACCEPT or not password:
+            if response!=RESPONSE_ACCEPT or not password:
                 self.quit(EXIT_PASSWORD_REQUIRED)
                 return
             self.send_challenge_reply(packet, password)
@@ -253,10 +257,11 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         add(title, 16)
         add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
         def password_activate(*_args):
-            handle_response(dialog, gtk.RESPONSE_ACCEPT)
-        password_input = gtk.Entry(max=255)
+            handle_response(dialog, RESPONSE_ACCEPT)
+        password_input = gtk.Entry()
+        password_input.set_max_length(255)
         password_input.set_width_chars(32)
-        password_input.set_visibility(gtk.FALSE)
+        password_input.set_visibility(False)
         password_input.connect("activate", password_activate)
         add(password_input, 10)
         dialog.vbox.show_all()
