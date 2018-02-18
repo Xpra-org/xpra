@@ -2527,6 +2527,7 @@ class ServerBase(ServerCore):
         if self.pulseaudio_private_dir and self.pulseaudio_private_socket:
             info["private-directory"] = self.pulseaudio_private_dir
             info["private-socket"] = self.pulseaudio_private_socket
+        return info
 
     def get_printing_info(self):
         d = {
