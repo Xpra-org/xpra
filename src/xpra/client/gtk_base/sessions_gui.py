@@ -326,6 +326,7 @@ class SessionsGUI(gtk.Window):
             return gtk.Label(uri), btn
         #multiple modes / uris
         uri_menu = gtk.combo_box_new_text()
+        uri_menu.set_size_request(340, 48)
         d = {}
         #sort by protocol so TCP comes first
         order = {"socket" : 0, "ssl" :2, "wss" : 3, "tcp" : 4, "ssh" : 6, "ws" : 8}
