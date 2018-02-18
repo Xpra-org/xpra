@@ -651,9 +651,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
+    ws_upgrades = opts.html and (os.path.isabs(opts.html) or opts.html.lower() in TRUE_OPTIONS+["auto"])
     netlog("setting up SSL sockets: %s", csv(bind_ssl))
     for host, iport in bind_ssl:
         add_tcp_socket("ssl", host, iport)
+        if ws_upgrades:
+            add_tcp_socket("wss", host, iport)
     netlog("setting up https / wss (secure websockets): %s", csv(bind_wss))
     for host, iport in bind_wss:
         add_tcp_socket("wss", host, iport)
@@ -663,6 +666,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         add_tcp_socket("tcp", host, iport)
         if tcp_ssl:
             add_mdns("ssl", host, iport)
+        if ws_upgrades:
+            add_mdns("ws", host, iport)
+        if ws_upgrades and tcp_ssl:
+            add_mdns("wss", host, iport)
     netlog("setting up UDP sockets: %s", csv(bind_udp))
     for host, iport in bind_udp:
         add_udp_socket("udp", host, iport)
