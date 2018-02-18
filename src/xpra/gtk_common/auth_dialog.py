@@ -110,7 +110,10 @@ class AuthDialog(gtk.Window):
     def get_pixbuf(self, icon_name):
         icon_filename = os.path.join(get_icon_dir(), icon_name)
         if os.path.exists(icon_filename):
-            return pixbuf_new_from_file(icon_filename)
+            try:
+                return pixbuf_new_from_file(icon_filename)
+            except Exception as e:
+                log("pixbuf_new_from_file(%s) failed: %s", icon_filename, e)
         return None
 
 
