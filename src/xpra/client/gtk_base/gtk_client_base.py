@@ -525,7 +525,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 return pixbuf_new_from_file(icon_filename)
         except:
             log.error("get_pixbuf(%s)", icon_name, exc_info=True)
-        return  None
+        return None
 
 
     def get_image(self, icon_name, size=None):
@@ -537,7 +537,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             return scaled_image(pixbuf, size)
         except:
             log.error("get_image(%s, %s)", icon_name, size, exc_info=True)
-            return  None
+            return None
 
 
     def request_frame_extents(self, window):
