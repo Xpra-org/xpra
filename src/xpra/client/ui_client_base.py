@@ -14,7 +14,6 @@ import datetime
 import traceback
 import logging
 from collections import deque
-from threading import RLock
 from time import sleep
 
 from xpra.log import Logger, set_global_logging_handler
@@ -37,7 +36,6 @@ mouselog = Logger("mouse")
 avsynclog = Logger("av-sync")
 clipboardlog = Logger("clipboard")
 scalinglog = Logger("scaling")
-webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
@@ -65,9 +63,10 @@ from xpra.net import compression, packet_encoding
 from xpra.net.compression import Compressed
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, WIN32, BITS, is_Ubuntu
+from xpra.os_util import BytesIOClass, Queue, platform_name, get_machine_id, get_user_uuid, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, BITS, is_Ubuntu
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
+from xpra.client.webcam_forwarder import WebcamForwarder
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -141,7 +140,7 @@ def fequ(v1, v2):
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase):
+class UIXpraClient(XpraClientBase, WebcamForwarder):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -157,6 +156,7 @@ class UIXpraClient(XpraClientBase):
 
     def __init__(self):
         XpraClientBase.__init__(self)
+        WebcamForwarder.__init__(self)
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
         try:
             pinfo = get_platform_info()
@@ -209,18 +209,6 @@ class UIXpraClient(XpraClientBase):
         self.client_ping_latency = deque(maxlen=1000)
         self._server_ok = True
         self.last_ping_echoed_time = 0
-
-        #webcam:
-        self.webcam_option = ""
-        self.webcam_forwarding = False
-        self.webcam_device = None
-        self.webcam_device_no = -1
-        self.webcam_last_ack = -1
-        self.webcam_ack_check_timer = None
-        self.webcam_send_timer = None
-        self.webcam_lock = RLock()
-        self.server_webcam = False
-        self.server_virtual_video_devices = 0
 
         #sound:
         self.sound_source_plugin = None
@@ -356,6 +344,7 @@ class UIXpraClient(XpraClientBase):
 
     def init(self, opts):
         """ initialize variables from configuration """
+        WebcamForwarder.init(self, opts)
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -393,7 +382,6 @@ class UIXpraClient(XpraClientBase):
                 self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
         self.desktop_fullscreen = opts.desktop_fullscreen
 
-        self.init_webcam(opts)
         self.init_sound(opts)
 
         self.readonly = opts.readonly
@@ -498,6 +486,11 @@ class UIXpraClient(XpraClientBase):
         self._draw_queue = Queue()
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
+
+    def webcam_state_changed(self):
+        self.idle_add(self.emit, "webcam-changed")
+
+
     def setup_connection(self, conn):
         XpraClientBase.setup_connection(self, conn)
         if self.supports_mmap:
@@ -522,7 +515,7 @@ class UIXpraClient(XpraClientBase):
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        self.stop_sending_webcam()
+        WebcamForwarder.cleanup(self)
         XpraClientBase.cleanup(self)
         #tell the draw thread to exit:
         dq = self._draw_queue
@@ -1903,6 +1896,7 @@ class UIXpraClient(XpraClientBase):
         return True
 
     def process_ui_capabilities(self):
+        WebcamForwarder.process_ui_capabilities(self, self.server_capabilities)
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         if self.clipboard_enabled:
@@ -1953,15 +1947,6 @@ class UIXpraClient(XpraClientBase):
             modifier_keycodes = c.dictget("modifier_keycodes")
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-
-        #webcam
-        self.server_webcam = c.boolget("webcam")
-        self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
-        self.server_virtual_video_devices = c.intget("virtual-video-devices")
-        webcamlog("webcam server support: %s (%i devices, encodings: %s)", self.server_webcam, self.server_virtual_video_devices, csv(self.server_webcam_encodings))
-        if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices>0:
-            if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
-                self.start_sending_webcam()
 
         #input devices:
         self.server_input_devices = c.strget("input-devices")
@@ -2234,239 +2219,6 @@ class UIXpraClient(XpraClientBase):
         assert self.server_lock_toggle
         self.send("lock-toggle", self.client_lock)
 
-
-    ######################################################################
-    # webcam:
-    def init_webcam(self, opts):
-        self.webcam_option = opts.webcam
-        self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
-        self.server_webcam = False
-        self.server_virtual_video_devices = 0
-        if self.webcam_forwarding:
-            try:
-                import cv2
-                from PIL import Image
-                assert cv2 and Image
-            except ImportError as e:
-                webcamlog("init webcam failure", exc_info=True)
-                if WIN32 and BITS==32:
-                    webcamlog.info("32-bit builds do not support webcam forwarding")
-                else:
-                    webcamlog.warn("Warning: failed to import opencv:")
-                    webcamlog.warn(" %s", e)
-                    webcamlog.warn(" webcam forwarding is disabled")
-                self.webcam_forwarding = False
-        webcamlog("webcam forwarding: %s", self.webcam_forwarding)
-
-    def start_sending_webcam(self):
-        with self.webcam_lock:
-            self.do_start_sending_webcam(self.webcam_option)
-
-    def do_start_sending_webcam(self, device_str):
-        assert self.server_webcam
-        device = 0
-        virt_devices, all_video_devices, non_virtual = {}, {}, {}
-        try:
-            from xpra.platform.webcam import get_virtual_video_devices, get_all_video_devices
-            virt_devices = get_virtual_video_devices()
-            all_video_devices = get_all_video_devices()
-            non_virtual = dict([(k,v) for k,v in all_video_devices.items() if k not in virt_devices])
-            webcamlog("virtual video devices=%s", virt_devices)
-            webcamlog("all_video_devices=%s", all_video_devices)
-            webcamlog("found %s known non-virtual video devices: %s", len(non_virtual), non_virtual)
-        except ImportError as e:
-            webcamlog("no webcam_util: %s", e)
-        webcamlog("do_start_sending_webcam(%s)", device_str)
-        if device_str in ("auto", "on", "yes", "off", "false", "true"):
-            if len(non_virtual)>0:
-                device = tuple(non_virtual.keys())[0]
-        else:
-            webcamlog("device_str: %s", device_str)
-            try:
-                device = int(device_str)
-            except:
-                p = device_str.find("video")
-                if p>=0:
-                    try:
-                        webcamlog("device_str: %s", device_str[p:])
-                        device = int(device_str[p+len("video"):])
-                    except:
-                        device = 0
-        if device in virt_devices:
-            webcamlog.warn("Warning: video device %s is a virtual device", virt_devices.get(device, device))
-            if WEBCAM_ALLOW_VIRTUAL:
-                webcamlog.warn(" environment override - this may hang..")
-            else:
-                webcamlog.warn(" corwardly refusing to use it")
-                webcamlog.warn(" set WEBCAM_ALLOW_VIRTUAL=1 to force enable it")
-                return
-        import cv2
-        webcamlog("do_start_sending_webcam(%s) device=%i", device_str, device)
-        self.webcam_frame_no = 0
-        try:
-            #test capture:
-            webcam_device = cv2.VideoCapture(device)        #0 -> /dev/video0
-            ret, frame = webcam_device.read()
-            webcamlog("test capture using %s: %s, %s", webcam_device, ret, frame is not None)
-            assert ret, "no device or permission"
-            assert frame is not None, "no data"
-            assert frame.ndim==3, "unexpected  number of dimensions: %s" % frame.ndim
-            w, h, Bpp = frame.shape
-            assert Bpp==3, "unexpected number of bytes per pixel: %s" % Bpp
-            assert frame.size==w*h*Bpp
-            self.webcam_device_no = device
-            self.webcam_device = webcam_device
-            self.send("webcam-start", device, w, h)
-            self.idle_add(self.emit, "webcam-changed")
-            webcamlog("webcam started")
-            if self.send_webcam_frame():
-                delay = 1000//WEBCAM_TARGET_FPS
-                webcamlog("webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
-                self.cancel_webcam_send_timer()
-                self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
-        except Exception as e:
-            webcamlog.warn("webcam test capture failed: %s", e)
-
-    def cancel_webcam_send_timer(self):
-        wst = self.webcam_send_timer
-        if wst:
-            self.webcam_send_timer = None
-            self.source_remove(wst)
-
-    def cancel_webcam_check_ack_timer(self):
-        wact = self.webcam_ack_check_timer
-        if wact:
-            self.webcam_ack_check_timer = None
-            self.source_remove(wact)
-
-    def webcam_check_acks(self, ack=0):
-        self.webcam_ack_check_timer = None
-        webcamlog("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
-        if self.webcam_last_ack<ack:
-            webcamlog.warn("Warning: no acknowledgements received from the server for frame %i, stopping webcam", ack)
-            self.stop_sending_webcam()
-
-    def stop_sending_webcam(self):
-        webcamlog("stop_sending_webcam()")
-        with self.webcam_lock:
-            self.do_stop_sending_webcam()
-
-    def do_stop_sending_webcam(self):
-        self.cancel_webcam_send_timer()
-        self.cancel_webcam_check_ack_timer()
-        wd = self.webcam_device
-        webcamlog("do_stop_sending_webcam() device=%s", wd)
-        if not wd:
-            return
-        self.send("webcam-stop", self.webcam_device_no)
-        assert self.server_webcam
-        self.webcam_device = None
-        self.webcam_device_no = -1
-        self.webcam_frame_no = 0
-        self.webcam_last_ack = -1
-        try:
-            wd.release()
-        except Exception as e:
-            webcamlog.error("Error closing webcam device %s: %s", wd, e)
-        self.idle_add(self.emit, "webcam-changed")
-
-    def _process_webcam_stop(self, packet):
-        device_no = packet[1]
-        if device_no!=self.webcam_device_no:
-            return
-        self.stop_sending_webcam()
-
-    def _process_webcam_ack(self, packet):
-        webcamlog("process_webcam_ack: %s", packet)
-        with self.webcam_lock:
-            if self.webcam_device:
-                frame_no = packet[2]
-                self.webcam_last_ack = frame_no
-                if self.may_send_webcam_frame():
-                    self.cancel_webcam_send_timer()
-                    delay = 1000//WEBCAM_TARGET_FPS
-                    webcamlog("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
-                    self.webcam_send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
-
-    def may_send_webcam_frame(self):
-        self.webcam_send_timer = None
-        if self.webcam_device_no<0 or not self.webcam_device:
-            return False
-        not_acked = self.webcam_frame_no-1-self.webcam_last_ack
-        #not all frames have been acked
-        latency = 100
-        if len(self.server_ping_latency)>0:
-            l = [x for _,x in tuple(self.server_ping_latency)]
-            latency = int(1000 * sum(l) / len(l))
-        #how many frames should be in flight
-        n = max(1, latency // (1000//WEBCAM_TARGET_FPS))    #20fps -> 50ms target between frames
-        if not_acked>0 and not_acked>n:
-            webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - will wait for next ack", latency, not_acked, n)
-            return False
-        webcamlog("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - trying to send now", latency, not_acked, n)
-        return self.send_webcam_frame()
-
-    def send_webcam_frame(self):
-        if not self.webcam_lock.acquire(False):
-            return False
-        webcamlog("send_webcam_frame() webcam_device=%s", self.webcam_device)
-        try:
-            assert self.webcam_device_no>=0, "device number is not set"
-            assert self.webcam_device, "no webcam device to capture from"
-            from xpra.codecs.pillow.encode import get_encodings
-            client_webcam_encodings = get_encodings()
-            common_encodings = list(set(self.server_webcam_encodings).intersection(client_webcam_encodings))
-            webcamlog("common encodings (server=%s, client=%s): %s", csv(self.server_encodings), csv(client_webcam_encodings), csv(common_encodings))
-            if not common_encodings:
-                webcamlog.error("Error: cannot send webcam image, no common formats")
-                webcamlog.error(" the server supports: %s", csv(self.server_webcam_encodings))
-                webcamlog.error(" the client supports: %s", csv(client_webcam_encodings))
-                self.stop_sending_webcam()
-                return False
-            preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
-            formats = [x for x in preferred_order if x in common_encodings] + common_encodings
-            encoding = formats[0]
-            start = monotonic_time()
-            import cv2
-            ret, frame = self.webcam_device.read()
-            assert ret, "capture failed"
-            assert frame.ndim==3, "invalid frame data"
-            h, w, Bpp = frame.shape
-            assert Bpp==3 and frame.size==w*h*Bpp
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            end = monotonic_time()
-            webcamlog("webcam frame capture took %ims", (end-start)*1000)
-            start = monotonic_time()
-            from PIL import Image
-            image = Image.fromarray(rgb)
-            buf = BytesIOClass()
-            image.save(buf, format=encoding)
-            data = buf.getvalue()
-            buf.close()
-            end = monotonic_time()
-            webcamlog("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
-            frame_no = self.webcam_frame_no
-            self.webcam_frame_no += 1
-            self.send("webcam-frame", self.webcam_device_no, frame_no, encoding, w, h, compression.Compressed(encoding, data))
-            self.cancel_webcam_check_ack_timer()
-            self.webcam_ack_check_timer = self.timeout_add(10*1000, self.webcam_check_acks)
-            return True
-        except Exception as e:
-            webcamlog.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
-            webcamlog.error("Error sending webcam frame: %s", e)
-            self.stop_sending_webcam()
-            try:
-                from xpra.notifications.common import XPRA_WEBCAM_NOTIFICATION_ID
-            except ImportError:
-                log("no notifications")
-            else:
-                summary = "Webcam forwarding has failed"
-                body = "The system encountered the following error:\n" + \
-                    ("%s\n" % e)
-                self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon_name="webcam")
-            return False
-        finally:
-            self.webcam_lock.release()
 
     ######################################################################
     # audio:
@@ -3789,6 +3541,7 @@ class UIXpraClient(XpraClientBase):
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
         XpraClientBase.init_authenticated_packet_handlers(self)
+        WebcamForwarder.init_authenticated_packet_handlers(self)
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,
             "setting-change":       self._process_setting_change,
@@ -3814,8 +3567,6 @@ class UIXpraClient(XpraClientBase):
             "rpc-reply":            self._process_rpc_reply,
             "control" :             self._process_control,
             "draw":                 self._process_draw,
-            "webcam-stop":          self._process_webcam_stop,
-            "webcam-ack":           self._process_webcam_ack,
             "clipboard-token":              self.process_clipboard_packet,
             "clipboard-request":            self.process_clipboard_packet,
             "clipboard-contents":           self.process_clipboard_packet,
