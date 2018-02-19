@@ -1254,11 +1254,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder):
 
     ######################################################################
     # grabs:
-    def init_packet_handlers(self):
-        XpraClientBase.init_packet_handlers(self)
-        self._ui_packet_handlers["pointer-grab"] = self._process_pointer_grab
-        self._ui_packet_handlers["pointer-ungrab"] = self._process_pointer_ungrab
-
     def window_grab(self, window):
         log.warn("Warning: window grab not implemented in %s", self.client_type())
 
@@ -3567,6 +3562,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder):
             "rpc-reply":            self._process_rpc_reply,
             "control" :             self._process_control,
             "draw":                 self._process_draw,
+            "pointer-grab":         self._process_pointer_grab,
+            "pointer-ungrab":       self._process_pointer_ungrab,
             "clipboard-token":              self.process_clipboard_packet,
             "clipboard-request":            self.process_clipboard_packet,
             "clipboard-contents":           self.process_clipboard_packet,
