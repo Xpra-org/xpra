@@ -1002,6 +1002,8 @@ def get_display_info():
 
 
 def scaled_image(pixbuf, icon_size=None):
+    if not pixbuf:
+        return None
     if icon_size:
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, INTERP_BILINEAR)
     return image_new_from_pixbuf(pixbuf)
@@ -1073,9 +1075,13 @@ def menuitem(title, image=None, tooltip=None, cb=None):
 
 
 def add_close_accel(window, callback):
-    add_window_accel(window, '<control>F4', callback)
-    add_window_accel(window, '<Alt>F4', callback)
-    add_window_accel(window, 'Escape', callback)
+    accel_groups = []
+    def wa(s, cb):
+        accel_groups.append(add_window_accel(window, s, cb))
+    wa('<control>F4', callback)
+    wa('<Alt>F4', callback)
+    wa('Escape', callback)
+    return accel_groups
 
 def add_window_accel(window, accel, callback):
     if is_gtk3():
@@ -1088,6 +1094,7 @@ def add_window_accel(window, accel, callback):
     key, mod = gtk.accelerator_parse(accel)
     connect(accel_group, key, mod, ACCEL_LOCKED, callback)
     window.add_accel_group(accel_group)
+    return accel_group
 
 
 def label(text="", tooltip=None, font=None):
