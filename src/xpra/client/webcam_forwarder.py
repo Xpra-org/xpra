@@ -64,7 +64,7 @@ class WebcamForwarder(object):
                 self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
-    def process_ui_capabilities(self, server_capabilities):
+    def process_capabilities(self, server_capabilities):
         c = server_capabilities
         self.server_webcam = c.boolget("webcam")
         self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))

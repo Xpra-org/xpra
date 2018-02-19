@@ -1118,19 +1118,25 @@ class ServerSource(FileTransferHandler):
     ######################################################################
     # audio:
     def audio_loop_check(self, mode="speaker"):
+        soundlog("audio_loop_check(%s)", mode)
         from xpra.sound.gstreamer_util import ALLOW_SOUND_LOOP, loop_warning_messages
         if ALLOW_SOUND_LOOP:
             return True
+        machine_id = get_machine_id()
+        uuid = get_user_uuid()
+        soundlog("audio_loop_check(%s) machine_id=%s client machine_id=%s, uuid=%s, client uuid=%s", mode, machine_id, self.machine_id, uuid, self.uuid)
         if self.machine_id:
-            if self.machine_id!=get_machine_id():
+            if self.machine_id!=machine_id:
                 #not the same machine, so OK
                 return True
-            if self.uuid!=get_user_uuid():
+            if self.uuid!=uuid:
                 #different user, assume different pulseaudio server
                 return True
         #check pulseaudio id if we have it
         pulseaudio_id = self.sound_properties.get("pulseaudio", {}).get("id")
         pulseaudio_cookie_hash = self.sound_properties.get("pulseaudio", {}).get("cookie-hash")
+        soundlog("audio_loop_check(%s) pulseaudio id=%s, client pulseaudio id=%s, pulseaudio cookie hash=%s, client pulseaudio cookie hash=%s",
+                 mode, pulseaudio_id, self.pulseaudio_id, pulseaudio_cookie_hash, self.pulseaudio_cookie_hash)
         if pulseaudio_id and self.pulseaudio_id:
             if self.pulseaudio_id!=pulseaudio_id:
                 return True
