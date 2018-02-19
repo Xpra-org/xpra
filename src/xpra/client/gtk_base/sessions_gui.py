@@ -207,7 +207,7 @@ class SessionsGUI(gtk.Window):
             self.table.show()
             return
         tb = TableBuilder(1, 6, False)
-        tb.add_row(gtk.Label("Host"), gtk.Label("Display"), gtk.Label("Name"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"))
+        tb.add_row(gtk.Label("Host"), gtk.Label("Display"), gtk.Label("Name"), gtk.Label("Platform"), gtk.Label("Type"), gtk.Label("URI"), gtk.Label("Connect"), gtk.Label("Open in Browser"))
         self.table = tb.get_table()
         self.vbox.add(self.table)
         self.table.resize(1+len(self.records), 5)
@@ -242,13 +242,15 @@ class SessionsGUI(gtk.Window):
                 label.set_tooltip_text(uuid)
             #try to use an icon for the platform:
             platform_icon_name = self.get_platform_icon_name(platform)
+            pwidget = None
             if platform_icon_name:
-                pwidget = scaled_image(self.get_pixbuf("%s.png" % platform_icon_name), 24)
-                pwidget.set_tooltip_text(platform)
-            else:
+                pwidget = scaled_image(self.get_pixbuf("%s.png" % platform_icon_name), 28)
+                if pwidget:
+                    pwidget.set_tooltip_text(platform_icon_name)
+            if not pwidget:
                 pwidget = gtk.Label(platform)
-            w, c = self.make_connect_widgets(key, recs, address, port, display)
-            tb.add_row(gtk.Label(host), label, gtk.Label(name), pwidget, gtk.Label(dtype), w, c)
+            w, c, b = self.make_connect_widgets(key, recs, address, port, display)
+            tb.add_row(gtk.Label(host), label, gtk.Label(name), pwidget, gtk.Label(dtype), w, c, b)
         self.table.show_all()
 
     def get_uri(self, password, interface, protocol, name, stype, domain, host, address, port, text):
@@ -303,7 +305,23 @@ class SessionsGUI(gtk.Window):
         self.clients[key] = proc
         self.populate()
 
+    def browser_open(self, rec):
+        import webbrowser
+        password = self.password_entry.get_text()
+        url = self.get_uri(password, *rec)
+        if url.startswith("wss"):
+            url = "https"+url[3:]
+        else:
+            assert url.startswith("ws")
+            url = "http"+url[2:]
+        #trim end of URL:
+        #http://192.168.1.7:10000/10 -> http://192.168.1.7:10000/
+        url = url[:url.rfind("/")]
+        webbrowser.open_new_tab(url)
+
     def make_connect_widgets(self, key, recs, address, port, display):
+        d = {}
+
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
             icon = self.get_pixbuf("disconnected.png")
@@ -313,21 +331,31 @@ class SessionsGUI(gtk.Window):
                 proc.terminate()
                 self.populate()
             btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
-            return gtk.Label("Already connected with pid=%i" % proc.pid), btn
+            return gtk.Label("Already connected with pid=%i" % proc.pid), btn, gtk.Label("")
+
+        icon = self.get_pixbuf("browser.png")
+        bopen = imagebutton("Open", icon)
+
         icon = self.get_pixbuf("connect.png")
         if len(recs)==1:
             #single record, single uri:
-            uri = self.get_uri(None, *recs[0])
+            rec = recs[0]
+            uri = self.get_uri(None, *rec)
+            bopen.set_sensitive(uri.startswith("ws"))
+            def browser_open(*_args):
+                self.browser_open(rec)
+            bopen.connect("clicked", browser_open)
+            d[uri] = rec
             def clicked(*_args):
                 password = self.password_entry.get_text()
-                uri = self.get_uri(password, *recs[0])
+                uri = self.get_uri(password, *rec)
                 self.attach(key, uri)
             btn = imagebutton("Connect", icon, clicked_callback=clicked)
-            return gtk.Label(uri), btn
+            return gtk.Label(uri), btn, bopen
+
         #multiple modes / uris
         uri_menu = gtk.combo_box_new_text()
         uri_menu.set_size_request(340, 48)
-        d = {}
         #sort by protocol so TCP comes first
         order = {"socket" : 0, "ssl" :2, "wss" : 3, "tcp" : 4, "ssh" : 6, "ws" : 8}
         if WIN32:
@@ -355,9 +383,17 @@ class SessionsGUI(gtk.Window):
             self.attach(key, uri)
         uri_menu.set_active(0)
         btn = imagebutton("Connect", icon, clicked_callback=connect)
-        #btn = gtk.Button(">")
-        #btn.connect("clicked", connect)
-        return uri_menu, btn
+        def uri_changed(*_args):
+            uri = uri_menu.get_active_text()
+            bopen.set_sensitive(uri.startswith("ws"))
+        uri_menu.connect("changed", uri_changed)
+        uri_changed()
+        def browser_open_option(*_args):
+            uri = uri_menu.get_active_text()
+            rec = d[uri]
+            self.browser_open(rec)
+        bopen.connect("clicked", browser_open_option)
+        return uri_menu, btn, bopen
 
     def get_platform_icon_name(self, platform):
         for p,i in {
