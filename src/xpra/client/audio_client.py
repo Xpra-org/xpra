@@ -4,16 +4,15 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
-log = Logger("client")
 avsynclog = Logger("av-sync")
-soundlog = Logger("client", "sound")
+log = Logger("client", "sound")
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.main import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
-from xpra.util import envint, typedict, csv, updict
+from xpra.util import envint, typedict, csv
 try:
     from xpra.sound.common import LEGACY_CODEC_NAMES, NEW_CODEC_NAMES, add_legacy_names
 except:
@@ -90,9 +89,9 @@ class AudioClient(object):
                 bits = self.sound_properties.intget("python.bits", 32)
                 log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
             except Exception as e:
-                soundlog("failed to query sound", exc_info=True)
-                soundlog.error("Error: failed to query sound subsystem:")
-                soundlog.error(" %s", e)
+                log("failed to query sound", exc_info=True)
+                log.error("Error: failed to query sound subsystem:")
+                log.error(" %s", e)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
         encoders = self.sound_properties.strlistget("encoders", [])
@@ -106,20 +105,20 @@ class AudioClient(object):
         self.speaker_enabled = self.speaker_allowed and sound_option(opts.speaker)=="on"
         self.microphone_enabled = self.microphone_allowed and opts.microphone.lower()=="on"
         self.av_sync = opts.av_sync
-        soundlog("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
-        soundlog("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
-        soundlog("av-sync=%s", self.av_sync)
+        log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
+        log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
+        log("av-sync=%s", self.av_sync)
         if POSIX:
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
                 pa_info = get_pa_info()
-                soundlog("pulseaudio info=%s", pa_info)
+                log("pulseaudio info=%s", pa_info)
                 self.sound_properties.update(pa_info)
             except ImportError as e:
-                soundlog.warn("Warning: no pulseaudio information available")
-                soundlog.warn(" %s", e)
+                log.warn("Warning: no pulseaudio information available")
+                log.warn(" %s", e)
             except Exception:
-                soundlog.error("failed to add pulseaudio info", exc_info=True)
+                log.error("failed to add pulseaudio info", exc_info=True)
 
 
     def cleanup(self):
@@ -144,7 +143,7 @@ class AudioClient(object):
             "receive"    : self.speaker_allowed,
             }
         caps.update(self.sound_properties)
-        soundlog("audio capabilities: %s", caps)
+        log("audio capabilities: %s", caps)
         return caps
 
     def process_capabilities(self):
@@ -163,12 +162,12 @@ class AudioClient(object):
             self.server_sound_decoders = conv(c.strlistget("sound.decoders", []))
             self.server_sound_encoders = conv(c.strlistget("sound.encoders", []))
         except:
-            soundlog("Error: cannot parse server sound codec data", exc_info=True)
+            log("Error: cannot parse server sound codec data", exc_info=True)
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
         self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         self.server_ogg_latency_fix = c.boolget("sound.ogg-latency-fix", False)
-        soundlog("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
+        log("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
                  self.server_sound_receive, self.server_sound_send)
@@ -201,7 +200,7 @@ class AudioClient(object):
 
     def get_matching_codecs(self, local_codecs, server_codecs):
         matching_codecs = [x for x in local_codecs if x in server_codecs]
-        soundlog("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
+        log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
         return matching_codecs
 
     def may_notify_audio(self, summary, body):
@@ -246,7 +245,7 @@ class AudioClient(object):
 
     def start_sending_sound(self, device=None):
         """ (re)start a sound source and emit client signal """
-        soundlog("start_sending_sound(%s)", device)
+        log("start_sending_sound(%s)", device)
         enabled = False
         try:
             assert self.microphone_allowed, "microphone forwarding is disabled"
@@ -256,7 +255,7 @@ class AudioClient(object):
             ss = self.sound_source
             if ss:
                 if ss.get_state()=="active":
-                    soundlog.error("Error: microphone forwarding is already active")
+                    log.error("Error: microphone forwarding is already active")
                     enabled = True
                     return
                 ss.start()
@@ -266,16 +265,16 @@ class AudioClient(object):
             if enabled!=self.microphone_enabled:
                 self.microphone_enabled = enabled
                 self.emit("microphone-changed")
-            soundlog("start_sending_sound(%s) done, microphone_enabled=%s", device, enabled)
+            log("start_sending_sound(%s) done, microphone_enabled=%s", device, enabled)
 
     def start_sound_source(self, device=None):
-        soundlog("start_sound_source(%s)", device)
+        log("start_sound_source(%s)", device)
         assert self.sound_source is None
         def sound_source_state_changed(*_args):
             self.emit("microphone-changed")
         #find the matching codecs:
         matching_codecs = self.get_matching_codecs(self.microphone_codecs, self.server_sound_decoders)
-        soundlog("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
+        log("start_sound_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if len(matching_codecs)==0:
             self.no_matching_codec_error("microphone", self.server_sound_decoders, self.microphone_codecs)
             return False
@@ -290,7 +289,7 @@ class AudioClient(object):
             ss.connect("state-changed", sound_source_state_changed)
             ss.connect("new-stream", self.new_stream)
             ss.start()
-            soundlog("start_sound_source(%s) sound source %s started", device, ss)
+            log("start_sound_source(%s) sound source %s started", device, ss)
             return True
         except Exception as e:
             self.may_notify_audio("Failed to start microphone forwarding", "%s" % e)
@@ -299,9 +298,9 @@ class AudioClient(object):
             return False
 
     def new_stream(self, sound_source, codec):
-        soundlog("new_stream(%s)", codec)
+        log("new_stream(%s)", codec)
         if self.sound_source!=sound_source:
-            soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
+            log("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
         codec = codec or sound_source.codec
         if not self.server_codec_full_names:
@@ -316,7 +315,7 @@ class AudioClient(object):
 
     def stop_sending_sound(self):
         """ stop the sound source and emit client signal """
-        soundlog("stop_sending_sound() sound source=%s", self.sound_source)
+        log("stop_sending_sound() sound source=%s", self.sound_source)
         ss = self.sound_source
         if self.microphone_enabled:
             self.microphone_enabled = False
@@ -331,11 +330,11 @@ class AudioClient(object):
 
     def start_receiving_sound(self):
         """ ask the server to start sending sound and emit the client signal """
-        soundlog("start_receiving_sound() sound sink=%s", self.sound_sink)
+        log("start_receiving_sound() sound sink=%s", self.sound_sink)
         enabled = False
         try:
             if self.sound_sink is not None:
-                soundlog("start_receiving_sound: we already have a sound sink")
+                log("start_receiving_sound: we already have a sound sink")
                 enabled = True
                 return
             elif not self.server_sound_send:
@@ -345,7 +344,7 @@ class AudioClient(object):
                 return
             #choose a codec:
             matching_codecs = self.get_matching_codecs(self.speaker_codecs, self.server_sound_encoders)
-            soundlog("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
+            log("start_receiving_sound() matching codecs: %s", csv(matching_codecs))
             if len(matching_codecs)==0:
                 self.no_matching_codec_error("speaker", self.server_sound_encoders, self.speaker_codecs)
                 return
@@ -357,7 +356,7 @@ class AudioClient(object):
                 scodec = codec
                 if not self.server_codec_full_names:
                     scodec = LEGACY_CODEC_NAMES.get(codec, codec)
-                soundlog("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
+                log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
                 self.send("sound-control", "start", scodec)
                 return False
             self.on_sink_ready = sink_ready
@@ -366,11 +365,11 @@ class AudioClient(object):
             if self.speaker_enabled!=enabled:
                 self.speaker_enabled = enabled
                 self.emit("speaker-changed")
-            soundlog("start_receiving_sound() done, speaker_enabled=%s", enabled)
+            log("start_receiving_sound() done, speaker_enabled=%s", enabled)
 
     def stop_receiving_sound(self, tell_server=True):
         """ ask the server to stop sending sound, toggle flag so we ignore further packets and emit client signal """
-        soundlog("stop_receiving_sound(%s) sound sink=%s", tell_server, self.sound_sink)
+        log("stop_receiving_sound(%s) sound sink=%s", tell_server, self.sound_sink)
         ss = self.sound_sink
         if self.speaker_enabled:
             self.speaker_enabled = False
@@ -382,24 +381,24 @@ class AudioClient(object):
         if ss is None:
             return
         self.sound_sink = None
-        soundlog("stop_receiving_sound(%s) calling %s", tell_server, ss.cleanup)
+        log("stop_receiving_sound(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
-        soundlog("stop_receiving_sound(%s) done", tell_server)
+        log("stop_receiving_sound(%s) done", tell_server)
 
     def sound_sink_state_changed(self, sound_sink, state):
         if sound_sink!=self.sound_sink:
-            soundlog("sound_sink_state_changed(%s, %s) not the current sink, ignoring it", sound_sink, state)
+            log("sound_sink_state_changed(%s, %s) not the current sink, ignoring it", sound_sink, state)
             return
-        soundlog("sound_sink_state_changed(%s, %s) on_sink_ready=%s", sound_sink, state, self.on_sink_ready)
+        log("sound_sink_state_changed(%s, %s) on_sink_ready=%s", sound_sink, state, self.on_sink_ready)
         if state==b"ready" and self.on_sink_ready:
             if not self.on_sink_ready():
                 self.on_sink_ready = None
         self.emit("speaker-changed")
     def sound_sink_bitrate_changed(self, sound_sink, bitrate):
         if sound_sink!=self.sound_sink:
-            soundlog("sound_sink_bitrate_changed(%s, %s) not the current sink, ignoring it", sound_sink, bitrate)
+            log("sound_sink_bitrate_changed(%s, %s) not the current sink, ignoring it", sound_sink, bitrate)
             return
-        soundlog("sound_sink_bitrate_changed(%s, %s)", sound_sink, bitrate)
+        log("sound_sink_bitrate_changed(%s, %s)", sound_sink, bitrate)
         #not shown in the UI, so don't bother with emitting a signal:
         #self.emit("speaker-changed")
     def sound_sink_error(self, sound_sink, error):
@@ -407,20 +406,20 @@ class AudioClient(object):
             #exiting
             return
         if sound_sink!=self.sound_sink:
-            soundlog("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
+            log("sound_sink_error(%s, %s) not the current sink, ignoring it", sound_sink, error)
             return
         self.may_notify_audio("Speaker forwarding error", error)
-        soundlog.warn("Error: stopping speaker:")
-        soundlog.warn(" %s", str(error).replace("gst-resource-error-quark: ", ""))
+        log.warn("Error: stopping speaker:")
+        log.warn(" %s", str(error).replace("gst-resource-error-quark: ", ""))
         self.stop_receiving_sound()
     def sound_process_stopped(self, sound_sink, *args):
         if self.exit_code is not None:
             #exiting
             return
         if sound_sink!=self.sound_sink:
-            soundlog("sound_process_stopped(%s, %s) not the current sink, ignoring it", sound_sink, args)
+            log("sound_process_stopped(%s, %s) not the current sink, ignoring it", sound_sink, args)
             return
-        soundlog.warn("Warning: the sound process has stopped")
+        log.warn("Warning: the sound process has stopped")
         self.stop_receiving_sound()
 
     def sound_sink_exit(self, sound_sink, *args):
@@ -430,20 +429,20 @@ class AudioClient(object):
             return
         ss = self.sound_sink
         if sound_sink!=ss:
-            soundlog("sound_sink_exit() not the current sink, ignoring it")
+            log("sound_sink_exit() not the current sink, ignoring it")
             return
         if ss and ss.codec:
             #the mandatory "I've been naughty warning":
             #we use the "codec" field as guard to ensure we only print this warning once..
-            soundlog.warn("Warning: the %s sound sink has stopped", ss.codec)
+            log.warn("Warning: the %s sound sink has stopped", ss.codec)
             ss.codec = ""
         self.stop_receiving_sound()
 
     def start_sound_sink(self, codec):
-        soundlog("start_sound_sink(%s)", codec)
+        log("start_sound_sink(%s)", codec)
         assert self.sound_sink is None, "sound sink already exists!"
         try:
-            soundlog("starting %s sound sink", codec)
+            log("starting %s sound sink", codec)
             from xpra.sound.wrapper import start_receiving_sound
             ss = start_receiving_sound(codec)
             if not ss:
@@ -455,15 +454,15 @@ class AudioClient(object):
             from xpra.net.protocol import Protocol
             ss.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
             ss.start()
-            soundlog("%s sound sink started", codec)
+            log("%s sound sink started", codec)
             return True
         except Exception as e:
-            soundlog.error("Error: failed to start sound sink", exc_info=True)
+            log.error("Error: failed to start sound sink", exc_info=True)
             self.sound_sink_error(self.sound_sink, e)
             return False
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
-        soundlog("new_sound_buffer(%s, %s, %s, %s)", sound_source, len(data or []), metadata, packet_metadata)
+        log("new_sound_buffer(%s, %s, %s, %s)", sound_source, len(data or []), metadata, packet_metadata)
         if not self.sound_source:
             return
         self.sound_out_bytecount += len(data)
@@ -507,7 +506,7 @@ class AudioClient(object):
         #verify sequence number if present:
         seq = metadata.intget("sequence", -1)
         if self.min_sound_sequence>0 and seq>=0 and seq<self.min_sound_sequence:
-            soundlog("ignoring sound data with old sequence number %s (now on %s)", seq, self.min_sound_sequence)
+            log("ignoring sound data with old sequence number %s (now on %s)", seq, self.min_sound_sequence)
             return
 
         if not self.speaker_enabled:
@@ -515,34 +514,34 @@ class AudioClient(object):
                 #server is asking us to start playing sound
                 if not self.speaker_allowed:
                     #no can do!
-                    soundlog.warn("Warning: cannot honour the request to start the speaker")
-                    soundlog.warn(" speaker forwarding is disabled")
+                    log.warn("Warning: cannot honour the request to start the speaker")
+                    log.warn(" speaker forwarding is disabled")
                     self.stop_receiving_sound(True)
                     return
                 self.speaker_enabled = True
                 self.emit("speaker-changed")
                 self.on_sink_ready = None
                 codec = metadata.strget("codec")
-                soundlog("starting speaker on server request using codec %s", codec)
+                log("starting speaker on server request using codec %s", codec)
                 self.start_sound_sink(codec)
             else:
-                soundlog("speaker is now disabled - dropping packet")
+                log("speaker is now disabled - dropping packet")
                 return
         ss = self.sound_sink
         if ss is None:
-            soundlog("no sound sink to process sound data, dropping it")
+            log("no sound sink to process sound data, dropping it")
             return
         if metadata.boolget("end-of-stream"):
-            soundlog("server sent end-of-stream for sequence %s, closing sound pipeline", seq)
+            log("server sent end-of-stream for sequence %s, closing sound pipeline", seq)
             self.stop_receiving_sound(False)
             return
         if codec!=ss.codec:
-            soundlog.error("Error: sound codec change is not supported!")
-            soundlog.error(" stream tried to switch from %s to %s", ss.codec, codec)
+            log.error("Error: sound codec change is not supported!")
+            log.error(" stream tried to switch from %s to %s", ss.codec, codec)
             self.stop_receiving_sound()
             return
         elif ss.get_state()=="stopped":
-            soundlog("sound data received, sound sink is stopped - telling server to stop")
+            log("sound data received, sound sink is stopped - telling server to stop")
             self.stop_receiving_sound()
             return
         #the server may send packet_metadata, which is pushed before the actual sound data:

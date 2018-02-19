@@ -61,10 +61,11 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, BITS, is_Ubuntu
-from xpra.util import nonl, std, iround, envint, envfloat, envbool, AtomicInteger, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import nonl, std, iround, envint, envfloat, envbool, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client.webcam_forwarder import WebcamForwarder
 from xpra.client.audio_client import AudioClient
+from xpra.client.rpc_client import RPCClient
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
 except:
@@ -128,7 +129,7 @@ def fequ(v1, v2):
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
+class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -147,6 +148,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         XpraClientBase.__init__(self)
         WebcamForwarder.__init__(self)
         AudioClient.__init__(self)
+        RPCClient.__init__(self)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -198,10 +200,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         self._server_ok = True
         self.last_ping_echoed_time = 0
 
-        #rpc / dbus:
-        self.rpc_counter = AtomicInteger()
-        self.rpc_pending_requests = {}
-
         #mmap:
         self.mmap_enabled = False
         self.mmap = None
@@ -229,8 +227,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         self.windows_enabled = True
         self.pings = False
         self.xsettings_enabled = False
-        self.server_dbus_proxy = False
-        self.server_rpc_types = []
         self.server_start_new_commands = False
         self.server_window_decorations = False
         self.server_window_frame_extents = False
@@ -513,6 +509,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         self._window_to_id = {}
 
 
+    ######################################################################
+    # refresh:
     def suspend(self):
         log.info("system is suspending")
         self._suspended_at = time.time()
@@ -533,7 +531,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
             #this should create new backing buffers:
             self.reinit_windows()
         self.reinit_window_icons()
-
 
     def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
         packet = ["buffer-refresh", wid, 0, quality]
@@ -581,6 +578,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         log.warn("show_bug_report() is not implemented in %s", self)
 
 
+    ######################################################################
+    # encodings:
     def get_encodings(self):
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
@@ -660,6 +659,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         return None
 
 
+    ######################################################################
+    # notifications:
     def make_notifier(self):
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
@@ -699,6 +700,9 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
             notifylog.error(" '%s'", summary)
             notifylog.error(" %s", e)
 
+
+    ######################################################################
+    # system tray:
     def make_system_tray(self, *args):
         """ tray used for application systray forwarding """
         tc = self.get_system_tray_classes()
@@ -842,6 +846,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         tray_widget.show()
         return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
 
+    ######################################################################
+    # screen and scaling:
     def desktops_changed(self, *args):
         workspacelog("desktops_changed%s", args)
         self.screen_size_changed(*args)
@@ -1023,24 +1029,26 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def get_root_size(self):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def set_windows_cursor(self, client_windows, new_cursor):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def get_mouse_position(self):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def get_current_modifiers(self):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        raise Exception("override me!")
+        raise NotImplementedError()
 
 
+    ######################################################################
+    # mmap:
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.os_util import get_int_uuid
@@ -1173,6 +1181,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         self.send("start-command", name, command, ignore, sharing)
 
 
+    ######################################################################
+    # focus:
     def send_focus(self, wid):
         focuslog("send_focus(%s)", wid)
         self.send("focus", wid, self.get_current_modifiers())
@@ -1740,13 +1750,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
 
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
-        self.server_dbus_proxy = c.boolget("dbus_proxy")
-        #default for pre-0.16 servers:
-        if self.server_dbus_proxy:
-            default_rpc_types = ["dbus"]
-        else:
-            default_rpc_types = []
-        self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
@@ -1827,6 +1830,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
     def process_ui_capabilities(self):
         WebcamForwarder.process_capabilities(self, self.server_capabilities)
         AudioClient.process_capabilities(self)
+        RPCClient.parse_capabilities(self)
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         if self.clipboard_enabled:
@@ -2004,59 +2008,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
                 pass
         finally:
             self.in_remote_logging = False
-
-    def rpc_call(self, rpc_type, rpc_args, reply_handler=None, error_handler=None):
-        assert rpc_type in self.server_rpc_types, "server does not support %s rpc" % rpc_type
-        rpcid = self.rpc_counter.increase()
-        self.rpc_filter_pending()
-        #keep track of this request (for timeout / error and reply callbacks):
-        req = monotonic_time(), rpc_type, rpc_args, reply_handler, error_handler
-        self.rpc_pending_requests[rpcid] = req
-        rpclog("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
-        packet = ["rpc", rpc_type, rpcid] + rpc_args
-        self.send(*packet)
-        self.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending)
-
-    def rpc_filter_pending(self):
-        """ removes timed out dbus requests """
-        for k in tuple(self.rpc_pending_requests.keys()):
-            v = self.rpc_pending_requests.get(k)
-            if v is None:
-                continue
-            t, rpc_type, _rpc_args, _reply_handler, ecb = v
-            if 1000*(monotonic_time()-t)>=RPC_TIMEOUT:
-                rpclog.warn("%s rpc request: %s has timed out", rpc_type, _rpc_args)
-                try:
-                    del self.rpc_pending_requests[k]
-                    if ecb is not None:
-                        ecb("timeout")
-                except Exception as e:
-                    rpclog.error("Error during timeout handler for %s rpc callback:", rpc_type)
-                    rpclog.error(" %s", e)
-                    del e
-
-    def _process_rpc_reply(self, packet):
-        rpc_type, rpcid, success, args = packet[1:5]
-        rpclog("rpc_reply: %s", (rpc_type, rpcid, success, args))
-        v = self.rpc_pending_requests.get(rpcid)
-        assert v is not None, "pending dbus handler not found for id %s" % rpcid
-        assert rpc_type==v[1], "rpc reply type does not match: expected %s got %s" % (v[1], rpc_type)
-        del self.rpc_pending_requests[rpcid]
-        if success:
-            ctype = "ok"
-            rh = v[-2]      #ok callback
-        else:
-            ctype = "error"
-            rh = v[-1]      #error callback
-        if rh is None:
-            rpclog("no %s rpc callback defined, return values=%s", ctype, args)
-            return
-        rpclog("calling %s callback %s(%s)", ctype, rh, args)
-        try:
-            rh(*args)
-        except Exception as e:
-            rpclog.error("Error processing rpc reply handler %s(%s) :", rh, args)
-            rpclog.error(" %s", e)
 
 
     def _process_control(self, packet):
@@ -3003,6 +2954,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
         XpraClientBase.init_authenticated_packet_handlers(self)
         WebcamForwarder.init_authenticated_packet_handlers(self)
         AudioClient.init_authenticated_packet_handlers(self)
+        RPCClient.init_authenticated_packet_handlers(self)
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,
             "setting-change":       self._process_setting_change,
@@ -3025,7 +2977,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient):
             "lost-window":          self._process_lost_window,
             "desktop_size":         self._process_desktop_size,
             "window-icon":          self._process_window_icon,
-            "rpc-reply":            self._process_rpc_reply,
             "control" :             self._process_control,
             "draw":                 self._process_draw,
             "pointer-grab":         self._process_pointer_grab,
