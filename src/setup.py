@@ -1908,7 +1908,7 @@ if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
-    add_modules("xpra.scripts.config", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
+    add_modules("xpra.scripts.config", "xpra.scripts.parsing", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
 if WIN32 and client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED):

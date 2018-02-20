@@ -49,8 +49,8 @@ from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename, get_icon_dir
 from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
 from xpra.child_reaper import reaper_cleanup
+from xpra.scripts.parsing import sound_option, parse_env
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.scripts.main import sound_option, parse_env
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.net.file_transfer import FileTransferAttributes

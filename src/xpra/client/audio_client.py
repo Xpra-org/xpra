@@ -9,7 +9,7 @@ log = Logger("client", "sound")
 
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.platform.paths import get_icon_filename
-from xpra.scripts.main import sound_option
+from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv

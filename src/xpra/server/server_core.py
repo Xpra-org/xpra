@@ -27,7 +27,8 @@ timeoutlog = Logger("timeout")
 dbuslog = Logger("dbus")
 
 from xpra.version_util import XPRA_VERSION
-from xpra.scripts.main import _socket_connect, full_version_str
+from xpra.version_util import full_version_str
+from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT

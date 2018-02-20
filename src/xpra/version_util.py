@@ -17,6 +17,17 @@ log = Logger("util")
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
 
+
+def full_version_str():
+    s = XPRA_VERSION
+    try:
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
+        s += "-r%i%s" % (REVISION, ["","M"][int(LOCAL_MODIFICATIONS>0)])
+    except:
+        pass
+    return s
+
+
 def version_as_numbers(version):
     return [int(x) for x in version.split(".")]
 

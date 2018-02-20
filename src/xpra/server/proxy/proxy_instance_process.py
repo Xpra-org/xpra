@@ -30,7 +30,7 @@ from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envi
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_number, parse_bool
-from xpra.scripts.main import full_version_str
+from xpra.version_util import full_version_str
 from xpra.server.socket_util import create_unix_domain_socket
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT

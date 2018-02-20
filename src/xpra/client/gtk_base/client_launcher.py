@@ -824,7 +824,7 @@ class ApplicationWindow:
         gtk.main_quit()
 
     def update_options_from_URL(self, url):
-        from xpra.scripts.main import parse_URL
+        from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url)
         pa = address.split(":")
         if pa[0] in ("tcp", "ssh") and len(pa)>=2:
@@ -906,7 +906,7 @@ def do_main():
     from xpra.platform.gui import ready as gui_ready
     gui_init()
     try:
-        from xpra.scripts.main import parse_cmdline, fixup_debug_option
+        from xpra.scripts.parsing import parse_cmdline, fixup_debug_option
         options, args = parse_cmdline(sys.argv)
         debug = fixup_debug_option(options.debug)
         if debug:
