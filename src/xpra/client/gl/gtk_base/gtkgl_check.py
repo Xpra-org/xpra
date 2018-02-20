@@ -109,13 +109,13 @@ def check_support(force_enable=False, check_colormap=False):
     log("GL props=%s", props)
 
     if TEST_GTKGL_RENDERING:
-        gl_props = test_gtkgl_rendering(gdkgl, glconfig, force_enable, check_colormap)
+        gl_props = test_gtkgl_rendering(glconfig, force_enable, check_colormap)
         props.update(gl_props)
     else:
         log("gtkgl rendering test skipped")
     return props
 
-def test_gtkgl_rendering(gdkgl, glconfig, force_enable=False, check_colormap=False):
+def test_gtkgl_rendering(glconfig, force_enable=False, check_colormap=False):
     log("testing gtkgl rendering")
     from xpra.client.gl.gl_window_backing_base import paint_context_manager
     from xpra.client.gl.gtk_base.gtk_compat import gdkgl, GLDrawingArea
