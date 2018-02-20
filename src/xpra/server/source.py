@@ -37,6 +37,7 @@ bandwidthlog = Logger("bandwidth")
 from xpra.server.source_stats import GlobalPerformanceStatistics
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.window.metadata import make_window_metadata
 from xpra.simple_stats import get_list_stats, std_unit
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
@@ -49,7 +50,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
-                    CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
+                    CLIENT_PING_TIMEOUT, DEFAULT_METADATA_SUPPORTED
 
 NOYIELD = not envbool("XPRA_YIELD", False)
 MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
@@ -70,144 +71,6 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
 counter = AtomicInteger()
-
-
-def make_window_metadata(window, propname, get_transient_for=None, get_window_id=None):
-    if propname in SKIP_METADATA:
-        return {}
-    #note: some of the properties handled here aren't exported to the clients,
-    #but we do expose them via xpra info
-    def raw():
-        return window.get_property(propname)
-    if propname in ("title", "icon-title", "command", "content-type"):
-        v = raw()
-        if v is None:
-            return {propname: ""}
-        return {propname: v.encode("utf-8")}
-    elif propname in ("pid", "workspace", "bypass-compositor", "depth"):
-        v = raw()
-        assert v is not None, "%s is None!" % propname
-        if v<0 or (v==WORKSPACE_UNSET and propname=="workspace"):
-            #meaningless
-            return {}
-        return {propname : v}
-    elif propname == "size-hints":
-        #just to confuse things, this is renamed
-        #and we have to filter out ratios as floats (already exported as pairs anyway)
-        v = dict((k,v) for k,v in raw().items() if k not in("max_aspect", "min_aspect"))
-        return {"size-constraints": v}
-    elif propname == "strut":
-        strut = raw()
-        if not strut:
-            strut = {}
-        else:
-            strut = strut.todict()
-        return {"strut": strut}
-    elif propname == "class-instance":
-        c_i = raw()
-        if c_i is None:
-            return {}
-        return {"class-instance": [x.encode("utf-8") for x in c_i]}
-    elif propname == "client-machine":
-        client_machine = raw()
-        if client_machine is None:
-            import socket
-            client_machine = socket.gethostname()
-            if client_machine is None:
-                return {}
-        return {"client-machine": client_machine.encode("utf-8")}
-    elif propname == "transient-for":
-        wid = None
-        if get_transient_for:
-            wid = get_transient_for(window)
-        if wid:
-            return {"transient-for" : wid}
-        return {}
-    elif propname in ("window-type", "shape", "menu"):
-        #always send unchanged:
-        return {propname : raw()}
-    elif propname in ("decorations", ):
-        #-1 means unset, don't send it
-        v = raw()
-        if v<0:
-            return {}
-        return {propname : v}
-    elif propname in ("iconic", "fullscreen", "maximized", "above", "below", "shaded", "sticky", "skip-taskbar", "skip-pager", "modal", "focused"):
-        #always send these when requested
-        return {propname : bool(raw())}
-    elif propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
-        v = raw()
-        if v is False:
-            #save space: all these properties are assumed false if unspecified
-            return {}
-        return {propname : v}
-    elif propname in ("role", "opacity", "fullscreen-monitors"):
-        v = raw()
-        if v is None or v=="":
-            return {}
-        return {propname : v}
-    elif propname == "xid":
-        return {"xid" : hex(raw() or 0)}
-    elif propname == "group-leader":
-        gl = raw()
-        if not gl or not get_window_id:
-            return  {}
-        xid, gdkwin = gl
-        p = {}
-        if xid:
-            p["group-leader-xid"] = xid
-        if gdkwin and get_window_id:
-            glwid = get_window_id(gdkwin)
-            if glwid:
-                p["group-leader-wid"] = glwid
-        return p
-    #the properties below are not actually exported to the client (yet?)
-    #it was just easier to handle them here
-    #(convert to a type that can be encoded for xpra info):
-    elif propname in ("state", "protocols"):
-        return {"state" : tuple(raw() or [])}
-    elif propname == "allowed-actions":
-        return {"allowed-actions" : tuple(raw())}
-    elif propname == "frame":
-        frame = raw()
-        if not frame:
-            return {}
-        return {"frame" : tuple(frame)}
-    raise Exception("unhandled property name: %s" % propname)
-
-
-class WindowPropertyFilter(object):
-    def __init__(self, property_name, value):
-        self.property_name = property_name
-        self.value = value
-
-    def get_window_value(self, window):
-        return window.get_property(self.property_name)
-
-    def show(self, window):
-        try:
-            v = self.get_window_value(window)
-            log("%s.show(%s) %s(..)=%s", type(self).__name__, window, self.get_window_value, v)
-        except Exception:
-            log("%s.show(%s) %s(..) error:", type(self).__name__, window, self.get_window_value, exc_info=True)
-            v = None
-        e = self.evaluate(v)
-        return e
-
-    def evaluate(self, window_value):
-        raise NotImplementedError()
-
-
-class WindowPropertyIn(WindowPropertyFilter):
-
-    def evaluate(self, window_value):
-        return window_value in self.value
-
-
-class WindowPropertyNotIn(WindowPropertyIn):
-
-    def evaluate(self, window_value):
-        return not(WindowPropertyIn.evaluate(window_value))
 
 
 class ServerSource(FileTransferHandler):
@@ -524,6 +387,17 @@ class ServerSource(FileTransferHandler):
             self.dbus_server = None
             self.idle_add(ds.cleanup)
         self.protocol = None
+
+
+    def compressed_wrapper(self, datatype, data, min_saving=128):
+        if self.zlib or self.lz4 or self.lzo:
+            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
+            if len(cw)+min_saving<=len(data):
+                #the compressed version is smaller, use it:
+                return cw
+            #skip compressed version: fall through
+        #we can't compress, so at least avoid warnings in the protocol layer:
+        return Compressed(datatype, data, can_inline=True)
 
 
     def update_bandwidth_limits(self):
@@ -1311,7 +1185,6 @@ class ServerSource(FileTransferHandler):
             self.sound_sink = None
             ss.cleanup()
 
-
     def sound_control(self, action, *args):
         assert self.hello_sent
         action = bytestostr(action)
@@ -1497,27 +1370,8 @@ class ServerSource(FileTransferHandler):
             ws.set_av_sync_delay(self.av_sync_delay_total)
 
 
-    def set_screen_sizes(self, screen_sizes):
-        self.screen_sizes = screen_sizes or []
-        log("client screen sizes: %s", screen_sizes)
-
-    def set_desktops(self, desktops, desktop_names):
-        self.desktops = desktops or 1
-        self.desktop_names = desktop_names or []
-
-    # Takes the name of a WindowModel property, and returns a dictionary of
-    # xpra window metadata values that depend on that property
-    def _make_metadata(self, window, propname):
-        if propname not in self.metadata_supported:
-            metalog("make_metadata: client does not support '%s'", propname)
-            return {}
-        return make_window_metadata(window, propname,
-                                        get_transient_for=self.get_transient_for,
-                                        get_window_id=self.get_window_id)
-
-#
-# Keyboard magic
-#
+    ######################################################################
+    # keyboard :
     def set_layout(self, layout, variant, options):
         return self.keyboard_config.set_layout(layout, variant, options)
 
@@ -1572,9 +1426,9 @@ class ServerSource(FileTransferHandler):
             self.mouse_last_position = (x, y, rx, ry)
             self.send_async("pointer-position", wid, x, y, rx, ry)
 
-#
-# Functions for interacting with the network layer:
-#
+
+    ######################################################################
+    # network:
     def next_packet(self):
         """ Called by protocol.py when it is ready to send the next packet """
         packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more = None, None, None, None, True, False, False
@@ -1610,10 +1464,11 @@ class ServerSource(FileTransferHandler):
         netlog("update_connection_data(%s)", data)
         self.client_connection_data = data
 
-#
-# Functions used by the server to request something
-# (window events, stats, user requests, etc)
-#
+
+    ######################################################################
+    # Functions used by the server to request something
+    # (window events, stats, user requests, etc)
+    #
     def set_auto_refresh_delay(self, delay, window_ids):
         if window_ids is not None:
             wss = (self.window_sources.get(wid) for wid in window_ids)
@@ -1693,6 +1548,8 @@ class ServerSource(FileTransferHandler):
         self.hello_sent = True
 
 
+    ######################################################################
+    # info:
     def get_info(self):
         lpe = 0
         if self.last_ping_echoed_time>0:
@@ -1900,6 +1757,8 @@ class ServerSource(FileTransferHandler):
             self.send_more("server-event", *args)
 
 
+    ######################################################################
+    # clipboard:
     def send_clipboard_enabled(self, reason=""):
         if not self.hello_sent:
             return
@@ -1959,6 +1818,8 @@ class ServerSource(FileTransferHandler):
         self.queue_packet(packet)
 
 
+    ######################################################################
+    # grabs:
     def pointer_grab(self, wid):
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-grab", wid)
@@ -1968,16 +1829,8 @@ class ServerSource(FileTransferHandler):
             self.send("pointer-ungrab", wid)
 
 
-    def compressed_wrapper(self, datatype, data, min_saving=128):
-        if self.zlib or self.lz4 or self.lzo:
-            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
-            if len(cw)+min_saving<=len(data):
-                #the compressed version is smaller, use it:
-                return cw
-            #skip compressed version: fall through
-        #we can't compress, so at least avoid warnings in the protocol layer:
-        return Compressed(datatype, data, can_inline=True)
-
+    ######################################################################
+    # cursors:
     def send_cursor(self):
         if not self.send_cursors or self.suspended or not self.hello_sent:
             return
@@ -2034,11 +1887,8 @@ class ServerSource(FileTransferHandler):
         self.send_more("cursor", *args)
 
 
-    def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        if not self.send_bell or self.suspended or not self.hello_sent:
-            return
-        self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
-
+    ######################################################################
+    # notifications:
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon, user_callback=None):
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
@@ -2069,10 +1919,19 @@ class ServerSource(FileTransferHandler):
             return
         self.send_more("notify_close", nid)
 
+
     def set_deflate(self, level):
         self.send("set_deflate", level)
 
 
+    def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+        if not self.send_bell or self.suspended or not self.hello_sent:
+            return
+        self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+
+
+    ######################################################################
+    # webcam:
     def send_webcam_ack(self, device, frame, *args):
         if self.hello_sent:
             self.send_async("webcam-ack", device, frame, *args)
@@ -2082,6 +1941,8 @@ class ServerSource(FileTransferHandler):
             self.send_async("webcam-stop", device, message)
 
 
+    ######################################################################
+    # printing:
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
         printlog("set_printers(%s, %s, %s, %s, %s) for %s", printers, password_file, auth, encryption, encryption_keyfile, self)
         if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
@@ -2198,6 +2059,9 @@ class ServerSource(FileTransferHandler):
         if self.hello_sent:
             self.send("rpc-reply", *args)
 
+
+    ######################################################################
+    # pings:
     def ping(self):
         self.ping_timer = None
         #NOTE: all ping time/echo time/load avg values are in milliseconds
@@ -2246,7 +2110,6 @@ class ServerSource(FileTransferHandler):
             self.ping_timer = None
             self.source_remove(pt)
 
-
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
         timer = self.check_ping_echo_timers.get(echoedtime)
@@ -2264,6 +2127,17 @@ class ServerSource(FileTransferHandler):
             self.statistics.server_ping_latency.append((monotonic_time(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
+
+    ######################################################################
+    # screen and desktops:
+    def set_screen_sizes(self, screen_sizes):
+        self.screen_sizes = screen_sizes or []
+        log("client screen sizes: %s", screen_sizes)
+
+    def set_desktops(self, desktops, desktop_names):
+        self.desktops = desktops or 1
+        self.desktop_names = desktop_names or []
+
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
         if not self.hello_sent:
@@ -2274,11 +2148,50 @@ class ServerSource(FileTransferHandler):
             return True
         return False
 
-
     def show_desktop(self, show):
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
 
+    ######################################################################
+    # window filters:
+    def reset_window_filters(self):
+        self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
+
+    def get_all_window_filters(self):
+        return [f for uuid, f in self.window_filters if uuid==self.uuid]
+
+    def get_window_filter(self, object_name, property_name, operator, value):
+        if object_name!="window":
+            raise ValueError("invalid object name")
+        from xpra.server.window.filters import WindowPropertyIn, WindowPropertyNotIn
+        if operator=="=":
+            return WindowPropertyIn(property_name, [value])
+        elif operator=="!=":
+            return WindowPropertyNotIn(property_name, [value])
+        raise ValueError("unknown filter operator: %s" % operator)
+
+    def add_window_filter(self, object_name, property_name, operator, value):
+        window_filter = self.get_window_filter(object_name, property_name, operator, value)
+        assert window_filter
+        self.window_filters.append((self.uuid, window_filter.show))
+
+    def can_send_window(self, window):
+        if not self.hello_sent:
+            return False
+        for uuid,x in self.window_filters:
+            v = x(window)
+            if v is True:
+                return uuid==self.uuid
+        if self.send_windows and self.system_tray:
+            #common case shortcut
+            return True
+        if window.is_tray():
+            return self.system_tray
+        return self.send_windows
+
+
+    ######################################################################
+    # windows:
     def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
         if not self.can_send_window(window) or not self.window_initiate_moveresize:
             return
@@ -2304,39 +2217,16 @@ class ServerSource(FileTransferHandler):
             if len(v)>0:
                 self.send("window-metadata", wid, v)
 
-    def reset_window_filters(self):
-        self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
 
-    def get_all_window_filters(self):
-        return [f for uuid, f in self.window_filters if uuid==self.uuid]
-
-    def get_window_filter(self, object_name, property_name, operator, value):
-        if object_name!="window":
-            raise ValueError("invalid object name")
-        if operator=="=":
-            return WindowPropertyIn(property_name, [value])
-        elif operator=="!=":
-            return WindowPropertyNotIn(property_name, [value])
-        raise ValueError("unknown filter operator: %s" % operator)
-
-    def add_window_filter(self, object_name, property_name, operator, value):
-        window_filter = self.get_window_filter(object_name, property_name, operator, value)
-        assert window_filter
-        self.window_filters.append((self.uuid, window_filter.show))
-
-    def can_send_window(self, window):
-        if not self.hello_sent:
-            return False
-        for uuid,x in self.window_filters:
-            v = x(window)
-            if v is True:
-                return uuid==self.uuid
-        if self.send_windows and self.system_tray:
-            #common case shortcut
-            return True
-        if window.is_tray():
-            return self.system_tray
-        return self.send_windows
+    # Takes the name of a WindowModel property, and returns a dictionary of
+    # xpra window metadata values that depend on that property
+    def _make_metadata(self, window, propname):
+        if propname not in self.metadata_supported:
+            metalog("make_metadata: client does not support '%s'", propname)
+            return {}
+        return make_window_metadata(window, propname,
+                                        get_transient_for=self.get_transient_for,
+                                        get_window_id=self.get_window_id)
 
     def new_tray(self, wid, window, w, h):
         assert window.is_tray()
@@ -2429,6 +2319,8 @@ class ServerSource(FileTransferHandler):
             pass
 
 
+    ######################################################################
+    # encoding attributes
     def set_min_quality(self, min_quality):
         for ws in tuple(self.window_sources.values()):
             ws.set_min_quality(min_quality)
