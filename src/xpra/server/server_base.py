@@ -214,6 +214,13 @@ class ServerBase(ServerCore):
         raise NotImplementedError()
 
 
+    def server_event(self, *args):
+        for s in self._server_sources.values():
+            s.send_server_event(*args)
+        if self.dbus_server:
+            self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
+
+
     def init(self, opts):
         ServerCore.init(self, opts)
         log("ServerBase.init(%s)", opts)
@@ -313,6 +320,30 @@ class ServerBase(ServerCore):
         self.init_memcheck()
         log("threaded_init() end")
 
+
+    def server_is_ready(self):
+        ServerCore.server_is_ready(self)
+        self.server_event("ready")
+
+
+    def run(self):
+        if self.pings>0:
+            self.timeout_add(1000*self.pings, self.send_ping)
+        return ServerCore.run(self)
+
+    def do_cleanup(self):
+        self.server_event("exit")
+        if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
+            self.terminate_children_processes()
+        if self.notifications_forwarder:
+            thread.start_new_thread(self.notifications_forwarder.release, ())
+            self.notifications_forwarder = None
+        getVideoHelper().cleanup()
+        reaper_cleanup()
+        self.cleanup_pulseaudio()
+        self.stop_virtual_webcam()
+
+
     def init_encodings(self):
         load_codecs(decoders=False)
         encs, core_encs = [], []
@@ -400,6 +431,9 @@ class ServerBase(ServerCore):
             except:
                 pass
 
+
+    ######################################################################
+    # printing:
     def init_printing(self):
         printing = self.file_transfer.printing
         if not printing or WIN32:
@@ -441,6 +475,163 @@ class ServerBase(ServerCore):
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
 
+    def _process_print(self, _proto, packet):
+        #ie: from the xpraforwarder we call this command:
+        #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
+        assert self.file_transfer.printing
+        #printlog("_process_print(%s, %s)", proto, packet)
+        if len(packet)<3:
+            log.error("Error: invalid print packet, only %i arguments", len(packet))
+            log.error(" %s", [repr_ellipsized(x) for x in packet])
+            return
+        filename, file_data = packet[1:3]
+        mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
+        if len(packet)>=4:
+            mimetype = packet[3]
+        if len(packet)>=5:
+            source_uuid = packet[4]
+        if len(packet)>=6:
+            title = packet[5]
+        if len(packet)>=7:
+            printer = packet[6]
+        if len(packet)>=8:
+            no_copies = int(packet[7])
+        if len(packet)>=9:
+            print_options = packet[8]
+        #parse and validate:
+        if len(mimetype)>=128:
+            log.error("Error: invalid mimetype in print packet:")
+            log.error(" %s", repr_ellipsized(mimetype))
+            return
+        if type(print_options)!=dict:
+            s = bytestostr(print_options)
+            print_options = {}
+            for x in s.split(" "):
+                parts = x.split("=", 1)
+                if len(parts)==2:
+                    print_options[parts[0]] = parts[1]
+        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options))
+        printlog("process_print: got %s bytes for file %s", len(file_data), filename)
+        #parse the print options:
+        u = hashlib.sha1()
+        u.update(file_data)
+        printlog("sha1 digest: %s", u.hexdigest())
+        options = {
+            "printer"    : printer,
+            "title"      : title,
+            "copies"     : no_copies,
+            "options"    : print_options,
+            "sha1"       : u.hexdigest(),
+            }
+        printlog("parsed printer options: %s", options)
+        if SAVE_PRINT_JOBS:
+            self._save_print_job(filename, file_data)
+
+        sent = 0
+        sources = tuple(self._server_sources.values())
+        printlog("will try to send to %i clients: %s", len(sources), sources)
+        for ss in sources:
+            if source_uuid!='*' and ss.uuid!=source_uuid:
+                printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
+                continue
+            if not ss.printing:
+                if source_uuid!='*':
+                    printlog.warn("Warning: printing is not enabled for:")
+                    printlog.warn(" %s", ss)
+                else:
+                    printlog("printing is not enabled for %s", ss)
+                continue
+            if not ss.printers:
+                printlog.warn("Warning: client %s does not have any printers", ss.uuid)
+                continue
+            if printer not in ss.printers:
+                printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
+                continue
+            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
+            if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
+                sent += 1
+        #warn if not sent:
+        if sent==0:
+            l = printlog.warn
+        else:
+            l = printlog.info
+        unit_str, v = to_std_unit(len(file_data), unit=1024)
+        l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
+
+    def _save_print_job(self, filename, file_data):
+        try:
+            save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
+            with open(save_filename, "wb") as f:
+                f.write(file_data)
+            printlog.info("saved print job to: %s", save_filename)
+        except Exception as e:
+            printlog.error("Error: failed to save print job to %s", save_filename)
+            printlog.error(" %s", e)
+
+    def _process_printers(self, proto, packet):
+        if not self.file_transfer.printing or WIN32:
+            log.error("Error: received printer definitions data")
+            log.error(" but this server does not support printer forwarding")
+            return
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        printers = packet[1]
+        auth_class = self.auth_classes.get("unix-domain")
+        ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
+
+    def get_printing_info(self):
+        d = {
+             "lpadmin"              : self.lpadmin,
+             "lpinfo"               : self.lpinfo,
+             "add-printer-options"  : self.add_printer_options,
+             }
+        if self.file_transfer.printing:
+            from xpra.platform.printing import get_info
+            d.update(get_info())
+        return d
+
+
+    ######################################################################
+    # file transfers:
+    def _process_send_file(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for send-file packet")
+            return
+        ss._process_send_file(packet)
+
+    def _process_ack_file_chunk(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for ack-file-chunk packet")
+            return
+        ss._process_ack_file_chunk(packet)
+
+    def _process_send_file_chunk(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for send-file-chunk packet")
+            return
+        ss._process_send_file_chunk(packet)
+
+    def _process_send_data_request(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for send-file-request packet")
+            return
+        ss._process_send_data_request(packet)
+
+    def _process_send_data_response(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            log.warn("Warning: invalid client source for send-data-response packet")
+            return
+        ss._process_send_data_response(packet)
+
+
+    ######################################################################
+    # webcam:
     def init_webcam(self):
         if not self.webcam:
             return
@@ -481,6 +672,160 @@ class ServerBase(ServerCore):
         webcamlog.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
         return len(devices)
 
+    def get_webcam_info(self):
+        webcam_info = {
+                       ""                       : self.webcam,
+                       }
+        if self.webcam_option.startswith("/dev/video"):
+            webcam_info["device"] = self.webcam_option
+        webcam_info["virtual-video-devices"] = self.virtual_video_devices
+        d = self.webcam_forwarding_device
+        if d:
+            webcam_info.update(d.get_info())
+        return webcam_info
+
+    def _process_webcam_start(self, proto, packet):
+        if self.readonly:
+            return
+        assert self.webcam
+        ss = self._server_sources.get(proto)
+        if not ss:
+            webcamlog.warn("Warning: invalid client source for webcam start")
+            return
+        device, w, h = packet[1:4]
+        log("starting webcam %sx%s", w, h)
+        self.start_virtual_webcam(ss, device, w, h)
+
+    def start_virtual_webcam(self, ss, device, w, h):
+        assert w>0 and h>0
+        if self.webcam_option.startswith("/dev/video"):
+            #use the device specified:
+            devices = {
+                0 : {
+                    "device" : self.webcam_option,
+                    }
+                       }
+        else:
+            from xpra.platform.xposix.webcam import get_virtual_video_devices
+            devices = get_virtual_video_devices()
+            if len(devices)==0:
+                webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
+                ss.send_webcam_stop(device)
+                return
+            if self.webcam_forwarding_device:
+                self.stop_virtual_webcam()
+            webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
+        errs = {}
+        for device_id, device_info in devices.items():
+            webcamlog("trying device %s: %s", device_id, device_info)
+            device_str = device_info.get("device")
+            try:
+                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
+                in_cs = get_input_colorspaces()
+                p = Pusher()
+                src_format = in_cs[0]
+                p.init_context(w, h, w, src_format, device_str)
+                self.webcam_forwarding_device = p
+                webcamlog.info("webcam forwarding using %s", device_str)
+                #this tell the client to start sending, and the size to use - which may have changed:
+                ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
+                return
+            except Exception as e:
+                errs[device_str] = str(e)
+                del e
+        #all have failed!
+        #cannot start webcam..
+        ss.send_webcam_stop(device, str(e))
+        webcamlog.error("Error setting up webcam forwarding:")
+        if len(errs)>1:
+            webcamlog.error(" tried %i devices:", len(errs))
+        for device_str, err in errs.items():
+            webcamlog.error(" %s : %s", device_str, err)
+
+    def _process_webcam_stop(self, proto, packet):
+        assert proto in self._server_sources
+        if self.readonly:
+            return
+        device, message = (packet+[""])[1:3]
+        webcamlog("stopping webcam device %s", ": ".join([str(x) for x in (device, message)]))
+        if not self.webcam_forwarding_device:
+            webcamlog.warn("Warning: cannot stop webcam device %s: no such context!", device)
+            return
+        self.stop_virtual_webcam()
+
+    def stop_virtual_webcam(self):
+        webcamlog("stop_virtual_webcam() webcam_forwarding_device=%s", self.webcam_forwarding_device)
+        vfd = self.webcam_forwarding_device
+        if vfd:
+            self.webcam_forwarding_device = None
+            vfd.clean()
+
+    def _process_webcam_frame(self, proto, packet):
+        if self.readonly:
+            return
+        device, frame_no, encoding, w, h, data = packet[1:7]
+        webcamlog("webcam-frame no %i: %s %ix%i", frame_no, encoding, w, h)
+        assert encoding and w and h and data
+        ss = self._server_sources.get(proto)
+        if not ss:
+            webcamlog.warn("Warning: invalid client source for webcam frame")
+            return
+        vfd = self.webcam_forwarding_device
+        if not self.webcam_forwarding_device:
+            webcamlog.warn("Warning: webcam forwarding is not active, dropping frame")
+            ss.send_webcam_stop(device, "not started")
+            return
+        try:
+            from xpra.codecs.pillow.decode import get_encodings
+            assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
+            rgb_pixel_format = "BGRX"       #BGRX
+            from PIL import Image
+            buf = BytesIOClass(data)
+            img = Image.open(buf)
+            pixels = img.tobytes('raw', rgb_pixel_format)
+            from xpra.codecs.image_wrapper import ImageWrapper
+            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
+            src_format = vfd.get_src_format()
+            if not src_format:
+                #closed / closing
+                return
+            #one of those two should be present
+            try:
+                csc_mod = "csc_swscale"
+                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+            except ImportError:
+                ss.send_webcam_stop(device, "no csc module")
+                return
+            try:
+                assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
+                assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
+            except Exception as e:
+                webcamlog.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
+                webcamlog.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
+                webcamlog.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
+                ss.send_webcam_stop(device, "csc format error")
+                return
+            tw = vfd.get_width()
+            th = vfd.get_height()
+            csc = ColorspaceConverter()
+            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
+            image = csc.convert_image(bgrx_image)
+            vfd.push_image(image)
+            #tell the client all is good:
+            ss.send_webcam_ack(device, frame_no)
+        except Exception as e:
+            webcamlog("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)
+            webcamlog.error("Error processing webcam frame:")
+            if str(e):
+                webcamlog.error(" %s", e)
+            else:
+                webcamlog.error("unknown error", exc_info=True)
+            ss.send_webcam_stop(device, str(e))
+            self.stop_virtual_webcam()
+
+
+    ######################################################################
+    # notifications:
     def init_notification_forwarder(self):
         log("init_notification_forwarder() enabled=%s", self.notifications)
         if self.notifications and POSIX and not OSX:
@@ -534,7 +879,32 @@ class ServerBase(ServerCore):
         else:
             client_callback(nid, action_key)
 
+    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+        try:
+            assert self.notifications_forwarder and self.notifications
+            icon = self.get_notification_icon(str(app_icon))
+            if os.path.isabs(str(app_icon)):
+                app_icon = ""
+            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), repr_ellipsized(str(icon)))
+            for ss in self._server_sources.values():
+                ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+        except Exception as e:
+            notifylog("notify_callback failed", exc_info=True)
+            notifylog.error("Error processing notification:")
+            notifylog.error(" %s", e)
 
+    def get_notification_icon(self, _icon_string):
+        return []
+
+    def notify_close_callback(self, nid):
+        assert self.notifications_forwarder and self.notifications
+        notifylog("notify_close_callback(%s)", nid)
+        for ss in self._server_sources.values():
+            ss.notify_close(int(nid))
+
+
+    ######################################################################
+    # audio:
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
@@ -728,6 +1098,31 @@ class ServerBase(ServerCore):
         soundlog("init_sound_options microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
 
+    def get_pulseaudio_info(self):
+        info = {
+            "command"               : self.pulseaudio_command,
+            "configure-commands"    : self.pulseaudio_configure_commands,
+            }
+        if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
+            info["pid"] = self.pulseaudio_proc.pid
+        if self.pulseaudio_private_dir and self.pulseaudio_private_socket:
+            info["private-directory"] = self.pulseaudio_private_dir
+            info["private-socket"] = self.pulseaudio_private_socket
+        return info
+
+    def _process_sound_control(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.sound_control(*packet[1:])
+
+    def _process_sound_data(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.sound_data(*packet[1:])
+
+
+    ######################################################################
+    # clipboard:
     def init_clipboard(self):
         clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
         ### Clipboard handling:
@@ -762,6 +1157,95 @@ class ServerBase(ServerCore):
             #clipboardlog("gdk clipboard helper failure", exc_info=True)
             clipboardlog.error("Error: failed to setup clipboard helper", exc_info=True)
 
+    def parse_hello_ui_clipboard(self, ss, c):
+        #take the clipboard if no-one else has it yet:
+        if not ss.clipboard_enabled:
+            clipboardlog("client does not support clipboard")
+            return
+        if not self._clipboard_helper:
+            clipboardlog("server does not support clipboard")
+            return
+        cc = self._clipboard_client
+        if cc and not cc.is_closed():
+            clipboardlog("another client already owns the clipboard")
+            return
+        self._clipboard_client = ss
+        self._clipboard_helper.init_proxies_uuid()
+        #deal with buggy win32 clipboards:
+        if "clipboard.greedy" not in c:
+            #old clients without the flag: take a guess based on platform:
+            client_platform = c.strget("platform", "")
+            greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
+        else:
+            greedy = c.boolget("clipboard.greedy")
+        self._clipboard_helper.set_greedy_client(greedy)
+        want_targets = c.boolget("clipboard.want_targets")
+        self._clipboard_helper.set_want_targets_client(want_targets)
+        #the selections the client supports (default to all):
+        client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+        clipboardlog("client %s is the clipboard peer", ss)
+        clipboardlog(" greedy=%s", greedy)
+        clipboardlog(" want targets=%s", want_targets)
+        clipboardlog(" server has selections: %s", csv(self._clipboards))
+        clipboardlog(" client initial selections: %s", csv(client_selections))
+        self._clipboard_helper.enable_selections(client_selections)
+
+    def process_clipboard_packet(self, ss, packet):
+        if self.readonly:
+            return
+        if not ss:
+            #protocol has been dropped!
+            return
+        assert self._clipboard_client==ss, \
+                "the clipboard packet '%s' does not come from the clipboard owner!" % packet[0]
+        if not ss.clipboard_enabled:
+            #this can happen when we disable clipboard in the middle of transfers
+            #(especially when there is a clipboard loop)
+            log.warn("received a clipboard packet from a source which does not have clipboard enabled!")
+            return
+        assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
+        self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
+
+    def _process_clipboard_enabled_status(self, proto, packet):
+        if self.readonly:
+            return
+        clipboard_enabled = packet[1]
+        ss = self._server_sources.get(proto)
+        self.set_clipboard_enabled_status(ss, clipboard_enabled)
+
+    def set_clipboard_enabled_status(self, ss, clipboard_enabled):
+        ch = self._clipboard_helper
+        if not ch:
+            clipboardlog.warn("Warning: client try to toggle clipboard-enabled status,")
+            clipboardlog.warn(" but we do not support clipboard at all! Ignoring it.")
+            return
+        cc = self._clipboard_client
+        if cc!=ss or ss is None:
+            clipboardlog.warn("Warning: received a request to change the clipboard status,")
+            clipboardlog.warn(" but it does not come from the clipboard owner! Ignoring it.")
+        cc.clipboard_enabled = clipboard_enabled
+        if not clipboard_enabled:
+            ch.enable_selections([])
+        clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
+
+    def clipboard_progress(self, local_requests, _remote_requests):
+        assert self._clipboard_helper is not None
+        if self._clipboard_client:
+            self._clipboard_client.send_clipboard_progress(local_requests)
+
+    def send_clipboard_packet(self, *parts):
+        assert self._clipboard_helper is not None
+        if self._clipboard_client:
+            self._clipboard_client.send_clipboard(parts)
+
+    def get_clipboard_info(self):
+        if self._clipboard_helper is None:
+            return {}
+        return self._clipboard_helper.get_info()
+
+
+    ######################################################################
+    # keyboard:
     def init_keyboard(self):
         keylog("init_keyboard()")
         ## These may get set by the client:
@@ -783,6 +1267,316 @@ class ServerBase(ServerCore):
     def watch_keymap_changes(self):
         pass
 
+    def parse_hello_ui_keyboard(self, ss, c):
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        #parse client config:
+        ss.keyboard_config = self.get_keyboard_config(c)
+
+        if not other_ui_clients:
+            #so only activate this feature afterwards:
+            self.keyboard_sync = c.boolget("keyboard_sync", True)
+            key_repeat = c.intpair("key_repeat")
+            self.set_keyboard_repeat(key_repeat)
+            #always clear modifiers before setting a new keymap
+            ss.make_keymask_match(c.strlistget("modifiers", []))
+        else:
+            self.set_keyboard_repeat(None)
+            key_repeat = (0, 0)
+
+        self.set_keymap(ss)
+        return key_repeat
+
+    def get_keyboard_info(self):
+        start = monotonic_time()
+        info = {
+             "sync"             : self.keyboard_sync,
+             "repeat"           : {
+                                   "delay"      : self.key_repeat_delay,
+                                   "interval"   : self.key_repeat_interval,
+                                   },
+             "keys_pressed"     : tuple(self.keys_pressed.values()),
+             "modifiers"        : self.xkbmap_mod_meanings,
+             }
+        kc = self.keyboard_config
+        if kc:
+            info.update(kc.get_info())
+        log("ServerBase.get_keyboard_info took %ims", (monotonic_time()-start)*1000)
+        return info
+
+    def _process_layout(self, proto, packet):
+        if self.readonly:
+            return
+        layout, variant = packet[1:3]
+        if len(packet)>=4:
+            options = packet[3]
+        else:
+            options = ""
+        ss = self._server_sources.get(proto)
+        if ss and ss.set_layout(layout, variant, options):
+            self.set_keymap(ss, force=True)
+
+    def _process_keymap(self, proto, packet):
+        if self.readonly:
+            return
+        props = typedict(packet[1])
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        log("received new keymap from client")
+        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
+        if other_ui_clients:
+            log.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
+            return
+        kc = ss.keyboard_config
+        if kc and kc.enabled:
+            kc.parse_options(props)
+            self.set_keymap(ss, True)
+        modifiers = props.get("modifiers", [])
+        ss.make_keymask_match(modifiers)
+
+    def set_keyboard_layout_group(self, grp):
+        #only actually implemented in X11ServerBase
+        pass
+
+    def _process_key_action(self, proto, packet):
+        if self.readonly:
+            return
+        wid, keyname, pressed, modifiers, keyval, _, client_keycode, group = packet[1:9]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        keyname = bytestostr(keyname)
+        modifiers = tuple(bytestostr(x) for x in modifiers)
+        self.ui_driver = ss.uuid
+        self.set_keyboard_layout_group(group)
+        keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
+        keylog("process_key_action(%s) server keycode=%s", packet, keycode)
+        #currently unused: (group, is_modifier) = packet[8:10]
+        self._focus(ss, wid, None)
+        ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
+        #negative keycodes are used for key events without a real keypress/unpress
+        #for example, used by win32 to send Caps_Lock/Num_Lock changes
+        if keycode>=0:
+            try:
+                self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
+            except Exception as e:
+                keylog("process_key_action%s", (proto, packet), exc_info=True)
+                keylog.error("Error: failed to %s key", ["unpress", "press"][pressed])
+                keylog.error(" %s", e)
+                keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
+        ss.user_event()
+
+    def get_keycode(self, ss, client_keycode, keyname, modifiers):
+        return ss.get_keycode(client_keycode, keyname, modifiers)
+
+    def is_modifier(self, keyname, keycode):
+        if keyname in DEFAULT_MODIFIER_MEANINGS.keys():
+            return True
+        #keyboard config should always exist if we are here?
+        if self.keyboard_config:
+            return self.keyboard_config.is_modifier(keycode)
+        return False
+
+    def fake_key(self, keycode, press):
+        pass
+
+    def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
+        """
+            Does the actual press/unpress for keys
+            Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
+        """
+        keylog("handle_key(%s,%s,%s,%s,%s,%s) keyboard_sync=%s", wid, pressed, name, keyval, keycode, modifiers, self.keyboard_sync)
+        if pressed and (wid is not None) and (wid not in self._id_to_window):
+            keylog("window %s is gone, ignoring key press", wid)
+            return
+        if keycode<0:
+            keylog.warn("ignoring invalid keycode=%s", keycode)
+            return
+        if keycode in self.keys_timedout:
+            del self.keys_timedout[keycode]
+        def press():
+            keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
+            self.keys_pressed[keycode] = name
+            self.fake_key(keycode, True)
+        def unpress():
+            keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
+            if keycode in self.keys_pressed:
+                del self.keys_pressed[keycode]
+            self.fake_key(keycode, False)
+        is_mod = self.is_modifier(name, keycode)
+        if pressed:
+            if keycode not in self.keys_pressed:
+                press()
+                if not self.keyboard_sync and not is_mod:
+                    #keyboard is not synced: client manages repeat so unpress
+                    #it immediately unless this is a modifier key
+                    #(as modifiers are synced via many packets: key, focus and mouse events)
+                    unpress()
+            else:
+                keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
+        else:
+            if keycode in self.keys_pressed:
+                unpress()
+            else:
+                keylog("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
+        if not is_mod and self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
+            self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
+
+    def cancel_key_repeat_timer(self):
+        if self.key_repeat_timer:
+            self.source_remove(self.key_repeat_timer)
+            self.key_repeat_timer = None
+
+    def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
+        """ Schedules/cancels the key repeat timeouts """
+        self.cancel_key_repeat_timer()
+        if pressed:
+            delay_ms = min(1500, max(250, delay_ms))
+            keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
+            now = monotonic_time()
+            self.key_repeat_timer = self.timeout_add(0, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers)
+
+    def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers):
+        self.key_repeat_timer = None
+        now = monotonic_time()
+        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
+        self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
+        self.keys_timedout[keycode] = now
+
+    def _process_key_repeat(self, proto, packet):
+        if self.readonly:
+            return
+        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        keyname = bytestostr(keyname)
+        modifiers = tuple(bytestostr(x) for x in modifiers)
+        keycode = ss.get_keycode(client_keycode, keyname, modifiers)
+        #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
+        ss.make_keymask_match(modifiers)
+        if not self.keyboard_sync:
+            #this check should be redundant: clients should not send key-repeat without
+            #having keyboard_sync enabled
+            return
+        if keycode not in self.keys_pressed:
+            #the key is no longer pressed, has it timed out?
+            when_timedout = self.keys_timedout.get(keycode, None)
+            if when_timedout:
+                del self.keys_timedout[keycode]
+            now = monotonic_time()
+            if when_timedout and (now-when_timedout)<30:
+                #not so long ago, just re-press it now:
+                keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)
+                self.keys_pressed[keycode] = keyname
+                self.fake_key(keycode, True)
+        self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
+        ss.user_event()
+
+    def _process_keyboard_sync_enabled_status(self, proto, packet):
+        assert proto in self._server_sources
+        if self.readonly:
+            return
+        self.keyboard_sync = bool(packet[1])
+        keylog("toggled keyboard-sync to %s", self.keyboard_sync)
+
+    def _keys_changed(self, *_args):
+        if not self.keymap_changing:
+            for ss in self._server_sources.values():
+                ss.keys_changed()
+
+    def _clear_keys_pressed(self):
+        pass
+
+    def get_keyboard_config(self, _props):
+        return None
+
+    def set_keyboard_repeat(self, key_repeat):
+        pass
+
+    def set_keymap(self, ss, force=False):
+        pass
+
+
+    ######################################################################
+    # pointer:
+    def _move_pointer(self, wid, pos, *args):
+        raise NotImplementedError()
+
+    def _adjust_pointer(self, proto, wid, pointer):
+        #the window may not be mapped at the same location by the client:
+        ss = self._server_sources.get(proto)
+        window = self._id_to_window.get(wid)
+        if ss and window:
+            ws = ss.get_window_source(wid)
+            if ws:
+                mapped_at = ws.mapped_at
+                pos = self.get_window_position(window)
+                mouselog("client %s: server window position: %s, client window position: %s", ss, pos, mapped_at)
+                if mapped_at and pos:
+                    wx, wy = pos
+                    cx, cy = mapped_at[:2]
+                    if wx!=cx or wy!=cy:
+                        px, py = pointer
+                        return px+(wx-cx), py+(wy-cy)
+        return pointer
+
+    def _process_mouse_common(self, proto, wid, pointer, *args):
+        pointer = self._adjust_pointer(proto, wid, pointer)
+        #TODO: adjust args too
+        self.do_process_mouse_common(proto, wid, pointer, *args)
+        return pointer
+
+    def do_process_mouse_common(self, proto, wid, pointer, *args):
+        pass
+
+    def _process_button_action(self, proto, packet):
+        mouselog("process_button_action(%s, %s)", proto, packet)
+        if self.readonly:
+            return
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        ss.user_event()
+        self.ui_driver = ss.uuid
+        self.do_process_button_action(proto, *packet[1:])
+
+    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
+        pass
+
+
+    def _update_modifiers(self, proto, wid, modifiers):
+        pass
+
+    def _process_pointer_position(self, proto, packet):
+        if self.readonly:
+            return
+        wid, pointer, modifiers = packet[1:4]
+        ss = self._server_sources.get(proto)
+        if ss is not None:
+            ss.mouse_last_position = pointer
+        if self.ui_driver and self.ui_driver!=ss.uuid:
+            return
+        self._update_modifiers(proto, wid, modifiers)
+        self._process_mouse_common(proto, wid, pointer, *packet[5:])
+
+
+    ######################################################################
+    # input devices:
+    def _process_input_devices(self, _proto, packet):
+        self.input_devices_format = packet[1]
+        self.input_devices_data = packet[2]
+        from xpra.util import print_nested_dict
+        mouselog("client %s input devices:", self.input_devices_format)
+        print_nested_dict(self.input_devices_data, print_fn=mouselog)
+        self.setup_input_devices()
+
+    def setup_input_devices(self):
+        pass
+
+
+    ######################################################################
+    # dbus:
     def init_dbus_helper(self):
         if not self.supports_dbus_proxy:
             return
@@ -796,7 +1590,6 @@ class ServerBase(ServerCore):
             log.warn(" %s", e)
             self.dbus_helper = None
             self.supports_dbus_proxy = False
-
 
     def make_dbus_server(self):
         from xpra.server.dbus.dbus_server import DBUS_Server
@@ -812,86 +1605,8 @@ class ServerBase(ServerCore):
     def is_shown(self, _window):
         return True
 
-    def init_packet_handlers(self):
-        ServerCore.init_packet_handlers(self)
-        self._authenticated_packet_handlers = {
-            "set-clipboard-enabled":                self._process_clipboard_enabled_status,
-            "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
-            "damage-sequence":                      self._process_damage_sequence,
-            "ping":                                 self._process_ping,
-            "ping_echo":                            self._process_ping_echo,
-            "set-cursors":                          self._process_set_cursors,
-            "set-notify":                           self._process_set_notify,
-            "set-bell":                             self._process_set_bell,
-            "logging":                              self._process_logging,
-            "command_request":                      self._process_command_request,
-            "printers":                             self._process_printers,
-            "send-file":                            self._process_send_file,
-            "ack-file-chunk":                       self._process_ack_file_chunk,
-            "send-file-chunk":                      self._process_send_file_chunk,
-            "send-data-request":                    self._process_send_data_request,
-            "send-data-response":                   self._process_send_data_response,
-            "webcam-start":                         self._process_webcam_start,
-            "webcam-stop":                          self._process_webcam_stop,
-            "webcam-frame":                         self._process_webcam_frame,
-            "connection-data":                      self._process_connection_data,
-            "bandwidth-limit":                      self._process_bandwidth_limit,
-            "sharing-toggle":                       self._process_sharing_toggle,
-            "lock-toggle":                          self._process_lock_toggle,
-            "command-signal":                       self._process_command_signal,
-          }
-        self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
-        self._authenticated_ui_packet_handlers.update({
-            #windows:
-            "map-window":                           self._process_map_window,
-            "unmap-window":                         self._process_unmap_window,
-            "configure-window":                     self._process_configure_window,
-            "close-window":                         self._process_close_window,
-            "focus":                                self._process_focus,
-            #keyboard:
-            "key-action":                           self._process_key_action,
-            "key-repeat":                           self._process_key_repeat,
-            "layout-changed":                       self._process_layout,
-            "keymap-changed":                       self._process_keymap,
-            #mouse:
-            "button-action":                        self._process_button_action,
-            "pointer-position":                     self._process_pointer_position,
-            #attributes / settings:
-            "server-settings":                      self._process_server_settings,
-            "quality":                              self._process_quality,
-            "min-quality":                          self._process_min_quality,
-            "speed":                                self._process_speed,
-            "min-speed":                            self._process_min_speed,
-            "set_deflate":                          self._process_set_deflate,
-            "desktop_size":                         self._process_desktop_size,
-            "encoding":                             self._process_encoding,
-            "suspend":                              self._process_suspend,
-            "resume":                               self._process_resume,
-            #dbus:
-            "rpc":                                  self._process_rpc,
-            #sound:
-            "sound-control":                        self._process_sound_control,
-            "sound-data":                           self._process_sound_data,
-            #requests:
-            "shutdown-server":                      self._process_shutdown_server,
-            "exit-server":                          self._process_exit_server,
-            "buffer-refresh":                       self._process_buffer_refresh,
-            "screenshot":                           self._process_screenshot,
-            "info-request":                         self._process_info_request,
-            "start-command":                        self._process_start_command,
-            "print":                                self._process_print,
-            "input-devices":                        self._process_input_devices,
-            #notifications:
-            "notification-close":                   self._process_notification_close,
-            "notification-action":                  self._process_notification_action,
-            # Note: "clipboard-*" packets are handled via a special case..
-            })
 
-    def init_aliases(self):
-        packet_types = list(self._default_packet_handlers.keys())
-        packet_types += list(self._authenticated_packet_handlers.keys())
-        packet_types += list(self._authenticated_ui_packet_handlers.keys())
-        self.do_init_aliases(packet_types)
+
 
     def init_control_commands(self):
         super(ServerBase, self).init_control_commands()
@@ -972,17 +1687,8 @@ class ServerBase(ServerCore):
             self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, max_args=1, validation=[from0to100])
 
 
-    def server_is_ready(self):
-        ServerCore.server_is_ready(self)
-        self.server_event("ready")
-
-
-    def run(self):
-        if self.pings>0:
-            self.timeout_add(1000*self.pings, self.send_ping)
-        return ServerCore.run(self)
-
-
+    ######################################################################
+    # start commands:
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
         env = os.environ.copy()
@@ -1048,6 +1754,23 @@ class ServerBase(ServerCore):
             execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
             return None
 
+    def _process_start_command(self, proto, packet):
+        log("start new command: %s", packet)
+        if not self.start_new_commands:
+            log.warn("Warning: received start-command request,")
+            log.warn(" but the feature is currently disabled")
+            return
+        name, command, ignore = packet[1:4]
+        proc = self.start_command(name, command, ignore)
+        if len(packet)>=5:
+            shared = packet[4]
+            if proc and not shared:
+                ss = self._server_sources.get(proto)
+                assert ss
+                log("adding filter: pid=%s for %s", proc.pid, proto)
+                ss.add_window_filter("window", "pid", "=", proc.pid)
+        log("process_start_command: proc=%s", proc)
+
     def add_process(self, process, name, command, ignore=False, callback=None):
         return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
 
@@ -1090,7 +1813,6 @@ class ServerBase(ServerCore):
             execlog("still not terminated: %s", wait_for)
         execlog("done waiting for child commands")
 
-
     def guess_session_name(self, procs):
         if not procs:
             return
@@ -1109,20 +1831,25 @@ class ServerBase(ServerCore):
         if cmd_names:
             self.session_name = csv(cmd_names)
 
+    def get_commands_info(self):
+        info = {
+                "start"                     : self.start_commands,
+                "start-child"               : self.start_child_commands,
+                "start-after-connect"       : self.start_after_connect,
+                "start-child-after-connect" : self.start_child_after_connect,
+                "start-on-connect"          : self.start_on_connect,
+                "start-child-on-connect"    : self.start_child_on_connect,
+                "exit-with-children"        : self.exit_with_children,
+                "start-after-connect-done"  : self.start_after_connect_done,
+                "start-new"                 : self.start_new_commands,
+                }
+        for i,procinfo in enumerate(self.children_started):
+            info[i] = procinfo.get_info()
+        return info
 
-    def do_cleanup(self):
-        self.server_event("exit")
-        if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
-            self.terminate_children_processes()
-        if self.notifications_forwarder:
-            thread.start_new_thread(self.notifications_forwarder.release, ())
-            self.notifications_forwarder = None
-        getVideoHelper().cleanup()
-        reaper_cleanup()
-        self.cleanup_pulseaudio()
-        self.stop_virtual_webcam()
 
-
+    ######################################################################
+    # shutdown / exit commands:
     def _process_exit_server(self, _proto, _packet):
         log.info("Exiting in response to client request")
         self.cleanup_all_protocols(SERVER_EXIT)
@@ -1136,126 +1863,9 @@ class ServerBase(ServerCore):
         self.cleanup_all_protocols(SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
 
-    def force_disconnect(self, proto):
-        self.cleanup_protocol(proto)
-        ServerCore.force_disconnect(self, proto)
 
-    def disconnect_protocol(self, protocol, reason, *extra):
-        ServerCore.disconnect_protocol(self, protocol, reason, *extra)
-        self.cleanup_protocol(protocol)
-
-    def cleanup_protocol(self, protocol):
-        netlog("cleanup_protocol(%s)", protocol)
-        #this ensures that from now on we ignore any incoming packets coming
-        #from this connection as these could potentially set some keys pressed, etc
-        try:
-            del self._potential_protocols[protocol]
-        except:
-            pass
-        source = self._server_sources.get(protocol)
-        if source:
-            self.cleanup_source(source)
-            try:
-                del self._server_sources[protocol]
-            except:
-                pass
-        return source
-
-    def cleanup_source(self, source):
-        had_client = len(self._server_sources)>0
-        self.server_event("connection-lost", source.uuid)
-        if self.ui_driver==source.uuid:
-            self.ui_driver = None
-        source.close()
-        remaining_sources = [x for x in self._server_sources.values() if x!=source]
-        netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
-        netlog.info("xpra client %i disconnected.", source.counter)
-        has_client = len(remaining_sources)>0
-        if had_client and not has_client:
-            self.idle_add(self.last_client_exited)
-
-    def last_client_exited(self):
-        #must run from the UI thread (modifies focus and keys)
-        if self.exit_with_client:
-            netlog.info("Last client has disconnected, terminating")
-            self.clean_quit(False)
-        else:
-            self.reset_server_timeout(True)
-            #so it is now safe to clear them:
-            #(this may fail during shutdown - which is ok)
-            try:
-                self._clear_keys_pressed()
-            except:
-                pass
-            self._focus(None, 0, [])
-            self.reset_icc_profile()
-
-
-    def get_all_protocols(self):
-        return list(self._potential_protocols) + list(self._server_sources.keys())
-
-
-    def is_timedout(self, protocol):
-        v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
-        netlog("is_timedout(%s)=%s", protocol, v)
-        return v
-
-
-    def idle_timeout_cb(self, source):
-        timeoutlog("idle_timeout_cb(%s)", source)
-        p = source.protocol
-        if p:
-            self.disconnect_client(p, IDLE_TIMEOUT)
-
-    def idle_grace_timeout_cb(self, source):
-        timeoutlog("idle_grace_timeout_cb(%s)", source)
-        nid = XPRA_IDLE_NOTIFICATION_ID
-        actions = ()
-        if source.send_notifications_actions:
-            actions = ("cancel", "Cancel Timeout")
-        user_icon = os.path.join(get_icon_dir(), "timer.png")
-        icon = parse_image_path(user_icon) or ()
-        def idle_notification_action(nid, action_id):
-            timeoutlog("idle_notification_action(%i, %s)", nid, action_id)
-            if action_id=="cancel":
-                source.user_event()
-                source.no_idle()
-        if self.session_name!="Xpra":
-            summary = "The Xpra session %s" % self.session_name
-        else:
-            summary = "Xpra session"
-        summary += " is about to timeout"
-        body = "Unless this session sees some activity,\n" + \
-               "it will be terminated soon."
-        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration*1000, icon, user_callback=idle_notification_action)
-        source.go_idle()
-
-
-    def _log_disconnect(self, proto, *args):
-        #skip logging of disconnection events for server sources
-        #we have tagged during hello ("info_request", "exit_request", etc..)
-        ss = self._server_sources.get(proto)
-        if ss and not ss.log_disconnect:
-            #log at debug level only:
-            netlog(*args)
-            return
-        ServerCore._log_disconnect(self, proto, *args)
-
-    def _disconnect_proto_info(self, proto):
-        #only log protocol info if there is more than one client:
-        if len(self._server_sources)>1:
-            return " %s" % proto
-        return ""
-
-    def _process_connection_lost(self, proto, packet):
-        ServerCore._process_connection_lost(self, proto, packet)
-        ch = self._clipboard_helper
-        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
-            self._clipboard_client = None
-            ch.client_reset()
-        self.cleanup_protocol(proto)
-
-
+    ######################################################################
+    # handle new connections:
     def handle_sharing(self, proto, ui_client=True, detach_request=False, share=False, uuid=None):
         share_count = 0
         disconnected = 0
@@ -1439,7 +2049,6 @@ class ServerBase(ServerCore):
             for s in self._server_sources.values():
                 s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         
-
     def get_client_bandwidth_limit(self, proto):
         if self.bandwidth_limit is None:
             #auto-detect:
@@ -1455,14 +2064,12 @@ class ServerBase(ServerCore):
         bandwidthlog("get_client_bandwidth_limit(%s)=%s", proto, v)            
         return v
 
-
     def get_server_source_class(self):
         from xpra.server.source import ServerSource
         return ServerSource
 
     def reset_window_filters(self):
         self.window_filters = []
-
 
     def parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #adds try:except around parse hello ui code:
@@ -1512,141 +2119,6 @@ class ServerBase(ServerCore):
             self.exec_after_connect_commands()
         self.exec_on_connect_commands()
 
-    def parse_screen_info(self, ss):
-        return self.do_parse_screen_info(ss, ss.desktop_size)
-
-    def do_parse_screen_info(self, ss, desktop_size):
-        log("do_parse_screen_info%s", (ss, desktop_size))
-        dw, dh = None, None
-        if desktop_size:
-            try:
-                dw, dh = desktop_size
-                if not ss.screen_sizes:
-                    screenlog.info(" client root window size is %sx%s", dw, dh)
-                else:
-                    screenlog.info(" client root window size is %sx%s with %s display%s:", dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
-                    log_screen_sizes(dw, dh, ss.screen_sizes)
-            except:
-                dw, dh = None, None
-        sw, sh = self.configure_best_screen_size()
-        screenlog("configure_best_screen_size()=%s", (sw, sh))
-        #we will tell the client about the size chosen in the hello we send back,
-        #so record this size as the current server desktop size to avoid change notifications:
-        ss.desktop_size_server = sw, sh
-        #prefer desktop size, fallback to screen size:
-        w = dw or sw
-        h = dh or sh
-        #clamp to max supported:
-        maxw, maxh = self.get_max_screen_size()
-        w = min(w, maxw)
-        h = min(h, maxh)
-        self.set_desktop_geometry_attributes(w, h)
-        self.set_icc_profile()
-        return w, h
-
-    def set_screen_geometry_attributes(self, w, h):
-        #by default, use the screen as desktop area:
-        self.set_desktop_geometry_attributes(w, h)
-
-    def set_desktop_geometry_attributes(self, w, h):
-        self.calculate_desktops()
-        self.calculate_workarea(w, h)
-        self.set_desktop_geometry(w, h)
-
-
-    def set_icc_profile(self):
-        screenlog("set_icc_profile() not implemented")
-
-    def reset_icc_profile(self):
-        screenlog("reset_icc_profile() not implemented")
-
-
-    def parse_hello_ui_clipboard(self, ss, c):
-        #take the clipboard if no-one else has it yet:
-        if not ss.clipboard_enabled:
-            clipboardlog("client does not support clipboard")
-            return
-        if not self._clipboard_helper:
-            clipboardlog("server does not support clipboard")
-            return
-        cc = self._clipboard_client
-        if cc and not cc.is_closed():
-            clipboardlog("another client already owns the clipboard")
-            return
-        self._clipboard_client = ss
-        self._clipboard_helper.init_proxies_uuid()
-        #deal with buggy win32 clipboards:
-        if "clipboard.greedy" not in c:
-            #old clients without the flag: take a guess based on platform:
-            client_platform = c.strget("platform", "")
-            greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-        else:
-            greedy = c.boolget("clipboard.greedy")
-        self._clipboard_helper.set_greedy_client(greedy)
-        want_targets = c.boolget("clipboard.want_targets")
-        self._clipboard_helper.set_want_targets_client(want_targets)
-        #the selections the client supports (default to all):
-        client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-        clipboardlog("client %s is the clipboard peer", ss)
-        clipboardlog(" greedy=%s", greedy)
-        clipboardlog(" want targets=%s", want_targets)
-        clipboardlog(" server has selections: %s", csv(self._clipboards))
-        clipboardlog(" client initial selections: %s", csv(client_selections))
-        self._clipboard_helper.enable_selections(client_selections)
-
-    def parse_hello_ui_keyboard(self, ss, c):
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
-        #parse client config:
-        ss.keyboard_config = self.get_keyboard_config(c)
-
-        if not other_ui_clients:
-            #so only activate this feature afterwards:
-            self.keyboard_sync = c.boolget("keyboard_sync", True)
-            key_repeat = c.intpair("key_repeat")
-            self.set_keyboard_repeat(key_repeat)
-            #always clear modifiers before setting a new keymap
-            ss.make_keymask_match(c.strlistget("modifiers", []))
-        else:
-            self.set_keyboard_repeat(None)
-            key_repeat = (0, 0)
-
-        self.set_keymap(ss)
-        return key_repeat
-
-    def parse_hello_ui_window_settings(self, ss, c):
-        pass
-
-
-    def server_event(self, *args):
-        for s in self._server_sources.values():
-            s.send_server_event(*args)
-        if self.dbus_server:
-            self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
-
-
-    def update_all_server_settings(self, reset=False):
-        pass        #may be overriden in subclasses (ie: x11 server)
-
-
-    def get_keyboard_config(self, _props):
-        return None
-
-    def set_keyboard_repeat(self, key_repeat):
-        pass
-
-    def set_keymap(self, ss, force=False):
-        pass
-
-    def get_transient_for(self, _window):
-        return  None
-
-    def send_initial_windows(self, ss, sharing=False):
-        raise NotImplementedError()
-
-    def send_initial_cursors(self, ss, sharing=False):
-        pass
-
-
     def sanity_checks(self, proto, c):
         server_uuid = c.strget("server_uuid")
         if server_uuid:
@@ -1656,6 +2128,13 @@ class ServerBase(ServerCore):
             log.warn("This client is running within the Xpra server %s", server_uuid)
         return True
 
+
+    def update_all_server_settings(self, reset=False):
+        pass        #may be overriden in subclasses (ie: x11 server)
+
+
+    ######################################################################
+    # hello:
     def get_server_features(self):
         #these are flags that have been added over time with new versions
         #to expose new server features:
@@ -1772,12 +2251,6 @@ class ServerBase(ServerCore):
         server_source.send_hello(capabilities)
 
 
-    def setting_changed(self, setting, value):
-        #tell all the clients (that can) about the new value for this setting
-        for ss in tuple(self._server_sources.values()):
-            ss.send_setting_change(setting, value)
-
-
     def _process_logging(self, proto, packet):
         assert self.remote_logging
         ss = self._server_sources.get(proto)
@@ -1794,18 +2267,6 @@ class ServerBase(ServerCore):
             msg = " ".join(bytestostr(x) for x in msg)
         for x in bytestostr(msg).splitlines():
             clientlog.log(level, prefix+x)
-
-    def _process_printers(self, proto, packet):
-        if not self.file_transfer.printing or WIN32:
-            log.error("Error: received printer definitions data")
-            log.error(" but this server does not support printer forwarding")
-            return
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        printers = packet[1]
-        auth_class = self.auth_classes.get("unix-domain")
-        ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
 
     def _process_command_signal(self, _proto, packet):
@@ -1845,7 +2306,6 @@ class ServerBase(ServerCore):
         #this may end up calling do_handle_command_request via the adapter
         code, msg = self.process_control_command(*packet[1:])
         commandlog("command request returned: %s (%s)", code, msg)
-
 
     def control_command_focus(self, wid):
         if self.readonly:
@@ -2268,166 +2728,10 @@ class ServerBase(ServerCore):
         return "window %s moved to workspace %s" % (wid, workspace)
 
 
-    def send_screenshot(self, proto):
-        #this is a screenshot request, handle it and disconnect
-        try:
-            packet = self.make_screenshot_packet()
-            if not packet:
-                self.send_disconnect(proto, "screenshot failed")
-                return
-            proto.send_now(packet)
-            self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
-        except Exception as e:
-            log.error("failed to capture screenshot", exc_info=True)
-            self.send_disconnect(proto, "screenshot failed: %s" % e)
 
 
-    def _process_send_file(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file packet")
-            return
-        ss._process_send_file(packet)
-
-    def _process_ack_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for ack-file-chunk packet")
-            return
-        ss._process_ack_file_chunk(packet)
-
-    def _process_send_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file-chunk packet")
-            return
-        ss._process_send_file_chunk(packet)
-
-    def _process_send_data_request(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file-request packet")
-            return
-        ss._process_send_data_request(packet)
-
-    def _process_send_data_response(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-data-response packet")
-            return
-        ss._process_send_data_response(packet)
-
-    def _process_print(self, _proto, packet):
-        #ie: from the xpraforwarder we call this command:
-        #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
-        assert self.file_transfer.printing
-        #printlog("_process_print(%s, %s)", proto, packet)
-        if len(packet)<3:
-            log.error("Error: invalid print packet, only %i arguments", len(packet))
-            log.error(" %s", [repr_ellipsized(x) for x in packet])
-            return
-        filename, file_data = packet[1:3]
-        mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
-        if len(packet)>=4:
-            mimetype = packet[3]
-        if len(packet)>=5:
-            source_uuid = packet[4]
-        if len(packet)>=6:
-            title = packet[5]
-        if len(packet)>=7:
-            printer = packet[6]
-        if len(packet)>=8:
-            no_copies = int(packet[7])
-        if len(packet)>=9:
-            print_options = packet[8]
-        #parse and validate:
-        if len(mimetype)>=128:
-            log.error("Error: invalid mimetype in print packet:")
-            log.error(" %s", repr_ellipsized(mimetype))
-            return
-        if type(print_options)!=dict:
-            s = bytestostr(print_options)
-            print_options = {}
-            for x in s.split(" "):
-                parts = x.split("=", 1)
-                if len(parts)==2:
-                    print_options[parts[0]] = parts[1]
-        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options))
-        printlog("process_print: got %s bytes for file %s", len(file_data), filename)
-        #parse the print options:
-        u = hashlib.sha1()
-        u.update(file_data)
-        printlog("sha1 digest: %s", u.hexdigest())
-        options = {
-            "printer"    : printer,
-            "title"      : title,
-            "copies"     : no_copies,
-            "options"    : print_options,
-            "sha1"       : u.hexdigest(),
-            }
-        printlog("parsed printer options: %s", options)
-        if SAVE_PRINT_JOBS:
-            self._save_print_job(filename, file_data)
-
-        sent = 0
-        sources = tuple(self._server_sources.values())
-        printlog("will try to send to %i clients: %s", len(sources), sources)
-        for ss in sources:
-            if source_uuid!='*' and ss.uuid!=source_uuid:
-                printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
-                continue
-            if not ss.printing:
-                if source_uuid!='*':
-                    printlog.warn("Warning: printing is not enabled for:")
-                    printlog.warn(" %s", ss)
-                else:
-                    printlog("printing is not enabled for %s", ss)
-                continue
-            if not ss.printers:
-                printlog.warn("Warning: client %s does not have any printers", ss.uuid)
-                continue
-            if printer not in ss.printers:
-                printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
-                continue
-            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
-            if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
-                sent += 1
-        #warn if not sent:
-        if sent==0:
-            l = printlog.warn
-        else:
-            l = printlog.info
-        unit_str, v = to_std_unit(len(file_data), unit=1024)
-        l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
-
-    def _save_print_job(self, filename, file_data):
-        try:
-            save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
-            with open(save_filename, "wb") as f:
-                f.write(file_data)
-            printlog.info("saved print job to: %s", save_filename)
-        except Exception as e:
-            printlog.error("Error: failed to save print job to %s", save_filename)
-            printlog.error(" %s", e)
-
-
-    def _process_start_command(self, proto, packet):
-        log("start new command: %s", packet)
-        if not self.start_new_commands:
-            log.warn("Warning: received start-command request,")
-            log.warn(" but the feature is currently disabled")
-            return
-        name, command, ignore = packet[1:4]
-        proc = self.start_command(name, command, ignore)
-        if len(packet)>=5:
-            shared = packet[4]
-            if proc and not shared:
-                ss = self._server_sources.get(proto)
-                assert ss
-                log("adding filter: pid=%s for %s", proc.pid, proto)
-                ss.add_window_filter("window", "pid", "=", proc.pid)
-        log("process_start_command: proc=%s", proc)
-
+    ######################################################################
+    # info:
     def _process_info_request(self, proto, packet):
         log("process_info_request(%s, %s)", proto, packet)
         #ignoring the list of client uuids supplied in packet[1]
@@ -2517,45 +2821,6 @@ class ServerBase(ServerCore):
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
-    def get_pulseaudio_info(self):
-        info = {
-            "command"               : self.pulseaudio_command,
-            "configure-commands"    : self.pulseaudio_configure_commands,
-            }
-        if self.pulseaudio_proc and self.pulseaudio_proc.poll() is None:
-            info["pid"] = self.pulseaudio_proc.pid
-        if self.pulseaudio_private_dir and self.pulseaudio_private_socket:
-            info["private-directory"] = self.pulseaudio_private_dir
-            info["private-socket"] = self.pulseaudio_private_socket
-        return info
-
-    def get_printing_info(self):
-        d = {
-             "lpadmin"              : self.lpadmin,
-             "lpinfo"               : self.lpinfo,
-             "add-printer-options"  : self.add_printer_options,
-             }
-        if self.file_transfer.printing:
-            from xpra.platform.printing import get_info
-            d.update(get_info())
-        return d
-
-    def get_commands_info(self):
-        info = {
-                "start"                     : self.start_commands,
-                "start-child"               : self.start_child_commands,
-                "start-after-connect"       : self.start_after_connect,
-                "start-child-after-connect" : self.start_child_after_connect,
-                "start-on-connect"          : self.start_on_connect,
-                "start-child-on-connect"    : self.start_child_on_connect,
-                "exit-with-children"        : self.exit_with_children,
-                "start-after-connect-done"  : self.start_after_connect_done,
-                "start-new"                 : self.start_new_commands,
-                }
-        for i,procinfo in enumerate(self.children_started):
-            info[i] = procinfo.get_info()
-        return info
-
     def get_features_info(self):
         i = {
              "randr"            : self.randr,
@@ -2574,52 +2839,6 @@ class ServerBase(ServerCore):
              }
         i.update(self.get_server_features())
         return i
-
-    def get_encoding_info(self):
-        return  {
-             ""                     : self.encodings,
-             "core"                 : self.core_encodings,
-             "allowed"              : self.allowed_encodings,
-             "lossless"             : self.lossless_encodings,
-             "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
-             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L", "webp"))),
-             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
-             "with_lossless_mode"   : self.lossless_mode_encodings,
-             }
-
-    def get_keyboard_info(self):
-        start = monotonic_time()
-        info = {
-             "sync"             : self.keyboard_sync,
-             "repeat"           : {
-                                   "delay"      : self.key_repeat_delay,
-                                   "interval"   : self.key_repeat_interval,
-                                   },
-             "keys_pressed"     : tuple(self.keys_pressed.values()),
-             "modifiers"        : self.xkbmap_mod_meanings,
-             }
-        kc = self.keyboard_config
-        if kc:
-            info.update(kc.get_info())
-        log("ServerBase.get_keyboard_info took %ims", (monotonic_time()-start)*1000)
-        return info
-
-    def get_clipboard_info(self):
-        if self._clipboard_helper is None:
-            return {}
-        return self._clipboard_helper.get_info()
-
-    def get_webcam_info(self):
-        webcam_info = {
-                       ""                       : self.webcam,
-                       }
-        if self.webcam_option.startswith("/dev/video"):
-            webcam_info["device"] = self.webcam_option
-        webcam_info["virtual-video-devices"] = self.virtual_video_devices
-        d = self.webcam_forwarding_device
-        if d:
-            webcam_info.update(d.get_info())
-        return webcam_info
 
     def do_get_info(self, proto, server_sources=None, window_ids=None):
         start = monotonic_time()
@@ -2667,6 +2886,228 @@ class ServerBase(ServerCore):
         log("ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
+
+    ######################################################################
+    # display / screen / root window:
+    def set_screen_geometry_attributes(self, w, h):
+        #by default, use the screen as desktop area:
+        self.set_desktop_geometry_attributes(w, h)
+
+    def set_desktop_geometry_attributes(self, w, h):
+        self.calculate_desktops()
+        self.calculate_workarea(w, h)
+        self.set_desktop_geometry(w, h)
+
+
+    def parse_screen_info(self, ss):
+        return self.do_parse_screen_info(ss, ss.desktop_size)
+
+    def do_parse_screen_info(self, ss, desktop_size):
+        log("do_parse_screen_info%s", (ss, desktop_size))
+        dw, dh = None, None
+        if desktop_size:
+            try:
+                dw, dh = desktop_size
+                if not ss.screen_sizes:
+                    screenlog.info(" client root window size is %sx%s", dw, dh)
+                else:
+                    screenlog.info(" client root window size is %sx%s with %s display%s:", dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
+                    log_screen_sizes(dw, dh, ss.screen_sizes)
+            except:
+                dw, dh = None, None
+        sw, sh = self.configure_best_screen_size()
+        screenlog("configure_best_screen_size()=%s", (sw, sh))
+        #we will tell the client about the size chosen in the hello we send back,
+        #so record this size as the current server desktop size to avoid change notifications:
+        ss.desktop_size_server = sw, sh
+        #prefer desktop size, fallback to screen size:
+        w = dw or sw
+        h = dh or sh
+        #clamp to max supported:
+        maxw, maxh = self.get_max_screen_size()
+        w = min(w, maxw)
+        h = min(h, maxh)
+        self.set_desktop_geometry_attributes(w, h)
+        self.set_icc_profile()
+        return w, h
+
+
+    def set_icc_profile(self):
+        screenlog("set_icc_profile() not implemented")
+
+    def reset_icc_profile(self):
+        screenlog("reset_icc_profile() not implemented")
+
+    def _screen_size_changed(self, screen):
+        screenlog("_screen_size_changed(%s)", screen)
+        #randr has resized the screen, tell the client (if it supports it)
+        w, h = screen.get_width(), screen.get_height()
+        screenlog("new screen dimensions: %ix%i", w, h)
+        self.set_screen_geometry_attributes(w, h)
+        self.idle_add(self.send_updated_screen_size)
+
+    def get_root_window_size(self):
+        raise NotImplementedError()
+
+    def send_updated_screen_size(self):
+        max_w, max_h = self.get_max_screen_size()
+        root_w, root_h = self.get_root_window_size()
+        root_w = min(root_w, max_w)
+        root_h = min(root_h, max_h)
+        count = 0
+        for ss in self._server_sources.values():
+            if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
+                count +=1
+        if count>0:
+            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)", count, engs(count), root_w, root_h, max_w, max_h)
+
+    def get_max_screen_size(self):
+        max_w, max_h = self.get_root_window_size()
+        return max_w, max_h
+
+    def _get_desktop_size_capability(self, server_source, root_w, root_h):
+        client_size = server_source.desktop_size
+        log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
+        if not client_size:
+            """ client did not specify size, just return what we have """
+            return    root_w, root_h
+        client_w, client_h = client_size
+        w = min(client_w, root_w)
+        h = min(client_h, root_h)
+        return    w, h
+
+    def configure_best_screen_size(self):
+        root_w, root_h = self.get_root_window_size()
+        return root_w, root_h
+
+    def _process_desktop_size(self, proto, packet):
+        width, height = packet[1:3]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        ss.desktop_size = (width, height)
+        if len(packet)>=10:
+            #added in 0.16 for scaled client displays:
+            xdpi, ydpi = packet[8:10]
+            if xdpi!=self.xdpi or ydpi!=self.ydpi:
+                self.xdpi, self.ydpi = xdpi, ydpi
+                screenlog("new dpi: %ix%i", self.xdpi, self.ydpi)
+                self.dpi = iround((self.xdpi + self.ydpi)/2.0)
+                self.dpi_changed()
+        if len(packet)>=8:
+            #added in 0.16 for scaled client displays:
+            ss.desktop_size_unscaled = packet[6:8]
+        if len(packet)>=6:
+            desktops, desktop_names = packet[4:6]
+            ss.set_desktops(desktops, desktop_names)
+            self.calculate_desktops()
+        if len(packet)>=4:
+            ss.set_screen_sizes(packet[3])
+        screenlog("client requesting new size: %sx%s", width, height)
+        self.set_screen_size(width, height)
+        if len(packet)>=4:
+            screenlog.info("received updated display dimensions")
+            screenlog.info("client display size is %sx%s with %s screen%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
+            log_screen_sizes(width, height, ss.screen_sizes)
+            self.calculate_workarea(width, height)
+        #ensures that DPI and antialias information gets reset:
+        self.update_all_server_settings()
+
+    def dpi_changed(self):
+        pass
+
+    def calculate_desktops(self):
+        count = 1
+        for ss in self._server_sources.values():
+            if ss.desktops:
+                count = max(count, ss.desktops)
+        count = max(1, min(20, count))
+        names = []
+        for i in range(count):
+            if i==0:
+                name = "Main"
+            else:
+                name = "Desktop %s" % (i+1)
+            for ss in self._server_sources.values():
+                if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
+                    name = ss.desktop_names[i]
+            names.append(name)
+        self.set_desktops(names)
+
+    def set_desktops(self, names):
+        pass
+
+    def calculate_workarea(self, w, h):
+        raise NotImplementedError()
+
+    def set_workarea(self, workarea):
+        pass
+
+
+    def _process_server_settings(self, proto, packet):
+        #only used by x11 servers
+        pass
+
+
+    def _set_client_properties(self, proto, wid, window, new_client_properties):
+        """
+        Allows us to keep window properties for a client after disconnection.
+        (we keep it in a map with the client's uuid as key)
+        """
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_client_properties(wid, window, typedict(new_client_properties))
+            #filter out encoding properties, which are expected to be set everytime:
+            ncp = {}
+            for k,v in new_client_properties.items():
+                if v is None:
+                    log.warn("removing invalid None property for %s", k)
+                    continue
+                if not k.startswith(b"encoding"):
+                    ncp[k] = v
+            if ncp:
+                log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
+                client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
+                client_properties.update(ncp)
+
+
+    ######################################################################
+    # screenshots:
+    def _process_screenshot(self, proto, _packet):
+        packet = self.make_screenshot_packet()
+        ss = self._server_sources.get(proto)
+        if packet and ss:
+            ss.send(*packet)
+
+    def make_screenshot_packet(self):
+        try:
+            return self.do_make_screenshot_packet()
+        except:
+            log.error("make_screenshot_packet()", exc_info=True)
+            return None
+
+    def do_make_screenshot_packet(self):
+        raise NotImplementedError("no screenshot capability in %s" % type(self))
+
+    def send_screenshot(self, proto):
+        #this is a screenshot request, handle it and disconnect
+        try:
+            packet = self.make_screenshot_packet()
+            if not packet:
+                self.send_disconnect(proto, "screenshot failed")
+                return
+            proto.send_now(packet)
+            self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
+        except Exception as e:
+            log.error("failed to capture screenshot", exc_info=True)
+            self.send_disconnect(proto, "screenshot failed: %s" % e)
+
+
+    ######################################################################
+    # windows:
+    def parse_hello_ui_window_settings(self, ss, c):
+        pass
+
     def add_windows_info(self, info, window_ids):
         winfo = info.setdefault("window", {})
         for wid, window in self._id_to_window.items():
@@ -2697,7 +3138,397 @@ class ServerBase(ServerCore):
                 info["client-properties"] = wprops
         return info
 
+    def _update_metadata(self, window, pspec):
+        metalog("updating metadata on %s: %s", window, pspec)
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.window_metadata(wid, window, pspec.name)
 
+
+    def _add_new_window_common(self, window):
+        props = window.get_dynamic_property_names()
+        metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
+        for prop in props:
+            window.managed_connect("notify::%s" % prop, self._update_metadata)
+        wid = self._max_window_id
+        self._max_window_id += 1
+        self._window_to_id[window] = wid
+        self._id_to_window[wid] = window
+        return wid
+
+    def _do_send_new_window_packet(self, ptype, window, geometry):
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+            x, y, w, h = geometry
+            #adjust if the transient-for window is not mapped in the same place by the client we send to:
+            if "transient-for" in window.get_property_names():
+                transient_for = self.get_transient_for(window)
+                if transient_for>0:
+                    parent = self._id_to_window.get(transient_for)
+                    parent_ws = ss.get_window_source(transient_for)
+                    pos = self.get_window_position(parent)
+                    geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
+                    if parent and parent_ws and parent_ws.mapped_at and pos:
+                        cx, cy = parent_ws.mapped_at[:2]
+                        px, py = pos
+                        x += cx-px
+                        y += cy-py
+            ss.new_window(ptype, wid, window, x, y, w, h, wprops)
+
+    def _process_damage_sequence(self, proto, packet):
+        packet_sequence, wid, width, height, decode_time = packet[1:6]
+        if len(packet)>=7:
+            message = packet[6]
+        else:
+            message = ""
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
+
+    def _damage(self, window, x, y, width, height, options=None):
+        wid = self._window_to_id[window]
+        for ss in self._server_sources.values():
+            ss.damage(wid, window, x, y, width, height, options)
+
+    def _process_buffer_refresh(self, proto, packet):
+        """ can be used for requesting a refresh, or tuning batch config, or both """
+        wid, _, qual = packet[1:4]
+        if len(packet)>=6:
+            options = typedict(packet[4])
+            client_properties = packet[5]
+        else:
+            options = typedict({})
+            client_properties = {}
+        if wid==-1:
+            wid_windows = self._id_to_window
+        elif wid in self._id_to_window:
+            wid_windows = {wid : self._id_to_window.get(wid)}
+        else:
+            #may have been destroyed since the request was made
+            log("invalid window specified for refresh: %s", wid)
+            return
+        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
+        batch_props = options.dictget("batch", {})
+        if batch_props or client_properties:
+            #change batch config and/or client properties
+            self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)
+        #default to True for backwards compatibility:
+        if options.get("refresh-now", True):
+            refresh_opts = {"quality"           : qual,
+                            "override_options"  : True}
+            self.refresh_windows(proto, wid_windows, refresh_opts)
+
+
+    def update_batch_config(self, proto, wid_windows, batch_props, client_properties):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        for wid, window in wid_windows.items():
+            if window is None or not window.is_managed():
+                continue
+            self._set_client_properties(proto, wid, window, client_properties)
+            ss.update_batch(wid, window, batch_props)
+
+    def refresh_windows(self, proto, wid_windows, opts={}):
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        for wid, window in wid_windows.items():
+            if window is None or not window.is_managed():
+                continue
+            if not self.is_shown(window):
+                log("window is no longer shown, ignoring buffer refresh which would fail")
+                continue
+            ss.refresh(wid, window, opts)
+
+    def _idle_refresh_all_windows(self, proto):
+        self.idle_add(self.refresh_windows, proto, self._id_to_window)
+
+
+    def get_window_position(self, _window):
+        #where the window is actually mapped on the server screen:
+        return None
+
+    def _window_mapped_at(self, proto, wid, window, coords=None):
+        #record where a window is mapped by a client
+        #(in order to support multiple clients and different offsets)
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        ws = ss.make_window_source(wid, window)
+        ws.mapped_at = coords
+        #log("window %i mapped at %s for client %s", wid, coords, ss)
+
+    def get_transient_for(self, _window):
+        return  None
+
+    def _process_map_window(self, proto, packet):
+        log.info("_process_map_window(%s, %s)", proto, packet)
+
+    def _process_unmap_window(self, proto, packet):
+        log.info("_process_unmap_window(%s, %s)", proto, packet)
+
+    def _process_close_window(self, proto, packet):
+        log.info("_process_close_window(%s, %s)", proto, packet)
+
+    def _process_configure_window(self, proto, packet):
+        log.info("_process_configure_window(%s, %s)", proto, packet)
+
+    def _get_window_dict(self, wids):
+        wd = {}
+        for wid in wids:
+            window = self._id_to_window.get(wid)
+            if window:
+                wd[wid] = window
+        return wd
+
+    def _process_suspend(self, proto, packet):
+        log("suspend(%s)", packet[1:])
+        ui = packet[1]
+        wd = self._get_window_dict(packet[2])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.suspend(ui, wd)
+
+    def _process_resume(self, proto, packet):
+        log("resume(%s)", packet[1:])
+        ui = packet[1]
+        wd = self._get_window_dict(packet[2])
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.resume(ui, wd)
+
+
+    def send_initial_windows(self, ss, sharing=False):
+        raise NotImplementedError()
+
+
+    def send_initial_cursors(self, ss, sharing=False):
+        pass
+
+
+    ######################################################################
+    # focus:
+    def _process_focus(self, proto, packet):
+        if self.readonly:
+            return
+        wid = packet[1]
+        focuslog("process_focus: wid=%s", wid)
+        if len(packet)>=3:
+            modifiers = packet[2]
+        else:
+            modifiers = None
+        ss = self._server_sources.get(proto)
+        if ss:
+            self._focus(ss, wid, modifiers)
+            #if the client focused one of our windows, count this as a user event:
+            if wid>0:
+                ss.user_event()
+
+    def _focus(self, _server_source, wid, modifiers):
+        focuslog("_focus(%s,%s)", wid, modifiers)
+
+    def get_focus(self):
+        #can be overriden by subclasses that do manage focus
+        #(ie: not shadow servers which only have a single window)
+        #default: no focus
+        return -1
+
+
+    ######################################################################
+    # encodings:
+    def _process_encoding(self, proto, packet):
+        encoding = packet[1]
+        ss = self._server_sources.get(proto)
+        if ss is None:
+            return
+        if len(packet)>=3:
+            #client specified which windows this is for:
+            in_wids = packet[2]
+            wids = []
+            wid_windows = {}
+            for wid in in_wids:
+                if wid not in self._id_to_window:
+                    continue
+                wids.append(wid)
+                wid_windows[wid] = self._id_to_window.get(wid)
+        else:
+            #apply to all windows:
+            wids = None
+            wid_windows = self._id_to_window
+        ss.set_encoding(encoding, wids)
+        self.refresh_windows(proto, wid_windows)
+
+    def _process_quality(self, proto, packet):
+        quality = packet[1]
+        log("Setting quality to %s", quality)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_quality(quality)
+            self._idle_refresh_all_windows(proto)
+
+    def _process_min_quality(self, proto, packet):
+        min_quality = packet[1]
+        log("Setting min quality to %s", min_quality)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_min_quality(min_quality)
+            self._idle_refresh_all_windows(proto)
+
+    def _process_speed(self, proto, packet):
+        speed = packet[1]
+        log("Setting speed to ", speed)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_speed(speed)
+            self._idle_refresh_all_windows(proto)
+
+    def _process_min_speed(self, proto, packet):
+        min_speed = packet[1]
+        log("Setting min speed to ", min_speed)
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_min_speed(min_speed)
+            self._idle_refresh_all_windows(proto)
+
+    def get_encoding_info(self):
+        return  {
+             ""                     : self.encodings,
+             "core"                 : self.core_encodings,
+             "allowed"              : self.allowed_encodings,
+             "lossless"             : self.lossless_encodings,
+             "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
+             "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x) for x in self.core_encodings if x in ("h264", "vp8", "vp9", "rgb24", "rgb32", "png", "png/P", "png/L", "webp"))),
+             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
+             "with_lossless_mode"   : self.lossless_mode_encodings,
+             }
+
+
+    ######################################################################
+    # connection state:
+    def _process_connection_data(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.update_connection_data(packet[1])
+
+    def _process_bandwidth_limit(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        bandwidth_limit = packet[1]
+        if self.bandwidth_limit:
+            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
+        ss.bandwidth_limit = bandwidth_limit
+        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
+
+    def send_ping(self):
+        for ss in self._server_sources.values():
+            ss.ping()
+        return True
+
+    def _process_ping_echo(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping_echo(packet)
+
+    def _process_ping(self, proto, packet):
+        time_to_echo = packet[1]
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping(time_to_echo)
+
+
+    ######################################################################
+    # settings toggle:
+    def setting_changed(self, setting, value):
+        #tell all the clients (that can) about the new value for this setting
+        for ss in tuple(self._server_sources.values()):
+            ss.send_setting_change(setting, value)
+
+    def _process_set_notify(self, proto, packet):
+        assert self.notifications, "cannot toggle notifications: the feature is disabled"
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_notifications = bool(packet[1])
+
+    def _process_set_cursors(self, proto, packet):
+        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_cursors = bool(packet[1])
+
+    def _process_set_bell(self, proto, packet):
+        assert self.bell, "cannot toggle send_bell: the feature is disabled"
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_bell = bool(packet[1])
+
+    def _process_set_deflate(self, proto, packet):
+        level = packet[1]
+        log("client has requested compression level=%s", level)
+        proto.set_compression_level(level)
+        #echo it back to the client:
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.set_deflate(level)
+
+    def _process_sharing_toggle(self, proto, packet):
+        assert self.sharing is None
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        sharing = bool(packet[1])
+        ss.share = sharing
+        if not sharing:
+            #disconnect other users:
+            for p,ss in tuple(self._server_sources.items()):
+                if p!=proto:
+                    self.disconnect_client(p, DETACH_REQUEST, "client %i no longer wishes to share the session" % ss.counter)
+
+    def _process_lock_toggle(self, proto, packet):
+        assert self.lock is None
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.lock = bool(packet[1])
+            log("lock set to %s for client %i", ss.lock, ss.counter)
+
+
+    ######################################################################
+    # rpc:
+    def _process_rpc(self, proto, packet):
+        if self.readonly:
+            return
+        ss = self._server_sources.get(proto)
+        assert ss is not None
+        rpc_type = packet[1]
+        rpcid = packet[2]
+        handler = self.rpc_handlers.get(rpc_type)
+        if not handler:
+            rpclog.error("Error: invalid rpc request of type '%s'", rpc_type)
+            return
+        rpclog("rpc handler for %s: %s", rpc_type, handler)
+        try:
+            handler(ss, *packet[2:])
+        except Exception as e:
+            rpclog.error("Error: cannot call %s handler %s:", rpc_type, handler, exc_info=True)
+            ss.rpc_reply(rpc_type, rpcid, False, str(e))
+
+    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):
+        assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
+        def native(args):
+            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
+        def ok_back(*args):
+            log("rpc: ok_back%s", args)
+            ss.rpc_reply("dbus", rpcid, True, native(args))
+        def err_back(*args):
+            log("rpc: err_back%s", args)
+            ss.rpc_reply("dbus", rpcid, False, native(args))
+        self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
+
+
+    ######################################################################
+    # http server and http audio stream:
     def get_http_info(self):
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
@@ -2778,993 +3609,210 @@ class ServerBase(ServerCore):
         self.timeout_add(1000*5, timeout_check)
 
 
-    def clipboard_progress(self, local_requests, _remote_requests):
-        assert self._clipboard_helper is not None
-        if self._clipboard_client:
-            self._clipboard_client.send_clipboard_progress(local_requests)
+    ######################################################################
+    # client connections:
+    def force_disconnect(self, proto):
+        self.cleanup_protocol(proto)
+        ServerCore.force_disconnect(self, proto)
 
-    def send_clipboard_packet(self, *parts):
-        assert self._clipboard_helper is not None
-        if self._clipboard_client:
-            self._clipboard_client.send_clipboard(parts)
+    def disconnect_protocol(self, protocol, reason, *extra):
+        ServerCore.disconnect_protocol(self, protocol, reason, *extra)
+        self.cleanup_protocol(protocol)
 
-    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+    def cleanup_protocol(self, protocol):
+        netlog("cleanup_protocol(%s)", protocol)
+        #this ensures that from now on we ignore any incoming packets coming
+        #from this connection as these could potentially set some keys pressed, etc
         try:
-            assert self.notifications_forwarder and self.notifications
-            icon = self.get_notification_icon(str(app_icon))
-            if os.path.isabs(str(app_icon)):
-                app_icon = ""
-            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), repr_ellipsized(str(icon)))
-            for ss in self._server_sources.values():
-                ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
-        except Exception as e:
-            notifylog("notify_callback failed", exc_info=True)
-            notifylog.error("Error processing notification:")
-            notifylog.error(" %s", e)
-
-    def get_notification_icon(self, _icon_string):
-        return []
-
-    def notify_close_callback(self, nid):
-        assert self.notifications_forwarder and self.notifications
-        notifylog("notify_close_callback(%s)", nid)
-        for ss in self._server_sources.values():
-            ss.notify_close(int(nid))
-
-
-    def _keys_changed(self, *_args):
-        if not self.keymap_changing:
-            for ss in self._server_sources.values():
-                ss.keys_changed()
-
-    def _clear_keys_pressed(self):
-        pass
-
-
-    def _focus(self, _server_source, wid, modifiers):
-        focuslog("_focus(%s,%s)", wid, modifiers)
-
-    def get_focus(self):
-        #can be overriden by subclasses that do manage focus
-        #(ie: not shadow servers which only have a single window)
-        #default: no focus
-        return -1
-
-
-    def _update_metadata(self, window, pspec):
-        metalog("updating metadata on %s: %s", window, pspec)
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            ss.window_metadata(wid, window, pspec.name)
-
-
-    def _add_new_window_common(self, window):
-        props = window.get_dynamic_property_names()
-        metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
-        for prop in props:
-            window.managed_connect("notify::%s" % prop, self._update_metadata)
-        wid = self._max_window_id
-        self._max_window_id += 1
-        self._window_to_id[window] = wid
-        self._id_to_window[wid] = window
-        return wid
-
-    def _do_send_new_window_packet(self, ptype, window, geometry):
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
-            x, y, w, h = geometry
-            #adjust if the transient-for window is not mapped in the same place by the client we send to:
-            if "transient-for" in window.get_property_names():
-                transient_for = self.get_transient_for(window)
-                if transient_for>0:
-                    parent = self._id_to_window.get(transient_for)
-                    parent_ws = ss.get_window_source(transient_for)
-                    pos = self.get_window_position(parent)
-                    geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
-                    if parent and parent_ws and parent_ws.mapped_at and pos:
-                        cx, cy = parent_ws.mapped_at[:2]
-                        px, py = pos
-                        x += cx-px
-                        y += cy-py
-            ss.new_window(ptype, wid, window, x, y, w, h, wprops)
-
-
-    def _screen_size_changed(self, screen):
-        screenlog("_screen_size_changed(%s)", screen)
-        #randr has resized the screen, tell the client (if it supports it)
-        w, h = screen.get_width(), screen.get_height()
-        screenlog("new screen dimensions: %ix%i", w, h)
-        self.set_screen_geometry_attributes(w, h)
-        self.idle_add(self.send_updated_screen_size)
-
-    def get_root_window_size(self):
-        raise NotImplementedError()
-
-    def send_updated_screen_size(self):
-        max_w, max_h = self.get_max_screen_size()
-        root_w, root_h = self.get_root_window_size()
-        root_w = min(root_w, max_w)
-        root_h = min(root_h, max_h)
-        count = 0
-        for ss in self._server_sources.values():
-            if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
-                count +=1
-        if count>0:
-            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)", count, engs(count), root_w, root_h, max_w, max_h)
-
-    def get_max_screen_size(self):
-        max_w, max_h = self.get_root_window_size()
-        return max_w, max_h
-
-    def _get_desktop_size_capability(self, server_source, root_w, root_h):
-        client_size = server_source.desktop_size
-        log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
-        if not client_size:
-            """ client did not specify size, just return what we have """
-            return    root_w, root_h
-        client_w, client_h = client_size
-        w = min(client_w, root_w)
-        h = min(client_h, root_h)
-        return    w, h
-
-    def configure_best_screen_size(self):
-        root_w, root_h = self.get_root_window_size()
-        return root_w, root_h
-
-
-    def _process_desktop_size(self, proto, packet):
-        width, height = packet[1:3]
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        ss.desktop_size = (width, height)
-        if len(packet)>=10:
-            #added in 0.16 for scaled client displays:
-            xdpi, ydpi = packet[8:10]
-            if xdpi!=self.xdpi or ydpi!=self.ydpi:
-                self.xdpi, self.ydpi = xdpi, ydpi
-                screenlog("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = iround((self.xdpi + self.ydpi)/2.0)
-                self.dpi_changed()
-        if len(packet)>=8:
-            #added in 0.16 for scaled client displays:
-            ss.desktop_size_unscaled = packet[6:8]
-        if len(packet)>=6:
-            desktops, desktop_names = packet[4:6]
-            ss.set_desktops(desktops, desktop_names)
-            self.calculate_desktops()
-        if len(packet)>=4:
-            ss.set_screen_sizes(packet[3])
-        screenlog("client requesting new size: %sx%s", width, height)
-        self.set_screen_size(width, height)
-        if len(packet)>=4:
-            screenlog.info("received updated display dimensions")
-            screenlog.info("client display size is %sx%s with %s screen%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
-        #ensures that DPI and antialias information gets reset:
-        self.update_all_server_settings()
-
-    def dpi_changed(self):
-        pass
-
-    def calculate_desktops(self):
-        count = 1
-        for ss in self._server_sources.values():
-            if ss.desktops:
-                count = max(count, ss.desktops)
-        count = max(1, min(20, count))
-        names = []
-        for i in range(count):
-            if i==0:
-                name = "Main"
-            else:
-                name = "Desktop %s" % (i+1)
-            for ss in self._server_sources.values():
-                if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
-                    name = ss.desktop_names[i]
-            names.append(name)
-        self.set_desktops(names)
-
-    def set_desktops(self, names):
-        pass
-
-    def calculate_workarea(self, w, h):
-        raise NotImplementedError()
-
-    def set_workarea(self, workarea):
-        pass
-
-
-    def _process_encoding(self, proto, packet):
-        encoding = packet[1]
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        if len(packet)>=3:
-            #client specified which windows this is for:
-            in_wids = packet[2]
-            wids = []
-            wid_windows = {}
-            for wid in in_wids:
-                if wid not in self._id_to_window:
-                    continue
-                wids.append(wid)
-                wid_windows[wid] = self._id_to_window.get(wid)
-        else:
-            #apply to all windows:
-            wids = None
-            wid_windows = self._id_to_window
-        ss.set_encoding(encoding, wids)
-        self.refresh_windows(proto, wid_windows)
-
-
-    def _process_rpc(self, proto, packet):
-        if self.readonly:
-            return
-        ss = self._server_sources.get(proto)
-        assert ss is not None
-        rpc_type = packet[1]
-        rpcid = packet[2]
-        handler = self.rpc_handlers.get(rpc_type)
-        if not handler:
-            rpclog.error("Error: invalid rpc request of type '%s'", rpc_type)
-            return
-        rpclog("rpc handler for %s: %s", rpc_type, handler)
-        try:
-            handler(ss, *packet[2:])
-        except Exception as e:
-            rpclog.error("Error: cannot call %s handler %s:", rpc_type, handler, exc_info=True)
-            ss.rpc_reply(rpc_type, rpcid, False, str(e))
-
-    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):
-        assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
-        def native(args):
-            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
-        def ok_back(*args):
-            log("rpc: ok_back%s", args)
-            ss.rpc_reply("dbus", rpcid, True, native(args))
-        def err_back(*args):
-            log("rpc: err_back%s", args)
-            ss.rpc_reply("dbus", rpcid, False, native(args))
-        self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
-
-
-    def _get_window_dict(self, wids):
-        wd = {}
-        for wid in wids:
-            window = self._id_to_window.get(wid)
-            if window:
-                wd[wid] = window
-        return wd
-
-    def _process_suspend(self, proto, packet):
-        log("suspend(%s)", packet[1:])
-        ui = packet[1]
-        wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.suspend(ui, wd)
-
-    def _process_resume(self, proto, packet):
-        log("resume(%s)", packet[1:])
-        ui = packet[1]
-        wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.resume(ui, wd)
-
-    def send_ping(self):
-        for ss in self._server_sources.values():
-            ss.ping()
-        return True
-
-    def _process_ping_echo(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping_echo(packet)
-
-    def _process_ping(self, proto, packet):
-        time_to_echo = packet[1]
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping(time_to_echo)
-
-    def _process_screenshot(self, proto, _packet):
-        packet = self.make_screenshot_packet()
-        ss = self._server_sources.get(proto)
-        if packet and ss:
-            ss.send(*packet)
-
-    def make_screenshot_packet(self):
-        try:
-            return self.do_make_screenshot_packet()
+            del self._potential_protocols[protocol]
         except:
-            log.error("make_screenshot_packet()", exc_info=True)
-            return None
+            pass
+        source = self._server_sources.get(protocol)
+        if source:
+            self.cleanup_source(source)
+            try:
+                del self._server_sources[protocol]
+            except:
+                pass
+        return source
 
-    def do_make_screenshot_packet(self):
-        raise NotImplementedError("no screenshot capability in %s" % type(self))
+    def cleanup_source(self, source):
+        had_client = len(self._server_sources)>0
+        self.server_event("connection-lost", source.uuid)
+        if self.ui_driver==source.uuid:
+            self.ui_driver = None
+        source.close()
+        remaining_sources = [x for x in self._server_sources.values() if x!=source]
+        netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
+        netlog.info("xpra client %i disconnected.", source.counter)
+        has_client = len(remaining_sources)>0
+        if had_client and not has_client:
+            self.idle_add(self.last_client_exited)
+
+    def last_client_exited(self):
+        #must run from the UI thread (modifies focus and keys)
+        if self.exit_with_client:
+            netlog.info("Last client has disconnected, terminating")
+            self.clean_quit(False)
+        else:
+            self.reset_server_timeout(True)
+            #so it is now safe to clear them:
+            #(this may fail during shutdown - which is ok)
+            try:
+                self._clear_keys_pressed()
+            except:
+                pass
+            self._focus(None, 0, [])
+            self.reset_icc_profile()
 
 
-    def _process_set_notify(self, proto, packet):
-        assert self.notifications, "cannot toggle notifications: the feature is disabled"
+    def get_all_protocols(self):
+        return list(self._potential_protocols) + list(self._server_sources.keys())
+
+
+    def is_timedout(self, protocol):
+        v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
+        netlog("is_timedout(%s)=%s", protocol, v)
+        return v
+
+
+    def idle_timeout_cb(self, source):
+        timeoutlog("idle_timeout_cb(%s)", source)
+        p = source.protocol
+        if p:
+            self.disconnect_client(p, IDLE_TIMEOUT)
+
+    def idle_grace_timeout_cb(self, source):
+        timeoutlog("idle_grace_timeout_cb(%s)", source)
+        nid = XPRA_IDLE_NOTIFICATION_ID
+        actions = ()
+        if source.send_notifications_actions:
+            actions = ("cancel", "Cancel Timeout")
+        user_icon = os.path.join(get_icon_dir(), "timer.png")
+        icon = parse_image_path(user_icon) or ()
+        def idle_notification_action(nid, action_id):
+            timeoutlog("idle_notification_action(%i, %s)", nid, action_id)
+            if action_id=="cancel":
+                source.user_event()
+                source.no_idle()
+        if self.session_name!="Xpra":
+            summary = "The Xpra session %s" % self.session_name
+        else:
+            summary = "Xpra session"
+        summary += " is about to timeout"
+        body = "Unless this session sees some activity,\n" + \
+               "it will be terminated soon."
+        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration*1000, icon, user_callback=idle_notification_action)
+        source.go_idle()
+
+
+    def _log_disconnect(self, proto, *args):
+        #skip logging of disconnection events for server sources
+        #we have tagged during hello ("info_request", "exit_request", etc..)
         ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_notifications = bool(packet[1])
-
-    def _process_set_cursors(self, proto, packet):
-        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_cursors = bool(packet[1])
-
-    def _process_set_bell(self, proto, packet):
-        assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_bell = bool(packet[1])
-
-    def _process_set_deflate(self, proto, packet):
-        level = packet[1]
-        log("client has requested compression level=%s", level)
-        proto.set_compression_level(level)
-        #echo it back to the client:
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_deflate(level)
-
-    def _process_sound_control(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.sound_control(*packet[1:])
-
-    def _process_sound_data(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.sound_data(*packet[1:])
-
-    def _process_clipboard_enabled_status(self, proto, packet):
-        if self.readonly:
+        if ss and not ss.log_disconnect:
+            #log at debug level only:
+            netlog(*args)
             return
-        clipboard_enabled = packet[1]
-        ss = self._server_sources.get(proto)
-        self.set_clipboard_enabled_status(ss, clipboard_enabled)
+        ServerCore._log_disconnect(self, proto, *args)
 
-    def set_clipboard_enabled_status(self, ss, clipboard_enabled):
+    def _disconnect_proto_info(self, proto):
+        #only log protocol info if there is more than one client:
+        if len(self._server_sources)>1:
+            return " %s" % proto
+        return ""
+
+    def _process_connection_lost(self, proto, packet):
+        ServerCore._process_connection_lost(self, proto, packet)
         ch = self._clipboard_helper
-        if not ch:
-            clipboardlog.warn("Warning: client try to toggle clipboard-enabled status,")
-            clipboardlog.warn(" but we do not support clipboard at all! Ignoring it.")
-            return
-        cc = self._clipboard_client
-        if cc!=ss or ss is None:
-            clipboardlog.warn("Warning: received a request to change the clipboard status,")
-            clipboardlog.warn(" but it does not come from the clipboard owner! Ignoring it.")
-        cc.clipboard_enabled = clipboard_enabled
-        if not clipboard_enabled:
-            ch.enable_selections([])
-        clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
-
-    def _process_keyboard_sync_enabled_status(self, proto, packet):
-        assert proto in self._server_sources
-        if self.readonly:
-            return
-        self.keyboard_sync = bool(packet[1])
-        keylog("toggled keyboard-sync to %s", self.keyboard_sync)
-
-
-    def _process_server_settings(self, proto, packet):
-        #only used by x11 servers
-        pass
-
-
-    def _set_client_properties(self, proto, wid, window, new_client_properties):
-        """
-        Allows us to keep window properties for a client after disconnection.
-        (we keep it in a map with the client's uuid as key)
-        """
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_client_properties(wid, window, typedict(new_client_properties))
-            #filter out encoding properties, which are expected to be set everytime:
-            ncp = {}
-            for k,v in new_client_properties.items():
-                if v is None:
-                    log.warn("removing invalid None property for %s", k)
-                    continue
-                if not k.startswith(b"encoding"):
-                    ncp[k] = v
-            if ncp:
-                log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
-                client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
-                client_properties.update(ncp)
-
-
-    def _process_focus(self, proto, packet):
-        if self.readonly:
-            return
-        wid = packet[1]
-        focuslog("process_focus: wid=%s", wid)
-        if len(packet)>=3:
-            modifiers = packet[2]
-        else:
-            modifiers = None
-        ss = self._server_sources.get(proto)
-        if ss:
-            self._focus(ss, wid, modifiers)
-            #if the client focused one of our windows, count this as a user event:
-            if wid>0:
-                ss.user_event()
-
-    def _process_layout(self, proto, packet):
-        if self.readonly:
-            return
-        layout, variant = packet[1:3]
-        if len(packet)>=4:
-            options = packet[3]
-        else:
-            options = ""
-        ss = self._server_sources.get(proto)
-        if ss and ss.set_layout(layout, variant, options):
-            self.set_keymap(ss, force=True)
-
-    def _process_keymap(self, proto, packet):
-        if self.readonly:
-            return
-        props = typedict(packet[1])
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        log("received new keymap from client")
-        other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
-        if other_ui_clients:
-            log.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
-            return
-        kc = ss.keyboard_config
-        if kc and kc.enabled:
-            kc.parse_options(props)
-            self.set_keymap(ss, True)
-        modifiers = props.get("modifiers", [])
-        ss.make_keymask_match(modifiers)
-
-    def set_keyboard_layout_group(self, grp):
-        #only actually implemented in X11ServerBase
-        pass
-
-    def _process_key_action(self, proto, packet):
-        if self.readonly:
-            return
-        wid, keyname, pressed, modifiers, keyval, _, client_keycode, group = packet[1:9]
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        keyname = bytestostr(keyname)
-        modifiers = tuple(bytestostr(x) for x in modifiers)
-        self.ui_driver = ss.uuid
-        self.set_keyboard_layout_group(group)
-        keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
-        keylog("process_key_action(%s) server keycode=%s", packet, keycode)
-        #currently unused: (group, is_modifier) = packet[8:10]
-        self._focus(ss, wid, None)
-        ss.make_keymask_match(modifiers, keycode, ignored_modifier_keynames=[keyname])
-        #negative keycodes are used for key events without a real keypress/unpress
-        #for example, used by win32 to send Caps_Lock/Num_Lock changes
-        if keycode>=0:
-            try:
-                self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers)
-            except Exception as e:
-                keylog("process_key_action%s", (proto, packet), exc_info=True)
-                keylog.error("Error: failed to %s key", ["unpress", "press"][pressed])
-                keylog.error(" %s", e)
-                keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
-        ss.user_event()
-
-    def get_keycode(self, ss, client_keycode, keyname, modifiers):
-        return ss.get_keycode(client_keycode, keyname, modifiers)
-
-    def is_modifier(self, keyname, keycode):
-        if keyname in DEFAULT_MODIFIER_MEANINGS.keys():
-            return True
-        #keyboard config should always exist if we are here?
-        if self.keyboard_config:
-            return self.keyboard_config.is_modifier(keycode)
-        return False
-
-    def fake_key(self, keycode, press):
-        pass
-
-    def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers):
-        """
-            Does the actual press/unpress for keys
-            Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
-        """
-        keylog("handle_key(%s,%s,%s,%s,%s,%s) keyboard_sync=%s", wid, pressed, name, keyval, keycode, modifiers, self.keyboard_sync)
-        if pressed and (wid is not None) and (wid not in self._id_to_window):
-            keylog("window %s is gone, ignoring key press", wid)
-            return
-        if keycode<0:
-            keylog.warn("ignoring invalid keycode=%s", keycode)
-            return
-        if keycode in self.keys_timedout:
-            del self.keys_timedout[keycode]
-        def press():
-            keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
-            self.keys_pressed[keycode] = name
-            self.fake_key(keycode, True)
-        def unpress():
-            keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
-            if keycode in self.keys_pressed:
-                del self.keys_pressed[keycode]
-            self.fake_key(keycode, False)
-        is_mod = self.is_modifier(name, keycode)
-        if pressed:
-            if keycode not in self.keys_pressed:
-                press()
-                if not self.keyboard_sync and not is_mod:
-                    #keyboard is not synced: client manages repeat so unpress
-                    #it immediately unless this is a modifier key
-                    #(as modifiers are synced via many packets: key, focus and mouse events)
-                    unpress()
-            else:
-                keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
-        else:
-            if keycode in self.keys_pressed:
-                unpress()
-            else:
-                keylog("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
-        if not is_mod and self.keyboard_sync and self.key_repeat_delay>0 and self.key_repeat_interval>0:
-            self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, self.key_repeat_delay)
-
-    def cancel_key_repeat_timer(self):
-        if self.key_repeat_timer:
-            self.source_remove(self.key_repeat_timer)
-            self.key_repeat_timer = None
-
-    def _key_repeat(self, wid, pressed, keyname, keyval, keycode, modifiers, delay_ms=0):
-        """ Schedules/cancels the key repeat timeouts """
-        self.cancel_key_repeat_timer()
-        if pressed:
-            delay_ms = min(1500, max(250, delay_ms))
-            keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
-            now = monotonic_time()
-            self.key_repeat_timer = self.timeout_add(0, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers)
-
-    def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers):
-        self.key_repeat_timer = None
-        now = monotonic_time()
-        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s", keyname, keycode, now, when, delay_ms)
-        self._handle_key(wid, False, keyname, keyval, keycode, modifiers)
-        self.keys_timedout[keycode] = now
-
-    def _process_key_repeat(self, proto, packet):
-        if self.readonly:
-            return
-        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        keyname = bytestostr(keyname)
-        modifiers = tuple(bytestostr(x) for x in modifiers)
-        keycode = ss.get_keycode(client_keycode, keyname, modifiers)
-        #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
-        ss.make_keymask_match(modifiers)
-        if not self.keyboard_sync:
-            #this check should be redundant: clients should not send key-repeat without
-            #having keyboard_sync enabled
-            return
-        if keycode not in self.keys_pressed:
-            #the key is no longer pressed, has it timed out?
-            when_timedout = self.keys_timedout.get(keycode, None)
-            if when_timedout:
-                del self.keys_timedout[keycode]
-            now = monotonic_time()
-            if when_timedout and (now-when_timedout)<30:
-                #not so long ago, just re-press it now:
-                keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)
-                self.keys_pressed[keycode] = keyname
-                self.fake_key(keycode, True)
-        self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, self.key_repeat_interval)
-        ss.user_event()
-
-
-    def _move_pointer(self, wid, pos, *args):
-        raise NotImplementedError()
-
-    def _adjust_pointer(self, proto, wid, pointer):
-        #the window may not be mapped at the same location by the client:
-        ss = self._server_sources.get(proto)
-        window = self._id_to_window.get(wid)
-        if ss and window:
-            ws = ss.get_window_source(wid)
-            if ws:
-                mapped_at = ws.mapped_at
-                pos = self.get_window_position(window)
-                mouselog("client %s: server window position: %s, client window position: %s", ss, pos, mapped_at)
-                if mapped_at and pos:
-                    wx, wy = pos
-                    cx, cy = mapped_at[:2]
-                    if wx!=cx or wy!=cy:
-                        px, py = pointer
-                        return px+(wx-cx), py+(wy-cy)
-        return pointer
-
-    def _process_mouse_common(self, proto, wid, pointer, *args):
-        pointer = self._adjust_pointer(proto, wid, pointer)
-        #TODO: adjust args too
-        self.do_process_mouse_common(proto, wid, pointer, *args)
-        return pointer
-
-    def do_process_mouse_common(self, proto, wid, pointer, *args):
-        pass
-
-
-    def _process_button_action(self, proto, packet):
-        mouselog("process_button_action(%s, %s)", proto, packet)
-        if self.readonly:
-            return
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        ss.user_event()
-        self.ui_driver = ss.uuid
-        self.do_process_button_action(proto, *packet[1:])
-
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
-        pass
-
-
-    def _update_modifiers(self, proto, wid, modifiers):
-        pass
-
-    def _process_pointer_position(self, proto, packet):
-        if self.readonly:
-            return
-        wid, pointer, modifiers = packet[1:4]
-        ss = self._server_sources.get(proto)
-        if ss is not None:
-            ss.mouse_last_position = pointer
-        if self.ui_driver and self.ui_driver!=ss.uuid:
-            return
-        self._update_modifiers(proto, wid, modifiers)
-        self._process_mouse_common(proto, wid, pointer, *packet[5:])
-
-
-    def _process_damage_sequence(self, proto, packet):
-        packet_sequence, wid, width, height, decode_time = packet[1:6]
-        if len(packet)>=7:
-            message = packet[6]
-        else:
-            message = ""
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
-
-
-    def _damage(self, window, x, y, width, height, options=None):
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            ss.damage(wid, window, x, y, width, height, options)
-
-
-    def _process_buffer_refresh(self, proto, packet):
-        """ can be used for requesting a refresh, or tuning batch config, or both """
-        wid, _, qual = packet[1:4]
-        if len(packet)>=6:
-            options = typedict(packet[4])
-            client_properties = packet[5]
-        else:
-            options = typedict({})
-            client_properties = {}
-        if wid==-1:
-            wid_windows = self._id_to_window
-        elif wid in self._id_to_window:
-            wid_windows = {wid : self._id_to_window.get(wid)}
-        else:
-            #may have been destroyed since the request was made
-            log("invalid window specified for refresh: %s", wid)
-            return
-        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
-        batch_props = options.dictget("batch", {})
-        if batch_props or client_properties:
-            #change batch config and/or client properties
-            self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)
-        #default to True for backwards compatibility:
-        if options.get("refresh-now", True):
-            refresh_opts = {"quality"           : qual,
-                            "override_options"  : True}
-            self.refresh_windows(proto, wid_windows, refresh_opts)
-
-    def update_batch_config(self, proto, wid_windows, batch_props, client_properties):
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        for wid, window in wid_windows.items():
-            if window is None or not window.is_managed():
-                continue
-            self._set_client_properties(proto, wid, window, client_properties)
-            ss.update_batch(wid, window, batch_props)
-
-    def refresh_windows(self, proto, wid_windows, opts={}):
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        for wid, window in wid_windows.items():
-            if window is None or not window.is_managed():
-                continue
-            if not self.is_shown(window):
-                log("window is no longer shown, ignoring buffer refresh which would fail")
-                continue
-            ss.refresh(wid, window, opts)
-
-    def _idle_refresh_all_windows(self, proto):
-        self.idle_add(self.refresh_windows, proto, self._id_to_window)
-
-    def _process_quality(self, proto, packet):
-        quality = packet[1]
-        log("Setting quality to %s", quality)
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_quality(quality)
-            self._idle_refresh_all_windows(proto)
-
-    def _process_min_quality(self, proto, packet):
-        min_quality = packet[1]
-        log("Setting min quality to %s", min_quality)
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_min_quality(min_quality)
-            self._idle_refresh_all_windows(proto)
-
-    def _process_speed(self, proto, packet):
-        speed = packet[1]
-        log("Setting speed to ", speed)
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_speed(speed)
-            self._idle_refresh_all_windows(proto)
-
-    def _process_min_speed(self, proto, packet):
-        min_speed = packet[1]
-        log("Setting min speed to ", min_speed)
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.set_min_speed(min_speed)
-            self._idle_refresh_all_windows(proto)
-
-
-    def get_window_position(self, _window):
-        #where the window is actually mapped on the server screen:
-        return None
-
-    def _window_mapped_at(self, proto, wid, window, coords=None):
-        #record where a window is mapped by a client
-        #(in order to support multiple clients and different offsets)
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        ws = ss.make_window_source(wid, window)
-        ws.mapped_at = coords
-        #log("window %i mapped at %s for client %s", wid, coords, ss)
-
-    def _process_map_window(self, proto, packet):
-        log.info("_process_map_window(%s, %s)", proto, packet)
-
-    def _process_unmap_window(self, proto, packet):
-        log.info("_process_unmap_window(%s, %s)", proto, packet)
-
-    def _process_close_window(self, proto, packet):
-        log.info("_process_close_window(%s, %s)", proto, packet)
-
-    def _process_configure_window(self, proto, packet):
-        log.info("_process_configure_window(%s, %s)", proto, packet)
-
-
-    def _process_webcam_start(self, proto, packet):
-        if self.readonly:
-            return
-        assert self.webcam
-        ss = self._server_sources.get(proto)
-        if not ss:
-            webcamlog.warn("Warning: invalid client source for webcam start")
-            return
-        device, w, h = packet[1:4]
-        log("starting webcam %sx%s", w, h)
-        self.start_virtual_webcam(ss, device, w, h)
-
-    def start_virtual_webcam(self, ss, device, w, h):
-        assert w>0 and h>0
-        if self.webcam_option.startswith("/dev/video"):
-            #use the device specified:
-            devices = {
-                0 : {
-                    "device" : self.webcam_option,
-                    }
-                       }
-        else:
-            from xpra.platform.xposix.webcam import get_virtual_video_devices
-            devices = get_virtual_video_devices()
-            if len(devices)==0:
-                webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
-                ss.send_webcam_stop(device)
-                return
-            if self.webcam_forwarding_device:
-                self.stop_virtual_webcam()
-            webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
-        errs = {}
-        for device_id, device_info in devices.items():
-            webcamlog("trying device %s: %s", device_id, device_info)
-            device_str = device_info.get("device")
-            try:
-                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
-                in_cs = get_input_colorspaces()
-                p = Pusher()
-                src_format = in_cs[0]
-                p.init_context(w, h, w, src_format, device_str)
-                self.webcam_forwarding_device = p
-                webcamlog.info("webcam forwarding using %s", device_str)
-                #this tell the client to start sending, and the size to use - which may have changed:
-                ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
-                return
-            except Exception as e:
-                errs[device_str] = str(e)
-                del e
-        #all have failed!
-        #cannot start webcam..
-        ss.send_webcam_stop(device, str(e))
-        webcamlog.error("Error setting up webcam forwarding:")
-        if len(errs)>1:
-            webcamlog.error(" tried %i devices:", len(errs))
-        for device_str, err in errs.items():
-            webcamlog.error(" %s : %s", device_str, err)
-
-    def _process_webcam_stop(self, proto, packet):
-        assert proto in self._server_sources
-        if self.readonly:
-            return
-        device, message = (packet+[""])[1:3]
-        webcamlog("stopping webcam device %s", ": ".join([str(x) for x in (device, message)]))
-        if not self.webcam_forwarding_device:
-            webcamlog.warn("Warning: cannot stop webcam device %s: no such context!", device)
-            return
-        self.stop_virtual_webcam()
-
-    def stop_virtual_webcam(self):
-        webcamlog("stop_virtual_webcam() webcam_forwarding_device=%s", self.webcam_forwarding_device)
-        vfd = self.webcam_forwarding_device
-        if vfd:
-            self.webcam_forwarding_device = None
-            vfd.clean()
-
-    def _process_webcam_frame(self, proto, packet):
-        if self.readonly:
-            return
-        device, frame_no, encoding, w, h, data = packet[1:7]
-        webcamlog("webcam-frame no %i: %s %ix%i", frame_no, encoding, w, h)
-        assert encoding and w and h and data
-        ss = self._server_sources.get(proto)
-        if not ss:
-            webcamlog.warn("Warning: invalid client source for webcam frame")
-            return
-        vfd = self.webcam_forwarding_device
-        if not self.webcam_forwarding_device:
-            webcamlog.warn("Warning: webcam forwarding is not active, dropping frame")
-            ss.send_webcam_stop(device, "not started")
-            return
-        try:
-            from xpra.codecs.pillow.decode import get_encodings
-            assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
-            rgb_pixel_format = "BGRX"       #BGRX
-            from PIL import Image
-            buf = BytesIOClass(data)
-            img = Image.open(buf)
-            pixels = img.tobytes('raw', rgb_pixel_format)
-            from xpra.codecs.image_wrapper import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
-            src_format = vfd.get_src_format()
-            if not src_format:
-                #closed / closing
-                return
-            #one of those two should be present
-            try:
-                csc_mod = "csc_swscale"
-                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            except ImportError:
-                ss.send_webcam_stop(device, "no csc module")
-                return
-            try:
-                assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
-                assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
-            except Exception as e:
-                webcamlog.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
-                webcamlog.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
-                webcamlog.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
-                ss.send_webcam_stop(device, "csc format error")
-                return
-            tw = vfd.get_width()
-            th = vfd.get_height()
-            csc = ColorspaceConverter()
-            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
-            image = csc.convert_image(bgrx_image)
-            vfd.push_image(image)
-            #tell the client all is good:
-            ss.send_webcam_ack(device, frame_no)
-        except Exception as e:
-            webcamlog("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)
-            webcamlog.error("Error processing webcam frame:")
-            if str(e):
-                webcamlog.error(" %s", e)
-            else:
-                webcamlog.error("unknown error", exc_info=True)
-            ss.send_webcam_stop(device, str(e))
-            self.stop_virtual_webcam()
-
-
-    def _process_connection_data(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.update_connection_data(packet[1])
-
-    def _process_bandwidth_limit(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        bandwidth_limit = packet[1]
-        if self.bandwidth_limit:
-            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
-        ss.bandwidth_limit = bandwidth_limit
-        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
-
-
-    def _process_sharing_toggle(self, proto, packet):
-        assert self.sharing is None
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        sharing = bool(packet[1])
-        ss.share = sharing
-        if not sharing:
-            #disconnect other users:
-            for p,ss in tuple(self._server_sources.items()):
-                if p!=proto:
-                    self.disconnect_client(p, DETACH_REQUEST, "client %i no longer wishes to share the session" % ss.counter)
-
-    def _process_lock_toggle(self, proto, packet):
-        assert self.lock is None
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.lock = bool(packet[1])
-            log("lock set to %s for client %i", ss.lock, ss.counter)
-
-
-    def _process_input_devices(self, _proto, packet):
-        self.input_devices_format = packet[1]
-        self.input_devices_data = packet[2]
-        from xpra.util import print_nested_dict
-        mouselog("client %s input devices:", self.input_devices_format)
-        print_nested_dict(self.input_devices_data, print_fn=mouselog)
-        self.setup_input_devices()
-
-    def setup_input_devices(self):
-        pass
-
-    def process_clipboard_packet(self, ss, packet):
-        if self.readonly:
-            return
-        if not ss:
-            #protocol has been dropped!
-            return
-        assert self._clipboard_client==ss, \
-                "the clipboard packet '%s' does not come from the clipboard owner!" % packet[0]
-        if not ss.clipboard_enabled:
-            #this can happen when we disable clipboard in the middle of transfers
-            #(especially when there is a clipboard loop)
-            log.warn("received a clipboard packet from a source which does not have clipboard enabled!")
-            return
-        assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
-        self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
-
+        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
+            self._clipboard_client = None
+            ch.client_reset()
+        self.cleanup_protocol(proto)
+
+
+    ######################################################################
+    # packets:
+    def init_packet_handlers(self):
+        ServerCore.init_packet_handlers(self)
+        self._authenticated_packet_handlers = {
+            "set-clipboard-enabled":                self._process_clipboard_enabled_status,
+            "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
+            "damage-sequence":                      self._process_damage_sequence,
+            "ping":                                 self._process_ping,
+            "ping_echo":                            self._process_ping_echo,
+            "set-cursors":                          self._process_set_cursors,
+            "set-notify":                           self._process_set_notify,
+            "set-bell":                             self._process_set_bell,
+            "logging":                              self._process_logging,
+            "command_request":                      self._process_command_request,
+            "printers":                             self._process_printers,
+            "send-file":                            self._process_send_file,
+            "ack-file-chunk":                       self._process_ack_file_chunk,
+            "send-file-chunk":                      self._process_send_file_chunk,
+            "send-data-request":                    self._process_send_data_request,
+            "send-data-response":                   self._process_send_data_response,
+            "webcam-start":                         self._process_webcam_start,
+            "webcam-stop":                          self._process_webcam_stop,
+            "webcam-frame":                         self._process_webcam_frame,
+            "connection-data":                      self._process_connection_data,
+            "bandwidth-limit":                      self._process_bandwidth_limit,
+            "sharing-toggle":                       self._process_sharing_toggle,
+            "lock-toggle":                          self._process_lock_toggle,
+            "command-signal":                       self._process_command_signal,
+          }
+        self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
+        self._authenticated_ui_packet_handlers.update({
+            #windows:
+            "map-window":                           self._process_map_window,
+            "unmap-window":                         self._process_unmap_window,
+            "configure-window":                     self._process_configure_window,
+            "close-window":                         self._process_close_window,
+            "focus":                                self._process_focus,
+            #keyboard:
+            "key-action":                           self._process_key_action,
+            "key-repeat":                           self._process_key_repeat,
+            "layout-changed":                       self._process_layout,
+            "keymap-changed":                       self._process_keymap,
+            #mouse:
+            "button-action":                        self._process_button_action,
+            "pointer-position":                     self._process_pointer_position,
+            #attributes / settings:
+            "server-settings":                      self._process_server_settings,
+            "quality":                              self._process_quality,
+            "min-quality":                          self._process_min_quality,
+            "speed":                                self._process_speed,
+            "min-speed":                            self._process_min_speed,
+            "set_deflate":                          self._process_set_deflate,
+            "desktop_size":                         self._process_desktop_size,
+            "encoding":                             self._process_encoding,
+            "suspend":                              self._process_suspend,
+            "resume":                               self._process_resume,
+            #dbus:
+            "rpc":                                  self._process_rpc,
+            #sound:
+            "sound-control":                        self._process_sound_control,
+            "sound-data":                           self._process_sound_data,
+            #requests:
+            "shutdown-server":                      self._process_shutdown_server,
+            "exit-server":                          self._process_exit_server,
+            "buffer-refresh":                       self._process_buffer_refresh,
+            "screenshot":                           self._process_screenshot,
+            "info-request":                         self._process_info_request,
+            "start-command":                        self._process_start_command,
+            "print":                                self._process_print,
+            "input-devices":                        self._process_input_devices,
+            #notifications:
+            "notification-close":                   self._process_notification_close,
+            "notification-action":                  self._process_notification_action,
+            # Note: "clipboard-*" packets are handled via a special case..
+            })
+
+    def init_aliases(self):
+        packet_types = list(self._default_packet_handlers.keys())
+        packet_types += list(self._authenticated_packet_handlers.keys())
+        packet_types += list(self._authenticated_ui_packet_handlers.keys())
+        self.do_init_aliases(packet_types)
 
     def process_packet(self, proto, packet):
         try:
