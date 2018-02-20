@@ -248,7 +248,6 @@ class GTKTrayMenuBase(object):
 
     def __init__(self, client):
         self.client = client
-        self.session_info = None
         self.menu = None
         self.menu_shown = False
         self.menu_icon_size = 0
@@ -307,10 +306,6 @@ class GTKTrayMenuBase(object):
         return menu
 
     def cleanup(self):
-        log("cleanup() session_info=%s", self.session_info)
-        if self.session_info:
-            self.session_info.destroy()
-            self.session_info = None
         self.close_menu()
         close_about()
 
