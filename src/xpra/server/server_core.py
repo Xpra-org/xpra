@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -162,7 +162,8 @@ def get_thread_info(proto=None, protocols=[]):
 class ServerCore(object):
     """
         This is the simplest base class for servers.
-        It only handles establishing the connection.
+        It only handles the connection layer:
+        authentication and the initial handshake.
     """
 
     #magic value to distinguish exit code for upgrading (True==1)
@@ -228,6 +229,10 @@ class ServerCore(object):
         self.init_aliases()
         sanity_checks()
 
+    def get_server_mode(self):
+        return "core"
+
+
     def idle_add(self, *args, **kwargs):
         raise NotImplementedError()
 
@@ -236,6 +241,10 @@ class ServerCore(object):
 
     def source_remove(self, timer):
         raise NotImplementedError()
+
+    def init_when_ready(self, callbacks):
+        self._when_ready = callbacks
+
 
     def init(self, opts):
         log("ServerCore.init(%s)", opts)
@@ -265,6 +274,115 @@ class ServerCore(object):
         self.init_dbus_server()
 
 
+    ######################################################################
+    # run / stop:
+    def reaper_exit(self):
+        self.clean_quit()
+
+    def signal_quit(self, signum, _frame):
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+        self._closing = True
+        log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
+        signal.signal(signal.SIGINT, deadly_signal)
+        signal.signal(signal.SIGTERM, deadly_signal)
+        self.idle_add(self.clean_quit)
+        self.idle_add(sys.exit, 128+signum)
+
+    def clean_quit(self, upgrading=False):
+        log("clean_quit(%s)", upgrading)
+        self._upgrading = upgrading
+        self._closing = True
+        #ensure the reaper doesn't call us again:
+        if self.child_reaper:
+            def noop():
+                pass
+            self.reaper_exit = noop
+            log("clean_quit: reaper_exit=%s", self.reaper_exit)
+        self.cleanup()
+        def quit_timer():
+            log.debug("quit_timer()")
+            stop_worker(True)
+            self.quit(upgrading)
+        #if from a signal, just force quit:
+        stop_worker()
+        #not from signal: use force stop worker after delay
+        self.timeout_add(250, stop_worker, True)
+        self.timeout_add(500, quit_timer)
+        def force_quit():
+            log.debug("force_quit()")
+            from xpra import os_util
+            os_util.force_quit()
+        self.timeout_add(5000, force_quit)
+        log("clean_quit(..) quit timers scheduled")
+        dump_all_frames()
+
+    def quit(self, upgrading=False):
+        log("quit(%s)", upgrading)
+        self._upgrading = upgrading
+        if not self._closing:
+            self._closing = True
+            log.info("xpra is terminating.")
+        sys.stdout.flush()
+        self.do_quit()
+        log("quit(%s) do_quit done!", upgrading)
+        dump_all_frames()
+
+    def do_quit(self):
+        raise NotImplementedError()
+
+    def run(self):
+        self.print_run_info()
+        self.print_screen_info()
+        #SIGINT breaks GTK3.. (but there are no py3k servers yet!)
+        signal.signal(signal.SIGINT, self.signal_quit)
+        signal.signal(signal.SIGTERM, self.signal_quit)
+        def start_ready_callbacks():
+            for x in self._when_ready:
+                try:
+                    x()
+                except Exception as e:
+                    log("start_ready_callbacks()", exc_info=True)
+                    log.error("Error on server start ready callback '%s':", x)
+                    log.error(" %s", e)
+                    del e
+        self.idle_add(start_ready_callbacks)
+        self.idle_add(self.reset_server_timeout)
+        self.idle_add(self.server_is_ready)
+        self.do_run()
+        return self._upgrading
+
+    def server_is_ready(self):
+        log.info("xpra is ready.")
+        sys.stdout.flush()
+
+    def do_run(self):
+        raise NotImplementedError()
+
+    def cleanup(self, *_args):
+        netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
+        for p in tuple(self._tcp_proxy_clients):
+            p.quit()
+        netlog("cleanup will disconnect: %s", self._potential_protocols)
+        if self._upgrading:
+            reason = SERVER_UPGRADE
+        else:
+            reason = SERVER_SHUTDOWN
+        protocols = self.get_all_protocols()
+        self.cleanup_protocols(protocols, reason)
+        self.do_cleanup()
+        self.cleanup_protocols(protocols, reason, True)
+        self._potential_protocols = []
+        self.cleanup_udp_listeners()
+        self.cleanup_dbus_server()
+
+    def do_cleanup(self):
+        #allow just a bit of time for the protocol packet flush
+        sleep(0.1)
+
+
+    ######################################################################
+    # dbus:
     def init_dbus_server(self):
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         if not self.dbus_control:
@@ -283,7 +401,6 @@ class ServerCore(object):
         if ds:
             ds.cleanup()
             self.dbus_server = None
-
 
     def make_dbus_server(self):
         dbuslog("make_dbus_server() no dbus server for %s", self)
@@ -350,6 +467,9 @@ class ServerCore(object):
             log.warn(" disabling the tcp-proxy option")
             self._tcp_proxy = False
 
+
+    ######################################################################
+    # authentication:
     def init_auth(self, opts):
         auth = self.get_auth_modules("local-auth", opts.auth, opts)
         if WIN32:
@@ -431,6 +551,84 @@ class ServerCore(object):
             raise InitException("Authenticator class not found in %s" % auth_module)
 
 
+    ######################################################################
+    # control commands:
+    def init_control_commands(self):
+        self.control_commands = {"hello"    : HelloCommand(),
+                                 "debug"    : DebugControl()}
+        help_command = HelpCommand(self.control_commands)
+        self.control_commands["help"] = help_command
+
+    def handle_command_request(self, proto, *args):
+        """ client sent a command request as part of the hello packet """
+        assert len(args)>0
+        code, response = self.process_control_command(*args)
+        hello = {"command_response"  : (code, response)}
+        proto.send_now(("hello", hello))
+
+    def process_control_command(self, *args):
+        assert len(args)>0
+        name = args[0]
+        try:
+            command = self.control_commands.get(name)
+            commandlog("process_control_command control_commands[%s]=%s", name, command)
+            if not command:
+                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, ", ".join(self.control_commands))
+                return 6, "invalid command"
+            commandlog("process_control_command calling %s%s", command.run, args[1:])
+            v = command.run(*args[1:])
+            return 0, v
+        except ControlError as e:
+            commandlog.error("error %s processing control command '%s'", e.code, name)
+            msgs = [" %s" % e]
+            if e.help:
+                msgs.append(" '%s': %s" % (name, e.help))
+            for msg in msgs:
+                commandlog.error(msg)
+            return e.code, "\n".join(msgs)
+        except Exception as e:
+            commandlog.error("error processing control command '%s'", name, exc_info=True)
+            return 127, "error processing control command: %s" % e
+
+
+    def print_run_info(self):
+        log.info("xpra %s version %s %i-bit", self.get_server_mode(), full_version_str(), BITS)
+        try:
+            pinfo = get_platform_info()
+            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
+        except:
+            log("platform name error:", exc_info=True)
+            osinfo = ""
+        if POSIX:
+            uid = os.getuid()
+            gid = os.getgid()
+            try:
+                import pwd, grp #@UnresolvedImport
+                user = pwd.getpwuid(uid)[0]
+                group = grp.getgrgid(gid)[0]
+                log.info(" uid=%i (%s), gid=%i (%s)", uid, user, gid, group)
+            except:
+                log.info(" uid=%i, gid=%i", uid, gid)
+        log.info(" running with pid %s%s", os.getpid(), osinfo)
+
+
+    ######################################################################
+    # screen / display:
+    def get_display_bit_depth(self):
+        return 0
+
+    def print_screen_info(self):
+        display = os.environ.get("DISPLAY")
+        if display and display.startswith(":"):
+            extra = ""
+            bit_depth = self.get_display_bit_depth()
+            if bit_depth:
+                extra = " with %i bit colors" % bit_depth
+            log.info(" connected to X11 display %s%s", display, extra)
+
+
+    ######################################################################
+    # sockets / connections / packets:
     def init_sockets(self, sockets):
         self._socket_info = sockets
         ### All right, we're ready to accept customers:
@@ -446,10 +644,6 @@ class ServerCore(object):
                 except Exception as e:
                     log.error("failed to set socket path to %s: %s", info, e)
                     del e
-
-    def init_when_ready(self, callbacks):
-        self._when_ready = callbacks
-
 
     def init_packet_handlers(self):
         netlog("initializing packet handlers")
@@ -472,154 +666,6 @@ class ServerCore(object):
             self._reverse_aliases[key] = i
             i += 1
 
-    def init_control_commands(self):
-        self.control_commands = {"hello"    : HelloCommand(),
-                                 "debug"    : DebugControl()}
-        help_command = HelpCommand(self.control_commands)
-        self.control_commands["help"] = help_command
-
-
-    def reaper_exit(self):
-        self.clean_quit()
-
-    def signal_quit(self, signum, _frame):
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-        self._closing = True
-        log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, deadly_signal)
-        signal.signal(signal.SIGTERM, deadly_signal)
-        self.idle_add(self.clean_quit)
-        self.idle_add(sys.exit, 128+signum)
-
-    def clean_quit(self, upgrading=False):
-        log("clean_quit(%s)", upgrading)
-        self._upgrading = upgrading
-        self._closing = True
-        #ensure the reaper doesn't call us again:
-        if self.child_reaper:
-            def noop():
-                pass
-            self.reaper_exit = noop
-            log("clean_quit: reaper_exit=%s", self.reaper_exit)
-        self.cleanup()
-        def quit_timer():
-            log.debug("quit_timer()")
-            stop_worker(True)
-            self.quit(upgrading)
-        #if from a signal, just force quit:
-        stop_worker()
-        #not from signal: use force stop worker after delay
-        self.timeout_add(250, stop_worker, True)
-        self.timeout_add(500, quit_timer)
-        def force_quit():
-            log.debug("force_quit()")
-            from xpra import os_util
-            os_util.force_quit()
-        self.timeout_add(5000, force_quit)
-        log("clean_quit(..) quit timers scheduled")
-        dump_all_frames()
-
-    def quit(self, upgrading=False):
-        log("quit(%s)", upgrading)
-        self._upgrading = upgrading
-        if not self._closing:
-            self._closing = True
-            log.info("xpra is terminating.")
-        sys.stdout.flush()
-        self.do_quit()
-        log("quit(%s) do_quit done!", upgrading)
-        dump_all_frames()
-
-    def do_quit(self):
-        raise NotImplementedError()
-
-    def get_server_mode(self):
-        return "core"
-
-    def run(self):
-        self.print_run_info()
-        self.print_screen_info()
-        #SIGINT breaks GTK3.. (but there are no py3k servers yet!)
-        signal.signal(signal.SIGINT, self.signal_quit)
-        signal.signal(signal.SIGTERM, self.signal_quit)
-        def start_ready_callbacks():
-            for x in self._when_ready:
-                try:
-                    x()
-                except Exception as e:
-                    log("start_ready_callbacks()", exc_info=True)
-                    log.error("Error on server start ready callback '%s':", x)
-                    log.error(" %s", e)
-                    del e
-        self.idle_add(start_ready_callbacks)
-        self.idle_add(self.reset_server_timeout)
-        self.idle_add(self.server_is_ready)
-        self.do_run()
-        return self._upgrading
-
-    def print_run_info(self):
-        log.info("xpra %s version %s %i-bit", self.get_server_mode(), full_version_str(), BITS)
-        try:
-            pinfo = get_platform_info()
-            osinfo = " on %s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-        except:
-            log("platform name error:", exc_info=True)
-            osinfo = ""
-        if POSIX:
-            uid = os.getuid()
-            gid = os.getgid()
-            try:
-                import pwd, grp #@UnresolvedImport
-                user = pwd.getpwuid(uid)[0]
-                group = grp.getgrgid(gid)[0]
-                log.info(" uid=%i (%s), gid=%i (%s)", uid, user, gid, group)
-            except:
-                log.info(" uid=%i, gid=%i", uid, gid)
-        log.info(" running with pid %s%s", os.getpid(), osinfo)
-
-    def get_display_bit_depth(self):
-        return 0
-
-    def print_screen_info(self):
-        display = os.environ.get("DISPLAY")
-        if display and display.startswith(":"):
-            extra = ""
-            bit_depth = self.get_display_bit_depth()
-            if bit_depth:
-                extra = " with %i bit colors" % bit_depth
-            log.info(" connected to X11 display %s%s", display, extra)
-
-
-    def server_is_ready(self):
-        log.info("xpra is ready.")
-        sys.stdout.flush()
-
-    def do_run(self):
-        raise NotImplementedError()
-
-    def cleanup(self, *_args):
-        netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
-        for p in tuple(self._tcp_proxy_clients):
-            p.quit()
-        netlog("cleanup will disconnect: %s", self._potential_protocols)
-        if self._upgrading:
-            reason = SERVER_UPGRADE
-        else:
-            reason = SERVER_SHUTDOWN
-        protocols = self.get_all_protocols()
-        self.cleanup_protocols(protocols, reason)
-        self.do_cleanup()
-        self.cleanup_protocols(protocols, reason, True)
-        self._potential_protocols = []
-        self.cleanup_udp_listeners()
-        self.cleanup_dbus_server()
-
-    def do_cleanup(self):
-        #allow just a bit of time for the protocol packet flush
-        sleep(0.1)
-
-
     def cleanup_udp_listeners(self):
         for udpl in self._udp_listeners:
             udpl.close()
@@ -639,7 +685,6 @@ class ServerCore(object):
                 self.force_disconnect(protocol)
             else:
                 self.disconnect_protocol(protocol, reason)
-
 
     def add_listen_socket(self, socktype, sock):
         info = self.socket_info.get(sock)
@@ -666,7 +711,6 @@ class ServerCore(object):
             netlog("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
             netlog.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
             netlog.error(" %s", e)
-
 
     def _new_connection(self, listener, *args):
         """
@@ -1005,6 +1049,8 @@ class ServerCore(object):
         return None, "character %#x, not an xpra client?" % c
 
 
+    ######################################################################
+    # http / websockets:
     def get_http_scripts(self):
         return {
             "/Status"       : self.http_status_request,
@@ -1237,6 +1283,8 @@ class ServerCore(object):
         self.disconnect_client(protocol, message)
 
 
+    ######################################################################
+    # hello / authentication:
     def send_version_info(self, proto, full=False):
         version = XPRA_VERSION
         if full:
@@ -1506,38 +1554,6 @@ class ServerCore(object):
         return False
 
 
-    def handle_command_request(self, proto, *args):
-        """ client sent a command request as part of the hello packet """
-        assert len(args)>0
-        code, response = self.process_control_command(*args)
-        hello = {"command_response"  : (code, response)}
-        proto.send_now(("hello", hello))
-
-    def process_control_command(self, *args):
-        assert len(args)>0
-        name = args[0]
-        try:
-            command = self.control_commands.get(name)
-            commandlog("process_control_command control_commands[%s]=%s", name, command)
-            if not command:
-                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, ", ".join(self.control_commands))
-                return 6, "invalid command"
-            commandlog("process_control_command calling %s%s", command.run, args[1:])
-            v = command.run(*args[1:])
-            return 0, v
-        except ControlError as e:
-            commandlog.error("error %s processing control command '%s'", e.code, name)
-            msgs = [" %s" % e]
-            if e.help:
-                msgs.append(" '%s': %s" % (name, e.help))
-            for msg in msgs:
-                commandlog.error(msg)
-            return e.code, "\n".join(msgs)
-        except Exception as e:
-            commandlog.error("error processing control command '%s'", name, exc_info=True)
-            return 127, "error processing control command: %s" % e
-
-
     def accept_client(self, proto, c):
         #max packet size from client (the biggest we can get are clipboard packets)
         netlog("accept_client(%s, %s)", proto, c)
@@ -1597,6 +1613,8 @@ class ServerCore(object):
         return capabilities
 
 
+    ######################################################################
+    # info:
     def send_id_info(self, proto):
         log("id info request from %s", proto._conn)
         proto.send_now(("hello", self.get_session_id_info()))
@@ -1723,6 +1741,8 @@ class ServerCore(object):
         return si
 
 
+    ######################################################################
+    # packet handling:
     def process_packet(self, proto, packet):
         packet_type = None
         handler = None
