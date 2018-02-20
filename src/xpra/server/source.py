@@ -50,13 +50,6 @@ from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_
 from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, updict, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     CLIENT_PING_TIMEOUT, WORKSPACE_UNSET, DEFAULT_METADATA_SUPPORTED
-def no_legacy_names(v):
-    return v
-try:
-    from xpra.sound.common import NEW_CODEC_NAMES, LEGACY_CODEC_NAMES, new_to_legacy
-except:
-    LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
-    new_to_legacy = no_legacy_names
 
 NOYIELD = not envbool("XPRA_YIELD", False)
 MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
@@ -325,7 +318,6 @@ class ServerSource(FileTransferHandler):
         self.sound_source_sequence = 0
         self.sound_source = None
         self.sound_sink = None
-        self.codec_full_names = False
         self.av_sync = av_sync
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
@@ -875,24 +867,15 @@ class ServerSource(FileTransferHandler):
         self.pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.pulseaudio_cookie_hash = c.strget("sound.pulseaudio.cookie-hash")
         self.pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.codec_full_names = c.boolget("sound.codec-full-names")
-        try:
-            if not self.codec_full_names:
-                from xpra.sound.common import legacy_to_new as conv
-            else:
-                def conv(v):
-                    return v
-            self.sound_decoders = conv(c.strlistget("sound.decoders", []))
-            self.sound_encoders = conv(c.strlistget("sound.encoders", []))
-        except:
-            soundlog("Error: cannot parse client sound codecs", exc_info=True)
+        self.sound_decoders = c.strlistget("sound.decoders", [])
+        self.sound_encoders = c.strlistget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
         self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         av_sync = c.boolget("av-sync")
         self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
-        soundlog("pulseaudio id=%s, cookie-hash=%s, server=%s, full-names=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
-                 self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server, self.codec_full_names, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
+        soundlog("pulseaudio id=%s, cookie-hash=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
+                 self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server, self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
         avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
@@ -1181,8 +1164,6 @@ class ServerSource(FileTransferHandler):
             if not self.sound_receive:
                 soundlog.error("Error sending sound: support is not enabled on the client")
                 return None
-            if not self.codec_full_names:
-                codec = NEW_CODEC_NAMES.get(codec, codec)
             if codec is None:
                 codecs = [x for x in self.sound_decoders if x in self.speaker_codecs]
                 if not codecs:
@@ -1274,8 +1255,6 @@ class ServerSource(FileTransferHandler):
             soundlog("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
         codec = codec or sound_source.codec
-        if not self.codec_full_names:
-            codec = LEGACY_CODEC_NAMES.get(codec, codec)
         sound_source.codec = codec
         #tell the client this is the start:
         self.send("sound-data", codec, "",
@@ -1434,7 +1413,6 @@ class ServerSource(FileTransferHandler):
         soundlog("sound_data(%s, %s, %s, %s) sound sink=%s", codec, len(data or []), metadata, packet_metadata, self.sound_sink)
         if self.is_closed():
             return
-        codec = NEW_CODEC_NAMES.get(codec, codec)
         if self.sound_sink is not None and codec!=self.sound_sink.codec:
             soundlog.info("sound codec changed from %s to %s", self.sound_sink.codec, codec)
             self.sound_sink.cleanup()
@@ -1460,7 +1438,6 @@ class ServerSource(FileTransferHandler):
                     soundlog.warn("stopping sound input because of error")
                     self.stop_receiving_sound()
                 from xpra.sound.wrapper import start_receiving_sound
-                codec = NEW_CODEC_NAMES.get(codec, codec)
                 ss = start_receiving_sound(codec)
                 if not ss:
                     return
@@ -1685,14 +1662,10 @@ class ServerSource(FileTransferHandler):
         if self.wants_sound and self.sound_properties:
             sound_props = self.sound_properties.copy()
             #only translate codec names if the client doesn't understand new full names:
-            if not self.codec_full_names:
-                name_trans = new_to_legacy
-            else:
-                name_trans = no_legacy_names
             sound_props.update({
                                 "codec-full-names"  : True,
-                                "encoders"  : name_trans(self.speaker_codecs),
-                                "decoders"  : name_trans(self.microphone_codecs),
+                                "encoders"  : self.speaker_codecs,
+                                "decoders"  : self.microphone_codecs,
                                 "send"      : self.supports_speaker and len(self.speaker_codecs)>0,
                                 "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
                                 })
@@ -1858,7 +1831,7 @@ class ServerSource(FileTransferHandler):
                 "speaker"       : sound_info(self.supports_speaker, self.sound_source, self.sound_decoders),
                 "microphone"    : sound_info(self.supports_microphone, self.sound_sink, self.sound_encoders),
                 }
-        for prop in ("pulseaudio_id", "pulseaudio_server", "codec_full_names"):
+        for prop in ("pulseaudio_id", "pulseaudio_server"):
             v = getattr(self, prop)
             if v is not None:
                 info[prop] = v

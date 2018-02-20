@@ -13,12 +13,6 @@ from xpra.scripts.main import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv
-try:
-    from xpra.sound.common import LEGACY_CODEC_NAMES, NEW_CODEC_NAMES, add_legacy_names
-except:
-    LEGACY_CODEC_NAMES, NEW_CODEC_NAMES = {}, {}
-    def add_legacy_names(codecs):
-        return codecs
 
 
 glib = import_glib()
@@ -60,7 +54,6 @@ class AudioClient(object):
         self.server_sound_send = False
         self.server_sound_bundle_metadata = False
         self.server_ogg_latency_fix = False
-        self.server_codec_full_names = False
         self.queue_used_sent = None
 
     def init(self, opts):
@@ -137,8 +130,8 @@ class AudioClient(object):
         #so always add legacy names in hello:
         caps = {
             "codec-full-names"  : True,
-            "decoders"   : add_legacy_names(self.speaker_codecs),
-            "encoders"   : add_legacy_names(self.microphone_codecs),
+            "decoders"   : self.speaker_codecs,
+            "encoders"   : self.microphone_codecs,
             "send"       : self.microphone_allowed,
             "receive"    : self.speaker_allowed,
             }
@@ -152,15 +145,9 @@ class AudioClient(object):
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
         self.server_pulseaudio_id = c.strget("sound.pulseaudio.id")
         self.server_pulseaudio_server = c.strget("sound.pulseaudio.server")
-        self.server_codec_full_names = c.boolget("sound.codec-full-names")
         try:
-            if not self.server_codec_full_names:
-                from xpra.sound.common import legacy_to_new as conv
-            else:
-                def conv(v):
-                    return v
-            self.server_sound_decoders = conv(c.strlistget("sound.decoders", []))
-            self.server_sound_encoders = conv(c.strlistget("sound.encoders", []))
+            self.server_sound_decoders = c.strlistget("sound.decoders", [])
+            self.server_sound_encoders = c.strlistget("sound.encoders", [])
         except:
             log("Error: cannot parse server sound codec data", exc_info=True)
         self.server_sound_receive = c.boolget("sound.receive")
@@ -303,8 +290,6 @@ class AudioClient(object):
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
             return
         codec = codec or sound_source.codec
-        if not self.server_codec_full_names:
-            codec = LEGACY_CODEC_NAMES.get(codec, codec)
         sound_source.codec = codec
         #tell the server this is the start:
         self.send("sound-data", codec, "",
@@ -354,8 +339,6 @@ class AudioClient(object):
                 log.warn(" the sound latency with the %s codec will be high", codec)
             def sink_ready(*args):
                 scodec = codec
-                if not self.server_codec_full_names:
-                    scodec = LEGACY_CODEC_NAMES.get(codec, codec)
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
                 self.send("sound-control", "start", scodec)
                 return False
@@ -481,8 +464,6 @@ class AudioClient(object):
 
     def send_sound_data(self, sound_source, data, metadata={}, packet_metadata=()):
         codec = sound_source.codec
-        if not self.server_codec_full_names:
-            codec = LEGACY_CODEC_NAMES.get(codec, codec)
         packet_data = [codec, Compressed(codec, data), metadata]
         if packet_metadata:
             assert self.server_sound_bundle_metadata
@@ -498,8 +479,6 @@ class AudioClient(object):
     def _process_sound_data(self, packet):
         codec, data, metadata = packet[1:4]
         codec = bytestostr(codec)
-        if not self.server_codec_full_names:
-            codec = NEW_CODEC_NAMES.get(codec, codec)
         metadata = typedict(metadata)
         if data:
             self.sound_in_bytecount += len(data)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,33 +40,6 @@ AAC_MPEG4   = AAC+"+"+MPEG4
 WAV_LZ4     = WAV+"+"+LZ4
 WAV_LZO     = WAV+"+"+LZO
 MP3_MPEG4   = MP3+"+"+MPEG4
-
-#when codecs were first added, there was no support for multiple muxers,
-#but now there is...
-#since it makes sense to use the full specification including the muxer in the codec name,
-#this maps it back to the original names
-LEGACY_CODEC_NAMES = {
-                      FLAC_OGG      : FLAC,
-                      OPUS_OGG      : OPUS,
-                      SPEEX_OGG     : SPEEX,
-                      }
-NEW_CODEC_NAMES = dict((v,k) for k,v in LEGACY_CODEC_NAMES.items())
-
-
-def add_legacy_names(codecs):
-    newlist = []
-    for x in codecs:
-        newlist.append(x)
-        v = LEGACY_CODEC_NAMES.get(x)
-        if v and v not in newlist:
-            newlist.append(v)
-    return newlist
-
-def new_to_legacy(codecs):
-    return [LEGACY_CODEC_NAMES.get(x, x) for x in (codecs or ())]
-
-def legacy_to_new(codecs):
-    return [NEW_CODEC_NAMES.get(x, x) for x in (codecs or ())]
 
 
 #used for parsing codec names specified on the command line:
