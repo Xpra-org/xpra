@@ -344,79 +344,6 @@ class ServerBase(ServerCore):
         self.stop_virtual_webcam()
 
 
-    def init_encodings(self):
-        load_codecs(decoders=False)
-        encs, core_encs = [], []
-        def add_encodings(encodings):
-            for ce in encodings:
-                e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
-                if self.allowed_encodings is not None and e not in self.allowed_encodings:
-                    #not in whitelist (if it exists)
-                    continue
-                if e not in encs:
-                    encs.append(e)
-                if ce not in core_encs:
-                    core_encs.append(ce)
-
-        add_encodings(["rgb24", "rgb32"])
-
-        #video encoders (empty when first called - see threaded_init)
-        ve = getVideoHelper().get_encodings()
-        log("init_encodings() adding video encodings: %s", ve)
-        add_encodings(ve)  #ie: ["vp8", "h264"]
-        #Pithon Imaging Libary:
-        enc_pillow = get_codec("enc_pillow")
-        if enc_pillow:
-            pil_encs = enc_pillow.get_encodings()
-            add_encodings(x for x in pil_encs if x!="webp")
-            #Note: webp will only be enabled if we have a Python-PIL fallback
-            #(either "webp" or "png")
-            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
-                add_encodings(["webp"])
-                if "webp" not in self.lossless_mode_encodings:
-                    self.lossless_mode_encodings.append("webp")
-        #look for video encodings with lossless mode:
-        for e in ve:
-            for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
-                for espec in especs:
-                    if espec.has_lossless_mode:
-                        if e not in self.lossless_mode_encodings:
-                            log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
-                            self.lossless_mode_encodings.append(e)
-                            break
-        #now update the variables:
-        self.encodings = encs
-        self.core_encodings = core_encs
-        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
-        log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s", self.allowed_encodings, encs, core_encs, self.lossless_encodings)
-        pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
-        if pref:
-            self.default_encoding = pref[0]
-        else:
-            self.default_encoding = None
-
-
-    def init_encoding(self, cmdline_encoding):
-        if not cmdline_encoding or str(cmdline_encoding).lower() in ("auto", "none"):
-            self.default_encoding = None
-        elif cmdline_encoding in self.encodings:
-            self.default_encoding = cmdline_encoding
-        else:
-            log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
-
-
-    def init_sockets(self, sockets):
-        ServerCore.init_sockets(self, sockets)
-        #verify we have a local socket for printing:
-        nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
-        printlog("local sockets we can use for printing: %s", nontcpsockets)
-        if not nontcpsockets and self.file_transfer.printing:
-            if not WIN32:
-                log.warn("Warning: no local sockets defined,")
-                log.warn(" disabling printer forwarding")
-            self.file_transfer.printing = False
-
-
     def init_memcheck(self):
         #verify we have enough memory:
         if POSIX and self.mem_bytes==0:
@@ -2728,8 +2655,6 @@ class ServerBase(ServerCore):
         return "window %s moved to workspace %s" % (wid, workspace)
 
 
-
-
     ######################################################################
     # info:
     def _process_info_request(self, proto, packet):
@@ -3338,6 +3263,65 @@ class ServerBase(ServerCore):
 
     ######################################################################
     # encodings:
+    def init_encodings(self):
+        load_codecs(decoders=False)
+        encs, core_encs = [], []
+        def add_encodings(encodings):
+            for ce in encodings:
+                e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
+                if self.allowed_encodings is not None and e not in self.allowed_encodings:
+                    #not in whitelist (if it exists)
+                    continue
+                if e not in encs:
+                    encs.append(e)
+                if ce not in core_encs:
+                    core_encs.append(ce)
+
+        add_encodings(["rgb24", "rgb32"])
+
+        #video encoders (empty when first called - see threaded_init)
+        ve = getVideoHelper().get_encodings()
+        log("init_encodings() adding video encodings: %s", ve)
+        add_encodings(ve)  #ie: ["vp8", "h264"]
+        #Pithon Imaging Libary:
+        enc_pillow = get_codec("enc_pillow")
+        if enc_pillow:
+            pil_encs = enc_pillow.get_encodings()
+            add_encodings(x for x in pil_encs if x!="webp")
+            #Note: webp will only be enabled if we have a Python-PIL fallback
+            #(either "webp" or "png")
+            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
+                add_encodings(["webp"])
+                if "webp" not in self.lossless_mode_encodings:
+                    self.lossless_mode_encodings.append("webp")
+        #look for video encodings with lossless mode:
+        for e in ve:
+            for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():
+                for espec in especs:
+                    if espec.has_lossless_mode:
+                        if e not in self.lossless_mode_encodings:
+                            log("found lossless mode for encoding %s with %s and colorspace %s", e, espec, colorspace)
+                            self.lossless_mode_encodings.append(e)
+                            break
+        #now update the variables:
+        self.encodings = encs
+        self.core_encodings = core_encs
+        self.lossless_encodings = [x for x in self.core_encodings if (x.startswith("png") or x.startswith("rgb") or x=="webp")]
+        log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s", self.allowed_encodings, encs, core_encs, self.lossless_encodings)
+        pref = [x for x in PREFERED_ENCODING_ORDER if x in self.encodings]
+        if pref:
+            self.default_encoding = pref[0]
+        else:
+            self.default_encoding = None
+
+    def init_encoding(self, cmdline_encoding):
+        if not cmdline_encoding or str(cmdline_encoding).lower() in ("auto", "none"):
+            self.default_encoding = None
+        elif cmdline_encoding in self.encodings:
+            self.default_encoding = cmdline_encoding
+        else:
+            log.warn("ignored invalid default encoding option: %s", cmdline_encoding)
+
     def _process_encoding(self, proto, packet):
         encoding = packet[1]
         ss = self._server_sources.get(proto)
@@ -3403,40 +3387,6 @@ class ServerBase(ServerCore):
              "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
-
-
-    ######################################################################
-    # connection state:
-    def _process_connection_data(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.update_connection_data(packet[1])
-
-    def _process_bandwidth_limit(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        bandwidth_limit = packet[1]
-        if self.bandwidth_limit:
-            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
-        ss.bandwidth_limit = bandwidth_limit
-        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
-
-    def send_ping(self):
-        for ss in self._server_sources.values():
-            ss.ping()
-        return True
-
-    def _process_ping_echo(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping_echo(packet)
-
-    def _process_ping(self, proto, packet):
-        time_to_echo = packet[1]
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping(time_to_echo)
 
 
     ######################################################################
@@ -3528,6 +3478,40 @@ class ServerBase(ServerCore):
 
 
     ######################################################################
+    # connection state:
+    def _process_connection_data(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.update_connection_data(packet[1])
+
+    def _process_bandwidth_limit(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return
+        bandwidth_limit = packet[1]
+        if self.bandwidth_limit:
+            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
+        ss.bandwidth_limit = bandwidth_limit
+        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
+
+    def send_ping(self):
+        for ss in self._server_sources.values():
+            ss.ping()
+        return True
+
+    def _process_ping_echo(self, proto, packet):
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping_echo(packet)
+
+    def _process_ping(self, proto, packet):
+        time_to_echo = packet[1]
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.process_ping(time_to_echo)
+
+
+    ######################################################################
     # http server and http audio stream:
     def get_http_info(self):
         info = ServerCore.get_http_info(self)
@@ -3611,6 +3595,17 @@ class ServerBase(ServerCore):
 
     ######################################################################
     # client connections:
+    def init_sockets(self, sockets):
+        ServerCore.init_sockets(self, sockets)
+        #verify we have a local socket for printing:
+        nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
+        printlog("local sockets we can use for printing: %s", nontcpsockets)
+        if not nontcpsockets and self.file_transfer.printing:
+            if not WIN32:
+                log.warn("Warning: no local sockets defined,")
+                log.warn(" disabling printer forwarding")
+            self.file_transfer.printing = False
+
     def force_disconnect(self, proto):
         self.cleanup_protocol(proto)
         ServerCore.force_disconnect(self, proto)
