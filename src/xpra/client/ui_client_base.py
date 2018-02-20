@@ -1430,7 +1430,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             })
         updict(capabilities, "window", {
             "raise"                     : True,
-            #only implemented on posix with the gtk client:
+            #implemented in the gtk client:
             "initiate-moveresize"       : False,
             "resize-counter"            : True,
             })
