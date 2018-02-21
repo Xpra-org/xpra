@@ -1187,7 +1187,7 @@ class ServerCore(object):
         return v
 
     def schedule_verify_connection_accepted(self, protocol, timeout=60):
-        t = self.timeout_add(self._accept_timeout*1000, self.verify_connection_accepted, protocol)
+        t = self.timeout_add(timeout*1000, self.verify_connection_accepted, protocol)
         self.socket_verify_timer[protocol] = t
 
     def verify_connection_accepted(self, protocol):
