@@ -32,7 +32,6 @@ grablog = Logger("client", "grab")
 iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
 mouselog = Logger("mouse")
-clipboardlog = Logger("clipboard")
 scalinglog = Logger("scaling")
 notifylog = Logger("notify")
 cursorlog = Logger("cursor")
@@ -48,7 +47,7 @@ from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE, EXIT_INTERNA
 from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS, REINIT_WINDOWS
+from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
                                get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
                                get_native_tray_menu_helper_class, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
@@ -66,10 +65,7 @@ from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client.webcam_forwarder import WebcamForwarder
 from xpra.client.audio_client import AudioClient
 from xpra.client.rpc_client import RPCClient
-try:
-    from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
-except:
-    ALL_CLIPBOARDS = []
+from xpra.client.clipboard_client import ClipboardClient
 
 
 glib = import_glib()
@@ -146,7 +142,7 @@ def make_instance(class_options, *args):
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
+class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient, RPCClient):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -165,6 +161,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         XpraClientBase.__init__(self)
         WebcamForwarder.__init__(self)
         AudioClient.__init__(self)
+        ClipboardClient.__init__(self)
         RPCClient.__init__(self)
         try:
             pinfo = get_platform_info()
@@ -239,7 +236,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless_mode = ()
         self.server_auto_video_encoding = False
-        self.server_clipboard_direction = "both"
         self.readonly = False
         self.windows_enabled = True
         self.pings = False
@@ -262,7 +258,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.client_supports_opengl = False
         self.client_supports_notifications = False
         self.client_supports_system_tray = False
-        self.client_supports_clipboard = False
         self.client_supports_cursors = False
         self.client_supports_bell = False
         self.client_supports_sharing = False
@@ -270,8 +265,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.client_lock = False
         self.log_both = False
         self.notifications_enabled = False
-        self.client_clipboard_direction = "both"
-        self.clipboard_enabled = False
         self.cursors_enabled = False
         self.default_cursor_data = None
         self.bell_enabled = False
@@ -290,7 +283,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.keyboard_grabbed = False
         self.pointer_grabbed = False
         self.kh_warning = False
-        self.clipboard_helper = None
         self.menu_helper = None
         self.tray = None
         self.overlay_image = None
@@ -317,6 +309,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         """ initialize variables from configuration """
         WebcamForwarder.init(self, opts)
         AudioClient.init(self, opts)
+        ClipboardClient.init(self, opts)
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -360,9 +353,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
         self.client_supports_notifications = opts.notifications
         self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
-        self.client_clipboard_type = opts.clipboard
-        self.client_clipboard_direction = opts.clipboard_direction
-        self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing is True
@@ -482,7 +472,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         dq = self._draw_queue
         if dq:
             dq.put(None)
-        for x in (self.keyboard_helper, self.clipboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
+        for x in (self.keyboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
             log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
@@ -767,7 +757,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         WebcamForwarder.process_capabilities(self, self.server_capabilities)
         AudioClient.process_capabilities(self)
         RPCClient.parse_capabilities(self)
-        self.parse_clipboard_caps()
+        ClipboardClient.parse_capabilities(self)
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         self.set_max_packet_size()
@@ -816,11 +806,9 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
         self.handshake_complete()
-        #ui may want to know this is now set:
-        self.emit("clipboard-toggled")
-        if self.server_clipboard:
-            #from now on, we will send a message to the server whenever the clipboard flag changes:
-            self.connect("clipboard-toggled", self.clipboard_toggled)
+
+        ClipboardClient.process_ui_capabilities(self)
+
         self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
         self.send_ping()
         if self.pings>0:
@@ -1249,125 +1237,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
     def send_deflate_level(self):
         self._protocol.set_compression_level(self.compression_level)
         self.send("set_deflate", self.compression_level)
-
-
-    ######################################################################
-    # clipboard:
-    def get_clipboard_caps(self):
-        return {
-            ""                          : self.client_supports_clipboard,
-            "notifications"             : self.client_supports_clipboard,
-            "selections"                : CLIPBOARDS,
-            #buggy osx clipboards:
-            "want_targets"              : CLIPBOARD_WANT_TARGETS,
-            #buggy osx and win32 clipboards:
-            "greedy"                    : CLIPBOARD_GREEDY,
-            "set_enabled"               : True,
-            }
-
-    def parse_clipboard_caps(self):
-        c = self.server_capabilities
-        self.server_clipboard = c.boolget("clipboard")
-        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
-        self.server_clipboard_direction = c.strget("clipboard-direction", "both")
-        if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
-            if self.client_clipboard_direction=="disabled":
-                pass
-            elif self.server_clipboard_direction=="disabled":
-                clipboardlog.warn("Warning: server clipboard synchronization is currently disabled")
-                self.client_clipboard_direction = "disabled"
-            elif self.client_clipboard_direction=="both":
-                clipboardlog.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
-                self.client_clipboard_direction = self.server_clipboard_direction
-            else:
-                clipboardlog.warn("Warning: incompatible clipboard direction settings")
-                clipboardlog.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
-        self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
-        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
-        clipboardlog("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
-                     self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
-        clipboardlog("client clipboard: supported=%s, direction=%s",
-                     self.client_supports_clipboard, self.client_clipboard_direction)
-        self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
-        clipboardlog("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
-        if self.clipboard_enabled:
-            self.clipboard_helper = self.make_clipboard_helper()
-            self.clipboard_enabled = self.clipboard_helper is not None
-            clipboardlog("clipboard helper=%s", self.clipboard_helper)
-            if self.clipboard_enabled and self.server_clipboard_enable_selections:
-                #tell the server about which selections we really want to sync with
-                #(could have been translated, or limited if the client only has one, etc)
-                clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
-                self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
-
-    def init_clipboard_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "set-clipboard-enabled":        self._process_clipboard_enabled_status,
-            "clipboard-token":              self.process_clipboard_packet,
-            "clipboard-request":            self.process_clipboard_packet,
-            "clipboard-contents":           self.process_clipboard_packet,
-            "clipboard-contents-none":      self.process_clipboard_packet,
-            "clipboard-pending-requests":   self.process_clipboard_packet,
-            "clipboard-enable-selections":  self.process_clipboard_packet,
-            })
-
-    def get_clipboard_helper_classes(self):
-        return []
-
-    def make_clipboard_helper(self):
-        """
-            Try the various clipboard classes until we find one
-            that loads ok. (some platforms have more options than others)
-        """
-        clipboard_options = self.get_clipboard_helper_classes()
-        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
-        for helperclass in clipboard_options:
-            try:
-                return self.setup_clipboard_helper(helperclass)
-            except ImportError as e:
-                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
-                clipboardlog.error(" %s", e)
-                del e
-            except:
-                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
-        return None
-
-    def process_clipboard_packet(self, packet):
-        ch = self.clipboard_helper
-        clipboardlog("process_clipboard_packet: %s, helper=%s", packet[0], ch)
-        if ch:
-            ch.process_clipboard_packet(packet)
-
-    def _process_clipboard_enabled_status(self, packet):
-        clipboard_enabled, reason = packet[1:3]
-        if self.clipboard_enabled!=clipboard_enabled:
-            clipboardlog.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])
-            clipboardlog.info(" %s", bytestostr(reason))
-            self.clipboard_enabled = bool(clipboard_enabled)
-            self.emit("clipboard-toggled")
-
-    def clipboard_toggled(self, *args):
-        clipboardlog("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s", args, self.clipboard_enabled, self.server_clipboard)
-        if self.server_clipboard:
-            self.send("set-clipboard-enabled", self.clipboard_enabled)
-            if self.clipboard_enabled:
-                ch = self.clipboard_helper
-                assert ch is not None
-                self.send_clipboard_selections(ch.remote_clipboards)
-                ch.send_all_tokens()
-            else:
-                pass    #FIXME: todo!
-
-    def send_clipboard_selections(self, selections):
-        clipboardlog("send_clipboard_selections(%s) server_clipboard_enable_selections=%s", selections, self.server_clipboard_enable_selections)
-        if self.server_clipboard_enable_selections:
-            self.send("clipboard-enable-selections", selections)
-
-    def send_clipboard_loop_uuids(self):
-        uuids = self.clipboard_helper.get_loop_uuids()
-        clipboardlog("send_clipboard_loop_uuid() uuids=%s", uuids)
-        if self.server_clipboard_loop_uuids:
-            self.send("clipboard-loop-uuids", uuids)
 
 
     ######################################################################
@@ -3060,7 +2929,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         WebcamForwarder.init_authenticated_packet_handlers(self)
         AudioClient.init_authenticated_packet_handlers(self)
         RPCClient.init_authenticated_packet_handlers(self)
-        self.init_clipboard_packet_handlers()
+        ClipboardClient.init_authenticated_packet_handlers(self)
         self.init_notifications_packet_handlers()
         self.init_window_packet_handlers()
         self.set_packet_handlers(self._ui_packet_handlers, {
