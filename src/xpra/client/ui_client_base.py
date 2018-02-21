@@ -125,6 +125,23 @@ def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
 
+def make_instance(class_options, *args):
+    log("make_instance%s", tuple([class_options]+list(args)))
+    for c in class_options:
+        if c is None:
+            continue
+        try:
+            v = c(*args)
+            log("make_instance(..) %s()=%s", c, v)
+            if v:
+                return v
+        except:
+            log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
+            log.error("Error: cannot instantiate %s:", c)
+            log.error(" with arguments %s", tuple(args))
+    return None
+
+
 """
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
@@ -440,16 +457,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
 
-    def webcam_state_changed(self):
-        self.idle_add(self.emit, "webcam-changed")
-
-
-    def setup_connection(self, conn):
-        XpraClientBase.setup_connection(self, conn)
-        if self.supports_mmap:
-            self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
-
-
     def parse_border(self, border_str, extra_args):
         #not implemented here (see gtk2 client)
         pass
@@ -498,76 +505,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         log("UIXpraClient.signal_cleanup() done")
 
 
-    def destroy_all_windows(self):
-        for wid, window in self._id_to_window.items():
-            try:
-                windowlog("destroy_all_windows() destroying %s / %s", wid, window)
-                self.destroy_window(wid, window)
-            except:
-                pass
-        self._id_to_window = {}
-        self._window_to_id = {}
-
-
-    ######################################################################
-    # refresh:
-    def suspend(self):
-        log.info("system is suspending")
-        self._suspended_at = time.time()
-        #tell the server to slow down refresh for all the windows:
-        self.control_refresh(-1, True, False)
-
-    def resume(self):
-        elapsed = 0
-        if self._suspended_at>0:
-            elapsed = max(0, time.time()-self._suspended_at)
-            self._suspended_at = 0
-        delta = datetime.timedelta(seconds=int(elapsed))
-        log.info("system resumed, was suspended for %s", delta)
-        #this will reset the refresh rate too:
-        self.send_refresh_all()
-        if self.opengl_enabled:
-            #with opengl, the buffers sometimes contain garbage after resuming,
-            #this should create new backing buffers:
-            self.reinit_windows()
-        self.reinit_window_icons()
-
-    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
-        packet = ["buffer-refresh", wid, 0, quality]
-        options["refresh-now"] = bool(refresh)
-        if suspend_resume is True:
-            options["batch"] = {
-                "reset"     : True,
-                "delay"     : 1000,
-                "locked"    : True,
-                "always"    : True,
-                }
-        elif suspend_resume is False:
-            options["batch"] = {"reset"     : True}
-        else:
-            pass    #batch unchanged
-        log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
-        packet.append(options)
-        packet.append(client_properties)
-        self.send(*packet)
-
-    def send_refresh(self, wid):
-        packet = ["buffer-refresh", wid, 0, 100,
-        #explicit refresh (should be assumed True anyway),
-        #also force a reset of batch configs:
-                       {
-                       "refresh-now"    : True,
-                       "batch"          : {"reset" : True}
-                       },
-                       {}   #no client_properties
-                 ]
-        self.send(*packet)
-
-    def send_refresh_all(self):
-        log("Automatic refresh for all windows ")
-        self.send_refresh(-1)
-
-
     def show_about(self, *_args):
         log.warn("show_about() is not implemented in %s", self)
 
@@ -578,454 +515,20 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         log.warn("show_bug_report() is not implemented in %s", self)
 
 
-    ######################################################################
-    # encodings:
-    def get_encodings(self):
-        """
-            Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
-            That's because although we may support both, the encoding chosen is plain "rgb",
-            and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
-            ("rgb32" if there is an alpha channel, and if the client supports it)
-        """
-        cenc = self.get_core_encodings()
-        if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
-            cenc.append("rgb")
-        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
-
-    def get_core_encodings(self):
-        if self.core_encodings is None:
-            self.core_encodings = self.do_get_core_encodings()
-        return self.core_encodings
-
-    def get_cursor_encodings(self):
-        e = ["raw"]
-        if "png" in self.get_core_encodings():
-            e.append("png")
-        return e
-
-    def get_window_icon_encodings(self):
-        e = ["premult_argb32", "default"]
-        if "png" in self.get_core_encodings():
-            e.append("png")
-        return e
-
-    def do_get_core_encodings(self):
-        """
-            This method returns the actual encodings supported.
-            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "jpeg2000", "h264", "vpx"]
-            It is often overriden in the actual client class implementations,
-            where extra encodings can be added (generally just 'rgb32' for transparency),
-            or removed if the toolkit implementation class is more limited.
-        """
-        #we always support rgb:
-        core_encodings = ["rgb24", "rgb32"]
-        for codec in ("dec_pillow", "dec_webp"):
-            if has_codec(codec):
-                c = get_codec(codec)
-                for e in c.get_encodings():
-                    if e not in core_encodings:
-                        core_encodings.append(e)
-        #we enable all the video decoders we know about,
-        #what will actually get used by the server will still depend on the csc modes supported
-        video_decodings = getVideoHelper().get_decodings()
-        log("video_decodings=%s", video_decodings)
-        for encoding in video_decodings:
-            if encoding not in core_encodings:
-                core_encodings.append(encoding)
-        #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
-        return core_encodings
+    def init_opengl(self, _enable_opengl):
+        self.opengl_enabled = False
+        self.client_supports_opengl = False
+        self.opengl_props = {"info" : "not supported"}
 
 
-    def get_clipboard_helper_classes(self):
-        return []
-
-    def make_clipboard_helper(self):
-        """
-            Try the various clipboard classes until we find one
-            that loads ok. (some platforms have more options than others)
-        """
-        clipboard_options = self.get_clipboard_helper_classes()
-        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
-        for helperclass in clipboard_options:
-            try:
-                return self.setup_clipboard_helper(helperclass)
-            except ImportError as e:
-                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
-                clipboardlog.error(" %s", e)
-                del e
-            except:
-                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
-        return None
+    def _ui_event(self):
+        if self._ui_events==0:
+            self.emit("first-ui-received")
+        self._ui_events += 1
 
 
-    ######################################################################
-    # notifications:
-    def make_notifier(self):
-        nc = self.get_notifier_classes()
-        notifylog("make_notifier() notifier classes: %s", nc)
-        return self.make_instance(nc, self.notification_closed, self.notification_action)
-
-    def notification_closed(self, nid, reason=3, text=""):
-        notifylog("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
-        if self.server_notifications_close:
-            self.send("notification-close", nid, reason, text)
-
-    def notification_action(self, nid, action_id):
-        notifylog("notification_action(%i, %s) server notifications.actions=%s", nid, action_id, self.server_notifications_actions)
-        if self.server_notifications_actions:
-            self.send("notification-action", nid, action_id)
-
-    def get_notifier_classes(self):
-        #subclasses will generally add their toolkit specific variants
-        #by overriding this method
-        #use the native ones first:
-        if not NATIVE_NOTIFIER:
-            return []
-        return get_native_notifier_classes()
-
-    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
-        notifylog("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
-        n = self.notifier
-        if not self.client_supports_notifications or not n:
-            return
-        try:
-            from xpra.notifications.common import parse_image_path
-            icon_filename = get_icon_filename(icon_name)
-            icon = parse_image_path(icon_filename)
-            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
-        except Exception as e:
-            notifylog("failed to show notification", exc_info=True)
-            notifylog.error("Error: cannot show notification")
-            notifylog.error(" '%s'", summary)
-            notifylog.error(" %s", e)
-
-
-    ######################################################################
-    # system tray:
-    def make_system_tray(self, *args):
-        """ tray used for application systray forwarding """
-        tc = self.get_system_tray_classes()
-        traylog("make_system_tray%s system tray classes=%s", args, tc)
-        return self.make_instance(tc, self, *args)
-
-    def get_system_tray_classes(self):
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
-        return get_native_system_tray_classes()
-
-
-    def make_tray(self, *args):
-        """ tray used by our own application """
-        tc = self.get_tray_classes()
-        traylog("make_tray%s tray classes=%s", args, tc)
-        return self.make_instance(tc, self, *args)
-
-    def get_tray_classes(self):
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
-        return get_native_tray_classes()
-
-
-    def make_tray_menu_helper(self):
-        """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
-        mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
-        traylog("make_tray_menu_helper() tray menu helper classes: %s", mhc)
-        return self.make_instance(mhc, self)
-
-
-    def make_instance(self, class_options, *args):
-        log("make_instance%s", tuple([class_options]+list(args)))
-        for c in class_options:
-            if c is None:
-                continue
-            try:
-                v = c(*args)
-                log("make_instance(..) %s()=%s", c, v)
-                if v:
-                    return v
-            except:
-                log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
-                log.error("Error: cannot instantiate %s:", c)
-                log.error(" with arguments %s", tuple(args))
-        return None
-
-
-    def show_menu(self, *_args):
-        if self.menu_helper:
-            self.menu_helper.activate()
-
-    def setup_xpra_tray(self, tray_icon_filename):
-        tray = None
-        #this is our own tray
-        def xpra_tray_click(button, pressed, time=0):
-            traylog("xpra_tray_click(%s, %s, %s)", button, pressed, time)
-            if button==1 and pressed:
-                self.idle_add(self.menu_helper.activate, button, time)
-            elif button==3 and not pressed:
-                self.idle_add(self.menu_helper.popup, button, time)
-        def xpra_tray_mouseover(*args):
-            traylog("xpra_tray_mouseover(%s)", args)
-        def xpra_tray_exit(*args):
-            traylog("xpra_tray_exit(%s)", args)
-            self.disconnect_and_quit(0, CLIENT_EXIT)
-        def xpra_tray_geometry(*args):
-            if tray:
-                traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
-        menu = None
-        if self.menu_helper:
-            menu = self.menu_helper.build()
-        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
-        traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
-        if tray:
-            def reset_tray_title():
-                tray.set_tooltip(self.get_tray_title())
-            self.after_handshake(reset_tray_title)
-        return tray
-
-    def get_tray_title(self):
-        t = []
-        if self.session_name or self.server_session_name:
-            t.append(self.session_name or self.server_session_name)
-        if self._protocol and self._protocol._conn:
-            t.append(bytestostr(self._protocol._conn.target))
-        if len(t)==0:
-            t.insert(0, u"Xpra")
-        v = u"\n".join(t)
-        traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
-        return v
-
-    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
-        tray_widget = None
-        #this is a tray forwarded for a remote application
-        def tray_click(button, pressed, time=0):
-            tray = self._id_to_window.get(wid)
-            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
-            if tray:
-                x, y = self.get_mouse_position()
-                modifiers = self.get_current_modifiers()
-                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
-                traylog("button_packet=%s", button_packet)
-                self.send_positional(button_packet)
-                tray.reconfigure()
-        def tray_mouseover(x, y):
-            tray = self._id_to_window.get(wid)
-            traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
-            if tray:
-                modifiers = self.get_current_modifiers()
-                buttons = []
-                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
-                traylog("pointer_packet=%s", pointer_packet)
-                self.send_mouse_position(pointer_packet)
-        def do_tray_geometry(*args):
-            #tell the "ClientTray" where it now lives
-            #which should also update the location on the server if it has changed
-            tray = self._id_to_window.get(wid)
-            if tray_widget:
-                geom = tray_widget.get_geometry()
-            else:
-                geom = None
-            traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
-            if tray and geom:
-                tray.move_resize(*geom)
-        def tray_geometry(*args):
-            #the tray widget may still be None if we haven't returned from make_system_tray yet,
-            #in which case we will check the geometry a little bit later:
-            if tray_widget:
-                do_tray_geometry(*args)
-            else:
-                self.idle_add(do_tray_geometry, *args)
-        def tray_exit(*args):
-            traylog("tray_exit(%s)", args)
-        title = metadata.strget("title", "")
-        tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
-        traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
-        assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
-        tray_widget.show()
-        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
-
-    ######################################################################
-    # screen and scaling:
-    def desktops_changed(self, *args):
-        workspacelog("desktops_changed%s", args)
-        self.screen_size_changed(*args)
-
-    def workspace_changed(self, *args):
-        workspacelog("workspace_changed%s", args)
-        for win in self._id_to_window.values():
-            win.workspace_changed()
-
-    def screen_size_changed(self, *args):
-        screenlog("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
-        if self.screen_size_change_pending:
-            return
-        #update via timer so the data is more likely to be final (up to date) when we query it,
-        #some properties (like _NET_WORKAREA for X11 clients via xposix "ClientExtras") may
-        #trigger multiple calls to screen_size_changed, delayed by some amount
-        #(sometimes up to 1s..)
-        self.screen_size_change_pending = True
-        delay = 1000
-        #if we are suspending, wait longer:
-        #(better chance that the suspend-resume cycle will have completed)
-        if self._suspended_at>0 and self._suspended_at-monotonic_time()<5*1000:
-            delay = 5*1000
-        self.timeout_add(delay, self.do_process_screen_size_change)
-
-    def do_process_screen_size_change(self):
-        self.update_screen_size()
-        screenlog("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
-        if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
-            return
-        if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
-            screenlog.info("screen size change: will reinit the windows")
-            self.reinit_windows()
-            self.reinit_window_icons()
-
-
-    def update_screen_size(self):
-        self.screen_size_change_pending = False
-        u_root_w, u_root_h = self.get_root_size()
-        root_w, root_h = self.cp(u_root_w, u_root_h)
-        self._current_screen_sizes = self.get_screen_sizes()
-        sss = self.get_screen_sizes(self.xscale, self.yscale)
-        ndesktops = get_number_of_desktops()
-        desktop_names = get_desktop_names()
-        screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
-        if self.dpi>0:
-            #use command line value supplied, but scale it:
-            xdpi = ydpi = self.dpi
-        else:
-            #not supplied, use platform detection code:
-            xdpi = self.get_xdpi()
-            ydpi = self.get_ydpi()
-        xdpi = self.cx(xdpi)
-        ydpi = self.cy(ydpi)
-        screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
-        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
-        screenlog("update_screen_size()     new settings=%s", screen_settings)
-        screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
-        if self._last_screen_settings==screen_settings:
-            log("screen size unchanged")
-            return
-        screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
-        log_screen_sizes(root_w, root_h, sss)
-        self.send("desktop_size", *screen_settings)
-        self._last_screen_settings = screen_settings
-        #update the max packet size (may have gone up):
-        self.set_max_packet_size()
-
-    def get_xdpi(self):
-        return get_xdpi()
-
-    def get_ydpi(self):
-        return get_ydpi()
-
-
-    def scaleup(self):
-        scaling = max(self.xscale, self.yscale)
-        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)>r4cmp(scaling, 10)]
-        scalinglog("scaleup() options>%s : %s", r4cmp(scaling, 1000)/1000.0, options)
-        if options:
-            self._scaleto(min(options))
-
-    def scaledown(self):
-        scaling = max(self.xscale, self.yscale)
-        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10)]
-        scalinglog("scaledown() options<%s : %s", r4cmp(scaling, 1000)/1000.0, options)
-        if options:
-            self._scaleto(max(options))
-
-    def _scaleto(self, new_scaling):
-        scaling = max(self.xscale, self.yscale)
-        scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000)/1000.0, r4cmp(scaling, 1000)/1000.0)
-        if new_scaling>0:
-            self.scale_change(new_scaling/scaling, new_scaling/scaling)
-
-    def scalingoff(self):
-        self.scaleset(1, 1)
-
-    def scalereset(self):
-        self.scaleset(*self.initial_scaling)
-
-    def scaleset(self, xscale=1, yscale=1):
-        scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
-        self.scale_change(float(xscale)/self.xscale, float(yscale)/self.yscale)
-
-    def scale_change(self, xchange=1, ychange=1):
-        scalinglog("scale_change(%s, %s)", xchange, ychange)
-        if self.server_is_desktop and self.desktop_fullscreen:
-            scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)
-            return
-        if not self.can_scale:
-            scalinglog("scale_change(%s, %s) ignored, scaling is disabled", xchange, ychange)
-            return
-        if self.screen_size_change_pending:
-            scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
-            return
-        if monotonic_time()<self.scale_change_embargo:
-            scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again", xchange, ychange)
-            return
-        def clamp(v):
-            return max(MIN_SCALING, min(MAX_SCALING, v))
-        xscale = clamp(self.xscale*xchange)
-        yscale = clamp(self.yscale*ychange)
-        scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
-        scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
-        if fequ(xscale, self.xscale) and fequ(yscale, self.yscale):
-            scalinglog("scaling unchanged: %sx%s", self.xscale, self.yscale)
-            return
-        #re-calculate change values against clamped scale:
-        xchange = xscale / self.xscale
-        ychange = yscale / self.yscale
-        #check against maximum server supported size:
-        maxw, maxh = self.server_max_desktop_size
-        root_w, root_h = self.get_root_size()
-        sw = int(root_w / xscale)
-        sh = int(root_h / yscale)
-        scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
-        scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
-        if not self.server_is_desktop and (sw>(maxw+1) or sh>(maxh+1)):
-            #would overflow..
-            summary = "Invalid Scale Factor"
-            messages = [
-                "cannot scale by %i%% x %i%% or lower" % ((100*xscale), (100*yscale)),
-                "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
-                " would overflow the server's screen: %i x %i" % (maxw, maxh),
-                ]    
-            try:
-                from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
-            except ImportError:
-                pass
-            else:
-                self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
-            scalinglog.warn("Warning: %s", summary)
-            for m in messages:
-                scalinglog.warn(" %s", m)
-            return
-        self.xscale = xscale
-        self.yscale = yscale
-        scalinglog("scale_change new scaling: %sx%s, change: %sx%s", self.xscale, self.yscale, xchange, ychange)
-        self.scale_reinit(xchange, ychange)
-
-    def scale_reinit(self, xchange=1.0, ychange=1.0):
-        #wait at least one second before changing again:
-        self.scale_change_embargo = monotonic_time()+SCALING_EMBARGO_TIME
-        if fequ(self.xscale, self.yscale):
-            scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
-        else:
-            scalinglog.info("setting scaling to %i%% x %i%%:", iround(100*self.xscale), iround(100*self.yscale))
-        self.update_screen_size()
-        #re-initialize all the windows with their new size
-        def new_size_fn(w, h):
-            minx, miny = 16384, 16384
-            if self.max_window_size!=(0, 0):
-                minx, miny = self.max_window_size
-            return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
-        self.reinit_windows(new_size_fn)
-        self.reinit_window_icons()
-        self.emit("scaling-changed")
+    def webcam_state_changed(self):
+        self.idle_add(self.emit, "webcam-changed")
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
@@ -1047,252 +550,17 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         raise NotImplementedError()
 
 
-    ######################################################################
-    # mmap:
-    def init_mmap(self, mmap_filename, mmap_group, socket_filename):
-        log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.os_util import get_int_uuid
-        from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-        #calculate size:
-        root_w, root_h = self.cp(*self.get_root_size())
-        #at least 256MB, or 8 fullscreen RGBX frames:
-        mmap_size = max(256*1024*1024, root_w*root_h*4*8)
-        mmap_size = min(1024*1024*1024, mmap_size)
-        self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
-        if self.mmap_enabled:
-            self.mmap_token = get_int_uuid()
-            self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
-            self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
-            #self.mmap_token_index = DEFAULT_TOKEN_INDEX*2
-            #write the token twice:
-            # once at the old default offset for older servers,
-            # and at the offset we want to use with new servers
-            for index in (DEFAULT_TOKEN_INDEX, self.mmap_token_index):
-                write_mmap_token(self.mmap, self.mmap_token, index, self.mmap_token_bytes)
-
-    def clean_mmap(self):
-        log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
-        if self.mmap_tempfile:
-            try:
-                self.mmap_tempfile.close()
-            except Exception as e:
-                log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
-            self.mmap_tempfile = None
-        if self.mmap_delete:
-            #this should be redundant: closing the tempfile should get it deleted
-            if self.mmap_filename and os.path.exists(self.mmap_filename):
-                from xpra.net.mmap_pipe import clean_mmap
-                clean_mmap(self.mmap_filename)
-                self.mmap_filename = None
-
-
-    def init_opengl(self, _enable_opengl):
-        self.opengl_enabled = False
-        self.client_supports_opengl = False
-        self.opengl_props = {"info" : "not supported"}
-
-
-    def scale_pointer(self, pointer):
-        return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
-
-
-    def send_wheel_delta(self, wid, button, distance, *args):
-        modifiers = self.get_current_modifiers()
-        pointer = self.get_mouse_position()
-        buttons = []
-        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s", wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
-        if self.server_precise_wheel:
-            #send the exact value multiplied by 1000 (as an int)
-            idist = int(distance*1000)
-            if abs(idist)>0:
-                packet =  ["wheel-motion", wid,
-                           button, idist,
-                           pointer, modifiers, buttons] + list(args)
-                mouselog.info("%s", packet)
-                self.send_positional(packet)
-            return 0
-        else:
-            #server cannot handle precise wheel,
-            #so we have to use discrete events,
-            #and send a click for each step:
-            steps = abs(int(distance))
-            for _ in range(steps):
-                self.send_button(wid, button, True, pointer, modifiers, buttons)
-                self.send_button(wid, button, False, pointer, modifiers, buttons)
-            #return remainder:
-            return float(distance) - int(distance)
-
-    def wheel_event(self, wid, deltax=0, deltay=0, deviceid=0):
-        #this is a different entry point for mouse wheel events,
-        #which provides finer grained deltas (if supported by the server)
-        #accumulate deltas:
-        if REVERSE_HORIZONTAL_SCROLLING:
-            deltax = -deltax
-        self.wheel_deltax += deltax
-        self.wheel_deltay += deltay
-        button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
-        if button>0:
-            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
-        button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
-        if button>0:
-            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
-        log("wheel_event%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
-
-    def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
-        pressed_state = self._button_state.get(button, False)
-        if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state==pressed:
-            mouselog("button action: unchanged state, ignoring event")
-            return
-        self._button_state[button] = pressed
-        packet =  ["button-action", wid,
-                   button, pressed,
-                   pointer, modifiers, buttons] + list(args)
-        mouselog("button packet: %s", packet)
-        self.send_positional(packet)
-
-
-    def window_keyboard_layout_changed(self, window):
-        #win32 can change the keyboard mapping per window...
-        keylog("window_keyboard_layout_changed(%s)", window)
-        if self.keyboard_helper:
-            self.keyboard_helper.keymap_changed()
-
-    def get_keymap_properties(self):
-        props = self.keyboard_helper.get_keymap_properties()
-        props["modifiers"] = self.get_current_modifiers()
-        return props
-
-    def handle_key_action(self, window, key_event):
-        if self.readonly or self.keyboard_helper is None:
-            return
-        wid = self._window_to_id[window]
-        keylog("handle_key_action(%s, %s) wid=%s", window, key_event, wid)
-        self.keyboard_helper.handle_key_action(window, wid, key_event)
-
-    def mask_to_names(self, mask):
-        if self.keyboard_helper is None:
-            return []
-        return self.keyboard_helper.mask_to_names(mask)
-
-
     def send_start_command(self, name, command, ignore, sharing=True):
         log("send_start_command(%s, %s, %s, %s)", name, command, ignore, sharing)
         self.send("start-command", name, command, ignore, sharing)
 
 
-    ######################################################################
-    # focus:
-    def send_focus(self, wid):
-        focuslog("send_focus(%s)", wid)
-        self.send("focus", wid, self.get_current_modifiers())
-
-    def update_focus(self, wid, gotit):
-        focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
-        if gotit and self._focused is not wid:
-            self.send_focus(wid)
-            self._focused = wid
-        if not gotit:
-            if self._window_with_grab:
-                self.window_ungrab()
-                self.do_force_ungrab(self._window_with_grab)
-                self._window_with_grab = None
-            if wid and self._focused and self._focused!=wid:
-                #if this window lost focus, it must have had it!
-                #(catch up - makes things like OR windows work:
-                # their parent receives the focus-out event)
-                focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
-                self.send_focus(wid)
-            if self._focused:
-                #send the lost-focus via a timer and re-check it
-                #(this allows a new window to gain focus without having to do a reset_focus)
-                def send_lost_focus():
-                    #check that a new window has not gained focus since:
-                    if self._focused is None:
-                        self.send_focus(0)
-                self.timeout_add(20, send_lost_focus)
-                self._focused = None
-
-
-    ######################################################################
-    # grabs:
-    def window_grab(self, window):
-        log.warn("Warning: window grab not implemented in %s", self.client_type())
-
-    def window_ungrab(self):
-        log.warn("Warning: window ungrab not implemented in %s", self.client_type())
-
-    def do_force_ungrab(self, wid):
-        grablog("do_force_ungrab(%s)", wid)
-        #ungrab via dedicated server packet:
-        self.send_force_ungrab(wid)
-
-    def _process_pointer_grab(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        grablog("grabbing %s: %s", wid, window)
-        if window:
-            self.window_grab(window)
-            self._window_with_grab = wid
-
-    def _process_pointer_ungrab(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        grablog("ungrabbing %s: %s", wid, window)
-        self.window_ungrab()
-        self._window_with_grab = None
-
-
-    def window_close_event(self, wid):
-        windowlog("window_close_event(%s) close window action=%s", wid, self.window_close_action)
-        if self.window_close_action=="forward":
-            self.send("close-window", wid)
-        elif self.window_close_action=="ignore":
-            windowlog("close event for window %i ignored", wid)
-        elif self.window_close_action=="disconnect":
-            log.info("window-close set to disconnect, exiting (window %i)", wid)
-            self.quit(0)
-        elif self.window_close_action=="shutdown":
-            self.send("shutdown-server", "shutdown on window close")
-        elif self.window_close_action=="auto":
-            #forward unless this looks like a desktop
-            #this allows us behave more like VNC:
-            window = self._id_to_window.get(wid)
-            log("window_close_event(%i) window=%s", wid, window)
-            if self.server_is_desktop:
-                log.info("window-close event on desktop or shadow window, disconnecting")
-                self.quit(0)
-                return True
-            if window:
-                metadata = getattr(window, "_metadata", {})
-                log("window_close_event(%i) metadata=%s", wid, metadata)
-                class_instance = metadata.get("class-instance")
-                title = metadata.get("title", "")
-                log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
-                matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
-                close = None
-                if matching_title_close:
-                    close = "window-close event on %s window" % title
-                elif class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
-                    close = "window-close event on %s window" % class_instance[0]
-                if close:
-                    #honour this close request if there are no other windows:
-                    if len(self._id_to_window)==1:
-                        log.info("%s, disconnecting", close)
-                        self.quit(0)
-                        return True
-                    else:
-                        log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
-            #default to forward:
-            self.send("close-window", wid)
-        else:
-            log.warn("unknown close-window action: %s", self.window_close_action)
-        return True
-
-
     def get_version_info(self):
         return get_version_info_full()
 
+
+    ######################################################################
+    # hello:
     def make_hello(self):
         capabilities = XpraClientBase.make_hello(self)
         updict(capabilities, "platform",  get_platform_info())
@@ -1556,144 +824,13 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         log("batch props=%s", [("%s=%s" % (k,v)) for k,v in capabilities.items() if k.startswith("batch.")])
         return capabilities
 
-    def has_transparency(self):
-        return False
 
-    def get_icc_info(self):
-        return get_icc_info()
-
-    def get_display_icc_info(self):
-        return get_display_icc_info()
-
-
-    def server_ok(self):
-        return self._server_ok
-
-    def check_server_echo(self, ping_sent_time):
-        if self._protocol is None:
-            #no longer connected!
-            return False
-        last = self._server_ok
-        if FAKE_BROKEN_CONNECTION>0:
-            self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
-        else:
-            self._server_ok = self.last_ping_echoed_time>=ping_sent_time
-        log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
-        if last!=self._server_ok and not self._server_ok:
-            log.info("server is not responding, drawing spinners over the windows")
-            def timer_redraw():
-                if self._protocol is None:
-                    #no longer connected!
-                    return False
-                ok = self.server_ok()
-                self.redraw_spinners()
-                if ok:
-                    log.info("server is OK again")
-                return not ok           #repaint again until ok
-            self.idle_add(self.redraw_spinners)
-            self.timeout_add(250, timer_redraw)
-        return False
-
-    def redraw_spinners(self):
-        #draws spinner on top of the window, or not (plain repaint)
-        #depending on whether the server is ok or not
-        ok = self.server_ok()
-        log("redraw_spinners() ok=%s", ok)
-        for w in self._id_to_window.values():
-            if not w.is_tray():
-                w.spinner(ok)
-
-    def check_echo_timeout(self, ping_time):
-        netlog("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
-        if self.last_ping_echoed_time<ping_time:
-            #no point trying to use disconnect_and_quit() to tell the server here..
-            self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
-
-    def send_ping(self):
-        now_ms = int(1000.0*monotonic_time())
-        self.send("ping", now_ms)
-        self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
-        wait = 2.0
-        if len(self.server_ping_latency)>0:
-            l = [x for _,x in tuple(self.server_ping_latency)]
-            avg = sum(l) / len(l)
-            wait = min(5, 1.0+avg*2.0)
-            netlog("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
-        self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
-        return True
-
-    def _process_ping_echo(self, packet):
-        echoedtime, l1, l2, l3, cl = packet[1:6]
-        self.last_ping_echoed_time = echoedtime
-        self.check_server_echo(0)
-        server_ping_latency = monotonic_time()-echoedtime/1000.0
-        self.server_ping_latency.append((monotonic_time(), server_ping_latency))
-        self.server_load = l1, l2, l3
-        if cl>=0:
-            self.client_ping_latency.append((monotonic_time(), cl/1000.0))
-        netlog("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
-
-    def _process_ping(self, packet):
-        echotime = packet[1]
-        l1,l2,l3 = 0,0,0
-        if POSIX:
-            try:
-                (fl1, fl2, fl3) = os.getloadavg()
-                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-            except (OSError, AttributeError):
-                pass
-        sl = -1
-        if len(self.server_ping_latency)>0:
-            _, sl = self.server_ping_latency[-1]
-        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
-
-
-    def _process_server_event(self, packet):
-        log(u": ".join((str(x) for x in packet[1:])))
-
-
-    def _process_info_response(self, packet):
-        self.info_request_pending = False
-        self.server_last_info = packet[1]
-        log("info-response: %s", self.server_last_info)
-        if LOG_INFO_RESPONSE:
-            items = LOG_INFO_RESPONSE.split(",")
-            logres = [re.compile(v) for v in items]
-            log.info("info-response debug for %s:", csv(["'%s'" % x for x in items]))
-            for k in sorted(self.server_last_info.keys()):
-                if any(lr.match(k) for lr in logres):
-                    log.info(" %s=%s", k, self.server_last_info[k])
-
-    def send_info_request(self, *categories):
-        if not self.info_request_pending:
-            self.info_request_pending = True
-            self.send("info-request", [self.uuid], tuple(self._id_to_window.keys()), categories)
-
-
-    def send_quality(self):
-        q = self.quality
-        log("send_quality() quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
-        self.send("quality", q)
-
-    def send_min_quality(self):
-        q = self.min_quality
-        log("send_min_quality() min-quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid min-quality: %s" % q
-        self.send("min-quality", q)
-
-    def send_speed(self):
-        s = self.speed
-        log("send_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
-        self.send("speed", s)
-
-    def send_min_speed(self):
-        s = self.min_speed
-        log("send_min_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
-        self.send("min-speed", s)
-
+    ######################################################################
+    # connection setup:
+    def setup_connection(self, conn):
+        XpraClientBase.setup_connection(self, conn)
+        if self.supports_mmap:
+            self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
     def server_connection_established(self):
         if not XpraClientBase.server_connection_established(self):
@@ -1923,36 +1060,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.send_info_request()
 
 
-    def on_server_setting_changed(self, setting, cb):
-        self._on_server_setting_changed.setdefault(setting, []).append(cb)
-
-    def _process_setting_change(self, packet):
-        setting, value = packet[1:3]
-        setting = bytestostr(setting)
-        #convert "hello" / "setting" variable names to client variables:
-        if setting in (
-            "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
-            "clipboard-direction", "session_name",
-            "sharing", "sharing-toggle", "lock", "lock-toggle",
-            "start-new-commands", "client-shutdown", "webcam",
-            "bandwidth-limit",
-            ):
-            setattr(self, "server_%s" % setting.replace("-", "_"), value)
-        else:
-            log.info("unknown server setting changed: %s=%s", setting, value)
-            return
-        log.info("server setting changed: %s=%s", setting, value)
-        self.server_setting_changed(setting, value)
-
-    def server_setting_changed(self, setting, value):
-        log("setting_changed(%s, %s)", setting, value)
-        cbs = self._on_server_setting_changed.get(setting)
-        if cbs:
-            for cb in cbs:
-                log("setting_changed(%s, %s) calling %s", setting, value, cb)
-                cb(setting, value)
-
-
     def handshake_complete(self):
         oh = self._on_handshake
         self._on_handshake = None
@@ -2010,6 +1117,60 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             self.in_remote_logging = False
 
 
+    ######################################################################
+    # info:
+    def _process_info_response(self, packet):
+        self.info_request_pending = False
+        self.server_last_info = packet[1]
+        log("info-response: %s", self.server_last_info)
+        if LOG_INFO_RESPONSE:
+            items = LOG_INFO_RESPONSE.split(",")
+            logres = [re.compile(v) for v in items]
+            log.info("info-response debug for %s:", csv(["'%s'" % x for x in items]))
+            for k in sorted(self.server_last_info.keys()):
+                if any(lr.match(k) for lr in logres):
+                    log.info(" %s=%s", k, self.server_last_info[k])
+
+    def send_info_request(self, *categories):
+        if not self.info_request_pending:
+            self.info_request_pending = True
+            self.send("info-request", [self.uuid], tuple(self._id_to_window.keys()), categories)
+
+
+    ######################################################################
+    # server messages:
+    def _process_server_event(self, packet):
+        log(u": ".join((str(x) for x in packet[1:])))
+
+    def on_server_setting_changed(self, setting, cb):
+        self._on_server_setting_changed.setdefault(setting, []).append(cb)
+
+    def _process_setting_change(self, packet):
+        setting, value = packet[1:3]
+        setting = bytestostr(setting)
+        #convert "hello" / "setting" variable names to client variables:
+        if setting in (
+            "bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
+            "clipboard-direction", "session_name",
+            "sharing", "sharing-toggle", "lock", "lock-toggle",
+            "start-new-commands", "client-shutdown", "webcam",
+            "bandwidth-limit",
+            ):
+            setattr(self, "server_%s" % setting.replace("-", "_"), value)
+        else:
+            log.info("unknown server setting changed: %s=%s", setting, value)
+            return
+        log.info("server setting changed: %s=%s", setting, value)
+        self.server_setting_changed(setting, value)
+
+    def server_setting_changed(self, setting, value):
+        log("setting_changed(%s, %s)", setting, value)
+        cbs = self._on_server_setting_changed.get(setting)
+        if cbs:
+            for cb in cbs:
+                log("setting_changed(%s, %s) calling %s", setting, value, cb)
+                cb(setting, value)
+
     def _process_control(self, packet):
         command = packet[1]
         if command=="show_session_info":
@@ -2055,6 +1216,111 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             log.warn("received invalid control command from server: %s", command)
 
 
+    def may_notify_audio(self, summary, body):
+        try:
+            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID
+        except ImportError:
+            log("no notifications")
+        else:
+            self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
+
+
+    ######################################################################
+    # encodings:
+    def get_encodings(self):
+        """
+            Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
+            That's because although we may support both, the encoding chosen is plain "rgb",
+            and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
+            ("rgb32" if there is an alpha channel, and if the client supports it)
+        """
+        cenc = self.get_core_encodings()
+        if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
+            cenc.append("rgb")
+        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
+
+    def get_core_encodings(self):
+        if self.core_encodings is None:
+            self.core_encodings = self.do_get_core_encodings()
+        return self.core_encodings
+
+    def get_cursor_encodings(self):
+        e = ["raw"]
+        if "png" in self.get_core_encodings():
+            e.append("png")
+        return e
+
+    def get_window_icon_encodings(self):
+        e = ["premult_argb32", "default"]
+        if "png" in self.get_core_encodings():
+            e.append("png")
+        return e
+
+    def do_get_core_encodings(self):
+        """
+            This method returns the actual encodings supported.
+            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "jpeg2000", "h264", "vpx"]
+            It is often overriden in the actual client class implementations,
+            where extra encodings can be added (generally just 'rgb32' for transparency),
+            or removed if the toolkit implementation class is more limited.
+        """
+        #we always support rgb:
+        core_encodings = ["rgb24", "rgb32"]
+        for codec in ("dec_pillow", "dec_webp"):
+            if has_codec(codec):
+                c = get_codec(codec)
+                for e in c.get_encodings():
+                    if e not in core_encodings:
+                        core_encodings.append(e)
+        #we enable all the video decoders we know about,
+        #what will actually get used by the server will still depend on the csc modes supported
+        video_decodings = getVideoHelper().get_decodings()
+        log("video_decodings=%s", video_decodings)
+        for encoding in video_decodings:
+            if encoding not in core_encodings:
+                core_encodings.append(encoding)
+        #remove duplicates and use prefered encoding order:
+        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
+        return core_encodings
+
+    def set_encoding(self, encoding):
+        log("set_encoding(%s)", encoding)
+        if encoding=="auto":
+            assert self.server_auto_video_encoding
+            self.encoding = ""
+        else:
+            assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
+            assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
+        self.encoding = encoding
+        self.send("encoding", self.encoding)
+
+    def send_quality(self):
+        q = self.quality
+        log("send_quality() quality=%s", q)
+        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
+        self.send("quality", q)
+
+    def send_min_quality(self):
+        q = self.min_quality
+        log("send_min_quality() min-quality=%s", q)
+        assert q==-1 or (q>=0 and q<=100), "invalid min-quality: %s" % q
+        self.send("min-quality", q)
+
+    def send_speed(self):
+        s = self.speed
+        log("send_speed() min-speed=%s", s)
+        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
+        self.send("speed", s)
+
+    def send_min_speed(self):
+        s = self.min_speed
+        log("send_min_speed() min-speed=%s", s)
+        assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
+        self.send("min-speed", s)
+
+
+    ######################################################################
+    # features:
     def send_input_devices(self, fmt, input_devices):
         assert self.server_input_devices
         self.send("input-devices", fmt, input_devices)
@@ -2073,16 +1339,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         assert self.server_lock_toggle
         self.send("lock-toggle", self.client_lock)
 
-
-    def may_notify_audio(self, summary, body):
-        try:
-            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID
-        except ImportError:
-            log("no notifications")
-        else:
-            self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
-
-
     def send_notify_enabled(self):
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
         self.send("set-notify", self.notifications_enabled)
@@ -2100,6 +1356,9 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
     def send_force_ungrab(self, wid):
         self.send("force-ungrab", wid)
 
+    def send_keyboard_sync_enabled_status(self, *_args):
+        self.send("set-keyboard-sync-enabled", self.keyboard_sync)
+
     def set_deflate_level(self, level):
         self.compression_level = level
         self.send_deflate_level()
@@ -2108,6 +1367,29 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self._protocol.set_compression_level(self.compression_level)
         self.send("set_deflate", self.compression_level)
 
+
+    ######################################################################
+    # clipboard:
+    def get_clipboard_helper_classes(self):
+        return []
+
+    def make_clipboard_helper(self):
+        """
+            Try the various clipboard classes until we find one
+            that loads ok. (some platforms have more options than others)
+        """
+        clipboard_options = self.get_clipboard_helper_classes()
+        clipboardlog("make_clipboard_helper() options=%s", clipboard_options)
+        for helperclass in clipboard_options:
+            try:
+                return self.setup_clipboard_helper(helperclass)
+            except ImportError as e:
+                clipboardlog.error("Error: cannot instantiate %s:", helperclass)
+                clipboardlog.error(" %s", e)
+                del e
+            except:
+                clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
+        return None
 
     def _process_clipboard_enabled_status(self, packet):
         clipboard_enabled, reason = packet[1:3]
@@ -2139,59 +1421,135 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         clipboardlog("send_clipboard_loop_uuid() uuids=%s", uuids)
         if self.server_clipboard_loop_uuids:
             self.send("clipboard-loop-uuids", uuids)
+
+
+    ######################################################################
+    # keyboard:
+    def window_keyboard_layout_changed(self, window):
+        #win32 can change the keyboard mapping per window...
+        keylog("window_keyboard_layout_changed(%s)", window)
+        if self.keyboard_helper:
+            self.keyboard_helper.keymap_changed()
+
+    def get_keymap_properties(self):
+        props = self.keyboard_helper.get_keymap_properties()
+        props["modifiers"] = self.get_current_modifiers()
+        return props
+
+    def handle_key_action(self, window, key_event):
+        if self.readonly or self.keyboard_helper is None:
+            return
+        wid = self._window_to_id[window]
+        keylog("handle_key_action(%s, %s) wid=%s", window, key_event, wid)
+        self.keyboard_helper.handle_key_action(window, wid, key_event)
+
+    def mask_to_names(self, mask):
+        if self.keyboard_helper is None:
+            return []
+        return self.keyboard_helper.mask_to_names(mask)
         
 
-    def send_keyboard_sync_enabled_status(self, *_args):
-        self.send("set-keyboard-sync-enabled", self.keyboard_sync)
-
-
-    def set_encoding(self, encoding):
-        log("set_encoding(%s)", encoding)
-        if encoding=="auto":
-            assert self.server_auto_video_encoding
-            self.encoding = ""
+    ######################################################################
+    # pointer:
+    def _process_pointer_position(self, packet):
+        wid, x, y = packet[1:4]
+        if len(packet)>=6:
+            rx, ry = packet[4:6]
         else:
-            assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
-            assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
-        self.encoding = encoding
-        self.send("encoding", self.encoding)
+            rx, ry = -1, -1
+        cx, cy = self.get_mouse_position()
+        size = 10
+        start_time = monotonic_time()
+        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
+        for i,w in self._id_to_window.items():
+            #not all window implementations have this method:
+            #(but GLClientWindow does)
+            show_pointer_overlay = getattr(w, "show_pointer_overlay", None)
+            if show_pointer_overlay:
+                if i==wid:
+                    value = rx, ry, size, start_time
+                else:
+                    value = None
+                show_pointer_overlay(value)
+
+    def send_wheel_delta(self, wid, button, distance, *args):
+        modifiers = self.get_current_modifiers()
+        pointer = self.get_mouse_position()
+        buttons = []
+        mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s", wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
+        if self.server_precise_wheel:
+            #send the exact value multiplied by 1000 (as an int)
+            idist = int(distance*1000)
+            if abs(idist)>0:
+                packet =  ["wheel-motion", wid,
+                           button, idist,
+                           pointer, modifiers, buttons] + list(args)
+                mouselog.info("%s", packet)
+                self.send_positional(packet)
+            return 0
+        else:
+            #server cannot handle precise wheel,
+            #so we have to use discrete events,
+            #and send a click for each step:
+            steps = abs(int(distance))
+            for _ in range(steps):
+                self.send_button(wid, button, True, pointer, modifiers, buttons)
+                self.send_button(wid, button, False, pointer, modifiers, buttons)
+            #return remainder:
+            return float(distance) - int(distance)
+
+    def wheel_event(self, wid, deltax=0, deltay=0, deviceid=0):
+        #this is a different entry point for mouse wheel events,
+        #which provides finer grained deltas (if supported by the server)
+        #accumulate deltas:
+        if REVERSE_HORIZONTAL_SCROLLING:
+            deltax = -deltax
+        self.wheel_deltax += deltax
+        self.wheel_deltay += deltay
+        button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
+        if button>0:
+            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
+        button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
+        if button>0:
+            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
+        log("wheel_event%s new deltas=%s,%s", (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
+
+    def send_button(self, wid, button, pressed, pointer, modifiers, buttons, *args):
+        pressed_state = self._button_state.get(button, False)
+        if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state==pressed:
+            mouselog("button action: unchanged state, ignoring event")
+            return
+        self._button_state[button] = pressed
+        packet =  ["button-action", wid,
+                   button, pressed,
+                   pointer, modifiers, buttons] + list(args)
+        mouselog("button packet: %s", packet)
+        self.send_positional(packet)
+
+    def scale_pointer(self, pointer):
+        return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
 
 
     def reset_cursor(self):
         self.set_windows_cursor(self._id_to_window.values(), [])
 
-    def _ui_event(self):
-        if self._ui_events==0:
-            self.emit("first-ui-received")
-        self._ui_events += 1
 
-
-    def sx(self, v):
-        """ convert X coordinate from server to client """
-        return iround(v*self.xscale)
-    def sy(self, v):
-        """ convert Y coordinate from server to client """
-        return iround(v*self.yscale)
-    def srect(self, x, y, w, h):
-        """ convert rectangle coordinates from server to client """
-        return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
-    def sp(self, x, y):
-        """ convert X,Y coordinates from server to client """
-        return self.sx(x), self.sy(y)
-
-    def cx(self, v):
-        """ convert X coordinate from client to server """
-        return iround(v/self.xscale)
-    def cy(self, v):
-        """ convert Y coordinate from client to server """
-        return iround(v/self.yscale)
-    def crect(self, x, y, w, h):
-        """ convert rectangle coordinates from client to server """
-        return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-    def cp(self, x, y):
-        """ convert X,Y coordinates from client to server """
-        return self.cx(x), self.cy(y)
-
+    ######################################################################
+    # windows:
+    def cook_metadata(self, _new_window, metadata):
+        #convert to a typedict and apply client-side overrides:
+        metadata = typedict(metadata)
+        if self.server_is_desktop and self.desktop_fullscreen:
+            #force it fullscreen:
+            try:
+                del metadata["size-constraints"]
+            except:
+                pass
+            metadata["fullscreen"] = True
+            #FIXME: try to figure out the monitors we go fullscreen on for X11:
+            #if POSIX:
+            #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
+        return metadata
 
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
@@ -2213,21 +1571,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             client_properties = packet[7]
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s", wid, override_redirect, packet[2:6], (x, y, ww, wh, bw, bh))
         self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
-
-    def cook_metadata(self, _new_window, metadata):
-        #convert to a typedict and apply client-side overrides:
-        metadata = typedict(metadata)
-        if self.server_is_desktop and self.desktop_fullscreen:
-            #force it fullscreen:
-            try:
-                del metadata["size-constraints"]
-            except:
-                pass
-            metadata["fullscreen"] = True
-            #FIXME: try to figure out the monitors we go fullscreen on for X11:
-            #if POSIX:
-            #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
-        return metadata
 
     def make_new_window(self, wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
@@ -2460,6 +1803,30 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self._window_to_id[tray] = wid
 
 
+    def _process_initiate_moveresize(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        if window:
+            x_root, y_root, direction, button, source_indication = packet[2:7]
+            window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
+
+    def _process_window_metadata(self, packet):
+        wid, metadata = packet[1:3]
+        metalog("metadata update for window %i: %s", wid, metadata)
+        window = self._id_to_window.get(wid)
+        if window:
+            metadata = self.cook_metadata(False, metadata)
+            window.update_metadata(metadata)
+
+    def _process_window_icon(self, packet):
+        wid, w, h, coding, data = packet[1:6]
+        img = self._window_icon_image(wid, w, h, coding, data)
+        window = self._id_to_window.get(wid)
+        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
+        if window and img:
+            window.update_icon(img)
+            self.set_tray_icon()
+
     def _process_window_move_resize(self, packet):
         wid, x, y, w, h = packet[1:6]
         ax = self.sx(x)
@@ -2486,6 +1853,237 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         if window:
             window.resize(aw, ah, resize_counter)
 
+    def _process_raise_window(self, packet):
+        #only implemented in gtk2 for now
+        pass
+
+    def _process_configure_override_redirect(self, packet):
+        wid, x, y, w, h = packet[1:6]
+        window = self._id_to_window[wid]
+        ax = self.sx(x)
+        ay = self.sy(y)
+        aw = max(1, self.sx(w))
+        ah = max(1, self.sy(h))
+        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s", packet[1:], window, wid, (ax,ay,aw,ah))
+        window.move_resize(ax, ay, aw, ah, -1)
+
+    def window_close_event(self, wid):
+        windowlog("window_close_event(%s) close window action=%s", wid, self.window_close_action)
+        if self.window_close_action=="forward":
+            self.send("close-window", wid)
+        elif self.window_close_action=="ignore":
+            windowlog("close event for window %i ignored", wid)
+        elif self.window_close_action=="disconnect":
+            log.info("window-close set to disconnect, exiting (window %i)", wid)
+            self.quit(0)
+        elif self.window_close_action=="shutdown":
+            self.send("shutdown-server", "shutdown on window close")
+        elif self.window_close_action=="auto":
+            #forward unless this looks like a desktop
+            #this allows us behave more like VNC:
+            window = self._id_to_window.get(wid)
+            log("window_close_event(%i) window=%s", wid, window)
+            if self.server_is_desktop:
+                log.info("window-close event on desktop or shadow window, disconnecting")
+                self.quit(0)
+                return True
+            if window:
+                metadata = getattr(window, "_metadata", {})
+                log("window_close_event(%i) metadata=%s", wid, metadata)
+                class_instance = metadata.get("class-instance")
+                title = metadata.get("title", "")
+                log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
+                matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
+                close = None
+                if matching_title_close:
+                    close = "window-close event on %s window" % title
+                elif class_instance and class_instance[1] in WM_CLASS_CLOSEEXIT:
+                    close = "window-close event on %s window" % class_instance[0]
+                if close:
+                    #honour this close request if there are no other windows:
+                    if len(self._id_to_window)==1:
+                        log.info("%s, disconnecting", close)
+                        self.quit(0)
+                        return True
+                    else:
+                        log("there are %i windows, so forwarding %s", len(self._id_to_window), close)
+            #default to forward:
+            self.send("close-window", wid)
+        else:
+            log.warn("unknown close-window action: %s", self.window_close_action)
+        return True
+
+    def _process_lost_window(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        if window:
+            del self._id_to_window[wid]
+            del self._window_to_id[window]
+            self.destroy_window(wid, window)
+        if len(self._id_to_window)==0:
+            windowlog("last window gone, clearing key repeat")
+        self.set_tray_icon()
+
+    def destroy_window(self, wid, window):
+        windowlog("destroy_window(%s, %s)", wid, window)
+        window.destroy()
+        if self._window_with_grab==wid:
+            log("destroying window %s which has grab, ungrabbing!", wid)
+            self.window_ungrab()
+            self._window_with_grab = None
+        #deal with signal watchers:
+        windowlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
+        for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):
+            if wid in wids:
+                windowlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
+                wids.remove(wid)
+                if not wids:
+                    windowlog("last window, removing watcher %s", signalwatcher)
+                    try:
+                        del self._signalwatcher_to_wids[signalwatcher]
+                        if signalwatcher.poll() is None:
+                            os.kill(signalwatcher.pid, signal.SIGKILL)
+                    except:
+                        log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
+                    #now remove any pids that use this watcher:
+                    for pid, w in tuple(self._pid_to_signalwatcher.items()):
+                        if w==signalwatcher:
+                            del self._pid_to_signalwatcher[pid]
+
+    def destroy_all_windows(self):
+        for wid, window in self._id_to_window.items():
+            try:
+                windowlog("destroy_all_windows() destroying %s / %s", wid, window)
+                self.destroy_window(wid, window)
+            except:
+                pass
+        self._id_to_window = {}
+        self._window_to_id = {}
+
+
+    ######################################################################
+    # focus:
+    def send_focus(self, wid):
+        focuslog("send_focus(%s)", wid)
+        self.send("focus", wid, self.get_current_modifiers())
+
+    def update_focus(self, wid, gotit):
+        focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
+        if gotit and self._focused is not wid:
+            self.send_focus(wid)
+            self._focused = wid
+        if not gotit:
+            if self._window_with_grab:
+                self.window_ungrab()
+                self.do_force_ungrab(self._window_with_grab)
+                self._window_with_grab = None
+            if wid and self._focused and self._focused!=wid:
+                #if this window lost focus, it must have had it!
+                #(catch up - makes things like OR windows work:
+                # their parent receives the focus-out event)
+                focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
+                self.send_focus(wid)
+            if self._focused:
+                #send the lost-focus via a timer and re-check it
+                #(this allows a new window to gain focus without having to do a reset_focus)
+                def send_lost_focus():
+                    #check that a new window has not gained focus since:
+                    if self._focused is None:
+                        self.send_focus(0)
+                self.timeout_add(20, send_lost_focus)
+                self._focused = None
+
+
+    ######################################################################
+    # grabs:
+    def window_grab(self, window):
+        log.warn("Warning: window grab not implemented in %s", self.client_type())
+
+    def window_ungrab(self):
+        log.warn("Warning: window ungrab not implemented in %s", self.client_type())
+
+    def do_force_ungrab(self, wid):
+        grablog("do_force_ungrab(%s)", wid)
+        #ungrab via dedicated server packet:
+        self.send_force_ungrab(wid)
+
+    def _process_pointer_grab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        grablog("grabbing %s: %s", wid, window)
+        if window:
+            self.window_grab(window)
+            self._window_with_grab = wid
+
+    def _process_pointer_ungrab(self, packet):
+        wid = packet[1]
+        window = self._id_to_window.get(wid)
+        grablog("ungrabbing %s: %s", wid, window)
+        self.window_ungrab()
+        self._window_with_grab = None
+
+
+    ######################################################################
+    # window refresh:
+    def suspend(self):
+        log.info("system is suspending")
+        self._suspended_at = time.time()
+        #tell the server to slow down refresh for all the windows:
+        self.control_refresh(-1, True, False)
+
+    def resume(self):
+        elapsed = 0
+        if self._suspended_at>0:
+            elapsed = max(0, time.time()-self._suspended_at)
+            self._suspended_at = 0
+        delta = datetime.timedelta(seconds=int(elapsed))
+        log.info("system resumed, was suspended for %s", delta)
+        #this will reset the refresh rate too:
+        self.send_refresh_all()
+        if self.opengl_enabled:
+            #with opengl, the buffers sometimes contain garbage after resuming,
+            #this should create new backing buffers:
+            self.reinit_windows()
+        self.reinit_window_icons()
+
+    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
+        packet = ["buffer-refresh", wid, 0, quality]
+        options["refresh-now"] = bool(refresh)
+        if suspend_resume is True:
+            options["batch"] = {
+                "reset"     : True,
+                "delay"     : 1000,
+                "locked"    : True,
+                "always"    : True,
+                }
+        elif suspend_resume is False:
+            options["batch"] = {"reset"     : True}
+        else:
+            pass    #batch unchanged
+        log("sending buffer refresh: options=%s, client_properties=%s", options, client_properties)
+        packet.append(options)
+        packet.append(client_properties)
+        self.send(*packet)
+
+    def send_refresh(self, wid):
+        packet = ["buffer-refresh", wid, 0, 100,
+        #explicit refresh (should be assumed True anyway),
+        #also force a reset of batch configs:
+                       {
+                       "refresh-now"    : True,
+                       "batch"          : {"reset" : True}
+                       },
+                       {}   #no client_properties
+                 ]
+        self.send(*packet)
+
+    def send_refresh_all(self):
+        log("Automatic refresh for all windows ")
+        self.send_refresh(-1)
+
+
+    ######################################################################
+    # painting windows:
     def _process_draw(self, packet):
         self._draw_queue.put(packet)
 
@@ -2569,6 +2167,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             self.idle_add(record_decode_time, False, str(e))
             raise
 
+    ######################################################################
+    # screen scaling:
     def _process_cursor(self, packet):
         if not self.cursors_enabled:
             return
@@ -2609,6 +2209,176 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         window = self._id_to_window.get(wid)
         self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
+
+    ######################################################################
+    # system tray:
+    def make_system_tray(self, *args):
+        """ tray used for application systray forwarding """
+        tc = self.get_system_tray_classes()
+        traylog("make_system_tray%s system tray classes=%s", args, tc)
+        return make_instance(tc, self, *args)
+
+    def get_system_tray_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_system_tray_classes()
+
+
+    def make_tray(self, *args):
+        """ tray used by our own application """
+        tc = self.get_tray_classes()
+        traylog("make_tray%s tray classes=%s", args, tc)
+        return make_instance(tc, self, *args)
+
+    def get_tray_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_tray_classes()
+
+
+    def make_tray_menu_helper(self):
+        """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
+        mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
+        traylog("make_tray_menu_helper() tray menu helper classes: %s", mhc)
+        return make_instance(mhc, self)
+
+
+    def show_menu(self, *_args):
+        if self.menu_helper:
+            self.menu_helper.activate()
+
+    def setup_xpra_tray(self, tray_icon_filename):
+        tray = None
+        #this is our own tray
+        def xpra_tray_click(button, pressed, time=0):
+            traylog("xpra_tray_click(%s, %s, %s)", button, pressed, time)
+            if button==1 and pressed:
+                self.idle_add(self.menu_helper.activate, button, time)
+            elif button==3 and not pressed:
+                self.idle_add(self.menu_helper.popup, button, time)
+        def xpra_tray_mouseover(*args):
+            traylog("xpra_tray_mouseover(%s)", args)
+        def xpra_tray_exit(*args):
+            traylog("xpra_tray_exit(%s)", args)
+            self.disconnect_and_quit(0, CLIENT_EXIT)
+        def xpra_tray_geometry(*args):
+            if tray:
+                traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
+        menu = None
+        if self.menu_helper:
+            menu = self.menu_helper.build()
+        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
+        traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
+        if tray:
+            def reset_tray_title():
+                tray.set_tooltip(self.get_tray_title())
+            self.after_handshake(reset_tray_title)
+        return tray
+
+    def get_tray_title(self):
+        t = []
+        if self.session_name or self.server_session_name:
+            t.append(self.session_name or self.server_session_name)
+        if self._protocol and self._protocol._conn:
+            t.append(bytestostr(self._protocol._conn.target))
+        if len(t)==0:
+            t.insert(0, u"Xpra")
+        v = u"\n".join(t)
+        traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
+        return v
+
+    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
+        tray_widget = None
+        #this is a tray forwarded for a remote application
+        def tray_click(button, pressed, time=0):
+            tray = self._id_to_window.get(wid)
+            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
+            if tray:
+                x, y = self.get_mouse_position()
+                modifiers = self.get_current_modifiers()
+                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
+                traylog("button_packet=%s", button_packet)
+                self.send_positional(button_packet)
+                tray.reconfigure()
+        def tray_mouseover(x, y):
+            tray = self._id_to_window.get(wid)
+            traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
+            if tray:
+                modifiers = self.get_current_modifiers()
+                buttons = []
+                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
+                traylog("pointer_packet=%s", pointer_packet)
+                self.send_mouse_position(pointer_packet)
+        def do_tray_geometry(*args):
+            #tell the "ClientTray" where it now lives
+            #which should also update the location on the server if it has changed
+            tray = self._id_to_window.get(wid)
+            if tray_widget:
+                geom = tray_widget.get_geometry()
+            else:
+                geom = None
+            traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
+            if tray and geom:
+                tray.move_resize(*geom)
+        def tray_geometry(*args):
+            #the tray widget may still be None if we haven't returned from make_system_tray yet,
+            #in which case we will check the geometry a little bit later:
+            if tray_widget:
+                do_tray_geometry(*args)
+            else:
+                self.idle_add(do_tray_geometry, *args)
+        def tray_exit(*args):
+            traylog("tray_exit(%s)", args)
+        title = metadata.strget("title", "")
+        tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
+        traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
+        assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
+        tray_widget.show()
+        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
+
+
+    ######################################################################
+    # notifications:
+    def make_notifier(self):
+        nc = self.get_notifier_classes()
+        notifylog("make_notifier() notifier classes: %s", nc)
+        return make_instance(nc, self.notification_closed, self.notification_action)
+
+    def notification_closed(self, nid, reason=3, text=""):
+        notifylog("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
+        if self.server_notifications_close:
+            self.send("notification-close", nid, reason, text)
+
+    def notification_action(self, nid, action_id):
+        notifylog("notification_action(%i, %s) server notifications.actions=%s", nid, action_id, self.server_notifications_actions)
+        if self.server_notifications_actions:
+            self.send("notification-action", nid, action_id)
+
+    def get_notifier_classes(self):
+        #subclasses will generally add their toolkit specific variants
+        #by overriding this method
+        #use the native ones first:
+        if not NATIVE_NOTIFIER:
+            return []
+        return get_native_notifier_classes()
+
+    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
+        notifylog("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
+        n = self.notifier
+        if not self.client_supports_notifications or not n:
+            return
+        try:
+            from xpra.notifications.common import parse_image_path
+            icon_filename = get_icon_filename(icon_name)
+            icon = parse_image_path(icon_filename)
+            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
+        except Exception as e:
+            notifylog("failed to show notification", exc_info=True)
+            notifylog.error("Error: cannot show notification")
+            notifylog.error(" '%s'", summary)
+            notifylog.error(" %s", e)
 
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
@@ -2676,62 +2446,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
                         return tray.tray_widget
         return self.tray
 
-
-    def _process_raise_window(self, packet):
-        #only implemented in gtk2 for now
-        pass
-
-    def _process_show_desktop(self, packet):
-        show = packet[1]
-        log("calling %s(%s)", show_desktop, show)
-        show_desktop(show)
-
-
-    def _process_pointer_position(self, packet):
-        wid, x, y = packet[1:4]
-        if len(packet)>=6:
-            rx, ry = packet[4:6]
-        else:
-            rx, ry = -1, -1
-        cx, cy = self.get_mouse_position()
-        size = 10
-        start_time = monotonic_time()
-        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i", x, y, rx, ry, wid, cx, cy)
-        for i,w in self._id_to_window.items():
-            #not all window implementations have this method:
-            #(but GLClientWindow does)
-            show_pointer_overlay = getattr(w, "show_pointer_overlay", None)
-            if show_pointer_overlay:
-                if i==wid:
-                    value = rx, ry, size, start_time
-                else:
-                    value = None
-                show_pointer_overlay(value)
-
-
-    def _process_initiate_moveresize(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        if window:
-            x_root, y_root, direction, button, source_indication = packet[2:7]
-            window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
-
-    def _process_window_metadata(self, packet):
-        wid, metadata = packet[1:3]
-        metalog("metadata update for window %i: %s", wid, metadata)
-        window = self._id_to_window.get(wid)
-        if window:
-            metadata = self.cook_metadata(False, metadata)
-            window.update_metadata(metadata)
-
-    def _process_window_icon(self, packet):
-        wid, w, h, coding, data = packet[1:6]
-        img = self._window_icon_image(wid, w, h, coding, data)
-        window = self._id_to_window.get(wid)
-        iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s", wid, w, h, coding, len(data), img, window)
-        if window and img:
-            window.update_icon(img)
-            self.set_tray_icon()
 
     def set_tray_icon(self):
         #find all the window icons,
@@ -2814,54 +2528,21 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         return icon
         
 
-    def _process_configure_override_redirect(self, packet):
-        wid, x, y, w, h = packet[1:6]
-        window = self._id_to_window[wid]
-        ax = self.sx(x)
-        ay = self.sy(y)
-        aw = max(1, self.sx(w))
-        ah = max(1, self.sy(h))
-        geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s", packet[1:], window, wid, (ax,ay,aw,ah))
-        window.move_resize(ax, ay, aw, ah, -1)
+    ######################################################################
+    # desktop and screen:
+    def has_transparency(self):
+        return False
 
-    def _process_lost_window(self, packet):
-        wid = packet[1]
-        window = self._id_to_window.get(wid)
-        if window:
-            del self._id_to_window[wid]
-            del self._window_to_id[window]
-            self.destroy_window(wid, window)
-        if len(self._id_to_window)==0:
-            windowlog("last window gone, clearing key repeat")
-        self.set_tray_icon()
+    def get_icc_info(self):
+        return get_icc_info()
 
+    def get_display_icc_info(self):
+        return get_display_icc_info()
 
-    def destroy_window(self, wid, window):
-        windowlog("destroy_window(%s, %s)", wid, window)
-        window.destroy()
-        if self._window_with_grab==wid:
-            log("destroying window %s which has grab, ungrabbing!", wid)
-            self.window_ungrab()
-            self._window_with_grab = None
-        #deal with signal watchers:
-        windowlog("looking for window %i in %s", wid, self._signalwatcher_to_wids)
-        for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):
-            if wid in wids:
-                windowlog("removing %i from %s for signalwatcher %s", wid, wids, signalwatcher)
-                wids.remove(wid)
-                if not wids:
-                    windowlog("last window, removing watcher %s", signalwatcher)
-                    try:
-                        del self._signalwatcher_to_wids[signalwatcher]
-                        if signalwatcher.poll() is None:
-                            os.kill(signalwatcher.pid, signal.SIGKILL)
-                    except:
-                        log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
-                    #now remove any pids that use this watcher:
-                    for pid, w in tuple(self._pid_to_signalwatcher.items()):
-                        if w==signalwatcher:
-                            del self._pid_to_signalwatcher[pid]
-
+    def _process_show_desktop(self, packet):
+        show = packet[1]
+        log("calling %s(%s)", show_desktop, show)
+        show_desktop(show)
 
     def _process_desktop_size(self, packet):
         root_w, root_h, max_w, max_h = packet[1:5]
@@ -2949,6 +2630,343 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             log("maximum packet size set to %i", p.max_packet_size)
 
 
+    ######################################################################
+    # screen scaling:
+    def sx(self, v):
+        """ convert X coordinate from server to client """
+        return iround(v*self.xscale)
+    def sy(self, v):
+        """ convert Y coordinate from server to client """
+        return iround(v*self.yscale)
+    def srect(self, x, y, w, h):
+        """ convert rectangle coordinates from server to client """
+        return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
+    def sp(self, x, y):
+        """ convert X,Y coordinates from server to client """
+        return self.sx(x), self.sy(y)
+
+    def cx(self, v):
+        """ convert X coordinate from client to server """
+        return iround(v/self.xscale)
+    def cy(self, v):
+        """ convert Y coordinate from client to server """
+        return iround(v/self.yscale)
+    def crect(self, x, y, w, h):
+        """ convert rectangle coordinates from client to server """
+        return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
+    def cp(self, x, y):
+        """ convert X,Y coordinates from client to server """
+        return self.cx(x), self.cy(y)
+
+
+    ######################################################################
+    # screen and scaling:
+    def desktops_changed(self, *args):
+        workspacelog("desktops_changed%s", args)
+        self.screen_size_changed(*args)
+
+    def workspace_changed(self, *args):
+        workspacelog("workspace_changed%s", args)
+        for win in self._id_to_window.values():
+            win.workspace_changed()
+
+    def screen_size_changed(self, *args):
+        screenlog("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
+        if self.screen_size_change_pending:
+            return
+        #update via timer so the data is more likely to be final (up to date) when we query it,
+        #some properties (like _NET_WORKAREA for X11 clients via xposix "ClientExtras") may
+        #trigger multiple calls to screen_size_changed, delayed by some amount
+        #(sometimes up to 1s..)
+        self.screen_size_change_pending = True
+        delay = 1000
+        #if we are suspending, wait longer:
+        #(better chance that the suspend-resume cycle will have completed)
+        if self._suspended_at>0 and self._suspended_at-monotonic_time()<5*1000:
+            delay = 5*1000
+        self.timeout_add(delay, self.do_process_screen_size_change)
+
+    def do_process_screen_size_change(self):
+        self.update_screen_size()
+        screenlog("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
+        if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":
+            return
+        if MONITOR_CHANGE_REINIT or REINIT_WINDOWS:
+            screenlog.info("screen size change: will reinit the windows")
+            self.reinit_windows()
+            self.reinit_window_icons()
+
+
+    def update_screen_size(self):
+        self.screen_size_change_pending = False
+        u_root_w, u_root_h = self.get_root_size()
+        root_w, root_h = self.cp(u_root_w, u_root_h)
+        self._current_screen_sizes = self.get_screen_sizes()
+        sss = self.get_screen_sizes(self.xscale, self.yscale)
+        ndesktops = get_number_of_desktops()
+        desktop_names = get_desktop_names()
+        screenlog("update_screen_size() sizes=%s, %s desktops: %s", sss, ndesktops, desktop_names)
+        if self.dpi>0:
+            #use command line value supplied, but scale it:
+            xdpi = ydpi = self.dpi
+        else:
+            #not supplied, use platform detection code:
+            xdpi = self.get_xdpi()
+            ydpi = self.get_ydpi()
+        xdpi = self.cx(xdpi)
+        ydpi = self.cy(ydpi)
+        screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
+        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
+        screenlog("update_screen_size()     new settings=%s", screen_settings)
+        screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
+        if self._last_screen_settings==screen_settings:
+            log("screen size unchanged")
+            return
+        screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
+        log_screen_sizes(root_w, root_h, sss)
+        self.send("desktop_size", *screen_settings)
+        self._last_screen_settings = screen_settings
+        #update the max packet size (may have gone up):
+        self.set_max_packet_size()
+
+    def get_xdpi(self):
+        return get_xdpi()
+
+    def get_ydpi(self):
+        return get_ydpi()
+
+
+    def scaleup(self):
+        scaling = max(self.xscale, self.yscale)
+        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)>r4cmp(scaling, 10)]
+        scalinglog("scaleup() options>%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        if options:
+            self._scaleto(min(options))
+
+    def scaledown(self):
+        scaling = max(self.xscale, self.yscale)
+        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10)]
+        scalinglog("scaledown() options<%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        if options:
+            self._scaleto(max(options))
+
+    def _scaleto(self, new_scaling):
+        scaling = max(self.xscale, self.yscale)
+        scalinglog("_scaleto(%s) current value=%s", r4cmp(new_scaling, 1000)/1000.0, r4cmp(scaling, 1000)/1000.0)
+        if new_scaling>0:
+            self.scale_change(new_scaling/scaling, new_scaling/scaling)
+
+    def scalingoff(self):
+        self.scaleset(1, 1)
+
+    def scalereset(self):
+        self.scaleset(*self.initial_scaling)
+
+    def scaleset(self, xscale=1, yscale=1):
+        scalinglog("scaleset(%s, %s) current scaling: %s, %s", xscale, yscale, self.xscale, self.yscale)
+        self.scale_change(float(xscale)/self.xscale, float(yscale)/self.yscale)
+
+    def scale_change(self, xchange=1, ychange=1):
+        scalinglog("scale_change(%s, %s)", xchange, ychange)
+        if self.server_is_desktop and self.desktop_fullscreen:
+            scalinglog("scale_change(%s, %s) ignored, fullscreen shadow mode is active", xchange, ychange)
+            return
+        if not self.can_scale:
+            scalinglog("scale_change(%s, %s) ignored, scaling is disabled", xchange, ychange)
+            return
+        if self.screen_size_change_pending:
+            scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
+            return
+        if monotonic_time()<self.scale_change_embargo:
+            scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again", xchange, ychange)
+            return
+        def clamp(v):
+            return max(MIN_SCALING, min(MAX_SCALING, v))
+        xscale = clamp(self.xscale*xchange)
+        yscale = clamp(self.yscale*ychange)
+        scalinglog("scale_change xscale: clamp(%s*%s)=%s", self.xscale, xchange, xscale)
+        scalinglog("scale_change yscale: clamp(%s*%s)=%s", self.yscale, ychange, yscale)
+        if fequ(xscale, self.xscale) and fequ(yscale, self.yscale):
+            scalinglog("scaling unchanged: %sx%s", self.xscale, self.yscale)
+            return
+        #re-calculate change values against clamped scale:
+        xchange = xscale / self.xscale
+        ychange = yscale / self.yscale
+        #check against maximum server supported size:
+        maxw, maxh = self.server_max_desktop_size
+        root_w, root_h = self.get_root_size()
+        sw = int(root_w / xscale)
+        sh = int(root_h / yscale)
+        scalinglog("scale_change root size=%s x %s, scaled to %s x %s", root_w, root_h, sw, sh)
+        scalinglog("scale_change max server desktop size=%s x %s", maxw, maxh)
+        if not self.server_is_desktop and (sw>(maxw+1) or sh>(maxh+1)):
+            #would overflow..
+            summary = "Invalid Scale Factor"
+            messages = [
+                "cannot scale by %i%% x %i%% or lower" % ((100*xscale), (100*yscale)),
+                "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
+                " would overflow the server's screen: %i x %i" % (maxw, maxh),
+                ]    
+            try:
+                from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
+            except ImportError:
+                pass
+            else:
+                self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
+            scalinglog.warn("Warning: %s", summary)
+            for m in messages:
+                scalinglog.warn(" %s", m)
+            return
+        self.xscale = xscale
+        self.yscale = yscale
+        scalinglog("scale_change new scaling: %sx%s, change: %sx%s", self.xscale, self.yscale, xchange, ychange)
+        self.scale_reinit(xchange, ychange)
+
+    def scale_reinit(self, xchange=1.0, ychange=1.0):
+        #wait at least one second before changing again:
+        self.scale_change_embargo = monotonic_time()+SCALING_EMBARGO_TIME
+        if fequ(self.xscale, self.yscale):
+            scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
+        else:
+            scalinglog.info("setting scaling to %i%% x %i%%:", iround(100*self.xscale), iround(100*self.yscale))
+        self.update_screen_size()
+        #re-initialize all the windows with their new size
+        def new_size_fn(w, h):
+            minx, miny = 16384, 16384
+            if self.max_window_size!=(0, 0):
+                minx, miny = self.max_window_size
+            return max(1, min(minx, int(w*xchange))), max(1, min(miny, int(h*ychange)))
+        self.reinit_windows(new_size_fn)
+        self.reinit_window_icons()
+        self.emit("scaling-changed")
+
+
+    ######################################################################
+    # network and status:
+    def server_ok(self):
+        return self._server_ok
+
+    def check_server_echo(self, ping_sent_time):
+        if self._protocol is None:
+            #no longer connected!
+            return False
+        last = self._server_ok
+        if FAKE_BROKEN_CONNECTION>0:
+            self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
+        else:
+            self._server_ok = self.last_ping_echoed_time>=ping_sent_time
+        log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
+        if last!=self._server_ok and not self._server_ok:
+            log.info("server is not responding, drawing spinners over the windows")
+            def timer_redraw():
+                if self._protocol is None:
+                    #no longer connected!
+                    return False
+                ok = self.server_ok()
+                self.redraw_spinners()
+                if ok:
+                    log.info("server is OK again")
+                return not ok           #repaint again until ok
+            self.idle_add(self.redraw_spinners)
+            self.timeout_add(250, timer_redraw)
+        return False
+
+    def redraw_spinners(self):
+        #draws spinner on top of the window, or not (plain repaint)
+        #depending on whether the server is ok or not
+        ok = self.server_ok()
+        log("redraw_spinners() ok=%s", ok)
+        for w in self._id_to_window.values():
+            if not w.is_tray():
+                w.spinner(ok)
+
+    def check_echo_timeout(self, ping_time):
+        netlog("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
+        if self.last_ping_echoed_time<ping_time:
+            #no point trying to use disconnect_and_quit() to tell the server here..
+            self.warn_and_quit(EXIT_TIMEOUT, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
+
+    def send_ping(self):
+        now_ms = int(1000.0*monotonic_time())
+        self.send("ping", now_ms)
+        self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
+        wait = 2.0
+        if len(self.server_ping_latency)>0:
+            l = [x for _,x in tuple(self.server_ping_latency)]
+            avg = sum(l) / len(l)
+            wait = min(5, 1.0+avg*2.0)
+            netlog("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
+        self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+        return True
+
+    def _process_ping_echo(self, packet):
+        echoedtime, l1, l2, l3, cl = packet[1:6]
+        self.last_ping_echoed_time = echoedtime
+        self.check_server_echo(0)
+        server_ping_latency = monotonic_time()-echoedtime/1000.0
+        self.server_ping_latency.append((monotonic_time(), server_ping_latency))
+        self.server_load = l1, l2, l3
+        if cl>=0:
+            self.client_ping_latency.append((monotonic_time(), cl/1000.0))
+        netlog("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
+
+    def _process_ping(self, packet):
+        echotime = packet[1]
+        l1,l2,l3 = 0,0,0
+        if POSIX:
+            try:
+                (fl1, fl2, fl3) = os.getloadavg()
+                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
+            except (OSError, AttributeError):
+                pass
+        sl = -1
+        if len(self.server_ping_latency)>0:
+            _, sl = self.server_ping_latency[-1]
+        self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
+
+
+    ######################################################################
+    # mmap:
+    def init_mmap(self, mmap_filename, mmap_group, socket_filename):
+        log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
+        from xpra.os_util import get_int_uuid
+        from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
+        #calculate size:
+        root_w, root_h = self.cp(*self.get_root_size())
+        #at least 256MB, or 8 fullscreen RGBX frames:
+        mmap_size = max(256*1024*1024, root_w*root_h*4*8)
+        mmap_size = min(1024*1024*1024, mmap_size)
+        self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
+            init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
+        if self.mmap_enabled:
+            self.mmap_token = get_int_uuid()
+            self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
+            self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
+            #self.mmap_token_index = DEFAULT_TOKEN_INDEX*2
+            #write the token twice:
+            # once at the old default offset for older servers,
+            # and at the offset we want to use with new servers
+            for index in (DEFAULT_TOKEN_INDEX, self.mmap_token_index):
+                write_mmap_token(self.mmap, self.mmap_token, index, self.mmap_token_bytes)
+
+    def clean_mmap(self):
+        log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
+        if self.mmap_tempfile:
+            try:
+                self.mmap_tempfile.close()
+            except Exception as e:
+                log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
+            self.mmap_tempfile = None
+        if self.mmap_delete:
+            #this should be redundant: closing the tempfile should get it deleted
+            if self.mmap_filename and os.path.exists(self.mmap_filename):
+                from xpra.net.mmap_pipe import clean_mmap
+                clean_mmap(self.mmap_filename)
+                self.mmap_filename = None
+
+
+    ######################################################################
+    # packets:
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
         XpraClientBase.init_authenticated_packet_handlers(self)
