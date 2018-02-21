@@ -323,7 +323,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
         log("parse_border(%s)=%s", border_str, self.border)
 
 
-    def show_server_commands(self, *args):
+    def show_server_commands(self, *_args):
         if not self.server_commands_info:
             log.warn("Warning: cannot show server commands")
             log.warn(" the feature is not available on the server")
