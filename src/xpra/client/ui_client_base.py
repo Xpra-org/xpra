@@ -440,7 +440,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         caps.update(self.get_desktop_caps())
         #nicely prefixed:
         def u(prefix, c):
-            updict(caps, prefix, c, flatten_dicts=True)
+            updict(caps, prefix, c, flatten_dicts=False)
         u("sound",              AudioClient.get_audio_capabilities(self))
         u("window",             self.get_window_caps())
         u("notifications",      self.get_notifications_caps())
