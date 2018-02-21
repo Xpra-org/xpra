@@ -158,6 +158,23 @@ def merge_dicts(a, b, path=None):
             a[key] = b[key]
     return a
 
+def make_instance(class_options, *args):
+    log = get_util_logger()
+    log("make_instance%s", tuple([class_options]+list(args)))
+    for c in class_options:
+        if c is None:
+            continue
+        try:
+            v = c(*args)
+            log("make_instance(..) %s()=%s", c, v)
+            if v:
+                return v
+        except:
+            log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
+            log.error("Error: cannot instantiate %s:", c)
+            log.error(" with arguments %s", tuple(args))
+    return None
+
 
 def roundup(n, m):
     return (n + m - 1) & ~(m - 1)

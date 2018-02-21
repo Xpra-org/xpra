@@ -41,12 +41,14 @@ class ClipboardClient(object):
         self.client_supports_clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
 
     def cleanup(self):
-        log("ClipboardClient.cleanup() clipboard_helper=%s", self.clipboard_helper)
-        if self.clipboard_helper:
+        ch = self.clipboard_helper
+        log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
+        if ch:
+            self.clipboard_helper = None
             try:
-                self.clipboard_helper.cleanup()
+                ch.cleanup()
             except:
-                log.error("error on clipboard cleanup", exc_info=True)
+                log.error("error on clipboard helper '%s' cleanup", ch, exc_info=True)
 
     def process_ui_capabilities(self):
         #ui may want to know this is now set:

@@ -33,7 +33,6 @@ iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
 mouselog = Logger("mouse")
 scalinglog = Logger("scaling")
-notifylog = Logger("notify")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
 metalog = Logger("metadata")
@@ -49,7 +48,7 @@ from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_vrefresh, get_antialias_info, get_icc_info, get_display_icc_info, get_double_click_time, show_desktop, get_cursor_size,
-                               get_double_click_distance, get_native_notifier_classes, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
+                               get_double_click_distance, get_native_tray_classes, get_native_system_tray_classes, get_session_type,
                                get_native_tray_menu_helper_class, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -60,12 +59,13 @@ from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, platform_name, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, BITS, is_Ubuntu
-from xpra.util import nonl, std, iround, envint, envfloat, envbool, log_screen_sizes, typedict, updict, csv, engs, repr_ellipsized, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import nonl, std, iround, envint, envfloat, envbool, log_screen_sizes, typedict, updict, csv, engs, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client.webcam_forwarder import WebcamForwarder
 from xpra.client.audio_client import AudioClient
 from xpra.client.rpc_client import RPCClient
 from xpra.client.clipboard_client import ClipboardClient
+from xpra.client.notification_client import NotificationClient
 
 
 glib = import_glib()
@@ -121,28 +121,11 @@ def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
 
-def make_instance(class_options, *args):
-    log("make_instance%s", tuple([class_options]+list(args)))
-    for c in class_options:
-        if c is None:
-            continue
-        try:
-            v = c(*args)
-            log("make_instance(..) %s()=%s", c, v)
-            if v:
-                return v
-        except:
-            log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
-            log.error("Error: cannot instantiate %s:", c)
-            log.error(" with arguments %s", tuple(args))
-    return None
-
-
 """
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient, RPCClient):
+class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -162,6 +145,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         WebcamForwarder.__init__(self)
         AudioClient.__init__(self)
         ClipboardClient.__init__(self)
+        NotificationClient.__init__(self)
         RPCClient.__init__(self)
         try:
             pinfo = get_platform_info()
@@ -256,7 +240,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         self.encoding_defaults = {}
 
         self.client_supports_opengl = False
-        self.client_supports_notifications = False
         self.client_supports_system_tray = False
         self.client_supports_cursors = False
         self.client_supports_bell = False
@@ -264,7 +247,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         self.client_supports_remote_logging = False
         self.client_lock = False
         self.log_both = False
-        self.notifications_enabled = False
         self.cursors_enabled = False
         self.default_cursor_data = None
         self.bell_enabled = False
@@ -286,7 +268,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         self.menu_helper = None
         self.tray = None
         self.overlay_image = None
-        self.notifier = None
         self.in_remote_logging = False
         self.local_logging = None
         self._pid_to_signalwatcher = {}
@@ -310,6 +291,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         WebcamForwarder.init(self, opts)
         AudioClient.init(self, opts)
         ClipboardClient.init(self, opts)
+        NotificationClient.init(self, opts)
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -351,7 +333,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         self.windows_enabled = opts.windows
         self.pings = opts.pings
 
-        self.client_supports_notifications = opts.notifications
         self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
@@ -419,11 +400,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
                     log.warn("Warning: failed to load overlay icon '%s':", icon_filename)
                     log.warn(" %s", e)
 
-        notifylog("client_supports_notifications=%s", self.client_supports_notifications)
-        if self.client_supports_notifications:
-            self.notifier = self.make_notifier()
-            notifylog("using notifier=%s", self.notifier)
-            self.client_supports_notifications = self.notifier is not None
+        NotificationClient.init_ui(self)
 
         self.init_opengl(opts.opengl)
 
@@ -468,11 +445,13 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         WebcamForwarder.cleanup(self)
         XpraClientBase.cleanup(self)
         AudioClient.cleanup(self)
+        ClipboardClient.cleanup(self)
+        NotificationClient.cleanup(self)
         #tell the draw thread to exit:
         dq = self._draw_queue
         if dq:
             dq.put(None)
-        for x in (self.keyboard_helper, self.tray, self.notifier, self.menu_helper, self.client_extras, getVideoHelper()):
+        for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
                 continue
             log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
@@ -661,14 +640,10 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
         self.server_window_frame_extents = c.boolget("window.frame-extents")
-        self.server_notifications = c.boolget("notifications")
-        self.server_notifications_close = c.boolget("notifications.close")
-        self.server_notifications_actions = c.boolget("notifications.actions")
         self.server_sharing = c.boolget("sharing")
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
-        self.notifications_enabled = self.client_supports_notifications
         self.server_cursors = c.boolget("cursors", True)    #added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors
         self.default_cursor_data = c.listget("cursor.default", None)
@@ -758,6 +733,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         AudioClient.process_capabilities(self)
         RPCClient.parse_capabilities(self)
         ClipboardClient.parse_capabilities(self)
+        NotificationClient.parse_server_capabilities(self)
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
         self.set_max_packet_size()
@@ -2201,98 +2177,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
 
 
-    ######################################################################
-    # notifications:
-    def get_notifications_caps(self):
-        return {
-            ""            : self.client_supports_notifications,
-            "close"       : self.client_supports_notifications,
-            "actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
-            }
-
-    def init_notifications_packet_handlers(self):
-        self.set_packet_handlers(self._ui_packet_handlers, {
-            "notify_show":          self._process_notify_show,
-            "notify_close":         self._process_notify_close,
-            })
-
-    def make_notifier(self):
-        nc = self.get_notifier_classes()
-        notifylog("make_notifier() notifier classes: %s", nc)
-        return make_instance(nc, self.notification_closed, self.notification_action)
-
-    def notification_closed(self, nid, reason=3, text=""):
-        notifylog("notification_closed(%i, %i, %s) server notification.close=%s", nid, reason, text, self.server_notifications_close)
-        if self.server_notifications_close:
-            self.send("notification-close", nid, reason, text)
-
-    def notification_action(self, nid, action_id):
-        notifylog("notification_action(%i, %s) server notifications.actions=%s", nid, action_id, self.server_notifications_actions)
-        if self.server_notifications_actions:
-            self.send("notification-action", nid, action_id)
-
-    def get_notifier_classes(self):
-        #subclasses will generally add their toolkit specific variants
-        #by overriding this method
-        #use the native ones first:
-        if not NATIVE_NOTIFIER:
-            return []
-        return get_native_notifier_classes()
-
-    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None):
-        notifylog("may_notify%s client_supports_notifications=%s, notifier=%s", (nid, summary, body, actions, hints, expire_timeout, icon_name), self.client_supports_notifications, self.notifier)
-        n = self.notifier
-        if not self.client_supports_notifications or not n:
-            return
-        try:
-            from xpra.notifications.common import parse_image_path
-            icon_filename = get_icon_filename(icon_name)
-            icon = parse_image_path(icon_filename)
-            n.show_notify("", self.tray, nid, "Xpra", nid, "", summary, body, actions, hints, expire_timeout, icon)
-        except Exception as e:
-            notifylog("failed to show notification", exc_info=True)
-            notifylog.error("Error: cannot show notification")
-            notifylog.error(" '%s'", summary)
-            notifylog.error(" %s", e)
-
-    def _process_notify_show(self, packet):
-        if not self.notifications_enabled:
-            notifylog("process_notify_show: ignoring packet, notifications are disabled")
-            return
-        self._ui_event()
-        dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout = packet[1:9]
-        icon, actions, hints = None, [], {}
-        if len(packet)>=10:
-            icon = packet[9]
-        if len(packet)>=12:
-            actions, hints = packet[10], packet[11]
-        #note: if the server doesn't support notification forwarding,
-        #it can still send us the messages (via xpra control or the dbus interface)
-        notifylog("_process_notify_show(%s) notifier=%s, server_notifications=%s", repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
-        notifylog("notification actions=%s, hints=%s", actions, hints)
-        assert self.notifier
-        #this one of the few places where we actually do care about character encoding:
-        try:
-            summary = summary.decode("utf8")
-        except:
-            summary = bytestostr(summary)
-        try:
-            body = body.decode("utf8")
-        except:
-            body = bytestostr(body)
-        app_name = bytestostr(app_name)
-        tray = self.get_tray_window(app_name, hints)
-        traylog("get_tray_window(%s)=%s", app_name, tray)
-        self.notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
-
-    def _process_notify_close(self, packet):
-        if not self.notifications_enabled:
-            return
-        assert self.notifier
-        nid = packet[1]
-        log("_process_notify_close(%s)", nid)
-        self.notifier.close_notify(nid)
-
     def get_tray_window(self, app_name, hints):
         #try to identify the application tray that generated this notification,
         #so we can show it as coming from the correct systray icon
@@ -2930,7 +2814,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
         AudioClient.init_authenticated_packet_handlers(self)
         RPCClient.init_authenticated_packet_handlers(self)
         ClipboardClient.init_authenticated_packet_handlers(self)
-        self.init_notifications_packet_handlers()
+        NotificationClient.init_authenticated_packet_handlers(self)
         self.init_window_packet_handlers()
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,
