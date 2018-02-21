@@ -562,107 +562,29 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
     ######################################################################
     # hello:
     def make_hello(self):
-        capabilities = XpraClientBase.make_hello(self)
-        updict(capabilities, "platform",  get_platform_info())
-        capabilities["session-type"] = get_session_type()
-        if self.readonly:
-            #don't bother sending keyboard info, as it won't be used
-            capabilities["keyboard"] = False
-        else:
-            capabilities.update(self.get_keymap_properties())
-            #show the user a summary of what we have detected:
-            self.keyboard_helper.log_keyboard_info()
+        caps = XpraClientBase.make_hello(self)
+        caps["session-type"] = get_session_type()
 
-        capabilities["modifiers"] = self.get_current_modifiers()
-        u_root_w, u_root_h = self.get_root_size()
-        wm_name = get_wm_name()
-        if wm_name:
-            capabilities["wm_name"] = wm_name
-        capabilities["desktop_size"] = self.cp(u_root_w, u_root_h)
-        ndesktops = get_number_of_desktops()
-        capabilities["desktops"] = ndesktops
-        desktop_names = get_desktop_names()
-        capabilities["desktop.names"] = desktop_names
-        ss = self.get_screen_sizes()
-        self._current_screen_sizes = ss
-        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
-        log_screen_sizes(u_root_w, u_root_h, ss)
-        if self.xscale!=1 or self.yscale!=1:
-            capabilities["screen_sizes.unscaled"] = ss
-            capabilities["desktop_size.unscaled"] = u_root_w, u_root_h
-            root_w, root_h = self.cp(u_root_w, u_root_h)
-            if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % iround(self.xscale*100)
-            else:
-                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
-            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
-            sss = self.get_screen_sizes(self.xscale, self.yscale)
-            log_screen_sizes(root_w, root_h, sss)
-        else:
-            root_w, root_h = u_root_w, u_root_h
-            sss = ss
-        capabilities["screen_sizes"] = sss
-        #command line (or config file) override supplied:
-        dpi = 0
-        if self.dpi>0:
-            #scale it:
-            xdpi = ydpi = dpi = self.cx(self.cy(self.dpi))
-        else:
-            #not supplied, use platform detection code:
-            #platforms may also provide per-axis dpi (later win32 versions do)
-            xdpi = self.get_xdpi()
-            ydpi = self.get_ydpi()
-            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
-            if xdpi>0 and ydpi>0:
-                xdpi = self.cx(xdpi)
-                ydpi = self.cy(ydpi)
-                dpi = iround((xdpi+ydpi)/2.0)
-                capabilities.update({
-                                     "dpi.x"    : xdpi,
-                                     "dpi.y"    : ydpi,
-                                     })
-        if dpi:
-            capabilities["dpi"] = dpi
-        screenlog("dpi: %i", dpi)
-        self._last_screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
-
-        if self.keyboard_helper:
-            delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
-            if delay_ms>0 and interval_ms>0:
-                capabilities["key_repeat"] = (delay_ms,interval_ms)
-            else:
-                #cannot do keyboard_sync without a key repeat value!
-                #(maybe we could just choose one?)
-                self.keyboard_helper.keyboard_sync = False
-            capabilities["keyboard_sync"] = self.keyboard_helper.keyboard_sync
-            log("keyboard capabilities: %s", [(k,v) for k,v in capabilities.items() if k.startswith("key")])
-        if self.mmap_enabled:
-            capabilities.update({
-                "mmap_file"         : self.mmap_filename,
-                "mmap_size"         : self.mmap_size,
-                "mmap_token"        : self.mmap_token,
-                "mmap_token_index"  : self.mmap_token_index,
-                "mmap_token_bytes"  : self.mmap_token_bytes,
-                })
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
         if MMAP_SUPPORTED:
             #we may be running inside another server!
             try:
                 from xpra.server.server_uuid import get_uuid
-                capabilities["server_uuid"] = get_uuid() or ""
+                caps["server_uuid"] = get_uuid() or ""
             except:
                 pass
-        capabilities.update({
+        for x in (
+            #generic feature flags:
+            "notify-startup-complete", "wants_events", "wants_default_cursor",
+            "setting-change", "randr_notify", "show-desktop", "info-namespace",
+            #legacy (not needed in 1.0 - can be dropped soon):
+            "raw_window_icons", "generic-rgb-encodings",
+            ):
+            caps[x] = True
+        #FIXME: the messy bits without proper namespace:
+        caps.update({
             #generic server flags:
-            "notify-startup-complete"   : True,
-            "wants_events"              : True,
-            "wants_default_cursor"      : True,
-            "setting-change"            : True,
-            "randr_notify"              : True,
-            "screen-scaling"            : True,
-            "screen-scaling.enabled"    : (self.xscale!=1 or self.yscale!=1),
-            "screen-scaling.values"     : (int(1000*self.xscale), int(1000*self.yscale)),
             #mouse and cursors:
             "mouse.show"                : MOUSE_SHOW,
             "mouse.initial-position"    : self.get_mouse_position(),
@@ -671,158 +593,57 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             "double_click.time"         : get_double_click_time(),
             "double_click.distance"     : get_double_click_distance(),
             #features:
-            "notifications"             : self.client_supports_notifications,
-            "notifications.close"       : self.client_supports_notifications,
-            "notifications.actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
             "bell"                      : self.client_supports_bell,
             "vrefresh"                  : get_vrefresh(),
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
             "windows"                   : self.windows_enabled,
-            "show-desktop"              : True,
             "system_tray"               : self.client_supports_system_tray,
-            "info-namespace"            : True,
             #window meta data and handling:
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
             "server-window-resize"      : True,
             #encoding related:
-            "raw_window_icons"          : True,
-            "generic-rgb-encodings"     : True,
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             "encodings"                 : self.get_encodings(),
             "encodings.core"            : self.get_core_encodings(),
             "encodings.window-icon"     : self.get_window_icon_encodings(),
             "encodings.cursor"          : self.get_cursor_encodings(),
-            "encoding.supports_delta"   : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
             })
-        updict(capabilities, "window", {
-            "raise"                     : True,
-            #implemented in the gtk client:
-            "initiate-moveresize"       : False,
-            "resize-counter"            : True,
-            })
-        updict(capabilities, "clipboard", {
-            ""                          : self.client_supports_clipboard,
-            "notifications"             : self.client_supports_clipboard,
-            "selections"                : CLIPBOARDS,
-            #buggy osx clipboards:
-            "want_targets"              : CLIPBOARD_WANT_TARGETS,
-            #buggy osx and win32 clipboards:
-            "greedy"                    : CLIPBOARD_GREEDY,
-            "set_enabled"               : True,
-            })
-        if B_FRAMES:
-            video_b_frames = ["h264"]   #only tested with dec_avcodec2
-        else:
-            video_b_frames = []
-        updict(capabilities, "encoding", {
-            "flush"                     : PAINT_FLUSH,
-            "scaling.control"           : self.video_scaling,
-            "client_options"            : True,
-            "csc_atoms"                 : True,
-            #TODO: check for csc support (swscale only?)
-            "video_reinit"              : True,
-            "video_scaling"             : True,
-            "video_b_frames"            : video_b_frames,
-            "webp_leaks"                : False,
-            "transparency"              : self.has_transparency(),
-            "rgb24zlib"                 : True,
-            "max-soft-expired"          : MAX_SOFT_EXPIRED,
-            "send-timestamps"           : SEND_TIMESTAMPS,
-            })
-        capabilities.update({
-                             "antialias"    : get_antialias_info(),
-                             "icc"          : self.get_icc_info(),
-                             "display-icc"  : self.get_display_icc_info(),
-                             "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
-                             })
-        #generic rgb compression flags:
-        for x in compression.ALL_COMPRESSORS:
-            capabilities["encoding.rgb_%s" % x] = x in compression.get_enabled_compressors()
+        #messy unprefixed:
+        caps.update(self.get_keyboard_caps())
+        caps.update(self.get_desktop_caps())
+        #nicely prefixed:
+        def u(prefix, c):
+            updict(caps, prefix, c, flatten_dicts=True)
+        u("sound",              AudioClient.get_audio_capabilities(self))
+        u("window",             self.get_window_caps())
+        u("notifications",      self.get_notifications_caps())
+        u("clipboard",          self.get_clipboard_caps())
+        u("encoding",           self.get_encodings_caps())
+        u("control_commands",   self.get_control_commands_caps())
+        u("platform",           get_platform_info())
+        u("batch",              self.get_batch_caps())
+        mmap_caps = self.get_mmap_caps()
+        u("mmap",               mmap_caps)
+        #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
+        for k,v in mmap_caps:
+            caps["mmap_%s" % k] = v
+        return caps
 
-        control_commands = ["show_session_info", "show_bug_report", "debug"]
-        for x in compression.get_enabled_compressors():
-            control_commands.append("enable_"+x)
-        for x in packet_encoding.get_enabled_encoders():
-            control_commands.append("enable_"+x)
-        capabilities["control_commands"] = control_commands
-        log("control_commands=%s", control_commands)
 
-        encoding_caps = {}
-        if self.encoding:
-            encoding_caps[""] = self.encoding
-        for k,v in codec_versions.items():
-            encoding_caps["%s.version" % k] = v
-        if self.quality>0:
-            encoding_caps["quality"] = self.quality
-        if self.min_quality>0:
-            encoding_caps["min-quality"] = self.min_quality
-        if self.speed>=0:
-            encoding_caps["speed"] = self.speed
-        if self.min_speed>=0:
-            encoding_caps["min-speed"] = self.min_speed
-
-        #these are the defaults - when we instantiate a window,
-        #we can send different values as part of the map event
-        #these are the RGB modes we want (the ones we are expected to be able to paint with):
-        rgb_formats = ["RGB", "RGBX", "RGBA"]
-        encoding_caps["rgb_formats"] = rgb_formats
-        #figure out which CSC modes (usually YUV) can give us those RGB modes:
-        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
-        if has_codec("dec_webp"):
-            if self.opengl_enabled:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
-            else:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", )
-        log("supported full csc_modes=%s", full_csc_modes)
-        encoding_caps["full_csc_modes"] = full_csc_modes
-
-        if "h264" in self.get_core_encodings():
-            # some profile options: "baseline", "main", "high", "high10", ...
-            # set the default to "high10" for I420/YUV420P
-            # as the python client always supports all the profiles
-            # whereas on the server side, the default is baseline to accomodate less capable clients.
-            # I422/YUV422P requires high422, and
-            # I444/YUV444P requires high444,
-            # so we don't bother specifying anything for those two.
-            for old_csc_name, csc_name, default_profile in (
-                        ("I420", "YUV420P", "high10"),
-                        ("I422", "YUV422P", ""),
-                        ("I444", "YUV444P", "")):
-                profile = default_profile
-                #try with the old prefix (X264) as well as the more correct one (H264):
-                for H264_NAME in ("X264", "H264"):
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, old_csc_name), profile)
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, csc_name), profile)
-                if profile:
-                    #send as both old and new names:
-                    for h264_name in ("x264", "h264"):
-                        encoding_caps["%s.%s.profile" % (h264_name, old_csc_name)] = profile
-                        encoding_caps["%s.%s.profile" % (h264_name, csc_name)] = profile
-            log("x264 encoding options: %s", str([(k,v) for k,v in encoding_caps.items() if k.startswith("x264.")]))
-        iq = max(self.min_quality, self.quality)
-        if iq<0:
-            iq = 70
-        encoding_caps["initial_quality"] = iq
-        log("encoding capabilities: %s", encoding_caps)
-        updict(capabilities, "encoding", encoding_caps)
-        self.encoding_defaults = encoding_caps
-        #hack: workaround namespace issue ("encodings" vs "encoding"..)
-        capabilities["encodings.rgb_formats"] = rgb_formats
-
-        audio_caps = AudioClient.get_audio_capabilities(self)
-        updict(capabilities, "sound", audio_caps, flatten_dicts=True)
+    def get_batch_caps(self):
         #batch options:
+        caps = {}
         for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
             evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
             if evalue:
                 try:
-                    capabilities["batch.%s" % bprop] = int(evalue)
+                    caps["batch.%s" % bprop] = int(evalue)
                 except:
-                    log.error("invalid environment value for %s: %s", bprop, evalue)
-        log("batch props=%s", [("%s=%s" % (k,v)) for k,v in capabilities.items() if k.startswith("batch.")])
-        return capabilities
+                    log.error("Error: invalid environment value for %s: %s", bprop, evalue)
+        log("get_batch_caps()=%s", caps)
+        return caps
 
 
     ######################################################################
@@ -863,27 +684,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.default_cursor_data = c.listget("cursor.default", None)
         self.server_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
-        self.server_clipboard = c.boolget("clipboard")
-        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
-        self.server_clipboard_direction = c.strget("clipboard-direction", "both")
-        if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
-            if self.client_clipboard_direction=="disabled":
-                pass
-            elif self.server_clipboard_direction=="disabled":
-                clipboardlog.warn("Warning: server clipboard synchronization is currently disabled")
-                self.client_clipboard_direction = "disabled"
-            elif self.client_clipboard_direction=="both":
-                clipboardlog.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
-                self.client_clipboard_direction = self.server_clipboard_direction
-            else:
-                clipboardlog.warn("Warning: incompatible clipboard direction settings")
-                clipboardlog.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
-        self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
-        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
-        clipboardlog("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
-                     self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
-        clipboardlog("client clipboard: supported=%s, direction=%s",
-                     self.client_supports_clipboard, self.client_clipboard_direction)
 
         self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
@@ -968,17 +768,9 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         WebcamForwarder.process_capabilities(self, self.server_capabilities)
         AudioClient.process_capabilities(self)
         RPCClient.parse_capabilities(self)
+        self.parse_clipboard_caps()
         #figure out the maximum actual desktop size and use it to
         #calculate the maximum size of a packet (a full screen update packet)
-        if self.clipboard_enabled:
-            self.clipboard_helper = self.make_clipboard_helper()
-            self.clipboard_enabled = self.clipboard_helper is not None
-            clipboardlog("clipboard helper=%s", self.clipboard_helper)
-            if self.clipboard_enabled and self.server_clipboard_enable_selections:
-                #tell the server about which selections we really want to sync with
-                #(could have been translated, or limited if the client only has one, etc)
-                clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
-                self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
         self.set_max_packet_size()
         self.send_deflate_level()
         c = self.server_capabilities
@@ -1171,6 +963,16 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
                 log("setting_changed(%s, %s) calling %s", setting, value, cb)
                 cb(setting, value)
 
+
+    def get_control_commands_caps(self):
+        caps = ["show_session_info", "show_bug_report", "debug"]
+        for x in compression.get_enabled_compressors():
+            caps.append("enable_"+x)
+        for x in packet_encoding.get_enabled_encoders():
+            caps.append("enable_"+x)
+        log("get_control_commands_caps()=%s", caps)
+        return caps
+
     def _process_control(self, packet):
         command = packet[1]
         if command=="show_session_info":
@@ -1227,6 +1029,88 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # encodings:
+    def get_encodings_caps(self):
+        if B_FRAMES:
+            video_b_frames = ["h264"]   #only tested with dec_avcodec2
+        else:
+            video_b_frames = []
+        caps = {
+            "flush"                     : PAINT_FLUSH,
+            "scaling.control"           : self.video_scaling,
+            "client_options"            : True,
+            "csc_atoms"                 : True,
+            #TODO: check for csc support (swscale only?)
+            "video_reinit"              : True,
+            "video_scaling"             : True,
+            "video_b_frames"            : video_b_frames,
+            "webp_leaks"                : False,
+            "transparency"              : self.has_transparency(),
+            "rgb24zlib"                 : True,
+            "max-soft-expired"          : MAX_SOFT_EXPIRED,
+            "send-timestamps"           : SEND_TIMESTAMPS,
+            "supports_delta"            : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
+            }
+        if self.encoding:
+            caps[""] = self.encoding
+        for k,v in codec_versions.items():
+            caps["%s.version" % k] = v
+        if self.quality>0:
+            caps["quality"] = self.quality
+        if self.min_quality>0:
+            caps["min-quality"] = self.min_quality
+        if self.speed>=0:
+            caps["speed"] = self.speed
+        if self.min_speed>=0:
+            caps["min-speed"] = self.min_speed
+
+        #generic rgb compression flags:
+        for x in compression.ALL_COMPRESSORS:
+            caps["rgb_%s" % x] = x in compression.get_enabled_compressors()
+        #these are the defaults - when we instantiate a window,
+        #we can send different values as part of the map event
+        #these are the RGB modes we want (the ones we are expected to be able to paint with):
+        rgb_formats = ["RGB", "RGBX", "RGBA"]
+        caps["rgb_formats"] = rgb_formats
+        #figure out which CSC modes (usually YUV) can give us those RGB modes:
+        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
+        if has_codec("dec_webp"):
+            if self.opengl_enabled:
+                full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
+            else:
+                full_csc_modes["webp"] = ("BGRX", "BGRA", )
+        log("supported full csc_modes=%s", full_csc_modes)
+        caps["full_csc_modes"] = full_csc_modes
+
+        if "h264" in self.get_core_encodings():
+            # some profile options: "baseline", "main", "high", "high10", ...
+            # set the default to "high10" for I420/YUV420P
+            # as the python client always supports all the profiles
+            # whereas on the server side, the default is baseline to accomodate less capable clients.
+            # I422/YUV422P requires high422, and
+            # I444/YUV444P requires high444,
+            # so we don't bother specifying anything for those two.
+            for old_csc_name, csc_name, default_profile in (
+                        ("I420", "YUV420P", "high10"),
+                        ("I422", "YUV422P", ""),
+                        ("I444", "YUV444P", "")):
+                profile = default_profile
+                #try with the old prefix (X264) as well as the more correct one (H264):
+                for H264_NAME in ("X264", "H264"):
+                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, old_csc_name), profile)
+                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, csc_name), profile)
+                if profile:
+                    #send as both old and new names:
+                    for h264_name in ("x264", "h264"):
+                        caps["%s.%s.profile" % (h264_name, old_csc_name)] = profile
+                        caps["%s.%s.profile" % (h264_name, csc_name)] = profile
+            log("x264 encoding options: %s", str([(k,v) for k,v in caps.items() if k.startswith("x264.")]))
+        iq = max(self.min_quality, self.quality)
+        if iq<0:
+            iq = 70
+        caps["initial_quality"] = iq
+        log("encoding capabilities: %s", caps)
+        return caps
+
     def get_encodings(self):
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
@@ -1370,6 +1254,52 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # clipboard:
+    def get_clipboard_caps(self):
+        return {
+            ""                          : self.client_supports_clipboard,
+            "notifications"             : self.client_supports_clipboard,
+            "selections"                : CLIPBOARDS,
+            #buggy osx clipboards:
+            "want_targets"              : CLIPBOARD_WANT_TARGETS,
+            #buggy osx and win32 clipboards:
+            "greedy"                    : CLIPBOARD_GREEDY,
+            "set_enabled"               : True,
+            }
+
+    def parse_clipboard_caps(self):
+        c = self.server_capabilities
+        self.server_clipboard = c.boolget("clipboard")
+        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
+        self.server_clipboard_direction = c.strget("clipboard-direction", "both")
+        if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
+            if self.client_clipboard_direction=="disabled":
+                pass
+            elif self.server_clipboard_direction=="disabled":
+                clipboardlog.warn("Warning: server clipboard synchronization is currently disabled")
+                self.client_clipboard_direction = "disabled"
+            elif self.client_clipboard_direction=="both":
+                clipboardlog.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
+                self.client_clipboard_direction = self.server_clipboard_direction
+            else:
+                clipboardlog.warn("Warning: incompatible clipboard direction settings")
+                clipboardlog.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
+        self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
+        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
+        clipboardlog("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
+                     self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
+        clipboardlog("client clipboard: supported=%s, direction=%s",
+                     self.client_supports_clipboard, self.client_clipboard_direction)
+
+        if self.clipboard_enabled:
+            self.clipboard_helper = self.make_clipboard_helper()
+            self.clipboard_enabled = self.clipboard_helper is not None
+            clipboardlog("clipboard helper=%s", self.clipboard_helper)
+            if self.clipboard_enabled and self.server_clipboard_enable_selections:
+                #tell the server about which selections we really want to sync with
+                #(could have been translated, or limited if the client only has one, etc)
+                clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
+                self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
+
     def get_clipboard_helper_classes(self):
         return []
 
@@ -1390,6 +1320,12 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             except:
                 clipboardlog.error("cannot instantiate %s", helperclass, exc_info=True)
         return None
+
+    def process_clipboard_packet(self, packet):
+        ch = self.clipboard_helper
+        clipboardlog("process_clipboard_packet: %s, helper=%s", packet[0], ch)
+        if ch:
+            ch.process_clipboard_packet(packet)
 
     def _process_clipboard_enabled_status(self, packet):
         clipboard_enabled, reason = packet[1:3]
@@ -1425,6 +1361,29 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # keyboard:
+    def get_keyboard_caps(self):
+        caps = {}
+        if self.readonly:
+            #don't bother sending keyboard info, as it won't be used
+            caps["keyboard"] = False
+        else:
+            caps.update(self.get_keymap_properties())
+            #show the user a summary of what we have detected:
+            self.keyboard_helper.log_keyboard_info()
+
+        caps["modifiers"] = self.get_current_modifiers()
+        if self.keyboard_helper:
+            delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
+            if delay_ms>0 and interval_ms>0:
+                caps["key_repeat"] = (delay_ms,interval_ms)
+            else:
+                #cannot do keyboard_sync without a key repeat value!
+                #(maybe we could just choose one?)
+                self.keyboard_helper.keyboard_sync = False
+            caps["keyboard_sync"] = self.keyboard_helper.keyboard_sync
+        log("keyboard capabilities: %s", caps)
+        return caps
+
     def window_keyboard_layout_changed(self, window):
         #win32 can change the keyboard mapping per window...
         keylog("window_keyboard_layout_changed(%s)", window)
@@ -1569,6 +1528,14 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # windows:
+    def get_window_caps(self):
+        return {
+            "raise"                     : True,
+            #implemented in the gtk client:
+            "initiate-moveresize"       : False,
+            "resize-counter"            : True,
+            }
+
     def cook_metadata(self, _new_window, metadata):
         #convert to a typedict and apply client-side overrides:
         metadata = typedict(metadata)
@@ -2037,7 +2004,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # grabs:
-    def window_grab(self, window):
+    def window_grab(self, _window):
         log.warn("Warning: window grab not implemented in %s", self.client_type())
 
     def window_ungrab(self):
@@ -2340,6 +2307,13 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # notifications:
+    def get_notifications_caps(self):
+        return {
+            ""            : self.client_supports_notifications,
+            "close"       : self.client_supports_notifications,
+            "actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
+            }
+    
     def make_notifier(self):
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
@@ -2659,7 +2633,73 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
 
     ######################################################################
-    # screen and scaling:
+    # desktop, screen and scaling:
+    def get_desktop_caps(self):
+        caps = {}
+        wm_name = get_wm_name()
+        if wm_name:
+            caps["wm_name"] = wm_name
+
+        self._last_screen_settings = self.get_screen_settings()
+        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
+        caps["desktop_size"] = self.cp(u_root_w, u_root_h)
+        caps["desktops"] = ndesktops
+        caps["desktop.names"] = desktop_names
+
+        ss = self.get_screen_sizes()
+        self._current_screen_sizes = ss
+
+        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
+        log_screen_sizes(u_root_w, u_root_h, ss)
+        if self.xscale!=1 or self.yscale!=1:
+            caps["screen_sizes.unscaled"] = ss
+            caps["desktop_size.unscaled"] = u_root_w, u_root_h
+            root_w, root_h = self.cp(u_root_w, u_root_h)
+            if fequ(self.xscale, self.yscale):
+                sinfo = "%i%%" % iround(self.xscale*100)
+            else:
+                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
+            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
+            log_screen_sizes(root_w, root_h, sss)
+        else:
+            root_w, root_h = u_root_w, u_root_h
+            sss = ss
+        caps["screen_sizes"] = sss
+
+        caps["screen-scaling"] = True
+        caps["screen-scaling.enabled"] = self.xscale!=1 or self.yscale!=1
+        caps["screen-scaling.values"] = (int(1000*self.xscale), int(1000*self.yscale))
+
+        #command line (or config file) override supplied:
+        dpi = 0
+        if self.dpi>0:
+            #scale it:
+            xdpi = ydpi = dpi = self.cx(self.cy(self.dpi))
+        else:
+            #not supplied, use platform detection code:
+            #platforms may also provide per-axis dpi (later win32 versions do)
+            xdpi = self.get_xdpi()
+            ydpi = self.get_ydpi()
+            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
+            if xdpi>0 and ydpi>0:
+                xdpi = self.cx(xdpi)
+                ydpi = self.cy(ydpi)
+                dpi = iround((xdpi+ydpi)/2.0)
+                caps.update({
+                    "dpi.x"    : xdpi,
+                    "dpi.y"    : ydpi,
+                    })
+        if dpi:
+            caps["dpi"] = dpi
+        screenlog("dpi: %i", dpi)
+        caps.update({
+            "antialias"    : get_antialias_info(),
+            "icc"          : self.get_icc_info(),
+            "display-icc"  : self.get_display_icc_info(),
+            "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
+            })
+        return caps
+    
     def desktops_changed(self, *args):
         workspacelog("desktops_changed%s", args)
         self.screen_size_changed(*args)
@@ -2696,8 +2736,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             self.reinit_window_icons()
 
 
-    def update_screen_size(self):
-        self.screen_size_change_pending = False
+    def get_screen_settings(self):
         u_root_w, u_root_h = self.get_root_size()
         root_w, root_h = self.cp(u_root_w, u_root_h)
         self._current_screen_sizes = self.get_screen_sizes()
@@ -2715,12 +2754,17 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         xdpi = self.cx(xdpi)
         ydpi = self.cy(ydpi)
         screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
-        screen_settings = (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
+        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
+        
+    def update_screen_size(self):
+        self.screen_size_change_pending = False
+        screen_settings = self.get_screen_settings()
         screenlog("update_screen_size()     new settings=%s", screen_settings)
         screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
         if self._last_screen_settings==screen_settings:
             log("screen size unchanged")
             return
+        root_w, root_h, sss = screen_settings[:3]
         screenlog.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
         log_screen_sizes(root_w, root_h, sss)
         self.send("desktop_size", *screen_settings)
@@ -2926,6 +2970,17 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
 
     ######################################################################
     # mmap:
+    def get_mmap_caps(self):
+        if self.mmap_enabled:
+            return {
+                "file"          : self.mmap_filename,
+                "size"          : self.mmap_size,
+                "token"         : self.mmap_token,
+                "token_index"   : self.mmap_token_index,
+                "token_bytes"   : self.mmap_token_bytes,
+                }
+        return {}
+    
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
         from xpra.os_util import get_int_uuid
@@ -3013,12 +3068,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             "server-event":         self._process_server_event,
             })
 
-
-    def process_clipboard_packet(self, packet):
-        ch = self.clipboard_helper
-        clipboardlog("process_clipboard_packet: %s, helper=%s", packet[0], ch)
-        if ch:
-            ch.process_clipboard_packet(packet)
 
     def process_packet(self, proto, packet):
         self.check_server_echo(0)
