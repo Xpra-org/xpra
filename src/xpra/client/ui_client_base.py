@@ -193,7 +193,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.server_lock = False
         self.server_lock_toggle = False
         self.server_window_filters = False
-        self.server_input_devices = None
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
 
@@ -270,7 +269,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.client_lock = opts.lock is True
         self.log_both = (opts.remote_logging or "").lower()=="both"
         self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
-        self.input_devices = opts.input_devices
 
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
@@ -641,10 +639,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             modifier_keycodes = c.dictget("modifier_keycodes")
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-
-        #input devices:
-        self.server_input_devices = c.strget("input-devices")
-        self.server_precise_wheel = c.boolget("wheel.precise", False)
 
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
         self.handshake_complete()
@@ -1034,11 +1028,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
 
     ######################################################################
     # features:
-    def send_input_devices(self, fmt, input_devices):
-        assert self.server_input_devices
-        self.send("input-devices", fmt, input_devices)
-
-
     def send_bandwidth_limit(self):
         bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
         assert self.server_bandwidth_limit_change

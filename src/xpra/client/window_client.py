@@ -81,6 +81,10 @@ class WindowClient(object):
         self.server_window_states = []
         self.server_window_signals = ()
 
+        self.server_input_devices = None
+        self.server_precise_wheel = False
+        self.input_devices = "auto"
+
         self.cursors_enabled = False
         self.default_cursor_data = None
         self.bell_enabled = False
@@ -103,6 +107,7 @@ class WindowClient(object):
         self._on_handshake = []
 
     def init(self, opts):
+        self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
         if opts.max_size:
             try:
@@ -240,6 +245,9 @@ class WindowClient(object):
         self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
         self.server_window_filters = c.boolget("window-filters")
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop")
+        #input devices:
+        self.server_input_devices = c.strget("input-devices")
+        self.server_precise_wheel = c.boolget("wheel.precise", False)
 
 
     ######################################################################
@@ -323,6 +331,10 @@ class WindowClient(object):
         #subclass may scale this:
         #return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
         return int(pointer[0]), int(pointer[1])
+
+    def send_input_devices(self, fmt, input_devices):
+        assert self.server_input_devices
+        self.send("input-devices", fmt, input_devices)
 
 
     def _process_cursor(self, packet):
