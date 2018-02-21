@@ -888,10 +888,10 @@ class ServerSource(FileTransferHandler):
         elog("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
-        mmap_filename = c.strget("mmap_file")
-        mmap_size = c.intget("mmap_size", 0)
+        mmap_filename = c.strget("mmap_file") or c.strget("mmap.file")
+        mmap_size = c.intget("mmap_size", 0) or c.intget("mmap.size")
         mmaplog("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget("mmap_token")
+        mmap_token = c.intget("mmap_token") or c.intget("mmap.token")
         mmaplog("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
         if mmap_filename:
             if self.mmap_filename:
@@ -908,8 +908,8 @@ class ServerSource(FileTransferHandler):
                 self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
-                    index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)
-                    count = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES)
+                    index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX) or c.intget("mmap.token_index", DEFAULT_TOKEN_INDEX)
+                    count = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES) or c.intget("mmap.token_bytes", DEFAULT_TOKEN_BYTES)
                     v = read_mmap_token(self.mmap, index, count)
                     mmaplog("mmap_token=%#x, verification=%#x", mmap_token, v)
                     if v!=mmap_token:
