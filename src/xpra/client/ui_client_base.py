@@ -627,7 +627,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         mmap_caps = self.get_mmap_caps()
         u("mmap",               mmap_caps)
         #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
-        for k,v in mmap_caps:
+        for k,v in mmap_caps.items():
             caps["mmap_%s" % k] = v
         return caps
 
@@ -686,7 +686,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         self.bell_enabled = self.server_bell and self.client_supports_bell
 
         self.server_compressors = c.strlistget("compressors", ["zlib"])
-        self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
@@ -971,7 +970,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         for x in packet_encoding.get_enabled_encoders():
             caps.append("enable_"+x)
         log("get_control_commands_caps()=%s", caps)
-        return caps
+        return {"" : caps}
 
     def _process_control(self, packet):
         command = packet[1]
@@ -1289,7 +1288,8 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
                      self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
         clipboardlog("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
-
+        self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
+        clipboardlog("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
             self.clipboard_helper = self.make_clipboard_helper()
             self.clipboard_enabled = self.clipboard_helper is not None
@@ -1299,6 +1299,17 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
                 #(could have been translated, or limited if the client only has one, etc)
                 clipboardlog("clipboard enabled clipboard helper=%s", self.clipboard_helper)
                 self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
+
+    def init_clipboard_packet_handlers(self):
+        self.set_packet_handlers(self._ui_packet_handlers, {
+            "set-clipboard-enabled":        self._process_clipboard_enabled_status,
+            "clipboard-token":              self.process_clipboard_packet,
+            "clipboard-request":            self.process_clipboard_packet,
+            "clipboard-contents":           self.process_clipboard_packet,
+            "clipboard-contents-none":      self.process_clipboard_packet,
+            "clipboard-pending-requests":   self.process_clipboard_packet,
+            "clipboard-enable-selections":  self.process_clipboard_packet,
+            })
 
     def get_clipboard_helper_classes(self):
         return []
@@ -1535,6 +1546,22 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             "initiate-moveresize"       : False,
             "resize-counter"            : True,
             }
+
+    def init_window_packet_handlers(self):
+        self.set_packet_handlers(self._ui_packet_handlers, {
+            "new-window":           self._process_new_window,
+            "new-override-redirect":self._process_new_override_redirect,
+            "new-tray":             self._process_new_tray,
+            "raise-window":         self._process_raise_window,
+            "initiate-moveresize":  self._process_initiate_moveresize,
+            "window-move-resize":   self._process_window_move_resize,
+            "window-resized":       self._process_window_resized,
+            "window-metadata":      self._process_window_metadata,
+            "configure-override-redirect":  self._process_configure_override_redirect,
+            "lost-window":          self._process_lost_window,
+            "window-icon":          self._process_window_icon,
+            "draw":                 self._process_draw,
+            })
 
     def cook_metadata(self, _new_window, metadata):
         #convert to a typedict and apply client-side overrides:
@@ -2313,7 +2340,13 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             "close"       : self.client_supports_notifications,
             "actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
             }
-    
+
+    def init_notifications_packet_handlers(self):
+        self.set_packet_handlers(self._ui_packet_handlers, {
+            "notify_show":          self._process_notify_show,
+            "notify_close":         self._process_notify_close,
+            })
+
     def make_notifier(self):
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
@@ -3027,38 +3060,20 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         WebcamForwarder.init_authenticated_packet_handlers(self)
         AudioClient.init_authenticated_packet_handlers(self)
         RPCClient.init_authenticated_packet_handlers(self)
+        self.init_clipboard_packet_handlers()
+        self.init_notifications_packet_handlers()
+        self.init_window_packet_handlers()
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,
             "setting-change":       self._process_setting_change,
-            "new-window":           self._process_new_window,
-            "new-override-redirect":self._process_new_override_redirect,
-            "new-tray":             self._process_new_tray,
-            "raise-window":         self._process_raise_window,
-            "initiate-moveresize":  self._process_initiate_moveresize,
             "show-desktop":         self._process_show_desktop,
-            "window-move-resize":   self._process_window_move_resize,
-            "window-resized":       self._process_window_resized,
+            "desktop_size":         self._process_desktop_size,
             "pointer-position":     self._process_pointer_position,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
-            "notify_show":          self._process_notify_show,
-            "notify_close":         self._process_notify_close,
-            "set-clipboard-enabled":self._process_clipboard_enabled_status,
-            "window-metadata":      self._process_window_metadata,
-            "configure-override-redirect":  self._process_configure_override_redirect,
-            "lost-window":          self._process_lost_window,
-            "desktop_size":         self._process_desktop_size,
-            "window-icon":          self._process_window_icon,
             "control" :             self._process_control,
-            "draw":                 self._process_draw,
             "pointer-grab":         self._process_pointer_grab,
             "pointer-ungrab":       self._process_pointer_ungrab,
-            "clipboard-token":              self.process_clipboard_packet,
-            "clipboard-request":            self.process_clipboard_packet,
-            "clipboard-contents":           self.process_clipboard_packet,
-            "clipboard-contents-none":      self.process_clipboard_packet,
-            "clipboard-pending-requests":   self.process_clipboard_packet,
-            "clipboard-enable-selections":  self.process_clipboard_packet,
             })
         #these handlers can run directly from the network thread:
         self.set_packet_handlers(self._packet_handlers, {
