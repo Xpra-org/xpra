@@ -1926,8 +1926,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             "setting-change":       self._process_setting_change,
             "show-desktop":         self._process_show_desktop,
             "desktop_size":         self._process_desktop_size,
-            "cursor":               self._process_cursor,
-            "bell":                 self._process_bell,
             "control" :             self._process_control,
             "new-tray":             self._process_new_tray,
             })
