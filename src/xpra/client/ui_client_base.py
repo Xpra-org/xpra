@@ -8,11 +8,9 @@
 import os
 import re
 import sys
-import traceback
-import logging
 from collections import deque
 
-from xpra.log import Logger, set_global_logging_handler
+from xpra.log import Logger
 log = Logger("client")
 traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
