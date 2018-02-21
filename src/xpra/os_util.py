@@ -701,7 +701,6 @@ def get_peercred(sock):
         log = get_util_logger()
         try:
             import socket
-            import struct
             creds = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, struct.calcsize('3i'))
             pid, uid, gid = struct.unpack('3i',creds)
             log("peer: %s", (pid, uid, gid))
