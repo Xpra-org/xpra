@@ -96,8 +96,6 @@ SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
-RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
-
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
@@ -2192,7 +2190,7 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, ClipboardClient
                     for tray in trays:
                         metadata = getattr(tray, "_metadata", typedict())
                         if metadata.intget("pid")==pid:
-                            notifylog("tray window: matched pid=%i", pid)
+                            traylog("tray window: matched pid=%i", pid)
                             return tray.tray_widget
             if app_name and app_name.lower()!="xpra":
                 #exact match:
