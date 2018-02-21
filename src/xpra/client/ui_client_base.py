@@ -8,7 +8,6 @@
 import os
 import re
 import sys
-import time
 import traceback
 import logging
 from collections import deque
@@ -28,13 +27,11 @@ bandwidthlog = Logger("bandwidth")
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
 from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE, EXIT_INTERNAL_ERROR)
-from xpra.client.client_tray import ClientTray
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
-from xpra.platform.paths import get_icon_filename
-from xpra.platform.features import MMAP_SUPPORTED, SYSTEM_TRAY_SUPPORTED, REINIT_WINDOWS
+from xpra.platform.features import MMAP_SUPPORTED, REINIT_WINDOWS
 from xpra.platform.gui import (ready as gui_ready, get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
-                               get_native_tray_classes, get_native_system_tray_classes, get_session_type,
+                               get_native_tray_classes, get_session_type,
                                get_native_tray_menu_helper_class, get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name, ClientExtras)
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
@@ -43,7 +40,7 @@ from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TR
 from xpra.simple_stats import std_unit
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
-from xpra.os_util import BytesIOClass, platform_name, bytestostr, monotonic_time, strtobytes, memoryview_to_bytes, OSX, POSIX, BITS, is_Ubuntu
+from xpra.os_util import platform_name, bytestostr, monotonic_time, strtobytes, POSIX, BITS
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, log_screen_sizes, typedict, updict, csv, engs, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client.webcam_forwarder import WebcamForwarder
@@ -75,11 +72,6 @@ MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
-DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
-
-ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
-ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
-SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
@@ -197,9 +189,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.encoding_defaults = {}
 
         self.client_supports_opengl = False
-        self.client_supports_system_tray = False
-        self.client_supports_cursors = False
-        self.client_supports_bell = False
         self.client_supports_sharing = False
         self.client_supports_remote_logging = False
         self.client_lock = False
@@ -216,7 +205,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.kh_warning = False
         self.menu_helper = None
         self.tray = None
-        self.overlay_image = None
         self.in_remote_logging = False
         self.local_logging = None
 
@@ -262,9 +250,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.readonly = opts.readonly
         self.pings = opts.pings
 
-        self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
-        self.client_supports_cursors = opts.cursors
-        self.client_supports_bell = opts.bell
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
         self.log_both = (opts.remote_logging or "").lower()=="both"
@@ -305,14 +290,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             else:
                 #show shortly after the main loop starts running:
                 self.timeout_add(TRAY_DELAY, setup_xpra_tray)
-            if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
-                icon_filename = get_icon_filename("xpra")
-                try:
-                    from PIL import Image   #@UnresolvedImport
-                    self.overlay_image = Image.open(icon_filename)
-                except Exception as e:
-                    log.warn("Warning: failed to load overlay icon '%s':", icon_filename)
-                    log.warn(" %s", e)
 
         NotificationClient.init_ui(self)
 
@@ -1137,39 +1114,18 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         return metadata
 
     ######################################################################
-    # system tray:
-    def make_system_tray(self, *args):
-        """ tray used for application systray forwarding """
-        tc = self.get_system_tray_classes()
-        traylog("make_system_tray%s system tray classes=%s", args, tc)
-        return make_instance(tc, self, *args)
-
-    def get_system_tray_classes(self):
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
-        return get_native_system_tray_classes()
-
-
-    def make_tray(self, *args):
-        """ tray used by our own application """
-        tc = self.get_tray_classes()
-        traylog("make_tray%s tray classes=%s", args, tc)
-        return make_instance(tc, self, *args)
-
+    # xpra's tray:
     def get_tray_classes(self):
         #subclasses may add their toolkit specific variants, if any
         #by overriding this method
         #use the native ones first:
         return get_native_tray_classes()
 
-
     def make_tray_menu_helper(self):
         """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
         mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
         traylog("make_tray_menu_helper() tray menu helper classes: %s", mhc)
         return make_instance(mhc, self)
-
 
     def show_menu(self, *_args):
         if self.menu_helper:
@@ -1203,6 +1159,12 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             self.after_handshake(reset_tray_title)
         return tray
 
+    def make_tray(self, *args):
+        """ tray used by our own application """
+        tc = self.get_tray_classes()
+        traylog("make_tray%s tray classes=%s", args, tc)
+        return make_instance(tc, self, *args)
+
     def get_tray_title(self):
         t = []
         if self.session_name or self.server_session_name:
@@ -1215,182 +1177,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
         return v
 
-    def _process_new_tray(self, packet):
-        assert SYSTEM_TRAY_SUPPORTED
-        self._ui_event()
-        wid, w, h = packet[1:4]
-        w = max(1, self.sx(w))
-        h = max(1, self.sy(h))
-        metadata = typedict()
-        if len(packet)>=5:
-            metadata = typedict(packet[4])
-        traylog("tray %i metadata=%s", wid, metadata)
-        assert wid not in self._id_to_window, "we already have a window %s" % wid
-        app_id = wid
-        tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
-        traylog("process_new_tray(%s) tray=%s", packet, tray)
-        self._id_to_window[wid] = tray
-        self._window_to_id[tray] = wid
-
-    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
-        tray_widget = None
-        #this is a tray forwarded for a remote application
-        def tray_click(button, pressed, time=0):
-            tray = self._id_to_window.get(wid)
-            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
-            if tray:
-                x, y = self.get_mouse_position()
-                modifiers = self.get_current_modifiers()
-                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
-                traylog("button_packet=%s", button_packet)
-                self.send_positional(button_packet)
-                tray.reconfigure()
-        def tray_mouseover(x, y):
-            tray = self._id_to_window.get(wid)
-            traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
-            if tray:
-                modifiers = self.get_current_modifiers()
-                buttons = []
-                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
-                traylog("pointer_packet=%s", pointer_packet)
-                self.send_mouse_position(pointer_packet)
-        def do_tray_geometry(*args):
-            #tell the "ClientTray" where it now lives
-            #which should also update the location on the server if it has changed
-            tray = self._id_to_window.get(wid)
-            if tray_widget:
-                geom = tray_widget.get_geometry()
-            else:
-                geom = None
-            traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
-            if tray and geom:
-                tray.move_resize(*geom)
-        def tray_geometry(*args):
-            #the tray widget may still be None if we haven't returned from make_system_tray yet,
-            #in which case we will check the geometry a little bit later:
-            if tray_widget:
-                do_tray_geometry(*args)
-            else:
-                self.idle_add(do_tray_geometry, *args)
-        def tray_exit(*args):
-            traylog("tray_exit(%s)", args)
-        title = metadata.strget("title", "")
-        tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
-        traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
-        assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
-        tray_widget.show()
-        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
-
-
-    def get_tray_window(self, app_name, hints):
-        #try to identify the application tray that generated this notification,
-        #so we can show it as coming from the correct systray icon
-        #on platforms that support it (ie: win32)
-        trays = tuple(w for w in self._id_to_window.values() if w.is_tray())
-        if trays:
-            try:
-                pid = int(hints.get("pid") or 0)
-            except (TypeError, ValueError):
-                pass
-            else:
-                if pid:
-                    for tray in trays:
-                        metadata = getattr(tray, "_metadata", typedict())
-                        if metadata.intget("pid")==pid:
-                            traylog("tray window: matched pid=%i", pid)
-                            return tray.tray_widget
-            if app_name and app_name.lower()!="xpra":
-                #exact match:
-                for tray in trays:
-                    #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
-                    if tray.title==app_name:
-                        return tray.tray_widget
-                for tray in trays:
-                    if tray.title.find(app_name)>=0:
-                        return tray.tray_widget
-        return self.tray
-
-
-    def set_tray_icon(self):
-        #find all the window icons,
-        #and if they are all using the same one, then use it as tray icon
-        #otherwise use the default icon
-        traylog("set_tray_icon() DYNAMIC_TRAY_ICON=%s, tray=%s", DYNAMIC_TRAY_ICON, self.tray)
-        if not self.tray:
-            return
-        if not DYNAMIC_TRAY_ICON:
-            #the icon ends up looking garbled on win32,
-            #and we somehow also lose the settings that can keep us in the visible systray list
-            #so don't bother
-            return
-        windows = tuple(w for w in self._window_to_id.keys() if not w.is_tray())
-        #get all the icons:
-        icons = tuple(getattr(w, "_current_icon", None) for w in windows)
-        missing = sum(1 for icon in icons if icon is None)
-        traylog("set_tray_icon() %i windows, %i icons, %i missing", len(windows), len(icons), missing)
-        if icons and not missing:
-            icon = icons[0]
-            for i in icons[1:]:
-                if i!=icon:
-                    #found a different icon
-                    icon = None
-                    break
-            if icon:
-                has_alpha = icon.mode=="RGBA"
-                width, height = icon.size
-                traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)", icon.mode, width, height, has_alpha)
-                rowstride = width * (3+int(has_alpha))
-                rgb_data = icon.tobytes("raw", icon.mode)
-                self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
-                return
-        #this sets the default icon (badly named function!)
-        traylog("set_tray_icon() using default icon")
-        self.tray.set_icon()
-
-    def _window_icon_image(self, wid, width, height, coding, data):
-        #convert the data into a pillow image,
-        #adding the icon overlay (if enabled)
-        from PIL import Image
-        coding = bytestostr(coding)
-        iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s", self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
-        if coding=="default":
-            img = self.overlay_image
-        elif coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
-            from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
-            data = unpremultiply_argb(data)
-            rowstride = width*4
-            img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
-            has_alpha = True
-        else:
-            buf = BytesIOClass(data)
-            img = Image.open(buf)
-            assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
-            has_alpha = img.mode=="RGBA"
-            rowstride = width * (3+int(has_alpha))
-        icon = img
-        if self.overlay_image and self.overlay_image!=img:
-            if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
-                #paste the application icon in the top-left corner,
-                #shrunk by ICON_SHRINKAGE pct
-                shrunk_width = max(1, width*ICON_SHRINKAGE//100)
-                shrunk_height = max(1, height*ICON_SHRINKAGE//100)
-                icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
-                icon = Image.new("RGBA", (width, height))
-                icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
-            assert ICON_OVERLAY>0 and ICON_OVERLAY<=100
-            overlay_width = max(1, width*ICON_OVERLAY//100)
-            overlay_height = max(1, height*ICON_OVERLAY//100)
-            xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
-            xpra_corner = Image.new("RGBA", (width, height))
-            xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
-            composite = Image.alpha_composite(icon, xpra_corner)
-            icon = composite
-        if SAVE_WINDOW_ICONS:
-            filename = "client-window-%i-icon-%i.png" % (wid, int(time.time()))
-            icon.save(filename, "png")
-            iconlog("client window icon saved to %s", filename)
-        return icon
-        
 
     ######################################################################
     # desktop and screen:
@@ -1927,7 +1713,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             "show-desktop":         self._process_show_desktop,
             "desktop_size":         self._process_desktop_size,
             "control" :             self._process_control,
-            "new-tray":             self._process_new_tray,
             })
         #these handlers can run directly from the network thread:
         self.set_packet_handlers(self._packet_handlers, {

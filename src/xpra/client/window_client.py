@@ -23,14 +23,18 @@ iconlog = Logger("icon")
 mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
+traylog = Logger("client", "tray")
 
 
 from xpra.gtk_common.gobject_compat import import_glib
-from xpra.platform.gui import get_vrefresh, get_double_click_time, get_double_click_distance
+from xpra.platform.gui import get_vrefresh, get_double_click_time, get_double_click_distance, get_native_system_tray_classes
+from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
+from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import make_thread
-from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, OSX, POSIX
-from xpra.util import iround, envint, envbool, typedict
+from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
+from xpra.util import iround, envint, envbool, typedict, make_instance
+from xpra.client.client_tray import ClientTray
 
 
 glib = import_glib()
@@ -45,6 +49,11 @@ TITLE_CLOSEEXIT = os.environ.get("XPRA_TITLE_CLOSEEXIT", "Xnest").split(",")
 
 SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
 REVERSE_HORIZONTAL_SCROLLING = envbool("XPRA_REVERSE_HORIZONTAL_SCROLLING", OSX)
+
+DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
+ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
+ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
+SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -85,6 +94,11 @@ class WindowClient(object):
         self.server_precise_wheel = False
         self.input_devices = "auto"
 
+        self.overlay_image = None
+
+        self.client_supports_system_tray = False
+        self.client_supports_cursors = False
+        self.client_supports_bell = False
         self.cursors_enabled = False
         self.default_cursor_data = None
         self.bell_enabled = False
@@ -107,6 +121,9 @@ class WindowClient(object):
         self._on_handshake = []
 
     def init(self, opts):
+        self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
+        self.client_supports_cursors = opts.cursors
+        self.client_supports_bell = opts.bell
         self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
         if opts.max_size:
@@ -150,6 +167,15 @@ class WindowClient(object):
             log.warn(" using '%s'", self.window_close_action)
         else:
             self.window_close_action = opts.window_close
+
+        if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
+            icon_filename = get_icon_filename("xpra")
+            try:
+                from PIL import Image   #@UnresolvedImport
+                self.overlay_image = Image.open(icon_filename)
+            except Exception as e:
+                log.warn("Warning: failed to load overlay icon '%s':", icon_filename)
+                log.warn(" %s", e)
 
         self._draw_queue = Queue()
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
@@ -337,6 +363,8 @@ class WindowClient(object):
         self.send("input-devices", fmt, input_devices)
 
 
+    ######################################################################
+    # cursor:
     def _process_cursor(self, packet):
         if not self.cursors_enabled:
             return
@@ -378,6 +406,204 @@ class WindowClient(object):
         #subclasses can apply tweaks here:
         return typedict(metadata)
 
+
+    ######################################################################
+    # system tray
+    def _process_new_tray(self, packet):
+        assert SYSTEM_TRAY_SUPPORTED
+        self._ui_event()
+        wid, w, h = packet[1:4]
+        w = max(1, self.sx(w))
+        h = max(1, self.sy(h))
+        metadata = typedict()
+        if len(packet)>=5:
+            metadata = typedict(packet[4])
+        traylog("tray %i metadata=%s", wid, metadata)
+        assert wid not in self._id_to_window, "we already have a window %s" % wid
+        app_id = wid
+        tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
+        traylog("process_new_tray(%s) tray=%s", packet, tray)
+        self._id_to_window[wid] = tray
+        self._window_to_id[tray] = wid
+
+
+    def make_system_tray(self, *args):
+        """ tray used for application systray forwarding """
+        tc = self.get_system_tray_classes()
+        traylog("make_system_tray%s system tray classes=%s", args, tc)
+        return make_instance(tc, self, *args)
+
+    def get_system_tray_classes(self):
+        #subclasses may add their toolkit specific variants, if any
+        #by overriding this method
+        #use the native ones first:
+        return get_native_system_tray_classes()
+
+    def setup_system_tray(self, client, app_id, wid, w, h, metadata):
+        tray_widget = None
+        #this is a tray forwarded for a remote application
+        def tray_click(button, pressed, time=0):
+            tray = self._id_to_window.get(wid)
+            traylog("tray_click(%s, %s, %s) tray=%s", button, pressed, time, tray)
+            if tray:
+                x, y = self.get_mouse_position()
+                modifiers = self.get_current_modifiers()
+                button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
+                traylog("button_packet=%s", button_packet)
+                self.send_positional(button_packet)
+                tray.reconfigure()
+        def tray_mouseover(x, y):
+            tray = self._id_to_window.get(wid)
+            traylog("tray_mouseover(%s, %s) tray=%s", x, y, tray)
+            if tray:
+                modifiers = self.get_current_modifiers()
+                buttons = []
+                pointer_packet = ["pointer-position", wid, self.cp(x, y), modifiers, buttons]
+                traylog("pointer_packet=%s", pointer_packet)
+                self.send_mouse_position(pointer_packet)
+        def do_tray_geometry(*args):
+            #tell the "ClientTray" where it now lives
+            #which should also update the location on the server if it has changed
+            tray = self._id_to_window.get(wid)
+            if tray_widget:
+                geom = tray_widget.get_geometry()
+            else:
+                geom = None
+            traylog("tray_geometry(%s) widget=%s, geometry=%s tray=%s", args, tray_widget, geom, tray)
+            if tray and geom:
+                tray.move_resize(*geom)
+        def tray_geometry(*args):
+            #the tray widget may still be None if we haven't returned from make_system_tray yet,
+            #in which case we will check the geometry a little bit later:
+            if tray_widget:
+                do_tray_geometry(*args)
+            else:
+                self.idle_add(do_tray_geometry, *args)
+        def tray_exit(*args):
+            traylog("tray_exit(%s)", args)
+        title = metadata.strget("title", "")
+        tray_widget = self.make_system_tray(app_id, None, title, None, tray_geometry, tray_click, tray_mouseover, tray_exit)
+        traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
+        assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
+        tray_widget.show()
+        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
+
+
+    def get_tray_window(self, app_name, hints):
+        #try to identify the application tray that generated this notification,
+        #so we can show it as coming from the correct systray icon
+        #on platforms that support it (ie: win32)
+        trays = tuple(w for w in self._id_to_window.values() if w.is_tray())
+        if trays:
+            try:
+                pid = int(hints.get("pid") or 0)
+            except (TypeError, ValueError):
+                pass
+            else:
+                if pid:
+                    for tray in trays:
+                        metadata = getattr(tray, "_metadata", typedict())
+                        if metadata.intget("pid")==pid:
+                            traylog("tray window: matched pid=%i", pid)
+                            return tray.tray_widget
+            if app_name and app_name.lower()!="xpra":
+                #exact match:
+                for tray in trays:
+                    #traylog("window %s: is_tray=%s, title=%s", window, window.is_tray(), getattr(window, "title", None))
+                    if tray.title==app_name:
+                        return tray.tray_widget
+                for tray in trays:
+                    if tray.title.find(app_name)>=0:
+                        return tray.tray_widget
+        return self.tray
+
+
+    def set_tray_icon(self):
+        #find all the window icons,
+        #and if they are all using the same one, then use it as tray icon
+        #otherwise use the default icon
+        traylog("set_tray_icon() DYNAMIC_TRAY_ICON=%s, tray=%s", DYNAMIC_TRAY_ICON, self.tray)
+        if not self.tray:
+            return
+        if not DYNAMIC_TRAY_ICON:
+            #the icon ends up looking garbled on win32,
+            #and we somehow also lose the settings that can keep us in the visible systray list
+            #so don't bother
+            return
+        windows = tuple(w for w in self._window_to_id.keys() if not w.is_tray())
+        #get all the icons:
+        icons = tuple(getattr(w, "_current_icon", None) for w in windows)
+        missing = sum(1 for icon in icons if icon is None)
+        traylog("set_tray_icon() %i windows, %i icons, %i missing", len(windows), len(icons), missing)
+        if icons and not missing:
+            icon = icons[0]
+            for i in icons[1:]:
+                if i!=icon:
+                    #found a different icon
+                    icon = None
+                    break
+            if icon:
+                has_alpha = icon.mode=="RGBA"
+                width, height = icon.size
+                traylog("set_tray_icon() using unique %s icon: %ix%i (has-alpha=%s)", icon.mode, width, height, has_alpha)
+                rowstride = width * (3+int(has_alpha))
+                rgb_data = icon.tobytes("raw", icon.mode)
+                self.tray.set_icon_from_data(rgb_data, has_alpha, width, height, rowstride)
+                return
+        #this sets the default icon (badly named function!)
+        traylog("set_tray_icon() using default icon")
+        self.tray.set_icon()
+
+
+    ######################################################################
+    # combine the window icon with our own icon
+    def _window_icon_image(self, wid, width, height, coding, data):
+        #convert the data into a pillow image,
+        #adding the icon overlay (if enabled)
+        from PIL import Image
+        coding = bytestostr(coding)
+        iconlog("%s.update_icon(%s, %s, %s, %s bytes) ICON_SHRINKAGE=%s, ICON_OVERLAY=%s", self, width, height, coding, len(data), ICON_SHRINKAGE, ICON_OVERLAY)
+        if coding=="default":
+            img = self.overlay_image
+        elif coding == "premult_argb32":            #we usually cannot do in-place and this is not performance critical
+            from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
+            data = unpremultiply_argb(data)
+            rowstride = width*4
+            img = Image.frombytes("RGBA", (width,height), memoryview_to_bytes(data), "raw", "BGRA", rowstride, 1)
+            has_alpha = True
+        else:
+            buf = BytesIOClass(data)
+            img = Image.open(buf)
+            assert img.mode in ("RGB", "RGBA"), "invalid image mode: %s" % img.mode
+            has_alpha = img.mode=="RGBA"
+            rowstride = width * (3+int(has_alpha))
+        icon = img
+        if self.overlay_image and self.overlay_image!=img:
+            if ICON_SHRINKAGE>0 and ICON_SHRINKAGE<100:
+                #paste the application icon in the top-left corner,
+                #shrunk by ICON_SHRINKAGE pct
+                shrunk_width = max(1, width*ICON_SHRINKAGE//100)
+                shrunk_height = max(1, height*ICON_SHRINKAGE//100)
+                icon_resized = icon.resize((shrunk_width, shrunk_height), Image.ANTIALIAS)
+                icon = Image.new("RGBA", (width, height))
+                icon.paste(icon_resized, (0, 0, shrunk_width, shrunk_height))
+            assert ICON_OVERLAY>0 and ICON_OVERLAY<=100
+            overlay_width = max(1, width*ICON_OVERLAY//100)
+            overlay_height = max(1, height*ICON_OVERLAY//100)
+            xpra_resized = self.overlay_image.resize((overlay_width, overlay_height), Image.ANTIALIAS)
+            xpra_corner = Image.new("RGBA", (width, height))
+            xpra_corner.paste(xpra_resized, (width-overlay_width, height-overlay_height, width, height))
+            composite = Image.alpha_composite(icon, xpra_corner)
+            icon = composite
+        if SAVE_WINDOW_ICONS:
+            filename = "client-window-%i-icon-%i.png" % (wid, int(time.time()))
+            icon.save(filename, "png")
+            iconlog("client window icon saved to %s", filename)
+        return icon
+        
+
+    ######################################################################
+    # regular windows:
     def _process_new_common(self, packet, override_redirect):
         self._ui_event()
         wid, x, y, w, h = packet[1:6]
@@ -438,6 +664,8 @@ class WindowClient(object):
         window.show()
         return window
 
+    ######################################################################
+    # listen for process signals using a watcher process:
     def assign_signal_watcher_pid(self, wid, pid):
         if not POSIX or OSX or not pid:
             return 0
@@ -669,13 +897,6 @@ class WindowClient(object):
         #only implemented in gtk2 for now
         pass
 
-    def _process_bell(self, packet):
-        if not self.bell_enabled:
-            return
-        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
-        window = self._id_to_window.get(wid)
-        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
-
 
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
@@ -781,6 +1002,16 @@ class WindowClient(object):
                 pass
         self._id_to_window = {}
         self._window_to_id = {}
+
+
+    ######################################################################
+    # bell
+    def _process_bell(self, packet):
+        if not self.bell_enabled:
+            return
+        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
+        window = self._id_to_window.get(wid)
+        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
 
     ######################################################################
@@ -989,9 +1220,6 @@ class WindowClient(object):
             self.idle_add(record_decode_time, False, str(e))
             raise
 
-    def _window_icon_image(self, wid, width, height, coding, data):
-        return None
-        
 
     ######################################################################
     # screen scaling:
