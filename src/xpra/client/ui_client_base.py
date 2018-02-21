@@ -1530,6 +1530,39 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
 
 
+    def _process_cursor(self, packet):
+        if not self.cursors_enabled:
+            return
+        #trim packet type:
+        packet = packet[1:]
+        if len(packet)==1:
+            #marker telling us to use the default cursor:
+            new_cursor = packet[0]
+        else:
+            if len(packet)<7:
+                raise Exception("invalid cursor packet: %s items" % len(packet))
+            #newer versions include the cursor encoding as first argument,
+            #we know this is it because it will be a string rather than an int:
+            if type(packet[0]) in (str, bytes):
+                #we have the encoding in the packet already
+                new_cursor = packet
+            else:
+                #prepend "raw" which is the default
+                new_cursor = [b"raw"] + packet
+            encoding = new_cursor[0]
+            pixels = new_cursor[8]
+            if encoding==b"png":
+                from PIL import Image
+                buf = BytesIOClass(pixels)
+                img = Image.open(buf)
+                new_cursor[8] = img.tobytes("raw", "BGRA")
+                cursorlog("used PIL to convert png cursor to raw")
+                new_cursor[0] = b"raw"
+            elif encoding!=b"raw":
+                cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
+                return
+        self.set_windows_cursor(self._id_to_window.values(), new_cursor)
+
     def reset_cursor(self):
         self.set_windows_cursor(self._id_to_window.values(), [])
 
@@ -1857,6 +1890,14 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
         #only implemented in gtk2 for now
         pass
 
+    def _process_bell(self, packet):
+        if not self.bell_enabled:
+            return
+        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
+        window = self._id_to_window.get(wid)
+        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
+
+
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
         window = self._id_to_window[wid]
@@ -2166,48 +2207,6 @@ class UIXpraClient(XpraClientBase, WebcamForwarder, AudioClient, RPCClient):
             drawlog.error("Error drawing on window %i", wid, exc_info=True)
             self.idle_add(record_decode_time, False, str(e))
             raise
-
-    ######################################################################
-    # screen scaling:
-    def _process_cursor(self, packet):
-        if not self.cursors_enabled:
-            return
-        #trim packet type:
-        packet = packet[1:]
-        if len(packet)==1:
-            #marker telling us to use the default cursor:
-            new_cursor = packet[0]
-        else:
-            if len(packet)<7:
-                raise Exception("invalid cursor packet: %s items" % len(packet))
-            #newer versions include the cursor encoding as first argument,
-            #we know this is it because it will be a string rather than an int:
-            if type(packet[0]) in (str, bytes):
-                #we have the encoding in the packet already
-                new_cursor = packet
-            else:
-                #prepend "raw" which is the default
-                new_cursor = [b"raw"] + packet
-            encoding = new_cursor[0]
-            pixels = new_cursor[8]
-            if encoding==b"png":
-                from PIL import Image
-                buf = BytesIOClass(pixels)
-                img = Image.open(buf)
-                new_cursor[8] = img.tobytes("raw", "BGRA")
-                cursorlog("used PIL to convert png cursor to raw")
-                new_cursor[0] = b"raw"
-            elif encoding!=b"raw":
-                cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
-                return
-        self.set_windows_cursor(self._id_to_window.values(), new_cursor)
-
-    def _process_bell(self, packet):
-        if not self.bell_enabled:
-            return
-        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
-        window = self._id_to_window.get(wid)
-        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
 
     ######################################################################
