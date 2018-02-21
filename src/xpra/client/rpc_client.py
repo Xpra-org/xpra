@@ -26,6 +26,11 @@ class RPCClient(object):
         self.server_dbus_proxy = False
         self.server_rpc_types = []
 
+    def init(self, _opts):
+        pass
+
+    def cleanup(self):
+        pass
 
     def parse_capabilities(self):
         c = self.server_capabilities

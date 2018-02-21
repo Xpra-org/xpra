@@ -26,7 +26,7 @@ bandwidthlog = Logger("bandwidth")
 
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
-from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_MMAP_TOKEN_FAILURE, EXIT_INTERNAL_ERROR)
+from xpra.exit_codes import (EXIT_TIMEOUT, EXIT_INTERNAL_ERROR)
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.features import MMAP_SUPPORTED, REINIT_WINDOWS
@@ -36,8 +36,7 @@ from xpra.platform.gui import (ready as gui_ready, get_antialias_info, get_icc_i
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.version_util import full_version_str
-from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.simple_stats import std_unit
+from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, monotonic_time, strtobytes, POSIX, BITS
@@ -49,6 +48,7 @@ from xpra.client.rpc_client import RPCClient
 from xpra.client.clipboard_client import ClipboardClient
 from xpra.client.notification_client import NotificationClient
 from xpra.client.window_client import WindowClient
+from xpra.client.mmap_client_mixin import MmapClient
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
@@ -84,7 +84,7 @@ def fequ(v1, v2):
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient):
+class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -107,6 +107,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         ClipboardClient.__init__(self)
         NotificationClient.__init__(self)
         RPCClient.__init__(self)
+        MmapClient.__init__(self)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -151,18 +152,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self._server_ok = True
         self.last_ping_echoed_time = 0
 
-        #mmap:
-        self.mmap_enabled = False
-        self.mmap = None
-        self.mmap_token = None
-        self.mmap_token_index = 0
-        self.mmap_token_bytes = 0
-        self.mmap_filename = None
-        self.mmap_size = 0
-        self.mmap_group = None
-        self.mmap_tempfile = None
-        self.mmap_delete = False
-
         #features:
         self.opengl_enabled = False
         self.opengl_props = {}
@@ -194,8 +183,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.client_lock = False
         self.log_both = False
 
-        self.supports_mmap = MMAP_SUPPORTED
-
         #helpers and associated flags:
         self.client_extras = None
         self.keyboard_helper_class = KeyboardHelper
@@ -223,6 +210,8 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         AudioClient.init(self, opts)
         ClipboardClient.init(self, opts)
         NotificationClient.init(self, opts)
+        RPCClient.init(self, opts)
+        MmapClient.init(self, opts)
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -238,13 +227,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
 
         self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
-        if MMAP_SUPPORTED:
-            self.mmap_group = opts.mmap_group
-            if os.path.isabs(opts.mmap):
-                self.mmap_filename = opts.mmap
-                self.supports_mmap = True
-            else:
-                self.supports_mmap = opts.mmap.lower() in TRUE_OPTIONS
         self.desktop_fullscreen = opts.desktop_fullscreen
 
         self.readonly = opts.readonly
@@ -317,7 +299,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        for x in (XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient):
+        for x in (XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient):
             x.cleanup(self)
         for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
@@ -330,7 +312,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()
-        self.clean_mmap()
         reaper_cleanup()
         log("UIXpraClient.cleanup() done")
 
@@ -449,7 +430,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         u("control_commands",   self.get_control_commands_caps())
         u("platform",           get_platform_info())
         u("batch",              self.get_batch_caps())
-        mmap_caps = self.get_mmap_caps()
+        mmap_caps = MmapClient.get_caps(self)
         u("mmap",               mmap_caps)
         #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
         for k,v in mmap_caps.items():
@@ -475,8 +456,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
     # connection setup:
     def setup_connection(self, conn):
         XpraClientBase.setup_connection(self, conn)
-        if self.supports_mmap:
-            self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
+        MmapClient.setup_connection(self, conn)
 
     def server_connection_established(self):
         if not XpraClientBase.server_connection_established(self):
@@ -501,23 +481,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
-        self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
-        if self.mmap_enabled:
-            from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-            mmap_token = c.intget("mmap_token")
-            mmap_token_index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)
-            mmap_token_bytes = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES)
-            token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
-            if token!=mmap_token:
-                log.error("Error: mmap token verification failed!")
-                log.error(" expected '%#x'", mmap_token)
-                log.error(" found '%#x'", token)
-                self.mmap_enabled = False
-                self.quit(EXIT_MMAP_TOKEN_FAILURE)
-                return
-            log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
-        #the server will have a handle on the mmap file by now, safe to delete:
-        self.clean_mmap()
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
@@ -1643,57 +1606,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         if len(self.server_ping_latency)>0:
             _, sl = self.server_ping_latency[-1]
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0*sl))
-
-
-    ######################################################################
-    # mmap:
-    def get_mmap_caps(self):
-        if self.mmap_enabled:
-            return {
-                "file"          : self.mmap_filename,
-                "size"          : self.mmap_size,
-                "token"         : self.mmap_token,
-                "token_index"   : self.mmap_token_index,
-                "token_bytes"   : self.mmap_token_bytes,
-                }
-        return {}
-    
-    def init_mmap(self, mmap_filename, mmap_group, socket_filename):
-        log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.os_util import get_int_uuid
-        from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-        #calculate size:
-        root_w, root_h = self.cp(*self.get_root_size())
-        #at least 256MB, or 8 fullscreen RGBX frames:
-        mmap_size = max(256*1024*1024, root_w*root_h*4*8)
-        mmap_size = min(1024*1024*1024, mmap_size)
-        self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
-            init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
-        if self.mmap_enabled:
-            self.mmap_token = get_int_uuid()
-            self.mmap_token_bytes = DEFAULT_TOKEN_BYTES
-            self.mmap_token_index = self.mmap_size - DEFAULT_TOKEN_BYTES
-            #self.mmap_token_index = DEFAULT_TOKEN_INDEX*2
-            #write the token twice:
-            # once at the old default offset for older servers,
-            # and at the offset we want to use with new servers
-            for index in (DEFAULT_TOKEN_INDEX, self.mmap_token_index):
-                write_mmap_token(self.mmap, self.mmap_token, index, self.mmap_token_bytes)
-
-    def clean_mmap(self):
-        log("XpraClient.clean_mmap() mmap_filename=%s", self.mmap_filename)
-        if self.mmap_tempfile:
-            try:
-                self.mmap_tempfile.close()
-            except Exception as e:
-                log("clean_mmap error closing file %s: %s", self.mmap_tempfile, e)
-            self.mmap_tempfile = None
-        if self.mmap_delete:
-            #this should be redundant: closing the tempfile should get it deleted
-            if self.mmap_filename and os.path.exists(self.mmap_filename):
-                from xpra.net.mmap_pipe import clean_mmap
-                clean_mmap(self.mmap_filename)
-                self.mmap_filename = None
 
 
     ######################################################################
