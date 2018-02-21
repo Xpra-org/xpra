@@ -49,6 +49,7 @@ from xpra.client.clipboard_client import ClipboardClient
 from xpra.client.notification_client import NotificationClient
 from xpra.client.window_client import WindowClient
 from xpra.client.mmap_client_mixin import MmapClient
+from xpra.client.client_remote_logging import RemoteLogging
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
@@ -84,7 +85,7 @@ def fequ(v1, v2):
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient):
+class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -108,6 +109,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         NotificationClient.__init__(self)
         RPCClient.__init__(self)
         MmapClient.__init__(self)
+        RemoteLogging.__init__(self)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -212,6 +214,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         NotificationClient.init(self, opts)
         RPCClient.init(self, opts)
         MmapClient.init(self, opts)
+        RemoteLogging.init(self, opts)
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -299,7 +302,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        for x in (XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient):
+        for x in (XpraClientBase, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging):
             x.cleanup(self)
         for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras, getVideoHelper()):
             if x is None:
@@ -469,6 +472,7 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
     def parse_server_capabilities(self):
         if not XpraClientBase.parse_server_capabilities(self):
             return  False
+        RemoteLogging.parse_server_capabilities(self)
         c = self.server_capabilities
         self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
@@ -590,21 +594,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
         if self.pings>0:
             self.timeout_add(1000*self.pings, self.send_ping)
 
-    def parse_logging_capabilities(self):
-        c = self.server_capabilities
-        if self.client_supports_remote_logging and c.boolget("remote-logging"):
-            #check for debug:
-            from xpra.log import is_debug_enabled
-            for x in ("network", "crypto", "udp"):
-                if is_debug_enabled(x):
-                    log.warn("Warning: cannot enable remote logging")
-                    log.warn(" because '%s' debug logging is enabled", x)
-                    return
-            log.info("enabled remote logging")
-            if not self.log_both:
-                log.info(" see server log file for further output")
-            self.local_logging = set_global_logging_handler(self.remote_logging_handler)
-
 
     def _process_startup_complete(self, packet):
         log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
@@ -631,45 +620,6 @@ class UIXpraClient(XpraClientBase, WindowClient, WebcamForwarder, AudioClient, C
             self.idle_add(cb, *args)
         else:
             self._on_handshake.append((cb, args))
-
-
-    def remote_logging_handler(self, log, level, msg, *args, **kwargs):
-        #prevent loops (if our send call ends up firing another logging call):
-        if self.in_remote_logging:
-            return
-        self.in_remote_logging = True
-        try:
-            dtime = int(1000*(monotonic_time() - self.start_time))
-            data = self.compressed_wrapper("text", strtobytes(msg % args), level=1)
-            self.send("logging", level, data, dtime)
-            exc_info = kwargs.get("exc_info")
-            if exc_info is True:
-                exc_info = sys.exc_info()
-            if exc_info:
-                for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, strtobytes(x), dtime)
-            if self.log_both:
-                self.local_logging(log, level, msg, *args, **kwargs)
-        except Exception as e:
-            if self.exit_code is not None:
-                #errors can happen during exit, don't care
-                return
-            self.local_logging(log, logging.WARNING, "Warning: failed to send logging packet:")
-            self.local_logging(log, logging.WARNING, " %s" % e)
-            self.local_logging(log, logging.WARNING, " original unformatted message: %s", msg)
-            try:
-                self.local_logging(log, level, msg, *args, **kwargs)
-            except:
-                pass
-            try:
-                exc_info = sys.exc_info()
-                for x in traceback.format_tb(exc_info[2]):
-                    for v in x.splitlines():
-                        self.local_logging(log, logging.WARNING, v)
-            except:
-                pass
-        finally:
-            self.in_remote_logging = False
 
 
     ######################################################################
