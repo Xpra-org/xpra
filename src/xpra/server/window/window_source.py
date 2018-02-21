@@ -945,7 +945,7 @@ class WindowSource(object):
             return "jpeg2000"
         return [x for x in self.common_encodings if x!="rgb"][0]
 
-    def get_current_or_rgb(self, pixel_count, ww, wh, speed, quality, *_args):
+    def get_current_or_rgb(self, pixel_count, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
         return self.encoding
@@ -1098,7 +1098,7 @@ class WindowSource(object):
             self._fixed_speed = speed
             self.reconfigure(True)
 
-    def get_speed(self, coding):
+    def get_speed(self, _encoding):
         return self._current_speed
 
 
@@ -1137,7 +1137,7 @@ class WindowSource(object):
             self._current_quality = quality
             self.reconfigure(True)
 
-    def get_quality(self, encoding):
+    def get_quality(self, _encoding):
         #overriden in window video source
         return self._current_quality
 
@@ -1624,7 +1624,7 @@ class WindowSource(object):
         log("send_delayed_regions: sent %i regions using %s", len(i_reg_enc), [v[2] for v in i_reg_enc])
 
 
-    def must_encode_full_frame(self, encoding):
+    def must_encode_full_frame(self, _encoding):
         #WindowVideoSource overrides this method
         return self.full_frames_only
 
@@ -2218,7 +2218,7 @@ class WindowSource(object):
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
-    def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}, options={}):
+    def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options={}, _options={}):
         packet = ("draw", self.wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
@@ -2270,7 +2270,8 @@ class WindowSource(object):
         transparency = self.supports_transparency and options.get("transparency", True)
         return self.enc_pillow.encode(coding, image, q, s, transparency)
 
-    def mmap_encode(self, coding, image, options):
+    def mmap_encode(self, coding, image, _options):
+        assert coding=="mmap"
         assert self._mmap and self._mmap_size>0
         v = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
         if v is None:
