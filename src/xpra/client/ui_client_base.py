@@ -52,7 +52,6 @@ from xpra.client.client_remote_logging import RemoteLogging
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
-UNGRAB_KEY = os.environ.get("XPRA_UNGRAB_KEY", "Escape")
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
 
