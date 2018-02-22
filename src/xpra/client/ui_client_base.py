@@ -33,7 +33,7 @@ from xpra.platform.gui import (ready as gui_ready,
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.version_util import full_version_str
-from xpra.scripts.config import parse_bool_or_int, parse_bool
+from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, monotonic_time, strtobytes, POSIX, BITS
@@ -158,9 +158,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
         self.client_supports_opengl = False
         self.client_supports_sharing = False
-        self.client_supports_remote_logging = False
         self.client_lock = False
-        self.log_both = False
 
         #helpers and associated flags:
         self.client_extras = None
@@ -171,8 +169,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.kh_warning = False
         self.menu_helper = None
         self.tray = None
-        self.in_remote_logging = False
-        self.local_logging = None
 
         #state:
         self._on_handshake = []
@@ -206,8 +202,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
-        self.log_both = (opts.remote_logging or "").lower()=="both"
-        self.client_supports_remote_logging = self.log_both or parse_bool("remote-logging", opts.remote_logging)
 
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)

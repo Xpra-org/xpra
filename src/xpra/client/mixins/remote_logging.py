@@ -21,8 +21,10 @@ Mixin for remote logging support
 class RemoteLogging(object):
 
     def __init__(self):
+        self.client_supports_remote_logging = False
         self.in_remote_logging = False
         self.local_logging = None
+        self.log_both = False
 
     def init(self, opts):
         self.log_both = (opts.remote_logging or "").lower()=="both"
