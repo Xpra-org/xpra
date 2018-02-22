@@ -31,7 +31,7 @@ Mixin for adding server / network state monitoring functions:
 class NetworkState(StubClientMixin):
 
     def __init__(self):
-        self.start_time = int(monotonic_time())
+        StubClientMixin.__init__(self)
         self.uuid = get_user_uuid()
 
         self.server_start_time = -1

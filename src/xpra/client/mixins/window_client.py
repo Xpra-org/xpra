@@ -67,6 +67,7 @@ create, resize, paint, grabs, cursors, etc
 class WindowClient(StubClientMixin):
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         self._window_to_id = {}
         self._id_to_window = {}
 

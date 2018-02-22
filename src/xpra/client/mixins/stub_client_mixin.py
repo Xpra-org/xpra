@@ -5,17 +5,24 @@
 
 import sys
 
+from xpra.os_util import monotonic_time
+
+
 class StubClientMixin(object):
 
     __signals__ = {}
+    def __init__(self):
+        self.exit_code = None
+        self.start_time = int(monotonic_time())
 
-    def init(self, opts):
+    def init(self, _opts):
         pass
 
     def run(self):
         pass
 
     def quit(self, exit_code):
+        self.exit_code = exit_code
         sys.exit(exit_code)
 
     def cleanup(self):
@@ -38,6 +45,12 @@ class StubClientMixin(object):
 
     def process_ui_capabilities(self):
         pass
+
+    def compressed_wrapper(self, datatype, data, level=5):
+        #sub-classes should override this
+        assert level>=0
+        from xpra.net.compression import Compressed
+        return Compressed("raw %s" % datatype, data, can_inline=True)
 
 
     def init_authenticated_packet_handlers(self):

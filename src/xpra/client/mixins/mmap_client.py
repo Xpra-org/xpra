@@ -19,7 +19,9 @@ from xpra.client.mixins.stub_client_mixin import StubClientMixin
 Mixin for adding mmap support to a client
 """
 class MmapClient(StubClientMixin):
+
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.mmap_enabled = False
         self.mmap = None
         self.mmap_token = None

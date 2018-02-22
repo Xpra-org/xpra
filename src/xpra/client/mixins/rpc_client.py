@@ -20,6 +20,7 @@ Utility superclass for client classes that handle RPC calls
 class RPCClient(StubClientMixin):
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         #rpc / dbus:
         self.rpc_counter = AtomicInteger()
         self.rpc_pending_requests = {}

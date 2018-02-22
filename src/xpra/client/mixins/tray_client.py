@@ -20,7 +20,9 @@ Mixin for supporting our system tray
 (not forwarding other application's trays - that's handled in WindowClient)
 """
 class TrayClient(StubClientMixin):
+
     def __init__(self):
+        StubClientMixin.__init__(self)
         #settings:
         self.tray_enabled = False
         self.delay_tray = False

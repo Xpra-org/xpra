@@ -23,6 +23,7 @@ Utility superclass for clients that handle notifications
 class NotificationClient(StubClientMixin):
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.client_supports_notifications = False
         self.notifications_enabled = False
         self.notifier = None

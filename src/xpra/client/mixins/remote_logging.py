@@ -22,6 +22,7 @@ Mixin for remote logging support
 class RemoteLogging(StubClientMixin):
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.client_supports_remote_logging = False
         self.in_remote_logging = False
         self.local_logging = None

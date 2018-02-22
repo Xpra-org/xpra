@@ -45,6 +45,7 @@ class DisplayClient(StubClientMixin):
     __signals__ = ["scaling-changed"]
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.dpi = 0
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling

@@ -25,6 +25,7 @@ class ClipboardClient(StubClientMixin):
     __signals__ = ["clipboard-toggled"]
 
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.client_clipboard_type = ""
         self.client_clipboard_direction = "both"
         self.client_supports_clipboard = False

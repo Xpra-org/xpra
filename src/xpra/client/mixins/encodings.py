@@ -35,7 +35,9 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 Mixin for adding encodings to a client
 """
 class Encodings(StubClientMixin):
+
     def __init__(self):
+        StubClientMixin.__init__(self)
         self.allowed_encodings = []
         self.core_encodings = None
         self.encoding = None
