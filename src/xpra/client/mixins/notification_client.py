@@ -11,6 +11,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.os_util import bytestostr
 from xpra.util import envbool, repr_ellipsized, make_instance
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
@@ -19,7 +20,7 @@ NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 """
 Utility superclass for clients that handle notifications
 """
-class NotificationClient(object):
+class NotificationClient(StubClientMixin):
 
     def __init__(self):
         self.client_supports_notifications = False
@@ -56,6 +57,8 @@ class NotificationClient(object):
         self.server_notifications_close = c.boolget("notifications.close")
         self.server_notifications_actions = c.boolget("notifications.actions")
         self.notifications_enabled = self.client_supports_notifications
+        return True
+
 
     def get_notifications_caps(self):
         return {

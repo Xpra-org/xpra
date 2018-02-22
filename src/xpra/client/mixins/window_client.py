@@ -35,6 +35,7 @@ from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
 from xpra.util import iround, envint, envbool, typedict, make_instance, updict
 from xpra.client.client_tray import ClientTray
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 glib = import_glib()
@@ -63,7 +64,7 @@ DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 Utility superclass for clients that handle windows:
 create, resize, paint, grabs, cursors, etc
 """
-class WindowClient(object):
+class WindowClient(StubClientMixin):
 
     def __init__(self):
         self._window_to_id = {}
@@ -203,7 +204,6 @@ class WindowClient(object):
         log("WindowClient.cleanup() done")
 
 
-
     def set_windows_cursor(self, client_windows, new_cursor):
         raise NotImplementedError()
 
@@ -252,9 +252,7 @@ class WindowClient(object):
             }
 
 
-    ######################################################################
-    # connection setup:
-    def parse_ui_capabilities(self):
+    def parse_server_capabilities(self):
         c = self.server_capabilities
         self.window_configure_pointer = c.boolget("window.configure.pointer")
         self.server_window_decorations = c.boolget("window.decorations")
@@ -275,6 +273,7 @@ class WindowClient(object):
         #input devices:
         self.server_input_devices = c.strget("input-devices")
         self.server_precise_wheel = c.boolget("wheel.precise", False)
+        return True
 
 
     ######################################################################

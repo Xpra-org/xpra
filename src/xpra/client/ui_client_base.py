@@ -75,18 +75,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     def __init__(self):
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
-        XpraClientBase.__init__(self)
-        DisplayClient.__init__(self)
-        WindowClient.__init__(self)
-        WebcamForwarder.__init__(self)
-        AudioClient.__init__(self)
-        ClipboardClient.__init__(self)
-        NotificationClient.__init__(self)
-        RPCClient.__init__(self)
-        MmapClient.__init__(self)
-        RemoteLogging.__init__(self)
-        NetworkState.__init__(self)
-        Encodings.__init__(self)
+        for c in UIXpraClient.__bases__:
+            c.__init__(self)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -139,18 +129,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     def init(self, opts):
         """ initialize variables from configuration """
-        XpraClientBase.init(self, opts)
-        DisplayClient.init(self, opts)
-        WindowClient.init(self, opts)
-        WebcamForwarder.init(self, opts)
-        AudioClient.init(self, opts)
-        ClipboardClient.init(self, opts)
-        NotificationClient.init(self, opts)
-        RPCClient.init(self, opts)
-        MmapClient.init(self, opts)
-        RemoteLogging.init(self, opts)
-        NetworkState.init(self, opts)
-        Encodings.init(self, opts)
+        for c in UIXpraClient.__bases__:
+            c.init(self, opts)
 
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
@@ -204,8 +184,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     def run(self):
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
-        WindowClient.run(self)      #start decoding thread
-        XpraClientBase.run(self)    #start network threads
+        for c in UIXpraClient.__bases__:
+            c.run(self)
         self.send_hello()
 
 
@@ -214,8 +194,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        for x in (XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings):
-            x.cleanup(self)
+        for c in UIXpraClient.__bases__:
+            c.cleanup(self)
         for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras):
             if x is None:
                 continue
@@ -351,12 +331,10 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
 
     def parse_server_capabilities(self):
-        if not XpraClientBase.parse_server_capabilities(self):
-            return  False
-        RemoteLogging.parse_server_capabilities(self)
-        DisplayClient.parse_server_capabilities(self)
-        NetworkState.parse_server_capabilities(self)
-        Encodings.parse_server_capabilities(self)
+        for c in UIXpraClient.__bases__:
+            if not c.parse_server_capabilities(self):
+                log.info("failed to parse server capabilities in %s", c)
+                return  False
         c = self.server_capabilities
         self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
@@ -397,14 +375,9 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         return True
 
     def process_ui_capabilities(self):
-        DisplayClient.parse_ui_capabilities(self)
-        WindowClient.parse_ui_capabilities(self)
-        WebcamForwarder.process_capabilities(self)
-        AudioClient.process_capabilities(self)
-        RPCClient.parse_capabilities(self)
-        ClipboardClient.parse_capabilities(self)
-        NotificationClient.parse_server_capabilities(self)
-        NetworkState.process_ui_capabilities(self)
+        for c in UIXpraClient.__bases__:
+            if c!=XpraClientBase:
+                c.process_ui_capabilities(self)
         #keyboard:
         c = self.server_capabilities
         if self.keyboard_helper:
@@ -412,10 +385,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1,-1))
-        self.handshake_complete()
         self.connect("keyboard-sync-toggled", self.send_keyboard_sync_enabled_status)
-        #FIXME: merge this with parse?
-        ClipboardClient.process_ui_capabilities(self)
+        self.handshake_complete()
 
 
     def _process_startup_complete(self, packet):
@@ -707,7 +678,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     ######################################################################
     # network and status:
-    def server_state_change(self):
+    def server_connection_state_change(self):
         if not self._server_ok:
             log.info("server is not responding, drawing spinners over the windows")
             def timer_redraw():
@@ -736,15 +707,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     # packets:
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
-        XpraClientBase.init_authenticated_packet_handlers(self)
-        DisplayClient.init_authenticated_packet_handlers(self)
-        WindowClient.init_authenticated_packet_handlers(self)
-        WebcamForwarder.init_authenticated_packet_handlers(self)
-        AudioClient.init_authenticated_packet_handlers(self)
-        RPCClient.init_authenticated_packet_handlers(self)
-        ClipboardClient.init_authenticated_packet_handlers(self)
-        NotificationClient.init_authenticated_packet_handlers(self)
-        NetworkState.init_authenticated_packet_handlers(self)
+        for c in UIXpraClient.__bases__:
+            c.init_authenticated_packet_handlers(self)
         #run from the UI thread:
         self.set_packet_handlers(self._ui_packet_handlers, {
             "startup-complete":     self._process_startup_complete,

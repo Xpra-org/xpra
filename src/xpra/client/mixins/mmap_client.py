@@ -12,12 +12,13 @@ from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
 from xpra.platform.features import MMAP_SUPPORTED
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 """
 Mixin for adding mmap support to a client
 """
-class MmapClient(object):
+class MmapClient(StubClientMixin):
     def __init__(self):
         self.mmap_enabled = False
         self.mmap = None
@@ -70,6 +71,8 @@ class MmapClient(object):
             log.info("enabled fast mmap transfers using %sB shared memory area", std_unit(self.mmap_size, unit=1024))
         #the server will have a handle on the mmap file by now, safe to delete:
         self.clean_mmap()
+        return True
+
 
     def get_caps(self):
         if self.mmap_enabled:

@@ -8,16 +8,16 @@ log = Logger("client", "rpc")
 
 from xpra.util import envint, AtomicInteger
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import import_glib
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
-glib = import_glib()
 
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
+
 
 """
 Utility superclass for client classes that handle RPC calls
 """
-class RPCClient(object):
+class RPCClient(StubClientMixin):
 
     def __init__(self):
         #rpc / dbus:
@@ -32,7 +32,15 @@ class RPCClient(object):
     def cleanup(self):
         pass
 
-    def parse_capabilities(self):
+
+    def run(self):
+        pass
+
+    def setup_connection(self, _conn):
+        pass
+
+
+    def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         #default for pre-0.16 servers:
@@ -41,6 +49,10 @@ class RPCClient(object):
         else:
             default_rpc_types = []
         self.server_rpc_types = c.strlistget("rpc-types", default_rpc_types)
+        return True
+
+    def process_ui_capabilities(self):
+        pass
 
 
     def rpc_call(self, rpc_type, rpc_args, reply_handler=None, error_handler=None):
@@ -53,7 +65,7 @@ class RPCClient(object):
         log("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
         packet = ["rpc", rpc_type, rpcid] + rpc_args
         self.send(*packet)
-        glib.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending)
+        self.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending)
 
     def rpc_filter_pending(self):
         """ removes timed out dbus requests """

@@ -13,6 +13,7 @@ from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 glib = import_glib()
@@ -24,7 +25,7 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
 """
 Utility superclass for clients that handle audio
 """
-class AudioClient(object):
+class AudioClient(StubClientMixin):
 
     def __init__(self):
         self.sound_source_plugin = None
@@ -117,6 +118,7 @@ class AudioClient(object):
     def cleanup(self):
         self.stop_all_sound()
 
+
     def stop_all_sound(self):
         if self.sound_source:
             self.stop_sending_sound()
@@ -139,7 +141,10 @@ class AudioClient(object):
         log("audio capabilities: %s", caps)
         return caps
 
-    def process_capabilities(self):
+    def setup_connection(self, _conn):
+        pass
+
+    def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_av_sync = c.boolget("av-sync.enabled")
         avsynclog("av-sync: server=%s, client=%s", self.server_av_sync, self.av_sync)
@@ -162,6 +167,7 @@ class AudioClient(object):
             self.start_receiving_sound()
         if self.server_sound_receive and self.microphone_enabled:
             self.start_sending_sound()
+        return True
 
 
     ######################################################################

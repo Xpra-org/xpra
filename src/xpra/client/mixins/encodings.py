@@ -23,6 +23,7 @@ from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression
 from xpra.util import envint, envbool, updict
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
@@ -33,7 +34,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 """
 Mixin for adding encodings to a client
 """
-class Encodings(object):
+class Encodings(StubClientMixin):
     def __init__(self):
         self.allowed_encodings = []
         self.core_encodings = None
@@ -86,9 +87,7 @@ class Encodings(object):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-
         self.server_compressors = c.strlistget("compressors", ["zlib"])
-        
         self.server_encodings = c.strlistget("encodings")
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
@@ -96,7 +95,6 @@ class Encodings(object):
         self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
         self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
         self.server_auto_video_encoding = c.boolget("auto-video-encoding")
-
         e = c.strget("encoding")
         if e:
             if self.encoding and e!=self.encoding:
@@ -105,6 +103,7 @@ class Encodings(object):
                 else:
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
+        return True
 
 
     def get_batch_caps(self):
@@ -292,9 +291,3 @@ class Encodings(object):
         log("send_min_speed() min-speed=%s", s)
         assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
         self.send("min-speed", s)
-
-
-    ######################################################################
-    # packets:
-    def init_authenticated_packet_handlers(self):
-        pass

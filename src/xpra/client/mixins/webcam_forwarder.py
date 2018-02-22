@@ -8,19 +8,21 @@ from threading import RLock
 from xpra.log import Logger
 log = Logger("webcam")
 
-
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.os_util import BytesIOClass, monotonic_time, WIN32, BITS
 from xpra.util import envint, envbool, csv
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
+
 
 WEBCAM_ALLOW_VIRTUAL = envbool("XPRA_WEBCAM_ALLOW_VIRTUAL", False)
 WEBCAM_TARGET_FPS = max(1, min(50, envint("XPRA_WEBCAM_FPS", 20)))
 
+
 """
 Utility superclass for clients that forward webcams
 """
-class WebcamForwarder(object):
+class WebcamForwarder(StubClientMixin):
 
     def __init__(self):
         #webcam:
@@ -40,8 +42,10 @@ class WebcamForwarder(object):
     def noop(self, *_args):
         pass
 
+
     def cleanup(self):
         self.stop_sending_webcam()
+
 
     def init(self, opts):
         self.webcam_option = opts.webcam
@@ -64,7 +68,8 @@ class WebcamForwarder(object):
                 self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
-    def process_capabilities(self):
+
+    def parse_server_capabilities(self):
         c = self.server_capabilities
         self.server_webcam = c.boolget("webcam")
         self.server_webcam_encodings = c.strlistget("webcam.encodings", ("png", "jpeg"))
@@ -73,6 +78,7 @@ class WebcamForwarder(object):
         if self.webcam_forwarding and self.server_webcam and self.server_virtual_video_devices>0:
             if self.webcam_option=="on" or self.webcam_option.find("/dev/video")>=0:
                 self.start_sending_webcam()
+        return True
 
 
     def webcam_state_changed(self):

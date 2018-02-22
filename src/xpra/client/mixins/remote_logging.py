@@ -13,12 +13,13 @@ log = Logger("client")
 
 from xpra.scripts.config import parse_bool
 from xpra.os_util import monotonic_time, strtobytes
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 """
 Mixin for remote logging support
 """
-class RemoteLogging(object):
+class RemoteLogging(StubClientMixin):
 
     def __init__(self):
         self.client_supports_remote_logging = False
@@ -51,6 +52,8 @@ class RemoteLogging(object):
             if not self.log_both:
                 log.info(" see server log file for further output")
             self.local_logging = set_global_logging_handler(self.remote_logging_handler)
+        return True
+
 
     def remote_logging_handler(self, log, level, msg, *args, **kwargs):
         #prevent loops (if our send call ends up firing another logging call):

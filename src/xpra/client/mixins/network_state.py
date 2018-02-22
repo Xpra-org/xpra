@@ -14,6 +14,7 @@ bandwidthlog = Logger("bandwidth")
 from xpra.os_util import monotonic_time, POSIX
 from xpra.util import envint, csv
 from xpra.exit_codes import EXIT_TIMEOUT
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
@@ -27,7 +28,7 @@ Mixin for adding server / network state monitoring functions:
 - ping and echo
 - info request and response
 """
-class NetworkState(object):
+class NetworkState(StubClientMixin):
 
     def __init__(self):
         self.start_time = monotonic_time()
@@ -57,10 +58,6 @@ class NetworkState(object):
         self.pings = opts.pings
 
 
-    def cleanup(self):
-        pass
-
-
     def get_caps(self):
         return {"info-namespace" : True}
 
@@ -70,6 +67,7 @@ class NetworkState(object):
         self.server_bandwidth_limit_change = c.boolget("network.bandwidth-limit-change")
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
         bandwidthlog("server_bandwidth_limit_change=%s, server_bandwidth_limit=%s", self.server_bandwidth_limit_change, self.server_bandwidth_limit)
+        return True
 
     def process_ui_capabilities(self):
         self.send_deflate_level()
@@ -113,11 +111,11 @@ class NetworkState(object):
         else:
             self._server_ok = self.last_ping_echoed_time>=ping_sent_time
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
-        self.server_state_change()
+        self.server_connection_state_change()
         return False
 
-    def server_state_change(self):
-        log("server_state_change() ok=%s", self._server_ok)
+    def server_connection_state_change(self):
+        log("server_connection_state_change() ok=%s", self._server_ok)
 
     def check_echo_timeout(self, ping_time):
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)

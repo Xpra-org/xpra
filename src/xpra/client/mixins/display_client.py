@@ -19,6 +19,7 @@ from xpra.platform.gui import (get_antialias_info, get_icc_info, get_display_icc
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.os_util import monotonic_time
 from xpra.util import iround, envint, envfloat, log_screen_sizes, engs
+from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
@@ -40,7 +41,7 @@ def fequ(v1, v2):
 Utility superclass for clients that handle a desktop / display
 Adds client-side scaling handling
 """
-class DisplayClient(object):
+class DisplayClient(StubClientMixin):
     def __init__(self):
         self.dpi = 0
         self.initial_scaling = 1, 1
@@ -68,10 +69,6 @@ class DisplayClient(object):
             from xpra.client.scaling_parser import parse_scaling
             self.initial_scaling = parse_scaling(opts.desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
             self.xscale, self.yscale = self.initial_scaling
-
-
-    def cleanup(self):
-        pass
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
@@ -161,8 +158,9 @@ class DisplayClient(object):
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
+        return True
 
-    def parse_ui_capabilities(self):
+    def process_ui_capabilities(self):
         c = self.server_capabilities
         server_desktop_size = c.intlistget("desktop_size")
         log("server desktop size=%s", server_desktop_size)
