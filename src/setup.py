@@ -1885,7 +1885,7 @@ if crypto_ENABLED and (OSX or WIN32):
 
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
-    add_modules("xpra.client")
+    add_modules("xpra.client", "xpra.client.mixins")
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")

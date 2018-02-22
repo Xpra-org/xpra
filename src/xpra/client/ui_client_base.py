@@ -41,15 +41,15 @@ from xpra.os_util import platform_name, bytestostr, monotonic_time, strtobytes, 
 from xpra.util import nonl, std, iround, envint, envfloat, envbool, typedict, updict, csv, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
-from xpra.client.webcam_forwarder import WebcamForwarder
-from xpra.client.audio_client import AudioClient
-from xpra.client.rpc_client import RPCClient
-from xpra.client.clipboard_client import ClipboardClient
-from xpra.client.notification_client import NotificationClient
-from xpra.client.window_client import WindowClient
-from xpra.client.mmap_client_mixin import MmapClient
-from xpra.client.client_remote_logging import RemoteLogging
-from xpra.client.display_client import DisplayClient
+from xpra.client.mixins.webcam_forwarder import WebcamForwarder
+from xpra.client.mixins.audio_client import AudioClient
+from xpra.client.mixins.rpc_client import RPCClient
+from xpra.client.mixins.clipboard_client import ClipboardClient
+from xpra.client.mixins.notification_client import NotificationClient
+from xpra.client.mixins.window_client import WindowClient
+from xpra.client.mixins.mmap_client import MmapClient
+from xpra.client.mixins.remote_logging import RemoteLogging
+from xpra.client.mixins.display_client import DisplayClient
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
