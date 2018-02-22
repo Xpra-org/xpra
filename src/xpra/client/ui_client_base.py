@@ -357,7 +357,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.send_info_request()
 
 
-    def send_info_request(self, categories):
+    def send_info_request(self, categories=[]):
         self.do_send_info_request(self._id_to_window.keys(), categories)
 
 
