@@ -357,6 +357,10 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.send_info_request()
 
 
+    def send_info_request(self, categories):
+        self.do_send_info_request(self._id_to_window.keys(), categories)
+
+
     def handshake_complete(self):
         oh = self._on_handshake
         self._on_handshake = None

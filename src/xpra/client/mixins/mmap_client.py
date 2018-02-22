@@ -52,19 +52,25 @@ class MmapClient(StubClientMixin):
             self.init_mmap(self.mmap_filename, self.mmap_group, conn.filename)
 
 
+    def get_root_size(self):
+        #subclasses should provide real values
+        return 1024, 1024
+
     def parse_server_capabilities(self):
         c = self.server_capabilities
         self.mmap_enabled = self.supports_mmap and self.mmap_enabled and c.boolget("mmap_enabled")
         if self.mmap_enabled:
             from xpra.net.mmap_pipe import read_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-            mmap_token = c.intget("mmap_token")
-            mmap_token_index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX)
-            mmap_token_bytes = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES)
+            def iget(attrname, default_value):
+                return c.intget("mmap_%s" % attrname) or c.intget("mmap.%s" % attrname) or default_value
+            mmap_token = iget("token")
+            mmap_token_index = iget("token_index", DEFAULT_TOKEN_INDEX)
+            mmap_token_bytes = iget("token_bytes", DEFAULT_TOKEN_BYTES)
             token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
             if token!=mmap_token:
                 log.error("Error: mmap token verification failed!")
-                log.error(" expected '%#x'", mmap_token)
-                log.error(" found '%#x'", token)
+                log.error(" expected '%#x'", token)
+                log.error(" found '%#x'", mmap_token)
                 self.mmap_enabled = False
                 self.quit(EXIT_MMAP_TOKEN_FAILURE)
                 return
@@ -90,7 +96,7 @@ class MmapClient(StubClientMixin):
         from xpra.os_util import get_int_uuid
         from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
         #calculate size:
-        root_w, root_h = self.cp(*self.get_root_size())
+        root_w, root_h = self.get_root_size()
         #at least 256MB, or 8 fullscreen RGBX frames:
         mmap_size = max(256*1024*1024, root_w*root_h*4*8)
         mmap_size = min(1024*1024*1024, mmap_size)

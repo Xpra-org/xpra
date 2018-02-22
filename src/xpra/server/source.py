@@ -1537,6 +1537,10 @@ class ServerSource(FileTransferHandler):
                 "mmap_token"        : self.mmap_client_token,
                 "mmap_token_index"  : self.mmap_client_token_index,
                 "mmap_token_bytes"  : self.mmap_client_token_bytes,
+                #new style namespaced version (2.3 onwards):
+                "mmap.token"        : self.mmap_client_token,
+                "mmap.token_index"  : self.mmap_client_token_index,
+                "mmap.token_bytes"  : self.mmap_client_token_bytes,
                 })
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:

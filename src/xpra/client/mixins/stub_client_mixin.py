@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+
 class StubClientMixin(object):
 
     __signals__ = {}
@@ -13,7 +15,13 @@ class StubClientMixin(object):
     def run(self):
         pass
 
+    def quit(self, exit_code):
+        sys.exit(exit_code)
+
     def cleanup(self):
+        pass
+
+    def send(self, *_args, **_kwargs):
         pass
 
     def emit(self, *_args, **_kwargs):

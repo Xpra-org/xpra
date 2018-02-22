@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
-from xpra.os_util import monotonic_time, POSIX
+from xpra.os_util import monotonic_time, get_user_uuid, POSIX
 from xpra.util import envint, csv
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -31,7 +31,9 @@ Mixin for adding server / network state monitoring functions:
 class NetworkState(StubClientMixin):
 
     def __init__(self):
-        self.start_time = monotonic_time()
+        self.start_time = int(monotonic_time())
+        self.uuid = get_user_uuid()
+
         self.server_start_time = -1
 
         #setting:
@@ -91,9 +93,12 @@ class NetworkState(StubClientMixin):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
     def send_info_request(self, *categories):
+        self.do_send_info_request([], categories)
+
+    def do_send_info_request(self, window_ids, categories):
         if not self.info_request_pending:
             self.info_request_pending = True
-            self.send("info-request", [self.uuid], tuple(self._id_to_window.keys()), categories)
+            self.send("info-request", [self.uuid], tuple(window_ids), categories)
 
 
     ######################################################################
