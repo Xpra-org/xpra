@@ -743,6 +743,14 @@ class WindowClient(object):
             window.deiconify()
 
 
+    def reinit_window_icons(self):
+        #make sure the window icons are the ones we want:
+        iconlog("reinit_window_icons()")
+        for window in self._id_to_window.values():
+            reset_icon = getattr(window, "reset_icon", None)
+            if reset_icon:
+                reset_icon()
+
     def reinit_windows(self, new_size_fn=None):
         def fake_send(*args):
             log("fake_send%s", args)
