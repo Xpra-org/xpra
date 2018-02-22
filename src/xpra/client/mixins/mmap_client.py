@@ -90,6 +90,7 @@ class MmapClient(StubClientMixin):
                 "token"         : self.mmap_token,
                 "token_index"   : self.mmap_token_index,
                 "token_bytes"   : self.mmap_token_bytes,
+                "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
                 }
         return {}
 

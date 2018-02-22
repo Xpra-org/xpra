@@ -166,6 +166,7 @@ class ServerSource(FileTransferHandler):
         self.mmap_client_token = None                   #the token we write that the client may check
         self.mmap_client_token_index = 512
         self.mmap_client_token_bytes = 0
+        self.mmap_client_namespace = False
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
         # mouse echo:
@@ -888,10 +889,14 @@ class ServerSource(FileTransferHandler):
         elog("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         #mmap:
-        mmap_filename = c.strget("mmap_file") or c.strget("mmap.file")
-        mmap_size = c.intget("mmap_size", 0) or c.intget("mmap.size")
+        self.mmap_client_namespace = c.boolget("mmap.namespace", False)
+        sep = ["_", "."][self.mmap_client_namespace] 
+        def mmapattr(k):
+            return "mmap%s%s" % (sep, k)
+        mmap_filename = c.strget(mmapattr("file"))
+        mmap_size = c.intget(mmapattr("size"), 0)
         mmaplog("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget("mmap_token") or c.intget("mmap.token")
+        mmap_token = c.intget(mmapattr("token"))
         mmaplog("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
         if mmap_filename:
             if self.mmap_filename:
@@ -908,8 +913,8 @@ class ServerSource(FileTransferHandler):
                 self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
                 mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
                 if self.mmap_size>0:
-                    index = c.intget("mmap_token_index", DEFAULT_TOKEN_INDEX) or c.intget("mmap.token_index", DEFAULT_TOKEN_INDEX)
-                    count = c.intget("mmap_token_bytes", DEFAULT_TOKEN_BYTES) or c.intget("mmap.token_bytes", DEFAULT_TOKEN_BYTES)
+                    index = c.intget(mmapattr("token_index"), DEFAULT_TOKEN_INDEX)
+                    count = c.intget(mmapattr("token_bytes"), DEFAULT_TOKEN_BYTES)
                     v = read_mmap_token(self.mmap, index, count)
                     mmaplog("mmap_token=%#x, verification=%#x", mmap_token, v)
                     if v!=mmap_token:
@@ -1533,15 +1538,12 @@ class ServerSource(FileTransferHandler):
                          "auto_refresh_delay"   : self.auto_refresh_delay,
                          })
         if self.mmap_client_token:
-            capabilities.update({
-                "mmap_token"        : self.mmap_client_token,
-                "mmap_token_index"  : self.mmap_client_token_index,
-                "mmap_token_bytes"  : self.mmap_client_token_bytes,
-                #new style namespaced version (2.3 onwards):
-                "mmap.token"        : self.mmap_client_token,
-                "mmap.token_index"  : self.mmap_client_token_index,
-                "mmap.token_bytes"  : self.mmap_client_token_bytes,
-                })
+            sep = ["_", "."][self.mmap_client_namespace]
+            def mmapattr(name, value):
+                capabilities["mmap%s%s" % (sep, name)] = value
+            mmapattr("token",       self.mmap_client_token)
+            mmapattr("token_index", self.mmap_client_token_index)
+            mmapattr("token_bytes", self.mmap_client_token_bytes)
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:
