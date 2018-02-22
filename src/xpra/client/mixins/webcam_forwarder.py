@@ -24,6 +24,8 @@ Utility superclass for clients that forward webcams
 """
 class WebcamForwarder(StubClientMixin):
 
+    __signals__ = ["webcam-changed"]
+
     def __init__(self):
         #webcam:
         self.webcam_option = ""
@@ -82,9 +84,7 @@ class WebcamForwarder(StubClientMixin):
 
 
     def webcam_state_changed(self):
-        #overriden in ui client
-        #glib.idle_add(self.emit, "webcam-changed")
-        log.info("webcam_state_changed()")
+        self.idle_add(self.emit, "webcam-changed")
 
 
     ######################################################################

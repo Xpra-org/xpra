@@ -22,6 +22,7 @@ except:
 Utility superclass for clients that handle clipboard synchronization
 """
 class ClipboardClient(StubClientMixin):
+    __signals__ = ["clipboard-toggled"]
 
     def __init__(self):
         self.client_clipboard_type = ""

@@ -42,6 +42,8 @@ Utility superclass for clients that handle a desktop / display
 Adds client-side scaling handling
 """
 class DisplayClient(StubClientMixin):
+    __signals__ = ["scaling-changed"]
+
     def __init__(self):
         self.dpi = 0
         self.initial_scaling = 1, 1
@@ -379,7 +381,7 @@ class DisplayClient(StubClientMixin):
         ydpi = self.cy(ydpi)
         screenlog("dpi: %s -> %s", (get_xdpi(), get_ydpi()), (xdpi, ydpi))
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
-        
+
     def update_screen_size(self):
         self.screen_size_change_pending = False
         screen_settings = self.get_screen_settings()
@@ -473,7 +475,7 @@ class DisplayClient(StubClientMixin):
                 "cannot scale by %i%% x %i%% or lower" % ((100*xscale), (100*yscale)),
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
-                ]    
+                ]
             try:
                 from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
             except ImportError:

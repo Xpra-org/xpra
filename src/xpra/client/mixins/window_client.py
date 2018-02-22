@@ -228,8 +228,13 @@ class WindowClient(StubClientMixin):
             "bell"                      : self.client_supports_bell,
             "vrefresh"                  : get_vrefresh(),
             "windows"                   : self.windows_enabled,
-            #encoding related:
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
+            #system tray forwarding:
+            "system_tray"               : self.client_supports_system_tray,
+            #window meta data and handling:
+            "generic_window_types"      : True,
+            "server-window-move-resize" : True,
+            "server-window-resize"      : True,
             }
         for x in (
             #generic feature flags:
@@ -600,7 +605,7 @@ class WindowClient(StubClientMixin):
             icon.save(filename, "png")
             iconlog("client window icon saved to %s", filename)
         return icon
-        
+
 
     ######################################################################
     # regular windows:

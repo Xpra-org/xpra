@@ -5,6 +5,8 @@
 
 class StubClientMixin(object):
 
+    __signals__ = {}
+
     def init(self, opts):
         pass
 
@@ -12,6 +14,9 @@ class StubClientMixin(object):
         pass
 
     def cleanup(self):
+        pass
+
+    def emit(self, *_args, **_kwargs):
         pass
 
     def setup_connection(self, _conn):

@@ -9,13 +9,7 @@ import sys
 
 from xpra.log import Logger
 log = Logger("client")
-traylog = Logger("client", "tray")
 keylog = Logger("client", "keyboard")
-workspacelog = Logger("client", "workspace")
-iconlog = Logger("client", "icon")
-screenlog = Logger("client", "screen")
-netlog = Logger("network")
-bandwidthlog = Logger("bandwidth")
 
 
 from xpra.gtk_common.gobject_util import no_arg_signal
@@ -23,14 +17,12 @@ from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.features import MMAP_SUPPORTED
-from xpra.platform.gui import (ready as gui_ready,
-                               get_native_tray_classes, get_session_type,
-                               get_native_tray_menu_helper_class, ClientExtras)
+from xpra.platform.gui import (ready as gui_ready, get_session_type, ClientExtras)
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import nonl, std, envint, envbool, typedict, updict, make_instance, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import std, envint, typedict, updict
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
 from xpra.client.mixins.webcam_forwarder import WebcamForwarder
@@ -44,13 +36,8 @@ from xpra.client.mixins.remote_logging import RemoteLogging
 from xpra.client.mixins.display_client import DisplayClient
 from xpra.client.mixins.network_state import NetworkState
 from xpra.client.mixins.encodings import Encodings
+from xpra.client.mixins.tray_client import TrayClient
 
-
-B_FRAMES = envbool("XPRA_B_FRAMES", True)
-PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
-
-MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
-SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
@@ -59,19 +46,18 @@ TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings):
-    #NOTE: these signals aren't registered because this class
-    #does not extend GObject.
+class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings, TrayClient):
+    #NOTE: these signals aren't registered here because this class
+    #does not extend GObject,
+    #the gtk client subclasses will take care of it.
     __gsignals__ = {
         "first-ui-received"         : no_arg_signal,
-
-        "clipboard-toggled"         : no_arg_signal,
-        "scaling-changed"           : no_arg_signal,
         "keyboard-sync-toggled"     : no_arg_signal,
-        "speaker-changed"           : no_arg_signal,        #bitrate or pipeline state has changed
-        "microphone-changed"        : no_arg_signal,        #bitrate or pipeline state has changed
-        "webcam-changed"            : no_arg_signal,
         }
+    #add signals from super classes (all no-arg signals)
+    for c in (DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings, TrayClient):
+        for signal_name in c.__signals__:
+            __gsignals__[signal_name] = no_arg_signal
 
     def __init__(self):
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
@@ -118,7 +104,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.pointer_grabbed = False
         self.kh_warning = False
         self.menu_helper = None
-        self.tray = None
 
         #state:
         self._on_handshake = []
@@ -151,23 +136,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
                 return v
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
             self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
-
-        if opts.tray:
-            self.menu_helper = self.make_tray_menu_helper()
-            def setup_xpra_tray(*args):
-                traylog("setup_xpra_tray%s", args)
-                self.tray = self.setup_xpra_tray(opts.tray_icon or "xpra")
-                if self.tray:
-                    self.tray.show()
-                #re-set the icon after a short delay,
-                #seems to help with buggy tray geometries:
-                self.timeout_add(1000, self.tray.set_icon)
-            if opts.delay_tray:
-                self.connect("first-ui-received", setup_xpra_tray)
-            else:
-                #show shortly after the main loop starts running:
-                self.timeout_add(TRAY_DELAY, setup_xpra_tray)
-
+        TrayClient.init_ui(self)
         NotificationClient.init_ui(self)
 
         self.init_opengl(opts.opengl)
@@ -240,10 +209,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self._ui_events += 1
 
 
-    def webcam_state_changed(self):
-        self.idle_add(self.emit, "webcam-changed")
-
-
     def get_mouse_position(self):
         raise NotImplementedError()
 
@@ -287,11 +252,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             #generic server flags:
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
-            "system_tray"               : self.client_supports_system_tray,
-            #window meta data and handling:
-            "generic_window_types"      : True,
-            "server-window-move-resize" : True,
-            "server-window-resize"      : True,
             })
         #messy unprefixed:
         caps.update(WindowClient.get_caps(self))
@@ -343,7 +303,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
-
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
@@ -592,7 +551,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         if self.keyboard_helper is None:
             return []
         return self.keyboard_helper.mask_to_names(mask)
-        
+
 
     ######################################################################
     # windows overrides
@@ -610,71 +569,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             #if POSIX:
             #    metadata["fullscreen-monitors"] = [0, 1, 0, 1]
         return metadata
-
-    ######################################################################
-    # xpra's tray:
-    def get_tray_classes(self):
-        #subclasses may add their toolkit specific variants, if any
-        #by overriding this method
-        #use the native ones first:
-        return get_native_tray_classes()
-
-    def make_tray_menu_helper(self):
-        """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
-        mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
-        traylog("make_tray_menu_helper() tray menu helper classes: %s", mhc)
-        return make_instance(mhc, self)
-
-    def show_menu(self, *_args):
-        if self.menu_helper:
-            self.menu_helper.activate()
-
-    def setup_xpra_tray(self, tray_icon_filename):
-        tray = None
-        #this is our own tray
-        def xpra_tray_click(button, pressed, time=0):
-            traylog("xpra_tray_click(%s, %s, %s)", button, pressed, time)
-            if button==1 and pressed:
-                self.idle_add(self.menu_helper.activate, button, time)
-            elif button==3 and not pressed:
-                self.idle_add(self.menu_helper.popup, button, time)
-        def xpra_tray_mouseover(*args):
-            traylog("xpra_tray_mouseover(%s)", args)
-        def xpra_tray_exit(*args):
-            traylog("xpra_tray_exit(%s)", args)
-            self.disconnect_and_quit(0, CLIENT_EXIT)
-        def xpra_tray_geometry(*args):
-            if tray:
-                traylog("xpra_tray_geometry%s geometry=%s", args, tray.get_geometry())
-        menu = None
-        if self.menu_helper:
-            menu = self.menu_helper.build()
-        tray = self.make_tray(XPRA_APP_ID, menu, self.get_tray_title(), tray_icon_filename, xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
-        traylog("setup_xpra_tray(%s)=%s", tray_icon_filename, tray)
-        if tray:
-            def reset_tray_title():
-                tray.set_tooltip(self.get_tray_title())
-            self.after_handshake(reset_tray_title)
-        return tray
-
-    def make_tray(self, *args):
-        """ tray used by our own application """
-        tc = self.get_tray_classes()
-        traylog("make_tray%s tray classes=%s", args, tc)
-        return make_instance(tc, self, *args)
-
-    def get_tray_title(self):
-        t = []
-        if self.session_name or self.server_session_name:
-            t.append(self.session_name or self.server_session_name)
-        if self._protocol and self._protocol._conn:
-            t.append(bytestostr(self._protocol._conn.target))
-        if len(t)==0:
-            t.insert(0, u"Xpra")
-        v = u"\n".join(t)
-        traylog("get_tray_title()=%s (items=%s)", nonl(v), tuple(strtobytes(x) for x in t))
-        return v
-
 
     ######################################################################
     # network and status:

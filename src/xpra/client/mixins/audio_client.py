@@ -7,16 +7,12 @@ from xpra.log import Logger
 avsynclog = Logger("av-sync")
 log = Logger("client", "sound")
 
-from xpra.gtk_common.gobject_compat import import_glib
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
-
-
-glib = import_glib()
 
 
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
@@ -26,6 +22,7 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA")
 Utility superclass for clients that handle audio
 """
 class AudioClient(StubClientMixin):
+    __signals__ = ["speaker-changed", "microphone-changed"]
 
     def __init__(self):
         self.sound_source_plugin = None
