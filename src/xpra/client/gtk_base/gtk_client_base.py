@@ -353,7 +353,7 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
     # file handling
     def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
-        
+
     def do_ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout

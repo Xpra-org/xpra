@@ -156,7 +156,7 @@ class FakeApplication:
     def xpra_tray_geometry(self, *args):
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
 
-       
+
 
 def main():
     import signal
