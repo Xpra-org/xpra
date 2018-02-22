@@ -17,7 +17,6 @@ keylog = Logger("client", "keyboard")
 workspacelog = Logger("client", "workspace")
 iconlog = Logger("client", "icon")
 screenlog = Logger("client", "screen")
-scalinglog = Logger("scaling")
 netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
@@ -34,11 +33,11 @@ from xpra.platform.gui import (ready as gui_ready,
 from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.version_util import full_version_str
-from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int, parse_bool
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, monotonic_time, strtobytes, POSIX, BITS
-from xpra.util import nonl, std, iround, envint, envfloat, envbool, typedict, updict, csv, make_instance, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import nonl, std, envint, envbool, typedict, updict, csv, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
 from xpra.client.mixins.webcam_forwarder import WebcamForwarder
@@ -55,8 +54,6 @@ from xpra.client.mixins.display_client import DisplayClient
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
-MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
-
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 
@@ -64,20 +61,10 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 
 
-MIN_SCALING = envfloat("XPRA_MIN_SCALING", "0.1")
-MAX_SCALING = envfloat("XPRA_MAX_SCALING", "8")
-SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
-SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
-
-
-def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
-    return iround(v*rounding)
-def fequ(v1, v2):
-    return r4cmp(v1)==r4cmp(v2)
 
 
 """
@@ -122,20 +109,10 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.title = ""
         self.session_name = u""
 
-        self.dpi = 0
-        self.initial_scaling = 1, 1
-        self.xscale, self.yscale = self.initial_scaling
-        self.scale_change_embargo = 0
-        self.desktop_fullscreen = False
-        self.screen_size_change_pending = False
-
         #statistics and server info:
         self.server_start_time = -1
         self.server_platform = ""
-        self.server_actual_desktop_size = None
-        self.server_max_desktop_size = None
-        self.server_display = None
-        self.server_randr = False
+
         self.server_bandwidth_limit_change = False
         self.server_bandwidth_limit = 0
         self.server_session_name = None
@@ -200,7 +177,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         #state:
         self._on_handshake = []
         self._on_server_setting_changed = {}
-        self._current_screen_sizes = None
 
         self.init_aliases()
 
@@ -222,17 +198,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
-        self.desktop_scaling = opts.desktop_scaling
-        self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
-        if self.can_scale:
-            root_w, root_h = self.get_root_size()
-            from xpra.client.scaling_parser import parse_scaling
-            self.initial_scaling = parse_scaling(opts.desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
-            self.xscale, self.yscale = self.initial_scaling
 
-        self.dpi = int(opts.dpi)
         self.xsettings_enabled = opts.xsettings
-        self.desktop_fullscreen = opts.desktop_fullscreen
 
         self.readonly = opts.readonly
         self.pings = opts.pings
