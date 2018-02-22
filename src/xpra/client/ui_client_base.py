@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
 
 from xpra.log import Logger
@@ -27,10 +26,7 @@ from xpra.platform.features import MMAP_SUPPORTED
 from xpra.platform.gui import (ready as gui_ready,
                                get_native_tray_classes, get_session_type,
                                get_native_tray_menu_helper_class, ClientExtras)
-from xpra.codecs.loader import load_codecs, codec_versions, has_codec, get_codec, PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
-from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.version_util import full_version_str
-from xpra.scripts.config import parse_bool_or_int
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
@@ -47,6 +43,7 @@ from xpra.client.mixins.mmap_client import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
 from xpra.client.mixins.display_client import DisplayClient
 from xpra.client.mixins.network_state import NetworkState
+from xpra.client.mixins.encodings import Encodings
 
 
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
@@ -62,7 +59,7 @@ TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState):
+class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings):
     #NOTE: these signals aren't registered because this class
     #does not extend GObject.
     __gsignals__ = {
@@ -89,6 +86,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         MmapClient.__init__(self)
         RemoteLogging.__init__(self)
         NetworkState.__init__(self)
+        Encodings.__init__(self)
         try:
             pinfo = get_platform_info()
             osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
@@ -103,20 +101,9 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.server_platform = ""
         self.server_session_name = None
 
-        self.allowed_encodings = []
-        self.core_encodings = None
-        self.encoding = None
-
         #features:
         self.opengl_enabled = False
         self.opengl_props = {}
-        self.server_encodings = []
-        self.server_core_encodings = []
-        self.server_encodings_problematic = PROBLEMATIC_ENCODINGS
-        self.server_encodings_with_speed = ()
-        self.server_encodings_with_quality = ()
-        self.server_encodings_with_lossless_mode = ()
-        self.server_auto_video_encoding = False
         self.readonly = False
         self.xsettings_enabled = False
         self.server_start_new_commands = False
@@ -128,8 +115,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.server_lock = False
         self.server_lock_toggle = False
         self.server_window_filters = False
-        #what we told the server about our encoding defaults:
-        self.encoding_defaults = {}
 
         self.client_supports_opengl = False
         self.client_supports_sharing = False
@@ -165,22 +150,14 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         MmapClient.init(self, opts)
         RemoteLogging.init(self, opts)
         NetworkState.init(self, opts)
-        self.allowed_encodings = opts.encodings
-        self.encoding = opts.encoding
-        self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
+        Encodings.init(self, opts)
+
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
         self.xsettings_enabled = opts.xsettings
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
-
-        #until we add the ability to choose decoders, use all of them:
-        #(and default to non grahics card csc modules if not specified)
-        load_codecs(encoders=False)
-        vh = getVideoHelper()
-        vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
-        vh.init()
 
 
     def init_ui(self, opts, extra_args=[]):
@@ -237,9 +214,9 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        for x in (XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState):
+        for x in (XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings):
             x.cleanup(self)
-        for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras, getVideoHelper()):
+        for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras):
             if x is None:
                 continue
             log("UIXpraClient.cleanup() calling %s.cleanup()", type(x))
@@ -320,10 +297,9 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
                 pass
         for x in (
             #generic feature flags:
-            "notify-startup-complete", "wants_events",
+            "notify-startup-complete",
+            "wants_events",
             "setting-change",
-            #legacy (not needed in 1.0 - can be dropped soon):
-            "generic-rgb-encodings",
             ):
             caps[x] = True
         #FIXME: the messy bits without proper namespace:
@@ -336,28 +312,21 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             "generic_window_types"      : True,
             "server-window-move-resize" : True,
             "server-window-resize"      : True,
-            "encodings"                 : self.get_encodings(),
-            "encodings.core"            : self.get_core_encodings(),
-            "encodings.window-icon"     : self.get_window_icon_encodings(),
-            "encodings.cursor"          : self.get_cursor_encodings(),
             })
         #messy unprefixed:
         caps.update(WindowClient.get_caps(self))
         caps.update(DisplayClient.get_caps(self))
         caps.update(NetworkState.get_caps(self))
+        caps.update(Encodings.get_caps(self))
         caps.update(self.get_keyboard_caps())
-        caps.update(self.get_desktop_caps())
         #nicely prefixed:
         def u(prefix, c):
             updict(caps, prefix, c, flatten_dicts=False)
         u("sound",              AudioClient.get_audio_capabilities(self))
-        u("window",             self.get_window_caps())
         u("notifications",      self.get_notifications_caps())
         u("clipboard",          self.get_clipboard_caps())
-        u("encoding",           self.get_encodings_caps())
         u("control_commands",   self.get_control_commands_caps())
         u("platform",           get_platform_info())
-        u("batch",              self.get_batch_caps())
         mmap_caps = MmapClient.get_caps(self)
         u("mmap",               mmap_caps)
         #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
@@ -365,19 +334,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             caps["mmap_%s" % k] = v
         return caps
 
-
-    def get_batch_caps(self):
-        #batch options:
-        caps = {}
-        for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
-            evalue = os.environ.get("XPRA_BATCH_%s" % bprop.upper())
-            if evalue:
-                try:
-                    caps["batch.%s" % bprop] = int(evalue)
-                except:
-                    log.error("Error: invalid environment value for %s: %s", bprop, evalue)
-        log("get_batch_caps()=%s", caps)
-        return caps
 
 
     ######################################################################
@@ -400,15 +356,16 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         RemoteLogging.parse_server_capabilities(self)
         DisplayClient.parse_server_capabilities(self)
         NetworkState.parse_server_capabilities(self)
+        Encodings.parse_server_capabilities(self)
         c = self.server_capabilities
         self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
+        self.server_platform = c.strget("platform")
         self.server_sharing = c.boolget("sharing")
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
 
-        self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
@@ -416,23 +373,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
-        self.server_encodings = c.strlistget("encodings")
-        self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
-        self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those
-        self.server_encodings_with_speed = c.strlistget("encodings.with_speed", ("h264",)) #old servers only supported x264
-        self.server_encodings_with_quality = c.strlistget("encodings.with_quality", ("jpeg", "webp", "h264"))
-        self.server_encodings_with_lossless_mode = c.strlistget("encodings.with_lossless_mode", ())
-        self.server_auto_video_encoding = c.boolget("auto-video-encoding")
-        self.server_platform = c.strget("platform")
 
-        e = c.strget("encoding")
-        if e:
-            if self.encoding and e!=self.encoding:
-                if self.encoding not in self.server_core_encodings:
-                    log.warn("server does not support %s encoding and has switched to %s", self.encoding, e)
-                else:
-                    log.info("server is using %s encoding instead of %s", e, self.encoding)
-            self.encoding = e
         i = platform_name(self._remote_platform, c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version
         if self._remote_revision:
@@ -603,188 +544,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
 
     ######################################################################
-    # encodings:
-    def get_encodings_caps(self):
-        if B_FRAMES:
-            video_b_frames = ["h264"]   #only tested with dec_avcodec2
-        else:
-            video_b_frames = []
-        caps = {
-            "flush"                     : PAINT_FLUSH,
-            "scaling.control"           : self.video_scaling,
-            "client_options"            : True,
-            "csc_atoms"                 : True,
-            #TODO: check for csc support (swscale only?)
-            "video_reinit"              : True,
-            "video_scaling"             : True,
-            "video_b_frames"            : video_b_frames,
-            "webp_leaks"                : False,
-            "transparency"              : self.has_transparency(),
-            "rgb24zlib"                 : True,
-            "max-soft-expired"          : MAX_SOFT_EXPIRED,
-            "send-timestamps"           : SEND_TIMESTAMPS,
-            "supports_delta"            : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
-            }
-        if self.encoding:
-            caps[""] = self.encoding
-        for k,v in codec_versions.items():
-            caps["%s.version" % k] = v
-        if self.quality>0:
-            caps["quality"] = self.quality
-        if self.min_quality>0:
-            caps["min-quality"] = self.min_quality
-        if self.speed>=0:
-            caps["speed"] = self.speed
-        if self.min_speed>=0:
-            caps["min-speed"] = self.min_speed
-
-        #generic rgb compression flags:
-        for x in compression.ALL_COMPRESSORS:
-            caps["rgb_%s" % x] = x in compression.get_enabled_compressors()
-        #these are the defaults - when we instantiate a window,
-        #we can send different values as part of the map event
-        #these are the RGB modes we want (the ones we are expected to be able to paint with):
-        rgb_formats = ["RGB", "RGBX", "RGBA"]
-        caps["rgb_formats"] = rgb_formats
-        #figure out which CSC modes (usually YUV) can give us those RGB modes:
-        full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*rgb_formats)
-        if has_codec("dec_webp"):
-            if self.opengl_enabled:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
-            else:
-                full_csc_modes["webp"] = ("BGRX", "BGRA", )
-        log("supported full csc_modes=%s", full_csc_modes)
-        caps["full_csc_modes"] = full_csc_modes
-
-        if "h264" in self.get_core_encodings():
-            # some profile options: "baseline", "main", "high", "high10", ...
-            # set the default to "high10" for I420/YUV420P
-            # as the python client always supports all the profiles
-            # whereas on the server side, the default is baseline to accomodate less capable clients.
-            # I422/YUV422P requires high422, and
-            # I444/YUV444P requires high444,
-            # so we don't bother specifying anything for those two.
-            for old_csc_name, csc_name, default_profile in (
-                        ("I420", "YUV420P", "high10"),
-                        ("I422", "YUV422P", ""),
-                        ("I444", "YUV444P", "")):
-                profile = default_profile
-                #try with the old prefix (X264) as well as the more correct one (H264):
-                for H264_NAME in ("X264", "H264"):
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, old_csc_name), profile)
-                    profile = os.environ.get("XPRA_%s_%s_PROFILE" % (H264_NAME, csc_name), profile)
-                if profile:
-                    #send as both old and new names:
-                    for h264_name in ("x264", "h264"):
-                        caps["%s.%s.profile" % (h264_name, old_csc_name)] = profile
-                        caps["%s.%s.profile" % (h264_name, csc_name)] = profile
-            log("x264 encoding options: %s", str([(k,v) for k,v in caps.items() if k.startswith("x264.")]))
-        iq = max(self.min_quality, self.quality)
-        if iq<0:
-            iq = 70
-        caps["initial_quality"] = iq
-        log("encoding capabilities: %s", caps)
-        return caps
-
-    def get_encodings(self):
-        """
-            Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
-            That's because although we may support both, the encoding chosen is plain "rgb",
-            and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
-            ("rgb32" if there is an alpha channel, and if the client supports it)
-        """
-        cenc = self.get_core_encodings()
-        if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
-            cenc.append("rgb")
-        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
-
-    def get_core_encodings(self):
-        if self.core_encodings is None:
-            self.core_encodings = self.do_get_core_encodings()
-        return self.core_encodings
-
-    def get_cursor_encodings(self):
-        e = ["raw"]
-        if "png" in self.get_core_encodings():
-            e.append("png")
-        return e
-
-    def get_window_icon_encodings(self):
-        e = ["premult_argb32", "default"]
-        if "png" in self.get_core_encodings():
-            e.append("png")
-        return e
-
-    def do_get_core_encodings(self):
-        """
-            This method returns the actual encodings supported.
-            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "jpeg2000", "h264", "vpx"]
-            It is often overriden in the actual client class implementations,
-            where extra encodings can be added (generally just 'rgb32' for transparency),
-            or removed if the toolkit implementation class is more limited.
-        """
-        #we always support rgb:
-        core_encodings = ["rgb24", "rgb32"]
-        for codec in ("dec_pillow", "dec_webp"):
-            if has_codec(codec):
-                c = get_codec(codec)
-                for e in c.get_encodings():
-                    if e not in core_encodings:
-                        core_encodings.append(e)
-        #we enable all the video decoders we know about,
-        #what will actually get used by the server will still depend on the csc modes supported
-        video_decodings = getVideoHelper().get_decodings()
-        log("video_decodings=%s", video_decodings)
-        for encoding in video_decodings:
-            if encoding not in core_encodings:
-                core_encodings.append(encoding)
-        #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER if x in set(core_encodings) and x in self.allowed_encodings]
-        return core_encodings
-
-    def set_encoding(self, encoding):
-        log("set_encoding(%s)", encoding)
-        if encoding=="auto":
-            assert self.server_auto_video_encoding
-            self.encoding = ""
-        else:
-            assert encoding in self.get_encodings(), "encoding %s is not supported!" % encoding
-            assert encoding in self.server_encodings, "encoding %s is not supported by the server! (only: %s)" % (encoding, self.server_encodings)
-        self.encoding = encoding
-        self.send("encoding", self.encoding)
-
-    def send_quality(self):
-        q = self.quality
-        log("send_quality() quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid quality: %s" % q
-        self.send("quality", q)
-
-    def send_min_quality(self):
-        q = self.min_quality
-        log("send_min_quality() min-quality=%s", q)
-        assert q==-1 or (q>=0 and q<=100), "invalid min-quality: %s" % q
-        self.send("min-quality", q)
-
-    def send_speed(self):
-        s = self.speed
-        log("send_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid speed: %s" % s
-        self.send("speed", s)
-
-    def send_min_speed(self):
-        s = self.min_speed
-        log("send_min_speed() min-speed=%s", s)
-        assert s==-1 or (s>=0 and s<=100), "invalid min-speed: %s" % s
-        self.send("min-speed", s)
-
-
-    ######################################################################
     # features:
-    def send_bandwidth_limit(self):
-        bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
-        assert self.server_bandwidth_limit_change
-        self.send("bandwidth-limit", self.bandwidth_limit)
-
     def send_sharing_enabled(self):
         assert self.server_sharing and self.server_sharing_toggle
         self.send("sharing-toggle", self.client_supports_sharing)

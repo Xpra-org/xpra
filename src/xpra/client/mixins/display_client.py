@@ -84,10 +84,73 @@ class DisplayClient(object):
     ######################################################################
     # hello:
     def get_caps(self):
-        return {
+        caps = {
             "randr_notify"  : True,
             "show-desktop"  : True,
             }
+        wm_name = get_wm_name()
+        if wm_name:
+            caps["wm_name"] = wm_name
+
+        self._last_screen_settings = self.get_screen_settings()
+        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
+        caps["desktop_size"] = self.cp(u_root_w, u_root_h)
+        caps["desktops"] = ndesktops
+        caps["desktop.names"] = desktop_names
+
+        ss = self.get_screen_sizes()
+        self._current_screen_sizes = ss
+
+        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
+        log_screen_sizes(u_root_w, u_root_h, ss)
+        if self.xscale!=1 or self.yscale!=1:
+            caps["screen_sizes.unscaled"] = ss
+            caps["desktop_size.unscaled"] = u_root_w, u_root_h
+            root_w, root_h = self.cp(u_root_w, u_root_h)
+            if fequ(self.xscale, self.yscale):
+                sinfo = "%i%%" % iround(self.xscale*100)
+            else:
+                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
+            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
+            log_screen_sizes(root_w, root_h, sss)
+        else:
+            root_w, root_h = u_root_w, u_root_h
+            sss = ss
+        caps["screen_sizes"] = sss
+
+        caps["screen-scaling"] = True
+        caps["screen-scaling.enabled"] = self.xscale!=1 or self.yscale!=1
+        caps["screen-scaling.values"] = (int(1000*self.xscale), int(1000*self.yscale))
+
+        #command line (or config file) override supplied:
+        dpi = 0
+        if self.dpi>0:
+            #scale it:
+            xdpi = ydpi = dpi = self.cx(self.cy(self.dpi))
+        else:
+            #not supplied, use platform detection code:
+            #platforms may also provide per-axis dpi (later win32 versions do)
+            xdpi = self.get_xdpi()
+            ydpi = self.get_ydpi()
+            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
+            if xdpi>0 and ydpi>0:
+                xdpi = self.cx(xdpi)
+                ydpi = self.cy(ydpi)
+                dpi = iround((xdpi+ydpi)/2.0)
+                caps.update({
+                    "dpi.x"    : xdpi,
+                    "dpi.y"    : ydpi,
+                    })
+        if dpi:
+            caps["dpi"] = dpi
+        screenlog("dpi: %i", dpi)
+        caps.update({
+            "antialias"    : get_antialias_info(),
+            "icc"          : self.get_icc_info(),
+            "display-icc"  : self.get_display_icc_info(),
+            "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
+            })
+        return caps
 
 
     def parse_server_capabilities(self):
@@ -263,72 +326,6 @@ class DisplayClient(object):
 
     ######################################################################
     # desktop, screen and scaling:
-    def get_desktop_caps(self):
-        caps = {}
-        wm_name = get_wm_name()
-        if wm_name:
-            caps["wm_name"] = wm_name
-
-        self._last_screen_settings = self.get_screen_settings()
-        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
-        caps["desktop_size"] = self.cp(u_root_w, u_root_h)
-        caps["desktops"] = ndesktops
-        caps["desktop.names"] = desktop_names
-
-        ss = self.get_screen_sizes()
-        self._current_screen_sizes = ss
-
-        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
-        log_screen_sizes(u_root_w, u_root_h, ss)
-        if self.xscale!=1 or self.yscale!=1:
-            caps["screen_sizes.unscaled"] = ss
-            caps["desktop_size.unscaled"] = u_root_w, u_root_h
-            root_w, root_h = self.cp(u_root_w, u_root_h)
-            if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % iround(self.xscale*100)
-            else:
-                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
-            log.info(" %sscaled by %s, virtual screen size: %ix%i", ["down", "up"][int(u_root_w>root_w or u_root_h>root_h)], sinfo, root_w, root_h)
-            log_screen_sizes(root_w, root_h, sss)
-        else:
-            root_w, root_h = u_root_w, u_root_h
-            sss = ss
-        caps["screen_sizes"] = sss
-
-        caps["screen-scaling"] = True
-        caps["screen-scaling.enabled"] = self.xscale!=1 or self.yscale!=1
-        caps["screen-scaling.values"] = (int(1000*self.xscale), int(1000*self.yscale))
-
-        #command line (or config file) override supplied:
-        dpi = 0
-        if self.dpi>0:
-            #scale it:
-            xdpi = ydpi = dpi = self.cx(self.cy(self.dpi))
-        else:
-            #not supplied, use platform detection code:
-            #platforms may also provide per-axis dpi (later win32 versions do)
-            xdpi = self.get_xdpi()
-            ydpi = self.get_ydpi()
-            screenlog("xdpi=%i, ydpi=%i", xdpi, ydpi)
-            if xdpi>0 and ydpi>0:
-                xdpi = self.cx(xdpi)
-                ydpi = self.cy(ydpi)
-                dpi = iround((xdpi+ydpi)/2.0)
-                caps.update({
-                    "dpi.x"    : xdpi,
-                    "dpi.y"    : ydpi,
-                    })
-        if dpi:
-            caps["dpi"] = dpi
-        screenlog("dpi: %i", dpi)
-        caps.update({
-            "antialias"    : get_antialias_info(),
-            "icc"          : self.get_icc_info(),
-            "display-icc"  : self.get_display_icc_info(),
-            "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
-            })
-        return caps
-    
     def desktops_changed(self, *args):
         workspacelog("desktops_changed%s", args)
         self.screen_size_changed(*args)

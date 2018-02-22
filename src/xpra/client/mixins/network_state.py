@@ -175,6 +175,12 @@ class NetworkState(object):
         self.send("set_deflate", self.compression_level)
 
 
+    def send_bandwidth_limit(self):
+        bandwidthlog("send_bandwidth_limit() bandwidth-limit=%i", self.bandwidth_limit)
+        assert self.server_bandwidth_limit_change
+        self.send("bandwidth-limit", self.bandwidth_limit)
+
+
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self):

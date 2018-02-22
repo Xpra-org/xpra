@@ -33,7 +33,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
-from xpra.util import iround, envint, envbool, typedict, make_instance
+from xpra.util import iround, envint, envbool, typedict, make_instance, updict
 from xpra.client.client_tray import ClientTray
 
 
@@ -240,6 +240,7 @@ class WindowClient(object):
             "raw_window_icons",
             ):
             caps[x] = True
+        updict(caps, "window", self.get_window_caps())
         return caps
 
     def get_window_caps(self):
