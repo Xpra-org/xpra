@@ -1340,7 +1340,8 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
                 self.clipboard_notify(0)
             self.connect("clipboard-toggled", clipboard_toggled)
             def loop_disabled_notify():
-                if self.clipboard_helper.disabled_by_loop and self.notifier:
+                ch = self.clipboard_helper
+                if ch and ch.disabled_by_loop and self.notifier:
                     icon = None
                     try:
                         from xpra.notifications.common import parse_image_path
