@@ -33,9 +33,17 @@ class ClipboardServer(object):
     def setup(self, _opts):
         self.init_clipboard()
 
+    def threaded_setup(self):
+        pass
+
     def cleanup(self):
         pass
 
+
+    def get_info(self):
+        if self._clipboard_helper is None:
+            return {}
+        return self._clipboard_helper.get_info()
 
     def get_caps(self):
         return {
@@ -173,11 +181,6 @@ class ClipboardServer(object):
         assert self._clipboard_helper is not None
         if self._clipboard_client:
             self._clipboard_client.send_clipboard(parts)
-
-    def get_clipboard_info(self):
-        if self._clipboard_helper is None:
-            return {}
-        return self._clipboard_helper.get_info()
 
 
     def init_packet_handlers(self):

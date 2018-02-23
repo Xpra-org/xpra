@@ -33,7 +33,7 @@ httplog = Logger("http")
 bandwidthlog = Logger("bandwidth")
 timeoutlog = Logger("timeout")
 
-from xpra.platform.features import COMMAND_SIGNALS, CLIPBOARDS
+from xpra.platform.features import COMMAND_SIGNALS
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
