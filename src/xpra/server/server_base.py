@@ -36,6 +36,7 @@ from xpra.server.mixins.input_server import InputServer
 from xpra.server.mixins.child_command_server import ChildCommandServer
 from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
 from xpra.server.mixins.encoding_server import EncodingServer
+from xpra.server.mixins.logging_server import LoggingServer
 
 from xpra.simple_stats import std_unit
 from xpra.os_util import thread, livefds, monotonic_time, bytestostr, WIN32, POSIX, PYTHON3
@@ -44,7 +45,7 @@ from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_scree
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
 from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
-from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
 
@@ -65,7 +66,7 @@ It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -105,7 +106,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.remote_logging = False
         self.pings = 0
         self.scaling_control = False
         self.mem_bytes = 0
@@ -169,7 +169,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
-        self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.pings = opts.pings
         self.av_sync = opts.av_sync
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -611,32 +610,11 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             capabilities.update({
                      "key_repeat"           : key_repeat,
                      "key_repeat_modifiers" : True})
-        if server_source.wants_features:
-            capabilities["remote-logging"] = self.remote_logging
-            capabilities["remote-logging.multi-line"] = True
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
-
-
-    def _process_logging(self, proto, packet):
-        assert self.remote_logging
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        level, msg = packet[1:3]
-        prefix = "client "
-        if len(self._server_sources)>1:
-            prefix += "%3i " % ss.counter
-        if len(packet)>=4:
-            dtime = packet[3]
-            prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
-        if isinstance(msg, (tuple, list)):
-            msg = " ".join(bytestostr(x) for x in msg)
-        for x in bytestostr(msg).splitlines():
-            clientlog.log(level, prefix+x)
 
 
     ######################################################################
@@ -1541,7 +1519,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "ping_echo":                            self._process_ping_echo,
             "set-cursors":                          self._process_set_cursors,
             "set-bell":                             self._process_set_bell,
-            "logging":                              self._process_logging,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
