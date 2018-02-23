@@ -34,6 +34,7 @@ from xpra.server.source.audio_mixin import AudioMixin
 from xpra.server.source.mmap_connection import MMAP_Connection
 from xpra.server.source.fileprint_mixin import FilePrintMixin
 from xpra.server.source.clipboard_connection import ClipboardConnection
+from xpra.server.source.networkstate_mixin import NetworkStateMixin
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.metadata import make_window_metadata
@@ -48,13 +49,11 @@ from xpra.server.background_worker import add_work_item
 from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, std, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
-                    CLIENT_PING_TIMEOUT, DEFAULT_METADATA_SUPPORTED
+                    DEFAULT_METADATA_SUPPORTED
 
 NOYIELD = not envbool("XPRA_YIELD", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
-PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
-PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
@@ -83,7 +82,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -124,6 +123,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
         ClipboardConnection.__init__(self)
         FilePrintMixin.__init__(self, file_transfer)
+        NetworkStateMixin.__init__(self)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -197,9 +197,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = monotonic_time()
-        self.last_ping_echoed_time = 0
-        self.check_ping_echo_timers = {}
-
 
         self.init_vars()
 
@@ -306,7 +303,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.keyboard_config = None
         self.cursor_timer = None
         self.last_cursor_sent = None
-        self.ping_timer = None
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -332,9 +328,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         self.cancel_recalculate_timer()
-        self.cancel_ping_echo_timers()
         self.cancel_cursor_timer()
-        self.cancel_ping_timer()
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
@@ -1048,9 +1042,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     ######################################################################
     # info:
     def get_info(self):
-        lpe = 0
-        if self.last_ping_echoed_time>0:
-            lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)
         info = {
                 "protocol"          : "xpra",
                 "version"           : self.client_version or "unknown",
@@ -1069,7 +1060,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
                 "elapsed_time"      : int(monotonic_time()-self.connection_time),
-                "last-ping-echo"    : lpe,
                 "suspended"         : self.suspended,
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
@@ -1131,6 +1121,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(info, FilePrintMixin.get_info(self))
         merge_dicts(info, AudioMixin.get_info(self))
         merge_dicts(info, MMAP_Connection.get_info(self))
+        merge_dicts(info, NetworkStateMixin.get_info(self))
         return info
 
     def get_screen_info(self):
@@ -1362,72 +1353,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             self.send("rpc-reply", *args)
 
 
-    ######################################################################
-    # pings:
-    def ping(self):
-        self.ping_timer = None
-        #NOTE: all ping time/echo time/load avg values are in milliseconds
-        now_ms = int(1000*monotonic_time())
-        log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send_async("ping", now_ms, will_have_more=False)
-        timeout = PING_TIMEOUT
-        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout*1000, self.check_ping_echo_timeout, now_ms, timeout)
-
-    def check_ping_echo_timeout(self, now_ms, timeout):
-        try:
-            del self.check_ping_echo_timers[now_ms]
-        except:
-            pass
-        if self.last_ping_echoed_time<now_ms and not self.is_closed():
-            self.disconnect(CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
-
-    def cancel_ping_echo_timers(self):
-        timers = self.check_ping_echo_timers.values()
-        self.check_ping_echo_timers = {}
-        for t in timers:
-            self.source_remove(t)
-
-    def process_ping(self, time_to_echo):
-        l1,l2,l3 = 0,0,0
-        cl = -1
-        if PING_DETAILS:
-            #send back the load average:
-            try:
-                (fl1, fl2, fl3) = os.getloadavg()
-                l1,l2,l3 = int(fl1*1000), int(fl2*1000), int(fl3*1000)
-            except:
-                l1,l2,l3 = 0,0,0
-            #and the last client ping latency we measured (if any):
-            if len(self.statistics.client_ping_latency)>0:
-                _, cl = self.statistics.client_ping_latency[-1]
-                cl = int(1000.0*cl)
-        self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, will_have_more=False)
-        #if the client is pinging us, ping it too:
-        if not self.ping_timer:
-            self.ping_timer = self.timeout_add(500, self.ping)
-
-    def cancel_ping_timer(self):
-        pt = self.ping_timer
-        if pt:
-            self.ping_timer = None
-            self.source_remove(pt)
-
-    def process_ping_echo(self, packet):
-        echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
-        timer = self.check_ping_echo_timers.get(echoedtime)
-        if timer:
-            try:
-                self.source_remove(timer)
-                del self.check_ping_echo_timers[echoedtime]
-            except:
-                pass
-        self.last_ping_echoed_time = echoedtime
-        client_ping_latency = monotonic_time()-echoedtime/1000.0
-        self.statistics.client_ping_latency.append((monotonic_time(), client_ping_latency))
-        self.client_load = l1, l2, l3
-        if server_ping_latency>=0:
-            self.statistics.server_ping_latency.append((monotonic_time(), server_ping_latency/1000.0))
-        log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
 
     ######################################################################
