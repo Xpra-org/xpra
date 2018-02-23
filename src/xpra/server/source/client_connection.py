@@ -19,8 +19,6 @@ keylog = Logger("keyboard")
 mouselog = Logger("mouse")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
-printlog = Logger("printing")
-filelog = Logger("file")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
@@ -34,6 +32,7 @@ bandwidthlog = Logger("bandwidth")
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.audio_mixin import AudioMixin
 from xpra.server.source.mmap_connection import MMAP_Connection
+from xpra.server.source.fileprint_mixin import FilePrintMixin
 from xpra.server.source.clipboard_connection import ClipboardConnection
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
@@ -43,9 +42,8 @@ from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed
-from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, monotonic_time, BytesIOClass, strtobytes
+from xpra.os_util import platform_name, Queue, monotonic_time, BytesIOClass, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
@@ -53,17 +51,14 @@ from xpra.util import csv, std, typedict, merge_dicts, flatten_dict, notypedict,
                     CLIENT_PING_TIMEOUT, DEFAULT_METADATA_SUPPORTED
 
 NOYIELD = not envbool("XPRA_YIELD", False)
-ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
-NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
 
-PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
@@ -88,7 +83,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, ClipboardConnection):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -124,11 +119,11 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed))
-        FileTransferHandler.__init__(self, file_transfer)
         AudioMixin.__init__(self, sound_properties, sound_source_plugin,
                  supports_speaker, supports_microphone, speaker_codecs, microphone_codecs)
         MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
         ClipboardConnection.__init__(self)
+        FilePrintMixin.__init__(self, file_transfer)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -291,7 +286,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
         self.metadata_supported = ()
         self.show_desktop_allowed = False
         self.supports_transparency = False
-        self.printers = {}
         self.vrefresh = -1
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
@@ -341,7 +335,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
         self.cancel_ping_echo_timers()
         self.cancel_cursor_timer()
         self.cancel_ping_timer()
-        self.remove_printers()
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
@@ -633,7 +626,7 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
         self.proxy_version = c.strget("proxy.version")
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
         
-        #file transfers and printing:
+        #file transfers and printing caps:
         self.parse_file_transfer_caps(c)
         #general features:
         self.zlib = c.boolget("zlib", True)
@@ -1135,7 +1128,7 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
             info["window-filter"] = finfo
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
-        info["file-transfers"] = FileTransferHandler.get_info(self)
+        merge_dicts(info, FilePrintMixin.get_info(self))
         merge_dicts(info, AudioMixin.get_info(self))
         merge_dicts(info, MMAP_Connection.get_info(self))
         return info
@@ -1169,8 +1162,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
                            "double_click_distance"  : "distance",
                            }.items():
             dcinfo[name] = getattr(self, prop)
-        if self.printers:
-            info["printers"] = self.printers
         return info
 
     def get_window_info(self, window_ids=[]):
@@ -1359,113 +1350,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, Clipboa
             self.send_async("webcam-stop", device, message)
 
 
-    ######################################################################
-    # printing:
-    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):
-        printlog("set_printers(%s, %s, %s, %s, %s) for %s", printers, password_file, auth, encryption, encryption_keyfile, self)
-        if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
-            self.printers = printers
-            printlog("local client with identical machine id,")
-            printlog(" not configuring local printers")
-            return
-        if not self.uuid:
-            printlog.warn("Warning: client did not supply a UUID,")
-            printlog.warn(" printer forwarding cannot be enabled")
-            return
-        from xpra.platform.pycups_printing import remove_printer
-        #remove the printers no longer defined
-        #or those whose definition has changed (and we will re-add them):
-        for k in tuple(self.printers.keys()):
-            cpd = self.printers.get(k)
-            npd = printers.get(k)
-            if cpd==npd:
-                #unchanged: make sure we don't try adding it again:
-                try:
-                    del printers[k]
-                except:
-                    pass
-                continue
-            if npd is None:
-                printlog("printer %s no longer exists", k)
-            else:
-                printlog("printer %s has been modified:", k)
-                printlog(" was %s", cpd)
-                printlog(" now %s", npd)
-            #remove it:
-            try:
-                del self.printers[k]
-                remove_printer(k)
-            except Exception as e:
-                printlog.error("Error: failed to remove printer %s:", k)
-                printlog.error(" %s", e)
-                del e
-        #expand it here so the xpraforwarder doesn't need to import anything xpra:
-        attributes = {"display"         : os.environ.get("DISPLAY"),
-                      "source"          : self.uuid}
-        def makeabs(filename):
-            #convert to an absolute path since the backend may run as a different user:
-            return os.path.abspath(os.path.expanduser(filename))
-        if auth:
-            auth_password_file = None
-            try:
-                name, authclass, authoptions = auth
-                auth_password_file = authoptions.get("file")
-                log("file for %s / %s: '%s'", name, authclass, password_file)
-            except Exception as e:
-                log.error("Error: cannot forward authentication attributes to printer backend:")
-                log.error(" %s", e)
-            if auth_password_file or password_file:
-                attributes["password-file"] = makeabs(auth_password_file or password_file)
-        if encryption:
-            if not encryption_keyfile:
-                log.error("Error: no encryption keyfile found for printing")
-            else:
-                attributes["encryption"] = encryption
-                attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
-        #if we can, tell it exactly where to connect:
-        if self.unix_socket_paths:
-            #prefer sockets in public paths:
-            spath = self.unix_socket_paths[0]
-            for x in self.unix_socket_paths:
-                if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
-                    spath = x
-            attributes["socket-path"] = spath
-        log("printer attributes: %s", attributes)
-        for k,props in printers.items():
-            if k not in self.printers:
-                self.setup_printer(k, props, attributes)
-
-    def setup_printer(self, name, props, attributes):
-        from xpra.platform.pycups_printing import add_printer
-        info = props.get("printer-info", "")
-        attrs = attributes.copy()
-        attrs["remote-printer"] = name
-        attrs["remote-device-uri"] = props.get("device-uri")
-        location = PRINTER_LOCATION_STRING
-        if self.hostname:
-            location = "on %s"
-            if PRINTER_LOCATION_STRING:
-                #ie: on FOO (via xpra)
-                location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
-        try:
-            def printer_added():
-                #once the printer has been added, register it in the list
-                #(so it will be removed on exit)
-                printlog.info("the remote printer '%s' has been configured", name)
-                self.printers[name] = props
-            add_printer(name, props, info, location, attrs, success_cb=printer_added)
-        except Exception as e:
-            printlog.warn("Warning: failed to add printer %s: %s", name, e)
-            printlog("setup_printer(%s, %s, %s)", name, props, attributes, exc_info=True)
-
-    def remove_printers(self):
-        if self.machine_id==get_machine_id() and not ADD_LOCAL_PRINTERS:
-            return
-        printers = self.printers.copy()
-        self.printers = {}
-        for k in printers:
-            from xpra.platform.pycups_printing import remove_printer
-            remove_printer(k)
 
 
     def send_client_command(self, *args):
