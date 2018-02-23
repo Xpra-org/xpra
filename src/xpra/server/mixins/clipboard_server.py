@@ -41,7 +41,7 @@ class ClipboardServer(StubServerMixin):
             ch.cleanup()
 
 
-    def get_info(self):
+    def get_info(self, _proto):
         if self._clipboard_helper is None:
             return {}
         return {"clipboard" : self._clipboard_helper.get_info()}

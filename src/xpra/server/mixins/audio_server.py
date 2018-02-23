@@ -57,6 +57,15 @@ class AudioServer(StubServerMixin):
         self.cleanup_pulseaudio()
 
 
+    def get_info(self, _proto):
+        info = {}
+        if self.pulseaudio:
+            info["pulseaudio"] = self.get_pulseaudio_info()
+        if self.sound_properties:
+            info["sound"] = self.sound_properties
+        return {}
+
+
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
@@ -258,14 +267,6 @@ class AudioServer(StubServerMixin):
             info["private-directory"] = self.pulseaudio_private_dir
             info["private-socket"] = self.pulseaudio_private_socket
         return info
-
-    def get_info(self):
-        info = {}
-        if self.pulseaudio:
-            info["pulseaudio"] = self.get_pulseaudio_info()
-        if self.sound_properties:
-            info["sound"] = self.sound_properties
-        return {}
 
 
     def _process_sound_control(self, proto, packet):

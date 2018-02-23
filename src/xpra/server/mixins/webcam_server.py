@@ -46,7 +46,7 @@ class WebcamServer(StubServerMixin):
             }
 
 
-    def get_info(self):
+    def get_info(self, _proto):
         webcam_info = {
             ""  : self.webcam,
             }

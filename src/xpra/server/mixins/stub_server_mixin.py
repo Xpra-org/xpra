@@ -12,6 +12,9 @@ class StubServerMixin(object):
     def cleanup(self):
         pass
 
+    def setup(self, _opts):
+        pass
+
     def threaded_setup(self):
         pass
 
@@ -21,7 +24,7 @@ class StubServerMixin(object):
     def get_server_features(self, _source):
         return {}
 
-    def get_info(self):
+    def get_info(self, _proto):
         return {}
 
     def init_packet_handlers(self):

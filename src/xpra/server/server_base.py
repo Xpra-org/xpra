@@ -8,7 +8,6 @@
 
 import os.path
 from time import sleep
-import hashlib
 
 from xpra.log import Logger
 log = Logger("server")
@@ -18,7 +17,6 @@ focuslog = Logger("focus")
 execlog = Logger("exec")
 clientlog = Logger("client")
 screenlog = Logger("screen")
-printlog = Logger("printing")
 filelog = Logger("file")
 netlog = Logger("network")
 metalog = Logger("metadata")
@@ -40,10 +38,11 @@ from xpra.server.mixins.notification_forwarder import NotificationForwarder
 from xpra.server.mixins.webcam_server import WebcamServer
 from xpra.server.mixins.clipboard_server import ClipboardServer
 from xpra.server.mixins.audio_server import AudioServer
-from xpra.simple_stats import to_std_unit, std_unit
+from xpra.server.mixins.fileprint_server import FilePrintServer
+from xpra.simple_stats import std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, livefds, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, detect_leaks, \
+from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, csv, iround, detect_leaks, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
@@ -53,7 +52,6 @@ from xpra.scripts.parsing import parse_env
 from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
-from xpra.net.file_transfer import FileTransferAttributes
 
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", POSIX and not OSX)
@@ -68,7 +66,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -123,10 +121,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.double_click_distance = -1, -1
         self.supports_dbus_proxy = False
         self.dbus_helper = None
-        self.lpadmin = ""
-        self.lpinfo = ""
-        self.add_printer_options = []
-        self.file_transfer = FileTransferAttributes()
         #starting child commands:
         self.child_display = None
         self.start_commands = []
@@ -248,15 +242,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.start_env = parse_env(opts.start_env)
         self.pings = opts.pings
-        #printing and file transfer:
-        self.file_transfer.init_opts(opts, can_ask=False)
-        self.lpadmin = opts.lpadmin
-        self.lpinfo = opts.lpinfo
-        self.add_printer_options = opts.add_printer_options
         self.av_sync = opts.av_sync
-        #server-side printer handling is only for posix via pycups for now:
-        self.postscript_printer = opts.postscript_printer
-        self.pdf_printer = opts.pdf_printer
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
 
         #video init: default to ALL if not specified
@@ -283,7 +269,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         getVideoHelper().init()
         #re-init list of encodings now that we have video initialized
         self.init_encodings()
-        self.init_printing()
         self.init_memcheck()
         for c in ServerBase.__bases__:
             if c!=ServerCore:
@@ -325,204 +310,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
             except:
                 pass
-
-
-    ######################################################################
-    # printing:
-    def init_printing(self):
-        printing = self.file_transfer.printing
-        if not printing or WIN32:
-            return
-        try:
-            from xpra.platform import pycups_printing
-            pycups_printing.set_lpadmin_command(self.lpadmin)
-            pycups_printing.set_lpinfo_command(self.lpinfo)
-            pycups_printing.set_add_printer_options(self.add_printer_options)
-            if self.postscript_printer:
-                pycups_printing.add_printer_def("application/postscript", self.postscript_printer)
-            if self.pdf_printer:
-                pycups_printing.add_printer_def("application/pdf", self.pdf_printer)
-            printer_definitions = pycups_printing.validate_setup()
-            printing = bool(printer_definitions)
-            if printing:
-                printlog.info("printer forwarding enabled using %s", " and ".join([x.replace("application/", "") for x in printer_definitions.keys()]))
-            else:
-                printlog.warn("Warning: no printer definitions found,")
-                printlog.warn(" cannot enable printer forwarding")
-        except ImportError as e:
-            printlog("printing module is not installed: %s", e)
-            printing = False
-        except Exception:
-            printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
-            printing = False
-        #verify that we can talk to the socket:
-        auth_class = self.auth_classes.get("unix-domain")
-        if printing and auth_class:
-            try:
-                #this should be the name of the auth module:
-                auth_name = auth_class[0]
-            except:
-                auth_name = str(auth_class)
-            if auth_name not in ("none", "file"):
-                log.warn("Warning: printing conflicts with socket authentication module '%s'", auth_name)
-                printing = False
-        #update file transfer attributes since printing nay have been disabled here
-        self.file_transfer.printing = printing
-        printlog("init_printing() printing=%s", printing)
-
-    def _process_print(self, _proto, packet):
-        #ie: from the xpraforwarder we call this command:
-        #command = ["xpra", "print", "socket:/path/tosocket", filename, mimetype, source, title, printer, no_copies, print_options]
-        assert self.file_transfer.printing
-        #printlog("_process_print(%s, %s)", proto, packet)
-        if len(packet)<3:
-            log.error("Error: invalid print packet, only %i arguments", len(packet))
-            log.error(" %s", [repr_ellipsized(x) for x in packet])
-            return
-        filename, file_data = packet[1:3]
-        mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
-        if len(packet)>=4:
-            mimetype = packet[3]
-        if len(packet)>=5:
-            source_uuid = packet[4]
-        if len(packet)>=6:
-            title = packet[5]
-        if len(packet)>=7:
-            printer = packet[6]
-        if len(packet)>=8:
-            no_copies = int(packet[7])
-        if len(packet)>=9:
-            print_options = packet[8]
-        #parse and validate:
-        if len(mimetype)>=128:
-            log.error("Error: invalid mimetype in print packet:")
-            log.error(" %s", repr_ellipsized(mimetype))
-            return
-        if type(print_options)!=dict:
-            s = bytestostr(print_options)
-            print_options = {}
-            for x in s.split(" "):
-                parts = x.split("=", 1)
-                if len(parts)==2:
-                    print_options[parts[0]] = parts[1]
-        printlog("process_print: %s", (filename, mimetype, "%s bytes" % len(file_data), source_uuid, title, printer, no_copies, print_options))
-        printlog("process_print: got %s bytes for file %s", len(file_data), filename)
-        #parse the print options:
-        u = hashlib.sha1()
-        u.update(file_data)
-        printlog("sha1 digest: %s", u.hexdigest())
-        options = {
-            "printer"    : printer,
-            "title"      : title,
-            "copies"     : no_copies,
-            "options"    : print_options,
-            "sha1"       : u.hexdigest(),
-            }
-        printlog("parsed printer options: %s", options)
-        if SAVE_PRINT_JOBS:
-            self._save_print_job(filename, file_data)
-
-        sent = 0
-        sources = tuple(self._server_sources.values())
-        printlog("will try to send to %i clients: %s", len(sources), sources)
-        for ss in sources:
-            if source_uuid!='*' and ss.uuid!=source_uuid:
-                printlog("not sending to %s (wanted uuid=%s)", ss, source_uuid)
-                continue
-            if not ss.printing:
-                if source_uuid!='*':
-                    printlog.warn("Warning: printing is not enabled for:")
-                    printlog.warn(" %s", ss)
-                else:
-                    printlog("printing is not enabled for %s", ss)
-                continue
-            if not ss.printers:
-                printlog.warn("Warning: client %s does not have any printers", ss.uuid)
-                continue
-            if printer not in ss.printers:
-                printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
-                continue
-            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
-            if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
-                sent += 1
-        #warn if not sent:
-        if sent==0:
-            l = printlog.warn
-        else:
-            l = printlog.info
-        unit_str, v = to_std_unit(len(file_data), unit=1024)
-        l("'%s' (%i%sB) sent to %i client%s for printing", title or filename, v, unit_str, sent, engs(sent))
-
-    def _save_print_job(self, filename, file_data):
-        try:
-            save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
-            with open(save_filename, "wb") as f:
-                f.write(file_data)
-            printlog.info("saved print job to: %s", save_filename)
-        except Exception as e:
-            printlog.error("Error: failed to save print job to %s", save_filename)
-            printlog.error(" %s", e)
-
-    def _process_printers(self, proto, packet):
-        if not self.file_transfer.printing or WIN32:
-            log.error("Error: received printer definitions data")
-            log.error(" but this server does not support printer forwarding")
-            return
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        printers = packet[1]
-        auth_class = self.auth_classes.get("unix-domain")
-        ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
-
-    def get_printing_info(self):
-        d = {
-             "lpadmin"              : self.lpadmin,
-             "lpinfo"               : self.lpinfo,
-             "add-printer-options"  : self.add_printer_options,
-             }
-        if self.file_transfer.printing:
-            from xpra.platform.printing import get_info
-            d.update(get_info())
-        return d
-
-
-    ######################################################################
-    # file transfers:
-    def _process_send_file(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file packet")
-            return
-        ss._process_send_file(packet)
-
-    def _process_ack_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for ack-file-chunk packet")
-            return
-        ss._process_ack_file_chunk(packet)
-
-    def _process_send_file_chunk(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file-chunk packet")
-            return
-        ss._process_send_file_chunk(packet)
-
-    def _process_send_data_request(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-file-request packet")
-            return
-        ss._process_send_data_request(packet)
-
-    def _process_send_data_response(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            log.warn("Warning: invalid client source for send-data-response packet")
-            return
-        ss._process_send_data_response(packet)
 
 
     ######################################################################
@@ -1390,7 +1177,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "rpc-types"                    : tuple(self.rpc_handlers.keys()),
-                 "printer.attributes"           : ("printer-info", "device-uri"),
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
@@ -1595,11 +1381,13 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         def up(prefix, d):
             info[prefix] = d
 
-        info.update(AudioServer.get_info(self))
-        info.update(WebcamServer.get_info(self))
-        info.update(ClipboardServer.get_info(self))
-        up("file",      self.file_transfer.get_info())
-        up("printing",  self.get_printing_info())
+        for c in ServerBase.__bases__:
+            try:
+                info.update(c.get_info(self, proto))
+            except Exception as e:
+                log("do_get_info%s", (proto, server_sources, window_ids), exc_info=True)
+                log.error("Error collecting information from %s: %s", c, e)
+
         up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())
         up("keyboard",  self.get_keyboard_info())
@@ -2418,7 +2206,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         ServerCore.init_sockets(self, sockets)
         #verify we have a local socket for printing:
         nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
-        printlog("local sockets we can use for printing: %s", nontcpsockets)
+        netlog("local sockets we can use for printing: %s", nontcpsockets)
         if not nontcpsockets and self.file_transfer.printing:
             if not WIN32:
                 log.warn("Warning: no local sockets defined,")
@@ -2559,12 +2347,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "set-bell":                             self._process_set_bell,
             "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
-            "printers":                             self._process_printers,
-            "send-file":                            self._process_send_file,
-            "ack-file-chunk":                       self._process_ack_file_chunk,
-            "send-file-chunk":                      self._process_send_file_chunk,
-            "send-data-request":                    self._process_send_data_request,
-            "send-data-response":                   self._process_send_data_response,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
@@ -2606,7 +2388,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "screenshot":                           self._process_screenshot,
             "info-request":                         self._process_info_request,
             "start-command":                        self._process_start_command,
-            "print":                                self._process_print,
             "input-devices":                        self._process_input_devices,
             })
 
