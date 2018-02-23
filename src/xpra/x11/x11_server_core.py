@@ -95,6 +95,9 @@ class X11ServerCore(GTKServerBase):
         self.randr_exact_size = False
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
+        #x11 keyboard bits:
+        self.current_keyboard_group = None
+        clean_keyboard_state()
         self.x11_init()
 
     def x11_init(self):
@@ -223,11 +226,6 @@ class X11ServerCore(GTKServerBase):
                       ]:
             X11Core.get_xatom("_NET_WM_WINDOW_TYPE"+wtype)
 
-    def init_keyboard(self):
-        GTKServerBase.init_keyboard(self)
-        self.current_keyboard_group = None
-        #clear all modifiers
-        clean_keyboard_state()
 
     def set_keyboard_layout_group(self, grp):
         keylog("set_keyboard_layout_group(%i) current keyboard group=%s", grp, self.current_keyboard_group)
