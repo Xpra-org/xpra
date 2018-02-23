@@ -20,11 +20,31 @@ TOGGLE_FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "c
 
 
 """
-    Control commands for ServerBase
+Control commands for ServerBase
 """
 class ServerBaseControlCommands(object):
 
-    def init_control_commands(self):
+    def init(self, opts):
+        pass
+
+    def cleanup(self):
+        pass
+
+    def setup(self, _opts):
+        self.add_control_commands()
+
+    def threaded_setup(self):
+        pass
+
+
+    def get_caps(self):
+        return {}
+
+    def get_server_features(self, _source):
+        return {}
+
+
+    def add_control_commands(self):
         def parse_boolean_value(v):
             if str(v).lower() in TRUE_OPTIONS:
                 return True

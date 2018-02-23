@@ -37,7 +37,8 @@ timeoutlog = Logger("timeout")
 from xpra.platform.features import COMMAND_SIGNALS, CLIPBOARDS
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
-from xpra.server.server_base_controlcommands import ServerBaseControlCommands
+from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
+from xpra.server.mixins.notification_forwarder import NotificationForwarder
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import BytesIOClass, thread, livefds, pollwait, monotonic_time, bytestostr, osexpand, OSX, WIN32, POSIX, PYTHON3
@@ -69,7 +70,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -78,8 +79,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
     """
 
     def __init__(self):
-        ServerCore.__init__(self)
-        ServerBaseControlCommands.__init__(self)
+        for c in ServerBase.__bases__:
+            c.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
 
@@ -220,7 +221,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
 
 
     def init(self, opts):
-        ServerCore.init(self, opts)
+        for c in ServerBase.__bases__:
+            c.init(self, opts)
         log("ServerBase.init(%s)", opts)
         self.init_options(opts)
 
@@ -275,8 +277,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         #server-side printer handling is only for posix via pycups for now:
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
-        self.notifications_forwarder = None
-        self.notifications = opts.notifications
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         self.webcam_option = opts.webcam
         self.webcam = opts.webcam.lower() not in FALSE_OPTIONS
@@ -291,15 +291,15 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
         getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
 
-    def init_components(self, opts):
+    def setup(self, opts):
         log("starting component init")
-        ServerCore.init_components(self, opts)
+        for c in ServerBase.__bases__:
+            c.setup(self, opts)
         self.init_webcam()
         self.init_clipboard()
         self.init_keyboard()
         self.init_pulseaudio()
         self.init_sound_options(opts)
-        self.init_notification_forwarder()
         self.init_dbus_helper()
 
         if opts.system_tray:
@@ -316,6 +316,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         self.init_encodings()
         self.init_printing()
         self.init_memcheck()
+        for c in ServerBase.__bases__:
+            if c!=ServerCore:
+                c.threaded_setup(self)
         log("threaded_init() end")
 
 
@@ -333,9 +336,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         self.server_event("exit")
         if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
             self.terminate_children_processes()
-        if self.notifications_forwarder:
-            thread.start_new_thread(self.notifications_forwarder.release, ())
-            self.notifications_forwarder = None
+        for c in ServerBase.__bases__:
+            if c!=ServerCore:
+                c.cleanup(self)
         getVideoHelper().cleanup()
         reaper_cleanup()
         self.cleanup_pulseaudio()
@@ -747,85 +750,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
                 webcamlog.error("unknown error", exc_info=True)
             ss.send_webcam_stop(device, str(e))
             self.stop_virtual_webcam()
-
-
-    ######################################################################
-    # notifications:
-    def init_notification_forwarder(self):
-        log("init_notification_forwarder() enabled=%s", self.notifications)
-        if self.notifications and POSIX and not OSX:
-            try:
-                from xpra.dbus.notifications_forwarder import register
-                self.notifications_forwarder = register(self.notify_callback, self.notify_close_callback)
-                if self.notifications_forwarder:
-                    log.info("D-Bus notification forwarding is available")
-                    log("%s", self.notifications_forwarder)
-            except Exception as e:
-                if str(e).endswith("is already claimed on the session bus"):
-                    log.warn("Warning: cannot forward notifications, the interface is already claimed")
-                else:
-                    log.warn("Warning: failed to load or register our dbus notifications forwarder:")
-                    log.warn(" %s", e)
-                log.warn(" if you do not have a dedicated dbus session for this xpra instance,")
-                log.warn(" use the 'notifications=no' option")
-
-    def _process_notification_close(self, proto, packet):
-        assert self.notifications
-        nid, reason, text = packet[1:4]
-        ss = self._server_sources.get(proto)
-        assert ss
-        try:
-            #remove client callback if we have one:
-            ss.notification_callbacks.pop(nid)
-        except KeyError:
-            if self.notifications_forwarder:
-                #regular notification forwarding:
-                active = self.notifications_forwarder.is_notification_active(nid)
-                notifylog("notification-close nid=%i, reason=%i, text=%s, active=%s", nid, reason, text, active)
-                if active:
-                    self.notifications_forwarder.NotificationClosed(nid, reason)
-
-    def _process_notification_action(self, proto, packet):
-        assert self.notifications
-        nid, action_key = packet[1:3]
-        ss = self._server_sources.get(proto)
-        assert ss
-        ss.user_event()
-        try:
-            #special client callback notification:
-            client_callback = ss.notification_callbacks.pop(nid)
-        except KeyError:
-            if self.notifications_forwarder:
-                #regular notification forwarding:
-                active = self.notifications_forwarder.is_notification_active(nid)
-                notifylog("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
-                if active:
-                    self.notifications_forwarder.ActionInvoked(nid, action_key)
-        else:
-            client_callback(nid, action_key)
-
-    def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
-        try:
-            assert self.notifications_forwarder and self.notifications
-            icon = self.get_notification_icon(str(app_icon))
-            if os.path.isabs(str(app_icon)):
-                app_icon = ""
-            notifylog("notify_callback%s icon=%s", (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), repr_ellipsized(str(icon)))
-            for ss in self._server_sources.values():
-                ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
-        except Exception as e:
-            notifylog("notify_callback failed", exc_info=True)
-            notifylog.error("Error processing notification:")
-            notifylog.error(" %s", e)
-
-    def get_notification_icon(self, _icon_string):
-        return []
-
-    def notify_close_callback(self, nid):
-        assert self.notifications_forwarder and self.notifications
-        notifylog("notify_close_callback(%s)", nid)
-        for ss in self._server_sources.values():
-            ss.notify_close(int(nid))
 
 
     ######################################################################
@@ -1531,13 +1455,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         return True
 
 
-
-
-    def init_control_commands(self):
-        ServerCore.init_control_commands(self)
-        ServerBaseControlCommands.init_control_commands(self)
-
-
     ######################################################################
     # start commands:
     def get_child_env(self):
@@ -1986,7 +1903,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
 
     ######################################################################
     # hello:
-    def get_server_features(self):
+    def get_server_features(self, server_source=None):
         #these are flags that have been added over time with new versions
         #to expose new server features:
         f = dict((k, True) for k in (
@@ -2021,10 +1938,16 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
                  "bandwidth-limit-change"       : True,
                  "bandwidth-limit"              : self.bandwidth_limit or 0,
                  }
+        for c in ServerBase.__bases__:
+            if c!=ServerCore:
+                f.update(c.get_server_features(self, server_source))
         return f
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
+        for c in ServerBase.__bases__:
+            if c!=ServerCore:
+                capabilities.update(c.get_caps(self))
         capabilities["server_type"] = "base"
         if source.wants_display:
             capabilities.update({
@@ -2034,9 +1957,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
             capabilities.update({
                  "clipboards"                   : self._clipboards,
                  "clipboard-direction"          : self.clipboard_direction,
-                 "notifications"                : self.notifications,
-                 "notifications.close"          : self.notifications,
-                 "notifications.actions"        : self.notifications,
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
@@ -2061,7 +1981,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
             if self._clipboard_helper:
                 capabilities["clipboard.loop-uuids"] = self._clipboard_helper.get_loop_uuids()
             capabilities.update(self.file_transfer.get_file_transfer_features())
-            capabilities.update(flatten_dict(self.get_server_features()))
+            capabilities.update(flatten_dict(self.get_server_features(source)))
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
         capabilities["exit_server"] = True
@@ -2887,12 +2807,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
 
-    def _process_set_notify(self, proto, packet):
-        assert self.notifications, "cannot toggle notifications: the feature is disabled"
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_notifications = bool(packet[1])
-
     def _process_set_cursors(self, proto, packet):
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self._server_sources.get(proto)
@@ -3228,7 +3142,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
             "ping":                                 self._process_ping,
             "ping_echo":                            self._process_ping_echo,
             "set-cursors":                          self._process_set_cursors,
-            "set-notify":                           self._process_set_notify,
             "set-bell":                             self._process_set_bell,
             "logging":                              self._process_logging,
             "command_request":                      self._process_command_request,
@@ -3288,9 +3201,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands):
             "start-command":                        self._process_start_command,
             "print":                                self._process_print,
             "input-devices":                        self._process_input_devices,
-            #notifications:
-            "notification-close":                   self._process_notification_close,
-            "notification-action":                  self._process_notification_action,
             # Note: "clipboard-*" packets are handled via a special case..
             })
 

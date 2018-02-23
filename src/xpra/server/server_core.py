@@ -225,7 +225,6 @@ class ServerCore(object):
         self.bandwidth_limit = 0
 
         self.init_uuid()
-        self.init_control_commands()
         self.init_packet_handlers()
         self.init_aliases()
         sanity_checks()
@@ -269,10 +268,11 @@ class ServerCore(object):
         self.ssl_mode = opts.ssl
         self.dbus_control = opts.dbus_control
 
-    def init_components(self, opts):
+    def setup(self, opts):
         self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_dbus_server()
+        self.init_control_commands()
 
 
     ######################################################################
