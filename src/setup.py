@@ -1701,10 +1701,10 @@ cython_add(Extension("xpra.buffers.membuf",
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(mdns_ENABLED, "xpra.net.mdns")
-toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
+toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.mixins", "xpra.server.auth")
 toggle_packages(rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
-toggle_packages(server_ENABLED, "xpra.server.window")
+toggle_packages(server_ENABLED, "xpra.server.window", "xpra.server.mixins")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
