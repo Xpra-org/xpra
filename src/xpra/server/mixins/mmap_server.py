@@ -10,9 +10,6 @@ from xpra.scripts.config import parse_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
-SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
-
-
 """
 Mixin for servers that can handle mmap transfers
 """
@@ -31,7 +28,7 @@ class MMAP_Server(StubServerMixin):
             self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
 
 
-    def get_info(self, _proto):
+    def get_info(self, _proto=None):
         return {
             "mmap" : {
                 "supported"     : self.supports_mmap,
