@@ -106,16 +106,6 @@ class ServerBaseControlCommands(StubServerMixin):
             self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn, min_args=1, max_args=1, validation=[from0to100])
 
 
-
-    def _process_command_request(self, _proto, packet):
-        """ client sent a command request through its normal channel """
-        assert len(packet)>=2, "invalid command request packet (too small!)"
-        #packet[0] = "control"
-        #this may end up calling do_handle_command_request via the adapter
-        code, msg = self.process_control_command(*packet[1:])
-        log("command request returned: %s (%s)", code, msg)
-
-
     #########################################
     # Control Commands
     #########################################
@@ -537,3 +527,17 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("invalid workspace value: %s", workspace)
         window.set_property("workspace", workspace)
         return "window %s moved to workspace %s" % (wid, workspace)
+
+
+    def _process_command_request(self, _proto, packet):
+        """ client sent a command request through its normal channel """
+        assert len(packet)>=2, "invalid command request packet (too small!)"
+        #packet[0] = "control"
+        #this may end up calling do_handle_command_request via the adapter
+        code, msg = self.process_control_command(*packet[1:])
+        log("command request returned: %s (%s)", code, msg)
+
+    def init_packet_handlers(self):
+        self._authenticated_packet_handlers.update({
+            "command_request" : self._process_command_request,
+          })

@@ -167,10 +167,6 @@ class ServerCore(object):
         authentication and the initial handshake.
     """
 
-    #magic value to distinguish exit code for upgrading (True==1)
-    #and exiting:
-    EXITING_CODE = 2
-
     def __init__(self):
         log("ServerCore.__init__()")
         self.start_time = monotonic_time()

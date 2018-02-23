@@ -12,7 +12,6 @@ from time import sleep
 from xpra.log import Logger
 log = Logger("server")
 focuslog = Logger("focus")
-execlog = Logger("exec")
 clientlog = Logger("client")
 screenlog = Logger("screen")
 netlog = Logger("network")
@@ -26,7 +25,6 @@ httplog = Logger("http")
 bandwidthlog = Logger("bandwidth")
 timeoutlog = Logger("timeout")
 
-from xpra.platform.features import COMMAND_SIGNALS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.mixins.notification_forwarder import NotificationForwarder
@@ -36,17 +34,16 @@ from xpra.server.mixins.audio_server import AudioServer
 from xpra.server.mixins.fileprint_server import FilePrintServer
 from xpra.server.mixins.mmap_server import MmapServer
 from xpra.server.mixins.input_server import InputServer
+from xpra.server.mixins.child_command_server import ChildCommandServer
 from xpra.simple_stats import std_unit
-from xpra.child_reaper import getChildReaper
-from xpra.os_util import thread, livefds, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, csv, iround, detect_leaks, \
+from xpra.os_util import thread, livefds, monotonic_time, bytestostr, WIN32, POSIX, PYTHON3
+from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, iround, detect_leaks, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
 from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
-from xpra.child_reaper import reaper_cleanup
-from xpra.scripts.parsing import parse_env
 from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS
+from xpra.server import EXITING_CODE
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 
@@ -61,13 +58,13 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MmapServer, InputServer):
-    """
-        This is the base class for servers.
-        It provides all the generic functions but is not tied
-        to a specific backend (X11 or otherwise).
-        See GTKServerBase/X11ServerBase and other platform specific subclasses.
-    """
+"""
+This is the base class for seamless and desktop servers. (not proxy servers)
+It provides all the generic functions but is not tied
+to a specific backend (X11 or otherwise).
+See GTKServerBase/X11ServerBase and other platform specific subclasses.
+"""
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MmapServer, InputServer, ChildCommandServer):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -113,24 +110,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.double_click_distance = -1, -1
         self.supports_dbus_proxy = False
         self.dbus_helper = None
-        #starting child commands:
-        self.child_display = None
-        self.start_commands = []
-        self.start_child_commands = []
-        self.start_after_connect = []
-        self.start_child_after_connect = []
-        self.start_on_connect = []
-        self.start_child_on_connect = []
-        self.exit_with_children = False
-        self.start_after_connect_done = False
-        self.start_new_commands = False
         self.remote_logging = False
-        self.start_env = []
-        self.exec_cwd = None
-        self.exec_wrapper = None
-        self.terminate_children = False
-        self.children_started = []
-        self.child_reaper = None
         self.pings = 0
         self.scaling_control = False
         self.rpc_handlers = {}
@@ -212,19 +192,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
         self.supports_dbus_proxy = opts.dbus_proxy
-        self.exit_with_children = opts.exit_with_children
-        self.terminate_children = opts.terminate_children
-        self.start_new_commands = opts.start_new_commands
-        if opts.exec_wrapper:
-            import shlex
-            self.exec_wrapper = shlex.split(opts.exec_wrapper)
-        self.child_reaper = getChildReaper()
-        def set_reaper_callback():
-            self.child_reaper.set_quit_callback(self.reaper_exit)
-            self.child_reaper.check()
-        self.idle_add(set_reaper_callback)
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
-        self.start_env = parse_env(opts.start_env)
         self.pings = opts.pings
         self.av_sync = opts.av_sync
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
@@ -271,13 +239,10 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
     def do_cleanup(self):
         self.server_event("exit")
-        if self.terminate_children and self._upgrading!=ServerCore.EXITING_CODE:
-            self.terminate_children_processes()
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 c.cleanup(self)
         getVideoHelper().cleanup()
-        reaper_cleanup()
 
 
     def init_memcheck(self):
@@ -327,172 +292,11 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
 
     ######################################################################
-    # start commands:
-    def get_child_env(self):
-        #subclasses may add more items (ie: fakexinerama)
-        env = os.environ.copy()
-        env.update(self.start_env)
-        if self.child_display:
-            env["DISPLAY"] = self.child_display
-        return env
-
-    def get_full_child_command(self, cmd, use_wrapper=True):
-        #make sure we have it as a list:
-        if type(cmd) not in (list, tuple):
-            import shlex
-            cmd = shlex.split(str(cmd))
-        if not use_wrapper or not self.exec_wrapper:
-            return cmd
-        return self.exec_wrapper + cmd
-
-    def exec_start_commands(self):
-        execlog("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)
-        self._exec_commands(self.start_commands, self.start_child_commands)
-
-    def exec_after_connect_commands(self):
-        execlog("exec_after_connect_commands() start=%s, start_child=%s", self.start_after_connect, self.start_child_after_connect)
-        self._exec_commands(self.start_after_connect, self.start_child_after_connect)
-
-    def exec_on_connect_commands(self):
-        execlog("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
-        self._exec_commands(self.start_on_connect, self.start_child_on_connect)
-
-    def _exec_commands(self, start_list, start_child_list):
-        started = []
-        if start_list:
-            for x in start_list:
-                if x:
-                    proc = self.start_command(x, x, ignore=True)
-                    if proc:
-                        started.append(proc)
-        if start_child_list:
-            for x in start_child_list:
-                if x:
-                    proc = self.start_command(x, x, ignore=False)
-                    if proc:
-                        started.append(proc)
-        procs = tuple(x for x in started if x is not None)
-        if not self.session_name:
-            self.guess_session_name(procs)
-
-    def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
-        execlog("start_command%s exec_wrapper=%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
-        import subprocess
-        env = self.get_child_env()
-        try:
-            real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
-            execlog("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
-            proc = subprocess.Popen(real_cmd, stdin=subprocess.PIPE, env=env, shell=shell, cwd=self.exec_cwd, close_fds=True, **kwargs)
-            procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
-            execlog("pid(%s)=%s", real_cmd, proc.pid)
-            if not ignore:
-                execlog.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
-            self.children_started.append(procinfo)
-            return proc
-        except OSError as e:
-            execlog.error("Error spawning child '%s': %s\n" % (child_cmd, e))
-            return None
-
-    def _process_start_command(self, proto, packet):
-        log("start new command: %s", packet)
-        if not self.start_new_commands:
-            log.warn("Warning: received start-command request,")
-            log.warn(" but the feature is currently disabled")
-            return
-        name, command, ignore = packet[1:4]
-        proc = self.start_command(name, command, ignore)
-        if len(packet)>=5:
-            shared = packet[4]
-            if proc and not shared:
-                ss = self._server_sources.get(proto)
-                assert ss
-                log("adding filter: pid=%s for %s", proc.pid, proto)
-                ss.add_window_filter("window", "pid", "=", proc.pid)
-        log("process_start_command: proc=%s", proc)
-
-    def add_process(self, process, name, command, ignore=False, callback=None):
-        return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
-
-    def is_child_alive(self, proc):
-        return proc is not None and proc.poll() is None
-
-    def reaper_exit(self):
-        if self.exit_with_children:
-            execlog.info("all children have exited and --exit-with-children was specified, exiting")
-            self.idle_add(self.clean_quit)
-
-    def terminate_children_processes(self):
-        cl = tuple(self.children_started)
-        self.children_started = []
-        execlog("terminate_children_processes() children=%s", cl)
-        if not cl:
-            return
-        wait_for = []
-        self.child_reaper.poll()
-        for procinfo in cl:
-            proc = procinfo.process
-            name = procinfo.name
-            if self.is_child_alive(proc):
-                wait_for.append(procinfo)
-                execlog("child command '%s' is still alive, calling terminate on %s", name, proc)
-                try:
-                    proc.terminate()
-                except Exception as e:
-                    execlog("failed to terminate %s: %s", proc, e)
-                    del e
-        if not wait_for:
-            return
-        execlog("waiting for child commands to exit: %s", wait_for)
-        start = monotonic_time()
-        while monotonic_time()-start<TERMINATE_DELAY and wait_for:
-            self.child_reaper.poll()
-            #this is called from the UI thread, we cannot sleep
-            #sleep(1)
-            wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
-            execlog("still not terminated: %s", wait_for)
-        execlog("done waiting for child commands")
-
-    def guess_session_name(self, procs):
-        if not procs:
-            return
-        #use the commands to define the session name:
-        self.child_reaper.poll()
-        cmd_names = []
-        for proc in procs:
-            proc_info = self.child_reaper.get_proc_info(proc.pid)
-            if not proc_info:
-                continue
-            cmd = proc_info.command
-            bcmd = os.path.basename(cmd[0])
-            if bcmd not in cmd_names:
-                cmd_names.append(bcmd)
-        execlog("guess_session_name() commands=%s", cmd_names)
-        if cmd_names:
-            self.session_name = csv(cmd_names)
-
-    def get_commands_info(self):
-        info = {
-                "start"                     : self.start_commands,
-                "start-child"               : self.start_child_commands,
-                "start-after-connect"       : self.start_after_connect,
-                "start-child-after-connect" : self.start_child_after_connect,
-                "start-on-connect"          : self.start_on_connect,
-                "start-child-on-connect"    : self.start_child_on_connect,
-                "exit-with-children"        : self.exit_with_children,
-                "start-after-connect-done"  : self.start_after_connect_done,
-                "start-new"                 : self.start_new_commands,
-                }
-        for i,procinfo in enumerate(self.children_started):
-            info[i] = procinfo.get_info()
-        return info
-
-
-    ######################################################################
     # shutdown / exit commands:
     def _process_exit_server(self, _proto, _packet):
         log.info("Exiting in response to client request")
         self.cleanup_all_protocols(SERVER_EXIT)
-        self.timeout_add(500, self.clean_quit, ServerCore.EXITING_CODE)
+        self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
     def _process_shutdown_server(self, _proto, _packet):
         if not self.client_shutdown:
@@ -829,8 +633,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
                  "rpc-types"                    : tuple(self.rpc_handlers.keys()),
-                 "start-new-commands"           : self.start_new_commands,
-                 "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
                  "input-devices"                : self.input_devices,
                  "client-shutdown"              : self.client_shutdown,
@@ -839,8 +641,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  "sharing-toggle"               : self.sharing is None,
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
-                 "server-commands-signals"      : COMMAND_SIGNALS,
-                 "server-commands-info"         : not WIN32 and not OSX,
                  })
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features(source)))
@@ -898,32 +698,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         for x in bytestostr(msg).splitlines():
             clientlog.log(level, prefix+x)
 
-
-    def _process_command_signal(self, _proto, packet):
-        pid = packet[1]
-        signame = packet[2]
-        if signame not in COMMAND_SIGNALS:
-            log.warn("Warning: invalid signal received: '%s'", signame)
-            return
-        procinfo = self.child_reaper.get_proc_info(pid)
-        if not procinfo:
-            log.warn("Warning: command not found for pid %i", pid)
-            return
-        if procinfo.returncode is not None:
-            log.warn("Warning: command for pid %i has already terminated", pid)
-            return
-        import signal
-        sigval = getattr(signal, signame, None)
-        if not sigval:
-            log.error("Error: signal '%s' not found!", signame)
-            return
-        log.info("sending signal %s to pid %i", signame, pid)
-        try:
-            os.kill(pid, sigval)
-        except Exception as e:
-            log.error("Error sending signal '%s' to pid %i", signame, pid)
-            log.error(" %s", e)
-            
 
     ######################################################################
     # info:
@@ -1003,7 +777,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                              })
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
-        info.setdefault("commands", self.get_commands_info())
         if self.notifications_forwarder:
             info.setdefault("notifications", {}).update(self.notifications_forwarder.get_info())
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
@@ -1014,7 +787,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
              "randr"            : self.randr,
              "cursors"          : self.cursors,
              "bell"             : self.bell,
-             "notifications"    : self.notifications_forwarder is not None,
              "sharing"          : self.sharing is not False,
              "dbus_proxy"       : self.supports_dbus_proxy,
              "rpc-types"        : tuple(self.rpc_handlers.keys()),
@@ -1036,9 +808,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 log("do_get_info%s", (proto, server_sources, window_ids), exc_info=True)
                 log.error("Error collecting information from %s: %s", c, e)
 
-        up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())
-        up("keyboard",  self.get_keyboard_info())
         up("encodings", self.get_encoding_info())
         up("network", {
             "sharing"                      : self.sharing is not False,
@@ -1987,19 +1757,16 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         for c in ServerBase.__bases__:
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
-            "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
             "damage-sequence":                      self._process_damage_sequence,
             "ping":                                 self._process_ping,
             "ping_echo":                            self._process_ping_echo,
             "set-cursors":                          self._process_set_cursors,
             "set-bell":                             self._process_set_bell,
             "logging":                              self._process_logging,
-            "command_request":                      self._process_command_request,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
-            "command-signal":                       self._process_command_signal,
           })
         self._authenticated_ui_packet_handlers.update({
             #windows:
@@ -2027,7 +1794,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "buffer-refresh":                       self._process_buffer_refresh,
             "screenshot":                           self._process_screenshot,
             "info-request":                         self._process_info_request,
-            "start-command":                        self._process_start_command,
             })
 
     def init_aliases(self):

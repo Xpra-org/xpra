@@ -994,6 +994,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             app = XpraDesktopServer()
         app.init_virtual_devices(devices)
 
+    if proxying or upgrading:
+        #when proxying or upgrading, don't exec any plain start commands:
+        opts.start = opts.start_child = [] 
+    elif opts.exit_with_children:
+        assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+
     try:
         app._ssl_wrap_socket = wrap_socket_fn
         app.original_desktop_display = desktop_display
@@ -1009,18 +1015,6 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         log.error(str(e))
         log.info("")
         return 1
-
-    #honour start child, html webserver, and setup child reaper
-    if not proxying and not upgrading:
-        if opts.exit_with_children:
-            assert opts.start_child, "exit-with-children was specified but start-child is missing!"
-        app.start_commands              = opts.start
-        app.start_child_commands        = opts.start_child
-        app.start_after_connect         = opts.start_after_connect
-        app.start_child_after_connect   = opts.start_child_after_connect
-        app.start_on_connect            = opts.start_on_connect
-        app.start_child_on_connect      = opts.start_child_on_connect
-        app.exec_start_commands()
 
     #publish mdns records:
     if opts.mdns:
@@ -1067,8 +1061,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             _cleanups.remove(close_display)
         if kill_dbus:
             _cleanups.remove(kill_dbus)
-        from xpra.server.server_core import ServerCore
-        if r==ServerCore.EXITING_CODE:
+        from xpra.server import EXITING_CODE
+        if r==EXITING_CODE:
             log.info("exiting: not cleaning up Xvfb")
         else:
             log.info("upgrading: not cleaning up Xvfb")
