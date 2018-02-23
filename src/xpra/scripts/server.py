@@ -357,7 +357,7 @@ def show_encoding_help(opts):
         x.logger.setLevel(logging.WARN)
     from xpra.server.server_base import ServerBase
     sb = ServerBase()
-    sb.init_options(opts)
+    sb.init(opts)
     from xpra.codecs.loader import PREFERED_ENCODING_ORDER, HELP_ORDER
     if "help" in opts.encodings:
         sb.allowed_encodings = PREFERED_ENCODING_ORDER
