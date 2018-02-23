@@ -24,7 +24,6 @@ filelog = Logger("file")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
-mmaplog = Logger("mmap")
 dbuslog = Logger("dbus")
 statslog = Logger("stats")
 notifylog = Logger("notify")
@@ -35,6 +34,7 @@ bandwidthlog = Logger("bandwidth")
 
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.audio_mixin import AudioMixin
+from xpra.server.source.mmap_connection import MMAP_Connection
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.metadata import make_window_metadata
@@ -90,7 +90,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(FileTransferHandler, AudioMixin):
+class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -99,7 +99,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, mmap_filename,
+                 supports_mmap, mmap_filename, min_mmap_size,
                  bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
@@ -116,7 +116,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
                  get_window_id,
                  window_filters,
                  file_transfer,
-                 supports_mmap, mmap_filename,
+                 supports_mmap, mmap_filename, min_mmap_size,
                  bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
@@ -129,6 +129,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         FileTransferHandler.__init__(self, file_transfer)
         AudioMixin.__init__(self, sound_properties, sound_source_plugin,
                  supports_speaker, supports_microphone, speaker_codecs, microphone_codecs)
+        MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -159,15 +160,6 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         self.get_cursor_data_cb = get_cursor_data_cb
         self.get_window_id = get_window_id
         self.window_filters = window_filters
-        # mmap:
-        self.supports_mmap = supports_mmap
-        self.mmap_filename = mmap_filename
-        self.mmap = None
-        self.mmap_size = 0
-        self.mmap_client_token = None                   #the token we write that the client may check
-        self.mmap_client_token_index = 512
-        self.mmap_client_token_bytes = 0
-        self.mmap_client_namespace = False
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
         # mouse echo:
@@ -353,11 +345,6 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         self.encode_work_queue.put(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
-        mmap = self.mmap
-        if mmap:
-            self.mmap = None
-            self.mmap_size = 0
-            mmap.close()
         self.cancel_recalculate_timer()
         self.cancel_ping_echo_timers()
         self.cancel_cursor_timer()
@@ -592,7 +579,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
             self.schedule_idle_timeout()
 
 
-    def parse_hello(self, c, min_mmap_size):
+    def parse_hello(self, c):
         #batch options:
         def batch_value(prop, default, minv=None, maxv=None):
             assert default is not None
@@ -750,7 +737,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         if not self.send_windows:
             log("windows/pixels forwarding is disabled for this client")
         else:
-            self.parse_encoding_caps(c, min_mmap_size)
+            self.parse_encoding_caps(c)
         if self.mmap_size>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
@@ -764,6 +751,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         if self.file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
         AudioMixin.parse_client_caps(self, c)
+        MMAP_Connection.parse_client_caps(self, c)
 
 
     def get_connect_info(self):
@@ -797,7 +785,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
         return cinfo
 
 
-    def parse_encoding_caps(self, c, min_mmap_size):
+    def parse_encoding_caps(self, c):
         self.set_encoding(c.strget("encoding", None), None)
         #encoding options (filter):
         #1: these properties are special cased here because we
@@ -858,63 +846,7 @@ class ClientConnection(FileTransferHandler, AudioMixin):
             self.default_encoding_options["min-speed"] = ms
         elog("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-        #mmap:
-        self.mmap_client_namespace = c.boolget("mmap.namespace", False)
-        sep = ["_", "."][self.mmap_client_namespace] 
-        def mmapattr(k):
-            return "mmap%s%s" % (sep, k)
-        mmap_filename = c.strget(mmapattr("file"))
-        mmap_size = c.intget(mmapattr("size"), 0)
-        mmaplog("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget(mmapattr("token"))
-        mmaplog("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
-        if mmap_filename:
-            if self.mmap_filename:
-                mmaplog("using global server specified mmap file path: '%s'", self.mmap_filename)
-                mmap_filename = self.mmap_filename
-            if not self.supports_mmap:
-                mmaplog("client enabled mmap but mmap mode is not supported", mmap_filename)
-            elif WIN32 and mmap_filename.startswith("/"):
-                mmaplog("mmap_file '%s' is a unix path", mmap_filename)
-            elif not os.path.exists(mmap_filename):
-                mmaplog("mmap_file '%s' cannot be found!", mmap_filename)
-            else:
-                from xpra.net.mmap_pipe import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
-                self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
-                mmaplog("found client mmap area: %s, %i bytes - min mmap size=%i", self.mmap, self.mmap_size, min_mmap_size)
-                if self.mmap_size>0:
-                    index = c.intget(mmapattr("token_index"), DEFAULT_TOKEN_INDEX)
-                    count = c.intget(mmapattr("token_bytes"), DEFAULT_TOKEN_BYTES)
-                    v = read_mmap_token(self.mmap, index, count)
-                    mmaplog("mmap_token=%#x, verification=%#x", mmap_token, v)
-                    if v!=mmap_token:
-                        log.warn("Warning: mmap token verification failed, not using mmap area!")
-                        log.warn(" expected '%#x', found '%#x'", mmap_token, v)
-                        self.mmap.close()
-                        self.mmap = None
-                        self.mmap_size = 0
-                    elif self.mmap_size<min_mmap_size:
-                        mmaplog.warn("Warning: client supplied mmap area is too small, discarding it")
-                        mmaplog.warn(" we need at least %iMB and this area is %iMB", min_mmap_size//1024//1024, self.mmap_size//1024//1024)
-                        self.mmap.close()
-                        self.mmap = None
-                        self.mmap_size = 0
-                    else:
-                        from xpra.os_util import get_int_uuid
-                        self.mmap_client_token = get_int_uuid()
-                        self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                        if c.intget("mmap_token_index"):
-                            #we can write the token anywhere we want and tell the client,
-                            #so write it right at the end:
-                            self.mmap_client_token_index = self.mmap_size-self.mmap_client_token_bytes
-                        else:
-                            #use the expected default for older versions:
-                            self.mmap_client_token_index = DEFAULT_TOKEN_INDEX
-                        write_mmap_token(self.mmap, self.mmap_client_token, self.mmap_client_token_index, self.mmap_client_token_bytes)
-
-        if self.mmap_size>0:
-            mmaplog.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
-        else:
+        if self.mmap_size==0:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
             if self.encoding=="auto":
                 s = "automatic picture encoding enabled"
@@ -1116,20 +1048,13 @@ class ClientConnection(FileTransferHandler, AudioMixin):
     def send_hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         merge_dicts(capabilities, AudioMixin.get_caps(self))
+        merge_dicts(capabilities, MMAP_Connection.get_caps(self))
         if self.wants_encodings and self.encoding:
             capabilities["encoding"] = self.encoding
         if self.wants_features:
             capabilities.update({
-                         "mmap_enabled"         : self.mmap_size>0,
                          "auto_refresh_delay"   : self.auto_refresh_delay,
                          })
-        if self.mmap_client_token:
-            sep = ["_", "."][self.mmap_client_namespace]
-            def mmapattr(name, value):
-                capabilities["mmap%s%s" % (sep, name)] = value
-            mmapattr("token",       self.mmap_client_token)
-            mmapattr("token_index", self.mmap_client_token_index)
-            mmapattr("token_bytes", self.mmap_client_token_bytes)
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:
@@ -1221,16 +1146,11 @@ class ClientConnection(FileTransferHandler, AudioMixin):
                     finfo[i] = str(f)
                     i += 1
             info["window-filter"] = finfo
-        info["mmap"] = {
-            "supported"     : self.supports_mmap,
-            "enabled"       : self.mmap is not None,
-            "size"          : self.mmap_size,
-            "filename"      : self.mmap_filename or "",
-            }
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
         info["file-transfers"] = FileTransferHandler.get_info(self)
         merge_dicts(info, AudioMixin.get_info(self))
+        merge_dicts(info, MMAP_Connection.get_info(self))
         return info
 
     def get_screen_info(self):

@@ -303,7 +303,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                           get_window_id,
                           self.window_filters,
                           self.file_transfer,
-                          self.supports_mmap, self.mmap_filename,
+                          self.supports_mmap, self.mmap_filename, self.min_mmap_size,
                           bandwidth_limit,
                           self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
@@ -315,7 +315,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                           self.default_speed, self.default_min_speed)
         log("process_hello clientconnection=%s", ss)
         try:
-            ss.parse_hello(c, self.min_mmap_size)
+            ss.parse_hello(c)
         except:
             #close it already
             ss.close()
