@@ -39,6 +39,7 @@ from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.mixins.notification_forwarder import NotificationForwarder
 from xpra.server.mixins.webcam_server import WebcamServer
+from xpra.server.mixins.clipboard_server import ClipboardServer
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, livefds, pollwait, monotonic_time, bytestostr, osexpand, OSX, WIN32, POSIX, PYTHON3
@@ -54,8 +55,6 @@ from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.net.file_transfer import FileTransferAttributes
-if PYTHON3:
-    unicode = str           #@ReservedAssignment
 
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", POSIX and not OSX)
@@ -70,7 +69,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -124,8 +123,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.clipboard = False
-        self.clipboard_direction = "both"
         self.supports_dbus_proxy = False
         self.dbus_helper = None
         self.lpadmin = ""
@@ -248,9 +245,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
-        self.clipboard = not ((opts.clipboard or "").lower() in FALSE_OPTIONS)
-        self.clipboard_direction = opts.clipboard_direction
-        self.clipboard_filter_file = opts.clipboard_filter_file
         self.supports_dbus_proxy = opts.dbus_proxy
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
@@ -291,7 +285,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         log("starting component init")
         for c in ServerBase.__bases__:
             c.setup(self, opts)
-        self.init_clipboard()
         self.init_keyboard()
         self.init_pulseaudio()
         self.init_sound_options(opts)
@@ -768,129 +761,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         ss = self._server_sources.get(proto)
         if ss:
             ss.sound_data(*packet[1:])
-
-
-    ######################################################################
-    # clipboard:
-    def init_clipboard(self):
-        clipboardlog("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
-        ### Clipboard handling:
-        self._clipboard_helper = None
-        self._clipboard_client = None
-        self._clipboards = []
-        if not self.clipboard:
-            return
-        clipboard_filter_res = []
-        if self.clipboard_filter_file:
-            if not os.path.exists(self.clipboard_filter_file):
-                clipboardlog.error("invalid clipboard filter file: '%s' does not exist - clipboard disabled!", self.clipboard_filter_file)
-                return
-            try:
-                with open(self.clipboard_filter_file, "r" ) as f:
-                    for line in f:
-                        clipboard_filter_res.append(line.strip())
-                    clipboardlog("loaded %s regular expressions from clipboard filter file %s", len(clipboard_filter_res), self.clipboard_filter_file)
-            except:
-                clipboardlog.error("error reading clipboard filter file %s - clipboard disabled!", self.clipboard_filter_file, exc_info=True)
-                return
-        try:
-            from xpra.clipboard.gdk_clipboard import GDKClipboardProtocolHelper
-            kwargs = {
-                      "filters"     : clipboard_filter_res,
-                      "can-send"    : self.clipboard_direction in ("to-client", "both"),
-                      "can-receive" : self.clipboard_direction in ("to-server", "both"),
-                      }
-            self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
-            self._clipboards = CLIPBOARDS
-        except Exception:
-            #clipboardlog("gdk clipboard helper failure", exc_info=True)
-            clipboardlog.error("Error: failed to setup clipboard helper", exc_info=True)
-
-    def parse_hello_ui_clipboard(self, ss, c):
-        #take the clipboard if no-one else has it yet:
-        if not ss.clipboard_enabled:
-            clipboardlog("client does not support clipboard")
-            return
-        if not self._clipboard_helper:
-            clipboardlog("server does not support clipboard")
-            return
-        cc = self._clipboard_client
-        if cc and not cc.is_closed():
-            clipboardlog("another client already owns the clipboard")
-            return
-        self._clipboard_client = ss
-        self._clipboard_helper.init_proxies_uuid()
-        #deal with buggy win32 clipboards:
-        if "clipboard.greedy" not in c:
-            #old clients without the flag: take a guess based on platform:
-            client_platform = c.strget("platform", "")
-            greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-        else:
-            greedy = c.boolget("clipboard.greedy")
-        self._clipboard_helper.set_greedy_client(greedy)
-        want_targets = c.boolget("clipboard.want_targets")
-        self._clipboard_helper.set_want_targets_client(want_targets)
-        #the selections the client supports (default to all):
-        client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
-        clipboardlog("client %s is the clipboard peer", ss)
-        clipboardlog(" greedy=%s", greedy)
-        clipboardlog(" want targets=%s", want_targets)
-        clipboardlog(" server has selections: %s", csv(self._clipboards))
-        clipboardlog(" client initial selections: %s", csv(client_selections))
-        self._clipboard_helper.enable_selections(client_selections)
-
-    def process_clipboard_packet(self, ss, packet):
-        if self.readonly:
-            return
-        if not ss:
-            #protocol has been dropped!
-            return
-        assert self._clipboard_client==ss, \
-                "the clipboard packet '%s' does not come from the clipboard owner!" % packet[0]
-        if not ss.clipboard_enabled:
-            #this can happen when we disable clipboard in the middle of transfers
-            #(especially when there is a clipboard loop)
-            log.warn("received a clipboard packet from a source which does not have clipboard enabled!")
-            return
-        assert self._clipboard_helper, "received a clipboard packet but we do not support clipboard sharing"
-        self.idle_add(self._clipboard_helper.process_clipboard_packet, packet)
-
-    def _process_clipboard_enabled_status(self, proto, packet):
-        if self.readonly:
-            return
-        clipboard_enabled = packet[1]
-        ss = self._server_sources.get(proto)
-        self.set_clipboard_enabled_status(ss, clipboard_enabled)
-
-    def set_clipboard_enabled_status(self, ss, clipboard_enabled):
-        ch = self._clipboard_helper
-        if not ch:
-            clipboardlog.warn("Warning: client try to toggle clipboard-enabled status,")
-            clipboardlog.warn(" but we do not support clipboard at all! Ignoring it.")
-            return
-        cc = self._clipboard_client
-        if cc!=ss or ss is None:
-            clipboardlog.warn("Warning: received a request to change the clipboard status,")
-            clipboardlog.warn(" but it does not come from the clipboard owner! Ignoring it.")
-        cc.clipboard_enabled = clipboard_enabled
-        if not clipboard_enabled:
-            ch.enable_selections([])
-        clipboardlog("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
-
-    def clipboard_progress(self, local_requests, _remote_requests):
-        assert self._clipboard_helper is not None
-        if self._clipboard_client:
-            self._clipboard_client.send_clipboard_progress(local_requests)
-
-    def send_clipboard_packet(self, *parts):
-        assert self._clipboard_helper is not None
-        if self._clipboard_client:
-            self._clipboard_client.send_clipboard(parts)
-
-    def get_clipboard_info(self):
-        if self._clipboard_helper is None:
-            return {}
-        return self._clipboard_helper.get_info()
 
 
     ######################################################################
@@ -1730,7 +1600,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                       "ogg-latency-fix" : True,
                       "eos-sequence"    : True,
                       }
-        f["clipboard"] = {"enable-selections" : True}
         f["encoding"] = {
                          "generic" : True,
                          }
@@ -1755,8 +1624,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  })
         if source.wants_features:
             capabilities.update({
-                 "clipboards"                   : self._clipboards,
-                 "clipboard-direction"          : self.clipboard_direction,
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "dbus_proxy"                   : self.supports_dbus_proxy,
@@ -1775,8 +1642,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  "server-commands-signals"      : COMMAND_SIGNALS,
                  "server-commands-info"         : not WIN32 and not OSX,
                  })
-            if self._clipboard_helper:
-                capabilities["clipboard.loop-uuids"] = self._clipboard_helper.get_loop_uuids()
             capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features(source)))
         #this is a feature, but we would need the hello request
@@ -1807,9 +1672,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                      "key_repeat"           : key_repeat,
                      "key_repeat_modifiers" : True})
         if server_source.wants_features:
-            clipboard = self._clipboard_helper is not None and self._clipboard_client == server_source
-            capabilities["clipboard"] = clipboard
-            clipboardlog("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s", self._clipboard_helper, self._clipboard_client, server_source, clipboard)
             capabilities["remote-logging"] = self.remote_logging
             capabilities["remote-logging.multi-line"] = True
         if self._reverse_aliases and server_source.wants_aliases:
@@ -1967,7 +1829,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                                    },
              "dbus_proxy"       : self.supports_dbus_proxy,
              "rpc-types"        : tuple(self.rpc_handlers.keys()),
-             "clipboard"        : self.clipboard,
              "idle_timeout"     : self.idle_timeout,
              }
         i.update(self.get_server_features())
@@ -1984,7 +1845,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         up("printing",  self.get_printing_info())
         up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())
-        up("clipboard", self.get_clipboard_info())
+        up("clipboard", ClipboardServer.get_info(self))
         up("keyboard",  self.get_keyboard_info())
         up("encodings", self.get_encoding_info())
         up("network", {
@@ -2934,7 +2795,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         for c in ServerBase.__bases__:
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
-            "set-clipboard-enabled":                self._process_clipboard_enabled_status,
             "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
             "damage-sequence":                      self._process_damage_sequence,
             "ping":                                 self._process_ping,
@@ -2995,7 +2855,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "start-command":                        self._process_start_command,
             "print":                                self._process_print,
             "input-devices":                        self._process_input_devices,
-            # Note: "clipboard-*" packets are handled via a special case..
             })
 
     def init_aliases(self):
@@ -3008,12 +2867,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         try:
             handler = None
             packet_type = bytestostr(packet[0])
-            assert isinstance(packet_type, (str, bytes, unicode)), "packet_type %s is not a string: %s..." % (type(packet_type), str(packet_type)[:100])
-            if packet_type.startswith("clipboard-"):
-                handler = self.process_clipboard_packet
-                ss = self._server_sources.get(proto)
-                handler(ss, packet)
-                return
             if proto in self._server_sources:
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
