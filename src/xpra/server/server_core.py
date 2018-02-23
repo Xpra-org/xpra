@@ -225,8 +225,6 @@ class ServerCore(object):
         self.bandwidth_limit = 0
 
         self.init_uuid()
-        self.init_packet_handlers()
-        self.init_aliases()
         sanity_checks()
 
     def get_server_mode(self):
@@ -269,6 +267,8 @@ class ServerCore(object):
         self.dbus_control = opts.dbus_control
 
     def setup(self, opts):
+        self.init_packet_handlers()
+        self.init_aliases()
         self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_dbus_server()

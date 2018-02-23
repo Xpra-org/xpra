@@ -43,6 +43,9 @@ class ServerBaseControlCommands(object):
     def get_server_features(self, _source):
         return {}
 
+    def init_packet_handlers(self):
+        pass
+
 
     def add_control_commands(self):
         def parse_boolean_value(v):

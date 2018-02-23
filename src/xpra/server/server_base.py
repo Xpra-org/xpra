@@ -28,7 +28,6 @@ windowlog = Logger("window")
 clipboardlog = Logger("clipboard")
 rpclog = Logger("rpc")
 dbuslog = Logger("dbus")
-webcamlog = Logger("webcam")
 notifylog = Logger("notify")
 httplog = Logger("http")
 bandwidthlog = Logger("bandwidth")
@@ -39,9 +38,10 @@ from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.mixins.notification_forwarder import NotificationForwarder
+from xpra.server.mixins.webcam_server import WebcamServer
 from xpra.simple_stats import to_std_unit, std_unit
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import BytesIOClass, thread, livefds, pollwait, monotonic_time, bytestostr, osexpand, OSX, WIN32, POSIX, PYTHON3
+from xpra.os_util import thread, livefds, pollwait, monotonic_time, bytestostr, osexpand, OSX, WIN32, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, repr_ellipsized, csv, iround, detect_leaks, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
@@ -70,7 +70,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -83,6 +83,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
             c.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
+
+        self._authenticated_packet_handlers = {}
+        self._authenticated_ui_packet_handlers = {}
 
         # This must happen early, before loading in windows at least:
         self._server_sources = {}
@@ -150,11 +153,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
         self.pings = 0
         self.scaling_control = False
         self.rpc_handlers = {}
-        self.webcam_option = ""
-        self.webcam = False
-        self.webcam_encodings = []
-        self.webcam_forwarding_device = None
-        self.virtual_video_devices = 0
         self.input_devices = "auto"
         self.input_devices_format = None
         self.input_devices_data = None
@@ -278,8 +276,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
         self.postscript_printer = opts.postscript_printer
         self.pdf_printer = opts.pdf_printer
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
-        self.webcam_option = opts.webcam
-        self.webcam = opts.webcam.lower() not in FALSE_OPTIONS
 
         #sound:
         self.pulseaudio = opts.pulseaudio
@@ -295,7 +291,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
         log("starting component init")
         for c in ServerBase.__bases__:
             c.setup(self, opts)
-        self.init_webcam()
         self.init_clipboard()
         self.init_keyboard()
         self.init_pulseaudio()
@@ -342,7 +337,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
         getVideoHelper().cleanup()
         reaper_cleanup()
         self.cleanup_pulseaudio()
-        self.stop_virtual_webcam()
 
 
     def init_memcheck(self):
@@ -556,200 +550,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
             log.warn("Warning: invalid client source for send-data-response packet")
             return
         ss._process_send_data_response(packet)
-
-
-    ######################################################################
-    # webcam:
-    def init_webcam(self):
-        if not self.webcam:
-            return
-        try:
-            from xpra.codecs.pillow.decode import get_encodings
-            self.webcam_encodings = get_encodings()
-        except Exception as e:
-            webcamlog.error("Error: webcam forwarding disabled:")
-            webcamlog.error(" %s", e)
-            self.webcam = False
-        if self.webcam_option.startswith("/dev/video"):
-            self.virtual_video_devices = 1
-        else:
-            self.virtual_video_devices = self.init_virtual_video_devices()
-            if self.virtual_video_devices==0:
-                self.webcam = False
-
-    def init_virtual_video_devices(self):
-        webcamlog("init_virtual_video_devices")
-        if not POSIX or OSX:
-            return 0
-        try:
-            from xpra.codecs.v4l2.pusher import Pusher
-            assert Pusher
-        except ImportError as e:
-            webcamlog.error("Error: failed to import the virtual video module:")
-            webcamlog.error(" %s", e)
-            return 0
-        try:
-            from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
-        except ImportError as e:
-            webcamlog.warn("Warning: cannot load webcam components")
-            webcamlog.warn(" %s", e)
-            webcamlog.warn(" webcam forwarding disabled")
-            return 0
-        check_virtual_dir()
-        devices = get_virtual_video_devices()
-        webcamlog.info("found %i virtual video device%s for webcam forwarding", len(devices), engs(devices))
-        return len(devices)
-
-    def get_webcam_info(self):
-        webcam_info = {
-                       ""                       : self.webcam,
-                       }
-        if self.webcam_option.startswith("/dev/video"):
-            webcam_info["device"] = self.webcam_option
-        webcam_info["virtual-video-devices"] = self.virtual_video_devices
-        d = self.webcam_forwarding_device
-        if d:
-            webcam_info.update(d.get_info())
-        return webcam_info
-
-    def _process_webcam_start(self, proto, packet):
-        if self.readonly:
-            return
-        assert self.webcam
-        ss = self._server_sources.get(proto)
-        if not ss:
-            webcamlog.warn("Warning: invalid client source for webcam start")
-            return
-        device, w, h = packet[1:4]
-        log("starting webcam %sx%s", w, h)
-        self.start_virtual_webcam(ss, device, w, h)
-
-    def start_virtual_webcam(self, ss, device, w, h):
-        assert w>0 and h>0
-        if self.webcam_option.startswith("/dev/video"):
-            #use the device specified:
-            devices = {
-                0 : {
-                    "device" : self.webcam_option,
-                    }
-                       }
-        else:
-            from xpra.platform.xposix.webcam import get_virtual_video_devices
-            devices = get_virtual_video_devices()
-            if len(devices)==0:
-                webcamlog.warn("Warning: cannot start webcam forwarding, no virtual devices found")
-                ss.send_webcam_stop(device)
-                return
-            if self.webcam_forwarding_device:
-                self.stop_virtual_webcam()
-            webcamlog("start_virtual_webcam%s virtual video devices=%s", (ss, device, w, h), devices)
-        errs = {}
-        for device_id, device_info in devices.items():
-            webcamlog("trying device %s: %s", device_id, device_info)
-            device_str = device_info.get("device")
-            try:
-                from xpra.codecs.v4l2.pusher import Pusher, get_input_colorspaces    #@UnresolvedImport
-                in_cs = get_input_colorspaces()
-                p = Pusher()
-                src_format = in_cs[0]
-                p.init_context(w, h, w, src_format, device_str)
-                self.webcam_forwarding_device = p
-                webcamlog.info("webcam forwarding using %s", device_str)
-                #this tell the client to start sending, and the size to use - which may have changed:
-                ss.send_webcam_ack(device, 0, p.get_width(), p.get_height())
-                return
-            except Exception as e:
-                errs[device_str] = str(e)
-                del e
-        #all have failed!
-        #cannot start webcam..
-        ss.send_webcam_stop(device, str(e))
-        webcamlog.error("Error setting up webcam forwarding:")
-        if len(errs)>1:
-            webcamlog.error(" tried %i devices:", len(errs))
-        for device_str, err in errs.items():
-            webcamlog.error(" %s : %s", device_str, err)
-
-    def _process_webcam_stop(self, proto, packet):
-        assert proto in self._server_sources
-        if self.readonly:
-            return
-        device, message = (packet+[""])[1:3]
-        webcamlog("stopping webcam device %s", ": ".join([str(x) for x in (device, message)]))
-        if not self.webcam_forwarding_device:
-            webcamlog.warn("Warning: cannot stop webcam device %s: no such context!", device)
-            return
-        self.stop_virtual_webcam()
-
-    def stop_virtual_webcam(self):
-        webcamlog("stop_virtual_webcam() webcam_forwarding_device=%s", self.webcam_forwarding_device)
-        vfd = self.webcam_forwarding_device
-        if vfd:
-            self.webcam_forwarding_device = None
-            vfd.clean()
-
-    def _process_webcam_frame(self, proto, packet):
-        if self.readonly:
-            return
-        device, frame_no, encoding, w, h, data = packet[1:7]
-        webcamlog("webcam-frame no %i: %s %ix%i", frame_no, encoding, w, h)
-        assert encoding and w and h and data
-        ss = self._server_sources.get(proto)
-        if not ss:
-            webcamlog.warn("Warning: invalid client source for webcam frame")
-            return
-        vfd = self.webcam_forwarding_device
-        if not self.webcam_forwarding_device:
-            webcamlog.warn("Warning: webcam forwarding is not active, dropping frame")
-            ss.send_webcam_stop(device, "not started")
-            return
-        try:
-            from xpra.codecs.pillow.decode import get_encodings
-            assert encoding in get_encodings(), "invalid encoding specified: %s (must be one of %s)" % (encoding, get_encodings())
-            rgb_pixel_format = "BGRX"       #BGRX
-            from PIL import Image
-            buf = BytesIOClass(data)
-            img = Image.open(buf)
-            pixels = img.tobytes('raw', rgb_pixel_format)
-            from xpra.codecs.image_wrapper import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w*4, planes=ImageWrapper.PACKED)
-            src_format = vfd.get_src_format()
-            if not src_format:
-                #closed / closing
-                return
-            #one of those two should be present
-            try:
-                csc_mod = "csc_swscale"
-                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
-            except ImportError:
-                ss.send_webcam_stop(device, "no csc module")
-                return
-            try:
-                assert rgb_pixel_format in get_input_colorspaces(), "unsupported RGB pixel format %s" % rgb_pixel_format
-                assert src_format in get_output_colorspaces(rgb_pixel_format), "unsupported output colourspace format %s" % src_format
-            except Exception as e:
-                webcamlog.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
-                webcamlog.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
-                webcamlog.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
-                ss.send_webcam_stop(device, "csc format error")
-                return
-            tw = vfd.get_width()
-            th = vfd.get_height()
-            csc = ColorspaceConverter()
-            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
-            image = csc.convert_image(bgrx_image)
-            vfd.push_image(image)
-            #tell the client all is good:
-            ss.send_webcam_ack(device, frame_no)
-        except Exception as e:
-            webcamlog("error on %ix%i frame %i using encoding %s", w, h, frame_no, encoding, exc_info=True)
-            webcamlog.error("Error processing webcam frame:")
-            if str(e):
-                webcamlog.error(" %s", e)
-            else:
-                webcamlog.error("unknown error", exc_info=True)
-            ss.send_webcam_stop(device, str(e))
-            self.stop_virtual_webcam()
 
 
     ######################################################################
@@ -1965,9 +1765,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
                  "start-new-commands"           : self.start_new_commands,
                  "exit-with-children"           : self.exit_with_children,
                  "av-sync.enabled"              : self.av_sync,
-                 "webcam"                       : self.webcam,
-                 "webcam.encodings"             : self.webcam_encodings,
-                 "virtual-video-devices"        : self.virtual_video_devices,
                  "input-devices"                : self.input_devices,
                  "client-shutdown"              : self.client_shutdown,
                  "window.states"                : [],   #subclasses set this as needed
@@ -2183,7 +1980,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
             info[prefix] = d
 
         up("file",      self.file_transfer.get_info())
-        up("webcam",    self.get_webcam_info())
+        up("webcam",    WebcamServer.get_info(self))
         up("printing",  self.get_printing_info())
         up("commands",  self.get_commands_info())
         up("features",  self.get_features_info())
@@ -3134,8 +2931,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
     ######################################################################
     # packets:
     def init_packet_handlers(self):
-        ServerCore.init_packet_handlers(self)
-        self._authenticated_packet_handlers = {
+        for c in ServerBase.__bases__:
+            c.init_packet_handlers(self)
+        self._authenticated_packet_handlers.update({
             "set-clipboard-enabled":                self._process_clipboard_enabled_status,
             "set-keyboard-sync-enabled":            self._process_keyboard_sync_enabled_status,
             "damage-sequence":                      self._process_damage_sequence,
@@ -3151,16 +2949,12 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
             "send-file-chunk":                      self._process_send_file_chunk,
             "send-data-request":                    self._process_send_data_request,
             "send-data-response":                   self._process_send_data_response,
-            "webcam-start":                         self._process_webcam_start,
-            "webcam-stop":                          self._process_webcam_stop,
-            "webcam-frame":                         self._process_webcam_frame,
             "connection-data":                      self._process_connection_data,
             "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
             "command-signal":                       self._process_command_signal,
-          }
-        self._authenticated_ui_packet_handlers = self._default_packet_handlers.copy()
+          })
         self._authenticated_ui_packet_handlers.update({
             #windows:
             "map-window":                           self._process_map_window,
@@ -3221,20 +3015,20 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder):
                 handler(ss, packet)
                 return
             if proto in self._server_sources:
-                handlers = self._authenticated_packet_handlers
-                ui_handlers = self._authenticated_ui_packet_handlers
-            else:
-                handlers = self._default_packet_handlers
-                ui_handlers = {}
-            handler = handlers.get(packet_type)
+                handler = self._authenticated_ui_packet_handlers.get(packet_type)
+                if handler:
+                    netlog("process ui packet %s", packet_type)
+                    self.idle_add(handler, proto, packet)
+                    return
+                handler = self._authenticated_packet_handlers.get(packet_type)
+                if handler:
+                    netlog("process non-ui packet %s", packet_type)
+                    handler(proto, packet)
+                    return
+            handler = self._default_packet_handlers.get(packet_type)
             if handler:
-                netlog("process non-ui packet %s", packet_type)
+                netlog("process default packet %s", packet_type)
                 handler(proto, packet)
-                return
-            handler = ui_handlers.get(packet_type)
-            if handler:
-                netlog("will process ui packet %s", packet_type)
-                self.idle_add(handler, proto, packet)
                 return
             def invalid_packet():
                 ss = self._server_sources.get(proto)
