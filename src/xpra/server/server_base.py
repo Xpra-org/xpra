@@ -39,6 +39,7 @@ from xpra.server.mixins.webcam_server import WebcamServer
 from xpra.server.mixins.clipboard_server import ClipboardServer
 from xpra.server.mixins.audio_server import AudioServer
 from xpra.server.mixins.fileprint_server import FilePrintServer
+from xpra.server.mixins.mmap_server import MmapServer
 from xpra.simple_stats import std_unit
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import thread, livefds, monotonic_time, bytestostr, OSX, WIN32, POSIX, PYTHON3
@@ -49,7 +50,7 @@ from xpra.platform.paths import get_icon_filename, get_icon_dir
 from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
 from xpra.child_reaper import reaper_cleanup
 from xpra.scripts.parsing import parse_env
-from xpra.scripts.config import parse_bool_or_int, parse_bool, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool_or_int, FALSE_OPTIONS
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, codec_versions, get_codec, has_codec
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 
@@ -66,7 +67,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
 
 
 
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MmapServer):
     """
         This is the base class for servers.
         It provides all the generic functions but is not tied
@@ -89,9 +90,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
 
-        self.supports_mmap = False
-        self.mmap_filename = None
-        self.min_mmap_size = 64*1024*1024
         self.randr = False
 
         self._window_to_id = {}
@@ -209,11 +207,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         from xpra.scripts import config
         config.warn = log.warn
 
-        if opts.mmap and os.path.isabs(opts.mmap):
-            self.supports_mmap = True
-            self.mmap_filename = opts.mmap
-        else:
-            self.supports_mmap = bool(parse_bool("mmap", opts.mmap.lower()))
         self.allowed_encodings = opts.encodings
         self.init_encoding(opts.encoding)
 
@@ -1349,10 +1342,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                              "x"            : self.xdpi,
                              "y"            : self.ydpi,
                              })
-        info.setdefault("mmap", {}).update({
-            "supported"     : self.supports_mmap,
-            "filename"      : self.mmap_filename or "",
-            })
         info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         info.setdefault("commands", self.get_commands_info())
