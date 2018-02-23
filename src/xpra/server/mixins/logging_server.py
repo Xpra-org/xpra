@@ -25,7 +25,7 @@ class LoggingServer(StubServerMixin):
 
     def get_server_features(self, _source=None):
         return {
-            "remote-logging"    : self.remote_logging
+            "remote-logging"            : self.remote_logging,
             "remote-logging.multi-line" : True,
             }
 
