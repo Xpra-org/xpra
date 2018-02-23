@@ -294,8 +294,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         def get_window_id(wid):
             return self._window_to_id.get(wid)
         bandwidth_limit = self.get_client_bandwidth_limit(proto)
-        ServerSourceClass = self.get_server_source_class()
-        ss = ServerSourceClass(proto, drop_client,
+        ClientConnectionClass = self.get_server_source_class()
+        ss = ClientConnectionClass(proto, drop_client,
                           self.idle_add, self.timeout_add, self.source_remove, self.setting_changed,
                           self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
                           self._socket_dir, self.unix_socket_paths, not is_request, self.dbus_control,
@@ -313,7 +313,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                           self.speaker_codecs, self.microphone_codecs,
                           self.default_quality, self.default_min_quality,
                           self.default_speed, self.default_min_speed)
-        log("process_hello serversource=%s", ss)
+        log("process_hello clientconnection=%s", ss)
         try:
             ss.parse_hello(c, self.min_mmap_size)
         except:
@@ -350,8 +350,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         
 
     def get_server_source_class(self):
-        from xpra.server.source import ServerSource
-        return ServerSource
+        from xpra.server.source.client_connection import ClientConnection
+        return ClientConnection
 
     def reset_window_filters(self):
         self.window_filters = []

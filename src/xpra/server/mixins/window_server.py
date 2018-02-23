@@ -71,7 +71,7 @@ class WindowServer(StubServerMixin):
             winfo.setdefault(wid, {}).update(self.get_window_info(window))
 
     def get_window_info(self, window):
-        from xpra.server.source import make_window_metadata
+        from xpra.server.window.metadata import make_window_metadata
         info = {}
         for prop in window.get_property_names():
             if prop=="icon" or prop is None:

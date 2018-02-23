@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2015-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.server.source import ServerSource
+from xpra.server.source.client_connection import ClientConnection
 from xpra.gtk_common.gobject_compat import get_xid
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
@@ -28,13 +28,13 @@ def get_x11_window_value(filter_object, window):
     return v
 
 
-class X11ServerSource(ServerSource):
+class X11ServerSource(ClientConnection):
     """ Adds the ability to filter windows using X11 properties """
 
     def get_window_filter(self, object_name, property_name, operator, value):
         if object_name.lower() not in ("x11window", "window"):
             raise ValueError("invalid object name")
-        wf = ServerSource.get_window_filter(self, "window", property_name, operator, value)
+        wf = ClientConnection.get_window_filter(self, "window", property_name, operator, value)
         if object_name.lower()=="x11window":
             #same filter but use X11 properties:
             def get_window_value(window):

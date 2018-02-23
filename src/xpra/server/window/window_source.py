@@ -82,7 +82,7 @@ class WindowSource(object):
     We create a Window Source for each window we send pixels for.
 
     The UI thread calls 'damage' for screen updates,
-    we eventually call 'ServerSource.call_in_encode_thread' to queue the damage compression,
+    we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
     the function can then submit the packet using the 'queue_damage_packet' callback.
 
     (also by 'send_window_icon' and clibpoard packets)
@@ -121,7 +121,7 @@ class WindowSource(object):
         self.compressed_wrapper = compressed_wrapper    #callback utility for making compressed wrappers
         self.wid = wid
         self.window = window                            #only to be used from the UI thread!
-        self.global_statistics = statistics             #shared/global statistics from ServerSource
+        self.global_statistics = statistics             #shared/global statistics from ClientConnection
         self.statistics = WindowPerformanceStatistics()
         self.av_sync = av_sync
         self.av_sync_delay = av_sync_delay
@@ -173,7 +173,7 @@ class WindowSource(object):
         self.window_dimensions = ww, wh
         self.mapped_at = None
         self.fullscreen = not self.is_tray and window.get("fullscreen")
-        self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ServerSource sets defaults with the client's scaling.control value
+        self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
         self.scaling = None
         self.maximized = False          #set by the client!
         self.iconic = False
