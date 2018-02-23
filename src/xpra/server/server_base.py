@@ -19,7 +19,6 @@ metalog = Logger("metadata")
 geomlog = Logger("geometry")
 windowlog = Logger("window")
 rpclog = Logger("rpc")
-dbuslog = Logger("dbus")
 notifylog = Logger("notify")
 httplog = Logger("http")
 bandwidthlog = Logger("bandwidth")
@@ -32,9 +31,11 @@ from xpra.server.mixins.webcam_server import WebcamServer
 from xpra.server.mixins.clipboard_server import ClipboardServer
 from xpra.server.mixins.audio_server import AudioServer
 from xpra.server.mixins.fileprint_server import FilePrintServer
-from xpra.server.mixins.mmap_server import MmapServer
+from xpra.server.mixins.mmap_server import MMAP_Server
 from xpra.server.mixins.input_server import InputServer
 from xpra.server.mixins.child_command_server import ChildCommandServer
+from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
+
 from xpra.simple_stats import std_unit
 from xpra.os_util import thread, livefds, monotonic_time, bytestostr, WIN32, POSIX, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, iround, detect_leaks, \
@@ -64,7 +65,7 @@ It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MmapServer, InputServer, ChildCommandServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -108,12 +109,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.supports_dbus_proxy = False
-        self.dbus_helper = None
         self.remote_logging = False
         self.pings = 0
         self.scaling_control = False
-        self.rpc_handlers = {}
         self.mem_bytes = 0
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
 
@@ -191,7 +189,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
-        self.supports_dbus_proxy = opts.dbus_proxy
         self.remote_logging = not ((opts.remote_logging or "").lower() in FALSE_OPTIONS)
         self.pings = opts.pings
         self.av_sync = opts.av_sync
@@ -206,7 +203,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         log("starting component init")
         for c in ServerBase.__bases__:
             c.setup(self, opts)
-        self.init_dbus_helper()
 
         if opts.system_tray:
             self.add_system_tray()
@@ -258,27 +254,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
             except:
                 pass
-
-
-    ######################################################################
-    # dbus:
-    def init_dbus_helper(self):
-        if not self.supports_dbus_proxy:
-            return
-        try:
-            from xpra.dbus.helper import DBusHelper
-            self.dbus_helper = DBusHelper()
-            self.rpc_handlers["dbus"] = self._handle_dbus_rpc
-        except Exception as e:
-            log("init_dbus_helper()", exc_info=True)
-            log.warn("Warning: cannot load dbus helper:")
-            log.warn(" %s", e)
-            self.dbus_helper = None
-            self.supports_dbus_proxy = False
-
-    def make_dbus_server(self):
-        from xpra.server.dbus.dbus_server import DBUS_Server
-        return DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
     def add_system_tray(self):
@@ -631,8 +606,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             capabilities.update({
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
-                 "dbus_proxy"                   : self.supports_dbus_proxy,
-                 "rpc-types"                    : tuple(self.rpc_handlers.keys()),
                  "av-sync.enabled"              : self.av_sync,
                  "input-devices"                : self.input_devices,
                  "client-shutdown"              : self.client_shutdown,
@@ -788,8 +761,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
              "cursors"          : self.cursors,
              "bell"             : self.bell,
              "sharing"          : self.sharing is not False,
-             "dbus_proxy"       : self.supports_dbus_proxy,
-             "rpc-types"        : tuple(self.rpc_handlers.keys()),
              "idle_timeout"     : self.idle_timeout,
              }
         i.update(self.get_server_features())
@@ -1469,37 +1440,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             log("lock set to %s for client %i", ss.lock, ss.counter)
 
 
-    ######################################################################
-    # rpc:
-    def _process_rpc(self, proto, packet):
-        if self.readonly:
-            return
-        ss = self._server_sources.get(proto)
-        assert ss is not None
-        rpc_type = packet[1]
-        rpcid = packet[2]
-        handler = self.rpc_handlers.get(rpc_type)
-        if not handler:
-            rpclog.error("Error: invalid rpc request of type '%s'", rpc_type)
-            return
-        rpclog("rpc handler for %s: %s", rpc_type, handler)
-        try:
-            handler(ss, *packet[2:])
-        except Exception as e:
-            rpclog.error("Error: cannot call %s handler %s:", rpc_type, handler, exc_info=True)
-            ss.rpc_reply(rpc_type, rpcid, False, str(e))
-
-    def _handle_dbus_rpc(self, ss, rpcid, _, bus_name, path, interface, function, args, *_extra):
-        assert self.supports_dbus_proxy, "server does not support dbus proxy calls"
-        def native(args):
-            return [self.dbus_helper.dbus_to_native(x) for x in (args or [])]
-        def ok_back(*args):
-            log("rpc: ok_back%s", args)
-            ss.rpc_reply("dbus", rpcid, True, native(args))
-        def err_back(*args):
-            log("rpc: err_back%s", args)
-            ss.rpc_reply("dbus", rpcid, False, native(args))
-        self.dbus_helper.call_function(bus_name, path, interface, function, args, ok_back, err_back)
 
 
     ######################################################################
@@ -1786,8 +1726,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "encoding":                             self._process_encoding,
             "suspend":                              self._process_suspend,
             "resume":                               self._process_resume,
-            #dbus:
-            "rpc":                                  self._process_rpc,
             #requests:
             "shutdown-server":                      self._process_shutdown_server,
             "exit-server":                          self._process_exit_server,

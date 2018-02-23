@@ -16,7 +16,7 @@ SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 """
 Mixin for servers that can handle mmap transfers
 """
-class MmapServer(StubServerMixin):
+class MMAP_Server(StubServerMixin):
 
     def __init__(self):
         self.supports_mmap = False
