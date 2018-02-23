@@ -27,7 +27,6 @@ avsynclog = Logger("av-sync")
 dbuslog = Logger("dbus")
 statslog = Logger("stats")
 notifylog = Logger("notify")
-clipboardlog = Logger("clipboard")
 netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
@@ -35,17 +34,18 @@ bandwidthlog = Logger("bandwidth")
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.audio_mixin import AudioMixin
 from xpra.server.source.mmap_connection import MMAP_Connection
+from xpra.server.source.clipboard_connection import ClipboardConnection
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.metadata import make_window_metadata
-from xpra.simple_stats import get_list_stats, std_unit
+from xpra.simple_stats import get_list_stats
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
-from xpra.net.compression import compressed_wrapper, Compressed, Compressible
+from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, get_machine_id, monotonic_time, BytesIOClass, strtobytes, WIN32
+from xpra.os_util import platform_name, Queue, get_machine_id, monotonic_time, BytesIOClass, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
@@ -53,8 +53,6 @@ from xpra.util import csv, std, typedict, merge_dicts, flatten_dict, notypedict,
                     CLIENT_PING_TIMEOUT, DEFAULT_METADATA_SUPPORTED
 
 NOYIELD = not envbool("XPRA_YIELD", False)
-MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
-MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
@@ -90,7 +88,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
+class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection, ClipboardConnection):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -130,6 +128,7 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         AudioMixin.__init__(self, sound_properties, sound_source_plugin,
                  supports_speaker, supports_microphone, speaker_codecs, microphone_codecs)
         MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
+        ClipboardConnection.__init__(self)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -206,8 +205,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         self.last_ping_echoed_time = 0
         self.check_ping_echo_timers = {}
 
-        self.clipboard_progress_timer = None
-        self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
 
         self.init_vars()
 
@@ -280,11 +277,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         self.pointer_grabs = False
         self.randr_notify = False
         self.window_initiate_moveresize = False
-        self.clipboard_enabled = False
-        self.clipboard_notifications = False
-        self.clipboard_notifications_current = 0
-        self.clipboard_notifications_pending = 0
-        self.clipboard_set_enabled = False
         self.share = False
         self.lock = False
         self.desktop_size = None
@@ -350,7 +342,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         self.cancel_cursor_timer()
         self.cancel_ping_timer()
         self.remove_printers()
-        self.cancel_clipboard_progress_timer()
         ds = self.dbus_server
         if ds:
             self.dbus_server = None
@@ -659,10 +650,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         self.randr_notify = c.boolget("randr_notify")
         self.mouse_show = c.boolget("mouse.show")
         self.mouse_last_position = c.intpair("mouse.initial-position")
-        self.clipboard_enabled = c.boolget("clipboard", True)
-        self.clipboard_notifications = c.boolget("clipboard.notifications")
-        self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
-        clipboardlog("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
@@ -1161,14 +1148,15 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
         for prop in ("lock", "share", "randr_notify",
-                     "clipboard_notifications", "system_tray",
+                     "system_tray",
                      "lz4", "lzo"):
             battr(prop, prop)
-        for prop, name in {"clipboard_enabled"  : "clipboard",
-                           "send_windows"       : "windows",
-                           "send_cursors"       : "cursors",
-                           "send_notifications" : "notifications",
-                           "send_bell"          : "bell"}.items():
+        for prop, name in {
+            "send_windows"       : "windows",
+            "send_cursors"       : "cursors",
+            "send_notifications" : "notifications",
+            "send_bell"          : "bell",
+            }.items():
             battr(name, prop)
         for prop, name in {
                            "vrefresh"               : "vertical-refresh",
@@ -1246,67 +1234,6 @@ class ClientConnection(FileTransferHandler, AudioMixin, MMAP_Connection):
     def send_server_event(self, *args):
         if self.wants_events:
             self.send_more("server-event", *args)
-
-
-    ######################################################################
-    # clipboard:
-    def send_clipboard_enabled(self, reason=""):
-        if not self.hello_sent:
-            return
-        self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
-
-    def cancel_clipboard_progress_timer(self):
-        cpt = self.clipboard_progress_timer
-        if cpt:
-            self.clipboard_progress_timer = None
-            self.source_remove(cpt)
-
-    def send_clipboard_progress(self, count):
-        if not self.clipboard_notifications or not self.hello_sent or self.clipboard_progress_timer:
-            return
-        #always set "pending" to the latest value:
-        self.clipboard_notifications_pending = count
-        #but send the latest value via a timer to tame toggle storms:
-        def may_send_progress_update():
-            self.clipboard_progress_timer = None
-            if self.clipboard_notifications_current!=self.clipboard_notifications_pending:
-                self.clipboard_notifications_current = self.clipboard_notifications_pending
-                clipboardlog("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
-                self.send_more("clipboard-pending-requests", self.clipboard_notifications_current)
-        delay = (count==0)*100
-        self.clipboard_progress_timer = self.timeout_add(delay, may_send_progress_update)
-
-    def send_clipboard(self, packet):
-        if not self.clipboard_enabled or self.suspended or not self.hello_sent:
-            return
-        now = monotonic_time()
-        self.clipboard_stats.append(now)
-        if len(self.clipboard_stats)>=MAX_CLIPBOARD_LIMIT:
-            event = self.clipboard_stats[-MAX_CLIPBOARD_LIMIT]
-            elapsed = now-event
-            clipboardlog("send_clipboard(..) elapsed=%.2f, clipboard_stats=%s", elapsed, self.clipboard_stats)
-            if elapsed<1:
-                msg = "more than %s clipboard requests per second!" % MAX_CLIPBOARD_LIMIT
-                clipboardlog.warn("Warning: %s", msg)
-                #disable if this rate is sustained for more than S seconds:
-                events = [x for x in self.clipboard_stats if x>(now-MAX_CLIPBOARD_LIMIT_DURATION)]
-                if len(events)>=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION:
-                    clipboardlog.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
-                    clipboardlog.warn(" the clipboard is now disabled")
-                    self.clipboard_enabled = False
-                    self.send_clipboard_enabled(msg)
-                return
-        #call compress_clibboard via the work queue:
-        self.encode_work_queue.put((True, self.compress_clipboard, packet))
-
-    def compress_clipboard(self, packet):
-        #Note: this runs in the 'encode' thread!
-        packet = list(packet)
-        for i in range(len(packet)):
-            v = packet[i]
-            if type(v)==Compressible:
-                packet[i] = self.compressed_wrapper(v.datatype, v.data)
-        self.queue_packet(packet)
 
 
     ######################################################################
