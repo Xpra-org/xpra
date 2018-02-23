@@ -13,12 +13,13 @@ log = Logger("clipboard")
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import csv
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 """
 Mixin for servers that handle clipboard synchronization.
 """
-class ClipboardServer(object):
+class ClipboardServer(StubServerMixin):
 
     def __init__(self):
         self.clipboard = False
@@ -33,21 +34,18 @@ class ClipboardServer(object):
     def setup(self, _opts):
         self.init_clipboard()
 
-    def threaded_setup(self):
-        pass
-
     def cleanup(self):
-        pass
+        ch = self._clipboard_helper
+        if ch:
+            self._clipboard_helper = None
+            ch.cleanup()
 
 
     def get_info(self):
         if self._clipboard_helper is None:
             return {}
-        return self._clipboard_helper.get_info()
+        return {"clipboard" : self._clipboard_helper.get_info()}
 
-    def get_caps(self):
-        return {
-            }
 
     def get_server_features(self, server_source=None):
         clipboard = self._clipboard_helper is not None and self._clipboard_client == server_source

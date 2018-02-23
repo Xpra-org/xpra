@@ -11,13 +11,14 @@ log = Logger("webcam")
 from xpra.os_util import BytesIOClass, OSX, POSIX
 from xpra.util import engs, csv
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 """
 Mixin for servers that handle webcam forwarding,
 currently requires v4loopback.
 """
-class WebcamServer(object):
+class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_option = ""
@@ -33,15 +34,9 @@ class WebcamServer(object):
     def setup(self, _opts):
         self.init_webcam()
 
-    def threaded_setup(self):
-        pass
-
     def cleanup(self):
         self.stop_virtual_webcam()
 
-
-    def get_caps(self):
-        return {}
 
     def get_server_features(self, _source):
         return {
@@ -61,7 +56,7 @@ class WebcamServer(object):
         d = self.webcam_forwarding_device
         if d:
             webcam_info.update(d.get_info())
-        return webcam_info
+        return {"webcam" : webcam_info}
 
 
     def init_webcam(self):

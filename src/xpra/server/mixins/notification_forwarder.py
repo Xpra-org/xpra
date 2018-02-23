@@ -12,12 +12,13 @@ notifylog = Logger("notify")
 
 from xpra.os_util import thread, OSX, POSIX
 from xpra.util import repr_ellipsized
+from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 """
 Mixin for servers that forward notifications.
 """
-class NotificationForwarder(object):
+class NotificationForwarder(StubServerMixin):
 
     def __init__(self):
         self.notifications_forwarder = None
@@ -29,17 +30,11 @@ class NotificationForwarder(object):
     def setup(self, _opts):
         self.init_notification_forwarder()
 
-    def threaded_setup(self):
-        pass
-
     def cleanup(self):
         nf = self.notifications_forwarder
         if nf:
             self.notifications_forwarder = None
             thread.start_new_thread(nf.release, ())
-
-    def get_caps(self):
-        return {}
 
     def get_server_features(self, _source=None):
         return {

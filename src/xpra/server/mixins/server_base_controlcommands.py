@@ -14,6 +14,7 @@ from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.os_util import load_binary_file
 from xpra.util import csv
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 TOGGLE_FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "clipboard",
                    "start-new-commands", "client-shutdown", "webcam", )
@@ -22,29 +23,10 @@ TOGGLE_FEATURES = ("bell", "randr", "cursors", "notifications", "dbus-proxy", "c
 """
 Control commands for ServerBase
 """
-class ServerBaseControlCommands(object):
-
-    def init(self, opts):
-        pass
-
-    def cleanup(self):
-        pass
+class ServerBaseControlCommands(StubServerMixin):
 
     def setup(self, _opts):
         self.add_control_commands()
-
-    def threaded_setup(self):
-        pass
-
-
-    def get_caps(self):
-        return {}
-
-    def get_server_features(self, _source):
-        return {}
-
-    def init_packet_handlers(self):
-        pass
 
 
     def add_control_commands(self):
