@@ -11,16 +11,9 @@ from time import sleep
 
 from xpra.log import Logger
 log = Logger("server")
-focuslog = Logger("focus")
-clientlog = Logger("client")
 netlog = Logger("network")
-metalog = Logger("metadata")
-geomlog = Logger("geometry")
-windowlog = Logger("window")
-rpclog = Logger("rpc")
 notifylog = Logger("notify")
 httplog = Logger("http")
-bandwidthlog = Logger("bandwidth")
 timeoutlog = Logger("timeout")
 
 from xpra.server.server_core import ServerCore, get_thread_info
@@ -38,6 +31,7 @@ from xpra.server.mixins.encoding_server import EncodingServer
 from xpra.server.mixins.logging_server import LoggingServer
 from xpra.server.mixins.networkstate_server import NetworkStateServer
 from xpra.server.mixins.display_manager import DisplayManager
+from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
@@ -56,14 +50,13 @@ CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 
 
-
 """
 This is the base class for seamless and desktop servers. (not proxy servers)
 It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer, DisplayManager):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer, DisplayManager, WindowServer):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -73,19 +66,10 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
         self._authenticated_packet_handlers = {}
         self._authenticated_ui_packet_handlers = {}
-        # This must happen early, before loading in windows at least:
-        self._server_sources = {}
 
-        #so clients can store persistent attributes on windows:
+        self._server_sources = {}
         self.client_properties = {}
         self.ui_driver = None
-
-        # Window id 0 is reserved for "not a window"
-        self._max_window_id = 1
-        self._window_to_id = {}
-        self._id_to_window = {}
-        self.window_filters = []
-
         self.sharing = None
         self.lock = None
 
@@ -116,15 +100,12 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
 
     def init(self, opts):
-        for c in ServerBase.__bases__:
-            c.init(self, opts)
-        log("ServerBase.init(%s)", opts)
-        self.init_options(opts)
-
-    def init_options(self, opts):
         #from now on, use the logger for parsing errors:
         from xpra.scripts import config
         config.warn = log.warn
+        for c in ServerBase.__bases__:
+            c.init(self, opts)
+        log("ServerBase.init(%s)", opts)
 
         self.sharing = opts.sharing
         self.lock = opts.lock
@@ -138,7 +119,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             c.setup(self, opts)
         if opts.system_tray:
             self.add_system_tray()
-        self.load_existing_windows()
         thread.start_new_thread(self.threaded_init, ())
 
     def threaded_init(self):
@@ -164,12 +144,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
     def add_system_tray(self):
         pass
-
-    def load_existing_windows(self):
-        pass
-
-    def is_shown(self, _window):
-        return True
 
 
     ######################################################################
@@ -451,27 +425,15 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #to expose new server features:
         f = dict((k, True) for k in (
                 #all these flags are assumed enabled in 0.17 (they are present in 0.14.x onwards):
-                "window_refresh_config",
                 "toggle_cursors_bell_notify",
                 "toggle_keyboard_sync",
-                "window_unmap",
                 "xsettings-tuple",
                 "event_request",
-                "sound_sequence",
                 "notify-startup-complete",
-                "suspend-resume",
                 "server-events",
                 #newer flags:
-                "window.configure.skip-geometry",
                 "av-sync",
-                "auto-video-encoding",
-                "window-filters",
-                "connection-data",
                 ))
-        f["sound"] = {
-                      "ogg-latency-fix" : True,
-                      "eos-sequence"    : True,
-                      }
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 merge_dicts(f, c.get_server_features(self, server_source))
@@ -492,20 +454,16 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                  "bell"                         : self.bell,
                  "cursors"                      : self.cursors,
                  "av-sync.enabled"              : self.av_sync,
-                 "input-devices"                : self.input_devices,
                  "client-shutdown"              : self.client_shutdown,
-                 "window.states"                : [],   #subclasses set this as needed
                  "sharing"                      : self.sharing is not False,
                  "sharing-toggle"               : self.sharing is None,
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
                  })
-            capabilities.update(self.file_transfer.get_file_transfer_features())
             capabilities.update(flatten_dict(self.get_server_features(source)))
         #this is a feature, but we would need the hello request
         #to know if it is really needed.. so always include it:
         capabilities["exit_server"] = True
-
         return capabilities
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
@@ -604,16 +562,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 info[k] = v
                 continue
             cval.update(v)
-        info.setdefault("dpi", {}).update({
-                             "default"      : self.default_dpi,
-                             "value"        : self.dpi,
-                             "x"            : self.xdpi,
-                             "y"            : self.ydpi,
-                             })
-        info.setdefault("antialias", {}).update(self.antialias)
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
-        if self.notifications_forwarder:
-            info.setdefault("notifications", {}).update(self.notifications_forwarder.get_info())
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
@@ -632,11 +581,11 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         start = monotonic_time()
         info = {}
         def up(prefix, d):
-            info[prefix] = d
+            merge_dicts(info, {prefix : d})
 
         for c in ServerBase.__bases__:
             try:
-                info.update(c.get_info(self, proto))
+                merge_dicts(info, c.get_info(self, proto))
             except Exception as e:
                 log("do_get_info%s", (proto, server_sources, window_ids), exc_info=True)
                 log.error("Error collecting information from %s: %s", c, e)
@@ -648,11 +597,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             "lock"                         : self.lock is not False,
             "lock-toggle"                  : self.lock is None,
             })
-        for k,v in codec_versions.items():
-            info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
-        # csc and video encoders:
 
-        info.setdefault("state", {})["windows"] = len([window for window in tuple(self._id_to_window.values()) if window.is_managed()])
         # other clients:
         info["clients"] = {""                   : len([p for p in self._server_sources.keys() if p!=proto]),
                            "unauthenticated"    : len([p for p in self._potential_protocols if ((p is not proto) and (p not in self._server_sources.keys()))])}
@@ -672,7 +617,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             up("client", cinfo)
         log("ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
-
 
 
     def _process_server_settings(self, proto, packet):
@@ -700,241 +644,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
                 client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
                 client_properties.update(ncp)
-
-
-    ######################################################################
-    # windows:
-    def parse_hello_ui_window_settings(self, ss, c):
-        pass
-
-    def add_windows_info(self, info, window_ids):
-        winfo = info.setdefault("window", {})
-        for wid, window in self._id_to_window.items():
-            if window_ids is not None and wid not in window_ids:
-                continue
-            winfo.setdefault(wid, {}).update(self.get_window_info(window))
-
-    def get_window_info(self, window):
-        from xpra.server.source import make_window_metadata
-        info = {}
-        for prop in window.get_property_names():
-            if prop=="icon" or prop is None:
-                continue
-            metadata = make_window_metadata(window, prop, get_transient_for=self.get_transient_for)
-            info.update(metadata)
-        for prop in window.get_internal_property_names():
-            metadata = make_window_metadata(window, prop)
-            info.update(metadata)
-        info.update({
-             "override-redirect"    : window.is_OR(),
-             "tray"                 : window.is_tray(),
-             "size"                 : window.get_dimensions(),
-             })
-        wid = self._window_to_id.get(window)
-        if wid:
-            wprops = self.client_properties.get(wid)
-            if wprops:
-                info["client-properties"] = wprops
-        return info
-
-    def _update_metadata(self, window, pspec):
-        metalog("updating metadata on %s: %s", window, pspec)
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            ss.window_metadata(wid, window, pspec.name)
-
-
-    def _add_new_window_common(self, window):
-        props = window.get_dynamic_property_names()
-        metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)
-        for prop in props:
-            window.managed_connect("notify::%s" % prop, self._update_metadata)
-        wid = self._max_window_id
-        self._max_window_id += 1
-        self._window_to_id[window] = wid
-        self._id_to_window[wid] = window
-        return wid
-
-    def _do_send_new_window_packet(self, ptype, window, geometry):
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
-            x, y, w, h = geometry
-            #adjust if the transient-for window is not mapped in the same place by the client we send to:
-            if "transient-for" in window.get_property_names():
-                transient_for = self.get_transient_for(window)
-                if transient_for>0:
-                    parent = self._id_to_window.get(transient_for)
-                    parent_ws = ss.get_window_source(transient_for)
-                    pos = self.get_window_position(parent)
-                    geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
-                    if parent and parent_ws and parent_ws.mapped_at and pos:
-                        cx, cy = parent_ws.mapped_at[:2]
-                        px, py = pos
-                        x += cx-px
-                        y += cy-py
-            ss.new_window(ptype, wid, window, x, y, w, h, wprops)
-
-    def _process_damage_sequence(self, proto, packet):
-        packet_sequence, wid, width, height, decode_time = packet[1:6]
-        if len(packet)>=7:
-            message = packet[6]
-        else:
-            message = ""
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
-
-    def _damage(self, window, x, y, width, height, options=None):
-        wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            ss.damage(wid, window, x, y, width, height, options)
-
-    def _process_buffer_refresh(self, proto, packet):
-        """ can be used for requesting a refresh, or tuning batch config, or both """
-        wid, _, qual = packet[1:4]
-        if len(packet)>=6:
-            options = typedict(packet[4])
-            client_properties = packet[5]
-        else:
-            options = typedict({})
-            client_properties = {}
-        if wid==-1:
-            wid_windows = self._id_to_window
-        elif wid in self._id_to_window:
-            wid_windows = {wid : self._id_to_window.get(wid)}
-        else:
-            #may have been destroyed since the request was made
-            log("invalid window specified for refresh: %s", wid)
-            return
-        log("process_buffer_refresh for windows: %s options=%s, client_properties=%s", wid_windows, options, client_properties)
-        batch_props = options.dictget("batch", {})
-        if batch_props or client_properties:
-            #change batch config and/or client properties
-            self.update_batch_config(proto, wid_windows, typedict(batch_props), client_properties)
-        #default to True for backwards compatibility:
-        if options.get("refresh-now", True):
-            refresh_opts = {"quality"           : qual,
-                            "override_options"  : True}
-            self.refresh_windows(proto, wid_windows, refresh_opts)
-
-
-    def update_batch_config(self, proto, wid_windows, batch_props, client_properties):
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        for wid, window in wid_windows.items():
-            if window is None or not window.is_managed():
-                continue
-            self._set_client_properties(proto, wid, window, client_properties)
-            ss.update_batch(wid, window, batch_props)
-
-    def refresh_windows(self, proto, wid_windows, opts={}):
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        for wid, window in wid_windows.items():
-            if window is None or not window.is_managed():
-                continue
-            if not self.is_shown(window):
-                log("window is no longer shown, ignoring buffer refresh which would fail")
-                continue
-            ss.refresh(wid, window, opts)
-
-    def _idle_refresh_all_windows(self, proto):
-        self.idle_add(self.refresh_windows, proto, self._id_to_window)
-
-
-    def get_window_position(self, _window):
-        #where the window is actually mapped on the server screen:
-        return None
-
-    def _window_mapped_at(self, proto, wid, window, coords=None):
-        #record where a window is mapped by a client
-        #(in order to support multiple clients and different offsets)
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        ws = ss.make_window_source(wid, window)
-        ws.mapped_at = coords
-        #log("window %i mapped at %s for client %s", wid, coords, ss)
-
-    def get_transient_for(self, _window):
-        return  None
-
-    def _process_map_window(self, proto, packet):
-        log.info("_process_map_window(%s, %s)", proto, packet)
-
-    def _process_unmap_window(self, proto, packet):
-        log.info("_process_unmap_window(%s, %s)", proto, packet)
-
-    def _process_close_window(self, proto, packet):
-        log.info("_process_close_window(%s, %s)", proto, packet)
-
-    def _process_configure_window(self, proto, packet):
-        log.info("_process_configure_window(%s, %s)", proto, packet)
-
-    def _get_window_dict(self, wids):
-        wd = {}
-        for wid in wids:
-            window = self._id_to_window.get(wid)
-            if window:
-                wd[wid] = window
-        return wd
-
-    def _process_suspend(self, proto, packet):
-        log("suspend(%s)", packet[1:])
-        ui = packet[1]
-        wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.suspend(ui, wd)
-
-    def _process_resume(self, proto, packet):
-        log("resume(%s)", packet[1:])
-        ui = packet[1]
-        wd = self._get_window_dict(packet[2])
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.resume(ui, wd)
-
-
-    def send_initial_windows(self, ss, sharing=False):
-        raise NotImplementedError()
-
-
-    def send_initial_cursors(self, ss, sharing=False):
-        pass
-
-
-    ######################################################################
-    # focus:
-    def _process_focus(self, proto, packet):
-        if self.readonly:
-            return
-        wid = packet[1]
-        focuslog("process_focus: wid=%s", wid)
-        if len(packet)>=3:
-            modifiers = packet[2]
-        else:
-            modifiers = None
-        ss = self._server_sources.get(proto)
-        if ss:
-            self._focus(ss, wid, modifiers)
-            #if the client focused one of our windows, count this as a user event:
-            if wid>0:
-                ss.user_event()
-
-    def _focus(self, _server_source, wid, modifiers):
-        focuslog("_focus(%s,%s)", wid, modifiers)
-
-    def get_focus(self):
-        #can be overriden by subclasses that do manage focus
-        #(ie: not shadow servers which only have a single window)
-        #default: no focus
-        return -1
-
-
 
 
     ######################################################################
@@ -1209,28 +918,18 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         for c in ServerBase.__bases__:
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
-            "damage-sequence":                      self._process_damage_sequence,
             "set-cursors":                          self._process_set_cursors,
             "set-bell":                             self._process_set_bell,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
           })
         self._authenticated_ui_packet_handlers.update({
-            #windows:
-            "map-window":                           self._process_map_window,
-            "unmap-window":                         self._process_unmap_window,
-            "configure-window":                     self._process_configure_window,
-            "close-window":                         self._process_close_window,
-            "focus":                                self._process_focus,
             #attributes / settings:
             "server-settings":                      self._process_server_settings,
             "set_deflate":                          self._process_set_deflate,
-            "suspend":                              self._process_suspend,
-            "resume":                               self._process_resume,
             #requests:
             "shutdown-server":                      self._process_shutdown_server,
             "exit-server":                          self._process_exit_server,
-            "buffer-refresh":                       self._process_buffer_refresh,
             "info-request":                         self._process_info_request,
             })
 

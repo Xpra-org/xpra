@@ -7,7 +7,7 @@
 from xpra.log import Logger
 log = Logger("encoding")
 
-from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, get_codec, has_codec
+from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, get_codec, has_codec, codec_versions
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
@@ -56,6 +56,7 @@ class EncodingServer(StubServerMixin):
 
     def get_server_features(self, _source=None):
         return {
+            "auto-video-encoding"   : True,
             "change-quality"        : True,
             "change-min-quality"    : True,
             "change-speed"          : True,
@@ -66,10 +67,13 @@ class EncodingServer(StubServerMixin):
             }
 
     def get_info(self, _proto):
-        return {
+        info = {
             "encodings" : self.get_encoding_info(),
             "video"     : getVideoHelper().get_info(),
             }
+        for k,v in codec_versions.items():
+            info.setdefault("encoding", {}).setdefault(k, {})["version"] = v
+        return info
 
     def get_encoding_info(self):
         return  {

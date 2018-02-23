@@ -66,6 +66,16 @@ class AudioServer(StubServerMixin):
         return {}
 
 
+    def get_server_features(self, _source):
+        return {
+            "sound_sequence" : True,        #legacy flag
+            "sound" : {
+                "ogg-latency-fix" : True,
+                "eos-sequence"    : True,
+                },
+            }
+
+
     def init_pulseaudio(self):
         soundlog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:

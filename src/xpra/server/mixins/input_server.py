@@ -50,6 +50,12 @@ class InputServer(StubServerMixin):
         return {"keyboard" : self.get_keyboard_info()}
 
 
+    def get_server_features(self, source=None):
+        return {
+            "toggle_keyboard_sync"  : True,
+            "input-devices"         : self.input_devices,
+            }
+
     def get_caps(self):
         if not self.key_repeat:
             return {}
@@ -369,12 +375,6 @@ class InputServer(StubServerMixin):
     def setup_input_devices(self):
         pass
 
-
-    def get_server_features(self, source=None):
-        return {
-                "toggle_keyboard_sync"  : True,
-                "input-devices"         : self.input_devices,
-                }
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
         capabilities = self.make_hello(server_source)

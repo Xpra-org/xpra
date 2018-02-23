@@ -44,7 +44,15 @@ class DisplayManager(StubServerMixin):
 
 
     def get_info(self, _proto):
-        return {}
+        return {
+            "dpi" : {
+                "default"   : self.default_dpi,
+                "value"     : self.dpi,
+                "x"         : self.xdpi,
+                "y"         : self.ydpi,
+                },
+            "antialias" : self.antialias,
+            }
 
 
     ######################################################################
