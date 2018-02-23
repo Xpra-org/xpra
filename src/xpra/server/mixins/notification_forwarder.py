@@ -39,7 +39,7 @@ class NotificationForwarder(StubServerMixin):
     def get_info(self, _source=None):
         if not self.notifications_forwarder:
             return {}
-        return {"notifications", self.notifications_forwarder.get_info()}
+        return {"notifications" : self.notifications_forwarder.get_info()}
 
     def get_server_features(self, _source=None):
         return {
