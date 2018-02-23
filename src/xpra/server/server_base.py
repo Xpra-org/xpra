@@ -37,10 +37,10 @@ from xpra.server.mixins.child_command_server import ChildCommandServer
 from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
 from xpra.server.mixins.encoding_server import EncodingServer
 from xpra.server.mixins.logging_server import LoggingServer
+from xpra.server.mixins.networkstate_server import NetworkStateServer
 
-from xpra.simple_stats import std_unit
-from xpra.os_util import thread, livefds, monotonic_time, bytestostr, WIN32, POSIX, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, envbool, envint, log_screen_sizes, engs, iround, detect_leaks, \
+from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
+from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, log_screen_sizes, engs, iround, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
@@ -55,8 +55,6 @@ DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 MAX_CONCURRENT_CONNECTIONS = 20
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 
@@ -66,7 +64,7 @@ It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -106,33 +104,12 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #duplicated from Server Source...
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.pings = 0
         self.scaling_control = False
         self.mem_bytes = 0
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
 
         self.init_packet_handlers()
         self.init_aliases()
-
-        if DETECT_MEMLEAKS:
-            print_leaks = detect_leaks()
-            if print_leaks:
-                def leak_thread():
-                    while True:
-                        print_leaks()
-                        sleep(10)
-                from xpra.make_thread import start_thread
-                start_thread(leak_thread, "leak thread", daemon=True)
-        if DETECT_FDLEAKS:
-            self.fds = livefds()
-            self.timeout_add(10, self.print_fds)
-
-    def print_fds(self):
-        fds = livefds()
-        newfds = fds-self.fds
-        self.fds = fds
-        log.info("print_fds() new fds=%s (total=%s)", newfds, len(fds))
-        return True
 
 
     def idle_add(self, *args, **kwargs):
@@ -169,7 +146,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
-        self.pings = opts.pings
         self.av_sync = opts.av_sync
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
 
@@ -187,8 +163,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
     def threaded_init(self):
         log("threaded_init() start")
         sleep(0.1)
-        #re-init list of encodings now that we have video initialized
-        self.init_memcheck()
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 c.threaded_setup(self)
@@ -200,31 +174,11 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.server_event("ready")
 
 
-    def run(self):
-        if self.pings>0:
-            self.timeout_add(1000*self.pings, self.send_ping)
-        return ServerCore.run(self)
-
     def do_cleanup(self):
         self.server_event("exit")
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 c.cleanup(self)
-
-
-    def init_memcheck(self):
-        #verify we have enough memory:
-        if POSIX and self.mem_bytes==0:
-            try:
-                self.mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
-                LOW_MEM_LIMIT = 512*1024*1024
-                if self.mem_bytes<=LOW_MEM_LIMIT:
-                    log.warn("Warning: only %iMB total system memory available", self.mem_bytes//(1024**2))
-                    log.warn(" this may not be enough to run a server")
-                else:
-                    log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
-            except:
-                pass
 
 
     def add_system_tray(self):
@@ -438,20 +392,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             for s in self._server_sources.values():
                 s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         
-    def get_client_bandwidth_limit(self, proto):
-        if self.bandwidth_limit is None:
-            #auto-detect:
-            pinfo = proto.get_info()
-            socket_speed = pinfo.get("socket", {}).get("speed")
-            if socket_speed:
-                #auto: use 80% of socket speed if we have it:
-                v = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
-            else:
-                v = 0
-        else:
-            v = self.bandwidth_limit
-        bandwidthlog("get_client_bandwidth_limit(%s)=%s", proto, v)            
-        return v
 
     def get_server_source_class(self):
         from xpra.server.source import ServerSource
@@ -550,20 +490,16 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                       "ogg-latency-fix" : True,
                       "eos-sequence"    : True,
                       }
-        f["network"] = {
-                 "bandwidth-limit-change"       : True,
-                 "bandwidth-limit"              : self.bandwidth_limit or 0,
-                 }
         for c in ServerBase.__bases__:
             if c!=ServerCore:
-                f.update(c.get_server_features(self, server_source))
+                merge_dicts(f, c.get_server_features(self, server_source))
         return f
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
         for c in ServerBase.__bases__:
             if c!=ServerCore:
-                capabilities.update(c.get_caps(self))
+                merge_dicts(capabilities, c.get_caps(self))
         capabilities["server_type"] = "base"
         if source.wants_display:
             capabilities.update({
@@ -667,7 +603,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
-        server_info["pings"] = self.pings
         if self.mem_bytes:
             server_info["total-memory"] = self.mem_bytes
         if client_uuids:
@@ -1260,40 +1195,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
 
     ######################################################################
-    # connection state:
-    def _process_connection_data(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.update_connection_data(packet[1])
-
-    def _process_bandwidth_limit(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if not ss:
-            return
-        bandwidth_limit = packet[1]
-        if self.bandwidth_limit:
-            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
-        ss.bandwidth_limit = bandwidth_limit
-        bandwidthlog.info("bandwidth-limit changed to %sbps for client %i", std_unit(bandwidth_limit), ss.counter)
-
-    def send_ping(self):
-        for ss in self._server_sources.values():
-            ss.ping()
-        return True
-
-    def _process_ping_echo(self, proto, packet):
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping_echo(packet)
-
-    def _process_ping(self, proto, packet):
-        time_to_echo = packet[1]
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.process_ping(time_to_echo)
-
-
-    ######################################################################
     # http server and http audio stream:
     def get_http_info(self):
         info = ServerCore.get_http_info(self)
@@ -1515,12 +1416,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
             "damage-sequence":                      self._process_damage_sequence,
-            "ping":                                 self._process_ping,
-            "ping_echo":                            self._process_ping_echo,
             "set-cursors":                          self._process_set_cursors,
             "set-bell":                             self._process_set_bell,
-            "connection-data":                      self._process_connection_data,
-            "bandwidth-limit":                      self._process_bandwidth_limit,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
           })
