@@ -13,7 +13,6 @@ from xpra.log import Logger
 log = Logger("server")
 focuslog = Logger("focus")
 clientlog = Logger("client")
-screenlog = Logger("screen")
 netlog = Logger("network")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
@@ -38,14 +37,14 @@ from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
 from xpra.server.mixins.encoding_server import EncodingServer
 from xpra.server.mixins.logging_server import LoggingServer
 from xpra.server.mixins.networkstate_server import NetworkStateServer
+from xpra.server.mixins.display_manager import DisplayManager
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, log_screen_sizes, engs, iround, \
+from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
 from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
-from xpra.scripts.config import parse_bool_or_int
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
 
@@ -64,7 +63,7 @@ It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer):
+class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer, DisplayManager):
 
     def __init__(self):
         for c in ServerBase.__bases__:
@@ -74,37 +73,24 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
         self._authenticated_packet_handlers = {}
         self._authenticated_ui_packet_handlers = {}
-
         # This must happen early, before loading in windows at least:
         self._server_sources = {}
 
         #so clients can store persistent attributes on windows:
         self.client_properties = {}
+        self.ui_driver = None
 
-        self.randr = False
-
+        # Window id 0 is reserved for "not a window"
+        self._max_window_id = 1
         self._window_to_id = {}
         self._id_to_window = {}
         self.window_filters = []
-        # Window id 0 is reserved for "not a window"
-        self._max_window_id = 1
-        self.ui_driver = None
 
         self.sharing = None
         self.lock = None
-        self.bell = False
-        self.cursors = False
-        self.default_dpi = 96
-        self.dpi = 0
-        self.xdpi = 0
-        self.ydpi = 0
-        self.antialias = {}
-        self.cursor_size = 0
+
         self.idle_timeout = 0
         #duplicated from Server Source...
-        self.double_click_time  = -1
-        self.double_click_distance = -1, -1
-        self.scaling_control = False
         self.mem_bytes = 0
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
 
@@ -142,19 +128,14 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
         self.sharing = opts.sharing
         self.lock = opts.lock
-        self.bell = opts.bell
-        self.cursors = opts.cursors
-        self.default_dpi = int(opts.dpi)
         self.idle_timeout = opts.idle_timeout
         self.av_sync = opts.av_sync
-        self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
 
 
     def setup(self, opts):
         log("starting component init")
         for c in ServerBase.__bases__:
             c.setup(self, opts)
-
         if opts.system_tray:
             self.add_system_tray()
         self.load_existing_windows()
@@ -323,7 +304,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
                 self.antialias = c.dictget("antialias")
                 self.cursor_size = c.intget("cursor.size", 0)
-            screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s, cursor_size=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
+            #FIXME: this belongs in DisplayManager!
+            log("dpi=%s, dpi.x=%s, dpi.y=%s, double_click_time=%s, double_click_distance=%s, antialias=%s, cursor_size=%s", self.dpi, self.xdpi, self.ydpi, self.double_click_time, self.double_click_distance, self.antialias, self.cursor_size)
             #if we're not sharing, reset all the settings:
             reset = share_count==0
             self.update_all_server_settings(reset)
@@ -692,162 +674,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         return info
 
 
-    ######################################################################
-    # display / screen / root window:
-    def set_screen_geometry_attributes(self, w, h):
-        #by default, use the screen as desktop area:
-        self.set_desktop_geometry_attributes(w, h)
-
-    def set_desktop_geometry_attributes(self, w, h):
-        self.calculate_desktops()
-        self.calculate_workarea(w, h)
-        self.set_desktop_geometry(w, h)
-
-
-    def parse_screen_info(self, ss):
-        return self.do_parse_screen_info(ss, ss.desktop_size)
-
-    def do_parse_screen_info(self, ss, desktop_size):
-        log("do_parse_screen_info%s", (ss, desktop_size))
-        dw, dh = None, None
-        if desktop_size:
-            try:
-                dw, dh = desktop_size
-                if not ss.screen_sizes:
-                    screenlog.info(" client root window size is %sx%s", dw, dh)
-                else:
-                    screenlog.info(" client root window size is %sx%s with %s display%s:", dw, dh, len(ss.screen_sizes), engs(ss.screen_sizes))
-                    log_screen_sizes(dw, dh, ss.screen_sizes)
-            except:
-                dw, dh = None, None
-        sw, sh = self.configure_best_screen_size()
-        screenlog("configure_best_screen_size()=%s", (sw, sh))
-        #we will tell the client about the size chosen in the hello we send back,
-        #so record this size as the current server desktop size to avoid change notifications:
-        ss.desktop_size_server = sw, sh
-        #prefer desktop size, fallback to screen size:
-        w = dw or sw
-        h = dh or sh
-        #clamp to max supported:
-        maxw, maxh = self.get_max_screen_size()
-        w = min(w, maxw)
-        h = min(h, maxh)
-        self.set_desktop_geometry_attributes(w, h)
-        self.set_icc_profile()
-        return w, h
-
-
-    def set_icc_profile(self):
-        screenlog("set_icc_profile() not implemented")
-
-    def reset_icc_profile(self):
-        screenlog("reset_icc_profile() not implemented")
-
-    def _screen_size_changed(self, screen):
-        screenlog("_screen_size_changed(%s)", screen)
-        #randr has resized the screen, tell the client (if it supports it)
-        w, h = screen.get_width(), screen.get_height()
-        screenlog("new screen dimensions: %ix%i", w, h)
-        self.set_screen_geometry_attributes(w, h)
-        self.idle_add(self.send_updated_screen_size)
-
-    def get_root_window_size(self):
-        raise NotImplementedError()
-
-    def send_updated_screen_size(self):
-        max_w, max_h = self.get_max_screen_size()
-        root_w, root_h = self.get_root_window_size()
-        root_w = min(root_w, max_w)
-        root_h = min(root_h, max_h)
-        count = 0
-        for ss in self._server_sources.values():
-            if ss.updated_desktop_size(root_w, root_h, max_w, max_h):
-                count +=1
-        if count>0:
-            log.info("sent updated screen size to %s client%s: %sx%s (max %sx%s)", count, engs(count), root_w, root_h, max_w, max_h)
-
-    def get_max_screen_size(self):
-        max_w, max_h = self.get_root_window_size()
-        return max_w, max_h
-
-    def _get_desktop_size_capability(self, server_source, root_w, root_h):
-        client_size = server_source.desktop_size
-        log("client resolution is %s, current server resolution is %sx%s", client_size, root_w, root_h)
-        if not client_size:
-            """ client did not specify size, just return what we have """
-            return    root_w, root_h
-        client_w, client_h = client_size
-        w = min(client_w, root_w)
-        h = min(client_h, root_h)
-        return    w, h
-
-    def configure_best_screen_size(self):
-        root_w, root_h = self.get_root_window_size()
-        return root_w, root_h
-
-    def _process_desktop_size(self, proto, packet):
-        width, height = packet[1:3]
-        ss = self._server_sources.get(proto)
-        if ss is None:
-            return
-        ss.desktop_size = (width, height)
-        if len(packet)>=10:
-            #added in 0.16 for scaled client displays:
-            xdpi, ydpi = packet[8:10]
-            if xdpi!=self.xdpi or ydpi!=self.ydpi:
-                self.xdpi, self.ydpi = xdpi, ydpi
-                screenlog("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = iround((self.xdpi + self.ydpi)/2.0)
-                self.dpi_changed()
-        if len(packet)>=8:
-            #added in 0.16 for scaled client displays:
-            ss.desktop_size_unscaled = packet[6:8]
-        if len(packet)>=6:
-            desktops, desktop_names = packet[4:6]
-            ss.set_desktops(desktops, desktop_names)
-            self.calculate_desktops()
-        if len(packet)>=4:
-            ss.set_screen_sizes(packet[3])
-        screenlog("client requesting new size: %sx%s", width, height)
-        self.set_screen_size(width, height)
-        if len(packet)>=4:
-            screenlog.info("received updated display dimensions")
-            screenlog.info("client display size is %sx%s with %s screen%s:", width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
-            log_screen_sizes(width, height, ss.screen_sizes)
-            self.calculate_workarea(width, height)
-        #ensures that DPI and antialias information gets reset:
-        self.update_all_server_settings()
-
-    def dpi_changed(self):
-        pass
-
-    def calculate_desktops(self):
-        count = 1
-        for ss in self._server_sources.values():
-            if ss.desktops:
-                count = max(count, ss.desktops)
-        count = max(1, min(20, count))
-        names = []
-        for i in range(count):
-            if i==0:
-                name = "Main"
-            else:
-                name = "Desktop %s" % (i+1)
-            for ss in self._server_sources.values():
-                if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
-                    name = ss.desktop_names[i]
-            names.append(name)
-        self.set_desktops(names)
-
-    def set_desktops(self, names):
-        pass
-
-    def calculate_workarea(self, w, h):
-        raise NotImplementedError()
-
-    def set_workarea(self, workarea):
-        pass
-
 
     def _process_server_settings(self, proto, packet):
         #only used by x11 servers
@@ -874,38 +700,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
                 client_properties = self.client_properties.setdefault(wid, {}).setdefault(ss.uuid, {})
                 client_properties.update(ncp)
-
-
-    ######################################################################
-    # screenshots:
-    def _process_screenshot(self, proto, _packet):
-        packet = self.make_screenshot_packet()
-        ss = self._server_sources.get(proto)
-        if packet and ss:
-            ss.send(*packet)
-
-    def make_screenshot_packet(self):
-        try:
-            return self.do_make_screenshot_packet()
-        except:
-            log.error("make_screenshot_packet()", exc_info=True)
-            return None
-
-    def do_make_screenshot_packet(self):
-        raise NotImplementedError("no screenshot capability in %s" % type(self))
-
-    def send_screenshot(self, proto):
-        #this is a screenshot request, handle it and disconnect
-        try:
-            packet = self.make_screenshot_packet()
-            if not packet:
-                self.send_disconnect(proto, "screenshot failed")
-                return
-            proto.send_now(packet)
-            self.timeout_add(5*1000, self.send_disconnect, proto, "screenshot sent")
-        except Exception as e:
-            log.error("failed to capture screenshot", exc_info=True)
-            self.send_disconnect(proto, "screenshot failed: %s" % e)
 
 
     ######################################################################
@@ -1431,14 +1225,12 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             #attributes / settings:
             "server-settings":                      self._process_server_settings,
             "set_deflate":                          self._process_set_deflate,
-            "desktop_size":                         self._process_desktop_size,
             "suspend":                              self._process_suspend,
             "resume":                               self._process_resume,
             #requests:
             "shutdown-server":                      self._process_shutdown_server,
             "exit-server":                          self._process_exit_server,
             "buffer-refresh":                       self._process_buffer_refresh,
-            "screenshot":                           self._process_screenshot,
             "info-request":                         self._process_info_request,
             })
 
