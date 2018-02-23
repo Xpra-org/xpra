@@ -28,7 +28,7 @@ class FilePrintMixin(FileTransferHandler):
         self.remove_printers()
 
     def parse_client_caps(self, c):
-        pass
+        FileTransferHandler.parse_file_transfer_caps(self, c)
 
     def get_caps(self):
         return {}

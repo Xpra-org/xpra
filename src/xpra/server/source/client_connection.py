@@ -35,6 +35,7 @@ from xpra.server.source.mmap_connection import MMAP_Connection
 from xpra.server.source.fileprint_mixin import FilePrintMixin
 from xpra.server.source.clipboard_connection import ClipboardConnection
 from xpra.server.source.networkstate_mixin import NetworkStateMixin
+from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.metadata import make_window_metadata
@@ -44,11 +45,11 @@ from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
 from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.make_thread import start_thread
-from xpra.os_util import platform_name, Queue, monotonic_time, BytesIOClass, strtobytes
+from xpra.os_util import Queue, monotonic_time, BytesIOClass, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.platform.paths import get_icon_dir
-from xpra.util import csv, std, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
+from xpra.util import csv, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
                     DEFAULT_METADATA_SUPPORTED
 
 NOYIELD = not envbool("XPRA_YIELD", False)
@@ -82,7 +83,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -124,6 +125,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         ClipboardConnection.__init__(self)
         FilePrintMixin.__init__(self, file_transfer)
         NetworkStateMixin.__init__(self)
+        ClientInfoMixin.__init__(self)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -230,33 +232,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.window_sources = {}                    #WindowSource for each Window ID
         self.suspended = False
 
-        self.uuid = ""
-        self.machine_id = ""
-        self.hostname = ""
-        self.username = ""
-        self.name = ""
-        self.argv = ()
-        # client capabilities/options:
-        self.client_setting_change = False
-        self.client_type = None
-        self.client_version = None
-        self.client_revision= None
-        self.client_bits = 0
-        self.client_platform = None
-        self.client_machine = None
-        self.client_processor = None
-        self.client_release = None
-        self.client_linux_distribution = None
-        self.client_proxy = False
-        self.client_wm_name = None
-        self.client_session_type = None
-        self.client_session_type_full = None
-        self.client_connection_data = {}
-        self.proxy_hostname = None
-        self.proxy_platform = None
-        self.proxy_release = None
-        self.proxy_version = None
-        self.proxy_version = None
         self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_cursors = False
@@ -593,35 +568,11 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.wants_features = c.boolget("wants_features", True)
         self.wants_default_cursor = c.boolget("wants_default_cursor", False)
 
-        #client uuid:
-        self.uuid = c.strget("uuid")
-        self.machine_id = c.strget("machine_id")
-        self.hostname = c.strget("hostname")
-        self.username = c.strget("username")
-        self.name = c.strget("name")
-        self.argv = c.strlistget("argv")
-        self.client_type = c.strget("client_type", "PyGTK")
-        self.client_platform = c.strget("platform")
-        self.client_machine = c.strget("platform.machine")
-        self.client_processor = c.strget("platform.processor")
-        self.client_release = c.strget("platform.sysrelease")
-        self.client_linux_distribution = c.strlistget("platform.linux_distribution")
-        self.client_version = c.strget("version")
-        self.client_revision = c.strget("build.revision")
-        self.client_bits = c.intget("python.bits")
-        self.client_proxy = c.boolget("proxy")
-        self.client_wm_name = c.strget("wm_name")
-        self.client_session_type = c.strget("session-type")
-        self.client_session_type_full = c.strget("session-type.full", "")
-        self.client_setting_change = c.boolget("setting-change")
-        self.proxy_hostname = c.strget("proxy.hostname")
-        self.proxy_platform = c.strget("proxy.platform")
-        self.proxy_release = c.strget("proxy.platform.sysrelease")
-        self.proxy_version = c.strget("proxy.version")
-        self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
-        
-        #file transfers and printing caps:
-        self.parse_file_transfer_caps(c)
+        ClientInfoMixin.parse_client_caps(self, c)
+        FilePrintMixin.parse_client_caps(self, c)
+        AudioMixin.parse_client_caps(self, c)
+        MMAP_Connection.parse_client_caps(self, c)
+
         #general features:
         self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and compression.use_lz4
@@ -724,39 +675,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #adjust max packet size if file transfers are enabled:
         if self.file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
-        AudioMixin.parse_client_caps(self, c)
-        MMAP_Connection.parse_client_caps(self, c)
-
-
-    def get_connect_info(self):
-        cinfo = []
-        pinfo = ""
-        if self.client_platform:
-            pinfo = " %s" % platform_name(self.client_platform, self.client_linux_distribution or self.client_release)
-        if self.client_session_type:
-            pinfo += " %s" % self.client_session_type
-        revinfo = ""
-        if self.client_revision:
-            revinfo="-r%s" % self.client_revision
-        bitsstr = ""
-        if self.client_bits:
-            bitsstr = " %i-bit" % self.client_bits
-        cinfo.append("%s%s client version %s%s%s" % (std(self.client_type), pinfo, std(self.client_version), std(revinfo), bitsstr))
-        msg = ""
-        if self.hostname:
-            msg += "connected from '%s'" % std(self.hostname)
-        if self.username:
-            msg += " as '%s'" % std(self.username)
-            if self.name and self.name!=self.username:
-                msg += " - '%s'" % std(self.name)
-        if msg:
-            cinfo.append(msg)
-        if self.client_proxy:
-            msg = "via %s proxy version %s" % (platform_name(self.proxy_platform, self.proxy_release), std(self.proxy_version or "unknown"))
-            if self.proxy_hostname:
-                msg += " on '%s'" % std(self.proxy_hostname)
-            cinfo.append(msg)
-        return cinfo
 
 
     def parse_encoding_caps(self, c):
@@ -1044,16 +962,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def get_info(self):
         info = {
                 "protocol"          : "xpra",
-                "version"           : self.client_version or "unknown",
-                "revision"          : self.client_revision or "unknown",
-                "platform_name"     : platform_name(self.client_platform, self.client_release),
-                "session-type"      : self.client_session_type,
-                "session-type.full" : self.client_session_type_full,
-                "uuid"              : self.uuid,
                 "idle_time"         : int(monotonic_time()-self.last_user_event),
                 "idle"              : self.idle,
-                "hostname"          : self.hostname,
-                "argv"              : self.argv,
                 "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
                 "desktops"          : self.desktops,
@@ -1122,6 +1032,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(info, AudioMixin.get_info(self))
         merge_dicts(info, MMAP_Connection.get_info(self))
         merge_dicts(info, NetworkStateMixin.get_info(self))
+        merge_dicts(info, ClientInfoMixin.get_info(self))
         return info
 
     def get_screen_info(self):
@@ -1341,8 +1252,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             self.send_async("webcam-stop", device, message)
 
 
-
-
     def send_client_command(self, *args):
         if self.hello_sent:
             self.send_more("control", *args)
@@ -1351,8 +1260,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def rpc_reply(self, *args):
         if self.hello_sent:
             self.send("rpc-reply", *args)
-
-
 
 
     ######################################################################
