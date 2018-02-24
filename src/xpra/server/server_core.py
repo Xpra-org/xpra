@@ -273,9 +273,6 @@ class ServerCore(object):
 
     ######################################################################
     # run / stop:
-    def reaper_exit(self):
-        self.clean_quit()
-
     def signal_quit(self, signum, _frame):
         sys.stdout.write("\n")
         sys.stdout.flush()
@@ -290,12 +287,6 @@ class ServerCore(object):
         log("clean_quit(%s)", upgrading)
         self._upgrading = upgrading
         self._closing = True
-        #ensure the reaper doesn't call us again:
-        if self.child_reaper:
-            def noop():
-                pass
-            self.reaper_exit = noop
-            log("clean_quit: reaper_exit=%s", self.reaper_exit)
         self.cleanup()
         def quit_timer():
             log.debug("quit_timer()")

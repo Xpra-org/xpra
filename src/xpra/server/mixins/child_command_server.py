@@ -73,6 +73,9 @@ class ChildCommandServer(StubServerMixin):
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
             self.terminate_children_processes()
+        def noop():
+            pass
+        self.reaper_exit = noop
         reaper_cleanup()
 
 
