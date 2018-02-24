@@ -34,8 +34,9 @@ from xpra.server.source.encodings_mixin import EncodingsMixin
 from xpra.server.source.idle_mixin import IdleMixin
 from xpra.server.source.input_mixin import InputMixin
 from xpra.server.source.avsync_mixin import AVSyncMixin
+from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envbool, AtomicInteger
+from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, AtomicInteger
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
@@ -59,7 +60,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -108,6 +109,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         IdleMixin.__init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb)
         InputMixin.__init__(self)
         AVSyncMixin.__init__(self, av_sync)
+        ClientDisplayMixin.__init__(self)
 
         global counter
         self.counter = counter.increase()
@@ -128,9 +130,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
 
-        self.icc = None
-        self.display_icc = {}
-
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
@@ -149,16 +148,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.send_notifications = False
         self.send_notifications_actions = False
         self.notification_callbacks = {}
-        self.randr_notify = False
         self.share = False
         self.lock = False
-        self.desktop_size = None
-        self.desktop_mode_size = None
-        self.desktop_size_unscaled = None
-        self.desktop_size_server = None
-        self.screen_sizes = ()
-        self.desktops = 1
-        self.desktop_names = ()
         self.control_commands = ()
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
@@ -242,12 +233,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         EncodingsMixin.parse_client_caps(self, c)
         InputMixin.parse_client_caps(self, c)
         AVSyncMixin.parse_client_caps(self, c)
+        ClientDisplayMixin.parse_client_caps(self, c)
 
         #general features:
         self.info_namespace = c.boolget("info-namespace")
         self.send_notifications = c.boolget("notifications")
         self.send_notifications_actions = c.boolget("notifications.actions")
-        self.randr_notify = c.boolget("randr_notify")
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
@@ -257,23 +248,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         else:
             self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
-
-        self.desktop_size = c.intpair("desktop_size")
-        if self.desktop_size is not None:
-            w, h = self.desktop_size
-            if w<=0 or h<=0 or w>=32768 or h>=32768:
-                log.warn("ignoring invalid desktop dimensions: %sx%s", w, h)
-                self.desktop_size = None
-        self.desktop_mode_size = c.intpair("desktop_mode_size")
-        self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
-        self.set_screen_sizes(c.listget("screen_sizes"))
-        self.set_desktops(c.intget("desktops", 1), c.strlistget("desktop.names"))
-
-        self.icc = c.dictget("icc")
-        self.display_icc = c.dictget("display-icc")
-
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
-        log("client uuid %s", self.uuid)
 
         cinfo = self.get_connect_info()
         for i,ci in enumerate(cinfo):
@@ -343,6 +318,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(capabilities, EncodingsMixin.get_caps(self))
         merge_dicts(capabilities, InputMixin.get_caps(self))
         merge_dicts(capabilities, AVSyncMixin.get_caps(self))
+        merge_dicts(capabilities, ClientDisplayMixin.get_caps(self))
         self.send("hello", capabilities)
         self.hello_sent = True
 
@@ -352,9 +328,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def get_info(self):
         info = {
                 "protocol"          : "xpra",
-                "desktop_size"      : self.desktop_size or "",
-                "desktops"          : self.desktops,
-                "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
                 "elapsed_time"      : int(monotonic_time()-self.connection_time),
                 "counter"           : self.counter,
@@ -364,25 +337,10 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                     "actual"        : self.soft_bandwidth_limit,
                     }
                 }
-        if self.desktop_mode_size:
-            info["desktop_mode_size"] = self.desktop_mode_size
-        if self.client_connection_data:
-            info["connection-data"] = self.client_connection_data
-        if self.desktop_size_unscaled:
-            info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
-
-        def addattr(k, name):
-            v = getattr(self, name)
-            if v is not None:
-                info[k] = v
-        for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
-            addattr(x, "client_"+x)
-        #encoding:
         info.update({
                      "connection"       : self.protocol.get_info(),
                      })
         info.update(self.get_features_info())
-        info.update(self.get_screen_info())
         merge_dicts(info, FilePrintMixin.get_info(self))
         merge_dicts(info, AudioMixin.get_info(self))
         merge_dicts(info, MMAP_Connection.get_info(self))
@@ -390,21 +348,16 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(info, ClientInfoMixin.get_info(self))
         merge_dicts(info, WindowsMixin.get_info(self))
         merge_dicts(info, EncodingsMixin.get_info(self))
+        merge_dicts(info, AVSyncMixin.get_info(self))
+        merge_dicts(info, ClientDisplayMixin.get_info(self))
         return info
 
-    def get_screen_info(self):
-        return get_screen_info(self.screen_sizes)
-
     def get_features_info(self):
-        info = {}
-        def battr(k, prop):
-            info[k] = bool(getattr(self, prop))
-        for prop in ("lock", "share", "randr_notify"):
-            battr(prop, prop)
-        for prop, name in {
-            "send_notifications" : "notifications",
-            }.items():
-            battr(name, prop)
+        info = {
+            "lock"  : bool(self.lock),
+            "share" : bool(self.share),
+            "notifications" : self.send_notifications,
+            }
         return info
 
 
@@ -494,28 +447,3 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def rpc_reply(self, *args):
         if self.hello_sent:
             self.send("rpc-reply", *args)
-
-
-    ######################################################################
-    # screen and desktops:
-    def set_screen_sizes(self, screen_sizes):
-        self.screen_sizes = screen_sizes or []
-        log("client screen sizes: %s", screen_sizes)
-
-    def set_desktops(self, desktops, desktop_names):
-        self.desktops = desktops or 1
-        self.desktop_names = desktop_names or []
-
-    def updated_desktop_size(self, root_w, root_h, max_w, max_h):
-        log("updated_desktop_size%s randr_notify=%s, desktop_size=%s", (root_w, root_h, max_w, max_h), self.randr_notify, self.desktop_size)
-        if not self.hello_sent:
-            return False
-        if self.randr_notify and (not self.desktop_size_server or tuple(self.desktop_size_server)!=(root_w, root_h)):
-            self.desktop_size_server = root_w, root_h
-            self.send("desktop_size", root_w, root_h, max_w, max_h)
-            return True
-        return False
-
-    def show_desktop(self, show):
-        if self.show_desktop_allowed and self.hello_sent:
-            self.send_async("show-desktop", show)

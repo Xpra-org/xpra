@@ -63,7 +63,6 @@ class WindowsMixin(StubServerMixin):
         self.window_initiate_moveresize = False
         self.system_tray = False
         self.metadata_supported = ()
-        self.show_desktop_allowed = False
 
         self.cursor_timer = None
         self.last_cursor_sent = None
@@ -124,7 +123,6 @@ class WindowsMixin(StubServerMixin):
         self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
-        self.show_desktop_allowed = c.boolget("show-desktop")
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)

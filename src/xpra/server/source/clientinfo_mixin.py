@@ -73,6 +73,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.proxy_release = c.strget("proxy.platform.sysrelease")
         self.proxy_version = c.strget("proxy.version")
         self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
+        log("client uuid %s", self.uuid)
 
     def get_connect_info(self):
         cinfo = []
