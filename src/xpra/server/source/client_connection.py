@@ -15,7 +15,6 @@ keylog = Logger("keyboard")
 mouselog = Logger("mouse")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
-avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 notifylog = Logger("notify")
 netlog = Logger("network")
@@ -34,10 +33,10 @@ from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.server.source.encodings_mixin import EncodingsMixin
 from xpra.server.source.idle_mixin import IdleMixin
 from xpra.server.source.input_mixin import InputMixin
+from xpra.server.source.avsync_mixin import AVSyncMixin
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger
+from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envbool, AtomicInteger
 
-AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
 counter = AtomicInteger()
@@ -60,7 +59,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -108,6 +107,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
         IdleMixin.__init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb)
         InputMixin.__init__(self)
+        AVSyncMixin.__init__(self, av_sync)
 
         global counter
         self.counter = counter.increase()
@@ -127,11 +127,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.setting_changed = setting_changed
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
-
-        self.av_sync = av_sync
-        self.av_sync_delay = 0
-        self.av_sync_delay_total = 0
-        self.av_sync_delta = AV_SYNC_DELTA
 
         self.icc = None
         self.display_icc = {}
@@ -246,6 +241,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         WindowsMixin.parse_client_caps(self, c)
         EncodingsMixin.parse_client_caps(self, c)
         InputMixin.parse_client_caps(self, c)
+        AVSyncMixin.parse_client_caps(self, c)
 
         #general features:
         self.info_namespace = c.boolget("info-namespace")
@@ -276,9 +272,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.icc = c.dictget("icc")
         self.display_icc = c.dictget("display-icc")
 
-        av_sync = c.boolget("av-sync")
-        self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
-        avsynclog("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
         log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
         log("client uuid %s", self.uuid)
 
@@ -302,30 +295,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def startup_complete(self):
         log("startup_complete()")
         self.send("startup-complete")
-
-
-    ######################################################################
-    # a/v sync:
-    def set_av_sync_delta(self, delta):
-        avsynclog("set_av_sync_delta(%i)", delta)
-        self.av_sync_delta = delta
-        self.update_av_sync_delay_total()
-
-    def set_av_sync_delay(self, v):
-        #update all window sources with the given delay
-        self.av_sync_delay = v
-        self.update_av_sync_delay_total()
-
-    def update_av_sync_delay_total(self):
-        if self.av_sync:
-            encoder_latency = self.get_sound_source_latency()
-            self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
-            avsynclog("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, delta=%s)", self.av_sync_delay_total, self.av_sync_delay, encoder_latency, self.av_sync_delta)
-        else:
-            avsynclog("av-sync support is disabled, setting it to 0")
-            self.av_sync_delay_total = 0
-        for ws in self.window_sources.values():
-            ws.set_av_sync_delay(self.av_sync_delay_total)
 
 
     ######################################################################
@@ -373,6 +342,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(capabilities, WindowsMixin.get_caps(self))
         merge_dicts(capabilities, EncodingsMixin.get_caps(self))
         merge_dicts(capabilities, InputMixin.get_caps(self))
+        merge_dicts(capabilities, AVSyncMixin.get_caps(self))
         self.send("hello", capabilities)
         self.hello_sent = True
 
@@ -410,11 +380,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #encoding:
         info.update({
                      "connection"       : self.protocol.get_info(),
-                     "av-sync"          : {
-                                           "client"     : {"delay"  : self.av_sync_delay},
-                                           "total"      : self.av_sync_delay_total,
-                                           "delta"      : self.av_sync_delta,
-                                           },
                      })
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
