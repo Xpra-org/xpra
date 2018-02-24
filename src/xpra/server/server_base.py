@@ -34,11 +34,11 @@ from xpra.server.mixins.display_manager import DisplayManager
 from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, csv, \
-    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
+from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
+    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY, XPRA_IDLE_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
-from xpra.notifications.common import parse_image_path, XPRA_IDLE_NOTIFICATION_ID
+from xpra.notifications.common import parse_image_path
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
 
@@ -336,17 +336,12 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         notifylog("notify_new_user(%s) sources=%s", ss, self._server_sources)
         if not self._server_sources:
             return
-        try:
-            from xpra.notifications.common import XPRA_NEW_USER_ID
-        except ImportError as e:
-            notifylog("notify_new_user(%s) %s", ss, e)
-        else:
-            nid = XPRA_NEW_USER_ID
-            icon = parse_image_path(get_icon_filename("user"))
-            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
-            body = "\n".join(ss.get_connect_info())
-            for s in self._server_sources.values():
-                s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+        nid = XPRA_NEW_USER_NOTIFICATION_ID
+        icon = parse_image_path(get_icon_filename("user"))
+        title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+        body = "\n".join(ss.get_connect_info())
+        for s in self._server_sources.values():
+            s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         
 
     def get_server_source_class(self):

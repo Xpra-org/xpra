@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 from xpra.net.compression import Compressible
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.util import envint
 from xpra.os_util import monotonic_time
 
@@ -18,7 +19,7 @@ MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
 MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 
 
-class ClipboardConnection(object):
+class ClipboardConnection(StubSourceMixin):
 
     def __init__(self):
         self.clipboard_enabled = False
@@ -38,9 +39,6 @@ class ClipboardConnection(object):
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
 
-    def get_caps(self):
-        return {}
-        
     def get_info(self):
         return {
             "clipboard"                 : self.clipboard_enabled,

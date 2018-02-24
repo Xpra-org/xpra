@@ -11,13 +11,14 @@ log = Logger("network")
 
 from xpra.util import envbool, envint, CLIENT_PING_TIMEOUT
 from xpra.os_util import monotonic_time
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
 PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 
-class NetworkStateMixin(object):
+class NetworkStateMixin(StubSourceMixin):
 
     def __init__(self):
         self.last_ping_echoed_time = 0
@@ -28,12 +29,6 @@ class NetworkStateMixin(object):
         self.cancel_ping_echo_timers()
         self.cancel_ping_timer()
 
-    def parse_client_caps(self, c):
-        pass
-
-    def get_caps(self):
-        return {}
-        
     def get_info(self):
         lpe = 0
         if self.last_ping_echoed_time>0:

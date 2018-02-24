@@ -9,13 +9,14 @@ log = Logger("server")
 
 
 from xpra.util import std
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 
 
 """
 Store information about the client.
 """
-class ClientInfoMixin(object):
+class ClientInfoMixin(StubSourceMixin):
 
     def __init__(self):
         self.uuid = ""
@@ -46,9 +47,6 @@ class ClientInfoMixin(object):
         self.proxy_version = None
         self.proxy_version = None
         
-    def cleanup(self):
-        pass
-
     def parse_client_caps(self, c):
         self.uuid = c.strget("uuid")
         self.machine_id = c.strget("machine_id")

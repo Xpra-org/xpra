@@ -22,7 +22,7 @@ from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import std, envint, typedict, updict
+from xpra.util import std, envint, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
 from xpra.client.mixins.webcam import WebcamForwarder
@@ -469,12 +469,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
 
     def may_notify_audio(self, summary, body):
-        try:
-            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID
-        except ImportError:
-            log("no notifications")
-        else:
-            self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
+        self.may_notify(XPRA_AUDIO_NOTIFICATION_ID, summary, body, icon_name="audio")
 
 
     ######################################################################

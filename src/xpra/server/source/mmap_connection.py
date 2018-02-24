@@ -11,9 +11,10 @@ log = Logger("mmap")
 
 from xpra.os_util import WIN32
 from xpra.simple_stats import std_unit
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
-class MMAP_Connection(object):
+class MMAP_Connection(StubSourceMixin):
 
     def __init__(self, supports_mmap, mmap_filename, min_mmap_size):
         self.supports_mmap = supports_mmap

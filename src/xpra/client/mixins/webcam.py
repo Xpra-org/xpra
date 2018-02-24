@@ -11,7 +11,7 @@ log = Logger("webcam")
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
 from xpra.os_util import BytesIOClass, monotonic_time, WIN32, BITS
-from xpra.util import envint, envbool, csv
+from xpra.util import envint, envbool, csv, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -268,15 +268,10 @@ class WebcamForwarder(StubClientMixin):
             log.error("webcam frame %i failed", self.webcam_frame_no, exc_info=True)
             log.error("Error sending webcam frame: %s", e)
             self.stop_sending_webcam()
-            try:
-                from xpra.notifications.common import XPRA_WEBCAM_NOTIFICATION_ID
-            except ImportError:
-                log("no notifications")
-            else:
-                summary = "Webcam forwarding has failed"
-                body = "The system encountered the following error:\n" + \
-                    ("%s\n" % e)
-                self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon_name="webcam")
+            summary = "Webcam forwarding has failed"
+            body = "The system encountered the following error:\n" + \
+                ("%s\n" % e)
+            self.may_notify(XPRA_WEBCAM_NOTIFICATION_ID, summary, body, expire_timeout=10*1000, icon_name="webcam")
             return False
         finally:
             self.webcam_lock.release()

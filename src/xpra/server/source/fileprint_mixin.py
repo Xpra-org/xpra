@@ -12,13 +12,14 @@ log = Logger("printing")
 from xpra.util import envbool
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 
 
-class FilePrintMixin(FileTransferHandler):
+class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     def __init__(self, file_transfer):
         FileTransferHandler.__init__(self, file_transfer)
@@ -30,9 +31,6 @@ class FilePrintMixin(FileTransferHandler):
     def parse_client_caps(self, c):
         FileTransferHandler.parse_file_transfer_caps(self, c)
 
-    def get_caps(self):
-        return {}
-        
     def get_info(self):
         return {
             "printers"          : self.printers,

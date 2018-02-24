@@ -18,7 +18,7 @@ from xpra.platform.gui import (get_antialias_info, get_icc_info, get_display_icc
                                get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name)
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.os_util import monotonic_time
-from xpra.util import iround, envint, envfloat, log_screen_sizes, engs
+from xpra.util import iround, envint, envfloat, log_screen_sizes, engs, XPRA_SCALING_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -284,12 +284,7 @@ class DisplayClient(StubClientMixin):
             "server desktop size is %ix%i" % (max_w, max_h),
             "using scaling factor %s x %s" % (xstr, ystr),
             ]
-        try:
-            from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
-        except:
-            pass
-        else:
-            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
+        self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), icon_name="scaling")
         scalinglog.warn("Warning: %s", summary)
         for m in messages:
             scalinglog.warn(" %s", m)
@@ -477,12 +472,7 @@ class DisplayClient(StubClientMixin):
                 "the scaled client screen %i x %i -> %i x %i" % (root_w, root_h, sw, sh),
                 " would overflow the server's screen: %i x %i" % (maxw, maxh),
                 ]
-            try:
-                from xpra.notifications.common import XPRA_SCALING_NOTIFICATION_ID
-            except ImportError:
-                pass
-            else:
-                self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
+            self.may_notify(XPRA_SCALING_NOTIFICATION_ID, summary, "\n".join(messages), "scaling")
             scalinglog.warn("Warning: %s", summary)
             for m in messages:
                 scalinglog.warn(" %s", m)

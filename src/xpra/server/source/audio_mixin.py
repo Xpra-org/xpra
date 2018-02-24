@@ -11,13 +11,14 @@ log = Logger("sound")
 notifylog = Logger("notify")
 
 from xpra.net.compression import Compressed
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
-from xpra.util import csv, envbool, flatten_dict
+from xpra.util import csv, envbool, flatten_dict, XPRA_AUDIO_NOTIFICATION_ID
 
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 
 
-class AudioMixin(object):
+class AudioMixin(StubSourceMixin):
 
     def __init__(self, sound_properties,
                  sound_source_plugin,
@@ -112,20 +113,13 @@ class AudioMixin(object):
         msgs = loop_warning_messages(mode)
         summary = msgs[0]
         body = "\n".join(msgs[1:])
-        try:
-            from xpra.platform.paths import get_icon_filename
-            from xpra.notifications.common import XPRA_AUDIO_NOTIFICATION_ID, parse_image_path
-        except ImportError as e:
-            notifylog("audio_loop_warning(%s) %s", mode, e)
-        else:
-            nid = XPRA_AUDIO_NOTIFICATION_ID
-            icon = parse_image_path(get_icon_filename(mode))
-            self.notify("", nid, "Xpra", 0, "", summary, body, [], {}, 10*1000, icon)
+        nid = XPRA_AUDIO_NOTIFICATION_ID
+        self.may_notify(nid, summary, body, icon_name=mode)
         log.warn("Warning: %s", summary)
         for x in msgs[1:]:
             log.warn(" %s", x)
         return False
-        
+
     def start_sending_sound(self, codec=None, volume=1.0, new_stream=None, new_buffer=None, skip_client_codec_check=False):
         assert self.hello_sent
         log("start_sending_sound(%s)", codec)

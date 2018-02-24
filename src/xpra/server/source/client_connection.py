@@ -47,10 +47,8 @@ from xpra.net.compression import compressed_wrapper, Compressed
 from xpra.make_thread import start_thread
 from xpra.os_util import Queue, monotonic_time, BytesIOClass, strtobytes
 from xpra.server.background_worker import add_work_item
-from xpra.notifications.common import XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
-from xpra.platform.paths import get_icon_dir
 from xpra.util import csv, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
-                    DEFAULT_METADATA_SUPPORTED
+                    DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
 
 NOYIELD = not envbool("XPRA_YIELD", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
@@ -1200,6 +1198,18 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
     ######################################################################
     # notifications:
+    """ Utility functions for mixins (makes notifications optional) """
+    def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
+        try:
+            from xpra.platform.paths import get_icon_filename
+            from xpra.notifications.common import parse_image_path
+        except ImportError as e:
+            notifylog("not sending notification: %s", e)
+        else:
+            icon_filename = get_icon_filename(icon_name)
+            icon = parse_image_path(icon_filename)
+            self.notify("", nid, "Xpra", 0, "", summary, body, actions, hints, expire_timeout, icon, user_callback)
+
     def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon, user_callback=None):
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
@@ -1594,7 +1604,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
             if count>CONGESTION_WARNING_EVENT_COUNT:
                 self.bandwidth_warning_time = now
-                dbus_id = ""
                 nid = XPRA_BANDWIDTH_NOTIFICATION_ID
                 summary = "Network Performance Issue"
                 body = "Your network connection is struggling to keep up,\n" + \
@@ -1607,16 +1616,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
                 hints = {}
-                expire_timeout = 10*1000
-                icon = ""
-                try:
-                    icon_filename = os.path.join(get_icon_dir(), "connect.png")
-                    if os.path.exists(icon_filename):
-                        from xpra.notifications.common import parse_image_path
-                        icon = parse_image_path(icon_filename) or ""
-                except Exception:
-                    notifylog.error("Error: failed to load network notification icon", exc_info=True)
-                self.notify(dbus_id, nid, "Xpra", 0, "", summary, body, actions, hints, expire_timeout, icon, user_callback=self.congestion_notification_callback)
+                self.may_notify(nid, summary, body, actions, hints, icon_name="connect", user_callback=self.congestion_notification_callback)
 
     def congestion_notification_callback(self, nid, action_id):
         log("congestion_notification_callback(%i, %s)", nid, action_id)

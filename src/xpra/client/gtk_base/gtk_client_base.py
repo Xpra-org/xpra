@@ -28,7 +28,8 @@ grablog = Logger("client", "grab")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, csv, DEFAULT_METADATA_SUPPORTED
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, csv, \
+    DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
 from xpra.net.compression import Compressible
@@ -935,14 +936,9 @@ class GTKXpraClient(UIXpraClient, GObjectXpraClient):
             for x in str(e).split("\n"):
                 opengllog.error(" %s", x)
             self.opengl_props["info"] = str(e)
-            try:
-                from xpra.notifications.common import XPRA_OPENGL_NOTIFICATION_ID
-            except ImportError:
-                opengllog("no notifications")
-            else:
-                summary = "OpenGL Setup Failure"
-                body = str(e)
-                self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
+            summary = "OpenGL Setup Failure"
+            body = str(e)
+            self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
 
         if warnings:
             if enable_option in ("", "auto"):
