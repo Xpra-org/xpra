@@ -6,7 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os
 import hashlib
 import threading
@@ -34,9 +33,6 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 
-ARGB_ICONS = envbool("XPRA_ARGB_ICONS", True)
-PNG_ICONS = envbool("XPRA_PNG_ICONS", True)
-
 DELTA = envbool("XPRA_DELTA", True)
 MIN_DELTA_SIZE = envint("XPRA_MIN_DELTA_SIZE", 1024)
 MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
@@ -57,12 +53,10 @@ AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 
-LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
-SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
-
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
-from xpra.os_util import BytesIOClass, memoryview_to_bytes
+from xpra.server.window.windowicon_source import WindowIconSource
+from xpra.os_util import memoryview_to_bytes
 from xpra.server.window.content_guesser import guess_content_type
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
@@ -77,16 +71,16 @@ from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
 
 
-class WindowSource(object):
-    """
-    We create a Window Source for each window we send pixels for.
+"""
+We create a Window Source for each window we send pixels for.
 
-    The UI thread calls 'damage' for screen updates,
-    we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
-    the function can then submit the packet using the 'queue_damage_packet' callback.
+The UI thread calls 'damage' for screen updates,
+we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
+the function can then submit the packet using the 'queue_damage_packet' callback.
 
-    (also by 'send_window_icon' and clibpoard packets)
-    """
+(also by 'send_window_icon' and clibpoard packets)
+"""
+class WindowSource(WindowIconSource):
 
     _encoding_warnings = set()
 
@@ -103,6 +97,7 @@ class WindowSource(object):
                     rgb_formats,
                     default_encoding_options,
                     mmap, mmap_size, bandwidth_limit):
+        WindowIconSource.__init__(self, window_icon_encodings, icons_encoding_options)
         self.idle_add = idle_add
         self.timeout_add = timeout_add
         self.source_remove = source_remove
@@ -137,10 +132,8 @@ class WindowSource(object):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.core_encodings = core_encodings            #the core encodings supported by the client
-        self.window_icon_encodings = window_icon_encodings  #for window icons only
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.icons_encoding_options = icons_encoding_options    #icon caps
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression (not to be confused with 'rgb24zlib'...)
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
@@ -208,20 +201,6 @@ class WindowSource(object):
             self.image_depth = window.get_property("depth")
         except:
             self.image_depth = 24
-
-        #for sending and batching window icon updates:
-        self.window_icon_data = None
-        self.send_window_icon_due = False
-        self.theme_default_icons = icons_encoding_options.strlistget("default.icons", [])
-        self.window_icon_greedy = icons_encoding_options.boolget("greedy", False)
-        self.window_icon_size = icons_encoding_options.intpair("size", (64, 64))
-        self.window_icon_max_size = icons_encoding_options.intpair("max_size", self.window_icon_size)
-        self.window_icon_max_size = max(self.window_icon_max_size[0], 16), max(self.window_icon_max_size[1], 16)
-        self.window_icon_size = min(self.window_icon_size[0], self.window_icon_max_size[0]), min(self.window_icon_size[1], self.window_icon_max_size[1])
-        self.window_icon_size = max(self.window_icon_size[0], 16), max(self.window_icon_size[1], 16)
-        iconlog("client icon settings: size=%s, max_size=%s", self.window_icon_size, self.window_icon_max_size)
-        if LOG_THEME_DEFAULT_ICONS:
-            iconlog("theme_default_icons=%s", self.theme_default_icons)
 
         # general encoding tunables (mostly used by video encoders):
         self._encoding_quality = deque(maxlen=100)   #keep track of the target encoding_quality: (event time, info, encoding speed)
@@ -380,6 +359,7 @@ class WindowSource(object):
             Add window specific stats
         """
         info = self.statistics.get_info()
+        info.update(WindowIconSource.get_info(self))
         einfo = info.setdefault("encoding", {})     #defined in statistics.get_info()
         einfo.update(self.get_quality_speed_info())
         einfo.update({
@@ -456,7 +436,6 @@ class WindowSource(object):
                     "source"                : self.image_depth,
                     "client"                : self.client_bit_depth,
                     },
-                 #"icons"                : self.icons_encoding_options,
                 })
         ma = self.mapped_at
         if ma:
@@ -470,16 +449,6 @@ class WindowSource(object):
         info["damage.fps"] = dfps
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
-        idata = self.window_icon_data
-        if idata:
-            pixel_data, pixel_format, stride, w, h = idata
-            info["icon"] = {
-                "pixel_format"  : pixel_format,
-                "width"         : w,
-                "height"        : h,
-                "stride"        : stride,
-                "bytes"         : len(pixel_data),
-                }
         return info
 
     def get_quality_speed_info(self):
@@ -548,134 +517,6 @@ class WindowSource(object):
         assert self.ui_thread == threading.current_thread()
         w, h = self.window.get_dimensions()
         self.damage(0, 0, w, h, options)
-
-
-    fallback_window_icon_surface = False
-    @staticmethod
-    def get_fallback_window_icon_surface():
-        if WindowSource.fallback_window_icon_surface is False:
-            try:
-                import cairo
-                from xpra.platform.paths import get_icon_filename
-                fn = get_icon_filename("xpra.png")
-                iconlog("get_fallback_window_icon_surface() icon filename=%s", fn)
-                if os.path.exists(fn):
-                    s = cairo.ImageSurface.create_from_png(fn)
-            except Exception as e:
-                iconlog.warn("failed to get fallback icon: %s", e)
-                s = None
-            WindowSource.fallback_window_icon_surface = s
-        return WindowSource.fallback_window_icon_surface
-
-    def send_window_icon(self):
-        assert self.ui_thread == threading.current_thread()
-        if self.suspended:
-            return
-        #this runs in the UI thread
-        surf = self.window.get_property("icon")
-        iconlog("send_window_icon window %s icon=%s", self.window, surf)
-        if not surf:
-            #FIXME: this is a bit dirty,
-            #we figure out if the client is likely to have an icon for this wmclass already,
-            #(assuming the window even has a 'class-instance'), and if not we send the default
-            try:
-                c_i = self.window.get_property("class-instance")
-            except:
-                c_i = None
-            if c_i and len(c_i)==2:
-                wm_class = c_i[0].encode("utf-8")
-                if wm_class in self.theme_default_icons:
-                    iconlog("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
-                    return
-                #try to load the icon for this class-instance from the theme:
-                surf = self.window.get_default_window_icon()
-                iconlog("send_window_icon window %s using default window icon=%s", self.window, surf)
-        if not surf:
-            if not self.window_icon_greedy:
-                return
-            #"greedy": client does not set a default icon, so we must provide one every time
-            #to make sure that the window icon does get set to something
-            #(our icon is at least better than the window manager's default)
-            if "default" in self.window_icon_encodings:
-                #client will set the default itself,
-                #send a mostly empty packet:
-                packet = ("window-icon", self.wid, 0, 0, "default", "")
-                iconlog("queuing window icon update: %s", packet)
-                #this is cheap, so don't use the encode thread:
-                self.queue_packet(packet, wait_for_more=True)
-                return
-            surf = WindowSource.get_fallback_window_icon_surface()
-            iconlog("using fallback window icon")
-        if surf:
-            if hasattr(surf, "get_pixels"):
-                #looks like a gdk.Pixbuf:
-                self.window_icon_data = (surf.get_pixels(), "RGBA", surf.get_rowstride(), surf.get_width(), surf.get_height())
-            else:
-                #for debugging, save to a file so we can see it:
-                #surf.write_to_png("S-%s-%s.png" % (self.wid, int(time.time())))
-                #extract the data from the cairo surface
-                import cairo
-                assert surf.get_format() == cairo.FORMAT_ARGB32
-                self.window_icon_data = (surf.get_data(), "BGRA", surf.get_stride(), surf.get_width(), surf.get_height())
-            if not self.send_window_icon_due:
-                self.send_window_icon_due = True
-                #call compress_clibboard via the work queue
-                #and delay sending it by a bit to allow basic icon batching:
-                delay = max(50, int(self.batch_config.delay))
-                iconlog("send_window_icon() window=%s, wid=%s, compression scheduled in %sms", self.window, self.wid, delay)
-                self.timeout_add(delay, self.call_in_encode_thread, True, self.compress_and_send_window_icon)
-
-    def compress_and_send_window_icon(self):
-        #this runs in the work queue
-        self.send_window_icon_due = False
-        idata = self.window_icon_data
-        if not idata:
-            return
-        pixel_data, pixel_format, stride, w, h = idata
-        PIL = get_codec("PIL")
-        max_w, max_h = self.window_icon_max_size
-        if stride!=w*4:
-            #re-stride it (I don't think this ever fires?)
-            pixel_data = b"".join(pixel_data[stride*y:stride*y+w*4] for y in range(h))
-            stride = w*4
-        #use png if supported and if "premult_argb32" is not supported by the client (ie: html5)
-        #or if we must downscale it (bigger than what the client is willing to deal with),
-        #or if we want to save window icons
-        has_png = PIL and PNG_ICONS and ("png" in self.window_icon_encodings)
-        has_premult = ARGB_ICONS and "premult_argb32" in self.window_icon_encodings
-        use_png = has_png and (SAVE_WINDOW_ICONS or w>max_w or h>max_h or w*h>=1024 or (not has_premult) or (pixel_format!="BGRA"))
-        iconlog("compress_and_send_window_icon: %sx%s (max-size=%s, standard-size=%s), sending as png=%s, has_png=%s, has_premult=%s, pixel_format=%s", w, h, self.window_icon_max_size, self.window_icon_size, use_png, has_png, has_premult, pixel_format)
-        if use_png:
-            img = PIL.Image.frombuffer("RGBA", (w,h), pixel_data, "raw", pixel_format, 0, 1)
-            if w>max_w or h>max_h:
-                #scale the icon down to the size the client wants
-                icon_w, icon_h = self.window_icon_size
-                if float(w)/icon_w>=float(h)/icon_h:
-                    h = min(max_h, h*icon_w//w)
-                    w = icon_w
-                else:
-                    w = min(max_w, w*icon_h//h)
-                    h = icon_h
-                iconlog("scaling window icon down to %sx%s", w, h)
-                img = img.resize((w,h), PIL.Image.ANTIALIAS)
-            output = BytesIOClass()
-            img.save(output, 'PNG')
-            compressed_data = output.getvalue()
-            output.close()
-            wrapper = compression.Compressed("png", compressed_data)
-            if SAVE_WINDOW_ICONS:
-                filename = "server-window-%i-icon-%i.png" % (self.wid, int(time.time()))
-                img.save(filename, 'PNG')
-                iconlog("server window icon saved to %s", filename)
-        elif ("premult_argb32" in self.window_icon_encodings) and pixel_format=="BGRA":
-            wrapper = self.compressed_wrapper("premult_argb32", str(pixel_data))
-        else:
-            iconlog("cannot send window icon, supported encodings: %s", self.window_icon_encodings)
-            return
-        assert wrapper.datatype in ("premult_argb32", "png"), "invalid wrapper datatype %s" % wrapper.datatype
-        packet = ("window-icon", self.wid, w, h, wrapper.datatype, wrapper)
-        iconlog("queuing window icon update: %s", packet)
-        self.queue_packet(packet, wait_for_more=True)
 
 
     def set_scaling(self, scaling):
