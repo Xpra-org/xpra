@@ -22,7 +22,6 @@ metalog = Logger("metadata")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
-dbuslog = Logger("dbus")
 statslog = Logger("stats")
 notifylog = Logger("notify")
 netlog = Logger("network")
@@ -36,6 +35,7 @@ from xpra.server.source.fileprint_mixin import FilePrintMixin
 from xpra.server.source.clipboard_connection import ClipboardConnection
 from xpra.server.source.networkstate_mixin import NetworkStateMixin
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
+from xpra.server.source.dbus_mixin import DBUS_Mixin
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.metadata import make_window_metadata
@@ -81,7 +81,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -124,6 +124,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         FilePrintMixin.__init__(self, file_transfer)
         NetworkStateMixin.__init__(self)
         ClientInfoMixin.__init__(self)
+        DBUS_Mixin.__init__(self, dbus_control)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -147,8 +148,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
-        self.dbus_control = dbus_control
-        self.dbus_server = None
         self.get_transient_for = get_transient_for
         self.get_focus = get_focus
         self.get_cursor_data_cb = get_cursor_data_cb
@@ -203,13 +202,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
         self.encode_thread = start_thread(self.encode_loop, "encode")
-        #dbus:
-        if self.dbus_control:
-            from xpra.server.dbus.dbus_common import dbus_exception_wrap
-            def make_dbus_server():
-                from xpra.server.dbus.dbus_source import DBUS_Source
-                return DBUS_Source(self, os.environ.get("DISPLAY", "").lstrip(":"))
-            self.dbus_server = dbus_exception_wrap(make_dbus_server, "setting up client dbus instance")
 
 
     def __repr__(self):
@@ -302,10 +294,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.video_helper.cleanup()
         self.cancel_recalculate_timer()
         self.cancel_cursor_timer()
-        ds = self.dbus_server
-        if ds:
-            self.dbus_server = None
-            self.idle_add(ds.cleanup)
         self.protocol = None
 
 
