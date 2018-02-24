@@ -94,7 +94,9 @@ class EncodingsMixin(StubServerMixin):
 
 
     def cleanup(self):
-        #it is now safe to add the end of queue marker:
+        self.cancel_recalculate_timer()
+        #Warning: this mixin must come AFTER the window mixin!
+        #to make sure that it is safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
         self.encode_work_queue.put(None)
         #this should be a noop since we inherit an initialized helper:

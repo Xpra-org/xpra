@@ -145,9 +145,11 @@ class WindowsMixin(StubServerMixin):
     # info:
     def get_info(self):
         info = {
-            "windows"   : self.send_windows,
-            "cursors"   : self.send_cursors,
-            "bell"      : self.send_bell,
+            "windows"       : self.send_windows,
+            "cursors"       : self.send_cursors,
+            "bell"          : self.send_bell,
+            "suspended"     : self.suspended,
+            "system-tray"   : self.system_tray
             }
         if self.window_frame_sizes:
             info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})

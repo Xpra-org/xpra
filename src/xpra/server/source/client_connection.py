@@ -33,7 +33,7 @@ from xpra.server.source.dbus_mixin import DBUS_Mixin
 from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.server.source.encodings_mixin import EncodingsMixin
 from xpra.server.source.idle_mixin import IdleMixin
-from xpra.make_thread import start_thread
+from xpra.server.source.input_mixin import InputMixin
 from xpra.os_util import monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger
 
@@ -60,7 +60,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -107,19 +107,24 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
         EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
         IdleMixin.__init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb)
+        InputMixin.__init__(self)
+
         global counter
         self.counter = counter.increase()
+        self.connection_time = monotonic_time()
         self.close_event = Event()
-        self.ordinary_packets = []
+
         self.protocol = protocol
+        self.ordinary_packets = []
         self.disconnect = disconnect_cb
-        self.idle_add = idle_add
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
-        self.setting_changed = setting_changed
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
+        self.idle_add = idle_add
+        self.timeout_add = timeout_add
+        self.source_remove = source_remove
+
+        self.setting_changed = setting_changed
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
 
@@ -131,17 +136,13 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.icc = None
         self.display_icc = {}
 
-        self.connection_time = monotonic_time()
-
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
-        self.last_user_event = monotonic_time()
 
         self.init_vars()
 
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
-        self.encode_thread = start_thread(self.encode_loop, "encode")
 
 
     def __repr__(self):
@@ -164,8 +165,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.desktops = 1
         self.desktop_names = ()
         self.control_commands = ()
-        self.double_click_time  = -1
-        self.double_click_distance = -1, -1
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
         self.bandwidth_warnings = True
@@ -180,8 +179,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.wants_events = False
         self.wants_default_cursor = False
 
-        self.keyboard_config = None
-
 
     def is_closed(self):
         return self.close_event.isSet()
@@ -191,10 +188,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         for c in ClientConnection.__bases__:
             c.cleanup(self)
         self.close_event.set()
-        #it is now safe to add the end of queue marker:
-        #(all window sources will have stopped queuing data)
-        self.encode_work_queue.put(None)
-        self.cancel_recalculate_timer()
         self.protocol = None
 
 
@@ -252,6 +245,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         MMAP_Connection.parse_client_caps(self, c)
         WindowsMixin.parse_client_caps(self, c)
         EncodingsMixin.parse_client_caps(self, c)
+        InputMixin.parse_client_caps(self, c)
 
         #general features:
         self.info_namespace = c.boolget("info-namespace")
@@ -261,8 +255,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
-        self.double_click_time = c.intget("double_click.time")
-        self.double_click_distance = c.intpair("double_click.distance")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         if self.server_bandwidth_limit<=0:
             self.bandwidth_limit = bandwidth_limit
@@ -299,10 +291,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
         self.update_connection_data(c.dictget("connection-data"))
-
-        #keyboard is now injected into this class, default to undefined:
-        self.keyboard_config = None
-
         if self.mmap_size>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
@@ -338,63 +326,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             self.av_sync_delay_total = 0
         for ws in self.window_sources.values():
             ws.set_av_sync_delay(self.av_sync_delay_total)
-
-
-    ######################################################################
-    # keyboard :
-    def set_layout(self, layout, variant, options):
-        return self.keyboard_config.set_layout(layout, variant, options)
-
-    def keys_changed(self):
-        if self.keyboard_config:
-            self.keyboard_config.compute_modifier_map()
-            self.keyboard_config.compute_modifier_keynames()
-        keylog("keys_changed() updated keyboard config=%s", self.keyboard_config)
-
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
-        if self.keyboard_config and self.keyboard_config.enabled:
-            self.keyboard_config.make_keymask_match(modifier_list, ignored_modifier_keycode, ignored_modifier_keynames)
-
-    def set_default_keymap(self):
-        keylog("set_default_keymap() keyboard_config=%s", self.keyboard_config)
-        if self.keyboard_config:
-            self.keyboard_config.set_default_keymap()
-        return self.keyboard_config
-
-
-    def set_keymap(self, current_keyboard_config, keys_pressed, force=False, translate_only=False):
-        keylog("set_keymap%s", (current_keyboard_config, keys_pressed, force, translate_only))
-        if self.keyboard_config and self.keyboard_config.enabled:
-            current_id = None
-            if current_keyboard_config and current_keyboard_config.enabled:
-                current_id = current_keyboard_config.get_hash()
-            keymap_id = self.keyboard_config.get_hash()
-            keylog("current keyboard id=%s, new keyboard id=%s", current_id, keymap_id)
-            if force or current_id is None or keymap_id!=current_id:
-                self.keyboard_config.keys_pressed = keys_pressed
-                self.keyboard_config.set_keymap(translate_only)
-                self.keyboard_config.owner = self.uuid
-                current_keyboard_config = self.keyboard_config
-            else:
-                keylog.info("keyboard mapping already configured (skipped)")
-                self.keyboard_config = current_keyboard_config
-        return current_keyboard_config
-
-
-    def get_keycode(self, client_keycode, keyname, modifiers):
-        if self.keyboard_config is None:
-            keylog.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
-            return -1
-        return self.keyboard_config.get_keycode(client_keycode, keyname, modifiers)
-
-
-    def update_mouse(self, wid, x, y, rx, ry):
-        mouselog("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i, show=%s", wid, x, y, rx, ry, self.mouse_last_position, self.counter, self.mouse_show)
-        if not self.mouse_show:
-            return
-        if self.mouse_last_position!=(x, y, rx, ry):
-            self.mouse_last_position = (x, y, rx, ry)
-            self.send_async("pointer-position", wid, x, y, rx, ry)
 
 
     ######################################################################
@@ -441,12 +372,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(capabilities, MMAP_Connection.get_caps(self))
         merge_dicts(capabilities, WindowsMixin.get_caps(self))
         merge_dicts(capabilities, EncodingsMixin.get_caps(self))
-        #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
-        #so clients can figure out which modifiers map to which keys:
-        if self.keyboard_config:
-            mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
-            if mck:
-                capabilities["modifier_keycodes"] = mck
+        merge_dicts(capabilities, InputMixin.get_caps(self))
         self.send("hello", capabilities)
         self.hello_sent = True
 
@@ -461,7 +387,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                 "desktop_names"     : self.desktop_names,
                 "connection_time"   : int(self.connection_time),
                 "elapsed_time"      : int(monotonic_time()-self.connection_time),
-                "suspended"         : self.suspended,
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
                 "bandwidth-limit"   : {
@@ -509,18 +434,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         info = {}
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
-        for prop in ("lock", "share", "randr_notify", "system_tray"):
+        for prop in ("lock", "share", "randr_notify"):
             battr(prop, prop)
         for prop, name in {
             "send_notifications" : "notifications",
             }.items():
             battr(name, prop)
-        dcinfo = info.setdefault("double_click", {})
-        for prop, name in {
-                           "double_click_time"      : "time",
-                           "double_click_distance"  : "distance",
-                           }.items():
-            dcinfo[name] = getattr(self, prop)
         return info
 
 

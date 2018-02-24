@@ -27,7 +27,7 @@ class DBUS_Mixin(StubSourceMixin):
             self.dbus_server = None
             self.idle_add(ds.cleanup)
         
-    def parse_client_caps(self, c):
+    def parse_client_caps(self, _c):
         if self.dbus_control:
             from xpra.server.dbus.dbus_common import dbus_exception_wrap
             def make_dbus_server():
