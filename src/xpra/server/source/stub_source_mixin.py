@@ -9,6 +9,9 @@ class StubSourceMixin(object):
     def cleanup(self):
         pass
 
+    def is_closed(self):
+        return False
+
     def parse_client_caps(self, c):
         pass
 
@@ -17,6 +20,9 @@ class StubSourceMixin(object):
         
     def get_info(self):
         return {}
+
+    def user_event(self):
+        pass
 
     def may_notify(self, *args, **kwargs):
         pass

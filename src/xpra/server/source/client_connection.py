@@ -32,12 +32,11 @@ from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server.source.dbus_mixin import DBUS_Mixin
 from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.server.source.encodings_mixin import EncodingsMixin
+from xpra.server.source.idle_mixin import IdleMixin
 from xpra.make_thread import start_thread
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, \
-    AtomicInteger, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger
 
-GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 
@@ -61,7 +60,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -107,6 +106,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         DBUS_Mixin.__init__(self, dbus_control)
         WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
         EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
+        IdleMixin.__init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -117,16 +117,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.setting_changed = setting_changed
-        self.idle = False
-        self.idle_timeout = idle_timeout
-        self.idle_timeout_cb = idle_timeout_cb
-        self.idle_grace_timeout_cb = idle_grace_timeout_cb
-        #grace duration is at least 10 seconds:
-        self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
-        self.idle_timer = None
-        self.idle_grace_timer = None
-        self.schedule_idle_grace_timeout()
-        self.schedule_idle_timeout()
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -159,7 +149,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
     def init_vars(self):
         self.hello_sent = False
-
         self.info_namespace = False
         self.send_notifications = False
         self.send_notifications_actions = False
@@ -245,51 +234,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             weight = window_weight.get(wid)
             if weight is not None:
                 ws.bandwidth_limit = max(1, bandwidth_limit*weight//total_weight)
-
-
-    def user_event(self):
-        timeoutlog("user_event()")
-        self.last_user_event = monotonic_time()
-        self.schedule_idle_grace_timeout()
-        self.schedule_idle_timeout()
-        if self.idle:
-            self.no_idle()
-        try:
-            self.notification_callbacks.pop(XPRA_IDLE_NOTIFICATION_ID)
-        except KeyError:
-            pass
-        else:
-            self.notify_close(XPRA_IDLE_NOTIFICATION_ID)
-        
-
-    def schedule_idle_timeout(self):
-        timeoutlog("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
-        if self.idle_timer:
-            self.source_remove(self.idle_timer)
-            self.idle_timer = None
-        if self.idle_timeout>0:
-            self.idle_timer = self.timeout_add(self.idle_timeout*1000, self.idle_timedout)
-
-    def schedule_idle_grace_timeout(self):
-        timeoutlog("schedule_idle_grace_timeout() grace timer=%s, idle_timeout=%s", self.idle_grace_timer, self.idle_timeout)
-        if self.idle_grace_timer:
-            self.source_remove(self.idle_grace_timer)
-            self.idle_grace_timer = None
-        if self.idle_timeout>0 and not self.is_closed():
-            grace = self.idle_timeout - self.idle_grace_duration
-            self.idle_grace_timer = self.timeout_add(max(0, int(grace*1000)), self.idle_grace_timedout)
-
-    def idle_grace_timedout(self):
-        self.idle_grace_timer = None
-        timeoutlog("idle_grace_timedout() callback=%s", self.idle_grace_timeout_cb)
-        self.idle_grace_timeout_cb(self)
-
-    def idle_timedout(self):
-        self.idle_timer = None
-        timeoutlog("idle_timedout() callback=%s", self.idle_timeout_cb)
-        self.idle_timeout_cb(self)
-        if not self.is_closed():
-            self.schedule_idle_timeout()
 
 
     def parse_hello(self, c):
@@ -512,8 +456,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def get_info(self):
         info = {
                 "protocol"          : "xpra",
-                "idle_time"         : int(monotonic_time()-self.last_user_event),
-                "idle"              : self.idle,
                 "desktop_size"      : self.desktop_size or "",
                 "desktops"          : self.desktops,
                 "desktop_names"     : self.desktop_names,
@@ -567,17 +509,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         info = {}
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
-        for prop in ("lock", "share", "randr_notify",
-                     "system_tray"):
+        for prop in ("lock", "share", "randr_notify", "system_tray"):
             battr(prop, prop)
         for prop, name in {
             "send_notifications" : "notifications",
             }.items():
             battr(name, prop)
-        for prop, name in {
-                           "file_size_limit"        : "file-size-limit",
-                           }.items():
-            info[name] = getattr(self, prop)
         dcinfo = info.setdefault("double_click", {})
         for prop, name in {
                            "double_click_time"      : "time",
@@ -698,10 +635,3 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def show_desktop(self, show):
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
-
-    def refresh(self, wid, window, opts):
-        if not self.can_send_window(window):
-            return
-        self.cancel_damage(wid)
-        w, h = window.get_dimensions()
-        self.damage(wid, window, 0, 0, w, h, opts)
