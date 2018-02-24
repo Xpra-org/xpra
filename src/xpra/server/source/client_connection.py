@@ -7,9 +7,9 @@
 # later version. See the file COPYING for details.
 
 import os
+from math import sqrt
 from collections import deque
 from threading import Event
-from math import sqrt
 from time import sleep
 
 from xpra.log import Logger
@@ -17,8 +17,6 @@ log = Logger("server")
 elog = Logger("encoding")
 keylog = Logger("keyboard")
 mouselog = Logger("mouse")
-cursorlog = Logger("cursor")
-metalog = Logger("metadata")
 timeoutlog = Logger("timeout")
 proxylog = Logger("proxy")
 avsynclog = Logger("av-sync")
@@ -36,28 +34,23 @@ from xpra.server.source.clipboard_connection import ClipboardConnection
 from xpra.server.source.networkstate_mixin import NetworkStateMixin
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server.source.dbus_mixin import DBUS_Mixin
-from xpra.server.window.window_video_source import WindowVideoSource
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.server.window.batch_config import DamageBatchConfig
-from xpra.server.window.metadata import make_window_metadata
 from xpra.simple_stats import get_list_stats
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net import compression
-from xpra.net.compression import compressed_wrapper, Compressed
+from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.make_thread import start_thread
-from xpra.os_util import Queue, monotonic_time, BytesIOClass, strtobytes
+from xpra.os_util import Queue, monotonic_time
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, AtomicInteger, \
-                    DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import csv, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, \
+    AtomicInteger, XPRA_IDLE_NOTIFICATION_ID
 
 NOYIELD = not envbool("XPRA_YIELD", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
-CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
-SKIP_METADATA = os.environ.get("XPRA_SKIP_METADATA", "").split(",")
-
-PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
@@ -81,7 +74,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -125,6 +118,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         NetworkStateMixin.__init__(self)
         ClientInfoMixin.__init__(self)
         DBUS_Mixin.__init__(self, dbus_control)
+        WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -148,16 +142,9 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
-        self.get_transient_for = get_transient_for
-        self.get_focus = get_focus
-        self.get_cursor_data_cb = get_cursor_data_cb
-        self.get_window_id = get_window_id
-        self.window_filters = window_filters
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
-        # mouse echo:
-        self.mouse_show = False
-        self.mouse_last_position = None
+
         self.av_sync = av_sync
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
@@ -219,21 +206,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()
 
-        self.window_sources = {}                    #WindowSource for each Window ID
-        self.suspended = False
-
         self.auto_refresh_delay = 0
         self.info_namespace = False
-        self.send_cursors = False
-        self.cursor_encodings = ()
-        self.send_bell = False
         self.send_notifications = False
         self.send_notifications_actions = False
         self.notification_callbacks = {}
-        self.send_windows = True
-        self.pointer_grabs = False
         self.randr_notify = False
-        self.window_initiate_moveresize = False
         self.share = False
         self.lock = False
         self.desktop_size = None
@@ -243,10 +221,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.screen_sizes = ()
         self.desktops = 1
         self.desktop_names = ()
-        self.system_tray = False
         self.control_commands = ()
-        self.metadata_supported = ()
-        self.show_desktop_allowed = False
         self.supports_transparency = False
         self.vrefresh = -1
         self.double_click_time  = -1
@@ -266,8 +241,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.wants_default_cursor = False
 
         self.keyboard_config = None
-        self.cursor_timer = None
-        self.last_cursor_sent = None
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -284,16 +257,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         for c in ClientConnection.__bases__:
             c.cleanup(self)
         self.close_event.set()
-        for window_source in self.window_sources.values():
-            window_source.cleanup()
-        self.window_sources = {}
         #it is now safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
         self.encode_work_queue.put(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         self.cancel_recalculate_timer()
-        self.cancel_cursor_timer()
         self.protocol = None
 
 
@@ -434,45 +403,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             self.source_remove(ct)
 
 
-    def suspend(self, ui, wd):
-        log("suspend(%s, %s) suspended=%s",
-                  ui, wd, self.suspended)
-        if ui:
-            self.suspended = True
-        for wid in wd.keys():
-            ws = self.window_sources.get(wid)
-            if ws:
-                ws.suspend()
-
-    def resume(self, ui, wd):
-        log("resume(%s, %s) suspended=%s",
-                  ui, wd, self.suspended)
-        if ui:
-            self.suspended = False
-        for wid in wd.keys():
-            ws = self.window_sources.get(wid)
-            if ws:
-                ws.resume()
-        self.send_cursor()
-
-
-    def go_idle(self):
-        #usually fires from the server's idle_grace_timeout_cb
-        if self.idle:
-            return
-        self.idle = True
-        for window_source in self.window_sources.values():
-            window_source.go_idle()
-
-    def no_idle(self):
-        #on user event, we stop being idle
-        if not self.idle:
-            return
-        self.idle = False
-        for window_source in self.window_sources.values():
-            window_source.no_idle()
-
-
     def user_event(self):
         timeoutlog("user_event()")
         self.last_user_event = monotonic_time()
@@ -558,33 +488,22 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         FilePrintMixin.parse_client_caps(self, c)
         AudioMixin.parse_client_caps(self, c)
         MMAP_Connection.parse_client_caps(self, c)
+        WindowsMixin.parse_client_caps(self, c)
 
         #general features:
         self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and compression.use_lz4
         self.lzo = c.boolget("lzo", False) and compression.use_lzo
-        self.send_windows = self.ui_client and c.boolget("windows", True)
-        self.pointer_grabs = c.boolget("pointer.grabs")
         self.info_namespace = c.boolget("info-namespace")
-        self.send_cursors = self.send_windows and c.boolget("cursors")
-        self.cursor_encodings = c.strlistget("encodings.cursor")
-        self.send_bell = c.boolget("bell")
         self.send_notifications = c.boolget("notifications")
         self.send_notifications_actions = c.boolget("notifications.actions")
         self.randr_notify = c.boolget("randr_notify")
-        self.mouse_show = c.boolget("mouse.show")
-        self.mouse_last_position = c.intpair("mouse.initial-position")
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
-        self.window_initiate_moveresize = c.boolget("window.initiate-moveresize")
-        self.system_tray = c.boolget("system_tray")
         self.control_commands = c.strlistget("control_commands")
-        self.metadata_supported = c.strlistget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
-        self.show_desktop_allowed = c.boolget("show-desktop")
         self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
-        self.window_frame_sizes = typedict(c.dictget("window.frame_sizes") or {})
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         if self.server_bandwidth_limit<=0:
             self.bandwidth_limit = bandwidth_limit
@@ -652,12 +571,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         if self.mmap_size>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
-        #window filters:
-        try:
-            for object_name, property_name, operator, value in c.listget("window-filters"):
-                self.add_window_filter(object_name, property_name, operator, value)
-        except Exception as e:
-            log.error("Error parsing window-filters: %s", e)
         #adjust max packet size if file transfers are enabled:
         if self.file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
@@ -1019,6 +932,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(info, MMAP_Connection.get_info(self))
         merge_dicts(info, NetworkStateMixin.get_info(self))
         merge_dicts(info, ClientInfoMixin.get_info(self))
+        merge_dicts(info, WindowsMixin.get_info(self))
         return info
 
     def get_screen_info(self):
@@ -1033,8 +947,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                      "lz4", "lzo"):
             battr(prop, prop)
         for prop, name in {
-            "send_windows"       : "windows",
-            "send_cursors"       : "cursors",
             "send_notifications" : "notifications",
             "send_bell"          : "bell",
             }.items():
@@ -1116,75 +1028,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
 
     ######################################################################
-    # grabs:
-    def pointer_grab(self, wid):
-        if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-grab", wid)
-
-    def pointer_ungrab(self, wid):
-        if self.pointer_grabs and self.hello_sent:
-            self.send("pointer-ungrab", wid)
-
-
-    ######################################################################
-    # cursors:
-    def send_cursor(self):
-        if not self.send_cursors or self.suspended or not self.hello_sent:
-            return
-        #if not pending already, schedule it:
-        if not self.cursor_timer:
-            delay = max(10, int(self.global_batch_config.delay/4))
-            self.cursor_timer = self.timeout_add(delay, self.do_send_cursor, delay)
-
-    def cancel_cursor_timer(self):
-        ct = self.cursor_timer
-        if ct:
-            self.cursor_timer = None
-            self.source_remove(ct)
-
-    def do_send_cursor(self, delay):
-        self.cursor_timer = None
-        cd = self.get_cursor_data_cb()
-        if cd and cd[0]:
-            cursor_data, cursor_sizes = cd
-            #skip first two fields (if present) as those are coordinates:
-            if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
-                cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
-                return
-            self.last_cursor_sent = cursor_data[:9]
-            w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
-            #compress pixels if needed:
-            encoding = None
-            if pixels is not None:
-                #convert bytearray to string:
-                cpixels = strtobytes(pixels)
-                if "png" in self.cursor_encodings:
-                    from xpra.codecs.loader import get_codec
-                    PIL = get_codec("PIL")
-                    assert PIL
-                    img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
-                    buf = BytesIOClass()
-                    img.save(buf, "PNG")
-                    cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
-                    buf.close()
-                    encoding = "png"
-                elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
-                    cpixels = self.compressed_wrapper("cursor", pixels)
-                    cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
-                    encoding = "raw"
-                cursor_data[7] = cpixels
-            cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-            args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-            if self.cursor_encodings and encoding:
-                args = [encoding] + args
-        else:
-            cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
-            args = [""]
-            self.last_cursor_sent = None
-        self.send_more("cursor", *args)
-
-
-    ######################################################################
     # notifications:
     """ Utility functions for mixins (makes notifications optional) """
     def may_notify(self, nid, summary, body, actions=[], hints={}, expire_timeout=10*1000, icon_name=None, user_callback=None):
@@ -1231,12 +1074,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
     def set_deflate(self, level):
         self.send("set_deflate", level)
-
-
-    def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
-        if not self.send_bell or self.suspended or not self.hello_sent:
-            return
-        self.send_async("bell", wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
 
     ######################################################################
@@ -1323,135 +1160,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
 
     ######################################################################
-    # windows:
-    def initiate_moveresize(self, wid, window, x_root, y_root, direction, button, source_indication):
-        if not self.can_send_window(window) or not self.window_initiate_moveresize:
-            return
-        log("initiate_moveresize sending to %s", self)
-        self.send("initiate-moveresize", wid, x_root, y_root, direction, button, source_indication)
-
-    def or_window_geometry(self, wid, window, x, y, w, h):
-        if not self.can_send_window(window):
-            return
-        self.send("configure-override-redirect", wid, x, y, w, h)
-
-    def window_metadata(self, wid, window, prop):
-        if not self.can_send_window(window):
-            return
-        if prop=="icon":
-            self.send_window_icon(wid, window)
-        else:
-            v = self._make_metadata(window, prop)
-            if prop in PROPERTIES_DEBUG:
-                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
-            else:
-                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
-            if len(v)>0:
-                self.send("window-metadata", wid, v)
-
-
-    # Takes the name of a WindowModel property, and returns a dictionary of
-    # xpra window metadata values that depend on that property
-    def _make_metadata(self, window, propname):
-        if propname not in self.metadata_supported:
-            metalog("make_metadata: client does not support '%s'", propname)
-            return {}
-        return make_window_metadata(window, propname,
-                                        get_transient_for=self.get_transient_for,
-                                        get_window_id=self.get_window_id)
-
-    def new_tray(self, wid, window, w, h):
-        assert window.is_tray()
-        if not self.can_send_window(window):
-            return
-        metadata = {}
-        for propname in list(window.get_property_names()):
-            metadata.update(self._make_metadata(window, propname))
-        self.send_async("new-tray", wid, w, h, metadata)
-
-    def new_window(self, ptype, wid, window, x, y, w, h, client_properties):
-        if not self.can_send_window(window):
-            return
-        send_props = list(window.get_property_names())
-        send_raw_icon = "icon" in send_props
-        if send_raw_icon:
-            send_props.remove("icon")
-        metadata = {}
-        for prop in send_props:
-            v = self._make_metadata(window, prop)
-            if prop in PROPERTIES_DEBUG:
-                metalog.info("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
-            else:
-                metalog("make_metadata(%s, %s, %s)=%s", wid, window, prop, v)
-            metadata.update(v)
-        log("new_window(%s, %s, %s, %s, %s, %s, %s, %s) metadata(%s)=%s", ptype, window, wid, x, y, w, h, client_properties, send_props, metadata)
-        self.send_async(ptype, wid, x, y, w, h, metadata, client_properties or {})
-        if send_raw_icon:
-            self.send_window_icon(wid, window)
-
-    def send_window_icon(self, wid, window):
-        if not self.can_send_window(window):
-            return
-        #we may need to make a new source at this point:
-        ws = self.make_window_source(wid, window)
-        if ws:
-            ws.send_window_icon()
-
-
-    def lost_window(self, wid, window):
-        if not self.can_send_window(window):
-            return
-        self.send("lost-window", wid)
-
-    def move_resize_window(self, wid, window, x, y, ww, wh, resize_counter=0):
-        """
-        The server detected that the application window has been moved and/or resized,
-        we forward it if the client supports this type of event.
-        """
-        if not self.can_send_window(window):
-            return
-        self.send("window-move-resize", wid, x, y, ww, wh, resize_counter)
-
-    def resize_window(self, wid, window, ww, wh, resize_counter=0):
-        if not self.can_send_window(window):
-            return
-        self.send("window-resized", wid, ww, wh, resize_counter)
-
-
-    def cancel_damage(self, wid):
-        """
-        Use this method to cancel all currently pending and ongoing
-        damage requests for a window.
-        """
-        ws = self.window_sources.get(wid)
-        if ws:
-            ws.cancel_damage()
-
-    def unmap_window(self, wid, _window):
-        ws = self.window_sources.get(wid)
-        if ws:
-            ws.unmap()
-
-    def raise_window(self, wid, window):
-        if not self.can_send_window(window):
-            return
-        self.send_async("raise-window", wid)
-
-    def remove_window(self, wid, window):
-        """ The given window is gone, ensure we free all the related resources """
-        if not self.can_send_window(window):
-            return
-        ws = self.window_sources.get(wid)
-        if ws:
-            del self.window_sources[wid]
-            ws.cleanup()
-        try:
-            del self.calculate_window_pixels[wid]
-        except:
-            pass
-
-
-    ######################################################################
     # encoding attributes
     def set_min_quality(self, min_quality):
         for ws in tuple(self.window_sources.values()):
@@ -1490,11 +1198,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                     setattr(ws.batch_config, x, batch_props.intget(x))
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
-    def set_client_properties(self, wid, window, new_client_properties):
-        assert self.send_windows
-        ws = self.make_window_source(wid, window)
-        ws.set_client_properties(new_client_properties)
-
     def make_batch_config(self, wid, window):
         batch_config = self.default_batch_config.clone()
         batch_config.wid = wid
@@ -1507,123 +1210,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         ratio = float(w*h) / 1000000
         batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
         return batch_config
-
-
-    def get_window_source(self, wid):
-        return self.window_sources.get(wid)
-
-    def make_window_source(self, wid, window):
-        ws = self.window_sources.get(wid)
-        if ws is None:
-            batch_config = self.make_batch_config(wid, window)
-            ww, wh = window.get_dimensions()
-            bandwidth_limit = self.bandwidth_limit
-            if self.mmap_size>0:
-                bandwidth_limit = 0
-            ws = WindowVideoSource(
-                              self.idle_add, self.timeout_add, self.source_remove,
-                              ww, wh,
-                              self.record_congestion_event, self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
-                              self.statistics,
-                              wid, window, batch_config, self.auto_refresh_delay,
-                              self.av_sync, self.av_sync_delay,
-                              self.video_helper,
-                              self.server_core_encodings, self.server_encodings,
-                              self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
-                              self.rgb_formats,
-                              self.default_encoding_options,
-                              self.mmap, self.mmap_size, bandwidth_limit)
-            self.window_sources[wid] = ws
-            if len(self.window_sources)>1:
-                #re-distribute bandwidth:
-                self.update_bandwidth_limits()
-        return ws
-
-    def damage(self, wid, window, x, y, w, h, options=None):
-        """
-            Main entry point from the window manager,
-            we dispatch to the WindowSource for this window id
-            (creating a new one if needed)
-        """
-        if not self.can_send_window(window):
-            return
-        assert window is not None
-        damage_options = {}
-        if options:
-            damage_options = options.copy()
-        self.statistics.damage_last_events.append((wid, monotonic_time(), w*h))
-        ws = self.make_window_source(wid, window)
-        ws.damage(x, y, w, h, damage_options)
-
-    def client_ack_damage(self, damage_packet_sequence, wid, width, height, decode_time, message):
-        """
-            The client is acknowledging a damage packet,
-            we record the 'client decode time' (which is provided by the client)
-            and WindowSource will calculate and record the "client latency".
-            (since it knows when the "draw" packet was sent)
-        """
-        if not self.send_windows:
-            log.error("client_ack_damage when we don't send any window data!?")
-            return
-        if decode_time>0:
-            self.statistics.client_decode_time.append((wid, monotonic_time(), width*height, decode_time))
-        ws = self.window_sources.get(wid)
-        if ws:
-            ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
-            self.may_recalculate(wid, width*height)
-
-#
-# Methods used by WindowSource:
-#
-    def record_congestion_event(self, source, late_pct=0, send_speed=0):
-        if not BANDWIDTH_DETECTION:
-            return
-        gs = self.statistics
-        if not gs:
-            #window cleaned up?
-            return
-        statslog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
-        now = monotonic_time()
-        gs.last_congestion_time = now
-        gs.congestion_send_speed.append((now, late_pct, send_speed))
-        if self.bandwidth_warnings and now-self.bandwidth_warning_time>60:
-            #enough congestion events?
-            min_time = now-10
-            count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
-            if count>CONGESTION_WARNING_EVENT_COUNT:
-                self.bandwidth_warning_time = now
-                nid = XPRA_BANDWIDTH_NOTIFICATION_ID
-                summary = "Network Performance Issue"
-                body = "Your network connection is struggling to keep up,\n" + \
-                        "consider lowering the bandwidth limit,\n" + \
-                        "or lowering the picture quality"
-                actions = []
-                if self.bandwidth_limit==0 or self.bandwidth_limit>1*1000*1000:
-                    actions += ["lower-bandwidth", "Lower bandwidth limit"]
-                #if self.default_min_quality>10:
-                #    actions += ["lower-quality", "Lower quality"]
-                actions += ["ignore", "Ignore"]
-                hints = {}
-                self.may_notify(nid, summary, body, actions, hints, icon_name="connect", user_callback=self.congestion_notification_callback)
-
-    def congestion_notification_callback(self, nid, action_id):
-        log("congestion_notification_callback(%i, %s)", nid, action_id)
-        if action_id=="lower-bandwidth":
-            bandwidth_limit = 50*1024*1024
-            if self.bandwidth_limit>256*1024:
-                bandwidth_limit = self.bandwidth_limit//2
-            css = 50*1024*1024
-            if self.statistics.avg_congestion_send_speed>256*1024:
-                #round up:
-                css = int(1+self.statistics.avg_congestion_send_speed//16/1024)*16*1024
-            self.bandwidth_limit = min(bandwidth_limit, css)
-            self.setting_changed("bandwidth-limit", self.bandwidth_limit)
-        #elif action_id=="lower-quality":
-        #    self.default_min_quality = max(1, self.default_min_quality-15)
-        #    self.set_min_quality(self.default_min_quality)
-        #    self.setting_changed("min-quality", self.default_min_quality)
-        elif action_id=="ignore":
-            self.bandwidth_warnings = False
 
 
     def queue_size(self):
