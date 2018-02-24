@@ -14,9 +14,7 @@ metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.server.window.metadata import make_window_metadata
-from xpra.simple_stats import get_list_stats
 from xpra.net.compression import Compressed
 from xpra.os_util import monotonic_time, BytesIOClass, strtobytes
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
@@ -165,6 +163,7 @@ class WindowsMixin(StubServerMixin):
         """
             Adds encoding and window specific information
         """
+        from xpra.simple_stats import get_list_stats
         pqpixels = [x[2] for x in tuple(self.packet_queue)]
         pqpi = get_list_stats(pqpixels)
         if len(pqpixels)>0:
@@ -485,6 +484,7 @@ class WindowsMixin(StubServerMixin):
             bandwidth_limit = self.bandwidth_limit
             if self.mmap_size>0:
                 bandwidth_limit = 0
+            from xpra.server.window.window_video_source import WindowVideoSource
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
