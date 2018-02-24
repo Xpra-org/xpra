@@ -25,18 +25,18 @@ from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
 from xpra.util import std, envint, typedict, updict
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
-from xpra.client.mixins.webcam_forwarder import WebcamForwarder
-from xpra.client.mixins.audio_client import AudioClient
-from xpra.client.mixins.rpc_client import RPCClient
-from xpra.client.mixins.clipboard_client import ClipboardClient
-from xpra.client.mixins.notification_client import NotificationClient
-from xpra.client.mixins.window_client import WindowClient
-from xpra.client.mixins.mmap_client import MmapClient
+from xpra.client.mixins.webcam import WebcamForwarder
+from xpra.client.mixins.audio import AudioClient
+from xpra.client.mixins.rpc import RPCClient
+from xpra.client.mixins.clipboard import ClipboardClient
+from xpra.client.mixins.notifications import NotificationClient
+from xpra.client.mixins.window_manager import WindowClient
+from xpra.client.mixins.mmap import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
-from xpra.client.mixins.display_client import DisplayClient
+from xpra.client.mixins.display import DisplayClient
 from xpra.client.mixins.network_state import NetworkState
 from xpra.client.mixins.encodings import Encodings
-from xpra.client.mixins.tray_client import TrayClient
+from xpra.client.mixins.tray import TrayClient
 
 
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
