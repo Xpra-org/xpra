@@ -6,11 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-from math import sqrt
-from collections import deque
 from threading import Event
-from time import sleep
 
 from xpra.log import Logger
 log = Logger("server")
@@ -35,24 +31,15 @@ from xpra.server.source.networkstate_mixin import NetworkStateMixin
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
 from xpra.server.source.dbus_mixin import DBUS_Mixin
 from xpra.server.source.windows_mixin import WindowsMixin
-from xpra.server.window.batch_config import DamageBatchConfig
-from xpra.simple_stats import get_list_stats
-from xpra.codecs.video_helper import getVideoHelper
-from xpra.codecs.codec_constants import video_spec
-from xpra.net import compression
-from xpra.net.compression import Compressed, compressed_wrapper
+from xpra.server.source.encodings_mixin import EncodingsMixin
 from xpra.make_thread import start_thread
-from xpra.os_util import Queue, monotonic_time
-from xpra.server.background_worker import add_work_item
-from xpra.util import csv, typedict, merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, \
+from xpra.os_util import monotonic_time
+from xpra.util import merge_dicts, flatten_dict, notypedict, get_screen_info, envint, envbool, \
     AtomicInteger, XPRA_IDLE_NOTIFICATION_ID
 
-NOYIELD = not envbool("XPRA_YIELD", False)
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
-
-MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
 counter = AtomicInteger()
 
@@ -74,7 +61,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -119,6 +106,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         ClientInfoMixin.__init__(self)
         DBUS_Mixin.__init__(self, dbus_control)
         WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
+        EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
         global counter
         self.counter = counter.increase()
         self.close_event = Event()
@@ -153,33 +141,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.icc = None
         self.display_icc = {}
 
-        self.server_core_encodings = core_encodings
-        self.server_encodings = encodings
-        self.default_encoding = default_encoding
-        self.scaling_control = scaling_control
-
-        self.default_quality = default_quality      #default encoding quality for lossy encodings
-        self.default_min_quality = default_min_quality #default minimum encoding quality
-        self.default_speed = default_speed          #encoding speed (only used by x264)
-        self.default_min_speed = default_min_speed  #default minimum encoding speed
-
-        self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
-        self.global_batch_config = self.default_batch_config.clone()      #global batch config
-
         self.connection_time = monotonic_time()
 
-        # the queues of damage requests we work through:
-        self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
-                                                    #items placed in this queue are picked off by the "encode" thread,
-                                                    #the functions should add the packets they generate to the 'packet_queue'
-        self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
-                                                    #these packets are picked off by the "protocol" via 'next_packet()'
-                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
-                                                    #(only packet is required - the rest can be 0/None for clipboard packets)
-        #if we "proxy video", we will modify the video helper to add
-        #new encoders, so we must make a deep copy to preserve the original
-        #which may be used by other clients (other ServerSource instances)
-        self.video_helper = getVideoHelper().clone()
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
         self.last_user_event = monotonic_time()
@@ -197,16 +160,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def init_vars(self):
         self.hello_sent = False
 
-        self.encoding = None                        #the default encoding for all windows
-        self.encodings = ()                         #all the encodings supported by the client
-        self.core_encodings = ()
-        self.window_icon_encodings = ["premult_argb32"]
-        self.rgb_formats = ("RGB",)
-        self.encoding_options = typedict()
-        self.icons_encoding_options = typedict()
-        self.default_encoding_options = typedict()
-
-        self.auto_refresh_delay = 0
         self.info_namespace = False
         self.send_notifications = False
         self.send_notifications_actions = False
@@ -222,8 +175,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.desktops = 1
         self.desktop_names = ()
         self.control_commands = ()
-        self.supports_transparency = False
-        self.vrefresh = -1
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
         self.bandwidth_limit = self.server_bandwidth_limit
@@ -242,12 +193,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
         self.keyboard_config = None
 
-        #for managing the recalculate_delays work:
-        self.calculate_window_pixels = {}
-        self.calculate_window_ids = set()
-        self.calculate_timer = 0
-        self.calculate_last_time = 0
-
 
     def is_closed(self):
         return self.close_event.isSet()
@@ -260,21 +205,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #it is now safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
         self.encode_work_queue.put(None)
-        #this should be a noop since we inherit an initialized helper:
-        self.video_helper.cleanup()
         self.cancel_recalculate_timer()
         self.protocol = None
-
-
-    def compressed_wrapper(self, datatype, data, min_saving=128):
-        if self.zlib or self.lz4 or self.lzo:
-            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
-            if len(cw)+min_saving<=len(data):
-                #the compressed version is smaller, use it:
-                return cw
-            #skip compressed version: fall through
-        #we can't compress, so at least avoid warnings in the protocol layer:
-        return Compressed(datatype, data, can_inline=True)
 
 
     def update_bandwidth_limits(self):
@@ -313,94 +245,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
             weight = window_weight.get(wid)
             if weight is not None:
                 ws.bandwidth_limit = max(1, bandwidth_limit*weight//total_weight)
-
-    def recalculate_delays(self):
-        """ calls update_averages() on ServerSource.statistics (GlobalStatistics)
-            and WindowSource.statistics (WindowPerformanceStatistics) for each window id in calculate_window_ids,
-            this runs in the worker thread.
-        """
-        self.calculate_timer = 0
-        if self.is_closed():
-            return
-        now = monotonic_time()
-        self.calculate_last_time = now
-        self.statistics.bytes_sent.append((now, self.protocol._conn.output_bytecount))
-        self.statistics.update_averages()
-        self.update_bandwidth_limits()
-        wids = tuple(self.calculate_window_ids)  #make a copy so we don't clobber new wids
-        focus = self.get_focus()
-        sources = self.window_sources.items()
-        maximized_wids = [wid for wid, source in sources if source is not None and source.maximized]
-        fullscreen_wids = [wid for wid, source in sources if source is not None and source.fullscreen]
-        log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s", wids, focus, maximized_wids, fullscreen_wids)
-        for wid in wids:
-            #this is safe because we only add to this set from other threads:
-            self.calculate_window_ids.remove(wid)
-            try:
-                del self.calculate_window_pixels[wid]
-            except:
-                pass
-            ws = self.window_sources.get(wid)
-            if ws is None:
-                continue
-            try:
-                ws.statistics.update_averages()
-                ws.calculate_batch_delay(wid==focus,
-                                         len(fullscreen_wids)>0 and wid not in fullscreen_wids,
-                                         len(maximized_wids)>0 and wid not in maximized_wids)
-                ws.reconfigure()
-            except:
-                log.error("error on window %s", wid, exc_info=True)
-            if self.is_closed():
-                return
-            #allow other threads to run
-            #(ideally this would be a low priority thread)
-            sleep(0)
-        #calculate weighted average as new global default delay:
-        wdimsum, wdelay, tsize, tcount = 0, 0, 0, 0
-        for ws in tuple(self.window_sources.values()):
-            if ws.batch_config.last_updated<=0:
-                continue
-            w, h = ws.window_dimensions
-            tsize += w*h
-            tcount += 1
-            time_w = 2.0+(now-ws.batch_config.last_updated)     #add 2 seconds to even things out
-            weight = w*h*time_w
-            wdelay += ws.batch_config.delay*weight
-            wdimsum += weight
-        if wdimsum>0 and tcount>0:
-            #weighted delay:
-            avg_size = tsize/tcount
-            wdelay = wdelay / wdimsum
-            #store the delay as a normalized value per megapixel:
-            delay = wdelay * 1000000 / avg_size
-            self.global_batch_config.last_delays.append((now, delay))
-            self.global_batch_config.delay = delay
-
-    def may_recalculate(self, wid, pixel_count):
-        if wid in self.calculate_window_ids:
-            return  #already scheduled
-        v = self.calculate_window_pixels.get(wid, 0)+pixel_count
-        self.calculate_window_pixels[wid] = v
-        if v<MIN_PIXEL_RECALCULATE:
-            return  #not enough pixel updates
-        statslog("may_recalculate(%i, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
-        self.calculate_window_ids.add(wid)
-        if self.calculate_timer:
-            #already due
-            return
-        delta = monotonic_time() - self.calculate_last_time
-        RECALCULATE_DELAY = 1.0           #1s
-        if delta>RECALCULATE_DELAY:
-            add_work_item(self.recalculate_delays)
-        else:
-            self.calculate_timer = self.timeout_add(int(1000*(RECALCULATE_DELAY-delta)), add_work_item, self.recalculate_delays)
-
-    def cancel_recalculate_timer(self):
-        ct = self.calculate_timer
-        if ct:
-            self.calculate_timer = 0
-            self.source_remove(ct)
 
 
     def user_event(self):
@@ -449,32 +293,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
 
     def parse_hello(self, c):
-        #batch options:
-        def batch_value(prop, default, minv=None, maxv=None):
-            assert default is not None
-            def parse_batch_int(value, varname):
-                if value is not None:
-                    try:
-                        return int(value)
-                    except:
-                        log.error("invalid value for batch option %s: %s", varname, value)
-                return None
-            #from client caps first:
-            cpname = "batch.%s" % prop
-            v = parse_batch_int(c.get(cpname), cpname)
-            #try env:
-            if v is None:
-                evname = "XPRA_BATCH_%s" % prop.upper()
-                v = parse_batch_int(os.environ.get(evname), evname)
-            #fallback to default:
-            if v is None:
-                v = default
-            if minv is not None:
-                v = max(minv, v)
-            if maxv is not None:
-                v = min(maxv, v)
-            assert v is not None
-            return v
         self.ui_client = c.boolget("ui_client", True)
         self.wants_encodings = c.boolget("wants_encodings", self.ui_client)
         self.wants_display = c.boolget("wants_display", self.ui_client)
@@ -489,11 +307,9 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         AudioMixin.parse_client_caps(self, c)
         MMAP_Connection.parse_client_caps(self, c)
         WindowsMixin.parse_client_caps(self, c)
+        EncodingsMixin.parse_client_caps(self, c)
 
         #general features:
-        self.zlib = c.boolget("zlib", True)
-        self.lz4 = c.boolget("lz4", False) and compression.use_lz4
-        self.lzo = c.boolget("lzo", False) and compression.use_lzo
         self.info_namespace = c.boolget("info-namespace")
         self.send_notifications = c.boolget("notifications")
         self.send_notifications_actions = c.boolget("notifications.actions")
@@ -501,7 +317,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
-        self.vrefresh = c.intget("vrefresh", -1)
         self.double_click_time = c.intget("double_click.time")
         self.double_click_distance = c.intpair("double_click.distance")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
@@ -510,16 +325,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         else:
             self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
-
-        default_min_delay = max(DamageBatchConfig.MIN_DELAY, 1000//(self.vrefresh or 60))
-        self.default_batch_config.always = bool(batch_value("always", DamageBatchConfig.ALWAYS))
-        self.default_batch_config.min_delay = batch_value("min_delay", default_min_delay, 0, 1000)
-        self.default_batch_config.max_delay = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
-        self.default_batch_config.max_events = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
-        self.default_batch_config.max_pixels = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
-        self.default_batch_config.time_unit = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
-        self.default_batch_config.delay = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
-        log("default batch config: %s", self.default_batch_config)
 
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
@@ -554,115 +359,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #keyboard is now injected into this class, default to undefined:
         self.keyboard_config = None
 
-        #encodings:
-        self.encodings = c.strlistget("encodings")
-        self.core_encodings = c.strlistget("encodings.core", self.encodings)
-        if self.send_windows and not self.core_encodings:
-            raise Exception("client failed to specify any supported encodings")
-        if "png" in self.core_encodings:
-            self.window_icon_encodings.append("png")
-        self.window_icon_encodings = c.strlistget("encodings.window-icon", ["premult_argb32"])
-        self.rgb_formats = c.strlistget("encodings.rgb_formats", ["RGB"])
-        #skip all other encoding related settings if we don't send pixels:
-        if not self.send_windows:
-            log("windows/pixels forwarding is disabled for this client")
-        else:
-            self.parse_encoding_caps(c)
         if self.mmap_size>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
         #adjust max packet size if file transfers are enabled:
         if self.file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
-
-
-    def parse_encoding_caps(self, c):
-        self.set_encoding(c.strget("encoding", None), None)
-        #encoding options (filter):
-        #1: these properties are special cased here because we
-        #defined their name before the "encoding." prefix convention,
-        #or because we want to pass default values (zlib/lz4):
-        for k,ek in {"initial_quality"          : "initial_quality",
-                     "quality"                  : "quality",
-                     }.items():
-            if k in c:
-                self.encoding_options[ek] = c.intget(k)
-        for k,ek in {"zlib"                     : "rgb_zlib",
-                     "lz4"                      : "rgb_lz4",
-                     }.items():
-            if k in c:
-                self.encoding_options[ek] = c.boolget(k)
-        #2: standardized encoding options:
-        for k in c.keys():
-            if k.startswith(b"theme.") or  k.startswith(b"encoding.icons."):
-                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c[k]
-            elif k.startswith(b"encoding."):
-                stripped_k = k[len(b"encoding."):]
-                if stripped_k in (b"transparency",
-                                  b"rgb_zlib", b"rgb_lz4", b"rgb_lzo",
-                                  b"video_scaling"):
-                    v = c.boolget(k)
-                elif stripped_k in (b"initial_quality", b"initial_speed",
-                                    b"min-quality", b"quality",
-                                    b"min-speed", b"speed"):
-                    v = c.intget(k)
-                else:
-                    v = c.get(k)
-                self.encoding_options[stripped_k] = v
-        elog("encoding options: %s", self.encoding_options)
-        elog("icons encoding options: %s", self.icons_encoding_options)
-
-        #handle proxy video: add proxy codec to video helper:
-        pv = self.encoding_options.boolget("proxy.video")
-        proxylog("proxy.video=%s", pv)
-        if pv:
-            #enabling video proxy:
-            try:
-                self.parse_proxy_video()
-            except:
-                proxylog.error("failed to parse proxy video", exc_info=True)
-
-        self.default_encoding_options["scaling.control"] = self.encoding_options.get("scaling.control", self.scaling_control)
-        q = self.encoding_options.intget("quality", self.default_quality)         #0.7 onwards:
-        if q>0:
-            self.default_encoding_options["quality"] = q
-        mq = self.encoding_options.intget("min-quality", self.default_min_quality)
-        if mq>0 and (q<=0 or q>mq):
-            self.default_encoding_options["min-quality"] = mq
-        s = self.encoding_options.intget("speed", self.default_speed)
-        if s>0:
-            self.default_encoding_options["speed"] = s
-        ms = self.encoding_options.intget("min-speed", self.default_min_speed)
-        if ms>0 and (s<=0 or s>ms):
-            self.default_encoding_options["min-speed"] = ms
-        elog("default encoding options: %s", self.default_encoding_options)
-        self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-        if self.mmap_size==0:
-            others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
-            if self.encoding=="auto":
-                s = "automatic picture encoding enabled"
-            else:
-                s = "using %s as primary encoding" % self.encoding
-            if others:
-                elog.info(" %s, also available:", s)
-                elog.info("  %s", ", ".join(others))
-            else:
-                elog.warn(" %s", s)
-                elog.warn("  no other encodings are available!")
-
-    def parse_proxy_video(self):
-        from xpra.codecs.enc_proxy.encoder import Encoder
-        proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
-        proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
-        for encoding, colorspace_specs in proxy_video_encodings.items():
-            for colorspace, spec_props in colorspace_specs.items():
-                for spec_prop in spec_props:
-                    #make a new spec based on spec_props:
-                    spec = video_spec(codec_class=Encoder, codec_type="proxy", encoding=encoding)
-                    for k,v in spec_prop.items():
-                        setattr(spec, k, v)
-                    proxylog("parse_proxy_video() adding: %s / %s / %s", encoding, colorspace, spec)
-                    self.video_helper.add_encoder_spec(encoding, colorspace, spec)
 
 
     def startup_complete(self):
@@ -789,63 +491,12 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.client_connection_data = data
 
 
-    ######################################################################
-    # Functions used by the server to request something
-    # (window events, stats, user requests, etc)
-    #
-    def set_auto_refresh_delay(self, delay, window_ids):
-        if window_ids is not None:
-            wss = (self.window_sources.get(wid) for wid in window_ids)
-        else:
-            wss = self.window_sources.values()
-        for ws in wss:
-            if ws is not None:
-                ws.set_auto_refresh_delay(delay)
-
-    def set_encoding(self, encoding, window_ids, strict=False):
-        """ Changes the encoder for the given 'window_ids',
-            or for all windows if 'window_ids' is None.
-        """
-        log("set_encoding(%s, %s, %s)", encoding, window_ids, strict)
-        if not self.ui_client:
-            return
-        if encoding and encoding!="auto":
-            #old clients (v0.9.x and earlier) only supported 'rgb24' as 'rgb' mode:
-            if encoding=="rgb24":
-                encoding = "rgb"
-            if encoding not in self.encodings:
-                log.warn("Warning: client specified '%s' encoding,", encoding)
-                log.warn(" but it only supports: %s" % csv(self.encodings))
-            if encoding not in self.server_encodings:
-                log.error("Error: encoding %s is not supported by this server", encoding)
-                encoding = None
-        if not encoding:
-            encoding = "auto"
-        if window_ids is not None:
-            wss = [self.window_sources.get(wid) for wid in window_ids]
-        else:
-            wss = self.window_sources.values()
-        #if we're updating all the windows, reset global stats too:
-        if set(wss).issuperset(self.window_sources.values()):
-            log("resetting global stats")
-            self.statistics.reset()
-            self.global_batch_config = self.default_batch_config.clone()
-        for ws in wss:
-            if ws is not None:
-                ws.set_new_encoding(encoding, strict)
-        if not window_ids:
-            self.encoding = encoding
-
     def send_hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
         merge_dicts(capabilities, AudioMixin.get_caps(self))
         merge_dicts(capabilities, MMAP_Connection.get_caps(self))
-        if self.wants_encodings and self.encoding:
-            capabilities["encoding"] = self.encoding
-        if self.wants_features:
-            capabilities.update({
-                         "auto_refresh_delay"   : self.auto_refresh_delay,
-                         })
+        merge_dicts(capabilities, WindowsMixin.get_caps(self))
+        merge_dicts(capabilities, EncodingsMixin.get_caps(self))
         #expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         #so clients can figure out which modifiers map to which keys:
         if self.keyboard_config:
@@ -863,7 +514,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                 "protocol"          : "xpra",
                 "idle_time"         : int(monotonic_time()-self.last_user_event),
                 "idle"              : self.idle,
-                "auto_refresh"      : self.auto_refresh_delay,
                 "desktop_size"      : self.desktop_size or "",
                 "desktops"          : self.desktops,
                 "desktop_names"     : self.desktop_names,
@@ -890,20 +540,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                 info[k] = v
         for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
             addattr(x, "client_"+x)
-        #remove very large item:
-        ieo = dict(self.icons_encoding_options)
-        try:
-            del ieo["default.icons"]
-        except:
-            pass
         #encoding:
         info.update({
-                     "encodings"        : {
-                                           ""      : self.encodings,
-                                           "core"  : self.core_encodings,
-                                           "window-icon"    : self.window_icon_encodings,
-                                           },
-                     "icons"            : ieo,
                      "connection"       : self.protocol.get_info(),
                      "av-sync"          : {
                                            "client"     : {"delay"  : self.av_sync_delay},
@@ -911,20 +549,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                                            "delta"      : self.av_sync_delta,
                                            },
                      })
-        einfo = {"default"      : self.default_encoding or ""}
-        einfo.update(self.default_encoding_options)
-        einfo.update(self.encoding_options)
-        info.setdefault("encoding", {}).update(einfo)
-        if self.window_frame_sizes:
-            info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
-        if self.window_filters:
-            i = 0
-            finfo = {}
-            for uuid, f in self.window_filters:
-                if uuid==self.uuid:
-                    finfo[i] = str(f)
-                    i += 1
-            info["window-filter"] = finfo
         info.update(self.get_features_info())
         info.update(self.get_screen_info())
         merge_dicts(info, FilePrintMixin.get_info(self))
@@ -933,6 +557,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         merge_dicts(info, NetworkStateMixin.get_info(self))
         merge_dicts(info, ClientInfoMixin.get_info(self))
         merge_dicts(info, WindowsMixin.get_info(self))
+        merge_dicts(info, EncodingsMixin.get_info(self))
         return info
 
     def get_screen_info(self):
@@ -943,16 +568,13 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         def battr(k, prop):
             info[k] = bool(getattr(self, prop))
         for prop in ("lock", "share", "randr_notify",
-                     "system_tray",
-                     "lz4", "lzo"):
+                     "system_tray"):
             battr(prop, prop)
         for prop, name in {
             "send_notifications" : "notifications",
-            "send_bell"          : "bell",
             }.items():
             battr(name, prop)
         for prop, name in {
-                           "vrefresh"               : "vertical-refresh",
                            "file_size_limit"        : "file-size-limit",
                            }.items():
             info[name] = getattr(self, prop)
@@ -962,50 +584,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                            "double_click_distance"  : "distance",
                            }.items():
             dcinfo[name] = getattr(self, prop)
-        return info
-
-    def get_window_info(self, window_ids=[]):
-        """
-            Adds encoding and window specific information
-        """
-        pqpixels = [x[2] for x in tuple(self.packet_queue)]
-        pqpi = get_list_stats(pqpixels)
-        if len(pqpixels)>0:
-            pqpi["current"] = pqpixels[-1]
-        info = {"damage"    : {
-                               "compression_queue"      : {"size" : {"current" : self.encode_work_queue.qsize()}},
-                               "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
-                               "packet_queue_pixels"    : pqpi,
-                               },
-                "batch"     : self.global_batch_config.get_info(),
-                }
-        info.update(self.statistics.get_info())
-
-        if len(window_ids)>0:
-            total_pixels = 0
-            total_time = 0.0
-            in_latencies, out_latencies = [], []
-            winfo = {}
-            for wid in window_ids:
-                ws = self.window_sources.get(wid)
-                if ws is None:
-                    continue
-                #per-window source stats:
-                winfo[wid] = ws.get_info()
-                #collect stats for global averages:
-                for _, _, pixels, _, _, encoding_time in tuple(ws.statistics.encoding_stats):
-                    total_pixels += pixels
-                    total_time += encoding_time
-                in_latencies += [x*1000 for _, _, _, x in tuple(ws.statistics.damage_in_latency)]
-                out_latencies += [x*1000 for _, _, _, x in tuple(ws.statistics.damage_out_latency)]
-            info["window"] = winfo
-            v = 0
-            if total_time>0:
-                v = int(total_pixels / total_time)
-            info.setdefault("encoding", {})["pixels_encoded_per_second"] = v
-            dinfo = info.setdefault("damage", {})
-            dinfo["in_latency"] = get_list_stats(in_latencies, show_percentile=[9])
-            dinfo["out_latency"] = get_list_stats(out_latencies, show_percentile=[9])
         return info
 
 
@@ -1121,148 +699,9 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         if self.show_desktop_allowed and self.hello_sent:
             self.send_async("show-desktop", show)
 
-    ######################################################################
-    # window filters:
-    def reset_window_filters(self):
-        self.window_filters = [(uuid, f) for uuid, f in self.window_filters if uuid!=self.uuid]
-
-    def get_all_window_filters(self):
-        return [f for uuid, f in self.window_filters if uuid==self.uuid]
-
-    def get_window_filter(self, object_name, property_name, operator, value):
-        if object_name!="window":
-            raise ValueError("invalid object name")
-        from xpra.server.window.filters import WindowPropertyIn, WindowPropertyNotIn
-        if operator=="=":
-            return WindowPropertyIn(property_name, [value])
-        elif operator=="!=":
-            return WindowPropertyNotIn(property_name, [value])
-        raise ValueError("unknown filter operator: %s" % operator)
-
-    def add_window_filter(self, object_name, property_name, operator, value):
-        window_filter = self.get_window_filter(object_name, property_name, operator, value)
-        assert window_filter
-        self.window_filters.append((self.uuid, window_filter.show))
-
-    def can_send_window(self, window):
-        if not self.hello_sent:
-            return False
-        for uuid,x in self.window_filters:
-            v = x(window)
-            if v is True:
-                return uuid==self.uuid
-        if self.send_windows and self.system_tray:
-            #common case shortcut
-            return True
-        if window.is_tray():
-            return self.system_tray
-        return self.send_windows
-
-
-    ######################################################################
-    # encoding attributes
-    def set_min_quality(self, min_quality):
-        for ws in tuple(self.window_sources.values()):
-            ws.set_min_quality(min_quality)
-
-    def set_quality(self, quality):
-        for ws in tuple(self.window_sources.values()):
-            ws.set_quality(quality)
-
-    def set_min_speed(self, min_speed):
-        for ws in tuple(self.window_sources.values()):
-            ws.set_min_speed(min_speed)
-
-    def set_speed(self, speed):
-        for ws in tuple(self.window_sources.values()):
-            ws.set_speed(speed)
-
-
     def refresh(self, wid, window, opts):
         if not self.can_send_window(window):
             return
         self.cancel_damage(wid)
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
-
-    def update_batch(self, wid, window, batch_props):
-        ws = self.window_sources.get(wid)
-        if ws:
-            if "reset" in batch_props:
-                ws.batch_config = self.make_batch_config(wid, window)
-            for x in ("always", "locked"):
-                if x in batch_props:
-                    setattr(ws.batch_config, x, batch_props.boolget(x))
-            for x in ("min_delay", "max_delay", "timeout_delay", "delay"):
-                if x in batch_props:
-                    setattr(ws.batch_config, x, batch_props.intget(x))
-            log("batch config updated for window %s: %s", wid, ws.batch_config)
-
-    def make_batch_config(self, wid, window):
-        batch_config = self.default_batch_config.clone()
-        batch_config.wid = wid
-        #scale initial delay based on window size
-        #(the global value is normalized to 1MPixel)
-        #but use sqrt to smooth things and prevent excesses
-        #(ie: a 4MPixel window, will start at 2 times the global delay)
-        #(ie: a 0.5MPixel window will start at 0.7 times the global delay)
-        w, h = window.get_dimensions()
-        ratio = float(w*h) / 1000000
-        batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
-        return batch_config
-
-
-    def queue_size(self):
-        return self.encode_work_queue.qsize()
-
-    def call_in_encode_thread(self, *fn_and_args):
-        """
-            This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
-            The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
-        """
-        self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_work_queue.qsize()))
-        self.encode_work_queue.put(fn_and_args)
-
-    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
-        """
-            Add a new 'draw' packet to the 'packet_queue'.
-            Note: this code runs in the non-ui thread
-        """
-        now = monotonic_time()
-        self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
-        if wid>0:
-            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
-        p = self.protocol
-        if p:
-            p.source_has_more()
-
-#
-# The damage packet thread loop:
-#
-    def encode_loop(self):
-        """
-            This runs in a separate thread and calls all the function callbacks
-            which are added to the 'encode_work_queue'.
-            Must run until we hit the end of queue marker,
-            to ensure all the queued items get called.
-        """
-        while True:
-            fn_and_args = self.encode_work_queue.get(True)
-            if fn_and_args is None:
-                return              #empty marker
-            #some function calls are optional and can be skipped when closing:
-            #(but some are not, like encoder clean functions)
-            optional_when_closing = fn_and_args[0]
-            if optional_when_closing and self.is_closed():
-                continue
-            try:
-                fn_and_args[1](*fn_and_args[2:])
-            except Exception as e:
-                if self.is_closed():
-                    log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
-                    log(" %s", e)
-                else:
-                    log.error("Error during encoding:", exc_info=True)
-                del e
-            NOYIELD or sleep(0)

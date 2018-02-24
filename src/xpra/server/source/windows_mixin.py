@@ -147,6 +147,7 @@ class WindowsMixin(StubServerMixin):
         info = {
             "windows"   : self.send_windows,
             "cursors"   : self.send_cursors,
+            "bell"      : self.send_bell,
             }
         if self.window_frame_sizes:
             info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
