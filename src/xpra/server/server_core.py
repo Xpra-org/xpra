@@ -1708,6 +1708,7 @@ class ServerCore(object):
                    "encryption"     : self.encryption or "",
                    "tcp-encryption" : self.tcp_encryption or "",
                    "bandwidth-limit": self.bandwidth_limit or 0,
+                   "packet-handlers" : self.get_packet_handlers_info(),
                    "www"    : {
                        ""                   : self._html,
                        "dir"                : self._www_dir or "",
@@ -1724,6 +1725,11 @@ class ServerCore(object):
         end = monotonic_time()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
+
+    def get_packet_handlers_info(self):
+        return {
+            "default"   : sorted(self._default_packet_handlers.keys()),
+            }
 
     def get_socket_info(self):
         si = {}

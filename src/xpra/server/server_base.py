@@ -34,7 +34,7 @@ from xpra.server.mixins.display_manager import DisplayManager
 from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
+from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, csv, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename, get_icon_dir
@@ -565,6 +565,15 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
+
+    def get_packet_handlers_info(self):
+        info = ServerCore.get_packet_handlers_info(self)
+        info.update({
+            "authenticated" : sorted(self._authenticated_packet_handlers.keys()),
+            "ui"            : sorted(self._authenticated_ui_packet_handlers.keys()),
+            })
+        return info
+
 
     def get_features_info(self):
         i = {
