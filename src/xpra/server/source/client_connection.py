@@ -234,15 +234,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.wants_features = c.boolget("wants_features", True)
         self.wants_default_cursor = c.boolget("wants_default_cursor", False)
 
-        ClientInfoMixin.parse_client_caps(self, c)
-        FilePrintMixin.parse_client_caps(self, c)
-        AudioMixin.parse_client_caps(self, c)
-        MMAP_Connection.parse_client_caps(self, c)
-        WindowsMixin.parse_client_caps(self, c)
-        EncodingsMixin.parse_client_caps(self, c)
-        InputMixin.parse_client_caps(self, c)
-        AVSyncMixin.parse_client_caps(self, c)
-        ClientDisplayMixin.parse_client_caps(self, c)
+        for mixin in ClientConnection.__bases__:
+            mixin.parse_client_caps(self, c)
 
         #general features:
         self.info_namespace = c.boolget("info-namespace")
