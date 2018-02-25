@@ -258,13 +258,13 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         caps.update(DisplayClient.get_caps(self))
         caps.update(NetworkState.get_caps(self))
         caps.update(Encodings.get_caps(self))
+        caps.update(ClipboardClient.get_caps(self))
         caps.update(self.get_keyboard_caps())
         #nicely prefixed:
         def u(prefix, c):
             updict(caps, prefix, c, flatten_dicts=False)
         u("sound",              AudioClient.get_audio_capabilities(self))
         u("notifications",      self.get_notifications_caps())
-        u("clipboard",          self.get_clipboard_caps())
         u("control_commands",   self.get_control_commands_caps())
         u("platform",           get_platform_info())
         mmap_caps = MmapClient.get_caps(self)

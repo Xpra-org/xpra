@@ -11,6 +11,7 @@ log = Logger("clipboard")
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARDS
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.util import flatten_dict
 from xpra.os_util import bytestostr
 try:
     from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
@@ -55,17 +56,20 @@ class ClipboardClient(StubClientMixin):
                 log.error("error on clipboard helper '%s' cleanup", ch, exc_info=True)
 
 
-    def get_clipboard_caps(self):
-        return {
-            ""                          : self.client_supports_clipboard,
-            "notifications"             : self.client_supports_clipboard,
-            "selections"                : CLIPBOARDS,
-            #buggy osx clipboards:
-            "want_targets"              : CLIPBOARD_WANT_TARGETS,
-            #buggy osx and win32 clipboards:
-            "greedy"                    : CLIPBOARD_GREEDY,
-            "set_enabled"               : True,
-            }
+    def get_caps(self):
+        caps = flatten_dict({
+            "clipboard" : {
+                "notifications"             : self.client_supports_clipboard,
+                "selections"                : CLIPBOARDS,
+                #buggy osx clipboards:
+                "want_targets"              : CLIPBOARD_WANT_TARGETS,
+                #buggy osx and win32 clipboards:
+                "greedy"                    : CLIPBOARD_GREEDY,
+                "set_enabled"               : True,
+                },
+             })
+        caps["clipboard"] = self.client_supports_clipboard
+        return caps
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
