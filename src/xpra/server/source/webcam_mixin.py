@@ -32,7 +32,7 @@ class WebcamMixin(StubSourceMixin):
         self.stop_all_virtual_webcams()
 
 
-    def get_info(self, _proto):
+    def get_info(self, _proto=None):
         return {
             "webcam" : {
                 "encodings"         : self.webcam_encodings,
@@ -78,14 +78,14 @@ class WebcamMixin(StubSourceMixin):
             self.send_webcam_stop(device_id, msg)
         if not self.webcam_enabled:
             fail("webcam forwarding is disabled")
-            return
+            return False
         devices = self.get_device_options(device_id)
         if len(devices)==0:
             fail("no virtual devices found")
-            return
+            return False
         if len(self.webcam_forwarding_devices)>MAX_WEBCAM_DEVICES:
             fail("too many virtual devices are already in use: %i" % len(self.webcam_forwarding_devices))
-            return
+            return False
         errs = {}
         for vid, device_info in devices.items():
             log("trying device %s: %s", vid, device_info)
@@ -100,7 +100,7 @@ class WebcamMixin(StubSourceMixin):
                 log.info("webcam forwarding using %s", device_str)
                 #this tell the client to start sending, and the size to use - which may have changed:
                 self.send_webcam_ack(device_id, 0, p.get_width(), p.get_height())
-                return
+                return True
             except Exception as e:
                 errs[device_str] = str(e)
                 del e
@@ -109,7 +109,7 @@ class WebcamMixin(StubSourceMixin):
             log.error(" tried %i devices:", len(errs))
         for device_str, err in errs.items():
             log.error(" %s : %s", device_str, err)
-
+        return False
 
     def stop_all_virtual_webcams(self):
         log("stop_all_virtual_webcams() stopping: %s", self.webcam_forwarding_devices)
@@ -156,8 +156,8 @@ class WebcamMixin(StubSourceMixin):
                 return
             #one of those two should be present
             try:
-                csc_mod = "csc_swscale"
-                from xpra.codecs.csc_swscale.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
+                csc_mod = "csc_libyuv"
+                from xpra.codecs.csc_libyuv.colorspace_converter import get_input_colorspaces, get_output_colorspaces, ColorspaceConverter        #@UnresolvedImport
             except ImportError:
                 self.send_webcam_stop(device_id, "no csc module")
                 return
@@ -187,4 +187,4 @@ class WebcamMixin(StubSourceMixin):
                 log.error(" %s error" % webcam, exc_info=True)
             log.error(" %s", msg)
             self.send_webcam_stop(device_id, msg)
-            self.stop_virtual_webcam()
+            self.stop_virtual_webcam(device_id)

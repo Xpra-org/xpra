@@ -38,7 +38,6 @@ class IdleMixin(StubSourceMixin):
 
     def parse_client_caps(self, _c):
         #start the timer
-        log.warn("parse_client_caps idle")
         self.schedule_idle_grace_timeout()
         self.schedule_idle_timeout()
 
@@ -81,6 +80,7 @@ class IdleMixin(StubSourceMixin):
         if self.idle_timeout>0 and not self.is_closed():
             grace = self.idle_timeout - self.idle_grace_duration
             self.idle_grace_timer = self.timeout_add(max(0, int(grace*1000)), self.idle_grace_timedout)
+            log("schedule_idle_grace_timeout() timer=%s due in %i seconds", self.idle_grace_timer, grace)
 
     def idle_grace_timedout(self):
         self.idle_grace_timer = None
