@@ -16,7 +16,7 @@ Manage input devices (keyboard, mouse, etc)
 """
 class InputMixin(StubSourceMixin):
 
-    def __init__(self):
+    def init_state(self):
         self.keyboard_config = None
         self.double_click_time  = -1
         self.double_click_distance = -1, -1

@@ -21,7 +21,7 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 
 class ClipboardConnection(StubSourceMixin):
 
-    def __init__(self):
+    def init_state(self):
         self.clipboard_enabled = False
         self.clipboard_notifications = False
         self.clipboard_notifications_current = 0

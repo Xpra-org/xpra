@@ -19,6 +19,8 @@ class DBUS_Mixin(StubSourceMixin):
 
     def __init__(self, dbus_control=False):
         self.dbus_control = dbus_control
+
+    def init_state(self):
         self.dbus_server = None
 
     def cleanup(self):

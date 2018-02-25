@@ -45,6 +45,8 @@ class WindowsMixin(StubServerMixin):
         self.get_cursor_data_cb = get_cursor_data_cb
         self.get_window_id = get_window_id
         self.window_filters = window_filters
+
+    def init_state(self):
         #WindowSource for each Window ID
         self.window_sources = {}
         # mouse echo:

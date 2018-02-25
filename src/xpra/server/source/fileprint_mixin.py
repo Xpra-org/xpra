@@ -21,8 +21,7 @@ PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xp
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
-    def __init__(self, file_transfer):
-        FileTransferHandler.__init__(self, file_transfer)
+    def init_state(self):
         self.printers = {}
 
     def cleanup(self):

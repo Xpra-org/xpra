@@ -25,6 +25,8 @@ class WebcamMixin(StubSourceMixin):
         self.webcam_enabled = webcam_enabled
         self.webcam_device = webcam_device
         self.webcam_encodings = webcam_encodings
+
+    def init_state(self):
         #for each webcam device_id, the actual device used
         self.webcam_forwarding_devices = {}
 

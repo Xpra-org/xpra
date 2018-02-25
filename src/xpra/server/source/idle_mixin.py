@@ -18,6 +18,8 @@ class IdleMixin(StubSourceMixin):
 
     def __init__(self, idle_timeout):
         self.idle_timeout = idle_timeout
+
+    def init_state(self):
         self.last_user_event = monotonic_time()
         #grace duration is at least 10 seconds:
         self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))

@@ -20,6 +20,8 @@ class MMAP_Connection(StubSourceMixin):
         self.supports_mmap = supports_mmap
         self.mmap_filename = mmap_filename
         self.min_mmap_size = min_mmap_size
+
+    def init_state(self):
         self.mmap = None
         self.mmap_size = 0
         self.mmap_client_token = None                   #the token we write that the client may check

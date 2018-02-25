@@ -20,7 +20,7 @@ PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 class NetworkStateMixin(StubSourceMixin):
 
-    def __init__(self):
+    def init_state(self):
         self.last_ping_echoed_time = 0
         self.check_ping_echo_timers = {}
         self.ping_timer = None
