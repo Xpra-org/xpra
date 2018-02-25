@@ -9,6 +9,11 @@ import time
 import math
 import os.path
 
+try:
+    from urllib import unquote          #python2 @UnusedImport
+except:
+    from urllib.parse import unquote    #python3 @Reimport @UnresolvedImport
+
 from xpra.log import Logger
 focuslog = Logger("focus")
 workspacelog = Logger("workspace")
@@ -264,7 +269,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if not uri.startswith("file://"):
                 draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
                 continue
-            filename = uri[len("file://"):].rstrip("\n\r")
+            filename = unquote(uri[len("file://"):].rstrip("\n\r"))
             if WIN32:
                 filename = filename.lstrip("/")
             abspath = os.path.abspath(filename)
