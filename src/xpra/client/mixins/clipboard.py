@@ -99,15 +99,18 @@ class ClipboardClient(StubClientMixin):
         return True
 
     def process_ui_capabilities(self):
+        log("process_ui_capabilities() clipboard_enabled=%s", self.clipboard_enabled)
         if self.clipboard_enabled:
-            self.clipboard_helper = self.make_clipboard_helper()
-            self.clipboard_enabled = self.clipboard_helper is not None
-            log("clipboard helper=%s", self.clipboard_helper)
-            if self.clipboard_enabled and self.server_clipboard_enable_selections:
-                #tell the server about which selections we really want to sync with
-                #(could have been translated, or limited if the client only has one, etc)
-                log("clipboard enabled clipboard helper=%s", self.clipboard_helper)
-                self.send_clipboard_selections(self.clipboard_helper.remote_clipboards)
+            ch = self.make_clipboard_helper()
+            self.clipboard_helper = ch
+            self.clipboard_enabled = ch is not None
+            log("clipboard helper=%s", ch)
+            if self.clipboard_enabled:
+                if self.server_clipboard_enable_selections:
+                    #tell the server about which selections we really want to sync with
+                    #(could have been translated, or limited if the client only has one, etc)
+                    self.send_clipboard_selections(ch.remote_clipboards)
+                ch.send_all_tokens()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
         if self.server_clipboard:
@@ -118,12 +121,12 @@ class ClipboardClient(StubClientMixin):
     def init_authenticated_packet_handlers(self):
         self.set_packet_handlers(self._ui_packet_handlers, {
             "set-clipboard-enabled":        self._process_clipboard_enabled_status,
-            "clipboard-token":              self.process_clipboard_packet,
-            "clipboard-request":            self.process_clipboard_packet,
-            "clipboard-contents":           self.process_clipboard_packet,
-            "clipboard-contents-none":      self.process_clipboard_packet,
-            "clipboard-pending-requests":   self.process_clipboard_packet,
-            "clipboard-enable-selections":  self.process_clipboard_packet,
+            "clipboard-token":              self._process_clipboard_packet,
+            "clipboard-request":            self._process_clipboard_packet,
+            "clipboard-contents":           self._process_clipboard_packet,
+            "clipboard-contents-none":      self._process_clipboard_packet,
+            "clipboard-pending-requests":   self._process_clipboard_packet,
+            "clipboard-enable-selections":  self._process_clipboard_packet,
             })
 
     def get_clipboard_helper_classes(self):
@@ -147,7 +150,7 @@ class ClipboardClient(StubClientMixin):
                 log.error("cannot instantiate %s", helperclass, exc_info=True)
         return None
 
-    def process_clipboard_packet(self, packet):
+    def _process_clipboard_packet(self, packet):
         ch = self.clipboard_helper
         log("process_clipboard_packet: %s, helper=%s", packet[0], ch)
         if ch:

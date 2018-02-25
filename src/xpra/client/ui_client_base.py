@@ -12,7 +12,6 @@ log = Logger("client")
 keylog = Logger("client", "keyboard")
 
 
-from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
@@ -50,14 +49,10 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     #NOTE: these signals aren't registered here because this class
     #does not extend GObject,
     #the gtk client subclasses will take care of it.
-    __gsignals__ = {
-        "first-ui-received"         : no_arg_signal,
-        "keyboard-sync-toggled"     : no_arg_signal,
-        }
-    #add signals from super classes (all no-arg signals)
+    #these are all "no-arg" signals
+    __signals__ = ["first-ui-received", "keyboard-sync-toggled"]
     for c in (DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings, TrayClient):
-        for signal_name in c.__signals__:
-            __gsignals__[signal_name] = no_arg_signal
+        __signals__ += c.__signals__
 
     def __init__(self):
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)

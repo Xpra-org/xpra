@@ -44,6 +44,7 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
             get_default_root_window, get_root_size, get_xwindow, image_new_from_stock, \
             INTERP_BILINEAR, WINDOW_TOPLEVEL, DIALOG_MODAL, DESTROY_WITH_PARENT, MESSAGE_INFO, BUTTONS_CLOSE, ICON_SIZE_BUTTON, GRAB_STATUS_STRING, \
             BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK, POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK
+from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.client_base import PASSWORD_PROMPT
@@ -59,8 +60,14 @@ USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 
 
-class GTKXpraClient(UIXpraClient, GObjectXpraClient):
-    __gsignals__ = UIXpraClient.__gsignals__
+class GTKXpraClient(GObjectXpraClient, UIXpraClient):
+    __gsignals__ = {
+        "first-ui-received"         : no_arg_signal,
+        "keyboard-sync-toggled"     : no_arg_signal,
+        }
+    #add signals from super classes (all no-arg signals)
+    for signal_name in UIXpraClient.__signals__:
+        __gsignals__[signal_name] = no_arg_signal
 
     ClientWindowClass = None
     GLClientWindowClass = None
