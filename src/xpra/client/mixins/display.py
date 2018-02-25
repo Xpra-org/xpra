@@ -18,7 +18,7 @@ from xpra.platform.gui import (get_antialias_info, get_icc_info, get_display_icc
                                get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name)
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.os_util import monotonic_time
-from xpra.util import iround, envint, envfloat, log_screen_sizes, engs, XPRA_SCALING_NOTIFICATION_ID
+from xpra.util import iround, envint, envfloat, log_screen_sizes, engs, flatten_dict, XPRA_SCALING_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -59,8 +59,6 @@ class DisplayClient(StubClientMixin):
         self.server_display = None
         self.server_randr = False
 
-        #in WindowClient - should it be?
-        #self.server_is_desktop = False
 
     def init(self, opts):
         self.desktop_fullscreen = opts.desktop_fullscreen
@@ -93,7 +91,7 @@ class DisplayClient(StubClientMixin):
             caps["wm_name"] = wm_name
 
         self._last_screen_settings = self.get_screen_settings()
-        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
+        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, _, _ = self._last_screen_settings
         caps["desktop_size"] = self.cp(u_root_w, u_root_h)
         caps["desktops"] = ndesktops
         caps["desktop.names"] = desktop_names
@@ -118,11 +116,14 @@ class DisplayClient(StubClientMixin):
             sss = ss
         caps["screen_sizes"] = sss
 
-        caps["screen-scaling"] = True
-        caps["screen-scaling.enabled"] = self.xscale!=1 or self.yscale!=1
-        caps["screen-scaling.values"] = (int(1000*self.xscale), int(1000*self.yscale))
+        caps.update(self.get_screen_caps())
+        caps.update(flatten_dict({"dpi", self.get_dpi_caps()}))
+        caps.update(flatten_dict({"screen-scaling", self.get_scaling_caps()}))
+        return caps
 
+    def get_dpi_caps(self):
         #command line (or config file) override supplied:
+        caps = {}
         dpi = 0
         if self.dpi>0:
             #scale it:
@@ -137,20 +138,57 @@ class DisplayClient(StubClientMixin):
                 xdpi = self.cx(xdpi)
                 ydpi = self.cy(ydpi)
                 dpi = iround((xdpi+ydpi)/2.0)
-                caps.update({
-                    "dpi.x"    : xdpi,
-                    "dpi.y"    : ydpi,
-                    })
+                caps = {
+                    "x"    : xdpi,
+                    "y"    : ydpi,
+                    }
         if dpi:
-            caps["dpi"] = dpi
+            caps[""] = dpi
         screenlog("dpi: %i", dpi)
-        caps.update({
+        return caps
+
+    def get_scaling_caps(self):
+        return {
+            "" : True,
+            "enabled"   : self.xscale!=1 or self.yscale!=1,
+            "values"    : (int(1000*self.xscale), int(1000*self.yscale)),
+            }
+
+    def get_screen_caps(self):
+        return {
             "antialias"    : get_antialias_info(),
             "icc"          : self.get_icc_info(),
             "display-icc"  : self.get_display_icc_info(),
-            "cursor.size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
-            })
-        return caps
+            "cursor" : {
+                "size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
+                },
+            }
+
+    #this is the format we should be moving towards
+    #with proper namespace:
+    #def get_info(self):
+    #    sinfo = self.get_screen_caps()
+    #    sinfo["scaling"] = self.get_scaling_caps()
+    #    sinfo["dpi"] = self.get_dpi_caps()
+    #    return {
+    #        "desktop"   : self.get_desktop_caps(),
+    #        "screen"    : sinfo,
+    #        }
+
+    #def get_desktop_info(self):
+    #    caps = {
+    #        "show"  : True,
+    #        }
+    #    wm_name = get_wm_name()
+    #    if wm_name:
+    #        caps["wm_name"] = wm_name
+    #    _, _, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi = self._last_screen_settings
+    #    caps["unscaled-size"] = u_root_w, u_root_h
+    #    caps["size"] = self.cp(u_root_w, u_root_h)
+    #    caps["dpi"] = (xdpi, ydpi)
+    #    caps["count"] = ndesktops
+    #    caps["names"] = desktop_names
+    #    caps["screens"] = len(sss)
 
 
     def parse_server_capabilities(self):
