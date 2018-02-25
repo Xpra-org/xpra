@@ -19,6 +19,12 @@ Store information about the client.
 class ClientInfoMixin(StubSourceMixin):
 
     def __init__(self):
+        self.init_vars()
+
+    def cleanup(self):
+        self.init_vars()
+
+    def init_vars(self):
         self.uuid = ""
         self.machine_id = ""
         self.hostname = ""

@@ -17,6 +17,12 @@ Store information and manage events related to the client's display
 class ClientDisplayMixin(StubSourceMixin):
 
     def __init__(self):
+        self.init_vars()
+
+    def cleanup(self):
+        self.init_vars()
+
+    def init_vars(self):
         self.icc = {}
         self.display_icc = {}
         self.randr_notify = False
@@ -29,9 +35,6 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_names = ()
         self.show_desktop_allowed = False
 
-    def cleanup(self):
-        pass
-
     def get_info(self):
         info = {
             "desktop_size"  : self.desktop_size or "",
@@ -42,8 +45,6 @@ class ClientDisplayMixin(StubSourceMixin):
         info.update(get_screen_info(self.screen_sizes))
         if self.desktop_mode_size:
             info["desktop_mode_size"] = self.desktop_mode_size
-        if self.client_connection_data:
-            info["connection-data"] = self.client_connection_data
         if self.desktop_size_unscaled:
             info["desktop_size"] = {"unscaled" : self.desktop_size_unscaled}
         return info
