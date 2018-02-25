@@ -861,7 +861,7 @@ class GTKTrayMenuBase(object):
         self.popup_menu_workaround(scaling_submenu)
         def scalecmp(v):
             return abs(self.client.xscale-v)<0.1
-        from xpra.client.mixins.display_client import SCALING_OPTIONS
+        from xpra.client.mixins.display import SCALING_OPTIONS
         def scalingitem(scalingvalue=1.0):
             pct = iround(100.0*scalingvalue)
             label = {100 : "None"}.get(pct, "%i%%" % pct)
