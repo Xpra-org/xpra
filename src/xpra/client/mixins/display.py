@@ -117,8 +117,10 @@ class DisplayClient(StubClientMixin):
         caps["screen_sizes"] = sss
 
         caps.update(self.get_screen_caps())
-        caps.update(flatten_dict({"dpi", self.get_dpi_caps()}))
-        caps.update(flatten_dict({"screen-scaling", self.get_scaling_caps()}))
+        caps.update(flatten_dict({
+            "dpi"               : self.get_dpi_caps(),
+            "screen-scaling"    : self.get_scaling_caps(),
+            }))
         return caps
 
     def get_dpi_caps(self):
