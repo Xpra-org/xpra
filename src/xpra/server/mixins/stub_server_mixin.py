@@ -9,6 +9,9 @@ class StubServerMixin(object):
     def init(self, _opts):
         pass
 
+    def init_state(self):
+        pass
+
     def cleanup(self):
         pass
 
