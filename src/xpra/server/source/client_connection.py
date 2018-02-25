@@ -35,6 +35,7 @@ from xpra.server.source.idle_mixin import IdleMixin
 from xpra.server.source.input_mixin import InputMixin
 from xpra.server.source.avsync_mixin import AVSyncMixin
 from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
+from xpra.server.source.webcam_mixin import WebcamMixin
 from xpra.os_util import monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, AtomicInteger
 
@@ -60,7 +61,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin):
+class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin, WebcamMixin):
 
     def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
                  idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
@@ -73,6 +74,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                  bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
+                 webcam_enabled, webcam_device, webcam_encodings,
                  sound_properties,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
@@ -90,6 +92,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                  bandwidth_limit,
                  av_sync,
                  core_encodings, encodings, default_encoding, scaling_control,
+                 webcam_enabled, webcam_device, webcam_encodings,
                  sound_properties,
                  sound_source_plugin,
                  supports_speaker, supports_microphone,
@@ -110,6 +113,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         InputMixin.__init__(self)
         AVSyncMixin.__init__(self, av_sync)
         ClientDisplayMixin.__init__(self)
+        WebcamMixin.__init__(self, webcam_enabled, webcam_device, webcam_encodings)
 
         global counter
         self.counter = counter.increase()
@@ -426,17 +430,6 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
 
     def set_deflate(self, level):
         self.send("set_deflate", level)
-
-
-    ######################################################################
-    # webcam:
-    def send_webcam_ack(self, device, frame, *args):
-        if self.hello_sent:
-            self.send_async("webcam-ack", device, frame, *args)
-
-    def send_webcam_stop(self, device, message):
-        if self.hello_sent:
-            self.send_async("webcam-stop", device, message)
 
 
     def send_client_command(self, *args):

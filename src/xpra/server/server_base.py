@@ -307,6 +307,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                           bandwidth_limit,
                           self.av_sync,
                           self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
+                          self.webcam_enabled, self.webcam_device, self.webcam_encodings,
                           self.sound_properties,
                           self.sound_source_plugin,
                           self.supports_speaker, self.supports_microphone,
