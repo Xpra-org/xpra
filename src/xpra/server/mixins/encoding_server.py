@@ -7,6 +7,7 @@
 from xpra.log import Logger
 log = Logger("encoding")
 
+from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS, load_codecs, get_codec, has_codec, codec_versions
 from xpra.codecs.video_helper import getVideoHelper, ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -28,6 +29,7 @@ class EncodingServer(StubServerMixin):
         self.lossless_encodings = []
         self.lossless_mode_encodings = []
         self.default_encoding = None
+        self.scaling_control = False
 
     def init(self, opts):
         self.encoding = opts.encoding
@@ -36,6 +38,7 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = opts.min_quality
         self.default_speed = opts.speed
         self.default_min_speed = opts.min_speed
+        self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
         #video init: default to ALL if not specified
         video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
         csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS

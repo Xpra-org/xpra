@@ -4,17 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
 from xpra.log import Logger
 log = Logger("screen")
 
 from xpra.util import iround, log_screen_sizes, engs
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.scripts.config import parse_bool_or_int
-
-
-SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 
 
 """
@@ -34,24 +28,33 @@ class DisplayManager(StubServerMixin):
         self.cursor_size = 0
         self.double_click_time  = -1
         self.double_click_distance = -1, -1
-        self.scaling_control = False
 
     def init(self, opts):
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
-        self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
 
 
     def get_info(self, _proto):
         return {
-            "dpi" : {
-                "default"   : self.default_dpi,
-                "value"     : self.dpi,
-                "x"         : self.xdpi,
-                "y"         : self.ydpi,
+            "display": {
+                "bell"  : self.bell,
+                "cursors" : {
+                    ""      : self.cursors,
+                    "size"  : self.cursor_size,
+                    },
+                "double-click"  : {
+                    "time"      : self.double_click_time,
+                    "distance"  : self.double_click_distance,
+                    },
+                "dpi" : {
+                    "default"   : self.default_dpi,
+                    "value"     : self.dpi,
+                    "x"         : self.xdpi,
+                    "y"         : self.ydpi,
+                    },
+                "antialias" : self.antialias,
                 },
-            "antialias" : self.antialias,
             }
 
 
