@@ -16,13 +16,10 @@ Store information and manage events related to the client's display
 """
 class ClientDisplayMixin(StubSourceMixin):
 
-    def __init__(self):
-        self.init_vars()
-
     def cleanup(self):
-        self.init_vars()
+        self.init_state()
 
-    def init_vars(self):
+    def init_state(self):
         self.icc = {}
         self.display_icc = {}
         self.randr_notify = False

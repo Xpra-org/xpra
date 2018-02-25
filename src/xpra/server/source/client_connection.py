@@ -63,8 +63,9 @@ and added to the damage_packet_queue.
 """
 class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin, WebcamMixin):
 
-    def __init__(self, protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
+    def __init__(self, protocol, disconnect_cb, session_name,
+                 idle_add, timeout_add, source_remove, setting_changed,
+                 idle_timeout,
                  socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
@@ -81,8 +82,9 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed):
-        log("ServerSource%s", (protocol, disconnect_cb, idle_add, timeout_add, source_remove, setting_changed,
-                 idle_timeout, idle_timeout_cb, idle_grace_timeout_cb,
+        log("ServerSource%s", (protocol, disconnect_cb, session_name,
+                 idle_add, timeout_add, source_remove, setting_changed,
+                 idle_timeout,
                  socket_dir, unix_socket_paths, log_disconnect, dbus_control,
                  get_transient_for, get_focus,
                  get_window_id,
@@ -109,7 +111,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         DBUS_Mixin.__init__(self, dbus_control)
         WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
         EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
-        IdleMixin.__init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb)
+        IdleMixin.__init__(self, idle_timeout)
         InputMixin.__init__(self)
         AVSyncMixin.__init__(self, av_sync)
         ClientDisplayMixin.__init__(self)
@@ -119,6 +121,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.counter = counter.increase()
         self.connection_time = monotonic_time()
         self.close_event = Event()
+        self.session_name = session_name
 
         self.protocol = protocol
         self.ordinary_packets = []
@@ -137,7 +140,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
-        self.init_vars()
+        self.init()
 
         # ready for processing:
         protocol.set_packet_source(self.next_packet)
@@ -146,7 +149,7 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
     def __repr__(self):
         return  "%s(%i : %s)" % (type(self).__name__, self.counter, self.protocol)
 
-    def init_vars(self):
+    def init(self):
         self.hello_sent = False
         self.info_namespace = False
         self.send_notifications = False
@@ -168,6 +171,8 @@ class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePri
         self.wants_display = True
         self.wants_events = False
         self.wants_default_cursor = False
+        for c in ClientConnection.__bases__:
+            c.init_state(self)
 
 
     def is_closed(self):

@@ -6,6 +6,9 @@
 
 class StubSourceMixin(object):
 
+    def init_state(self):
+        pass
+
     def cleanup(self):
         pass
 

@@ -7,7 +7,7 @@
 from xpra.log import Logger
 log = Logger("timeout")
 
-from xpra.util import envint, XPRA_IDLE_NOTIFICATION_ID
+from xpra.util import envint, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
 from xpra.os_util import monotonic_time
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
@@ -16,18 +16,14 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 
 class IdleMixin(StubSourceMixin):
 
-    def __init__(self, idle_timeout, idle_timeout_cb, idle_grace_timeout_cb):
+    def __init__(self, idle_timeout):
         self.idle_timeout = idle_timeout
-        self.idle_timeout_cb = idle_timeout_cb
-        self.idle_grace_timeout_cb = idle_grace_timeout_cb
         self.last_user_event = monotonic_time()
         #grace duration is at least 10 seconds:
         self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
         self.idle = False
         self.idle_timer = None
         self.idle_grace_timer = None
-        self.schedule_idle_grace_timeout()
-        self.schedule_idle_timeout()
 
     def cleanup(self):
         self.cancel_idle_grace_timeout()
@@ -39,6 +35,12 @@ class IdleMixin(StubSourceMixin):
                 "idle"              : self.idle,
                 }
 
+
+    def parse_client_caps(self, _c):
+        #start the timer
+        log.warn("parse_client_caps idle")
+        self.schedule_idle_grace_timeout()
+        self.schedule_idle_timeout()
 
     def user_event(self):
         log("user_event()")
@@ -82,12 +84,37 @@ class IdleMixin(StubSourceMixin):
 
     def idle_grace_timedout(self):
         self.idle_grace_timer = None
-        log("idle_grace_timedout() callback=%s", self.idle_grace_timeout_cb)
-        self.idle_grace_timeout_cb(self)
+        log("idle_grace_timedout()")
+        if not self.send_notifications:
+            #not much we can do!
+            return
+        #notify the user, giving him a chance to cancel the timeout:
+        nid = XPRA_IDLE_NOTIFICATION_ID
+        if nid in self.notification_callbacks:
+            return
+        actions = ()
+        if self.send_notifications_actions:
+            actions = ("cancel", "Cancel Timeout")
+        if self.session_name!="Xpra":
+            summary = "The Xpra session %s" % self.session_name
+        else:
+            summary = "Xpra session"
+        summary += " is about to timeout"
+        body = "Unless this session sees some activity,\n" + \
+               "it will be terminated soon."
+        self.may_notify(nid, summary, body, actions, {}, expire_timeout=10*1000, icon_name="timer", user_callback=self.idle_notification_action)
+        self.go_idle()
+
+    def idle_notification_action(self, nid, action_id):
+        log("idle_notification_action(%i, %s)", nid, action_id)
+        if action_id=="cancel":
+            self.user_event()
 
     def idle_timedout(self):
         self.idle_timer = None
-        log("idle_timedout() callback=%s", self.idle_timeout_cb)
-        self.idle_timeout_cb(self)
+        p = self.protocol
+        log("idle_timedout() protocol=%s", p)
+        if p:
+            self.disconnect(IDLE_TIMEOUT)
         if not self.is_closed():
             self.schedule_idle_timeout()

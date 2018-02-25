@@ -6,7 +6,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
 from time import sleep
 
 from xpra.log import Logger
@@ -35,9 +34,9 @@ from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
-    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, IDLE_TIMEOUT, SESSION_BUSY, XPRA_IDLE_NOTIFICATION_ID, XPRA_NEW_USER_NOTIFICATION_ID
+    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.platform.paths import get_icon_filename, get_icon_dir
+from xpra.platform.paths import get_icon_filename
 from xpra.notifications.common import parse_image_path
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
@@ -291,13 +290,13 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        def get_window_id(wid):
-            return self._window_to_id.get(wid)
+        get_window_id = self._window_to_id.get
         bandwidth_limit = self.get_client_bandwidth_limit(proto)
         ClientConnectionClass = self.get_server_source_class()
         ss = ClientConnectionClass(proto, drop_client,
+                          self.session_name,
                           self.idle_add, self.timeout_add, self.source_remove, self.setting_changed,
-                          self.idle_timeout, self.idle_timeout_cb, self.idle_grace_timeout_cb,
+                          self.idle_timeout,
                           self._socket_dir, self.unix_socket_paths, not is_request, self.dbus_control,
                           self.get_transient_for, self.get_focus, self.get_cursor_data,
                           get_window_id,
@@ -860,36 +859,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
-
-
-    def idle_timeout_cb(self, source):
-        timeoutlog("idle_timeout_cb(%s)", source)
-        p = source.protocol
-        if p:
-            self.disconnect_client(p, IDLE_TIMEOUT)
-
-    def idle_grace_timeout_cb(self, source):
-        timeoutlog("idle_grace_timeout_cb(%s)", source)
-        nid = XPRA_IDLE_NOTIFICATION_ID
-        actions = ()
-        if source.send_notifications_actions:
-            actions = ("cancel", "Cancel Timeout")
-        user_icon = os.path.join(get_icon_dir(), "timer.png")
-        icon = parse_image_path(user_icon) or ()
-        def idle_notification_action(nid, action_id):
-            timeoutlog("idle_notification_action(%i, %s)", nid, action_id)
-            if action_id=="cancel":
-                source.user_event()
-                source.no_idle()
-        if self.session_name!="Xpra":
-            summary = "The Xpra session %s" % self.session_name
-        else:
-            summary = "Xpra session"
-        summary += " is about to timeout"
-        body = "Unless this session sees some activity,\n" + \
-               "it will be terminated soon."
-        source.notify("", nid, "Xpra", 0, "", summary, body, actions, {}, source.idle_grace_duration*1000, icon, user_callback=idle_notification_action)
-        source.go_idle()
 
 
     def _log_disconnect(self, proto, *args):
