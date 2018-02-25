@@ -26,6 +26,7 @@ class WebcamServer(StubServerMixin):
         self.webcam_device = ""
         self.webcam_encodings = []
         self.webcam_enabled = False
+        self.webcam_virtual_video_devices = 0
 
     def init(self, opts):
         self.webcam_enabled = opts.webcam.lower() not in FALSE_OPTIONS
