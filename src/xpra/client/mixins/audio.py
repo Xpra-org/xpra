@@ -100,7 +100,7 @@ class AudioClient(StubClientMixin):
         log("speaker: codecs=%s, allowed=%s, enabled=%s", encoders, self.speaker_allowed, csv(self.speaker_codecs))
         log("microphone: codecs=%s, allowed=%s, enabled=%s, default device=%s", decoders, self.microphone_allowed, csv(self.microphone_codecs), self.microphone_device)
         log("av-sync=%s", self.av_sync)
-        if POSIX:
+        if POSIX and not OSX:
             try:
                 from xpra.sound.pulseaudio.pulseaudio_util import get_info as get_pa_info
                 pa_info = get_pa_info()
