@@ -742,6 +742,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
 
 
 def std(s, extras="-,./: "):
+    s = s or ""
     try:
         s = s.decode("latin1")
     except:
