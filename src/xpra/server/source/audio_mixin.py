@@ -8,7 +8,6 @@ import os
 
 from xpra.log import Logger
 log = Logger("sound")
-notifylog = Logger("notify")
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -31,7 +30,8 @@ class AudioMixin(StubSourceMixin):
         self.speaker_codecs = speaker_codecs
         self.supports_microphone = supports_microphone
         self.microphone_codecs = microphone_codecs
-        #runtime:
+
+    def init_state(self):
         self.wants_sound = True
         self.sound_source_sequence = 0
         self.sound_source = None
@@ -51,6 +51,7 @@ class AudioMixin(StubSourceMixin):
         self.cancel_sound_fade_timer()
         self.stop_sending_sound()
         self.stop_receiving_sound()
+        self.init_state()
 
 
     def parse_client_caps(self, c):
@@ -71,12 +72,12 @@ class AudioMixin(StubSourceMixin):
             return {}
         sound_props = self.sound_properties.copy()
         sound_props.update({
-                            "codec-full-names"  : True,
-                            "encoders"  : self.speaker_codecs,
-                            "decoders"  : self.microphone_codecs,
-                            "send"      : self.supports_speaker and len(self.speaker_codecs)>0,
-                            "receive"   : self.supports_microphone and len(self.microphone_codecs)>0,
-                            })
+            "codec-full-names"  : True,
+            "encoders"          : self.speaker_codecs,
+            "decoders"          : self.microphone_codecs,
+            "send"              : self.supports_speaker and len(self.speaker_codecs)>0,
+            "receive"           : self.supports_microphone and len(self.microphone_codecs)>0,
+            })
         return flatten_dict({"sound" : sound_props})
         
 

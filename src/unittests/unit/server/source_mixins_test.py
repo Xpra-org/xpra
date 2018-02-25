@@ -74,6 +74,36 @@ class SourceMixinsTest(unittest.TestCase):
 			wm.stop_virtual_webcam(device_id)
 		finally:
 			wm.cleanup()
+
+	def test_avsync(self):
+		from xpra.server.source.avsync_mixin import AVSyncMixin
+		#test disabled:
+		#what the client sets doesn't matter:
+		for e in (True, False):
+			av = AVSyncMixin(False)
+			av.window_sources = {}
+			av.init_state()
+			caps = typedict({"av-sync" : e})
+			av.parse_client_caps(caps)
+			i = av.get_info()
+			assert i
+			avi = i.get("av-sync")
+			assert avi and not avi.get("enabled", True)
+		#now enabled:
+		def get_sound_source_latency():
+			return 20
+		for e in (True, False):
+			av = AVSyncMixin(True)
+			av.window_sources = {}
+			av.init_state()
+			av.get_sound_source_latency = get_sound_source_latency
+			caps = typedict({"av-sync" : e})
+			av.parse_client_caps(caps)
+			i = av.get_info()
+			assert i
+			avi = i.get("av-sync")
+			assert avi and avi.get("enabled", not e)==e
+		
 		
 
 def main():

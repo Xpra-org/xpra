@@ -17,25 +17,32 @@ class AVSyncMixin(StubSourceMixin):
 
     def __init__(self, av_sync):
         self.av_sync = av_sync
+
+    def cleanup(self):
+        self.init_state()
+
+    def init_state(self):
+        self.av_sync_enabled = False
         self.av_sync_delay = 0
         self.av_sync_delay_total = 0
         self.av_sync_delta = AV_SYNC_DELTA
 
-    def cleanup(self):
-        pass
 
     def get_info(self):
         return {
             "av-sync" : {
-                "client"     : {"delay"  : self.av_sync_delay},
-                "total"      : self.av_sync_delay_total,
-                "delta"      : self.av_sync_delta,
+                ""          : self.av_sync,
+                "enabled"   : self.av_sync_enabled,
+                "client"    : self.av_sync_delay,
+                "total"     : self.av_sync_delay_total,
+                "delta"     : self.av_sync_delta,
                 },
             }
 
     def parse_client_caps(self, c):
         av_sync = c.boolget("av-sync")
-        self.set_av_sync_delay(int(self.av_sync and av_sync) * c.intget("av-sync.delay.default", 150))
+        self.av_sync_enabled = self.av_sync and av_sync
+        self.set_av_sync_delay(int(self.av_sync_enabled) * c.intget("av-sync.delay.default", 150))
         log("av-sync: server=%s, client=%s, total=%s", self.av_sync, av_sync, self.av_sync_delay_total)
 
 
