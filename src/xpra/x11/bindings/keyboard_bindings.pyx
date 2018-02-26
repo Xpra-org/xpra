@@ -1056,9 +1056,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                 pixels[i*4+2]   = b
                 pixels[i*4+3]   = a
                 i += 1
-            name = str(image.name)
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                image.cursor_serial, str(pixels), name]
+                image.cursor_serial, bytes(pixels), bytes(image.name)]
         finally:
             if image:
                 XFree(image)
