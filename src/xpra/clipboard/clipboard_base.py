@@ -782,17 +782,16 @@ class ClipboardProxy(gtk.Invisible):
         dtype = result["type"]
         log("do_selection_get(%s,%s,%s) calling selection_data.set(%s, %s, %s:%s)",
               selection_data, info, time, dtype, dformat, type(data), len(data or ""))
-        #GTK3 workaround: can only use set_text and only on the clipboard?
+        boc = self._block_owner_change
+        self._block_owner_change = True
         if is_gtk3() and dtype in (b"UTF8_STRING", b"STRING") and dformat==8:
+            #GTK3 workaround: can only use set_text and only on the clipboard?
             s = bytestostr(data)
             self._clipboard.set_text(s, len(s))
-            #problem here is that we now own the selection...
         else:
-            boc = self._block_owner_change
-            self._block_owner_change = True
             selectiondata_set(selection_data, dtype, dformat, data)
-            if boc is False:
-                glib.idle_add(self.remove_block)
+        if boc is False:
+            glib.idle_add(self.remove_block)
 
     def do_selection_clear_event(self, event):
         # Someone else on our side has the selection
