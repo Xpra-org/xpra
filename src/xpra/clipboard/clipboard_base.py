@@ -242,13 +242,13 @@ class ClipboardProtocolHelperBase(object):
 
     def init_packet_handlers(self):
         self._packet_handlers = {
-            b"clipboard-token"              : self._process_clipboard_token,
-            b"clipboard-request"            : self._process_clipboard_request,
-            b"clipboard-contents"           : self._process_clipboard_contents,
-            b"clipboard-contents-none"      : self._process_clipboard_contents_none,
-            b"clipboard-pending-requests"   : self._process_clipboard_pending_requests,
-            b"clipboard-enable-selections"  : self._process_clipboard_enable_selections,
-            b"clipboard-loop-uuids"         : self._process_clipboard_loop_uuids,
+            "clipboard-token"               : self._process_clipboard_token,
+            "clipboard-request"             : self._process_clipboard_request,
+            "clipboard-contents"            : self._process_clipboard_contents,
+            "clipboard-contents-none"       : self._process_clipboard_contents_none,
+            "clipboard-pending-requests"    : self._process_clipboard_pending_requests,
+            "clipboard-enable-selections"   : self._process_clipboard_enable_selections,
+            "clipboard-loop-uuids"          : self._process_clipboard_loop_uuids,
             }
 
     def make_proxy(self, clipboard):
@@ -542,9 +542,13 @@ class ClipboardProtocolHelperBase(object):
 
 
     def process_clipboard_packet(self, packet):
-        packet_type = packet[0]
-        log("process clipboard packet type=%s", bytestostr(packet_type))
-        self._packet_handlers[packet_type](packet)
+        packet_type = bytestostr(packet[0])
+        handler = self._packet_handlers.get(packet_type)
+        log("process clipboard handler(%s)=%s", packet_type, handler)
+        if handler:
+            self._packet_handlers[packet_type](packet)
+        else:
+            log.warn("Warning: no clipboard packet handler for '%s'", packet_type)
 
 
 class DefaultClipboardProtocolHelper(ClipboardProtocolHelperBase):
