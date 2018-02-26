@@ -543,7 +543,7 @@ class ClipboardProtocolHelperBase(object):
 
     def process_clipboard_packet(self, packet):
         packet_type = packet[0]
-        log("process clipboard packet type=%s", packet_type)
+        log("process clipboard packet type=%s", bytestostr(packet_type))
         self._packet_handlers[packet_type](packet)
 
 

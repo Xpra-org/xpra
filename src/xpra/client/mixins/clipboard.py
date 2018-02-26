@@ -152,7 +152,7 @@ class ClipboardClient(StubClientMixin):
 
     def _process_clipboard_packet(self, packet):
         ch = self.clipboard_helper
-        log("process_clipboard_packet: %s, helper=%s", packet[0], ch)
+        log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
         if ch:
             ch.process_clipboard_packet(packet)
 
