@@ -48,7 +48,7 @@ class RemoteLogging(StubClientMixin):
                 if is_debug_enabled(x):
                     log.warn("Warning: cannot enable remote logging")
                     log.warn(" because '%s' debug logging is enabled", x)
-                    return
+                    return True
             log.info("enabled remote logging")
             if not self.log_both:
                 log.info(" see server log file for further output")
