@@ -152,7 +152,7 @@ class ChildCommandServer(StubServerMixin):
                         started.append(proc)
         procs = tuple(x for x in started if x is not None)
         if not self.session_name:
-            self.guess_session_name(procs)
+            self.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
         log("start_command%s exec_wrapper=%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
