@@ -1187,9 +1187,12 @@ class WindowSource(WindowIconSource):
             return False
 
     def get_packets_backlog(self):
-        now = monotonic_time()
-        latency_tolerance_pct = int(min(self._damage_packet_sequence, 10)*min(now-self.global_statistics.last_congestion_time, 10))
-        return self.statistics.get_packets_backlog(latency_tolerance_pct)
+        s = self.statistics
+        gs = self.global_statistics
+        if not s or not gs:
+            return 0
+        latency_tolerance_pct = int(min(self._damage_packet_sequence, 10)*min(monotonic_time()-gs.last_congestion_time, 10))
+        return s.get_packets_backlog(latency_tolerance_pct)
 
     def expire_delayed_region(self, delay):
         """ mark the region as expired so damage_packet_acked can send it later,
