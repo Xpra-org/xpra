@@ -12,7 +12,7 @@ mouselog = Logger("mouse")
 notifylog = Logger("notify")
 
 from xpra.util import envint
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -216,7 +216,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 #except this doesn't work and nothing happens!
                 #position_menu = self.tray_widget.tray_widget.position_menu
                 #pos = position_menu(self.tray_menu, x, y, self.tray_widget.tray_widget)
-                if POSIX:
+                if POSIX and not OSX:
                     self.tray_menu.popup_at_pointer()
                 else:
                     self.tray_menu.popup(None, None, None, None, button, time)
