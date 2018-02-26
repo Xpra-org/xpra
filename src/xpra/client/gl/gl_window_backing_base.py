@@ -716,13 +716,20 @@ class GLWindowBackingBase(WindowBackingBase):
 
         cw = self.cursor_data[3]
         ch = self.cursor_data[4]
+        pixels = self.cursor_data[8]
+        blen = cw*ch*4
+        if len(pixels)!=blen:
+            log.error("Error: invalid cursor pixel buffer for %ix%i", cw, ch)
+            log.error(" expected %i bytes but got %i (%s)", blen, len(pixels), type(pixels))
+            log.error(" %s", repr_ellipsized(hexstr(pixels)))
+            return
         if TEXTURE_CURSOR:
             #paint the texture containing the cursor:
             #glActiveTexture(GL_TEXTURE1)
             target = GL_TEXTURE_2D
             glEnable(target)
             glBindTexture(target, self.textures[TEX_CURSOR])
-            self.upload_cursor_texture(target, self.cursor_data)
+            self.upload_cursor_texture(target, cw, ch, pixels)
 
             #glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
             #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -745,8 +752,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #glActiveTexture(GL_TEXTURE0)
         else:
             #FUGLY: paint each pixel separately..
-            pixels = self.cursor_data[8]
-            p = struct.unpack("B"*(cw*ch*4), pixels)
+            p = struct.unpack(b"B"*blen, pixels)
             glLineWidth(1)
             #TODO: use VBO arrays to make this faster
             for cx in range(cw):
@@ -758,15 +764,7 @@ class GLWindowBackingBase(WindowBackingBase):
                         glVertex2i(x+cx, y+cy)
                         glEnd()
 
-    def upload_cursor_texture(self, target, cursor_data):
-        width = cursor_data[3]
-        height = cursor_data[4]
-        pixels = cursor_data[8]
-        if len(pixels)<width*4*height:
-            log.error("Error: invalid cursor pixel buffer for %ix%i", width, height)
-            log.error(" expected %i bytes but got %i", width*height*4, len(pixels))
-            log.error(" %s", repr_ellipsized(hexstr(pixels)))
-            return
+    def upload_cursor_texture(self, target, width, height, pixels):
         upload, pixel_data = self.pixels_for_upload(pixels)
         rgb_format = "BGRA"
         self.set_alignment(width, width*4, rgb_format)
