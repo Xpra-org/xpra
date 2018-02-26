@@ -61,7 +61,7 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, MMAP_Connection, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin, WebcamMixin):
+class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, MMAP_Connection, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin, WebcamMixin):
 
     def __init__(self, protocol, disconnect_cb, session_name,
                  idle_add, timeout_add, source_remove, setting_changed,
