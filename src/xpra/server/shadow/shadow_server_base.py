@@ -109,6 +109,8 @@ class ShadowServerBase(RFBServer):
 
     ############################################################################
     # notifications
+    def notify_setup_error(self, exception):
+        log.info("notification forwarding is not available")
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
