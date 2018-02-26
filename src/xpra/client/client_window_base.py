@@ -95,12 +95,6 @@ class ClientWindowBase(ClientWidgetBase):
         return None
 
 
-    def set_cursor_data(self, cursor_data):
-        self.cursor_data = cursor_data
-        b = self._backing
-        if b:
-            b.set_cursor_data(cursor_data)
-
     def new_backing(self, bw, bh):
         backing_class = self.get_backing_class()
         log("new_backing(%s, %s) backing_class=%s", bw, bh, backing_class)
@@ -109,7 +103,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
         self._backing.default_cursor_data = self.default_cursor_data
-        self._backing.set_cursor_data(self.cursor_data)
         return self._backing._backing
 
 

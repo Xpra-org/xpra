@@ -51,11 +51,11 @@ from OpenGL.GL import \
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER, \
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, \
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5, \
-    GL_BLEND, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
+    GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, \
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL, \
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST, \
     glLineStipple, GL_LINE_STIPPLE, GL_POINTS, \
-    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, GL_TEXTURE_2D, \
+    glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE, \
     glHint, \
     glBlendFunc, \
     glActiveTexture, glTexSubImage2D, \
@@ -716,42 +716,32 @@ class GLWindowBackingBase(WindowBackingBase):
 
         cw = self.cursor_data[3]
         ch = self.cursor_data[4]
-        pixels = self.cursor_data[8]
-        blen = cw*ch*4
-        if len(pixels)!=blen:
-            log.error("Error: invalid cursor pixel buffer for %ix%i", cw, ch)
-            log.error(" expected %i bytes but got %i (%s)", blen, len(pixels), type(pixels))
-            log.error(" %s", repr_ellipsized(hexstr(pixels)))
-            return
         if TEXTURE_CURSOR:
             #paint the texture containing the cursor:
-            #glActiveTexture(GL_TEXTURE1)
-            target = GL_TEXTURE_2D
+            glActiveTexture(GL_TEXTURE0)
+            target = GL_TEXTURE_RECTANGLE_ARB
             glEnable(target)
             glBindTexture(target, self.textures[TEX_CURSOR])
-            self.upload_cursor_texture(target, cw, ch, pixels)
-
-            #glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
-            #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            #from OpenGL.GL import GL_REPLACE, GL_TEXTURE_2D, GL_COMBINE, GL_DECAL, GL_MODULATE, GL_ADD
-            #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE)  #GL_REPLACE, GL_BLEND, GL_MODULATE
+            glEnablei(GL_BLEND, self.textures[TEX_CURSOR])
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+            glBlendFunc(GL_ONE, GL_ONE)
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
             glBegin(GL_QUADS)
-            glTexCoord2i(0, 0)
-            glVertex2i(x, y)
-            glTexCoord2i(0, 1)
-            glVertex2i(x, y+ch)
-            glTexCoord2i(1, 1)
-            glVertex2i(x+cw, y+ch)
-            glTexCoord2i(1, 0)
-            glVertex2i(x+cw, y)
+            glTexCoord2i(0, 0);     glVertex2i(x, y)
+            glTexCoord2i(0, ch);    glVertex2i(x, y+ch)
+            glTexCoord2i(cw, ch);   glVertex2i(x+cw, y+ch)
+            glTexCoord2i(cw, 0);    glVertex2i(x+cw, y)
             glEnd()
 
             glBindTexture(target, 0)
             glDisable(target)
-            #glActiveTexture(GL_TEXTURE0)
         else:
             #FUGLY: paint each pixel separately..
+            if not self.validate_cursor():
+                return
+            pixels = self.cursor_data[8]
+            blen = cw*ch*4
             p = struct.unpack(b"B"*blen, pixels)
             glLineWidth(1)
             #TODO: use VBO arrays to make this faster
@@ -763,18 +753,6 @@ class GLWindowBackingBase(WindowBackingBase):
                         glColor4f(p[i]/256.0, p[i+1]/256.0, p[i+2]/256.0, p[i+3]/256.0)
                         glVertex2i(x+cx, y+cy)
                         glEnd()
-
-    def upload_cursor_texture(self, target, width, height, pixels):
-        upload, pixel_data = self.pixels_for_upload(pixels)
-        rgb_format = "BGRA"
-        self.set_alignment(width, width*4, rgb_format)
-        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        set_texture_level(target)
-        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-        glTexImage2D(target, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixel_data)
-        log("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s", width, height, len(pixels), rgb_format, upload)
 
     def draw_spinner(self):
         bw, bh = self.size
@@ -810,13 +788,57 @@ class GLWindowBackingBase(WindowBackingBase):
             glVertex2i(px, py)
         glEnd()
 
+
+    def validate_cursor(self):
+        cursor_data = self.cursor_data
+        cw = cursor_data[3]
+        ch = cursor_data[4]
+        pixels = cursor_data[8]
+        blen = cw*ch*4
+        if len(pixels)!=blen:
+            log.error("Error: invalid cursor pixel buffer for %ix%i", cw, ch)
+            log.error(" expected %i bytes but got %i (%s)", blen, len(pixels), type(pixels))
+            log.error(" %s", repr_ellipsized(hexstr(pixels)))
+            return False
+        return True
+
     def set_cursor_data(self, cursor_data):
         if (not cursor_data or len(cursor_data)==1) and self.default_cursor_data:
             cursor_data = ["raw"] + self.default_cursor_data
         if not cursor_data:
             return
         self.cursor_data = cursor_data
+        if not cursor_data or not TEXTURE_CURSOR:
+            return
+        cw = cursor_data[3]
+        ch = cursor_data[4]
+        pixels = cursor_data[8]
+        if not self.validate_cursor():
+            return
+        context = self.gl_context()
+        if not context:
+            return
+        with context:
+            self.gl_init()
+            self.upload_cursor_texture(cw, ch, pixels)
 
+    def upload_cursor_texture(self, width, height, pixels):
+        upload, pixel_data = self.pixels_for_upload(pixels)
+        rgb_format = "RGBA"
+        glActiveTexture(GL_TEXTURE0)
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glEnable(target)
+        glBindTexture(target, self.textures[TEX_CURSOR])
+        self.set_alignment(width, width*4, rgb_format)
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        set_texture_level(target)
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexImage2D(target, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel_data)
+        log("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s", width, height, len(pixels), rgb_format, upload)
+        glBindTexture(target, 0)
+        glDisable(target)
 
     def paint_box(self, encoding, is_delta, x, y, w, h):
         #show region being painted if debug paint box is enabled only:

@@ -554,6 +554,19 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             self.move(x, y)
         self.set_default_size(*self._size)
 
+    def new_backing(self, bw, bh):
+        b = ClientWindowBase.new_backing(self, bw, bh)
+        #call via idle_add so that the backing has time to be realized too:
+        self.when_realized("cursor", self.idle_add, self._backing.set_cursor_data, self.cursor_data)
+        return b
+
+    def set_cursor_data(self, cursor_data):
+        self.cursor_data = cursor_data
+        b = self._backing
+        if b:
+            self.when_realized("cursor", b.set_cursor_data, cursor_data)
+
+
     def calculate_window_offset(self, wx, wy, ww, wh):
         ss = self._client._current_screen_sizes
         if not ss:
