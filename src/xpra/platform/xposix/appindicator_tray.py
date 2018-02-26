@@ -26,6 +26,8 @@ def get_appindicator():
         try:
             import sys
             if "gi" in sys.modules:
+                import gi
+                gi.require_version('AppIndicator3', '0.1')
                 from gi.repository import AppIndicator3 #@UnresolvedImport @Reimport
                 _appindicator = AppIndicator3
             else:
