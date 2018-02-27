@@ -23,10 +23,11 @@ from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
 from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, gendigest, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
-from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
+from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
+from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
@@ -55,7 +56,7 @@ assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA
     * xpra.client.gtk2.client
     * xpra.client.gtk3.client
 """
-class XpraClientBase(FilePrintMixin):
+class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def __init__(self):
         #this may be called more than once,
@@ -89,11 +90,6 @@ class XpraClientBase(FilePrintMixin):
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
-        self.quality = -1
-        self.min_quality = 0
-        self.speed = 0
-        self.min_speed = -1
-        self.server_client_shutdown = True
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -107,20 +103,13 @@ class XpraClientBase(FilePrintMixin):
         #server state and caps:
         self.server_capabilities = None
         self.completed_startup = False
-        self._remote_machine_id = None
-        self._remote_uuid = None
-        self._remote_version = None
-        self._remote_revision = None
-        self._remote_platform = None
-        self._remote_platform_release = None
-        self._remote_platform_platform = None
-        self._remote_platform_linux_distribution = None
         self.uuid = get_user_uuid()
         self.init_packet_handlers()
         sanity_checks()
 
     def init(self, opts):
-        FilePrintMixin.init(self, opts)
+        for c in XpraClientBase.__bases__:
+            c.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
         self.username = opts.username
@@ -132,11 +121,6 @@ class XpraClientBase(FilePrintMixin):
         if self.encryption:
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
-        self.quality = opts.quality
-        self.min_quality = opts.min_quality
-        self.speed = opts.speed
-        self.min_speed = opts.min_speed
-        #printing and file transfer:
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -239,10 +223,8 @@ class XpraClientBase(FilePrintMixin):
                 })
         else:
             self._protocol = Protocol(self.get_scheduler(), conn, self.process_packet, self.next_packet)
-        self._protocol.large_packets.append("keymap-changed")
-        self._protocol.large_packets.append("server-settings")
-        self._protocol.large_packets.append("logging")
-        self._protocol.large_packets.append("input-devices")
+        for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
+            self._protocol.large_packets.append(x)
         self._protocol.set_compression_level(self.compression_level)
         self._protocol.receive_aliases.update(self._aliases)
         self._protocol.enable_default_encoder()
@@ -755,9 +737,6 @@ class XpraClientBase(FilePrintMixin):
 
     def server_connection_established(self):
         netlog("server_connection_established()")
-        if not self.parse_version_capabilities():
-            netlog("server_connection_established() failed version capabilities")
-            return False
         if not self.parse_server_capabilities():
             netlog("server_connection_established() failed server capabilities")
             return False
@@ -767,7 +746,6 @@ class XpraClientBase(FilePrintMixin):
         if not self.parse_encryption_capabilities():
             netlog("server_connection_established() failed encryption capabilities")
             return False
-        FilePrintMixin.parse_server_capabilities(self)
         #raise packet size if required:
         if self.file_transfer:
             self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
@@ -777,32 +755,10 @@ class XpraClientBase(FilePrintMixin):
         return True
 
 
-    def parse_version_capabilities(self):
-        c = self.server_capabilities
-        self._remote_machine_id = c.strget("machine_id")
-        self._remote_uuid = c.strget("uuid")
-        self._remote_version = c.strget("build.version", c.strget("version"))
-        self._remote_revision = c.strget("build.revision", c.strget("revision"))
-        self._remote_platform = c.strget("platform")
-        self._remote_platform_release = c.strget("platform.release")
-        self._remote_platform_platform = c.strget("platform.platform")
-        #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
-        pld = c.listget("platform.linux_distribution")
-        if pld and len(pld)==3:
-            def san(v):
-                if type(v)==int:
-                    return v
-                return bytestostr(v)
-            self._remote_platform_linux_distribution = [san(x) for x in pld]
-        verr = version_compat_check(self._remote_version)
-        if verr is not None:
-            self.warn_and_quit(EXIT_INCOMPATIBLE_VERSION, "incompatible remote version '%s': %s" % (self._remote_version, verr))
-            return False
-        return True
-
     def parse_server_capabilities(self):
-        c = self.server_capabilities
-        self.server_client_shutdown = c.boolget("client-shutdown", True)
+        for c in XpraClientBase.__bases__:
+            if not c.parse_server_capabilities(self):
+                return False
         return True
 
     def parse_network_capabilities(self):
@@ -812,6 +768,7 @@ class XpraClientBase(FilePrintMixin):
             return False
         p.enable_compressor_from_caps(c)
         p.accept()
+        p.send_aliases = c.dictget("aliases", {})
         return True
 
     def parse_encryption_capabilities(self):
@@ -819,7 +776,6 @@ class XpraClientBase(FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        p.send_aliases = c.dictget("aliases", {})
         if self.encryption:
             #server uses a new cipher after second hello:
             key = self.get_encryption_key()

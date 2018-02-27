@@ -41,6 +41,10 @@ class Encodings(StubClientMixin):
         self.allowed_encodings = []
         self.core_encodings = None
         self.encoding = None
+        self.quality = -1
+        self.min_quality = 0
+        self.speed = 0
+        self.min_speed = -1
 
         self.server_encodings = []
         self.server_core_encodings = []
@@ -59,6 +63,10 @@ class Encodings(StubClientMixin):
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)
+        self.quality = opts.quality
+        self.min_quality = opts.min_quality
+        self.speed = opts.speed
+        self.min_speed = opts.min_speed
         #until we add the ability to choose decoders, use all of them:
         #(and default to non grahics card csc modules if not specified)
         load_codecs(encoders=False)

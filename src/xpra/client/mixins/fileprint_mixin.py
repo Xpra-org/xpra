@@ -50,6 +50,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
     def parse_server_capabilities(self):
         self.parse_printing_capabilities()
         self.parse_file_transfer_caps(self.server_capabilities)
+        return True
 
     def parse_printing_capabilities(self):
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
