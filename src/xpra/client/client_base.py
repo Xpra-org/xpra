@@ -790,7 +790,6 @@ class XpraClientBase(FileTransferHandler):
             netlog("server_connection_established() failed encryption capabilities")
             return False
         self.parse_printing_capabilities()
-        self.parse_logging_capabilities()
         self.parse_file_transfer_caps(self.server_capabilities)
         #raise packet size if required:
         if self.file_transfer:
@@ -798,9 +797,6 @@ class XpraClientBase(FileTransferHandler):
         netlog("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True
-
-    def parse_logging_capabilities(self):
-        pass
 
     def parse_printing_capabilities(self):
         printlog("parse_printing_capabilities() client printing support=%s", self.printing)
