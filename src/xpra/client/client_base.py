@@ -685,10 +685,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def get_encryption_key(self):
         key = load_binary_file(self.encryption_keyfile)
         if not key:
-            key = os.environ.get('XPRA_ENCRYPTION_KEY')
+            key = strtobytes(os.environ.get('XPRA_ENCRYPTION_KEY', ''))
         if not key:
             raise InitExit(1, "no encryption key")
-        return key.strip("\n\r")
+        return key.strip(b"\n\r")
 
     def load_password(self, prompt="password"):
         authlog("load_password() existing value found: %s", bool(self.password))
