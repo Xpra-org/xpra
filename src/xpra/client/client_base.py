@@ -9,13 +9,9 @@ import os
 import sys
 import socket
 import string
-from xpra.gtk_common.gobject_compat import import_gobject, import_glib
-gobject = import_gobject()
 
 from xpra.log import Logger
 log = Logger("client")
-printlog = Logger("printing")
-filelog = Logger("file")
 netlog = Logger("network")
 authlog = Logger("auth")
 bandwidthlog = Logger("bandwidth")
@@ -30,27 +26,19 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import version_compat_check, get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS
-from xpra.util import flatten_dict, typedict, updict, xor, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
-from xpra.net.file_transfer import FileTransferHandler
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
+from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
 
-try:
-    from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-    xor = xor_str
-except:
-    pass
-
 
 EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
-DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
-SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
@@ -58,23 +46,23 @@ MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
-class XpraClientBase(FileTransferHandler):
-    """ Base class for Xpra clients.
-        Provides the glue code for:
-        * sending packets via Protocol
-        * handling packets received via _process_packet
-        For an actual implementation, look at:
-        * GObjectXpraClient
-        * xpra.client.gtk2.client
-        * xpra.client.gtk3.client
-    """
+""" Base class for Xpra clients.
+    Provides the glue code for:
+    * sending packets via Protocol
+    * handling packets received via _process_packet
+    For an actual implementation, look at:
+    * GObjectXpraClient
+    * xpra.client.gtk2.client
+    * xpra.client.gtk3.client
+"""
+class XpraClientBase(FilePrintMixin):
 
     def __init__(self):
-        FileTransferHandler.__init__(self)
         #this may be called more than once,
         #skip doing internal init again:
         if not hasattr(self, "exit_code"):
             self.defaults_init()
+        FilePrintMixin.__init__(self)
 
     def defaults_init(self):
         #skip warning when running the client
@@ -105,9 +93,6 @@ class XpraClientBase(FileTransferHandler):
         self.min_quality = 0
         self.speed = 0
         self.min_speed = -1
-        self.printer_attributes = []
-        self.send_printers_timer = None
-        self.exported_printers = None
         self.server_client_shutdown = True
         #protocol stuff:
         self._protocol = None
@@ -135,6 +120,7 @@ class XpraClientBase(FileTransferHandler):
         sanity_checks()
 
     def init(self, opts):
+        FilePrintMixin.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
         self.username = opts.username
@@ -151,7 +137,6 @@ class XpraClientBase(FileTransferHandler):
         self.speed = opts.speed
         self.min_speed = opts.min_speed
         #printing and file transfer:
-        FileTransferHandler.init_opts(self, opts)
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -312,14 +297,7 @@ class XpraClientBase(FileTransferHandler):
             })
 
     def init_authenticated_packet_handlers(self):
-        self.set_packet_handlers(self._packet_handlers, {
-            "open-url"          : self._process_open_url,
-            "send-file"         : self._process_send_file,
-            "send-data-request" : self._process_send_data_request,
-            "send-data-response": self._process_send_data_response,
-            "ack-file-chunk"    : self._process_ack_file_chunk,
-            "send-file-chunk"   : self._process_send_file_chunk,
-            })
+        FilePrintMixin.init_authenticated_packet_handlers(self)
 
 
     def init_aliases(self):
@@ -370,6 +348,7 @@ class XpraClientBase(FileTransferHandler):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
+        capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
                 "encoding.generic"      : True,
@@ -527,9 +506,7 @@ class XpraClientBase(FileTransferHandler):
 
     def cleanup(self):
         reaper_cleanup()
-        #we must clean printing before FileTransferHandler, which turns the printing flag off!
-        self.cleanup_printing()
-        FileTransferHandler.cleanup(self)
+        FilePrintMixin.cleanup(self)
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
@@ -547,6 +524,7 @@ class XpraClientBase(FileTransferHandler):
             if gi.version_info>=(3, 11):
                 #no longer need to call threads_init
                 return
+        from xpra.gtk_common.gobject_compat import import_glib
         glib = import_glib()
         glib.threads_init()
 
@@ -789,132 +767,14 @@ class XpraClientBase(FileTransferHandler):
         if not self.parse_encryption_capabilities():
             netlog("server_connection_established() failed encryption capabilities")
             return False
-        self.parse_printing_capabilities()
-        self.parse_file_transfer_caps(self.server_capabilities)
+        FilePrintMixin.parse_server_capabilities(self)
         #raise packet size if required:
         if self.file_transfer:
             self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
         netlog("server_connection_established() adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
+        self.init_aliases()
         return True
-
-    def parse_printing_capabilities(self):
-        printlog("parse_printing_capabilities() client printing support=%s", self.printing)
-        if self.printing:
-            server_printing = self.server_capabilities.boolget("printing")
-            printlog("parse_printing_capabilities() server printing support=%s", server_printing)
-            if server_printing:
-                self.printer_attributes = self.server_capabilities.strlistget("printer.attributes", ["printer-info", "device-uri"])
-                self.timeout_add(1000, self.init_printing)
-
-    def init_printing(self):
-        try:
-            from xpra.platform.printing import init_printing
-            printlog("init_printing=%s", init_printing)
-            init_printing(self.send_printers)
-        except Exception as e:
-            printlog.error("Error initializing printing support:")
-            printlog.error(" %s", e)
-            self.printing = False
-        else:
-            try:
-                self.do_send_printers()
-            except Exception:
-                printlog.error("Error sending the list of printers:", exc_info=True)
-                self.printing = False
-        printlog("init_printing() enabled=%s", self.printing)
-
-    def cleanup_printing(self):
-        printlog("cleanup_printing() printing=%s", self.printing)
-        if not self.printing:
-            return
-        self.cancel_send_printers_timer()
-        try:
-            from xpra.platform.printing import cleanup_printing
-            printlog("cleanup_printing=%s", cleanup_printing)
-            cleanup_printing()
-        except Exception as e:
-            printlog("cleanup_printing()", exc_info=True)
-            printlog.warn("Warning: failed to cleanup printing subsystem:")
-            printlog.warn(" %s", e)
-
-    def send_printers(self, *args):
-        printlog("send_printers%s timer=%s", args, self.send_printers_timer)
-        #dbus can fire dozens of times for a single printer change
-        #so we wait a bit and fire via a timer to try to batch things together:
-        if self.send_printers_timer:
-            return
-        self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
-
-    def cancel_send_printers_timer(self):
-        spt = self.send_printers_timer
-        printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
-        if spt:
-            self.send_printers_timer = None
-            self.source_remove(spt)
-
-    def do_send_printers(self):
-        try:
-            self.send_printers_timer = None
-            from xpra.platform.printing import get_printers, get_mimetypes
-            try:
-                printers = get_printers()
-            except Exception as  e:
-                printlog("%s", get_printers, exc_info=True)
-                printlog.error("Error: cannot access the list of printers")
-                printlog.error(" %s", e)
-                return
-            printlog("do_send_printers() found printers=%s", printers)
-            #remove xpra-forwarded printers to avoid loops and multi-forwards,
-            #also ignore stopped printers
-            #and only keep the attributes that the server cares about (self.printer_attributes)
-            exported_printers = {}
-            def used_attrs(d):
-                #filter attributes so that we only compare things that are actually used
-                if not d:
-                    return d
-                return dict((k,v) for k,v in d.items() if k in self.printer_attributes)
-            for k,v in printers.items():
-                device_uri = v.get("device-uri", "")
-                if device_uri:
-                    #this is cups specific.. oh well
-                    printlog("do_send_printers() device-uri(%s)=%s", k, device_uri)
-                    if device_uri.startswith("xpraforwarder"):
-                        printlog("do_send_printers() skipping xpra forwarded printer=%s", k)
-                        continue
-                state = v.get("printer-state")
-                #"3" if the destination is idle,
-                #"4" if the destination is printing a job,
-                #"5" if the destination is stopped.
-                if state==5 and SKIP_STOPPED_PRINTERS:
-                    printlog("do_send_printers() skipping stopped printer=%s", k)
-                    continue
-                attrs = used_attrs(v)
-                #add mimetypes:
-                attrs["mimetypes"] = get_mimetypes()
-                exported_printers[k.encode("utf8")] = attrs
-            if self.exported_printers is None:
-                #not been sent yet, ensure we can use the dict below:
-                self.exported_printers = {}
-            elif exported_printers==self.exported_printers:
-                printlog("do_send_printers() exported printers unchanged: %s", self.exported_printers)
-                return
-            #show summary of what has changed:
-            added = [k for k in exported_printers.keys() if k not in self.exported_printers]
-            if added:
-                printlog("do_send_printers() new printers: %s", added)
-            removed = [k for k in self.exported_printers.keys() if k not in exported_printers]
-            if removed:
-                printlog("do_send_printers() printers removed: %s", removed)
-            modified = [k for k,v in exported_printers.items() if self.exported_printers.get(k)!=v and k not in added]
-            if modified:
-                printlog("do_send_printers() printers modified: %s", modified)
-            printlog("do_send_printers() printers=%s", exported_printers.keys())
-            printlog("do_send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
-            self.exported_printers = exported_printers
-            self.send("printers", self.exported_printers)
-        except:
-            printlog.error("do_send_printers()", exc_info=True)
 
 
     def parse_version_capabilities(self):

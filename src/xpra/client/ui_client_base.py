@@ -104,8 +104,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self._on_handshake = []
         self._on_server_setting_changed = {}
 
-        self.init_aliases()
-
 
     def init(self, opts):
         """ initialize variables from configuration """
