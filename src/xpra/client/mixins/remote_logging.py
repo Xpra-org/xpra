@@ -61,16 +61,21 @@ class RemoteLogging(StubClientMixin):
         if self.in_remote_logging:
             return
         self.in_remote_logging = True
+        def enc(x):
+            try:
+                return x.encode("utf8")
+            except:
+                return strtobytes(x)
         try:
             dtime = int(1000*(monotonic_time() - self.start_time))
-            data = self.compressed_wrapper("text", strtobytes(msg % args), level=1)
+            data = self.compressed_wrapper("text", enc(msg % args), level=1)
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
                 exc_info = sys.exc_info()
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, strtobytes(x), dtime)
+                    self.send("logging", level, enc(x), dtime)
             if self.log_both:
                 self.local_logging(log, level, msg, *args, **kwargs)
         except Exception as e:

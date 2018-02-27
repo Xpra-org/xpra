@@ -41,9 +41,14 @@ class LoggingServer(StubServerMixin):
         if len(packet)>=4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
+        def dec(x):
+            try:
+                return x.decode("utf8")
+            except:
+                return bytestostr(x)
         if isinstance(msg, (tuple, list)):
-            msg = " ".join(bytestostr(x) for x in msg)
-        for x in bytestostr(msg).splitlines():
+            msg = " ".join(dec(x) for x in msg)
+        for x in dec(msg).splitlines():
             log.log(level, prefix+x)
 
 
