@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -756,6 +756,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(" %s", error_message)
             del self.send_chunks_in_progress[chunk_id]
             return
+        chunk_id = bytestostr(chunk_id)
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         if not chunk_state:
             filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
