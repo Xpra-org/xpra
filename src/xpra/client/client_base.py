@@ -737,14 +737,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def server_connection_established(self):
         netlog("server_connection_established()")
+        if not self.parse_encryption_capabilities():
+            netlog("server_connection_established() failed encryption capabilities")
+            return False
         if not self.parse_server_capabilities():
             netlog("server_connection_established() failed server capabilities")
             return False
         if not self.parse_network_capabilities():
             netlog("server_connection_established() failed network capabilities")
-            return False
-        if not self.parse_encryption_capabilities():
-            netlog("server_connection_established() failed encryption capabilities")
             return False
         #raise packet size if required:
         if self.file_transfer:
