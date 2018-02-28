@@ -13,7 +13,7 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
-from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX
+from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX, OSX
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
@@ -91,6 +91,8 @@ EndSection
 def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
+    if OSX:
+        raise InitException("starting an Xvfb is not supported on MacOS")
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
 
@@ -102,7 +104,10 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
 
     # We need to set up a new server environment
-    xauthority = os.environ.get("XAUTHORITY", pathexpand("~/.Xauthority"))
+    # use our own XAUTHORITY file:
+    from xpra.platform.xposix.paths import _get_xpra_runtime_dir
+    xauthority = os.path.join(pathexpand(_get_xpra_runtime_dir()), "Xauthority")
+    os.environ["XAUTHORITY"] = xauthority
     subs["XAUTHORITY"] = xauthority
     if not os.path.exists(xauthority):
         log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
