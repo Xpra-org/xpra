@@ -501,7 +501,7 @@ $(document).ready(function() {
 		};
 	}
 	var sound = getboolparam("sound");
-	$('input#sound').prop("checked", sound && codecs_supported.length>0);
+	$('input#sound').prop("checked", sound && Object.keys(codecs_supported).length>0);
 
 	var video = document.getElementById("video");
 	function toggle_mediasource_video() {
