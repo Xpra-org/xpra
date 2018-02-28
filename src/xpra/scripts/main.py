@@ -1833,7 +1833,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         #sort because we prefer a socket in /run/* to one in /home/*:
         new_sockets = tuple(reversed(tuple(sockets-existing_sockets)))
-        log("identify_new_sockets=%s", new_sockets)
+        log("identify_new_socket new_sockets=%s", new_sockets)
         for socket_path in new_sockets:
             #verify that this is the right server:
             try:
@@ -1864,6 +1864,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                                 found = True
                     if found:
                         assert display, "display value not found in id output"
+                        log("identify_new_socket found match: path=%s, display=%s", socket_path, display)
                         return socket_path, display
             except Exception as e:
                 warn("error during server process detection: %s" % e)
