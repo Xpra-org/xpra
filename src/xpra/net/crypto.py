@@ -231,7 +231,7 @@ def get_crypto_caps():
 
 
 def get_encryptor(ciphername, iv, password, key_salt, iterations):
-    log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+    log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
     assert iterations>=100
@@ -242,7 +242,7 @@ def get_encryptor(ciphername, iv, password, key_salt, iterations):
     return backend.get_encryptor(key, iv), block_size
 
 def get_decryptor(ciphername, iv, password, key_salt, iterations):
-    log("get_decryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, key_salt, iterations)
+    log("get_decryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
     assert iterations>=100
