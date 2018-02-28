@@ -13,7 +13,7 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
-from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, POSIX
+from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
@@ -264,14 +264,25 @@ def set_initial_resolution(desktop=False):
 
 
 def xauth_add(filename, display_name, xauth_data, uid, gid):
-    xauth_cmd = ["xauth", "-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
+    xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     try:
         def preexec():
             setsid()
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
+        xauth_cmd = ["xauth"]+xauth_args
+        start = monotonic_time()
         code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
-        if code != 0:
+        end = monotonic_time()
+        if code!=0 and (end-start>=10):
+            sys.stderr.write("Warning: xauth command took %i seconds and failed\n" % (end-start))
+            #took more than 10 seconds to fail, check for stale locks:
+            import glob
+            if glob.glob("%s-*" % filename):
+                sys.stderr.write("Warning: trying to clean some stale xauth locks\n")
+                xauth_cmd = ["xauth", "-b"]+xauth_args
+                code = subprocess.call(xauth_cmd, preexec_fn=preexec, close_fds=True)
+        if code!=0:
             raise OSError("non-zero exit code: %s" % code)
     except OSError as e:
         #trying to continue anyway!
