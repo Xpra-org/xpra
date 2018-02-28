@@ -252,7 +252,7 @@ class SoundPipeline(gobject.GObject):
               "mpeg4"       : "iso fmp4",
               }.get(desc.lower(), desc.lower())
         if not cdl or (cdl!=dl and dl.find(cdl)<0 and cdl.find(dl)<0):
-            self.gstloginfo("using '%s' container format", cdl)
+            self.gstloginfo("using '%s' container format", dl)
         self.container_description = dl
         self.info["container_description"]  = dl
 
