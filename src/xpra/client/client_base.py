@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")
+cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
 from xpra.scripts.config import InitExit, parse_with_unit
@@ -683,9 +684,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def get_encryption_key(self):
-        key = load_binary_file(self.encryption_keyfile)
+        if os.path.exists(self.encryption_keyfile):
+            key = load_binary_file(self.encryption_keyfile)
+            cryptolog("get_encryption_key() loaded %i bytes from '%s'", len(key or ""), self.encryption_keyfile)
         if not key:
-            key = strtobytes(os.environ.get('XPRA_ENCRYPTION_KEY', ''))
+            XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
+            key = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
+            cryptolog("get_encryption_key() got %i bytes from '%s' environment variable", len(key or ""), XPRA_ENCRYPTION_KEY)
         if not key:
             raise InitExit(1, "no encryption key")
         return key.strip(b"\n\r")
