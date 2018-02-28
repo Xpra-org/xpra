@@ -113,13 +113,11 @@
 				var steal = getboolparam("steal", true);
 				var reconnect = getboolparam("reconnect", true);
 				var swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
-				if (!reconnect) {
-					try {
-						sessionStorage.removeItem("password");
-					}
-					catch (e) {
-						//ignore
-					}
+				try {
+					sessionStorage.removeItem("password");
+				}
+				catch (e) {
+					//ignore
 				}
 
 				var progress_timer = null;
