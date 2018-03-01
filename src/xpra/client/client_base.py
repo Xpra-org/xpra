@@ -765,7 +765,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for c in XpraClientBase.__bases__:
             if not c.parse_server_capabilities(self):
                 return False
-        self.server_client_shutdown = c.boolget("client-shutdown", True)
+        self.server_client_shutdown = self.server_capabilities.boolget("client-shutdown", True)
         return True
 
     def parse_network_capabilities(self):
