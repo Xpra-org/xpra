@@ -15,43 +15,85 @@ class StubClientMixin(object):
         self.exit_code = None
         self.start_time = int(monotonic_time())
 
+    """
+    Initialize this instance with the options given.
+    Options are usually obtained by parsing the command line,
+    or using a default configuration object.
+    """
     def init(self, _opts):
         pass
 
+    """
+    Dummy method, actual client implementations will run the main loop.
+    """
     def run(self):
         pass
 
+    """
+    Terminate the client with the given exit code.
+    (the exit code is ignored if we already have one)
+    """
     def quit(self, exit_code):
         self.exit_code = exit_code
         sys.exit(exit_code)
 
+    """
+    Free up any resources.
+    """
     def cleanup(self):
         pass
 
+    """
+    Send a packet to the server, dummy implementation.
+    """
     def send(self, *_args, **_kwargs):
         pass
 
+    """
+    Emit a signal, dummy implementation overriden by gobject.
+    """
     def emit(self, *_args, **_kwargs):
         pass
 
+    """
+    Prepare to run using this connection to the server.
+    """
     def setup_connection(self, _conn):
         pass
 
+    """
+    Return the capabilities provided by this mixin.
+    """
     def get_caps(self):
         return {}
 
+    """
+    Parse server attributes specified in the hello capabilities.
+    This runs in a non-UI thread.
+    """
     def parse_server_capabilities(self):
         return True
 
+    """
+    Parse server attributes specified in the hello capabilities.
+    This runs in the UI thread.
+    """
     def process_ui_capabilities(self):
         pass
 
+    """
+    Dummy utility method for compressing data.
+    Actual client implementations will provide compression
+    based on the client and server capabilities (lz4, lzo, zlib).
+    """
     def compressed_wrapper(self, datatype, data, level=5):
         #sub-classes should override this
         assert level>=0
         from xpra.net.compression import Compressed
         return Compressed("raw %s" % datatype, data, can_inline=True)
 
-
+    """
+    Register the packet types that this mixin can handle.
+    """
     def init_authenticated_packet_handlers(self):
         pass

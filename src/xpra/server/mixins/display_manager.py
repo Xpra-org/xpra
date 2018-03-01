@@ -12,7 +12,7 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
 """
-Mixin for servers that can handle mmap transfers
+Mixin for servers that handle displays.
 """
 class DisplayManager(StubServerMixin):
 
