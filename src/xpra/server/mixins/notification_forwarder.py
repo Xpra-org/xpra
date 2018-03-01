@@ -60,6 +60,7 @@ class NotificationForwarder(StubServerMixin):
                     log("%s", self.notifications_forwarder)
             except Exception as e:
                 log("init_notification_forwarder()", exc_info=True)
+                self.notifications = False
                 self.notify_setup_error(e)
 
     def notify_setup_error(self, exception):
@@ -139,9 +140,9 @@ class NotificationForwarder(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_ui_packet_handlers.update({
-            #notifications:
-            "notification-close":                   self._process_notification_close,
-            "notification-action":                  self._process_notification_action,
-            "set-notify":                           self._process_set_notify,
-            })
+        if self.notifications:
+            self._authenticated_ui_packet_handlers.update({
+                "notification-close"    : self._process_notification_close,
+                "notification-action"   : self._process_notification_action,
+                "set-notify"            : self._process_set_notify,
+                })

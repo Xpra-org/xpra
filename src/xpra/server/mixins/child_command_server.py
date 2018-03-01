@@ -79,7 +79,7 @@ class ChildCommandServer(StubServerMixin):
         reaper_cleanup()
 
 
-    def get_server_features(self, source):
+    def get_server_features(self, _source):
         return {
             "start-new-commands"        : self.start_new_commands,
             "exit-with-children"        : self.exit_with_children,
@@ -278,9 +278,11 @@ class ChildCommandServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_packet_handlers.update({
-            "command-signal":                       self._process_command_signal,
-          })
-        self._authenticated_ui_packet_handlers.update({
-            "start-command":                        self._process_start_command,
-            })
+        if COMMAND_SIGNALS:
+            self._authenticated_packet_handlers.update({
+                "command-signal" : self._process_command_signal,
+              })
+        if self.start_new_commands:
+            self._authenticated_ui_packet_handlers.update({
+                "start-command" : self._process_start_command,
+                })

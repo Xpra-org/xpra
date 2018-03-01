@@ -97,6 +97,7 @@ class DBUS_RPC_Server(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_ui_packet_handlers.update({
-            "rpc" : self._process_rpc,
-            })
+        if self.supports_dbus_proxy:
+            self._authenticated_ui_packet_handlers.update({
+                "rpc" : self._process_rpc,
+                })

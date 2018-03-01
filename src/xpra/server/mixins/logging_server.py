@@ -53,6 +53,7 @@ class LoggingServer(StubServerMixin):
 
 
     def init_packet_handlers(self):
-        self._authenticated_packet_handlers.update({
-            "logging" : self._process_logging,
-          })
+        if self.remote_logging:
+            self._authenticated_packet_handlers.update({
+                "logging" : self._process_logging,
+              })

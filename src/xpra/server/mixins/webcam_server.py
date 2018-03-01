@@ -132,8 +132,9 @@ class WebcamServer(StubServerMixin):
         ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data)
 
     def init_packet_handlers(self):
-        self._authenticated_packet_handlers.update({
-            "webcam-start":                         self._process_webcam_start,
-            "webcam-stop":                          self._process_webcam_stop,
-            "webcam-frame":                         self._process_webcam_frame,
-          })
+        if self.webcam_enabled:
+            self._authenticated_packet_handlers.update({
+                "webcam-start"  : self._process_webcam_start,
+                "webcam-stop"   : self._process_webcam_stop,
+                "webcam-frame"  : self._process_webcam_frame,
+              })
