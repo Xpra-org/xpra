@@ -1204,6 +1204,7 @@ class ServerCore(object):
 
     def force_disconnect(self, proto):
         netlog("force_disconnect(%s)", proto)
+        self.cleanup_protocol(proto)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
         proto.close()
@@ -1227,7 +1228,10 @@ class ServerCore(object):
         self.cancel_verify_connection_accepted(protocol)
         self.cancel_upgrade_to_rfb_timer(protocol)
         protocol.send_disconnect(reasons)
+        self.cleanup_protocol(self, protocol)
 
+    def cleanup_protocol(self, proto):
+        pass
 
     def _process_disconnect(self, proto, packet):
         info = bytestostr(packet[1])
@@ -1257,6 +1261,7 @@ class ServerCore(object):
         uuid = getattr(proto, "uuid", None)
         if uuid and uuid in self._udp_protocols:
             del self._udp_protocols[uuid]
+        self.cleanup_protocol(proto)
 
     def _process_gibberish(self, proto, packet):
         (_, message, data) = packet

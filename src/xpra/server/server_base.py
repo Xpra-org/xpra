@@ -790,14 +790,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 log.warn(" disabling printer forwarding")
             self.file_transfer.printing = False
 
-    def force_disconnect(self, proto):
-        self.cleanup_protocol(proto)
-        ServerCore.force_disconnect(self, proto)
-
-    def disconnect_protocol(self, protocol, reason, *extra):
-        ServerCore.disconnect_protocol(self, protocol, reason, *extra)
-        self.cleanup_protocol(protocol)
-
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)
         #this ensures that from now on we ignore any incoming packets coming
@@ -813,6 +805,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 del self._server_sources[protocol]
             except:
                 pass
+        for c in ServerBase.__bases__:
+            c.cleanup_protocol(self, protocol)
         return source
 
     def cleanup_source(self, source):
@@ -870,15 +864,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         if len(self._server_sources)>1:
             return " %s" % proto
         return ""
-
-    def _process_connection_lost(self, proto, packet):
-        ServerCore._process_connection_lost(self, proto, packet)
-        ch = self._clipboard_helper
-        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
-            self._clipboard_client = None
-            ch.client_reset()
-        self.cleanup_protocol(proto)
-
 
     ######################################################################
     # packets:

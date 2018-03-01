@@ -40,6 +40,12 @@ class ClipboardServer(StubServerMixin):
             self._clipboard_helper = None
             ch.cleanup()
 
+    def cleanup_protocol(self, proto):
+        ch = self._clipboard_helper
+        if ch and self._clipboard_client and self._clipboard_client.protocol==proto:
+            self._clipboard_client = None
+            ch.client_reset()
+
 
     def get_info(self, _proto):
         if self._clipboard_helper is None:

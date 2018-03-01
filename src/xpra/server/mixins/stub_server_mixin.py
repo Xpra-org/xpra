@@ -32,3 +32,6 @@ class StubServerMixin(object):
 
     def init_packet_handlers(self):
         pass
+
+    def cleanup_protocol(self, protocol):
+        pass
