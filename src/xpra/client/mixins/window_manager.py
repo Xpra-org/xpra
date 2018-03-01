@@ -34,7 +34,6 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import make_thread
 from xpra.os_util import BytesIOClass, Queue, bytestostr, monotonic_time, memoryview_to_bytes, OSX, POSIX, is_Ubuntu
 from xpra.util import iround, envint, envbool, typedict, make_instance, updict
-from xpra.client.client_tray import ClientTray
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -123,7 +122,14 @@ class WindowClient(StubClientMixin):
         self._on_handshake = []
 
     def init(self, opts):
-        self.client_supports_system_tray = opts.system_tray and SYSTEM_TRAY_SUPPORTED
+        if opts.system_tray and SYSTEM_TRAY_SUPPORTED:
+            try:
+                from xpra.client import client_tray
+                assert client_tray
+            except ImportError:
+                log.warn("Warning: the tray forwarding module is missing")
+            else:
+                self.client_supports_system_tray = True
         self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.input_devices = opts.input_devices
@@ -416,7 +422,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # system tray
     def _process_new_tray(self, packet):
-        assert SYSTEM_TRAY_SUPPORTED
+        assert self.client_supports_system_tray
         self._ui_event()
         wid, w, h = packet[1:4]
         w = max(1, self.sx(w))
@@ -492,6 +498,7 @@ class WindowClient(StubClientMixin):
         traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
         tray_widget.show()
+        from xpra.client.client_tray import ClientTray
         return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, self.mmap)
 
 

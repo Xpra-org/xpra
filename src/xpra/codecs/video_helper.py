@@ -426,11 +426,12 @@ class VideoHelper(object):
         return self.get_server_full_csc_modes(*supported_csc_modes)
 
 
-instance = VideoHelper()
+instance = None
 def getVideoHelper():
     global instance
+    if instance is None:
+        instance = VideoHelper()
     return instance
-
 
 
 def main():

@@ -23,7 +23,7 @@ class ClipboardServer(StubServerMixin):
 
     def __init__(self):
         self.clipboard = False
-        self.clipboard_direction = "both"
+        self.clipboard_direction = "none"
         self.clipboard_filter_file = None
 
     def init(self, opts):
@@ -103,6 +103,7 @@ class ClipboardServer(StubServerMixin):
         except Exception:
             #log("gdk clipboard helper failure", exc_info=True)
             log.error("Error: failed to setup clipboard helper", exc_info=True)
+            self.clipboard = False
 
     def parse_hello_ui_clipboard(self, ss, c):
         #take the clipboard if no-one else has it yet:

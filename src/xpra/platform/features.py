@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,7 @@ LOCAL_SERVERS_SUPPORTED = PYTHON2
 SHADOW_SUPPORTED = True
 CAN_DAEMONIZE = True
 MMAP_SUPPORTED = True
-SYSTEM_TRAY_SUPPORTED = False
+SYSTEM_TRAY_SUPPORTED = True
 REINIT_WINDOWS = False
 
 INPUT_DEVICES = ["auto"]

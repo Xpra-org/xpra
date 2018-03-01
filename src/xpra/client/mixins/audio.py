@@ -70,22 +70,31 @@ class AudioClient(StubClientMixin):
             return []
         if self.speaker_allowed or self.microphone_allowed:
             try:
-                from xpra.sound.common import sound_option_or_all
-                from xpra.sound.wrapper import query_sound
-                self.sound_properties = query_sound()
-                assert self.sound_properties, "query did not return any data"
-                def vinfo(k):
-                    val = self.sound_properties.strlistget(k)
-                    assert val, "%s not found in sound properties" % k
-                    return ".".join(val[:3])
-                bits = self.sound_properties.intget("python.bits", 32)
-                log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
-            except Exception as e:
-                log("failed to query sound", exc_info=True)
-                log.error("Error: failed to query sound subsystem:")
-                log.error(" %s", e)
+                from xpra import sound
+                assert sound
+            except ImportError as e:
+                log.warn("Warning: sound module is not installed")
+                log.warn(" speaker and microphone are disabled")
                 self.speaker_allowed = False
                 self.microphone_allowed = False
+            else:
+                try:
+                    from xpra.sound.common import sound_option_or_all
+                    from xpra.sound.wrapper import query_sound
+                    self.sound_properties = query_sound()
+                    assert self.sound_properties, "query did not return any data"
+                    def vinfo(k):
+                        val = self.sound_properties.strlistget(k)
+                        assert val, "%s not found in sound properties" % k
+                        return ".".join(val[:3])
+                    bits = self.sound_properties.intget("python.bits", 32)
+                    log.info("GStreamer version %s for Python %s %s-bit", vinfo("gst.version"), vinfo("python.version"), bits)
+                except Exception as e:
+                    log("failed to query sound", exc_info=True)
+                    log.error("Error: failed to query sound subsystem:")
+                    log.error(" %s", e)
+                    self.speaker_allowed = False
+                    self.microphone_allowed = False
         encoders = self.sound_properties.strlistget("encoders", [])
         decoders = self.sound_properties.strlistget("decoders", [])
         self.speaker_codecs = sound_option_or_all("speaker-codec", opts.speaker_codec, decoders)

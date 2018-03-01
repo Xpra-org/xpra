@@ -30,8 +30,14 @@ class NotificationClient(StubClientMixin):
         self.tray = None
 
     def init(self, opts):
-        """ initialize variables from configuration """
-        self.client_supports_notifications = opts.notifications
+        if opts.notifications:
+            try:
+                from xpra import notifications
+                assert notifications
+            except ImportError:
+                log.warn("Warning: notifications module not found")
+            else:
+                self.client_supports_notifications = True
 
     def init_ui(self):
         log("client_supports_notifications=%s", self.client_supports_notifications)

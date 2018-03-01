@@ -13,10 +13,6 @@ from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLI
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util import flatten_dict
 from xpra.os_util import bytestostr
-try:
-    from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
-except:
-    ALL_CLIPBOARDS = []
 
 
 """
@@ -72,6 +68,13 @@ class ClipboardClient(StubClientMixin):
         return caps
 
     def parse_server_capabilities(self):
+        try:
+            from xpra import clipboard
+            assert clipboard
+        except ImportError:
+            log.warn("Warning: clipboard module is missing")
+            self.clipboard_enabled = False
+            return
         c = self.server_capabilities
         self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
@@ -89,6 +92,10 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s", self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
+        try:
+            from xpra.clipboard.clipboard_base import ALL_CLIPBOARDS
+        except:
+            ALL_CLIPBOARDS = []
         self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
         log("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
                      self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
