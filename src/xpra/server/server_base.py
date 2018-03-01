@@ -112,12 +112,10 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         self.av_sync = opts.av_sync
 
 
-    def setup(self, opts):
+    def setup(self):
         log("starting component init")
         for c in ServerBase.__bases__:
-            c.setup(self, opts)
-        if opts.system_tray:
-            self.add_system_tray()
+            c.setup(self)
         thread.start_new_thread(self.threaded_init, ())
 
     def threaded_init(self):
@@ -139,10 +137,6 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 c.cleanup(self)
-
-
-    def add_system_tray(self):
-        pass
 
 
     ######################################################################

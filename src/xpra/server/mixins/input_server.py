@@ -39,7 +39,7 @@ class InputServer(StubServerMixin):
         #timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = None
 
-    def setup(self, _opts):
+    def setup(self):
         self.watch_keymap_changes()
 
     def cleanup(self):
@@ -374,6 +374,7 @@ class InputServer(StubServerMixin):
 
     def setup_input_devices(self):
         pass
+
 
 
     def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):

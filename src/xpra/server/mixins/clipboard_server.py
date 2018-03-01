@@ -31,7 +31,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_direction = opts.clipboard_direction
         self.clipboard_filter_file = opts.clipboard_filter_file
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_clipboard()
 
     def cleanup(self):

@@ -49,7 +49,7 @@ class AudioServer(StubServerMixin):
         self.pulseaudio_command = opts.pulseaudio_command
         self.pulseaudio_configure_commands = opts.pulseaudio_configure_commands
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_pulseaudio()
         self.init_sound_options()
 

@@ -27,7 +27,7 @@ class WindowServer(StubServerMixin):
         self._id_to_window = {}
         self.window_filters = []
 
-    def setup(self, _opts):
+    def setup(self):
         self.load_existing_windows()
 
     def cleanup(self):

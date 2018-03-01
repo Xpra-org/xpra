@@ -261,12 +261,12 @@ class ServerCore(object):
         self.readonly = opts.readonly
         self.ssl_mode = opts.ssl
         self.dbus_control = opts.dbus_control
-
-    def setup(self, opts):
-        self.init_packet_handlers()
-        self.init_aliases()
         self.init_html_proxy(opts)
         self.init_auth(opts)
+
+    def setup(self):
+        self.init_packet_handlers()
+        self.init_aliases()
         self.init_dbus_server()
         self.init_control_commands()
 

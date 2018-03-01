@@ -25,7 +25,7 @@ Control commands for ServerBase
 """
 class ServerBaseControlCommands(StubServerMixin):
 
-    def setup(self, _opts):
+    def setup(self):
         self.add_control_commands()
 
 

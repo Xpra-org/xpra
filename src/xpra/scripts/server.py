@@ -1005,7 +1005,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         app.original_desktop_display = desktop_display
         app.exec_cwd = opts.chdir or cwd
         app.init(opts)
-        app.setup(opts)
+        app.setup()
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)

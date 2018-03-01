@@ -15,7 +15,7 @@ class StubServerMixin(object):
     def cleanup(self):
         pass
 
-    def setup(self, _opts):
+    def setup(self):
         pass
 
     def threaded_setup(self):

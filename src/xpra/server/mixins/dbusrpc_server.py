@@ -27,7 +27,7 @@ class DBUS_RPC_Server(StubServerMixin):
     def init(self, opts):
         self.supports_dbus_proxy = opts.dbus_proxy
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_dbus_helper()
 
     def cleanup(self):

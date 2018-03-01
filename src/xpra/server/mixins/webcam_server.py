@@ -33,7 +33,7 @@ class WebcamServer(StubServerMixin):
         if os.path.isabs(opts.webcam):
             self.webcam_device = opts.webcam
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_webcam()
 
 

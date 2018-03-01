@@ -27,7 +27,7 @@ class NotificationForwarder(StubServerMixin):
     def init(self, opts):
         self.notifications = opts.notifications
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_notification_forwarder()
 
     def cleanup(self):

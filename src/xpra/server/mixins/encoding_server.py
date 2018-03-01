@@ -44,9 +44,8 @@ class EncodingServer(StubServerMixin):
         csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
         getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_encodings()
-        self.init_encoding()
 
     def threaded_setup(self):
         getVideoHelper().init()
@@ -140,8 +139,7 @@ class EncodingServer(StubServerMixin):
             self.default_encoding = pref[0]
         else:
             self.default_encoding = None
-
-    def init_encoding(self):
+        #default encoding:
         if not self.encoding or str(self.encoding).lower() in ("auto", "none"):
             self.default_encoding = None
         elif self.encoding in self.encodings:

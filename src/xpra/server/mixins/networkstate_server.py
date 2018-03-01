@@ -39,7 +39,7 @@ class NetworkStateServer(StubServerMixin):
     def init(self, opts):
         self.pings = opts.pings
 
-    def setup(self, _opts):
+    def setup(self):
         self.init_leak_detection()
         if self.pings>0:
             self.timeout_add(1000*self.pings, self.send_ping)
