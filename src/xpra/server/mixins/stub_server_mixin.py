@@ -18,6 +18,9 @@ class StubServerMixin(object):
     def setup(self):
         pass
 
+    def init_sockets(self, _sockets):
+        pass
+
     def threaded_setup(self):
         pass
 

@@ -47,6 +47,17 @@ class FilePrintServer(StubServerMixin):
     def threaded_setup(self):
         self.init_printing()
 
+    def init_sockets(self, sockets):
+        #verify we have a local socket for printing:
+        unixsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
+        printlog("local unix domain sockets we can use for printing: %s", unixsockets)
+        if not unixsockets and self.file_transfer.printing:
+            if not WIN32:
+                printlog.warn("Warning: no local sockets defined,")
+                printlog.warn(" disabling printer forwarding")
+            printlog("printer forwarding disabled")
+            self.file_transfer.printing = False
+
 
     def get_server_features(self, _source):
         f = self.file_transfer.get_file_transfer_features()

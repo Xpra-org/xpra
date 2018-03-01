@@ -780,15 +780,8 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
     ######################################################################
     # client connections:
     def init_sockets(self, sockets):
-        ServerCore.init_sockets(self, sockets)
-        #verify we have a local socket for printing:
-        nontcpsockets = [info for socktype, _, info in sockets if socktype=="unix-domain"]
-        netlog("local sockets we can use for printing: %s", nontcpsockets)
-        if not nontcpsockets and self.file_transfer.printing:
-            if not WIN32:
-                log.warn("Warning: no local sockets defined,")
-                log.warn(" disabling printer forwarding")
-            self.file_transfer.printing = False
+        for c in ServerBase.__bases__:
+            c.init_sockets(self, sockets)
 
     def cleanup_protocol(self, protocol):
         netlog("cleanup_protocol(%s)", protocol)

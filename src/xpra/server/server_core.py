@@ -1228,7 +1228,7 @@ class ServerCore(object):
         self.cancel_verify_connection_accepted(protocol)
         self.cancel_upgrade_to_rfb_timer(protocol)
         protocol.send_disconnect(reasons)
-        self.cleanup_protocol(self, protocol)
+        self.cleanup_protocol(protocol)
 
     def cleanup_protocol(self, proto):
         pass
