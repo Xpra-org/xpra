@@ -14,13 +14,8 @@ from xpra.util import parse_simple_dict
 from xpra.net.crypto import verify_digest
 
 
-socket_dir = None
-socket_dirs = None
 def init(opts):
     file_init(opts)
-    global socket_dir, socket_dirs
-    socket_dir = opts.socket_dir
-    socket_dirs = opts.socket_dirs
 
 
 def getuid(v):
@@ -83,7 +78,6 @@ class Authenticator(FileAuthenticatorBase):
         self.sessions = None
 
     def parse_filedata(self, data):
-        global socket_dir, socket_dirs
         if not data:
             return {}
         auth_data = {}
