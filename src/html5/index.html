@@ -81,6 +81,8 @@
 					window.alert("Incomplete Xpra HTML5 client installation: jQuery is missing, cannot continue.");
 					return;
 				}
+				var https = document.location.protocol=="https:";
+
 				var getparam = Utilities.getparam;
 				var getboolparam = Utilities.getboolparam;
 				// look at url parameters
@@ -94,6 +96,7 @@
 				var submit = getboolparam("submit", true);
 				var server = getparam("server") || window.location.hostname;
 				var port = getparam("port") || window.location.port;
+				var ssl = getboolparam("ssl", https);
 				var path = getparam("path") || "";
 				var encryption = getboolparam("encryption", false);
 				var key = getparam("key") || null;
@@ -336,7 +339,6 @@
 				}
 			    client.init(ignore_audio_blacklist);
 
-				var ssl = document.location.protocol=="https:";
 			    client.host = server;
 			    client.port = port;
 			    client.ssl = ssl;

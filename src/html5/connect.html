@@ -56,8 +56,9 @@
 			<label class="sr-only" for="password">Password</label>
 			<input title="Password" type="password" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
 			<br>
-			<div class="password-warning-box">
-			  	<input type="checkbox" id="insecure"> <span>Insecure plain-text passwords</span>
+			<div class="security-box">
+			  	<span id="ssl-span"><input type="checkbox" id="ssl"> Secure Sockets</span>
+			  	<span id="insecure-span"><input type="checkbox" id="insecure"> Insecure plain-text passwords</span>
 			</div>
 
 			<div class="panel-group">
@@ -314,7 +315,7 @@ function doConnect() {
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video",
-		"insecure",
+		"ssl", "insecure",
 		"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
 		];
 	for (var i = 0; i < bool_props.length; i++) {
@@ -328,7 +329,6 @@ $(document).ready(function() {
 	var getparam = Utilities.getparam;
 	var getboolparam = Utilities.getboolparam;
 
-	var ssl = document.location.protocol=="https:";
 	var disconnect_reason = getparam("disconnect") || null;
 
 	if(disconnect_reason) {
@@ -343,19 +343,35 @@ $(document).ready(function() {
 	document.getElementById("server").value = getparam("server") || link.hostname;
 	document.getElementById("port").value = getparam("port") || link.port;
 	document.getElementById("username").value = getparam("username") || "";
-	if (getboolparam("insecure", false)) {
-		document.getElementById("password").value = getparam("password") || "";
-	}
-	if(ssl) {
-	   	$('div.password-warning-box').hide();
+	var https = document.location.protocol=="https:";
+	var ssl = getboolparam("ssl", https);
+	var insecure = getboolparam("insecure", false);
+	$('input#ssl').prop("checked", ssl);
+	$('input#insecure').prop("checked", insecure);
+	var ssl_input = document.getElementById("ssl");
+	var insecure_input = document.getElementById("insecure");
+	var has_local_storage = typeof(Storage)!=="undefined";
+	if (!has_local_storage) {
+		//passwords would be sent on URL,
+		//so show insecure checkbox whenever ssl is off:
+		ssl_input.onchange = function() {
+			$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+			if (ssl_input.checked) {
+			   	$('span#insecure-span').hide();
+			}
+			else {
+			   	$('span#insecure-span').show();
+			}
+		}
 	}
 	else {
-	   	$('input#password').prop("disabled", true);
-		var insecure_input = document.getElementById("insecure");
-		insecure_input.onchange = function() {
-   			$('input#password').prop("disabled", !insecure_input.checked && typeof(Storage)==="undefined");
-		};
+		//local storage makes this secure
+	   	$('span#insecure-span').hide();
 	}
+	$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+	insecure_input.onchange = function() {
+		$('input#password').prop("disabled", !has_local_storage && !ssl_input.checked && !insecure_input.checked);
+	};
 
 	var action = getparam("action") || "";
 	if(action=="shadow") {
@@ -514,8 +530,7 @@ $(document).ready(function() {
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect", "swap_keys",
 			"video", "mediasource_video",
-			"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
-			"insecure"];
+			"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
 	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "exit_with_children", "exit_with_client"];
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
@@ -525,7 +540,6 @@ $(document).ready(function() {
 		var def = default_on.indexOf(prop)>=0;
 		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
-	$('input#password').prop("disabled", !ssl && !insecure_input.checked && typeof(Storage)==="undefined");
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
