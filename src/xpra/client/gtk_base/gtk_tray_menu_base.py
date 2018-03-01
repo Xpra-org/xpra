@@ -1124,7 +1124,15 @@ class GTKTrayMenuBase(object):
         sync.set_submenu(menu)
         sync.show_all()
         def set_avsyncmenu(*_args):
-            set_sensitive(sync, self.client.server_av_sync)
+            if not self.client.server_av_sync:
+                set_sensitive(sync, False)
+                sync.set_tooltip_text("video-sync is not supported by the server")
+                return
+            if not (self.client.speaker_allowed and self.client.server_sound_send):
+                set_sensitive(sync, False)
+                sync.set_tooltip_text("video-sync requires speaker forwarding")
+                return
+            set_sensitive(sync, True)
         self.client.after_handshake(set_avsyncmenu)
         return sync
 
