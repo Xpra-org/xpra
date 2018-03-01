@@ -21,7 +21,6 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_release = None
         self._remote_platform_platform = None
         self._remote_platform_linux_distribution = None
-        self.server_client_shutdown = True
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
@@ -32,7 +31,6 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform = c.strget("platform")
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")
-        self.server_client_shutdown = c.boolget("client-shutdown", True)
         #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
         pld = c.listget("platform.linux_distribution")
         if pld and len(pld)==3:

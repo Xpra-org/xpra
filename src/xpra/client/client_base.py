@@ -91,6 +91,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
+        self.server_client_shutdown = True
         #protocol stuff:
         self._protocol = None
         self._priority_packets = []
@@ -764,6 +765,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         for c in XpraClientBase.__bases__:
             if not c.parse_server_capabilities(self):
                 return False
+        self.server_client_shutdown = c.boolget("client-shutdown", True)
         return True
 
     def parse_network_capabilities(self):
