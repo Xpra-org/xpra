@@ -5,6 +5,9 @@
 
 import os
 from xpra.os_util import monotonic_time
+from xpra.util import envint
+
+DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 10)
 
 
 def write_displayfd(w_pipe, display, timeout=10):
@@ -26,7 +29,7 @@ def write_displayfd(w_pipe, display, timeout=10):
                 raise
     return len(buf)==0
 
-def read_displayfd(r_pipe, timeout=10, proc=None):
+def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     import select   #@UnresolvedImport
     import errno
     # Read the display number from the pipe we gave to Xvfb
