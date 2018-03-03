@@ -1026,8 +1026,8 @@ class WindowSource(WindowIconSource):
 
     def do_set_auto_refresh_delay(self, min_delay, delay):
         refreshlog("do_set_auto_refresh_delay%s", (min_delay, delay))
-        self.min_auto_refresh_delay = min_delay
-        self.base_auto_refresh_delay = delay
+        self.min_auto_refresh_delay = int(min_delay)
+        self.base_auto_refresh_delay = int(delay)
 
 
     def reconfigure(self, force_reload=False):
@@ -1598,8 +1598,8 @@ class WindowSource(WindowIconSource):
             else:
                 msg = "added pixels to refresh regions"
                 schedule = True
+        now = monotonic_time()
         if schedule:
-            now = monotonic_time()
             #figure out the proportion of pixels that need refreshing:
             #(some of those rectangles may overlap,
             # so the value may be greater than the size of the window)
@@ -1608,10 +1608,10 @@ class WindowSource(WindowIconSource):
             pct = int(min(100, 100*pixels//(ww*wh)) * (1+self.global_statistics.congestion_value))
             if not self.refresh_timer:
                 #we must schedule a new refresh timer
-                self.refresh_event_time = monotonic_time()
+                self.refresh_event_time = now
                 sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) / 10.0))
                 self.refresh_target_time = now + sched_delay/1000.0
-                self.refresh_timer = self.timeout_add(int(sched_delay), self.refresh_timer_function, options)
+                self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
                 msg += ", scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay)
             else:
                 #add to the target time,
@@ -1620,7 +1620,7 @@ class WindowSource(WindowIconSource):
                 target_time = self.refresh_target_time
                 self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
                 msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
-        self.last_auto_refresh_message = monotonic_time(), msg
+        self.last_auto_refresh_message = now, msg
         refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)", encoding, actual_quality, lossy, msg, region, self.refresh_regions)
 
     def remove_refresh_region(self, region):
