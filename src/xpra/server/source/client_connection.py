@@ -101,6 +101,14 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
                  speaker_codecs, microphone_codecs,
                  default_quality, default_min_quality,
                  default_speed, default_min_speed))
+
+        global counter
+        self.counter = counter.increase()
+        self.protocol = protocol
+        self.connection_time = monotonic_time()
+        self.close_event = Event()
+        self.session_name = session_name
+
         AudioMixin.__init__(self, sound_properties, sound_source_plugin,
                  supports_speaker, supports_microphone, speaker_codecs, microphone_codecs)
         MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
@@ -117,13 +125,6 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         ClientDisplayMixin.__init__(self)
         WebcamMixin.__init__(self, webcam_enabled, webcam_device, webcam_encodings)
 
-        global counter
-        self.counter = counter.increase()
-        self.connection_time = monotonic_time()
-        self.close_event = Event()
-        self.session_name = session_name
-
-        self.protocol = protocol
         self.ordinary_packets = []
         self.disconnect = disconnect_cb
         self.socket_dir = socket_dir
