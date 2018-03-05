@@ -685,6 +685,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def get_encryption_key(self):
+        key = None
         if os.path.exists(self.encryption_keyfile):
             key = load_binary_file(self.encryption_keyfile)
             cryptolog("get_encryption_key() loaded %i bytes from '%s'", len(key or ""), self.encryption_keyfile)
