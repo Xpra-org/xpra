@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")
+mouselog = Logger("mouse")
 cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
@@ -45,6 +46,7 @@ PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
+MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
@@ -65,6 +67,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not hasattr(self, "exit_code"):
             self.defaults_init()
         FilePrintMixin.__init__(self)
+        self._init_done = False
 
     def defaults_init(self):
         #skip warning when running the client
@@ -99,6 +102,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position = None
         self._mouse_position_pending = None
         self._mouse_position_send_time = 0
+        self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
         self._aliases = {}
         self._reverse_aliases = {}
@@ -110,6 +114,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         sanity_checks()
 
     def init(self, opts):
+        if self._init_done:
+            #the gtk client classes can inherit this method
+            #from multiple parents, skip initializing twice
+            return
+        self._init_done = True
         for c in XpraClientBase.__bases__:
             c.init(self, opts)
         self.compression_level = opts.compression_level
@@ -123,6 +132,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.encryption:
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
+
+        if MOUSE_DELAY_AUTO:
+            try:
+                from xpra.platform.gui import get_vrefresh
+                v = get_vrefresh()
+                if v<=0:
+                    #some platforms don't detect the vrefresh correctly
+                    #(ie: macos in virtualbox?), so use a sane default:
+                    v = 60
+                self._mouse_position_delay = 1000//v
+                log("mouse delay: %s", self._mouse_position_delay)
+            except Exception:
+                log("failed to calculate automatic delay", exc_info=True)
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
@@ -432,6 +454,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.have_more()
 
     def send_positional(self, packet):
+        #packets that include the mouse position in them
+        #we can cancel the pending position packets
         self._ordinary_packets.append(packet)
         self._mouse_position = None
         self._mouse_position_pending = None
@@ -445,8 +469,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_pending = packet
         now = monotonic_time()
         elapsed = int(1000*(now-self._mouse_position_send_time))
-        if elapsed<MOUSE_DELAY:
-            self._mouse_position_timer = self.timeout_add(MOUSE_DELAY-elapsed, self.do_send_mouse_position)
+        mouselog("send_mouse_position(%s) elapsed=%i, delay=%i", packet, elapsed, self._mouse_position_delay)
+        if elapsed<self._mouse_position_delay:
+            self._mouse_position_timer = self.timeout_add(self._mouse_position_delay-elapsed, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -454,6 +479,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_timer = 0
         self._mouse_position_send_time = monotonic_time()
         self._mouse_position = self._mouse_position_pending
+        mouselog("do_send_mouse_position() position=%s", self._mouse_position)
         self.have_more()
 
     def cancel_send_mouse_position_timer(self):
