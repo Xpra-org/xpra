@@ -72,6 +72,8 @@ from xpra.net import compression
 
 
 INFINITY = float("inf")
+TRANSPARENCY_ENCODINGS = ("webp", "png", "rgb32")
+LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L")
 
 """
 We create a Window Source for each window we send pixels for.
@@ -761,12 +763,13 @@ class WindowSource(WindowIconSource):
 
     def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
-        if current_encoding in ("webp", "png", "rgb32"):
+        
+        if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
         if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or (self.image_depth>24 and self.client_bit_depth>24)):
             #the only encoding that can do higher bit depth at present
             return "rgb32"
-        for x in ("webp", "png", "rgb32"):
+        for x in TRANSPARENCY_ENCODINGS:
             if x in self.common_encodings:
                 return x
         #so we don't have an encoding that does transparency...
@@ -775,18 +778,20 @@ class WindowSource(WindowIconSource):
     def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
         if pixel_count<self._rgb_auto_threshold:
             return "rgb24"
-        if self.image_depth>24 and "rgb32" in self.common_encodings and self.client_bit_depth>24:
+        co = self.common_encodings
+        depth = self.image_depth
+        if depth>24 and "rgb32" in co and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
-        if speed<80 and self.image_depth in (24, 32) and "webp" in self.common_encodings and ww>=2 and wh>=2:
+        if depth in (24, 32) and "webp" in co and ww>=2 and wh>=2:
             return "webp"
-        if "png" in self.common_encodings and ((quality>=80 and speed<80) or self.image_depth<=16):
+        if "png" in co and ((quality>=80 and speed<80) or depth<=16):
             return "png"
-        if "jpeg" in self.common_encodings and ww>=2 and wh>=2:
+        if "jpeg" in co and ww>=2 and wh>=2:
             return "jpeg"
-        if "jpeg2000" in self.common_encodings and ww>=32 and wh>=32:
+        if "jpeg2000" in co and ww>=32 and wh>=32:
             return "jpeg2000"
-        return [x for x in self.common_encodings if x!="rgb"][0]
+        return [x for x in co if x!="rgb"][0]
 
     def get_current_or_rgb(self, pixel_count, *_args):
         if pixel_count<self._rgb_auto_threshold:
@@ -948,7 +953,7 @@ class WindowSource(WindowIconSource):
     def update_quality(self):
         if self.suspended or self._mmap or self._sequence<10:
             return
-        if self.encoding in ("rgb", "png", "png/P", "png/L"):
+        if self.encoding in LOSSLESS_ENCODINGS:
             #the user has selected an encoding which does not use quality
             #so skip the calculations!
             self._current_quality = 100

@@ -427,7 +427,8 @@ class WindowVideoSource(WindowSource):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
-        if self.image_depth==8:
+        depth = self.image_depth
+        if depth==8:
             return "png/P"
         if pixel_count<self._rgb_auto_threshold or self.is_tray:
             #high speed and high quality, rgb is still good
@@ -440,14 +441,16 @@ class WindowVideoSource(WindowSource):
         #take into account how many pixels need to be encoded:
         #more pixels means we switch to lossless more easily
         lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
-        if quality<lossless_q and self.image_depth>16 and "jpeg" in options and ww>=2 and wh>=2:
+        if quality<lossless_q and depth>16 and "jpeg" in options and ww>=2 and wh>=2:
             #assume that we have "turbojpeg",
             #which beats everything in terms of efficiency for lossy compression:
             return "jpeg"
         if "webp" in options and pixel_count>=16384 and ww>=2 and wh>=2:
             return "webp"
         #lossless options:
-        if speed>95 or self.image_depth>24:
+        if speed>95 or depth>24:
+            if depth>24 and "rgb32" in options:
+                return "rgb32"
             if "rgb24" in options:
                 return "rgb24"
             if "rgb32" in options:
@@ -1608,11 +1611,12 @@ class WindowVideoSource(WindowSource):
         #and we don't know the size in this method, so discard it
         #also, don't choose mmap!
         fallback_encodings = tuple(x for x in order if (x in encodings and x in self._encoders and x!="mmap" and x!="jpeg2000"))
-        if self.image_depth==8 and "png/P" in fallback_encodings:
+        depth = self.image_depth
+        if depth==8 and "png/P" in fallback_encodings:
             return "png/P"
-        elif self.image_depth==30 and "rgb32" in fallback_encodings:
+        elif depth==30 and "rgb32" in fallback_encodings:
             return "rgb32"
-        elif self.image_depth not in (24, 32):
+        elif depth not in (24, 32):
             #jpeg cannot handle other bit depths
             fallback_encodings = tuple(x for x in fallback_encodings if x!="jpeg")
         if not fallback_encodings:
