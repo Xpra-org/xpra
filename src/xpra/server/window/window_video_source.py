@@ -423,7 +423,7 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="size out of range")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding, options=[]):
+    def get_best_nonvideo_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding=None, options=[]):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
@@ -1556,42 +1556,38 @@ class WindowVideoSource(WindowSource):
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
         #send the rest as rectangles:
         if non_scroll:
+            speed, quality = self._current_speed, self._current_quality
             nsstart = monotonic_time()
-            #prefer fast encoding in most cases,
-            #since video and scroll encoding fire when there are lots of updates:
-            order = None
-            if len(non_scroll)>=16:
-                order = FAST_ORDER
-            encoding = self.get_scroll_fallback_encoding(order)
             client_options = options.copy()
-            if encoding:
+            for sy, sh in non_scroll.items():
+                substart = monotonic_time()
+                sub = image.get_sub_image(0, sy, w, sh)
+                encoding = self.get_best_nonvideo_encoding(w*sh, w, sh, speed, quality)
+                assert encoding, "no nonvideo encoding found for %ix%i screen update" % (w, sh)
                 encode_fn = self._encoders[encoding]
-                for sy, sh in non_scroll.items():
-                    substart = monotonic_time()
-                    sub = image.get_sub_image(0, sy, w, sh)
-                    ret = encode_fn(encoding, sub, options)
-                    if not ret:
-                        #cancelled?
-                        return None
-                    coding, data, client_options, outw, outh, outstride, _ = ret
-                    assert data
-                    flush -= 1
-                    if self.supports_flush and flush>0:
-                        client_options["flush"] = flush
-                    #if SAVE_TO_FILE:
-                    #    #hard-coded for BGRA!
-                    #    from xpra.os_util import memoryview_to_bytes
-                    #    from PIL import Image
-                    #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()), "raw", "BGRA", sub.get_rowstride(), 1)
-                    #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
-                    #    im.save(filename, "png")
-                    #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
-                    packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
-                    self.queue_damage_packet(packet)
-                    psize = w*sh*4
-                    csize = len(data)
-                    compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                         (monotonic_time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                ret = encode_fn(encoding, sub, options)
+                if not ret:
+                    #cancelled?
+                    return None
+                coding, data, client_options, outw, outh, outstride, _ = ret
+                assert data
+                flush -= 1
+                if self.supports_flush and flush>0:
+                    client_options["flush"] = flush
+                #if SAVE_TO_FILE:
+                #    #hard-coded for BGRA!
+                #    from xpra.os_util import memoryview_to_bytes
+                #    from PIL import Image
+                #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()), "raw", "BGRA", sub.get_rowstride(), 1)
+                #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
+                #    im.save(filename, "png")
+                #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
+                packet = self.make_draw_packet(sub.get_x(), sub.get_y(), outw, outh, coding, data, outstride, client_options, options)
+                self.queue_damage_packet(packet)
+                psize = w*sh*4
+                csize = len(data)
+                compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
+                     (monotonic_time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
                 scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
             else:
                 #we can't send the non-scroll areas, ouch!
@@ -1624,9 +1620,6 @@ class WindowVideoSource(WindowSource):
                 log.warn("Warning: no non-video fallback encodings are available!")
             return None
         return fallback_encodings[0]
-
-    def get_scroll_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
-        return self.get_fallback_encoding(self.non_scroll_encodings, order)
 
     def get_video_fallback_encoding(self, order=PREFERED_ENCODING_ORDER):
         return self.get_fallback_encoding(self.non_video_encodings, order)
