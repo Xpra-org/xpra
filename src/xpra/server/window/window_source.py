@@ -71,6 +71,8 @@ from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression
 
 
+INFINITY = float("inf")
+
 """
 We create a Window Source for each window we send pixels for.
 
@@ -323,7 +325,7 @@ class WindowSource(WindowIconSource):
         log("encoding_totals for wid=%s with primary encoding=%s : %s", self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
         #make sure we don't queue any more screen updates for encoding:
-        self._damage_cancelled = float("inf")
+        self._damage_cancelled = INFINITY
         self.batch_config.cleanup()
         #we can only clear the encoders after clearing the whole encoding queue:
         #(because mmap cannot be cancelled once queued for encoding)
@@ -866,9 +868,9 @@ class WindowSource(WindowIconSource):
             self.source_remove(avst)
 
 
-    def is_cancelled(self, sequence=None):
+    def is_cancelled(self, sequence=INFINITY):
         """ See cancel_damage(wid) """
-        return self._damage_cancelled>=(sequence or float("inf"))
+        return self._damage_cancelled>=sequence
 
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):

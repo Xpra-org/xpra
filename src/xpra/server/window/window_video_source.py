@@ -999,7 +999,7 @@ class WindowVideoSource(WindowSource):
             scorelog(*info)
             self.cleanup_codecs()
         #do some sanity checks to see if there is any point in finding a suitable video encoding pipeline:
-        if self._sequence<2 or self._damage_cancelled>=float("inf"):
+        if self._sequence<2 or self.is_cancelled():
             #too early, or too late!
             return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
         #which video encodings to evaluate:
