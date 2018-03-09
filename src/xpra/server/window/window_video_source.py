@@ -1587,7 +1587,7 @@ class WindowVideoSource(WindowSource):
                 psize = w*sh*4
                 csize = len(data)
                 compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%s",
-                     (monotonic_time()-substart)*1000.0, w, sh, 0, sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
+                     (monotonic_time()-substart)*1000.0, w, sh, x+0, y+sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options)
                 scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles", encoding, self._current_quality, self._current_speed, (monotonic_time()-nsstart)*1000, len(non_scroll))
             else:
                 #we can't send the non-scroll areas, ouch!
