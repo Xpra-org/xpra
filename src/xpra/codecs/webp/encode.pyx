@@ -445,7 +445,11 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
         #the latency will be higher for a negligible compression gain: 
         config.quality = fclamp(50-speed//2)
     else:
-        config.quality = fclamp(quality)
+        #normalize quality: webp quality is much higher than jpeg's
+        #so we can go lower,
+        #[0,10,...,90,100] maps to:
+        #[0, 3, 7, 13, 20, 29, 40, 52, 66, 82, 100]
+        config.quality = fclamp(((quality+10)**2//121))
     #"method" takes values from 0 to 6,
     #but anything higher than 1 is dreadfully slow,
     #so only use method=1 when speed is already very low
