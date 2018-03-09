@@ -180,32 +180,22 @@ def kill_xvfb(xvfb_pid):
         except OSError as e:
             log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
             log.info(" %s", e)
+    from xpra.x11.vfb_util import PRIVATE_XAUTH
+    xauthority = os.environ.get("XAUTHORITY")
+    if PRIVATE_XAUTH and xauthority and os.path.exists(xauthority):
+        os.unlink(xauthority)
 
 
-def print_DE_warnings(desktop_display, pulseaudio, notifications, dbus_launch):
+def print_DE_warnings():
     de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
     if not de:
         return
-    warnings = []
     log = get_util_logger()
-    if pulseaudio is not False:
-        try:
-            xprop = subprocess.Popen(["xprop", "-root", "-display", desktop_display], stdout=subprocess.PIPE)
-            out,_ = xprop.communicate()
-            for x in out.splitlines():
-                if x.startswith("PULSE_SERVER"):
-                    #found an existing pulseaudio server
-                    warnings.append("pulseaudio")
-                    break
-        except:
-            pass    #don't care, this is just to decide if we show an informative warning or not
-    if notifications and not dbus_launch:
-        warnings.append("notifications")
-    if warnings:
-        log.warn("Warning: xpra start from an existing '%s' desktop session", de)
-        log.warn(" %s forwarding may not work", " and ".join(warnings))
-        log.warn(" try using a clean environment, a dedicated user,")
-        log.warn(" or disable xpra's %s option", " and ".join(['"%s"' % x for x in warnings]))
+    log.warn("Warning: xpra start from an existing '%s' desktop session", de)
+    log.warn(" without using dbus-launch,")
+    log.warn(" notifications forwarding may not work")
+    log.warn(" try using a clean environment, a dedicated user,")
+    log.warn(" or disable xpra's notifications option")
 
 
 def sanitize_env():
@@ -586,8 +576,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 pass
 
     #warn early about this:
-    if (starting or starting_desktop) and desktop_display:
-        print_DE_warnings(desktop_display, opts.pulseaudio, opts.notifications, opts.dbus_launch)
+    if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
+        print_DE_warnings()
 
     log = get_util_logger()
     netlog = get_network_logger()
@@ -755,6 +745,13 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         def check_xvfb():
             return check_xvfb_process(xvfb)
     else:
+        if POSIX and clobber:
+            #if we're meant to be using a private XAUTHORITY file,
+            #make sure to point to it:
+            from xpra.x11.vfb_util import get_xauthority_path
+            xauthority = get_xauthority_path(display_name, username, uid, gid)
+            if os.path.exists(xauthority):
+                os.environ["XAUTHORITY"] = xauthority
         def check_xvfb():
             return True
 

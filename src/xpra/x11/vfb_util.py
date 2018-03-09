@@ -13,6 +13,7 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
+from xpra.util import envbool
 from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX, OSX
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
@@ -21,6 +22,8 @@ DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_
 assert len(DEFAULT_VFB_RESOLUTION)==2
 DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024").replace(",", "x").split("x", 1))
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
+PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", True)
+XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
 
 vfb_logger = None
@@ -88,6 +91,23 @@ EndSection
     cleanups.insert(0, cleanup_conf_file)
     return cleanups
 
+
+def get_xauthority_path(display_name, username, uid, gid):
+    assert POSIX
+    def pathexpand(s):
+        return osexpand(s, actual_username=username, uid=uid, gid=gid)
+    from xpra.platform.xposix.paths import _get_xpra_runtime_dir
+    if PRIVATE_XAUTH:
+        d = _get_xpra_runtime_dir()
+        if XAUTH_PER_DISPLAY:
+            filename = "Xauthority-%s" % display_name.lstrip(":")
+        else:
+            filename = "Xauthority"
+    else:
+        d = "~/"
+        filename = ".Xauthority"
+    return os.path.join(pathexpand(d), filename)
+
 def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
@@ -96,19 +116,11 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
 
+    cleanups = []
     log = _vfb_logger()
     log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
-
-    subs = {}
-    def pathexpand(s):
-        return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
-
-    # We need to set up a new server environment
-    # use our own XAUTHORITY file:
-    from xpra.platform.xposix.paths import _get_xpra_runtime_dir
-    xauthority = os.path.join(pathexpand(_get_xpra_runtime_dir()), "Xauthority")
+    xauthority = get_xauthority_path(display_name, username, uid, gid)
     os.environ["XAUTHORITY"] = xauthority
-    subs["XAUTHORITY"] = xauthority
     if not os.path.exists(xauthority):
         log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
         try:
@@ -122,8 +134,14 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     else:
         log("found existing XAUTHORITY file '%s'", xauthority)
     use_display_fd = display_name[0]=='S'
-    subs["DISPLAY"] = display_name
-    subs["XPRA_LOG_DIR"] = pathexpand(os.environ.get("XPRA_LOG_DIR"))
+
+    subs = {}
+    def pathexpand(s):
+        return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
+    subs.update({
+        "DISPLAY"       : display_name,
+        "XPRA_LOG_DIR"  : pathexpand(os.environ.get("XPRA_LOG_DIR")),
+        })
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
@@ -158,7 +176,6 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
             except OSError as e:
                 raise InitException("failed to create the Xorg log directory '%s': %s" % (xorg_log_dir, e))
 
-    cleanups = []
     if uinput_uuid:
         #use uinput:
         #identify -config xorg.conf argument and replace it with the uinput one:
