@@ -1081,64 +1081,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog("fake_send(%s)", args)
         #now replace all the windows with new ones:
         for wid, window in self._id_to_window.items():
-            if window.is_tray():
-                #trays are never GL enabled, so don't bother re-creating them
-                #(might cause problems anyway if we did)
-                continue
-            #ignore packets from old window:
-            window.send = fake_send
-            #copy attributes:
-            x, y = window._pos
-            ww, wh = window._size
-            try:
-                bw, bh = window._backing.size
-            except:
-                bw, bh = ww, wh
-            icon = window._current_icon
-            client_properties = window._client_properties
-            metadata = window._metadata
-            override_redirect = window._override_redirect
-            backing = window._backing
-            video_decoder = None
-            csc_decoder = None
-            decoder_lock = None
-            try:
-                if backing:
-                    video_decoder = backing._video_decoder
-                    csc_decoder = backing._csc_decoder
-                    decoder_lock = backing._decoder_lock
-                    if decoder_lock:
-                        decoder_lock.acquire()
-                        opengllog("toggle_opengl() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
-                        backing._video_decoder = None
-                        backing._csc_decoder = None
-                        backing._decoder_lock = None
-                        backing.close()
-
-                #now we can unmap it:
-                self.destroy_window(wid, window)
-                #explicitly tell the server we have unmapped it:
-                #(so it will reset the video encoders, etc)
-                self.send("unmap-window", wid)
-                try:
-                    del self._id_to_window[wid]
-                except:
-                    pass
-                try:
-                    del self._window_to_id[window]
-                except:
-                    pass
-                #create the new window, which should honour the new state of the opengl_enabled flag:
-                window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
-                if video_decoder or csc_decoder:
-                    backing = window._backing
-                    backing._video_decoder = video_decoder
-                    backing._csc_decoder = csc_decoder
-                    backing._decoder_lock = decoder_lock
-                window._current_icon = icon
-            finally:
-                if decoder_lock:
-                    decoder_lock.release()
+            self.reinit_window(wid, window)
         opengllog("replaced all the windows with opengl=%s: %s", self.opengl_enabled, self._id_to_window)
         self.reinit_window_icons()
 
