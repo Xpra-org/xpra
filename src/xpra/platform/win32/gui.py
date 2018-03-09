@@ -231,6 +231,8 @@ def get_window_handle(window):
         gdk_window = window.get_window()
     except:
         pass
+    if not gdk_window:
+        return 0
     if PYTHON2:
         return gdk_window.handle
     gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
@@ -445,6 +447,8 @@ def apply_maxsize_hints(window, hints):
     """
     workw, workh = 0, 0
     handle = get_window_handle(window)
+    if not handle:
+        return
     log("apply_maxsize_hints(%s, %s) handle=%s", window, hints, handle)
     if not window.get_decorated():
         workarea = get_monitor_workarea_for_window(handle)
