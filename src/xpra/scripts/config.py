@@ -11,6 +11,7 @@ import os
 #before we import xpra.platform
 import platform as python_platform
 assert python_platform
+from xpra.util import csv
 from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, osexpand, getuid, getgid, get_username_for_uid
 
 def warn(msg):
@@ -1194,7 +1195,7 @@ def fixup_video_all_or_none(options):
     pvestr  = _csvstr(options.proxy_video_encoders)
     def getlist(strarg, help_txt, all_list):
         if strarg=="help":
-            raise InitInfo("the following %s may be available: %s" % (help_txt, ", ".join(all_list)))
+            raise InitInfo("the following %s may be available: %s" % (help_txt, csv(all_list)))
         elif strarg=="none":
             return []
         elif strarg=="all":
@@ -1261,7 +1262,7 @@ def fixup_compression(options):
         compressors = _nodupes(cstr)
         unknown = [x for x in compressors if x and x not in compression.ALL_COMPRESSORS]
         if unknown:
-            warn("warning: invalid compressor(s) specified: %s" % (", ".join(unknown)))
+            warn("warning: invalid compressor(s) specified: %s" % csv(unknown))
     options.compressors = compressors
 
 def fixup_packetencoding(options):
@@ -1274,7 +1275,7 @@ def fixup_packetencoding(options):
         packet_encoders = _nodupes(pestr)
         unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
         if unknown:
-            warn("warning: invalid packet encoder(s) specified: %s" % (", ".join(unknown)))
+            warn("warning: invalid packet encoder(s) specified: %s" % csv(unknown))
     options.packet_encoders = packet_encoders
 
 def fixup_keyboard(options):
@@ -1348,7 +1349,7 @@ def main():
             if ot==bool and v is None:
                 v = "Auto"
             if type(v)==list:
-                v = ", ".join(str(x) for x in v)
+                v = csv(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import program_context
     from xpra.log import enable_color

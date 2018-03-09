@@ -304,7 +304,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Start the session within a dbus-launch context, leave empty to turn off. Default: %default.")
     group.add_option("--start-env", action="append",
                       dest="start_env", default=list(defaults.start_env or []),
-                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")]))
+                      help="Define environment variables used with 'start-child' and 'start', can be specified multiple times. Default: %s." % csv(("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
     if POSIX:
         legacy_bool_parse("systemd-run")
         group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
@@ -711,10 +711,10 @@ def do_parse_cmdline(cmdline, defaults):
                       + " 0.0 to disable."
                       + " Default: %default.")
     group.add_option("--compressors", action="store",
-                      dest="compressors", default=", ".join(defaults.compressors),
+                      dest="compressors", default=csv(defaults.compressors),
                       help="The packet compressors to enable. Default: %default.")
     group.add_option("--packet-encoders", action="store",
-                      dest="packet_encoders", default=", ".join(defaults.packet_encoders),
+                      dest="packet_encoders", default=csv(defaults.packet_encoders),
                       help="The packet encoders to enable. Default: %default.")
     group.add_option("-z", "--compress", action="store",
                       dest="compression_level", type="int", default=defaults.compression_level,
@@ -877,7 +877,7 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
-                      help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % ", ".join([("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")]))
+                      help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % csv(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
     group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode). Default: %s." % csv(defaults.password_file))
@@ -1138,9 +1138,9 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
     hs = "help" in speaker_codecs
     if hs:
-        info.append("speaker codecs available: %s" % (", ".join(all_speaker_codecs)))
+        info.append("speaker codecs available: %s" % csv(all_speaker_codecs))
     elif len(invalid_sc):
-        info.append("WARNING: some of the specified speaker codecs are not available: %s" % (", ".join(invalid_sc)))
+        info.append("WARNING: some of the specified speaker codecs are not available: %s" % csv(invalid_sc))
         for x in invalid_sc:
             speaker_codecs.remove(x)
     elif len(speaker_codecs)==0:
@@ -1150,7 +1150,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
     hm = "help" in microphone_codecs
     if hm:
-        info.append("microphone codecs available: %s" % (", ".join(all_microphone_codecs)))
+        info.append("microphone codecs available: %s" % csv(all_microphone_codecs))
     elif len(invalid_mc):
         info.append("WARNING: some of the specified microphone codecs are not available: %s" % (", ".join(invalid_mc)))
         for x in invalid_mc:

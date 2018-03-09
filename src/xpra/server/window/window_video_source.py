@@ -1747,10 +1747,10 @@ class WindowVideoSource(WindowSource):
                     if especs.codec_type not in encoder_types:
                         encoder_types.append(especs.codec_type)
             videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s", encoding, src_format)
-            videolog.error(" all encoders: %s", ", ".join(tuple(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
-            videolog.error(" supported CSC modes: %s", ", ".join(supported_csc_modes))
-            videolog.error(" supported encoders: %s", ", ".join(encoder_types))
-            videolog.error(" encoders CSC modes: %s", ", ".join(ecsc))
+            videolog.error(" all encoders: %s", csv(tuple(set([es.codec_type for sublist in encoder_specs.values() for es in sublist]))))
+            videolog.error(" supported CSC modes: %s", csv(supported_csc_modes))
+            videolog.error(" supported encoders: %s", csv(encoder_types))
+            videolog.error(" encoders CSC modes: %s", csv(ecsc))
             if FORCE_CSC:
                 videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
             return self.video_fallback(image, options, warn=True)

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2015 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os.path
 
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.os_util import PYTHON3
 from xpra.log import Logger
 log = Logger("codec", "loader")
@@ -339,10 +339,10 @@ def main():
                         cs = list(mod.get_input_colorspaces())
                         for c in list(cs):
                             cs += list(mod.get_output_colorspaces(c))
-                        print("                         colorspaces: %s" % ", ".join(list(set(cs))))
+                        print("                         colorspaces: %s" % csv(list(set(cs))))
                     elif name.find("enc")>=0 or name.find("dec")>=0:
                         encodings = mod.get_encodings()
-                        print("                         encodings: %s" % ", ".join(encodings))
+                        print("                         encodings: %s" % csv(encodings))
                     try:
                         i = mod.get_info()
                         for k,v in sorted(i.items()):

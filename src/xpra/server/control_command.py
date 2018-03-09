@@ -98,7 +98,7 @@ class HelpCommand(ArgsControlCommand):
 
     def run(self, *args):
         if len(args)==0:
-            return "control supports: %s" % (", ".join(self.control_commands))
+            return "control supports: %s" % csv(self.control_commands)
         name = args[0]
         command = self.control_commands.get(name)
         if not command:

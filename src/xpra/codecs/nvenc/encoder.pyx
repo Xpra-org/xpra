@@ -2505,7 +2505,7 @@ cdef class Encoder:
                 else:
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
-                log.warn("Warning: found some unknown NVENC presets: %s", b", ".join(unknowns))
+                log.warn("Warning: found some unknown NVENC presets: %s", csv(unknowns))
         finally:
             free(preset_GUIDs)
         if DEBUG_API:

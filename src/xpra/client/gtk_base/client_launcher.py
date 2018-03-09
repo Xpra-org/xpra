@@ -35,7 +35,7 @@ from xpra.gtk_common.gtk_util import gtk_main, add_close_accel, scaled_image, pi
                                     WIN_POS_CENTER, STATE_NORMAL, \
                                     DESTROY_WITH_PARENT, MESSAGE_INFO,  BUTTONS_CLOSE, \
                                     FILE_CHOOSER_ACTION_SAVE, FILE_CHOOSER_ACTION_OPEN
-from xpra.util import DEFAULT_PORT
+from xpra.util import DEFAULT_PORT, csv
 from xpra.os_util import thread, WIN32, OSX, PYTHON3
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
@@ -142,7 +142,7 @@ class ApplicationWindow:
         def validate_in_list(x, options):
             if x in options:
                 return None
-            return "must be in %s" % (", ".join(options))
+            return "must be in %s" % csv(options)
         modes = self.get_connection_modes()
         return {"mode"              : lambda x : validate_in_list(x, modes)}
 
@@ -421,7 +421,7 @@ class ApplicationWindow:
             if e:
                 err_text.append(text)
         log("validate(%s) err_text=%s, errs=%s", args, err_text, errs)
-        self.set_info_text(", ".join(err_text))
+        self.set_info_text(csv(err_text))
         self.set_info_color(len(err_text)>0)
         self.button.set_sensitive(len(err_text)==0)
         return errs

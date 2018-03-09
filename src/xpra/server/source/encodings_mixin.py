@@ -344,7 +344,7 @@ class EncodingsMixin(StubServerMixin):
                 s = "using %s as primary encoding" % self.encoding
             if others:
                 log.info(" %s, also available:", s)
-                log.info("  %s", ", ".join(others))
+                log.info("  %s", csv(others))
             else:
                 log.warn(" %s", s)
                 log.warn("  no other encodings are available!")

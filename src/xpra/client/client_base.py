@@ -559,7 +559,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         info = packet[2:]
         s = nonl(reason)
         if len(info):
-            s += " (%s)" % (", ".join([nonl(bytestostr(x)) for x in info]))
+            s += " (%s)" % csv(nonl(bytestostr(x)) for x in info)
         if self.server_capabilities is None or len(self.server_capabilities)==0:
             #server never sent hello to us - so disconnect is an error
             #(but we don't know which one - the info message may help)
@@ -698,10 +698,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.warn_and_quit(EXIT_ENCRYPTION, "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
             return False
         if cipher not in ENCRYPTION_CIPHERS:
-            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, ", ".join(ENCRYPTION_CIPHERS)))
+            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, csv(ENCRYPTION_CIPHERS)))
             return False
         if padding not in ALL_PADDING_OPTIONS:
-            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, ", ".join(ALL_PADDING_OPTIONS)))
+            self.warn_and_quit(EXIT_ENCRYPTION, "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, csv(ALL_PADDING_OPTIONS)))
             return False
         p = self._protocol
         if not p:

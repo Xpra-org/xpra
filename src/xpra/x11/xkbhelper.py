@@ -81,7 +81,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         variant = xkbmap_query_struct.get("variant")
         options = xkbmap_query_struct.get("options")
         if layout:
-            log.info("setting keymap: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v]))
+            log.info("setting keymap: %s", csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items() if k in ["rules", "model", "layout"] and v))
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")

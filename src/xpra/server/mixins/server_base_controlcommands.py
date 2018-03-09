@@ -285,7 +285,7 @@ class ServerBaseControlCommands(StubServerMixin):
         from xpra.net import compression
         opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
         if c not in opts:
-            raise ControlError("compressor argument must be one of: %s" % (", ".join(opts)))
+            raise ControlError("compressor argument must be one of: %s" % csv(opts))
         for cproto in tuple(self._server_sources.keys()):
             cproto.enable_compressor(c)
         self.all_send_client_command("enable_%s" % c)
@@ -296,7 +296,7 @@ class ServerBaseControlCommands(StubServerMixin):
         from xpra.net import packet_encoding
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
         if e not in opts:
-            raise ControlError("encoder argument must be one of: %s" % (", ".join(opts)))
+            raise ControlError("encoder argument must be one of: %s" % csv(opts))
         for cproto in tuple(self._server_sources.keys()):
             cproto.enable_encoder(e)
         self.all_send_client_command("enable_%s" % e)
@@ -515,7 +515,7 @@ class ServerBaseControlCommands(StubServerMixin):
         msg = []
         for csource in tuple(self._server_sources.values()):
             msg.append("%s : %s" % (csource, csource.sound_control(*args)))
-        return ", ".join(msg)
+        return csv(msg)
 
     def control_command_workspace(self, wid, workspace):
         window = self._id_to_window.get(wid)

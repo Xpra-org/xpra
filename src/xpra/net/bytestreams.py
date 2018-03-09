@@ -12,7 +12,7 @@ import socket
 from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.common import ConnectionClosedException
-from xpra.util import envint, envbool
+from xpra.util import envint, envbool, csv
 from xpra.os_util import WIN32, PYTHON2
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 
@@ -117,7 +117,7 @@ def pretty_socket(s):
         if len(s)==2:
             return "%s:%s" % (s[0], s[1])
         assert len(s)==4
-        return ", ".join(str(x) for x in s)
+        return csv(str(x) for x in s)
     except:
         return str(s)
 

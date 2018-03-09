@@ -7,6 +7,7 @@
 
 import binascii
 
+from xpra.util import csv
 from xpra.log import Logger
 log = Logger("util")
 
@@ -70,7 +71,7 @@ def testdecoder(decoder_module, full):
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)", decoder_module.get_type(), ", ".join(decoder_module.get_encodings()))
+        log.error("%s: all the codecs have failed! (%s)", decoder_module.get_type(), csv(decoder_module.get_encodings()))
     return codecs
 
 def testdecoding(decoder_module, encoding, full):
@@ -115,7 +116,7 @@ def testencoder(encoder_module, full):
             del e
             codecs.remove(encoding)
     if not codecs:
-        log.error("%s: all the codecs have failed! (%s)", encoder_module.get_type(), ", ".join(encoder_module.get_encodings()))
+        log.error("%s: all the codecs have failed! (%s)", encoder_module.get_type(), csv(encoder_module.get_encodings()))
     return codecs
 
 def testencoding(encoder_module, encoding, full):

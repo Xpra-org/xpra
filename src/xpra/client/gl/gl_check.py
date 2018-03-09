@@ -7,7 +7,7 @@
 
 import sys
 import logging
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.os_util import POSIX, OSX, WIN32, PYTHON3, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST
@@ -79,9 +79,9 @@ def check_functions(*functions):
         else:
             available.append(name)
     if len(missing)>0:
-        gl_check_error("some required OpenGL functions are not available: %s" % (", ".join(missing)))
+        gl_check_error("some required OpenGL functions are not available: %s" % csv(missing))
     else:
-        log("All the required OpenGL functions are available: %s " % (", ".join(available)))
+        log("All the required OpenGL functions are available: %s " % csv(available))
 
 
 def check_PyOpenGL_support(force_enable):
@@ -151,7 +151,7 @@ def check_PyOpenGL_support(force_enable):
             log("error querying extensions", exc_info=True)
             extensions = []
             gl_check_error("OpenGL could not find the list of GL extensions - does the graphics driver support OpenGL?")
-        log("OpenGL extensions found: %s", ", ".join(extensions))
+        log("OpenGL extensions found: %s", csv(extensions))
         props["extensions"] = extensions
 
         from OpenGL.arrays.arraydatatype import ArrayDatatype
@@ -343,7 +343,7 @@ def check_PyOpenGL_support(force_enable):
                 format_handler = format_handler[:p]
                 missing_handlers.append(format_handler)
         if len(missing_handlers)>0:
-            log.warn("PyOpenGL warning: missing array format handlers: %s", ", ".join(missing_handlers))
+            log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
 
         for x in elogger.handlers[0].records:
             msg = x.getMessage()
@@ -367,7 +367,7 @@ def check_PyOpenGL_support(force_enable):
             else:
                 log.info(msg)
         if missing_accelerators:
-            log.info("OpenGL accelerate missing: %s", ", ".join(missing_accelerators))
+            log.info("OpenGL accelerate missing: %s", csv(missing_accelerators))
 
         def restore_logger(logger):
             logger.handlers = logger.saved_handlers

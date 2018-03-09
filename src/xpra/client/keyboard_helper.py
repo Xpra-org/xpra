@@ -419,4 +419,4 @@ class KeyboardHelper(object):
         if len(kb_info)==0:
             log.info(" using default keyboard settings")
         else:
-            log.info(" keyboard settings: %s", ", ".join(["%s=%s" % (std(k), std(v)) for k,v in kb_info.items()]))
+            log.info(" keyboard settings: %s", csv("%s=%s" % (std(k), std(v)) for k,v in kb_info.items()))

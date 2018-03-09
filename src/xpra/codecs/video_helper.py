@@ -141,7 +141,7 @@ class VideoHelper(object):
         def filt(name, inlist, all_list):
             notfound = [x for x in inlist if x and x not in all_list]
             if notfound:
-                log.warn("ignoring unknown %s: %s", name, ", ".join(notfound))
+                log.warn("ignoring unknown %s: %s", name, csv(notfound))
             return [x for x in inlist if x in all_list]
         self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)

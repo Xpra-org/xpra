@@ -1461,7 +1461,7 @@ def make_client(error_cb, opts):
         toolkit_module = __import__(client_module, globals(), locals(), ['XpraClient'])
         if toolkit_module:
             return toolkit_module.XpraClient()
-    error_cb("could not load %s" % ", ".join(CLIENT_MODULES))
+    error_cb("could not load %s" % csv(CLIENT_MODULES))
 
 def do_run_client(app):
     try:
@@ -1626,9 +1626,9 @@ def guess_X11_display(dotxpra, uid=getuid(), gid=getgid()):
         xpra_displays = [display for _, display in results]
         displays = list(set(displays)-set(xpra_displays))
         if len(displays)==0:
-            raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % ", ".join(xpra_displays))
+            raise InitExit(1, "could not detect any live plain X11 displays, only multiple xpra displays: %s" % csv(xpra_displays))
     if len(displays)!=1:
-        raise InitExit(1, "too many live X11 displays to choose from: %s" % ", ".join(displays))
+        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(displays))
     return displays[0]
 
 
@@ -2199,7 +2199,7 @@ def run_showconfig(options, args):
         if type(v)==str:
             return "'%s'" % nonl(v)
         if type(v) in (tuple, list) and len(v)>0:
-            return ", ".join(vstr(x) for x in v)
+            return csv(vstr(x) for x in v)
         return str(v)
     for opt in sorted(OPTION_TYPES.keys()):
         if opt in VIRTUAL:

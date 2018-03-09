@@ -309,7 +309,7 @@ class ProxyInstanceProcess(Process):
             if x not in order:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
-        enclog.info("proxy video encoders: %s", ", ".join(self.video_encoder_types or ["none",]))
+        enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none",]))
 
 
     def create_control_socket(self):

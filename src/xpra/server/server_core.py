@@ -561,7 +561,7 @@ class ServerCore(object):
             command = self.control_commands.get(name)
             commandlog("process_control_command control_commands[%s]=%s", name, command)
             if not command:
-                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, ", ".join(self.control_commands))
+                commandlog.warn("invalid command: '%s' (must be one of: %s)", name, csv(self.control_commands))
                 return 6, "invalid command"
             commandlog("process_control_command calling %s%s", command.run, args[1:])
             v = command.run(*args[1:])
@@ -1236,7 +1236,7 @@ class ServerCore(object):
     def _process_disconnect(self, proto, packet):
         info = bytestostr(packet[1])
         if len(packet)>2:
-            info += u" (%s)" % (", ".join(bytestostr(packet[2:])))
+            info += u" (%s)" % csv(bytestostr(packet[2:]))
         #only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)

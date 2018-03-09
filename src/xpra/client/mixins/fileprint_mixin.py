@@ -7,7 +7,7 @@ from xpra.log import Logger
 printlog = Logger("printing")
 filelog = Logger("file")
 
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
@@ -165,7 +165,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             if modified:
                 printlog("do_send_printers() printers modified: %s", modified)
             printlog("do_send_printers() printers=%s", exported_printers.keys())
-            printlog("do_send_printers() exported printers=%s", ", ".join(str(x) for x in exported_printers.keys()))
+            printlog("do_send_printers() exported printers=%s", csv(str(x) for x in exported_printers.keys()))
             self.exported_printers = exported_printers
             self.send("printers", self.exported_printers)
         except:
