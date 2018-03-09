@@ -68,6 +68,9 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling, target_speed=10
     #then always favour fast encoders:
     sscore += speed
     sscore /= 2
+    #and fast csc:
+    if csc_spec:
+        sscore += csc_spec.speed//2
     return int(sscore)
 
 def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
@@ -174,9 +177,9 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
     #edge resistance score: average of csc and encoder score:
     er_score = (ecsc_score + ee_score) / 2.0
     score = int((qscore+sscore+er_score+sizescore+client_score_delta)*runtime_score/100.0/4.0)
-    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, score=%2i",
+    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i - %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, score=%2i",
              enc_in_format, csc_spec, encoder_spec, width, height,
-             qscore, sscore, er_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta, score)
+             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
 def get_encoder_dimensions(encoder_spec, width, height, scaling=(1,1)):
