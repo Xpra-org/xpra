@@ -30,6 +30,8 @@ class InputServer(StubServerMixin):
         self.keyboard_config = None
         self.keymap_changing = False            #to ignore events when we know we are changing the configuration
         self.keyboard_sync = True
+        self.key_repeat = None
+        #ugly: we're duplicating the value pair from "key_repeat" here:
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
         #store list of currently pressed keys
@@ -83,7 +85,7 @@ class InputServer(StubServerMixin):
         else:
             self.set_keyboard_repeat(None)
             self.key_repeat = (0, 0)
-
+        self.key_repeat_delay, self.key_repeat_interval = self.key_repeat
         self.set_keymap(ss)
 
     def get_keyboard_info(self):
