@@ -70,7 +70,7 @@ def get_mimetypes():
 
 
 def get_info():
-    return default_get_info
+    return default_get_info()
 
 def default_get_info():
     return {
