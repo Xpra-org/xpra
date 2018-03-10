@@ -366,6 +366,7 @@ cdef class Decoder:
             return  False
         #up to 3 AVFrame objects used:
         self.av_frame = av_frame_alloc()
+        log("av_frame_alloc()=%#x", <uintptr_t> self.av_frame)
         if self.av_frame==NULL:
             log.error("could not allocate an AVFrame for decoding")
             self.clean_decoder()
@@ -531,7 +532,7 @@ cdef class Decoder:
         if ret==-errno.EAGAIN:
             d = options.intget("delayed", 0)
             if d>0:
-                log("avcodec_decode_video2 %i delayed pictures", d)
+                log("avcodec_receive_frame %i delayed pictures", d)
                 return None
             self.log_error(buf_len, "no picture", options)
             return None
