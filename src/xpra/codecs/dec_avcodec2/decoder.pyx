@@ -11,7 +11,7 @@ import weakref
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, WIN32
 from xpra.util import csv
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -144,7 +144,8 @@ if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
 if avcodec_find_decoder(AV_CODEC_ID_MPEG4)!=NULL:
     CODECS.append("mpeg4")
-if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+#crashes with ffmpeg 3.4.2 on win32, not sure when this started
+if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL and not WIN32:
     VP9_CS = []
     #there used to be problems with YUV444P with older versions of ffmpeg:
     # "[vp9 @ ...] Invalid compressed header size"
