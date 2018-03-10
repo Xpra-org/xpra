@@ -220,7 +220,7 @@ class WindowBackingBase(object):
         self.idle_add(self.paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
 
 
-    def paint_image(self, _coding, img_data, x, y, width, height, options, callbacks):
+    def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         """ can be called from any thread """
         #log("paint_image(%s, %s bytes, %s, %s, %s, %s, %s, %s)", coding, len(img_data), x, y, width, height, options, callbacks)
         PIL = get_codec("PIL")
@@ -271,18 +271,19 @@ class WindowBackingBase(object):
         elif img.mode in ("RGBA", "RGBX"):
             rowstride = width*4
             rgb_format = options.strget("rgb_format", img.mode)
-            #the webp encoder only takes BGRX input,
-            #so we have to swap things around if it was fed "RGBA":
-            if rgb_format=="RGBA":
-                rgb_format = "BGRA"
-            elif rgb_format=="RGBX":
-                rgb_format = "BGRX"
-            elif rgb_format=="BGRA":
-                rgb_format = "RGBA"
-            elif rgb_format=="BGRX":
-                rgb_format = "RGBX"
-            else:
-                log.warn("Warning: unexpected RGB format '%s'", rgb_format)
+            if coding=="webp":
+                #the webp encoder only takes BGRX input,
+                #so we have to swap things around if it was fed "RGBA":
+                if rgb_format=="RGBA":
+                    rgb_format = "BGRA"
+                elif rgb_format=="RGBX":
+                    rgb_format = "BGRX"
+                elif rgb_format=="BGRA":
+                    rgb_format = "RGBA"
+                elif rgb_format=="BGRX":
+                    rgb_format = "RGBX"
+                else:
+                    log.warn("Warning: unexpected RGB format '%s'", rgb_format)
             img_data = self.process_delta(raw_data, width, height, rowstride, options)
         else:
             raise Exception("invalid image mode: %s" % img.mode)
