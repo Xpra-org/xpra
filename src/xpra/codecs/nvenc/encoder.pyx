@@ -1906,7 +1906,7 @@ cdef class Encoder:
         info.update({
                 "width"     : self.width,
                 "height"    : self.height,
-                "frames"    : self.frames,
+                "frames"    : int(self.frames),
                 "codec"     : self.codec_name,
                 "encoder_width"     : self.encoder_width,
                 "encoder_height"    : self.encoder_height,

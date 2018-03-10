@@ -365,7 +365,7 @@ cdef class Pusher:
     def get_info(self):             #@DuplicatedSignature
         info = get_info()
         info.update({
-                     "frames"    : self.frames,
+                     "frames"    : int(self.frames),
                      "width"     : self.width,
                      "height"    : self.height,
                      "src_format": self.src_format,

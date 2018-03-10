@@ -210,7 +210,7 @@ cdef class ColorspaceConverter:
     def get_info(self):         #@DuplicatedSignature
         info = get_info()
         info.update({
-                "frames"    : self.frames,
+                "frames"    : int(self.frames),
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,

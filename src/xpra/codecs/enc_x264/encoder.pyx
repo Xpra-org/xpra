@@ -619,7 +619,7 @@ cdef class Encoder:
             "preset"        : get_preset_names()[self.preset],
             "b-frames"      : self.b_frames,
             "tune"          : self.tune or "",
-            "frames"        : self.frames,
+            "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
             #"opencl"        : bool(self.opencl),

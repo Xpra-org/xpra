@@ -225,7 +225,7 @@ cdef class Decoder:
                 "width"     : self.get_width(),
                 "height"    : self.get_height(),
                 "encoding"  : self.encoding,
-                "frames"    : self.frames,
+                "frames"    : int(self.frames),
                 "colorspace": self.get_colorspace(),
                 "max_threads" : self.max_threads,
                 }

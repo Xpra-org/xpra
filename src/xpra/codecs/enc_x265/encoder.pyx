@@ -446,7 +446,7 @@ cdef class Encoder:
         info = {
             "profile"   : self.profile,
             #"preset"    : get_preset_names()[self.preset],
-            "frames"    : self.frames,
+            "frames"    : int(self.frames),
             "width"     : self.width,
             "height"    : self.height,
             "speed"     : self.speed,

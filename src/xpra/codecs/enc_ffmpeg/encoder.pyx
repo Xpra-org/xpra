@@ -1026,7 +1026,7 @@ cdef class Encoder(object):
                 "muxer"     : self.muxer_format,
                 "formats"   : get_input_colorspaces(self.encoding),
                 "type"      : self.get_type(),
-                "frames"    : self.frames,
+                "frames"    : int(self.frames),
                 "width"     : self.width,
                 "height"    : self.height,
                 }

@@ -327,7 +327,7 @@ cdef class ColorspaceConverter:
         info = get_info()
         info.update({
                 "flags"     : get_swscale_flags_strs(self.flags),
-                "frames"    : self.frames,
+                "frames"    : int(self.frames),
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,
