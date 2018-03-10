@@ -333,22 +333,23 @@ class WindowVideoSource(WindowSource):
         return WindowSource.get_best_encoding_impl_default(self)
 
 
-    def get_best_encoding_video(self, pixel_count, ww, wh, speed, quality, current_encoding):
+    def get_best_encoding_video(self, ww, wh, speed, quality, current_encoding):
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
+        pixel_count = ww*wh
         def nonvideo(q=quality, info=""):
             s = max(0, min(100, speed))
             q = max(0, min(100, q))
             log("nonvideo(%i, %s)", q, info)
-            return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
+            return self.get_best_nonvideo_encoding(ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
         def lossless(reason):
             log("get_best_encoding_video(..) temporarily switching to lossless mode for %8i pixels: %s", pixel_count, reason)
             s = max(0, min(100, speed))
             q = 100
-            return self.get_best_nonvideo_encoding(pixel_count, ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
+            return self.get_best_nonvideo_encoding(ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s", (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
 
@@ -423,13 +424,14 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="size out of range")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding=None, options=[]):
+    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=[]):
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
         depth = self.image_depth
-        if depth==8:
+        if depth==8 and "png/P" in options:
             return "png/P"
+        pixel_count = ww*wh
         if pixel_count<self._rgb_auto_threshold or self.is_tray:
             #high speed and high quality, rgb is still good
             if "rgb24" in options:
@@ -561,7 +563,7 @@ class WindowVideoSource(WindowSource):
         #could have been cleared by another thread:
         if vr:
             w, h = vr.width, vr.height
-        return self.get_best_nonvideo_encoding(ww*wh, w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, self.auto_refresh_encodings[0], self.auto_refresh_encodings)
+        return self.get_best_nonvideo_encoding(w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, self.auto_refresh_encodings[0], self.auto_refresh_encodings)
 
     def remove_refresh_region(self, region):
         #override so we can update the subregion timers / regions tracking:
@@ -1562,7 +1564,7 @@ class WindowVideoSource(WindowSource):
             for sy, sh in non_scroll.items():
                 substart = monotonic_time()
                 sub = image.get_sub_image(0, sy, w, sh)
-                encoding = self.get_best_nonvideo_encoding(w*sh, w, sh, speed, quality)
+                encoding = self.get_best_nonvideo_encoding(w, sh, speed, quality)
                 assert encoding, "no nonvideo encoding found for %ix%i screen update" % (w, sh)
                 encode_fn = self._encoders[encoding]
                 ret = encode_fn(encoding, sub, options)

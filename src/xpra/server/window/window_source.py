@@ -761,11 +761,12 @@ class WindowSource(WindowIconSource):
     def get_strict_encoding(self, *_args):
         return self.encoding
 
-    def get_transparent_encoding(self, pixel_count, ww, wh, speed, quality, current_encoding):
+    def get_transparent_encoding(self, w, h, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
         
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
+        pixel_count = w*h
         if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or (self.image_depth>24 and self.client_bit_depth>24)):
             #the only encoding that can do higher bit depth at present
             return "rgb32"
@@ -773,23 +774,23 @@ class WindowSource(WindowIconSource):
             if x in self.common_encodings:
                 return x
         #so we don't have an encoding that does transparency...
-        return self.get_auto_encoding(pixel_count, ww, wh, speed, quality)
+        return self.get_auto_encoding(w, h, speed, quality)
 
-    def get_auto_encoding(self, pixel_count, ww, wh, speed, quality, *_args):
-        if pixel_count<self._rgb_auto_threshold:
+    def get_auto_encoding(self, w, h, speed, quality, *_args):
+        if w*h<self._rgb_auto_threshold:
             return "rgb24"
         co = self.common_encodings
         depth = self.image_depth
         if depth>24 and "rgb32" in co and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
-        if depth in (24, 32) and "webp" in co and ww>=2 and wh>=2:
+        if depth in (24, 32) and "webp" in co and w>=2 and h>=2:
             return "webp"
         if "png" in co and ((quality>=80 and speed<80) or depth<=16):
             return "png"
-        if "jpeg" in co and ww>=2 and wh>=2:
+        if "jpeg" in co and w>=2 and h>=2:
             return "jpeg"
-        if "jpeg2000" in co and ww>=32 and wh>=32:
+        if "jpeg2000" in co and w>=32 and h>=32:
             return "jpeg2000"
         return [x for x in co if x!="rgb"][0]
 
@@ -1149,7 +1150,7 @@ class WindowSource(WindowIconSource):
             if actual_encoding is None:
                 q = options.get("quality") or self._current_quality
                 s = options.get("speed") or self._current_speed
-                actual_encoding = self.get_best_encoding(w*h, ww, wh, s, q, self.encoding)
+                actual_encoding = self.get_best_encoding(w, h, s, q, self.encoding)
             if self.must_encode_full_frame(actual_encoding):
                 x, y = 0, 0
                 w, h = ww, wh
@@ -1377,11 +1378,11 @@ class WindowSource(WindowIconSource):
         speed = options.get("speed") or self._current_speed
         quality = options.get("quality") or self._current_quality
         get_best_encoding = get_best_encoding or self.get_best_encoding
-        def get_encoding(pixel_count):
-            return get_best_encoding(pixel_count, ww, wh, speed, quality, coding)
+        def get_encoding(w, h):
+            return get_best_encoding(w, h, speed, quality, coding)
 
         def send_full_window_update():
-            actual_encoding = get_encoding(ww*wh)
+            actual_encoding = get_encoding(ww, wh)
             log("send_delayed_regions: using full window update %sx%s as %5s, from %s", ww, wh, actual_encoding, get_best_encoding)
             assert actual_encoding is not None
             self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
@@ -1431,22 +1432,16 @@ class WindowSource(WindowIconSource):
                 if merged_bytes_cost<bytes_cost or merged_pixel_count<pixel_count:
                     #better, so replace with merged regions:
                     regions = merged_rects
-            elif len(regions)==1:
-                #if we find one region covering almost the entire window,
-                #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
-                r = regions[0]
-                if r.x==0 and r.y==0 and abs(ww-r.width)<2 and abs(wh-r.height)<2:
-                    regions = [rectangle(0, 0, ww, wh)]
 
-            #check to see if the total amount of pixels makes us use a fullscreen update instead:
-            if len(regions)>1 and exclude_region is None:
-                pixel_count = sum(rect.width*rect.height for rect in regions)
-                actual_encoding = get_encoding(pixel_count)
-                log("send_delayed_regions: %s regions with %s pixels (encoding=%s, actual=%s)", len(regions), pixel_count, coding, actual_encoding)
-                if pixel_count>=ww*wh or self.must_encode_full_frame(actual_encoding):
-                    #use full screen dimensions:
-                    self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
-                    return
+            if len(regions)==1:
+                merged = regions[0]
+            else:
+                merged = merge_all(regions)
+            #if we find one region covering almost the entire window,
+            #refresh the whole window (ie: when the video encoder mask rounded the dimensions down)
+            if merged.x<=1 and merged.y<=1 and abs(ww-merged.width)<2 and abs(wh-merged.height)<2:
+                send_full_window_update()
+                return
 
         #we're processing a number of regions separately,
         #start by removing the exclude region if there is one:
@@ -1461,7 +1456,7 @@ class WindowSource(WindowIconSource):
         #and shortcut out if this needs to be a full window update:
         i_reg_enc = []
         for i,region in enumerate(regions):
-            actual_encoding = get_encoding(region.width*region.height)
+            actual_encoding = get_encoding(region.width, region.height)
             if self.must_encode_full_frame(actual_encoding):
                 log("send_delayed_regions: using full frame for %s encoding of %ix%i", actual_encoding, region.width, region.height)
                 self.process_damage_region(damage_time, 0, 0, ww, wh, actual_encoding, options)
@@ -1697,17 +1692,17 @@ class WindowSource(WindowIconSource):
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=self.get_refresh_exclude(), get_best_encoding=self.get_refresh_encoding)
         return False
 
-    def get_refresh_encoding(self, pixel_count, ww, wh, speed, quality, coding):
+    def get_refresh_encoding(self, w, h, speed, quality, coding):
         refresh_encodings = self.auto_refresh_encodings
         encoding = refresh_encodings[0]
         if self.refresh_quality<100:
             for x in ("jpeg", "webp"):
                 if x in self.common_encodings:
                     return x
-        best_encoding = self.get_best_encoding(ww*wh, ww, wh, self.refresh_speed, self.refresh_quality, encoding)
+        best_encoding = self.get_best_encoding(w, h, self.refresh_speed, self.refresh_quality, encoding)
         if best_encoding not in refresh_encodings:
             best_encoding = refresh_encodings[0]
-        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %i, %s)=%s", pixel_count, ww, wh, speed, quality, coding, best_encoding)
+        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %s)=%s", w, h, speed, quality, coding, best_encoding)
         return best_encoding
 
     def get_refresh_exclude(self):
