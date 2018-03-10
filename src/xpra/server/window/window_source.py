@@ -659,7 +659,7 @@ class WindowSource(WindowIconSource):
             if self.refresh_quality<100 and self.image_depth>16:
                 ropts.add("jpeg")
             are = [x for x in PREFERED_ENCODING_ORDER if x in ropts and x in self.common_encodings]
-            if not are and "jpeg" in self.common_encodings and "jpeg" in self.server_core_encodings:
+            if not are and "jpeg" in self.common_encodings:
                 are.append("jpeg")
         self.auto_refresh_encodings = are
         log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s", self.client_refresh_encodings, self.auto_refresh_encodings)
