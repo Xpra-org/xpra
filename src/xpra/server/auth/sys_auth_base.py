@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,7 @@ def init(opts):
     socket_dirs = opts.socket_dirs
 
 
-class SysAuthenticator(object):
+class SysAuthenticatorBase(object):
     USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
 
     def __init__(self, username, **kwargs):
@@ -33,12 +33,6 @@ class SysAuthenticator(object):
         self.prompt = kwargs.pop("prompt", "password")
         self.challenge_sent = False
         self.passed = False
-        try:
-            import pwd
-            self.pw = pwd.getpwnam(username)
-        except Exception as e:
-            log("cannot load password database entry for '%s': %s", username, e)
-            self.pw = None
         #warn about unused options:
         unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd"))
         if unused:
@@ -46,14 +40,10 @@ class SysAuthenticator(object):
             log.warn(" %s", unused)
 
     def get_uid(self):
-        if self.pw is None:
-            raise Exception("username '%s' not found" % self.username)
-        return self.pw.pw_uid
+        raise NotImplementedError()
 
     def get_gid(self):
-        if self.pw is None:
-            raise Exception("username '%s' not found" % self.username)
-        return self.pw.pw_gid
+        raise NotImplementedError()
 
     def requires_challenge(self):
         return True
@@ -158,3 +148,24 @@ class SysAuthenticator(object):
         v = uid, gid, displays, {}, {}
         log("%s.get_sessions()=%s", self, v)
         return v
+
+class SysAuthenticator(SysAuthenticatorBase):
+
+    def __init__(self, username, **kwargs):
+        SysAuthenticatorBase.__init__(self, username)
+        try:
+            import pwd
+            self.pw = pwd.getpwnam(username)
+        except Exception as e:
+            log("cannot load password database entry for '%s': %s", username, e)
+            self.pw = None
+
+    def get_uid(self):
+        if self.pw is None:
+            raise Exception("username '%s' not found" % self.username)
+        return self.pw.pw_uid
+
+    def get_gid(self):
+        if self.pw is None:
+            raise Exception("username '%s' not found" % self.username)
+        return self.pw.pw_gid

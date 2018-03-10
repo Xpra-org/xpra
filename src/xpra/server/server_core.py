@@ -507,6 +507,11 @@ class ServerCore(object):
             AUTH_MODULES["sqlite"] = sqlite_auth
         except Exception as e:
             authlog("cannot load sql auth: %s", e)
+        try:
+            from xpra.server.auth import kerberos_auth
+            AUTH_MODULES["kerberos"] = kerberos_auth
+        except Exception as e:
+            authlog("cannot load kerberos auth: %s", e)
         if WIN32:
             try:
                 from xpra.server.auth import win32_auth
