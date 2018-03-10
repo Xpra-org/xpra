@@ -245,7 +245,7 @@ class WindowSource(WindowIconSource):
         if "webp" in self.server_core_encodings:
             self._encoders["webp"] = self.webp_encode
         self.enc_jpeg = get_codec("enc_jpeg")
-        if self.enc_jpeg:
+        if "jpeg" in self.server_core_encodings and self.enc_jpeg:
             self._encoders["jpeg"] = self.jpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
