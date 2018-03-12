@@ -644,7 +644,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log.error("Error: kerberos GSS client init failed")
             self.quit(EXIT_INTERNAL_ERROR)
             return
-        kerberos.authGSSClientStep(ctx, "")
+        try:
+            kerberos.authGSSClientStep(ctx, "")
+        except Exception as e:
+            authlog("kerberos.authGSSClientStep", exc_info=True)
+            log.error("Error: kerberos client failure:")
+            log.error(" %s", e)
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
         token = kerberos.authGSSClientResponse(ctx)
         authlog("kerberos token=%s", token)
         self.send_challenge_reply(packet, token)
@@ -662,8 +669,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         service = bytestostr(digest.split(b":", 1)[1])
         authlog("gss service=%s", service)
         service_name = gssapi.Name(service)
-        ctx = gssapi.SecurityContext(name=service_name, usage="initiate")
-        token = ctx.step()
+        try:
+            ctx = gssapi.SecurityContext(name=service_name, usage="initiate")
+            token = ctx.step()
+        except Exception as e:
+            authlog("gssapi failure", exc_info=True)
+            log.error("Error: gssapi client failure:")
+            log.error(" %s", e)
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
         authlog("gss token=%s", repr(token))
         self.send_challenge_reply(packet, token)
 
