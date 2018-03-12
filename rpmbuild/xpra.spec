@@ -167,6 +167,8 @@ Requires:			numpy
 %if 0%{?fedora}
 Requires:			libyuv
 Recommends:			python2-lzo
+Recommends:         python2-kerberos
+Recommends:         python2-gssapi
 #webcam:
 Recommends:			python-inotify
 Recommends:			opencv-python
@@ -300,6 +302,8 @@ Recommends:			dbus-python
 Recommends:			python3-avahi
 %if 0%{?fedora}
 Recommends:			python3-lzo
+Recommends:         python3-kerberos
+Recommends:         python3-gssapi
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 %endif
