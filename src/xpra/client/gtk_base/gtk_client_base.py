@@ -225,10 +225,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not self.validate_challenge_packet(packet):
             return
         digest = packet[3]
-        if digest.startswith("kerberos:"):
+        if digest.startswith(b"kerberos:"):
             self.process_kerberos_challenge(packet)
             return
-        if digest.startswith("gss:"):
+        if digest.startswith(b"gss:"):
             self.process_gss_challenge(packet)
             return
         prompt = "password"

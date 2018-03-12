@@ -634,8 +634,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.quit(EXIT_UNSUPPORTED)
             return
         digest = packet[3]
-        assert digest.startswith("kerberos:")
-        service = digest.split(":", 1)[1]
+        assert digest.startswith(b"kerberos:")
+        service = bytestostr(digest.split(b":", 1)[1])
         authlog("kerberos service=%s", service)
         r, ctx = kerberos.authGSSClientInit(service)
         if r!=1:
@@ -656,8 +656,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.quit(EXIT_UNSUPPORTED)
             return
         digest = packet[3]
-        assert digest.startswith("gss:")
-        service = digest.split(":", 1)[1]
+        assert digest.startswith(b"gss:")
+        service = bytestostr(digest.split(b":", 1)[1])
         authlog("gss service=%s", service)
         service_name = gssapi.Name(service)
         ctx = gssapi.SecurityContext(name=service_name, usage="initiate")
@@ -722,7 +722,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = bytestostr(packet[3])
-        actual_digest = digest.split(b":", 1)[0]
+        actual_digest = digest.split(":", 1)[0]
         l = len(server_salt)
         salt_digest = "xor"
         if len(packet)>=5:
