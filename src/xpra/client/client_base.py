@@ -357,16 +357,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             import kerberos
             assert kerberos
-        except ImportError as e:
-            authlog("no kerberos: %s", e)
+        except ImportError:
+            authlog("no kerberos", exc_info=True)
         else:
             authlog("got kerberos support")
             capabilities["digest"].append("kerberos")
         try:
             import gssapi
             assert gssapi
-        except ImportError as e:
-            authlog("no gss: %s", e)
+        except ImportError:
+            authlog("no gssapi", exc_info=True)
         else:
             authlog("got gss support")
             capabilities["digest"].append("gss")
