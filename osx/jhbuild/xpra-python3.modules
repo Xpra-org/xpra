@@ -399,6 +399,34 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-kerberos">
+		<branch repo="pypi.python.org"
+			module="/packages/34/18/9c86fdfdb27e0f7437b7d5a9e22975dcc382637b2a68baac07843be512fc/kerberos-1.3.0.tar.gz"
+			hash="sha256:f039b7dd4746df56f6102097b3dc250fe0078be75130b9dc4211a85a3b1ec6a4"
+			version="1.3.0">
+		</branch>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+	<distutils id="python3-gssapi">
+		<branch repo="pypi.python.org"
+			module="/packages/c9/88/8306f545a9c2425f18678fa8f3ff369df2615168b2aaf3495f32dd609225/gssapi-1.4.1.tar.gz"
+			hash="sha256:be8f37dd9da726db375b9c693e0a63b391d381d903516e79ecc2a2cc965580e4"
+			version="1.4.1">
+		</branch>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-macholib" python3="1">
 		<branch repo="pypi.python.org"
 			module="https://pypi.python.org/packages/70/54/12d547ebb73de8412120a293ab013e61caef36bf712d76c9a574020d2796/macholib-1.9.tar.gz"
