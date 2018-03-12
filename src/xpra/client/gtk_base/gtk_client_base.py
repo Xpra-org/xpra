@@ -224,6 +224,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _process_challenge(self, packet):
         if not self.validate_challenge_packet(packet):
             return
+        digest = packet[3]
+        if digest.startswith("kerberos:"):
+            self.process_kerberos_challenge(packet)
+            return
+        if digest.startswith("gss:"):
+            self.process_gss_challenge(packet)
+            return
         prompt = "password"
         if len(packet)>=6:
             prompt = std(packet[5])

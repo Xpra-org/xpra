@@ -5,7 +5,9 @@
 # later version. See the file COPYING for details.
 
 import sys
-import kerberos
+
+from gssapi import creds as gsscreds
+from gssapi import sec_contexts as gssctx
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.net.crypto import get_salt, get_digests, gendigest
@@ -19,17 +21,18 @@ def init(opts):
 class Authenticator(SysAuthenticatorBase):
 
     def __init__(self, username, **kwargs):
-        self.service = kwargs.pop("service", "")
-        self.realm = kwargs.pop("realm", "")
         def ipop(k):
             try:
                 return int(kwargs.pop(k, 0))
             except ValueError:
                 return 0
+        self.service = kwargs.pop("service", "")
         self.uid = ipop("uid")
         self.gid = ipop("gid")
+        username = kwargs.pop("username", username)
+        kwargs["prompt"] = kwargs.pop("prompt", "token")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
-        log("kerberos auth: service=%s, realm=%s, username=%s", self.service, self.realm, username)
+        log("gss auth: service=%s, username=%s", self.service, username)
 
     def get_uid(self):
         return self.uid
@@ -38,51 +41,44 @@ class Authenticator(SysAuthenticatorBase):
         return self.gid
 
     def __repr__(self):
-        return "kerberos"
+        return "gss"
 
     def get_challenge(self, digests):
-        if self.salt is not None:
-            log.error("Error: authentication challenge already sent!")
-            return None
-        if "xor" not in digests:
-            log.error("Error: kerberos authentication requires the 'xor' digest")
+        assert not self.challenge_sent
+        if "gss" not in digests:
+            log.error("Error: client does not support gss authentication")
             return None
         self.salt = get_salt()
         self.challenge_sent = True
-        return self.salt, "xor"
+        return self.salt, "gss:%s" % self.service
 
-    def check(self, password):
-        try:
-            kerberos.checkPassword(self.username, password, self.service, self.realm)
-            return True
-        except kerberos.KrbError as e:
-            log("check(..)", exc_info=True)
-            log.error("Error: kerberos authentication failed:")
-            log.error(" %s", e)
-            return False
+    def check(self, token):
+        log("check(%s)", repr(token))
+        assert self.challenge_sent
+        server_creds = gsscreds.Credentials(usage='accept')
+        server_ctx = gssctx.SecurityContext(creds=server_creds)
+        server_ctx.step(token)
+        log("gss step complete=%s", server_ctx.complete)
+        return True
 
 
 def main(argv):
     from xpra.platform import program_context
-    with program_context("Kerberos Auth", "Kerberos Auth"):
-        if len(sys.argv) not in (3,4,5):
-            sys.stderr.write("%s invalid arguments\n" % sys.argv[0])
-            sys.stderr.write("usage: %s username password [service [realm]]\n" % sys.argv[0])
+    with program_context("GSS-Auth", "GSS-Authentication"):
+        if len(argv)!=3:
+            sys.stderr.write("%s invalid arguments\n" % argv[0])
+            sys.stderr.write("usage: %s username token\n" % argv[0])
             return 1
-        username = sys.argv[1]
-        password = sys.argv[2]
+        username = argv[1]
+        token = argv[2]
         kwargs = {}
-        if len(sys.argv)>=4:
-            kwargs["service"] = sys.argv[3]
-        if len(sys.argv)==5:
-            kwargs["realm"] = sys.argv[4]
         a = Authenticator(username, **kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest=="xor"
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
-        response = xor(password, combined_salt)
+        response = xor(token, combined_salt)
         a.authenticate(response, client_salt)
     return 0
 

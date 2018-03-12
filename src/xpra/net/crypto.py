@@ -142,8 +142,10 @@ def gendigest(digest, password, salt):
         salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)
         return hexstr(v)
-    elif digest=="xor":
-        salt = salt.ljust(16, b"\x00")[:len(password)]
+    elif digest in ("xor", "kerberos", "gss"):
+        #kerberos and gss use xor because we need to use the actual token
+        #at the other end
+        salt = salt.ljust(len(password), b"\x00")[:len(password)]
         v = xor(password, salt)
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)

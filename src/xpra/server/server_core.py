@@ -508,10 +508,20 @@ class ServerCore(object):
         except Exception as e:
             authlog("cannot load sql auth: %s", e)
         try:
-            from xpra.server.auth import kerberos_auth
-            AUTH_MODULES["kerberos"] = kerberos_auth
+            from xpra.server.auth import kerberos_password_auth
+            AUTH_MODULES["kerberos-password"] = kerberos_password_auth
         except Exception as e:
-            authlog("cannot load kerberos auth: %s", e)
+            authlog("cannot load kerberos-password auth: %s", e)
+        try:
+            from xpra.server.auth import kerberos_token_auth
+            AUTH_MODULES["kerberos-token"] = kerberos_token_auth
+        except Exception as e:
+            authlog("cannot load kerberos-token auth: %s", e)
+        try:
+            from xpra.server.auth import gss_auth
+            AUTH_MODULES["gss"] = gss_auth
+        except Exception as e:
+            authlog("cannot load kerberos-token auth: %s", e)
         if WIN32:
             try:
                 from xpra.server.auth import win32_auth
@@ -1413,7 +1423,7 @@ class ServerCore(object):
             return
 
         authlog("processing authentication with %s, remaining=%s, response=%s, client_salt=%s, digest_modes=%s, salt_digest_modes=%s",
-                proto.authenticators, remaining_authenticators, hexstr(challenge_response), hexstr(client_salt or ""), digest_modes, salt_digest_modes)
+                proto.authenticators, remaining_authenticators, repr(challenge_response), repr(client_salt or ""), digest_modes, salt_digest_modes)
         #verify each remaining authenticator:
         for index, authenticator in enumerate(proto.authenticators):
             if authenticator not in remaining_authenticators:
@@ -1447,11 +1457,12 @@ class ServerCore(object):
                     send_fake_challenge()
                     return
                 salt, digest = challenge
+                actual_digest = digest.split(":", 1)[0]
                 authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
                 authlog.info("Authentication required by %s authenticator module %i", authenticator, (index+1))
-                authlog.info(" sending challenge for username '%s' using %s digest", username, digest)
-                if digest not in digest_modes:
-                    auth_failed("cannot proceed without %s digest support" % digest)
+                authlog.info(" sending challenge for username '%s' using %s digest", username, actual_digest)
+                if actual_digest not in digest_modes:
+                    auth_failed("cannot proceed without %s digest support" % actual_digest)
                     return
                 salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):

@@ -340,7 +340,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             hello["challenge_response"] = challenge_response
             #make it harder for a passive attacker to guess the password length
             #by observing packet sizes (only relevant for wss and ssl)
-            hello["challenge_padding"] = get_salt(max(0, 256-len(challenge_response)))
+            hello["challenge_padding"] = get_salt(max(32, 512-len(challenge_response)))
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
         log("send_hello(%s) packet=%s", hexstr(challenge_response or ""), hello)
@@ -354,6 +354,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
+        capabilities["digest"].append("kerberos")
+        capabilities["digest"].append("gss")
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
@@ -595,6 +597,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog("processing challenge: %s", packet[1:])
         if not self.validate_challenge_packet(packet):
             return
+        digest = packet[3]
+        if digest.startswith("kerberos:"):
+            self.process_kerberos_challenge(packet)
+            return
+        if digest.startswith("gss:"):
+            self.process_kerberos_challenge(packet)
+            return
         prompt = "password"
         if len(packet)>=6:
             prompt = std(packet[5])
@@ -603,6 +612,46 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.quit(EXIT_PASSWORD_REQUIRED)
         else:
             self.send_challenge_reply(packet, password)
+
+    def process_kerberos_challenge(self, packet):
+        try:
+            import kerberos
+        except ImportError as e:
+            log.error("Error: kerberos authentication not supported:")
+            log.error(" %s", e)
+            self.quit(EXIT_UNSUPPORTED)
+            return
+        digest = packet[3]
+        assert digest.startswith("kerberos:")
+        service = digest.split(":", 1)[1]
+        authlog("kerberos service=%s", service)
+        r, ctx = kerberos.authGSSClientInit(service)
+        if r!=1:
+            log.error("Error: kerberos GSS client init failed")
+            self.quit(EXIT_INTERNAL_ERROR)
+            return
+        kerberos.authGSSClientStep(ctx, "")
+        token = kerberos.authGSSClientResponse(ctx)
+        authlog("kerberos token=%s", token)
+        self.send_challenge_reply(packet, token)
+
+    def process_gss_challenge(self, packet):
+        try:
+            import gssapi
+        except ImportError as e:
+            log.error("Error: gss authentication not supported:")
+            log.error(" %s", e)
+            self.quit(EXIT_UNSUPPORTED)
+            return
+        digest = packet[3]
+        assert digest.startswith("gss:")
+        service = digest.split(":", 1)[1]
+        authlog("gss service=%s", service)
+        service_name = gssapi.Name(service)
+        ctx = gssapi.SecurityContext(name=service_name, usage="initiate")
+        token = ctx.step()
+        authlog("gss token=%s", repr(token))
+        self.send_challenge_reply(packet, token)
 
     def auth_error(self, code, message, server_message="authentication failed"):
         authlog.error("Error: authentication failed:")
@@ -661,6 +710,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #all server versions support a client salt,
         #they also tell us which digest to use:
         digest = bytestostr(packet[3])
+        actual_digest = digest.split(b":", 1)[0]
         l = len(server_salt)
         salt_digest = "xor"
         if len(packet)>=5:
@@ -676,12 +726,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         salt = gendigest(salt_digest, client_salt, server_salt)
         authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
 
-        challenge_response = gendigest(digest, password, salt)
+        challenge_response = gendigest(actual_digest, password, salt)
         if not challenge_response:
-            log("invalid digest module '%s': %s", digest)
-            self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % digest, "invalid digest")
+            log("invalid digest module '%s': %s", actual_digest)
+            self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
             return
-        authlog("%s(%s, %s)=%s", digest, repr(password), hexstr(salt), hexstr(challenge_response))
+        authlog("%s(%s, %s)=%s", actual_digest, repr(password), repr(salt), repr(challenge_response))
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 
