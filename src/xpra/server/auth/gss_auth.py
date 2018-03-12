@@ -58,8 +58,7 @@ class Authenticator(SysAuthenticatorBase):
         server_creds = gsscreds.Credentials(usage='accept')
         server_ctx = gssctx.SecurityContext(creds=server_creds)
         server_ctx.step(token)
-        log("gss step complete=%s", server_ctx.complete)
-        return True
+        return server_ctx.complete
 
 
 def main(argv):

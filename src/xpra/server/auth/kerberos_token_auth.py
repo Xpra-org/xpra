@@ -53,13 +53,24 @@ class Authenticator(SysAuthenticatorBase):
     def check(self, token):
         log("check(%s)", token)
         assert self.challenge_sent
-        v, c = kerberos.authGSSServerInit(self.service)
+        v, ctx = kerberos.authGSSServerInit(self.service)
         if v!=1:
             log.error("Error: kerberos GSS server init failed for service '%s'", self.service)
             return False
-        r = kerberos.authGSSServerStep(c, token)
-        log("kerberos server step: %s", r==1)
-        return r==1
+        try:
+            r = kerberos.authGSSServerStep(ctx, token)
+            log("kerberos auth server step result: %s", r==1)
+            if r!=1:
+                return False
+            targetname = kerberos.authGSSServerTargetName(ctx)
+            #response = kerberos.authGSSServerResponse(ctx)
+            principal = kerberos.authGSSServerUserName(ctx)
+            #ie: user1@LOCALDOMAIN
+            #maybe we should validate the realm?
+            log("kerberos targetname=%s, principal=%s", targetname, principal)
+            return True
+        finally:
+            kerberos.authGSSServerClean(ctx)
 
 
 def main(argv):
