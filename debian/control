@@ -92,7 +92,6 @@ Recommends:
 # for the proxy server:
         ,python-setproctitle
 # AES encryption:
-        ,libxvidcore4
 #webp
 #stretch:        ,libwebp6
 #xenial:        ,libwebp5
@@ -144,6 +143,8 @@ Suggests: openssh-server
         ,python-pycuda, libnvidia-encode1
 #python-lz4 is better and available everywhere now, alternatively use:
         ,python-lzo
+#old codec - shouldn't really be used
+        ,libxvidcore4
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
