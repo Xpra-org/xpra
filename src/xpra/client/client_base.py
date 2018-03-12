@@ -354,8 +354,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
-        capabilities["digest"].append("kerberos")
-        capabilities["digest"].append("gss")
+        try:
+            import kerberos
+            assert kerberos
+        except ImportError:
+            pass
+        else:
+            capabilities["digest"].append("kerberos")
+        try:
+            import gssapi
+            assert gssapi
+        except ImportError:
+            pass
+        else:
+            capabilities["digest"].append("gss")
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
