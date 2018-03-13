@@ -78,7 +78,7 @@ class InputServer(StubServerMixin):
         if not other_ui_clients:
             #so only activate this feature afterwards:
             self.keyboard_sync = c.boolget("keyboard_sync", True)
-            self.key_repeat = c.intpair("key_repeat")
+            self.key_repeat = c.intpair("key_repeat", (0, 0))
             self.set_keyboard_repeat(self.key_repeat)
             #always clear modifiers before setting a new keymap
             ss.make_keymask_match(c.strlistget("modifiers", []))
