@@ -41,6 +41,7 @@ MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 ACK_JITTER = envint("XPRA_ACK_JITTER", 20)
 ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 100)
+SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", False)
@@ -1750,7 +1751,6 @@ class WindowSource(WindowIconSource):
         ack_pending = [0, coding, 0, 0, 0, width*height, client_options]
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
-        max_send_delay = 5 + self.estimate_send_delay(ldata)
         def start_send(bytecount):
             ack_pending[0] = monotonic_time()
             ack_pending[2] = bytecount
@@ -1761,9 +1761,13 @@ class WindowSource(WindowIconSource):
             if process_damage_time>0:
                 statistics.damage_out_latency.append((now, width*height, actual_batch_delay, now-process_damage_time))
             elapsed_ms = int((now-ack_pending[0])*1000)
-            #if this packet completed late, record congestion send speed:
-            if elapsed_ms>max_send_delay and ldata>1024:
-                self.networksend_congestion_event("slow send", (elapsed_ms*100/max_send_delay)-100, int(ldata*8*1000/elapsed_ms))
+            #only record slow send as congestion events
+            #if the bandwidth limit is already below the threshold:
+            if ldata>1024 and self.bandwidth_limit<SLOW_SEND_THRESHOLD:
+                #if this packet completed late, record congestion send speed:
+                max_send_delay = 5 + self.estimate_send_delay(ldata)
+                if elapsed_ms>max_send_delay:
+                    self.networksend_congestion_event("slow send", (elapsed_ms*100/max_send_delay)-100, int(ldata*8*1000/elapsed_ms))
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
             now = monotonic_time()
