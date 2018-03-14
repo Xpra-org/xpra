@@ -37,9 +37,10 @@ from xpra.server.source.avsync_mixin import AVSyncMixin
 from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
 from xpra.server.source.webcam_mixin import WebcamMixin
 from xpra.os_util import monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, AtomicInteger
+from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, AtomicInteger
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
+MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 1*1024*1024)
 
 counter = AtomicInteger()
 
@@ -193,7 +194,7 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         #calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0
         if BANDWIDTH_DETECTION:
-            bandwidth_limit = self.statistics.avg_congestion_send_speed
+            bandwidth_limit = max(MIN_BANDWIDTH, self.statistics.avg_congestion_send_speed)
             bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
             if bandwidth_limit>20*1024*1024:
                 #ignore congestion speed if greater 20Mbps
