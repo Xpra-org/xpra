@@ -1810,7 +1810,7 @@ class WindowSource(WindowIconSource):
                     send_speed = (avg_send_speed*100 + cur_send_speed*late_pct)//2//(100+late_pct)
                 else:
                     send_speed = avg_send_speed
-        statslog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps)", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024)
+        bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps)", source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024)
         rtt = self.refresh_target_time
         if rtt:
             #a refresh now would really hurt us!
@@ -1866,29 +1866,32 @@ class WindowSource(WindowIconSource):
         if bytecount>0 and end_send_at>0:
             if decode_time>0:
                 self.global_statistics.record_latency(self.wid, decode_time, start_send_at, end_send_at, pixels, bytecount)
-            netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
-            sendlatency = min(200, self.estimate_send_delay(bytecount))
-            decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-            latency = netlatency + sendlatency + decode + ACK_TOLERANCE
-            eta = end_send_at + latency/1000.0
-            now = monotonic_time()
             #we can ignore some packets:
             # * the first frame (frame=0) of video encoders can take longer to decode
             #   as we have to create a decoder context
             # * when flushing multiple updates at once (network layer aggregation),
             #   only the last one (flush=0) is relevant
-            if now>eta and client_options.get("frame", None)!=0 and client_options.get("flush", 0)==0:
-                actual = int(1000*(now-start_send_at))
-                actual_send_latency = actual-netlatency-decode
-                late_pct = actual_send_latency*100//(1+sendlatency)
-                if pixels<=4096:
-                    #small packets can really skew things, don't bother
-                    #(this also filters out scroll packets which are tiny)
-                    send_speed = 0
-                else:
-                    send_speed = bytecount*8*1000//actual_send_latency
-                #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE)), late_pct, send_speed)
+            frame_no = client_options.get("frame", None)
+            flush = client_options.get("flush", 0)
+            if frame_no!=0 and flush==0:
+                netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
+                sendlatency = min(200, self.estimate_send_delay(bytecount))
+                decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
+                latency = netlatency + sendlatency + decode + ACK_TOLERANCE
+                eta = end_send_at + latency/1000.0
+                now = monotonic_time()
+                if now>eta:
+                    actual = int(1000*(now-start_send_at))
+                    actual_send_latency = actual-netlatency-decode
+                    late_pct = actual_send_latency*100//(1+sendlatency)
+                    if pixels<=4096:
+                        #small packets can really skew things, don't bother
+                        #(this also filters out scroll packets which are tiny)
+                        send_speed = 0
+                    else:
+                        send_speed = bytecount*8*1000//actual_send_latency
+                    #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
+                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE)), late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
