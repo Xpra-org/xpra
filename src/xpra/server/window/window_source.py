@@ -1574,21 +1574,17 @@ class WindowSource(WindowIconSource):
         schedule = False
         msg = ""
         if not lossy or options.get("auto_refresh", False):
-            if not self.refresh_regions:
+            #substract this region from the list of refresh regions:
+            #(window video source may remove it from the video subregion)
+            self.remove_refresh_region(region)
+            if not self.refresh_timer:
                 #nothing due for refresh, still nothing to do
                 msg = "nothing to do"
+            elif not self.refresh_regions:
+                msg = "covered all regions that needed a refresh, cancelling refresh timer"
+                self.cancel_refresh_timer()
             else:
-                #substract this region from the list of refresh regions:
-                self.remove_refresh_region(region)
-                if not self.refresh_regions:
-                    msg = "covered all regions that needed a refresh, cancelling refresh timer"
-                    self.cancel_refresh_timer()
-                else:
-                    if self.refresh_timer:
-                        msg = "removed rectangle from regions, keeping existing refresh timer"
-                    else:
-                        msg = "removed rectangle from regions"
-                        schedule = True
+                msg = "removed rectangle from regions, keeping existing refresh timer"
         else:
             #if we're here: the window is still valid and this was a lossy update,
             #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
