@@ -1873,11 +1873,11 @@ class WindowSource(WindowIconSource):
             #we can ignore some packets:
             # * the first frame (frame=0) of video encoders can take longer to decode
             #   as we have to create a decoder context
-            # * when flushing multiple updates at once (network layer aggregation),
-            #   only the last one (flush=0) is relevant
             frame_no = client_options.get("frame", None)
-            flush = client_options.get("flush", 0)
-            if frame_no!=0 and flush==0:
+            # when flushing a screen update as multiple packets (network layer aggregation),
+            # we could ignore all but the last one (flush=0):
+            #flush = client_options.get("flush", 0)
+            if frame_no!=0:
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
                 decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
