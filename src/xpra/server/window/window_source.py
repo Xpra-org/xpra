@@ -1496,17 +1496,16 @@ class WindowSource(object):
         region = rectangle(x, y, w, h)
         if options.get("auto_refresh", False) or (actual_quality>=AUTO_REFRESH_THRESHOLD and not lossy_csc and not scaled):
             #this screen update is lossless or high quality
-            if not self.refresh_regions:
+            #substract this region from the list of refresh regions:
+            self.remove_refresh_region(region)
+            if not self.refresh_timer:
                 #nothing due for refresh, still nothing to do
                 msg = "nothing to do"
+            elif len(self.refresh_regions)==0:
+                msg = "covered all regions that needed a refresh, cancelling refresh"
+                self.cancel_refresh_timer()
             else:
-                #refresh already due: substract this region from the list of regions:
-                self.remove_refresh_region(region)
-                if len(self.refresh_regions)==0:
-                    msg = "covered all regions that needed a refresh, cancelling refresh"
-                    self.cancel_refresh_timer()
-                else:
-                    msg = "removed rectangle from regions, keeping refresh"
+                msg = "removed rectangle from regions, keeping refresh"
         else:
             #if we're here: the window is still valid and this was a lossy update,
             #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
