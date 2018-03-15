@@ -267,6 +267,7 @@ div.windowinfocus {
 .menu-block {
 	position: relative;
 	display: inline-block;
+    float: left;
 }
 
 .menu-content {
