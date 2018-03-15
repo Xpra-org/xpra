@@ -1533,13 +1533,17 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 		ctx.do_reconnect();
 	}
 	else {
-		ctx.close_windows();
-		ctx.close_audio();
-		ctx.clear_timers();
-		ctx.close_protocol();
-		// call the client's close callback
-		ctx.callback_close(ctx.disconnect_reason);
+		ctx.close();
 	}
+}
+
+XpraClient.prototype.close = function() {
+	this.close_windows();
+	this.close_audio();
+	this.clear_timers();
+	this.close_protocol();
+	// call the client's close callback
+	this.callback_close(this.disconnect_reason);
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
@@ -1548,7 +1552,7 @@ XpraClient.prototype._process_disconnect = function(packet, ctx) {
 	ctx.debug("main", "disconnect reason:", reason);
 	if (ctx.reconnect_in_progress) {
 		return;
-	}	
+	}
 	ctx.disconnect_reason = reason;
 	ctx.close();
 	// call the client's close callback

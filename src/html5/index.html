@@ -3,7 +3,7 @@
 	<head>
 
 		<!--
-			Copyright (c) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+			Copyright (c) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 			Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
 			Licensed under MPL 2.0
  		-->
@@ -55,10 +55,32 @@
 
 		<div id="screen" style="width: 100%; height:100%;">
 			<div id="top_bar">
+				<div class="menu-block">
+					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra <span class="caret"></span></button>
+					<div id="xpra_menu" class="menu-content">
+						<a href="#" onclick="show_about(event); return false">About</a>
+						<a href="#" onclick="client.close(); return false">Disconnect</a>
+					</div>
+				</div>
 			</div>
 		</div>
 
 		<div class="notifications">
+		</div>
+
+		<div id="about">
+			<h2>Xpra HTML5 Client</h2>
+			<h3>Version 2.3</h3>
+			<span>
+				Copyright (c) 2013-2018 Antoine Martin &lt;antoine@devloop.org.uk&gt;
+				<br />
+				Copyright (c) 2014 Joshua Higgins &lt;josh@kxes.net&gt;
+			</span>
+			<br />
+			<br />
+			<span class="info">
+			For more information, see <a href="https://xpra.org/trac/wiki/HTML5">xpra HTML5 wiki</a>.
+			</span>
 		</div>
 
 	    <div>
@@ -75,6 +97,22 @@
 
 			var cdebug = console.debug;
 			var clog = console.log;
+
+			function show_menu(menu_id, event) {
+				$("#"+menu_id).toggle();
+				event.stopPropagation();
+			}
+
+			$("body").click(function() {
+				$('.menu-content').hide();
+				$('#about').hide();
+			});
+
+			function show_about(event) {
+				$('#about').show();
+				$('.menu-content').hide();
+				event.stopPropagation();
+			}
 
 			function init_client() {
 				if (typeof jQuery == 'undefined') {
@@ -454,8 +492,9 @@
 				screen.addEventListener('drop', handleFileSelect, false);
 			}
 
+			var client = null;
 			$(document).ready(function() {
-				var client = init_client();
+				client = init_client();
 			    client.connect();
 
 			    //from now on, send log and debug to client function

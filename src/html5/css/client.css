@@ -263,6 +263,64 @@ div.windowinfocus {
 	font-weight: 300;
 	transform-origin: center center;
 }
+
+.menu-block {
+	position: relative;
+	display: inline-block;
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 140px;
+    overflow: auto;
+    font-size: 13px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.menu-content a {
+    color: black;
+    padding: 8px 12px;
+    text-decoration: none;
+    display: block;
+}
+.menu-block a:hover {
+	background-color: #ddd;
+}
+
+.menu-button {
+    background-color: #3498DB;
+    color: white;
+    padding: 14px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+}
+
+#about {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	background-color: #eee;
+	border: 2px solid #ddd;
+	display: none;
+	z-index: 1000000;
+	position: fixed;
+	margin: auto;
+	width: 640px;
+	height: 280px;
+	top: 50%;
+	left: 50%;
+	margin-left: -320px;
+	margin-top: -140px;
+	text-align: center;
+	padding: 20px;
+}
+
+.menu-button:hover, .menu-button:focus {
+    background-color: #2980B9;
+}
+
 @media screen {
 	.notifications .alert.visible {
 		margin-top: 0;
