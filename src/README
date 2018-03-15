@@ -24,17 +24,6 @@ your regular window manager, instead of being trapped inside a box.
 It gives you "remote applications", not a "remote desktop".  (Hence
 the name -- "X Persistent Remote Applications".)
 
-Another difference is that VNC is far more portable -- you can get
-both 'servers' and 'viewers' for essentially any operating system.
-For xpra, you can only run X programs against the 'server'.
-The xpra viewer is more portable, the existing one should be able
-to work anywhere that GTK+ does. And there are Java and Android
-versions too. Writing new clients is relatively easy.
-
-Basically, if you want a remote desktop, use VNC; if you just want to
-run a few programs remotely, use xpra.
-
-
 What about NX?
 --------------
 
