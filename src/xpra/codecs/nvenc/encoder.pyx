@@ -40,7 +40,8 @@ cdef int MIN_COMPUTE = 0x30
 
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
-cdef int NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", not WIN32)
+cdef int NATIVE_RGB = int(not WIN32)
+NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", NATIVE_RGB)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
@@ -357,8 +358,6 @@ cdef extern from "nvEncodeAPI.h":
         uint16_t Data2
         uint16_t Data3
         uint8_t  Data4[8]
-
-    int NVENC_INFINITE_GOPLENGTH
 
     #Encode Codec GUIDS supported by the NvEncodeAPI interface.
     GUID NV_ENC_CODEC_H264_GUID
@@ -923,8 +922,6 @@ cdef extern from "nvEncodeAPI.h":
     unsigned int NV_ENC_ERR_RESOURCE_NOT_MAPPED
 
     unsigned int NV_ENC_CAPS_MB_PER_SEC_MAX
-    unsigned int NV_ENC_CAPS_SUPPORT_YUV444_ENCODE
-    unsigned int NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE
     unsigned int NV_ENC_RECONFIGURE_PARAMS_VER
 
 
