@@ -298,6 +298,8 @@ div.windowinfocus {
     font-size: 16px;
     border: none;
     cursor: pointer;
+    display: inline-block;
+	white-space: nowrap;
 }
 
 #about {
