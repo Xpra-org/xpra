@@ -25,6 +25,7 @@ body {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 	font-size: 16px;
+	max-width: 16em;
 }
 .form-signin .form-control.command {
 	margin-left: 1.6em;

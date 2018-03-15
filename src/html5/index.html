@@ -97,7 +97,7 @@
 				var server = getparam("server") || window.location.hostname;
 				var port = getparam("port") || window.location.port;
 				var ssl = getboolparam("ssl", https);
-				var path = getparam("path") || "";
+				var path = getparam("path") || window.location.pathname;
 				var encryption = getboolparam("encryption", false);
 				var key = getparam("key") || null;
 				var keyboard_layout = getparam("keyboard_layout") || null;

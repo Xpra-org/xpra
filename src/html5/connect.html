@@ -241,6 +241,10 @@
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<span>Server Path:</span>
+					<input title="path" type="text" class="form-control" id="path" placeholder="" size="16" maxlength="256">
+				  </li>
+				  <li class="list-group-item">
 				  	<span>Debugging</span>:<br/>
 				  	<input type="checkbox" id="debug_main"> <span>Main</span>,
 				  	<input type="checkbox" id="debug_keyboard"> <span>keyboard</span>,
@@ -282,7 +286,7 @@ function doConnect() {
 		}
 	}
 	add_prop("submit", true);
-	var val_props = ["server", "port", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
+	var val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
 	for (var i = 0; i < val_props.length; i++) {
 		var prop = val_props[i];
 		var value = document.getElementById(prop).value;
@@ -342,6 +346,7 @@ $(document).ready(function() {
 	link.setAttribute('href', url);
 	document.getElementById("server").value = getparam("server") || link.hostname;
 	document.getElementById("port").value = getparam("port") || link.port;
+	document.getElementById("path").value = getparam("path") || link.pathname;
 	document.getElementById("username").value = getparam("username") || "";
 	var https = document.location.protocol=="https:";
 	var ssl = getboolparam("ssl", https);
