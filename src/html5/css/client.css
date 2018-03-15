@@ -300,6 +300,11 @@ div.windowinfocus {
     cursor: pointer;
     display: inline-block;
 	white-space: nowrap;
+	margin: 0;
+}
+
+.menu-button:hover, .menu-button:focus {
+    background-color: #2980B9;
 }
 
 #about {
@@ -320,8 +325,8 @@ div.windowinfocus {
 	padding: 20px;
 }
 
-.menu-button:hover, .menu-button:focus {
-    background-color: #2980B9;
+#upload {
+	display: none;
 }
 
 @media screen {

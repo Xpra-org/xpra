@@ -56,10 +56,15 @@
 		<div id="screen" style="width: 100%; height:100%;">
 			<div id="top_bar">
 				<div class="menu-block">
-					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra <span class="caret">&#9660;</span></button>
+					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra &#9660;</button>
 					<div id="xpra_menu" class="menu-content">
-						<a href="#" onclick="show_about(event); return false">About</a>
-						<a href="#" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
+						<a href="#" id="about_link" onclick="show_about(event); return false">About</a>
+						<a href="#" id="disconnect_link" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
+					</div>
+					<button onclick="show_menu('server_menu', event);" class="menu-button">Server &#9660;</button>
+					<div id="server_menu" class="menu-content">
+						<a href="#" id="shutdown_link" onclick="confirm_shutdown_server(event); return false">Shutdown Server</a>
+						<a href="#" id="upload_link" onclick="upload_file(event); return false">Upload File</a>
 					</div>
 				</div>
 			</div>
@@ -67,6 +72,10 @@
 
 		<div class="notifications">
 		</div>
+
+		<form id="upload_form">
+			<input type="file" id="upload" style="display: none" />
+		</form>
 
 		<div id="about">
 			<h2>Xpra HTML5 Client</h2>
@@ -99,8 +108,28 @@
 			var clog = console.log;
 
 			function show_menu(menu_id, event) {
-				$("#"+menu_id).toggle();
+				var menu = $("#"+menu_id);
+				if (menu.is(':visible')) {
+					menu.hide();
+				}
+				else {
+					$('.menu-content').hide();
+					var left = $(event.target).offset().left;
+					menu.offset({left : left});
+					menu.show();
+				}
 				event.stopPropagation();
+			}
+
+			function confirm_shutdown_server() {
+				if (confirm("Shutdown this server?")) {
+					client.send(["shutdown-server"]);
+				}
+			}
+
+			function upload_file(event) {
+				$('.menu-content').hide();
+				$('#upload').click();
 			}
 
 			$("body").click(function() {
@@ -474,13 +503,15 @@
 					};
 					fileReader.readAsArrayBuffer(f);
 				}
-				function handleFileSelect(evt) {
-					evt.stopPropagation();
-					evt.preventDefault();
-					var files = evt.dataTransfer.files;
+				function sendAllFiles(files) {
 					for (var i = 0, f; f = files[i]; i++) {
 						send_file(f);
 					}
+				}
+				function handleFileSelect(evt) {
+					evt.stopPropagation();
+					evt.preventDefault();
+					sendAllFiles(evt.dataTransfer.files);
 				}
 				function handleDragOver(evt) {
 					evt.stopPropagation();
@@ -490,6 +521,16 @@
 				var screen = document.getElementById('screen');
 				screen.addEventListener('dragover', handleDragOver, false);
 				screen.addEventListener('drop', handleFileSelect, false);
+
+				$("#upload").on("change", function(evt) {
+					evt.stopPropagation();
+					evt.preventDefault();
+					sendAllFiles(this.files);
+					return false;
+				});
+				$("#upload_form").on('submit',function(evt){
+				    evt.preventDefault();
+				});
 			}
 
 			var client = null;
@@ -511,6 +552,9 @@
 			    }
 			   	if (client.file_transfer) {
 			   		init_file_transfer(client);
+			   	}
+			   	else {
+			   		$('upload_link').removeAttr('href');
 			   	}
 			});
 		</script>
