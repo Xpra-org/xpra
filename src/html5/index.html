@@ -59,7 +59,7 @@
 					<button onclick="show_menu('xpra_menu', event);" class="menu-button">Xpra <span class="caret"></span></button>
 					<div id="xpra_menu" class="menu-content">
 						<a href="#" onclick="show_about(event); return false">About</a>
-						<a href="#" onclick="client.close(); return false">Disconnect</a>
+						<a href="#" onclick="client.disconnect_reason='User request'; client.close(); return false">Disconnect</a>
 					</div>
 				</div>
 			</div>
