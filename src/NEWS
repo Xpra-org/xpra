@@ -1,3 +1,10 @@
+v1.0.11 (2018-03-15)
+======================
+	-- fix refresh loop with video region
+	-- fix NVENC codec compatibility with Cython 0.28
+	-- disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
+
+
 v1.0.10 (2018-02-12)
 ======================
 	-- fix crash with invalid tray docking requests

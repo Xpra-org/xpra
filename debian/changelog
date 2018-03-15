@@ -1,3 +1,10 @@
+xpra (1.0.11-1) UNRELEASED; urgency=low
+  * fix refresh loop with video region
+  * fix NVENC codec compatibility with Cython 0.28
+  * disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 15 Mar 2018 17:01:54 +0700
+
 xpra (1.0.10-1) UNRELEASED; urgency=low
   * fix crash with invalid tray docking requests
   * fix client authentication failures with multiple challenges

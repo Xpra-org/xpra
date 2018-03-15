@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.10
+%define version 1.0.11
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -612,7 +612,12 @@ fi
 
 
 %changelog
-* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.10-1
+* Thu Mar 15 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
+- fix refresh loop with video region
+- fix NVENC codec compatibility with Cython 0.28
+- disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
+
+* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix errors with some unauthenticated connections
