@@ -592,7 +592,7 @@
 				}
 				document.addEventListener("visibilitychange", function (e) {
 					window_ids = Object.keys(client.id_to_window);
-					console.log("visibilitychange hidden=", document.hidden);
+					clog("visibilitychange hidden=", document.hidden);
 					if (document.hidden) {
 						client.send(["suspend", true, window_ids]);
 					}
