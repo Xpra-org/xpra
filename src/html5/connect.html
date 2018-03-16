@@ -347,9 +347,16 @@ $(document).ready(function() {
 	var url = window.location.href;
 	var link = document.createElement('a');
 	link.setAttribute('href', url);
+	var pathname = link.pathname;
+	if (pathname && Utilities.endsWith(pathname, "connect.html")) {
+		pathname = pathname.substring(0, pathname.length-"connect.html".length);
+	}
+	if (pathname && pathname=="/") {
+		pathname = "";
+	}
 	document.getElementById("server").value = getparam("server") || link.hostname;
 	document.getElementById("port").value = getparam("port") || link.port;
-	document.getElementById("path").value = getparam("path") || link.pathname;
+	document.getElementById("path").value = getparam("path") || pathname;
 	document.getElementById("username").value = getparam("username") || "";
 	var https = document.location.protocol=="https:";
 	var ssl = getboolparam("ssl", https);
