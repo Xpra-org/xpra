@@ -120,6 +120,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.ping_timeout_timer = null;
 	this.ping_grace_timer = null;
 	this.ping_timer = null;
+	this.last_ping_server_time = 0
+	this.last_ping_local_time = 0
 	this.last_ping_echoed_time = 0;
 	this.server_ok = false;
     //packet handling
@@ -1818,6 +1820,12 @@ XpraClient.prototype._gendigest = function(digest, password, salt) {
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
 	var echotime = packet[1];
+	ctx.last_ping_server_time = echotime;
+	if (packet.length>2) {
+		//prefer system time (packet[1] is monotonic)
+		ctx.last_ping_server_time = packet[2];
+	}
+	ctx.last_ping_local_time = new Date().getTime();
 	var l1=0, l2=0, l3=0;
 	ctx.send(["ping_echo", echotime, l1, l2, l3, 0]);
 }

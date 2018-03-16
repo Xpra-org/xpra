@@ -329,6 +329,16 @@ div.windowinfocus {
 	display: none;
 }
 
+.clock_block {
+	position: relative;
+	float: left;
+	padding-left: 100px;
+}
+#clock_text {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: #fff;
+}
+
 @media screen {
 	.notifications .alert.visible {
 		margin-top: 0;

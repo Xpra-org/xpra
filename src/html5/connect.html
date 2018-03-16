@@ -238,6 +238,9 @@
 				  	<input type="checkbox" id="swap_keys"> <span>Swap command and control key</span>
 				  </li>
 				  <li class="list-group-item">
+				  	<input type="checkbox" id="clock"> <span>Show server clock</span>
+				  </li>
+				  <li class="list-group-item">
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
@@ -319,7 +322,7 @@ function doConnect() {
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video",
-		"ssl", "insecure",
+		"ssl", "insecure", "clock",
 		"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
 		];
 	for (var i = 0; i < bool_props.length; i++) {
@@ -534,9 +537,9 @@ $(document).ready(function() {
 	var bool_props = ["clipboard", "printing", "file_transfer",
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect", "swap_keys",
-			"video", "mediasource_video",
+			"video", "mediasource_video", "clock",
 			"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
-	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "exit_with_children", "exit_with_client"];
+	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "clock", "exit_with_children", "exit_with_client"];
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
 	}

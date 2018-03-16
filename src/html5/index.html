@@ -67,6 +67,9 @@
 						<a href="#" id="upload_link" onclick="upload_file(event); return false">Upload File</a>
 					</div>
 				</div>
+				<div class="clock_block">
+					<p id="clock_text"></p>
+				</div>
 			</div>
 		</div>
 
@@ -97,6 +100,8 @@
 	    </div>
 
 		<script>
+			var getparam = Utilities.getparam;
+			var getboolparam = Utilities.getboolparam;
 
 			// disable right click menu:
 			window.oncontextmenu = function(e) {
@@ -110,13 +115,13 @@
 			function show_menu(menu_id, event) {
 				var menu = $("#"+menu_id);
 				if (menu.is(':visible')) {
-					menu.hide();
+					menu.slideUp();
 				}
 				else {
 					$('.menu-content').hide();
 					var left = $(event.target).offset().left;
 					menu.offset({left : left});
-					menu.show();
+					menu.slideDown();
 				}
 				event.stopPropagation();
 			}
@@ -128,18 +133,18 @@
 			}
 
 			function upload_file(event) {
-				$('.menu-content').hide();
+				$('.menu-content').slideUp();
 				$('#upload').click();
 			}
 
 			$("body").click(function() {
-				$('.menu-content').hide();
+				$('.menu-content').slideUp();
 				$('#about').hide();
 			});
 
 			function show_about(event) {
+				$('.menu-content').slideUp();
 				$('#about').show();
-				$('.menu-content').hide();
 				event.stopPropagation();
 			}
 
@@ -150,8 +155,6 @@
 				}
 				var https = document.location.protocol=="https:";
 
-				var getparam = Utilities.getparam;
-				var getboolparam = Utilities.getboolparam;
 				// look at url parameters
 				var username = getparam("username") || null;
 				var password = getparam("password") || null;
@@ -533,6 +536,37 @@
 				});
 			}
 
+			function init_clock(client) {
+				function update_clock() {
+					var now = new Date().getTime();
+					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time);
+					var date = new Date(server_time);
+					cdebug("update_clock() server_time=", server_time, "date=", date.toLocaleDateString());
+					$("#clock_text").text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
+					//try to land at the half-second point,
+					//so that we never miss displaying a second:
+					var delay = (1500-(server_time % 1000)) % 1000;
+					if (delay<10) {
+						delay = 1000;
+					}
+					setTimeout(update_clock, delay);
+				}
+
+				function wait_for_time() {
+					cdebug("wait_for_time() last_ping_local_time=", client.last_ping_local_time);
+					if (client.last_ping_local_time>0) {
+						update_clock();
+					}
+					else {
+						//check again soon:
+						//(ideally, we should register a callback on the ping packet)
+						setTimeout(wait_for_time, 1000);
+					}
+				}
+				wait_for_time();
+			}
+			
+			
 			var client = null;
 			$(document).ready(function() {
 				client = init_client();
@@ -556,6 +590,9 @@
 			   	else {
 			   		$('upload_link').removeAttr('href');
 			   	}
+				if (getboolparam("clock")) {
+					init_clock(client);
+				}
 			});
 		</script>
 	</body>
