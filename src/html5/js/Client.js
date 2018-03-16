@@ -1903,6 +1903,16 @@ XpraClient.prototype._tray_closed = function(win) {
 	ctx.debug("main", "tray closed (ignored)");
 }
 
+XpraClient.prototype.reconfigure_all_trays = function() {
+	for (var twid in this.id_to_window) {
+		var twin = this.id_to_window[twid];
+		if (twin && twin.tray) {
+			this.send_tray_configure(twid);
+		}
+	}
+}
+
+
 XpraClient.prototype._process_new_window = function(packet, ctx) {
 	ctx._new_window_common(packet, false);
 }
@@ -1950,15 +1960,7 @@ XpraClient.prototype._process_lost_window = function(packet, ctx) {
 		console.log("lost window, was tray=", win.tray);
 		if (win.tray) {
 			//other trays may have moved:
-			for (var twid in ctx.id_to_window) {
-				console.log("testing", twid);
-				var twin = ctx.id_to_window[twid];
-				console.log("testing", twin);
-				if (twin && twin.tray) {
-					console.log("is tray!");
-					ctx.send_tray_configure(twid);
-				}
-			}
+			ctx.reconfigure_all_trays();
 		}
 	}
 	console.log("lost window", wid, ", remaining: ", Object.keys(ctx.id_to_window));

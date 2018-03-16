@@ -541,7 +541,13 @@
 					var now = new Date().getTime();
 					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time);
 					var date = new Date(server_time);
-					$("#clock_text").text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
+					var clock_text = $("#clock_text");
+					var width = clock_text.width();
+					clock_text.text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
+					if (width != clock_text.width()) {
+						//trays have been shifted left or right:
+						client.reconfigure_all_trays();
+					}
 					//try to land at the half-second point,
 					//so that we never miss displaying a second:
 					var delay = (1500-(server_time % 1000)) % 1000;
