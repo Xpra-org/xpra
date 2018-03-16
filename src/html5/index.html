@@ -563,8 +563,7 @@
 				}
 				wait_for_time();
 			}
-			
-			
+
 			var client = null;
 			$(document).ready(function() {
 				client = init_client();
@@ -591,6 +590,18 @@
 				if (getboolparam("clock")) {
 					init_clock(client);
 				}
+				document.addEventListener("visibilitychange", function (e) {
+					window_ids = Object.keys(client.id_to_window);
+					console.log("visibilitychange hidden=", document.hidden);
+					if (document.hidden) {
+						client.send(["suspend", true, window_ids]);
+					}
+					else {
+						client.send(["resume", true, window_ids]);
+						client.redraw_windows();
+						client.request_refresh(-1);
+					}
+				});
 			});
 		</script>
 	</body>
