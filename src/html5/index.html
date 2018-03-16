@@ -541,7 +541,6 @@
 					var now = new Date().getTime();
 					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time);
 					var date = new Date(server_time);
-					cdebug("update_clock() server_time=", server_time, "date=", date.toLocaleDateString());
 					$("#clock_text").text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
 					//try to land at the half-second point,
 					//so that we never miss displaying a second:
@@ -553,7 +552,6 @@
 				}
 
 				function wait_for_time() {
-					cdebug("wait_for_time() last_ping_local_time=", client.last_ping_local_time);
 					if (client.last_ping_local_time>0) {
 						update_clock();
 					}
