@@ -2258,11 +2258,15 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 		ctx.add_sound_data(codec, buf, metadata);
 	}
 	catch(e) {
+		this.on_audio_state_change("error", ""+e);
 		this.error("audio failed:", e);
 		this.close_audio();
 	}
 }
 
+XpraClient.prototype.on_audio_state_change = function(newstate, details) {
+	//can be overriden
+}
 
 XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	var MIN_START_BUFFERS = 4;
@@ -2270,6 +2274,7 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	this.debug("audio", "sound-data: ", codec, ", ", buf.length, "bytes");
 	if (this.audio_buffers.length>=MAX_BUFFERS) {
 		this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
+		this.on_audio_state_change("error", "queue overflow");
 		this.close_audio();
 		return;
 	}
@@ -2322,6 +2327,7 @@ XpraClient.prototype._audio_start_stream = function() {
 	else {
 		this.audio_aurora_ctx.play();
 	}
+	this.on_audio_state_change("playing", ""+this.audio_framework+" playing "+this.audio_codec+" stream");
 }
 
 XpraClient.prototype._audio_ready = function() {

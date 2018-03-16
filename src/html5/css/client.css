@@ -339,6 +339,11 @@ div.windowinfocus {
 	color: #fff;
 }
 
+.audio {
+	float: right;
+	padding-right: 10px;
+}
+
 @media screen {
 	.notifications .alert.visible {
 		margin-top: 0;

@@ -70,6 +70,11 @@
 				<div class="clock_block">
 					<p id="clock_text"></p>
 				</div>
+				<div class="audio">
+					<div id="speaker">
+						<img id="speaker_icon" src="./icons/speaker-off.png" alt="speaker off" />
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -596,6 +601,25 @@
 				if (getboolparam("clock")) {
 					init_clock(client);
 				}
+		    	client.on_audio_state_change = function(newstate, details) {
+		    		var tooltip = "";
+		    		var image_name = "";
+		    		if (newstate=="playing") {
+		    			image_name = "speaker.png";
+		    			tooltip = details || "playing";
+		    		}
+		    		else if (newstate=="waiting") {
+		    			image_name = "speaker-buffering.png";
+		    			tooltip = details || "buffering";
+		    		}
+		    		else {
+		    			image_name = "speaker-off.png";
+		    			tooltip = details || "off";
+		    		}
+		    		clog("audio-state:", newstate);
+		    		$("#speaker_icon").attr("src", "./icons/"+image_name);
+		    		$("#speaker_icon").attr("title", tooltip);
+		    	};
 				document.addEventListener("visibilitychange", function (e) {
 					window_ids = Object.keys(client.id_to_window);
 					clog("visibilitychange hidden=", document.hidden);
