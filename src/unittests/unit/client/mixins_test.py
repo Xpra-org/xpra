@@ -9,7 +9,7 @@ import unittest
 from xpra.util import AdHocStruct, typedict
 from xpra.os_util import monotonic_time
 from xpra.client.mixins.network_state import NetworkState
-from xpra.client.mixins.mmap_client import MmapClient
+from xpra.client.mixins.mmap import MmapClient
 from xpra.client.mixins.remote_logging import RemoteLogging
 
 
