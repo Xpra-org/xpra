@@ -117,6 +117,10 @@
 			var cdebug = console.debug;
 			var clog = console.log;
 
+			if (!getboolparam("top_bar", true)) {
+				$("#top_bar").hide();
+			}
+
 			function show_menu(menu_id, event) {
 				var menu = $("#"+menu_id);
 				if (menu.is(':visible')) {
@@ -229,7 +233,7 @@
 					progress_offset++;
 					$('#progress-bar').val(progress_value + progress_offset);
 					if (progress_offset<9) {
-						progress_timer = window.setTimeout(progress_move_offset, (5+progress_offset)*progress_offset); 
+						progress_timer = window.setTimeout(progress_move_offset, (5+progress_offset)*progress_offset);
 					}
 				}
 

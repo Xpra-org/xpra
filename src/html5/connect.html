@@ -238,7 +238,7 @@
 				  	<input type="checkbox" id="swap_keys"> <span>Swap command and control key</span>
 				  </li>
 				  <li class="list-group-item">
-				  	<input type="checkbox" id="clock"> <span>Show server clock</span>
+				  	<input type="checkbox" id="top_bar"> <span>Show top bar</span>, <input type="checkbox" id="clock"> <span>show server clock</span>
 				  </li>
 				  <li class="list-group-item">
 				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
@@ -322,7 +322,7 @@ function doConnect() {
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video",
-		"ssl", "insecure", "clock",
+		"ssl", "insecure", "top_bar", "clock",
 		"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
 		];
 	for (var i = 0; i < bool_props.length; i++) {
@@ -537,9 +537,9 @@ $(document).ready(function() {
 	var bool_props = ["clipboard", "printing", "file_transfer",
 			"exit_with_children", "exit_with_client",
 			"sharing", "steal", "reconnect", "swap_keys",
-			"video", "mediasource_video", "clock",
+			"video", "mediasource_video", "top_bar", "clock",
 			"debug_main", "debug_keyboard", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
-	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "clock", "exit_with_children", "exit_with_client"];
+	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "top_bar", "clock", "exit_with_children", "exit_with_client"];
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
 	}
@@ -548,6 +548,18 @@ $(document).ready(function() {
 		var def = default_on.indexOf(prop)>=0;
 		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
+
+	var top_bar_checkbox = $("#top_bar");
+	function set_clock_visibility() {
+		if (top_bar_checkbox.is(':checked')) {
+			$("#clock").removeAttr("disabled");
+		}
+		else {
+		    $("#clock").attr("disabled", true);
+		}
+	}
+	top_bar_checkbox.change(set_clock_visibility);
+	set_clock_visibility();
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
