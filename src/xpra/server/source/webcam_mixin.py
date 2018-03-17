@@ -104,6 +104,7 @@ class WebcamMixin(StubSourceMixin):
                 self.send_webcam_ack(device_id, 0, p.get_width(), p.get_height())
                 return True
             except Exception as e:
+                log.error("start_virtual_webcam%s error on device %s: %s", (device_id, w, h), vid, device_info, exc_info=True)
                 errs[device_str] = str(e)
                 del e
         fail("all devices failed")
