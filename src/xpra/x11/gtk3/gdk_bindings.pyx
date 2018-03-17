@@ -29,7 +29,6 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
 from libc.stdint cimport uintptr_t
-from xpra.gtk_common.gtk3.gdk_bindings cimport unwrap
 from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_display_for, get_raw_display_for
 
 
@@ -41,9 +40,9 @@ cdef extern from "gtk-3.0/gdk/gdk.h":
     GdkAtom GDK_NONE
     ctypedef struct GdkWindow:
         pass
-    void gdk_flush()
-    void gdk_error_trap_push()
-    int gdk_error_trap_pop()
+    void gdk_display_flush(GdkDisplay *display)
+    void gdk_x11_display_error_trap_push(GdkDisplay *display)
+    int gdk_x11_display_error_trap_pop(GdkDisplay *display)
 
 cdef extern from "gtk-3.0/gdk/gdkx.h":
     pass
@@ -441,9 +440,8 @@ cdef GdkAtom get_gdkatom(display_source, xatom):
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
         return GDK_NONE
-    cdef GdkDisplay * disp
+    cdef GdkDisplay *disp = get_raw_display_for(display_source)
     cdef GdkAtom gdk_atom
-    disp = get_raw_display_for(display_source)
     gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
     return gdk_atom
 
@@ -917,18 +915,22 @@ cdef _route_event(int etype, event, signal, parent_signal):
 cdef object _gw(display, Window xwin):
     if xwin==0:
         return None
-    gdk_error_trap_push()
+    cdef GdkDisplay *disp = NULL
     try:
-        disp = get_display_for(display)
-        win = GdkX11.X11Window.foreign_new_for_display(disp, xwin)
-        gdk_flush()
-        error = gdk_error_trap_pop()
+        disp = get_raw_display_for(display)
+        gdk_x11_display_error_trap_push(disp)
+        win = GdkX11.X11Window.foreign_new_for_display(display, xwin)
+        gdk_display_flush(disp)
+        error = gdk_x11_display_error_trap_pop(disp)
     except Exception as e:
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, e)
-        error = gdk_error_trap_pop()
-        if error:
-            verbose("ignoring XError %s in unwind", get_error_text(error))
-        raise XError(e)
+        if disp:
+            error = gdk_x11_display_error_trap_pop(disp)
+            if error:
+                verbose("ignoring XError %s in unwind", get_error_text(error))
+            raise XError(e)
+        else:
+            raise
     if error:
         verbose("cannot get gdk window for %s, %s: %s", display, xwin, get_error_text(error))
         raise XError(error)
