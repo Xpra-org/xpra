@@ -284,7 +284,7 @@ cdef class Pusher:
         cdef v4l2_format vid_format
         self.device_name = device or os.environ.get("XPRA_VIDEO_DEVICE", "/dev/video1")
         log("v4l2 using device %s", self.device_name)
-        self.device = open(self.device_name, "wrb", 0)
+        self.device = open(self.device_name, "w+b", 0)
         r = ioctl(self.device.fileno(), VIDIOC_QUERYCAP, &vid_caps)
         log("ioctl(%s, VIDIOC_QUERYCAP, %#x)=%s", self.device_name, <unsigned long> &vid_caps, r)
         assert r>=0, "VIDIOC_QUERYCAP ioctl failed on %s" % self.device_name
