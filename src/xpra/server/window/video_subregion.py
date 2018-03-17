@@ -73,15 +73,18 @@ class VideoSubregion(object):
         self.set_at = 0         #value of the "damage event count" when the region was set
         self.counter = 0        #value of the "damage event count" recorded at "time"
         self.time = 0           #see above
-        self.refresh_timer = None
+        self.refresh_timer = 0
         self.refresh_regions = []
         self.last_scores = {}
+        self.nonvideo_regions = []
+        self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
         self.min_time = monotonic_time()
 
     def reset(self):
         self.cancel_refresh_timer()
+        self.cancel_nonvideo_refresh_timer()
         self.init_vars()
 
     def cleanup(self):
@@ -128,7 +131,7 @@ class VideoSubregion(object):
         rt = self.refresh_timer
         refreshlog("%s.cancel_refresh_timer() timer=%s", self, rt)
         if rt:
-            self.refresh_timer = None
+            self.refresh_timer = 0
             self.source_remove(rt)
 
     def get_info(self):
@@ -152,6 +155,8 @@ class VideoSubregion(object):
                      "time"         : int(self.time),
                      "min-time"     : int(self.min_time),
                      "non-max-wait" : self.non_max_wait,
+                     "timer"        : self.refresh_timer,
+                     "nonvideo-timer" : self.nonvideo_refresh_timer,
                      "in-out"       : self.inout,
                      "score"        : self.score,
                      "fps"          : self.fps,
@@ -166,12 +171,17 @@ class VideoSubregion(object):
         if rr:
             for i, r in enumerate(rr):
                 info["refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
+        nvrr = tuple(self.nonvideo_regions)
+        if nvrr:
+            for i, r in enumerate(nvrr):
+                info["nonvideo_refresh_region[%s]" % i] = (r.x, r.y, r.width, r.height)
         return info
 
 
     def remove_refresh_region(self, region):
         remove_rectangle(self.refresh_regions, region)
-        refreshlog("remove_refresh_region(%s) updated refresh regions=%s", region, self.refresh_regions)
+        remove_rectangle(self.nonvideo_regions, region)
+        refreshlog("remove_refresh_region(%s) updated refresh regions=%s, nonvideo regions=%s", region, self.refresh_regions, self.nonvideo_regions)
 
 
     def add_video_refresh(self, region):
@@ -187,36 +197,54 @@ class VideoSubregion(object):
         add_rectangle(self.refresh_regions, region)
         #do refresh any regions which are now outside the current video region:
         #(this can happen when the region moves or changes size)
-        non_video = []
+        nonvideo = []
         for r in self.refresh_regions:
             if not rect.contains_rect(r):
-                non_video += r.substract_rect(rect)
+                nonvideo += r.substract_rect(rect)
         delay = max(150, self.auto_refresh_delay)
         refreshlog("add_video_refresh(%s) rectangle=%s, delay=%ims", region, rect, delay)
-        if non_video:
-            #refresh via timeout_add so this will run in the UI thread:
-            self.timeout_add(delay, self.nonvideo_refresh, non_video)
+        self.nonvideo_regions += nonvideo
+        if self.nonvideo_regions:
+            if not self.nonvideo_refresh_timer:
+                #refresh via timeout_add so this will run in the UI thread:
+                self.nonvideo_refresh_timer = self.timeout_add(delay, self.nonvideo_refresh)
             #only keep the regions still in the video region:
-            inrect = [rect.intersection_rect(r) for r in self.refresh_regions]
+            inrect = (rect.intersection_rect(r) for r in self.refresh_regions)
             self.refresh_regions = [r for r in inrect if r is not None]
         #re-schedule the video region refresh (if we have regions to fresh):
         if self.refresh_regions:
             self.refresh_timer = self.timeout_add(delay, self.refresh)
 
-    def nonvideo_refresh(self, non_video):
-        self.refresh_cb(non_video)
-        return False
+    def cancel_nonvideo_refresh_timer(self):
+        nvrt = self.nonvideo_refresh_timer
+        refreshlog("cancel_nonvideo_refresh_timer() timer=%s", self, nvrt)
+        if nvrt:
+            self.nonvideo_refresh_timer = 0
+            self.source_remove(nvrt)
+            self.nonvideo_regions = []
+
+    def nonvideo_refresh(self):
+        self.nonvideo_refresh_timer = 0
+        nonvideo = tuple(self.nonvideo_regions)
+        refreshlog("nonvideo_refresh() nonvideo regions=%s", nonvideo)
+        if not nonvideo:
+            return
+        if self.refresh_cb(nonvideo):
+            self.nonvideo_regions = []
+        #if the refresh didn't fire (refresh_cb() returned False),
+        #then we should end up re-scheduling the nonvideo refresh
+        #from add_video_refresh()
 
     def refresh(self):
         refreshlog("refresh() refresh_timer=%s", self.refresh_timer)
         #runs via timeout_add, safe to call UI!
-        self.refresh_timer = None
+        self.refresh_timer = 0
         regions = self.refresh_regions
         #it probably makes sense to refresh the whole thing:
         #(the window source code doesn't know about the video region,
         # and would decide to do many overlapping refreshes)
         rect = self.rectangle
-        if len(regions)>=2 and rect:
+        if rect and len(regions)>=2:
             regions = [rect]
         refreshlog("refresh() calling %s with regions=%s", self.refresh_cb, regions)
         if self.refresh_cb(regions):
