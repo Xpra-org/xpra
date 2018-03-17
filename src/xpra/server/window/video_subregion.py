@@ -195,13 +195,17 @@ class VideoSubregion(object):
         refreshlog("add_video_refresh(%s) rectangle=%s, delay=%ims", region, rect, delay)
         if non_video:
             #refresh via timeout_add so this will run in the UI thread:
-            self.timeout_add(delay, self.refresh_cb, non_video)
+            self.timeout_add(delay, self.nonvideo_refresh, non_video)
             #only keep the regions still in the video region:
             inrect = [rect.intersection_rect(r) for r in self.refresh_regions]
             self.refresh_regions = [r for r in inrect if r is not None]
         #re-schedule the video region refresh (if we have regions to fresh):
         if self.refresh_regions:
             self.refresh_timer = self.timeout_add(delay, self.refresh)
+
+    def nonvideo_refresh(self, non_video):
+        self.refresh_cb(non_video)
+        return False
 
     def refresh(self):
         refreshlog("refresh() refresh_timer=%s", self.refresh_timer)
