@@ -48,6 +48,7 @@ class SourceMixinsTest(unittest.TestCase):
 			return
 		from xpra.server.source.webcam_mixin import WebcamMixin
 		wm = WebcamMixin(True, None, ["png", "jpeg"])
+		wm.init_state()
 		wm.hello_sent = True
 		packets = []
 		def send(*args):
