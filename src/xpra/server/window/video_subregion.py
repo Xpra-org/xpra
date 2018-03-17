@@ -240,17 +240,18 @@ class VideoSubregion(object):
         #runs via timeout_add, safe to call UI!
         self.refresh_timer = 0
         regions = self.refresh_regions
-        #it probably makes sense to refresh the whole thing:
-        #(the window source code doesn't know about the video region,
-        # and would decide to do many overlapping refreshes)
         rect = self.rectangle
         if rect and len(regions)>=2:
-            regions = [rect]
+            #figure out if it makes sense to refresh the whole area,
+            #or if we just send the list of smaller rectangles:
+            pixels = sum(r.width*r.height for r in regions)
+            if pixels>=rect.width*rect.height//2:
+                regions = [rect]
         refreshlog("refresh() calling %s with regions=%s", self.refresh_cb, regions)
         if self.refresh_cb(regions):
             self.refresh_regions = []
         else:
-            #retry
+            #retry later
             self.refresh_timer = self.timeout_add(1000, self.refresh)
 
 
