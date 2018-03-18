@@ -68,7 +68,6 @@ class ProxyServer(ServerCore):
         self.source_remove = glib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
-        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
 
     def init(self, opts):
         log("ProxyServer.init(%s)", opts)
@@ -81,6 +80,10 @@ class ProxyServer(ServerCore):
         from xpra.version_util import get_platform_info
         get_platform_info()
         self.child_reaper = getChildReaper()
+
+    def init_control_commands(self):
+        ServerCore.init_control_commands(self)
+        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display", self.handle_stop_command, min_args=1, max_args=1)
 
 
     def make_dbus_server(self):
