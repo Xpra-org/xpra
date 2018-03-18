@@ -46,7 +46,6 @@ PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
-MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
@@ -132,19 +131,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.encryption:
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
-
-        if MOUSE_DELAY_AUTO:
-            try:
-                from xpra.platform.gui import get_vrefresh
-                v = get_vrefresh()
-                if v<=0:
-                    #some platforms don't detect the vrefresh correctly
-                    #(ie: macos in virtualbox?), so use a sane default:
-                    v = 60
-                self._mouse_position_delay = 1000//v
-                log("mouse delay: %s", self._mouse_position_delay)
-            except Exception:
-                log("failed to calculate automatic delay", exc_info=True)
 
         if DETECT_LEAKS:
             from xpra.util import detect_leaks

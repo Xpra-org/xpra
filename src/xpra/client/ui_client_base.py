@@ -21,7 +21,7 @@ from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import std, envint, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import std, envint, envbool, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.version_util import get_version_info_full, get_platform_info
 #client mixins:
 from xpra.client.mixins.webcam import WebcamForwarder
@@ -38,6 +38,7 @@ from xpra.client.mixins.encodings import Encodings
 from xpra.client.mixins.tray import TrayClient
 
 
+MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
 
@@ -141,6 +142,19 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             self.client_extras = ClientExtras(self, opts)
 
         WindowClient.init_ui(self, opts, extra_args)
+
+        if MOUSE_DELAY_AUTO:
+            try:
+                from xpra.platform.gui import get_vrefresh
+                v = get_vrefresh()
+                if v<=0:
+                    #some platforms don't detect the vrefresh correctly
+                    #(ie: macos in virtualbox?), so use a sane default:
+                    v = 60
+                self._mouse_position_delay = 1000//v
+                log("mouse delay: %s", self._mouse_position_delay)
+            except Exception:
+                log("failed to calculate automatic delay", exc_info=True)
 
 
     def run(self):
