@@ -27,7 +27,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS, WIN32
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -341,7 +341,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
         try:
-            import kerberos
+            if WIN32:
+                import winkerberos as kerberos
+            else:
+                import kerberos
             assert kerberos
         except ImportError:
             authlog("no kerberos", exc_info=True)
@@ -615,7 +618,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def process_kerberos_challenge(self, packet):
         try:
-            import kerberos
+            if WIN32:
+                import winkerberos as kerberos
+            else:
+                import kerberos
         except ImportError as e:
             log.error("Error: kerberos authentication not supported:")
             log.error(" %s", e)
