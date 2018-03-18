@@ -63,13 +63,13 @@ class MixinsTest(unittest.TestCase):
 		x.send = send
 		from xpra.log import Logger
 		log = Logger("util")
-		message = "hello"
+		message = b"hello"
 		log.info(message)
 		assert len(packets)==1
 		packet = packets[0]
-		assert packet[0]=="logging"
-		assert packet[1]==20		#info
-		assert packet[2].data==message
+		assert packet[0]=="logging", "expected logging packet but got '%s'" % (packet[0],)
+		assert packet[1]==20, "expected INFO level (20) but got %s" % (packet[1],)
+		assert packet[2].data==message, "expected message '%s' but got '%s'" % (message, packet[2].data)
 		#after cleanup, log messages should not be intercepted:
 		x.cleanup()
 		log.info("foo")
