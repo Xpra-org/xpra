@@ -794,11 +794,13 @@ def _get_device_caps(constant):
 def get_vrefresh():
     try:
         v = _get_device_caps(win32con.VREFRESH)
-        screenlog("get_vrefresh()=%s", v)
-        return v
     except Exception as e:
-        log.warn("failed to get VREFRESH: %s", e)
-        return -1
+        log("get_vrefresh()", exc_info=True)
+        log.warn("Warning: failed to query the display vertical refresh rate:")
+        log.warn(" %s", e)
+        v = -1
+    screenlog("get_vrefresh()=%s", v)
+    return v
 
 def get_double_click_time():
     try:

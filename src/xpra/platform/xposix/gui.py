@@ -378,7 +378,9 @@ def get_vrefresh():
         randr = RandRBindings()
         v = randr.get_vrefresh()
     except Exception as e:
-        screenlog.warn("failed to get VREFRESH: %s", e)
+        log("get_vrefresh()", exc_info=True)
+        log.warn("Warning: failed to query the display vertical refresh rate:")
+        log.warn(" %s", e)
         v = -1
     screenlog("get_vrefresh()=%s", v)
     return v
