@@ -226,9 +226,9 @@
 
 	<distutils id="python3-cython" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/fa/86/0c8311bcba3b3f0944c135db95312e057a353058f522692e4dcf6d4bb978/Cython-0.28.tar.gz"
-			hash="sha256:518f7e22da54109661e483a91a63045203caf9fd78da4a69185a7622f759965f"
-			version="0.28"/>
+			module="/packages/be/08/bb5ffd1c32a951cbc26011ecb8557e59dc7a0a4975f0ad98b2cd7446f7dd/Cython-0.28.1.tar.gz"
+			hash="sha256:152ee5f345012ca3bb7cc71da2d3736ee20f52cd8476e4d49e5e25c5a4102b12"
+			version="0.28.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
