@@ -35,6 +35,7 @@ class NetworkStateServer(StubServerMixin):
 
     def __init__(self):
         self.pings = False
+        self.ping_timer = None
 
     def init(self, opts):
         self.pings = opts.pings
@@ -42,10 +43,16 @@ class NetworkStateServer(StubServerMixin):
     def setup(self):
         self.init_leak_detection()
         if self.pings>0:
-            self.timeout_add(1000*self.pings, self.send_ping)
+            self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
 
     def threaded_setup(self):
         self.init_memcheck()
+
+    def cleanup(self):
+        pt = self.ping_timer
+        if pt:
+            self.ping_timer = None
+            self.source_remove(pt)
 
 
     def get_info(self, _source=None):

@@ -151,10 +151,8 @@ class SoundSink(SoundPipeline):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
-        if self.volume_timer!=0:
-            glib.source_remove(self.volume_timer)
-            self.volume_timer = 0
         SoundPipeline.cleanup(self)
+        self.cancel_volume_timer()
         self.sink_type = ""
         self.src = None
 
@@ -162,11 +160,17 @@ class SoundSink(SoundPipeline):
         SoundPipeline.start(self)
         self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
 
+
     def start_adjust_volume(self, interval=100):
         if self.volume_timer!=0:
             glib.source_remove(self.volume_timer)
         self.volume_timer = self.timeout_add(interval, self.adjust_volume)
         return False
+
+    def cancel_volume_timer(self):
+        if self.volume_timer!=0:
+            glib.source_remove(self.volume_timer)
+            self.volume_timer = 0
 
 
     def adjust_volume(self):

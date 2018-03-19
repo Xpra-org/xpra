@@ -53,7 +53,7 @@ class SoundPipeline(gobject.GObject):
         self.state = "stopped"
         self.buffer_count = 0
         self.byte_count = 0
-        self.emit_info_due = False
+        self.emit_info_timer = None
         self.info = {
                      "codec"        : self.codec,
                      "state"        : self.state,
@@ -67,17 +67,23 @@ class SoundPipeline(gobject.GObject):
         self.idle_add(self.emit, sig, *args)
 
     def emit_info(self):
-        if self.emit_info_due:
+        if self.emit_info_timer:
             return
-        self.emit_info_due = True
         def do_emit_info():
-            self.emit_info_due = False
+            self.emit_info_timer = None
             if self.pipeline:
                 info = self.get_info()
                 #reset info:
                 self.info = {}
                 self.emit("info", info)
-        self.timeout_add(200, do_emit_info)
+        self.emit_info_timer = self.timeout_add(200, do_emit_info)
+
+    def cancel_emit_info_timer(self):
+        eit = self.emit_info_timer
+        if eit:
+            self.emit_info_timer = None
+            self.source_remove(eit)
+
 
     def get_info(self):
         info = self.info.copy()
@@ -196,6 +202,7 @@ class SoundPipeline(gobject.GObject):
 
     def cleanup(self):
         log("SoundPipeline.cleanup()")
+        self.cancel_emit_info_timer()
         self.stop()
         b = self.bus
         self.bus = None

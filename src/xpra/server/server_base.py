@@ -76,6 +76,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #duplicated from Server Source...
         self.mem_bytes = 0
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
+        self.mp3_stream_check_timer = None
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -134,6 +135,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
     def do_cleanup(self):
         self.server_event("exit")
+        self.cancel_mp3_stream_check_timer()
         for c in ServerBase.__bases__:
             if c!=ServerCore:
                 c.cleanup(self)
@@ -774,7 +776,13 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         if source.sound_source:
             source.stop_sending_sound()
         source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream, new_buffer=new_buffer, skip_client_codec_check=True)
-        self.timeout_add(1000*5, timeout_check)
+        self.mp3_stream_check_timer = self.timeout_add(1000*5, timeout_check)
+
+    def cancel_mp3_stream_check_timer(self):
+        msct = self.mp3_stream_check_timer
+        if msct:
+            self.mp3_stream_check_timer = None
+            self.source_remove(msct)
 
 
     ######################################################################

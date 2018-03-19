@@ -54,10 +54,18 @@ class NetworkState(StubClientMixin):
         self.client_ping_latency = deque(maxlen=1000)
         self._server_ok = True
         self.last_ping_echoed_time = 0
+        self.ping_timer = None
 
 
     def init(self, opts):
         self.pings = opts.pings
+
+
+    def cleanup(self):
+        pt = self.ping_timer
+        if pt:
+            self.ping_timer = None
+            self.source_remove(pt)
 
 
     def get_caps(self):
@@ -75,7 +83,7 @@ class NetworkState(StubClientMixin):
         self.send_deflate_level()
         self.send_ping()
         if self.pings>0:
-            self.timeout_add(1000*self.pings, self.send_ping)
+            self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
 
 
     ######################################################################

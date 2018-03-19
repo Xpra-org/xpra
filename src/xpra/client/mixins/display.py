@@ -52,7 +52,7 @@ class DisplayClient(StubClientMixin):
         self.scale_change_embargo = 0
         self.desktop_fullscreen = False
         self.desktop_scaling = False
-        self.screen_size_change_pending = False
+        self.screen_size_change_timer = None
 
         self.server_actual_desktop_size = None
         self.server_max_desktop_size = None
@@ -70,6 +70,12 @@ class DisplayClient(StubClientMixin):
             from xpra.client.scaling_parser import parse_scaling
             self.initial_scaling = parse_scaling(opts.desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
             self.xscale, self.yscale = self.initial_scaling
+
+    def cleanup(self):
+        ssct = self.screen_size_change_timer
+        if ssct:
+            self.screen_size_change_timer = None
+            self.source_remove(ssct)
 
 
     def get_screen_sizes(self, xscale=1, yscale=1):
@@ -372,22 +378,22 @@ class DisplayClient(StubClientMixin):
             win.workspace_changed()
 
     def screen_size_changed(self, *args):
-        screenlog("screen_size_changed(%s) pending=%s", args, self.screen_size_change_pending)
-        if self.screen_size_change_pending:
+        screenlog("screen_size_changed(%s) timer=%s", args, self.screen_size_change_timer)
+        if self.screen_size_change_timer:
             return
         #update via timer so the data is more likely to be final (up to date) when we query it,
         #some properties (like _NET_WORKAREA for X11 clients via xposix "ClientExtras") may
         #trigger multiple calls to screen_size_changed, delayed by some amount
         #(sometimes up to 1s..)
-        self.screen_size_change_pending = True
         delay = 1000
         #if we are suspending, wait longer:
         #(better chance that the suspend-resume cycle will have completed)
         if self._suspended_at>0 and self._suspended_at-monotonic_time()<5*1000:
             delay = 5*1000
-        self.timeout_add(delay, self.do_process_screen_size_change)
+        self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
     def do_process_screen_size_change(self):
+        self.screen_size_change_timer = None
         self.update_screen_size()
         screenlog("do_process_screen_size_change() MONITOR_CHANGE_REINIT=%s, REINIT_WINDOWS=%s", MONITOR_CHANGE_REINIT, REINIT_WINDOWS)
         if MONITOR_CHANGE_REINIT and MONITOR_CHANGE_REINIT=="0":

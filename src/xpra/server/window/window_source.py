@@ -276,6 +276,7 @@ class WindowSource(WindowIconSource):
         self.suspended = False
         self.strict = STRICT_MODE
         #
+        self.decode_error_refresh_timer = None
         self.may_send_timer = None
         self.auto_refresh_delay = 0
         self.base_auto_refresh_delay = 0
@@ -821,6 +822,7 @@ class WindowSource(WindowIconSource):
         self.cancel_refresh_timer()
         self.cancel_timeout_timer()
         self.cancel_av_sync_timer()
+        self.cancel_decode_error_refresh_timer()
         #if a region was delayed, we can just drop it now:
         self.refresh_regions = []
         self._damage_delayed = None
@@ -1920,7 +1922,18 @@ class WindowSource(WindowIconSource):
         #something failed client-side, so we can't rely on the delta being available
         self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         if self.window:
-            self.timeout_add(250, self.full_quality_refresh)
+            delay = min(1000, 250+self.global_statistics.decode_errors*100)
+            self.decode_error_refresh_timer = self.timeout_add(delay, self.decode_error_refresh)
+
+    def decode_error_refresh(self):
+        self.decode_error_refresh_timer = None
+        self.full_quality_refresh()
+
+    def cancel_decode_error_refresh_timer(self):
+        dert = self.decode_error_refresh_timer
+        if dert:
+            self.decode_error_refresh_timer = None
+            self.source_remove(dert)
 
 
     def make_data_packet(self, image, coding, sequence, options, flush):

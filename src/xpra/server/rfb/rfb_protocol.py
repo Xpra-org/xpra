@@ -18,7 +18,6 @@ from xpra.net.bytestreams import ABORT
 from xpra.server.rfb.rfb_const import RFBClientMessage, RFBAuth, PIXEL_FORMAT
 
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
-#merge header and packet if packet is smaller than:
 
 
 class RFBProtocol(object):
