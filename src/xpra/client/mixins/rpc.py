@@ -26,12 +26,16 @@ class RPCClient(StubClientMixin):
         self.rpc_pending_requests = {}
         self.server_dbus_proxy = False
         self.server_rpc_types = []
+        self.rpc_filter_timers = {}
 
     def init(self, _opts):
         pass
 
     def cleanup(self):
-        pass
+        timers = tuple(self.rpc_filter_timers.values())
+        self.rpc_filter_timers = {}
+        for t in timers:
+            self.source_remove(t)
 
 
     def run(self):
@@ -66,10 +70,11 @@ class RPCClient(StubClientMixin):
         log("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
         packet = ["rpc", rpc_type, rpcid] + rpc_args
         self.send(*packet)
-        self.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending)
+        self.rpc_filter_timers[rpcid] = self.timeout_add(RPC_TIMEOUT, self.rpc_filter_pending, rpcid)
 
-    def rpc_filter_pending(self):
+    def rpc_filter_pending(self, rpcid):
         """ removes timed out dbus requests """
+        del self.rpc_filter_timers[rpcid]
         for k in tuple(self.rpc_pending_requests.keys()):
             v = self.rpc_pending_requests.get(k)
             if v is None:

@@ -192,6 +192,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._current_frame_extents = None
         self._screen = -1
         self._frozen = False
+        self.window_state_timer = None
         self.send_iconify_timer = None
         self.remove_pointer_overlay_timer = None
         self.show_pointer_overlay_timer = None
@@ -752,11 +753,20 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state.update(server_updates)
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
-        def send_updated_window_state():
-            if self._window_state and self.get_window():
-                self.send_configure_event(True)
-        if self._window_state:
-            self.timeout_add(25, send_updated_window_state)
+        if self._window_state and not self.window_state_timer:
+            self.window_state_timer = self.timeout_add(25, self.send_updated_window_state)
+
+    def send_updated_window_state(self):
+        self.window_state_timer = None
+        if self._window_state and self.get_window():
+            self.send_configure_event(True)
+
+    def cancel_window_state_timer(self):
+        wst = self.window_state_timer
+        if wst:
+            self.window_state_timer = None
+            self.source_remove(wst)
+
 
     def schedule_send_iconify(self):
         #calculate a good delay to prevent races causing minimize/unminimize loops:
@@ -773,7 +783,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self.send_iconify_timer = None
         if self._iconified:
             self.send("unmap-window", self._id, True, self._window_state)
+            #we have sent the window-state already:
             self._window_state = {}
+            self.cancel_window_state_timer()
 
     def cancel_send_iconifiy_timer(self):
         sit = self.send_iconify_timer
@@ -1519,6 +1531,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         props = self._client_properties
         self._client_properties = {}
         self._window_state = {}
+        self.cancel_window_state_timer()
         workspace = self.get_window_workspace()
         screen = self.get_screen().get_number()
         workspacelog("process_map_event() wid=%i, workspace=%s, screen=%i, been_mapped=%s", self._id, workspace, screen, self._been_mapped)
@@ -1605,6 +1618,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         props = self._client_properties
         self._client_properties = {}
         self._window_state = {}
+        self.cancel_window_state_timer()
         if self._been_mapped:
             #if the window has been mapped already, the workspace should be set:
             screen = self.get_screen().get_number()
@@ -1742,6 +1756,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log.warn("Warning: window destroy called twice!")
 
     def destroy(self):
+        self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()

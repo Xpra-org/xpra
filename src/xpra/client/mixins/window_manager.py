@@ -115,6 +115,7 @@ class WindowClient(StubClientMixin):
         self.wheel_deltay = 0
 
         #state:
+        self.lost_focus_timer = None
         self._focused = None
         self._window_with_grab = None
         self._suspended_at = 0
@@ -208,6 +209,7 @@ class WindowClient(StubClientMixin):
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()
+        self.cancel_lost_focus_timer()
         log("WindowClient.cleanup() done")
 
 
@@ -1044,10 +1046,12 @@ class WindowClient(StubClientMixin):
 
     def update_focus(self, wid, gotit):
         focuslog("update_focus(%s, %s) focused=%s, grabbed=%s", wid, gotit, self._focused, self._window_with_grab)
-        if gotit and self._focused is not wid:
-            self.send_focus(wid)
-            self._focused = wid
-        if not gotit:
+        if gotit:
+            if self._focused is not wid:
+                self.send_focus(wid)
+                self._focused = wid
+            self.cancel_lost_focus_timer()
+        else:
             if self._window_with_grab:
                 self.window_ungrab()
                 self.do_force_ungrab(self._window_with_grab)
@@ -1058,15 +1062,23 @@ class WindowClient(StubClientMixin):
                 # their parent receives the focus-out event)
                 focuslog("window %s lost a focus it did not have!? (simulating focus before losing it)", wid)
                 self.send_focus(wid)
-            if self._focused:
+            if self._focused and not self.lost_focus_timer:
                 #send the lost-focus via a timer and re-check it
                 #(this allows a new window to gain focus without having to do a reset_focus)
-                def send_lost_focus():
-                    #check that a new window has not gained focus since:
-                    if self._focused is None:
-                        self.send_focus(0)
-                self.timeout_add(20, send_lost_focus)
+                self.lost_focus_timer = self.timeout_add(20, self.send_lost_focus)
                 self._focused = None
+
+    def send_lost_focus(self):
+        self.lost_focus_timer = None
+        #check that a new window has not gained focus since:
+        if self._focused is None:
+            self.send_focus(0)
+
+    def cancel_lost_focus_timer(self):
+        lft = self.lost_focus_timer
+        if lft:
+            self.lost_focus_timer = None
+            self.source_remove(lft)
 
 
     ######################################################################

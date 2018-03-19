@@ -55,6 +55,8 @@ class NetworkState(StubClientMixin):
         self._server_ok = True
         self.last_ping_echoed_time = 0
         self.ping_timer = None
+        self.ping_echo_timers = {}
+        self.ping_echo_timeout_timer = None
 
 
     def init(self, opts):
@@ -62,10 +64,9 @@ class NetworkState(StubClientMixin):
 
 
     def cleanup(self):
-        pt = self.ping_timer
-        if pt:
-            self.ping_timer = None
-            self.source_remove(pt)
+        self.cancel_ping_timer()
+        self.cancel_ping_echo_timers()
+        self.cancel_ping_echo_timeout_timer()
 
 
     def get_caps(self):
@@ -84,6 +85,18 @@ class NetworkState(StubClientMixin):
         self.send_ping()
         if self.pings>0:
             self.ping_timer = self.timeout_add(1000*self.pings, self.send_ping)
+
+    def cancel_ping_timer(self):
+        pt = self.ping_timer
+        if pt:
+            self.ping_timer = None
+            self.source_remove(pt)
+
+    def cancel_ping_echo_timers(self):
+        pet = tuple(self.ping_echo_timers.values())
+        self.ping_echo_timers = {}
+        for t in pet:
+            self.source_remove(t)
 
 
     ######################################################################
@@ -115,6 +128,10 @@ class NetworkState(StubClientMixin):
         return self._server_ok
 
     def check_server_echo(self, ping_sent_time):
+        try:
+            del self.ping_echo_timers[ping_sent_time]
+        except KeyError:
+            pass
         if self._protocol is None:
             #no longer connected!
             return False
@@ -123,14 +140,26 @@ class NetworkState(StubClientMixin):
             self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
         else:
             self._server_ok = self.last_ping_echoed_time>=ping_sent_time
+        if not self._server_ok:
+            if not self.ping_echo_timeout_timer:
+                self.ping_echo_timeout_timer = self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, ping_sent_time)
+        else:
+            self.cancel_ping_echo_timeout_timer()
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
         self.server_connection_state_change()
         return False
+
+    def cancel_ping_echo_timeout_timer(self):
+        pett = self.ping_echo_timeout_timer
+        if pett:
+            self.ping_echo_timeout_timer = None
+            self.source_remove(pett)
 
     def server_connection_state_change(self):
         log("server_connection_state_change() ok=%s", self._server_ok)
 
     def check_echo_timeout(self, ping_time):
+        self.ping_echo_timeout_timer = None
         log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
         if self.last_ping_echoed_time<ping_time:
             #no point trying to use disconnect_and_quit() to tell the server here..
@@ -139,14 +168,14 @@ class NetworkState(StubClientMixin):
     def send_ping(self):
         now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
-        self.timeout_add(PING_TIMEOUT*1000, self.check_echo_timeout, now_ms)
         wait = 2.0
         if len(self.server_ping_latency)>0:
             l = [x for _,x in tuple(self.server_ping_latency)]
             avg = sum(l) / len(l)
             wait = min(5, 1.0+avg*2.0)
             log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs", now_ms, 1000.0*avg, wait)
-        self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+        t = self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
+        self.ping_echo_timers[now_ms] = t
         return True
 
     def _process_ping_echo(self, packet):
