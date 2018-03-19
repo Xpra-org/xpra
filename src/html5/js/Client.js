@@ -106,6 +106,12 @@ XpraClient.prototype.init_state = function(container) {
 	this.browser_language = Utilities.getFirstBrowserLanguage();
 	this.browser_language_change_embargo_time = 0;
 	this.key_layout = null;
+	// mouse
+	this.mousedown_event = null;
+	this.last_mouse_x = null;
+	this.last_mouse_y = null;
+	this.wheel_delta_x = 0;
+	this.wheel_delta_y = 0;
 	// clipboard
 	this.clipboard_buffer = "";
 	this.clipboard_pending = false;
@@ -145,6 +151,30 @@ XpraClient.prototype.init_state = function(container) {
 	this.topwindow = null;
 	this.topindex = 0;
 	this.focus = -1;
+
+	jQuery("#screen").mousedown(function (e) {
+		me.on_mousedown(e);
+	});
+	jQuery("#screen").mouseup(function (e) {
+		me.on_mouseup(e);
+	});
+	jQuery("#screen").mousemove(function (e) {
+		me.on_mousemove(e);
+	});
+	var me = this;
+	var div = document.getElementById("screen");
+	function on_mousescroll(e) {
+		me.on_mousescroll(e);
+	}
+	if (Utilities.isEventSupported("wheel")) {
+		div.addEventListener('wheel',			on_mousescroll, false);
+	}
+	else if (Utilities.isEventSupported("mousewheel")) {
+		div.addEventListener('mousewheel',		on_mousescroll, false);
+	}
+	else if (Utilities.isEventSupported("DOMMouseScroll")) {
+		div.addEventListener('DOMMouseScroll',	on_mousescroll, false); // for Firefox
+	}
 }
 
 XpraClient.prototype.send = function() {
@@ -203,109 +233,6 @@ XpraClient.prototype.init = function(ignore_blacklist) {
 	this.init_audio(ignore_blacklist);
 	this.init_packet_handlers();
 	this.init_keyboard();
-}
-
-XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
-	this.debug("audio", "init_audio() enabled=", this.audio_enabled, ", mediasource enabled=", this.audio_mediasource_enabled, ", aurora enabled=", this.audio_aurora_enabled, ", http-stream enabled=", this.audio_httpstream_enabled);
-	if(!this.audio_enabled) {
-		return;
-	}
-	if(this.audio_mediasource_enabled) {
-		this.mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
-		for (var codec_option in this.mediasource_codecs) {
-			this.audio_codecs[codec_option] = this.mediasource_codecs[codec_option];
-		}
-	}
-	if(this.audio_aurora_enabled) {
-		this.aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-		for (var codec_option in this.aurora_codecs) {
-			if(codec_option in this.audio_codecs) {
-				//we already have native MediaSource support!
-				continue;
-			}
-			this.audio_codecs[codec_option] = this.aurora_codecs[codec_option];
-		}
-	}
-	if (this.audio_httpstream_enabled) {
-		var stream_codecs = ["mp3"];
-		for (var i in stream_codecs) {
-			var codec_option = stream_codecs[i];
-			if (codec_option in this.audio_codecs) {
-				continue;
-			}
-			this.audio_codecs[codec_option] = codec_option;
-		}
-	}
-	this.debug("audio", "audio codecs:", this.audio_codecs);
-	if(!this.audio_codecs) {
-		this.audio_codec = null;
-		this.audio_enabled = false;
-		this.warn("no valid audio codecs found");
-		return;
-	}
-	if(!(this.audio_codec in this.audio_codecs)) {
-		if(this.audio_codec) {
-			this.warn("invalid audio codec: "+this.audio_codec);
-		}
-		this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
-		if(this.audio_codec) {
-			if(this.audio_mediasource_enabled && (this.audio_codec in this.mediasource_codecs)) {
-				this.audio_framework = "mediasource";
-			}
-			else if (this.audio_aurora_enabled && !Utilities.isIE()) {
-				this.audio_framework = "aurora";
-			}
-			else if (this.audio_httpstream_enabled) {
-				this.audio_framework = "http-stream";
-			}
-			if (this.audio_framework) {
-				this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
-			}
-			else {
-				this.warn("no valid audio framework - cannot enable audio");
-				this.audio_enabled = false;
-			}
-		}
-		else {
-			this.warn("no valid audio codec found");
-			this.audio_enabled = false;
-		}
-	}
-	else {
-		this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
-	}
-	this.log("audio codecs: ", Object.keys(this.audio_codecs));
-}
-
-XpraClient.prototype.init_keyboard = function() {
-	var me = this;
-	// modifier keys:
-	this.caps_lock = null;
-	this.num_lock = true;
-	this.num_lock_mod = null;
-	this.alt_modifier = null;
-	this.meta_modifier = null;
-	// assign the keypress callbacks
-	// if we detect jQuery, use that to assign them instead
-	// to allow multiple clients on the same page
-	document.addEventListener('keydown', function(e) {
-		var r = me._keyb_onkeydown(e, me);
-		if (!r) {
-			e.preventDefault();
-		}
-	});
-	document.addEventListener('keyup', function (e) {
-		var r = me._keyb_onkeyup(e, me);
-		if (!r) {
-			e.preventDefault();
-		}
-	});
-	document.addEventListener('keypress', function (e) {
-		var r = me._keyb_onkeypress(e, me);
-		if (!r) {
-			e.preventDefault();
-		}
-	});
 }
 
 
@@ -541,6 +468,39 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 	}
 }
 
+/**
+ * Keyboard
+ */
+XpraClient.prototype.init_keyboard = function() {
+	var me = this;
+	// modifier keys:
+	this.caps_lock = null;
+	this.num_lock = true;
+	this.num_lock_mod = null;
+	this.alt_modifier = null;
+	this.meta_modifier = null;
+	// assign the keypress callbacks
+	// if we detect jQuery, use that to assign them instead
+	// to allow multiple clients on the same page
+	document.addEventListener('keydown', function(e) {
+		var r = me._keyb_onkeydown(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
+	document.addEventListener('keyup', function (e) {
+		var r = me._keyb_onkeyup(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
+	document.addEventListener('keypress', function (e) {
+		var r = me._keyb_onkeypress(e, me);
+		if (!r) {
+			e.preventDefault();
+		}
+	});
+}
 
 XpraClient.prototype._keyb_get_modifiers = function(event) {
 	/**
@@ -871,6 +831,9 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
 	}
 }
 
+/**
+ * Ping
+ */
 XpraClient.prototype._check_server_echo = function(ping_sent_time) {
 	var last = this.server_ok;
 	this.server_ok = this.last_ping_echoed_time >= ping_sent_time;
@@ -922,7 +885,9 @@ XpraClient.prototype._send_ping = function() {
 	}, wait);
 }
 
-
+/**
+ * Hello
+ */
 XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	// make the base hello
 	this._make_hello_base();
@@ -1151,112 +1116,171 @@ XpraClient.prototype._new_ui_event = function() {
 	this.ui_events++;
 }
 
-/*
- * Window callbacks
+/**
+ * Mouse handlers
  */
+XpraClient.prototype.getMouse = function(e, window) {
+	// get mouse position take into account scroll
+	var mx = e.clientX + jQuery(document).scrollLeft();
+	var my = e.clientY + jQuery(document).scrollTop();
 
-XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_redirect, client_properties) {
-	// each window needs their own DIV that contains a canvas
-	var mydiv = document.createElement("div");
-	mydiv.id = String(wid);
-	var mycanvas = document.createElement("canvas");
-	mydiv.appendChild(mycanvas);
-	var screen = document.getElementById("screen");
-	screen.appendChild(mydiv);
-	// set initial sizes
-	mycanvas.width = w;
-	mycanvas.height = h;
-	// create the XpraWindow object to own the new div
-	var win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
-		metadata,
-		override_redirect,
-		false,
-		client_properties,
-		this._window_geometry_changed,
-		this._window_mouse_move,
-		this._window_mouse_click,
-		this._window_set_focus,
-		this._window_closed
-		);
-	this.id_to_window[wid] = win;
-	if (!override_redirect) {
-		var geom = win.get_internal_geometry();
-		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
-		this._window_set_focus(win);
-	}
-}
-
-XpraClient.prototype._new_window_common = function(packet, override_redirect) {
-	var wid, x, y, w, h, metadata;
-	wid = packet[1];
-	x = packet[2];
-	y = packet[3];
-	w = packet[4];
-	h = packet[5];
-	metadata = packet[6];
-	if (wid in this.id_to_window)
-		throw "we already have a window " + wid;
-	if (w<=0 || h<=0) {
-		this.error("window dimensions are wrong: "+w+"x"+h);
-		w, h = 1, 1;
-	}
-	var client_properties = {}
-	if (packet.length>=8)
-		client_properties = packet[7];
-	if (x==0 && y==0 && !metadata["set-initial-position"]) {
-		//find a good position for it
-		var l = Object.keys(this.id_to_window).length;
-		if (l==0) {
-			//first window: center it
-			x = Math.round((this.desktop_width-w)/2);
-			if (w<this.desktop_height) {
-				y = Math.round((this.desktop_height-h)/2);
-			}
+	// check last mouse position incase the event
+	// hasn't provided it - bug #854
+	if(isNaN(mx) || isNaN(my)) {
+		if(!isNaN(this.last_mouse_x) && !isNaN(this.last_mouse_y)) {
+			mx = this.last_mouse_x;
+			my = this.last_mouse_y;
+		} else {
+			// should we avoid sending NaN to the server?
+			mx = 0;
+			my = 0;
 		}
-		else {
-			x = Math.min(l*10, Math.max(0, this.desktop_width-100));
-			y = 96;
-		}
+	} else {
+		this.last_mouse_x = mx;
+		this.last_mouse_y = my;
 	}
-	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
-	this._new_ui_event();
+
+	var mbutton = 0;
+	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
+		mbutton = Math.max(0, e.which);
+	else if ("button" in e)  // IE, Opera (zero based)
+		mbutton = Math.max(0, e.button)+1;
+	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
+
+	if (window && this.server_is_desktop) {
+		//substract window offset since the desktop's top-left corner should be at 0,0:
+		var pos = jQuery(window.div).position()
+		mx -= pos.left;
+		my -= pos.top;
+	}
+
+	// We return a simple javascript object (a hash) with x and y defined
+	return {x: mx, y: my, button: mbutton};
+};
+
+XpraClient.prototype.on_mousemove = function(e) {
+	this.do_window_mouse_move(e, null);
+};
+
+XpraClient.prototype.on_mousedown = function(e) {
+	this.do_window_mouse_click(e, null, true);
+};
+
+XpraClient.prototype.on_mouseup = function(e) {
+	this.do_window_mouse_click(e, null, false);
+};
+
+XpraClient.prototype.on_mousescroll = function(e) {
+	this.do_window_mouse_scroll(e, null);
 }
 
-XpraClient.prototype._window_closed = function(win) {
-	win.client.send(["close-window", win.wid]);
+
+XpraClient.prototype._window_mouse_move = function(ctx, e, window) {
+	ctx.do_window_mouse_move(e, window);
+}
+XpraClient.prototype.do_window_mouse_move = function(e, window) {
+	this._check_browser_language();
+	var mouse = this.getMouse(e, window),
+		x = Math.round(mouse.x),
+		y = Math.round(mouse.y);
+	var modifiers = [];
+	var buttons = [];
+	var wid = 0;
+	if (window) {
+		wid = window.wid;
+	}
+	this.send(["pointer-position", wid, [x, y], modifiers, buttons]);
 }
 
-XpraClient.prototype._get_client_properties = function(win) {
-	var cp = win.client_properties;
-	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
-	return cp;
+XpraClient.prototype._window_mouse_down = function(ctx, e, window) {
+	ctx.mousedown_event = e;
+	ctx.do_window_mouse_click(e, window, true);
 }
 
-XpraClient.prototype._window_geometry_changed = function(win) {
-	// window callbacks are called from the XpraWindow function context
-	// so use win.client instead of `this` to refer to the client
-	var geom = win.get_internal_geometry();
-	var wid = win.wid;
-	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
+XpraClient.prototype._window_mouse_up = function(ctx, e, window) {
+	//this.mousedown_event = null;
+	ctx.do_window_mouse_click(e, window, false);
 }
 
-XpraClient.prototype._window_mouse_move = function(win, x, y, modifiers, buttons) {
-	win.client._check_browser_language();
-	var wid = win.wid;
-	win.client.send(["pointer-position", wid, [x, y], modifiers, buttons]);
-}
-
-XpraClient.prototype._window_mouse_click = function(win, button, pressed, x, y, modifiers, buttons) {
-	var wid = win.wid;
-	var client = win.client;
-	//client.debug("main", "click focus=", client.focus, ", wid=", wid);
+XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
+	var mouse = this.getMouse(e, window),
+		x = Math.round(mouse.x),
+		y = Math.round(mouse.y);
+	var modifiers = [];
+	var buttons = [];
+	var wid = 0;
+	if (window) {
+		wid = window.wid;
+	}
 	// dont call set focus unless the focus has actually changed
-	if(client.focus != wid) {
-		client._window_set_focus(win);
+	if (wid>0 && this.focus != wid) {
+		this._window_set_focus(window);
 	}
-	client.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+	var button = mouse.button;
+	var me = this;
+	setTimeout(function() {
+		me.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
+	}, 0);
 }
 
+XpraClient.prototype._window_mouse_scroll = function(ctx, e, window) {
+	ctx.do_window_mouse_scroll(e, window);
+}
+
+XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
+	var mouse = this.getMouse(e, window),
+		x = Math.round(mouse.x),
+		y = Math.round(mouse.y);
+	var modifiers = [];
+	var buttons = [];
+	var wheel = Utilities.normalizeWheel(e);
+	this.debug("mouse", "normalized wheel event:", wheel);
+	//clamp to prevent event floods:
+	var px = Math.min(1200, wheel.pixelX);
+	var py = Math.min(1200, wheel.pixelY);
+	var apx = Math.abs(px);
+	var apy = Math.abs(py);
+	//generate a single event if we can, or add to accumulators:
+	if (apx>=40 && apx<=160) {
+		this.wheel_delta_x = (px>0) ? 120 : -120;
+	}
+	else {
+		this.wheel_delta_x += px;
+	}
+	if (apy>=40 && apy<=160) {
+		this.wheel_delta_y = (py>0) ? 120 : -120;
+	}
+	else {
+		this.wheel_delta_y += py;
+	}
+	//send synthetic click+release as many times as needed:
+	var wx = Math.abs(this.wheel_delta_x);
+	var wy = Math.abs(this.wheel_delta_y);
+	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
+	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
+	var wid = 0;
+	if (window) {
+		wid = window.wid;
+	}
+	while (wx>=120) {
+		wx -= 120;
+		this.send(["button-action", wid, btn_x, true, [x, y], modifiers, buttons]);
+		this.send(["button-action", wid, btn_x, false, [x, y], modifiers, buttons]);
+	}
+	while (wy>=120) {
+		wy -= 120;
+		this.send(["button-action", wid, btn_y, true, [x, y], modifiers, buttons]);
+		this.send(["button-action", wid, btn_y, false, [x, y], modifiers, buttons]);
+	}
+	//store left overs:
+	this.wheel_delta_x = (this.wheel_delta_x>=0) ? wx : -wx;
+	this.wheel_delta_y = (this.wheel_delta_y>=0) ? wy : -wy;
+}
+
+
+/**
+ * Focus
+ */
 XpraClient.prototype._window_set_focus = function(win) {
 	// don't send focus packet for override_redirect windows!
 	if (win.override_redirect || win.tray) {
@@ -1292,194 +1316,6 @@ XpraClient.prototype._window_set_focus = function(win) {
 	}
 	//client._set_favicon(wid);
 }
-
-
-XpraClient.prototype._sound_start_receiving = function() {
-	try {
-		this.audio_buffers = [];
-		this.audio_buffers_count = 0;
-		if (this.audio_framework=="http-stream") {
-			this._sound_start_httpstream();
-		}
-		else if (this.audio_framework=="mediasource") {
-			this._sound_start_mediasource();
-		}
-		else {
-			this._sound_start_aurora();
-		}
-	}
-	catch(e) {
-		this.error('error starting audio player: '+e);
-	}
-}
-
-
-XpraClient.prototype._send_sound_start = function() {
-	this.log("audio: requesting "+this.audio_codec+" stream from the server");
-	this.send(["sound-control", "start", this.audio_codec]);
-}
-
-
-XpraClient.prototype._sound_start_httpstream = function() {
-	this.audio = document.createElement("audio");
-	this.audio.setAttribute('autoplay', true);
-	this.audio.setAttribute('controls', false);
-	this.audio.setAttribute('loop', true);
-	var url = "http";
-	if (this.ssl) {
-		url = "https";
-	}
-	url += "://"+this.host+":"+this.port;
-	if (this.path) {
-		url += "/"+this.path;
-	}
-	url += "/audio.mp3?uuid="+this.uuid;
-	this.log("starting http stream from", url);
-	this.audio.src = url;
-}
-
-XpraClient.prototype._sound_start_aurora = function() {
-	this.audio_aurora_ctx = AV.Player.fromXpraSource();
-	this._send_sound_start();
-}
-
-XpraClient.prototype._sound_start_mediasource = function() {
-	var me = this;
-
-	function audio_error(event) {
-		if(me.audio) {
-			me.error(event+" error: "+me.audio.error);
-			if(me.audio.error) {
-				me.error(MediaSourceConstants.ERROR_CODE[me.audio.error.code]);
-			}
-		}
-		else {
-			me.error(event+" error");
-		}
-		me.close_audio();
-	}
-
-	//Create a MediaSource:
-	this.media_source = MediaSourceUtil.getMediaSource();
-	if(this.debug) {
-		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "audio");
-	}
-	this.media_source.addEventListener('error', 	function(e) {audio_error("audio source"); });
-
-	//Create an <audio> element:
-	this.audio = document.createElement("audio");
-	this.audio.setAttribute('autoplay', true);
-	if(this.debug) {
-		MediaSourceUtil.addMediaElementEventDebugListeners(this.audio, "audio");
-	}
-	this.audio.addEventListener('play', 			function() { console.log("audio play!"); });
-	this.audio.addEventListener('error', 			function() { audio_error("audio"); });
-	document.body.appendChild(this.audio);
-
-	//attach the MediaSource to the <audio> element:
-	this.audio.src = window.URL.createObjectURL(this.media_source);
-	this.audio_buffers = []
-	this.audio_buffers_count = 0;
-	this.audio_source_ready = false;
-	console.log("audio waiting for source open event on "+this.media_source);
-	this.media_source.addEventListener('sourceopen', function() {
-		me.log("audio media source open");
-		if (me.audio_source_ready) {
-			me.warn("ignoring: source already open");
-			return;
-		}
-		//ie: codec_string = "audio/mp3";
-		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
-		if(codec_string==null) {
-			me.error("invalid codec '"+me.audio_codec+"'");
-			me.close_audio();
-			return;
-		}
-		me.log("using audio codec string for "+me.audio_codec+": "+codec_string);
-
-		//Create a SourceBuffer:
-		var asb = null;
-		try {
-			asb = me.media_source.addSourceBuffer(codec_string);
-		} catch (e) {
-			me.error("audio setup error for '"+codec_string+"':", e);
-			me.close_audio();
-			return;
-		}
-		me.audio_source_buffer = asb;
-		asb.mode = "sequence";
-		if (this.debug) {
-			MediaSourceUtil.addSourceBufferEventDebugListeners(asb, "audio");
-		}
-		asb.addEventListener('error', 				function(e) { audio_error("audio buffer"); });
-		me.audio_source_ready = true;
-		me._send_sound_start();
-	});
-}
-
-XpraClient.prototype.close_audio = function() {
-	if (this.protocol) {
-		this.send(["sound-control", "stop"]);
-	}
-	if (this.audio_framework=="http-stream") {
-		this._close_audio_httpstream();
-	}
-	else if (this.audio_framework=="mediasource") {
-		this._close_audio_mediasource();
-	}
-	else {
-		this._close_audio_aurora();
-	}
-}
-
-XpraClient.prototype._close_audio_httpstream = function() {
-	this._remove_audio_element();
-}
-
-XpraClient.prototype._close_audio_aurora = function() {
-	if(this.audio_aurora_ctx) {
-		//this.audio_aurora_ctx.close();
-		this.audio_aurora_ctx = null;
-	}
-}
-
-XpraClient.prototype._close_audio_mediasource = function() {
-	this.log("close_audio_mediasource: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
-	this.audio_source_ready = false;
-	if(this.audio) {
-		this.send(["sound-control", "stop"]);
-		if(this.media_source) {
-			try {
-				if(this.audio_source_buffer) {
-					this.media_source.removeSourceBuffer(this.audio_source_buffer);
-					this.audio_source_buffer = null;
-				}
-				if(this.media_source.readyState=="open") {
-					this.media_source.endOfStream();
-				}
-			} catch(e) {
-				this.warn("audio media source EOS error:", e);
-			}
-			this.media_source = null;
-		}
-		this._remove_audio_element();
-	}
-}
-
-XpraClient.prototype._remove_audio_element = function() {
-	if (this.audio) {
-		this.audio.src = "";
-		this.audio.load();
-		try {
-			document.body.removeChild(this.audio);
-		}
-		catch (e) {
-			this.debug("audio", "failed to remove audio from page:", e);
-		}
-		this.audio = null;
-	}
-}
-
 
 /*
  * packet processing functions start here
@@ -1854,6 +1690,9 @@ XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 	ctx._check_server_echo(0);
 }
 
+/**
+ * System Tray forwarding
+ */
 XpraClient.prototype._process_new_tray = function(packet, ctx) {
     var wid = packet[1],
     	w = packet[2],
@@ -1878,7 +1717,9 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 		{},
 		ctx._tray_geometry_changed,
 		ctx._window_mouse_move,
-		ctx._window_mouse_click,
+		ctx._window_mouse_down,
+		ctx._window_mouse_up,
+		ctx._window_mouse_scroll,
 		ctx._tray_set_focus,
 		ctx._tray_closed,
 		);
@@ -1912,6 +1753,95 @@ XpraClient.prototype.reconfigure_all_trays = function() {
 	}
 }
 
+/**
+ * Windows
+ */
+XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_redirect, client_properties) {
+	// each window needs their own DIV that contains a canvas
+	var mydiv = document.createElement("div");
+	mydiv.id = String(wid);
+	var mycanvas = document.createElement("canvas");
+	mydiv.appendChild(mycanvas);
+	var screen = document.getElementById("screen");
+	screen.appendChild(mydiv);
+	// set initial sizes
+	mycanvas.width = w;
+	mycanvas.height = h;
+	// create the XpraWindow object to own the new div
+	var win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
+		metadata,
+		override_redirect,
+		false,
+		client_properties,
+		this._window_geometry_changed,
+		this._window_mouse_move,
+		this._window_mouse_down,
+		this._window_mouse_up,
+		this._window_mouse_scroll,
+		this._window_set_focus,
+		this._window_closed
+		);
+	this.id_to_window[wid] = win;
+	if (!override_redirect) {
+		var geom = win.get_internal_geometry();
+		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
+		this._window_set_focus(win);
+	}
+}
+
+XpraClient.prototype._new_window_common = function(packet, override_redirect) {
+	var wid, x, y, w, h, metadata;
+	wid = packet[1];
+	x = packet[2];
+	y = packet[3];
+	w = packet[4];
+	h = packet[5];
+	metadata = packet[6];
+	if (wid in this.id_to_window)
+		throw "we already have a window " + wid;
+	if (w<=0 || h<=0) {
+		this.error("window dimensions are wrong: "+w+"x"+h);
+		w, h = 1, 1;
+	}
+	var client_properties = {}
+	if (packet.length>=8)
+		client_properties = packet[7];
+	if (x==0 && y==0 && !metadata["set-initial-position"]) {
+		//find a good position for it
+		var l = Object.keys(this.id_to_window).length;
+		if (l==0) {
+			//first window: center it
+			x = Math.round((this.desktop_width-w)/2);
+			if (w<this.desktop_height) {
+				y = Math.round((this.desktop_height-h)/2);
+			}
+		}
+		else {
+			x = Math.min(l*10, Math.max(0, this.desktop_width-100));
+			y = 96;
+		}
+	}
+	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+	this._new_ui_event();
+}
+
+XpraClient.prototype._window_closed = function(win) {
+	win.client.send(["close-window", win.wid]);
+}
+
+XpraClient.prototype._get_client_properties = function(win) {
+	var cp = win.client_properties;
+	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
+	return cp;
+}
+
+XpraClient.prototype._window_geometry_changed = function(win) {
+	// window callbacks are called from the XpraWindow function context
+	// so use win.client instead of `this` to refer to the client
+	var geom = win.get_internal_geometry();
+	var wid = win.wid;
+	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
+}
 
 XpraClient.prototype._process_new_window = function(packet, ctx) {
 	ctx._new_window_common(packet, false);
@@ -1939,10 +1869,9 @@ XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
 			direction = packet[4],
 			button = packet[5],
 			source_indication = packet[6];
-        win.initiate_moveresize(x_root, y_root, direction, button, source_indication)
+        win.initiate_moveresize(this.mousedown_event, x_root, y_root, direction, button, source_indication)
 	}
 }
-
 
 XpraClient.prototype.on_last_window = function() {
 	//this hook can be overriden
@@ -2038,6 +1967,9 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
 	return;
 }
 
+/**
+ * Notifications
+ */
 XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	//TODO: add UI switch to disable notifications
 	var dbus_id = packet[1];
@@ -2077,6 +2009,9 @@ XpraClient.prototype._process_notify_close = function(packet, ctx) {
 }
 
 
+/**
+ * Cursors
+ */
 XpraClient.prototype.reset_cursor = function(packet, ctx) {
 	for (var wid in ctx.id_to_window) {
 		var window = ctx.id_to_window[wid];
@@ -2128,6 +2063,9 @@ XpraClient.prototype._process_window_icon = function(packet, ctx) {
 	}
 }
 
+/**
+ * Window Painting
+ */
 XpraClient.prototype._process_draw = function(packet, ctx) {
     if(ctx.queue_draw_packets){
         if (ctx.dQ_interval_id === null) {
@@ -2230,6 +2168,268 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		ctx.error('error painting', coding, e);
 		send_damage_sequence(-1, String(e));
 		ctx.request_redraw(win);
+	}
+}
+
+
+/**
+ * Audio
+ */
+XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
+	this.debug("audio", "init_audio() enabled=", this.audio_enabled, ", mediasource enabled=", this.audio_mediasource_enabled, ", aurora enabled=", this.audio_aurora_enabled, ", http-stream enabled=", this.audio_httpstream_enabled);
+	if(!this.audio_enabled) {
+		return;
+	}
+	if(this.audio_mediasource_enabled) {
+		this.mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
+		for (var codec_option in this.mediasource_codecs) {
+			this.audio_codecs[codec_option] = this.mediasource_codecs[codec_option];
+		}
+	}
+	if(this.audio_aurora_enabled) {
+		this.aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+		for (var codec_option in this.aurora_codecs) {
+			if(codec_option in this.audio_codecs) {
+				//we already have native MediaSource support!
+				continue;
+			}
+			this.audio_codecs[codec_option] = this.aurora_codecs[codec_option];
+		}
+	}
+	if (this.audio_httpstream_enabled) {
+		var stream_codecs = ["mp3"];
+		for (var i in stream_codecs) {
+			var codec_option = stream_codecs[i];
+			if (codec_option in this.audio_codecs) {
+				continue;
+			}
+			this.audio_codecs[codec_option] = codec_option;
+		}
+	}
+	this.debug("audio", "audio codecs:", this.audio_codecs);
+	if(!this.audio_codecs) {
+		this.audio_codec = null;
+		this.audio_enabled = false;
+		this.warn("no valid audio codecs found");
+		return;
+	}
+	if(!(this.audio_codec in this.audio_codecs)) {
+		if(this.audio_codec) {
+			this.warn("invalid audio codec: "+this.audio_codec);
+		}
+		this.audio_codec = MediaSourceUtil.getDefaultAudioCodec(this.audio_codecs);
+		if(this.audio_codec) {
+			if(this.audio_mediasource_enabled && (this.audio_codec in this.mediasource_codecs)) {
+				this.audio_framework = "mediasource";
+			}
+			else if (this.audio_aurora_enabled && !Utilities.isIE()) {
+				this.audio_framework = "aurora";
+			}
+			else if (this.audio_httpstream_enabled) {
+				this.audio_framework = "http-stream";
+			}
+			if (this.audio_framework) {
+				this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+			}
+			else {
+				this.warn("no valid audio framework - cannot enable audio");
+				this.audio_enabled = false;
+			}
+		}
+		else {
+			this.warn("no valid audio codec found");
+			this.audio_enabled = false;
+		}
+	}
+	else {
+		this.log("using "+this.audio_framework+" audio codec: "+this.audio_codec);
+	}
+	this.log("audio codecs: ", Object.keys(this.audio_codecs));
+}
+
+XpraClient.prototype._sound_start_receiving = function() {
+	try {
+		this.audio_buffers = [];
+		this.audio_buffers_count = 0;
+		if (this.audio_framework=="http-stream") {
+			this._sound_start_httpstream();
+		}
+		else if (this.audio_framework=="mediasource") {
+			this._sound_start_mediasource();
+		}
+		else {
+			this._sound_start_aurora();
+		}
+	}
+	catch(e) {
+		this.error('error starting audio player: '+e);
+	}
+}
+
+
+XpraClient.prototype._send_sound_start = function() {
+	this.log("audio: requesting "+this.audio_codec+" stream from the server");
+	this.send(["sound-control", "start", this.audio_codec]);
+}
+
+
+XpraClient.prototype._sound_start_httpstream = function() {
+	this.audio = document.createElement("audio");
+	this.audio.setAttribute('autoplay', true);
+	this.audio.setAttribute('controls', false);
+	this.audio.setAttribute('loop', true);
+	var url = "http";
+	if (this.ssl) {
+		url = "https";
+	}
+	url += "://"+this.host+":"+this.port;
+	if (this.path) {
+		url += "/"+this.path;
+	}
+	url += "/audio.mp3?uuid="+this.uuid;
+	this.log("starting http stream from", url);
+	this.audio.src = url;
+}
+
+XpraClient.prototype._sound_start_aurora = function() {
+	this.audio_aurora_ctx = AV.Player.fromXpraSource();
+	this._send_sound_start();
+}
+
+XpraClient.prototype._sound_start_mediasource = function() {
+	var me = this;
+
+	function audio_error(event) {
+		if(me.audio) {
+			me.error(event+" error: "+me.audio.error);
+			if(me.audio.error) {
+				me.error(MediaSourceConstants.ERROR_CODE[me.audio.error.code]);
+			}
+		}
+		else {
+			me.error(event+" error");
+		}
+		me.close_audio();
+	}
+
+	//Create a MediaSource:
+	this.media_source = MediaSourceUtil.getMediaSource();
+	if(this.debug) {
+		MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "audio");
+	}
+	this.media_source.addEventListener('error', 	function(e) {audio_error("audio source"); });
+
+	//Create an <audio> element:
+	this.audio = document.createElement("audio");
+	this.audio.setAttribute('autoplay', true);
+	if(this.debug) {
+		MediaSourceUtil.addMediaElementEventDebugListeners(this.audio, "audio");
+	}
+	this.audio.addEventListener('play', 			function() { console.log("audio play!"); });
+	this.audio.addEventListener('error', 			function() { audio_error("audio"); });
+	document.body.appendChild(this.audio);
+
+	//attach the MediaSource to the <audio> element:
+	this.audio.src = window.URL.createObjectURL(this.media_source);
+	this.audio_buffers = []
+	this.audio_buffers_count = 0;
+	this.audio_source_ready = false;
+	console.log("audio waiting for source open event on "+this.media_source);
+	this.media_source.addEventListener('sourceopen', function() {
+		me.log("audio media source open");
+		if (me.audio_source_ready) {
+			me.warn("ignoring: source already open");
+			return;
+		}
+		//ie: codec_string = "audio/mp3";
+		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
+		if(codec_string==null) {
+			me.error("invalid codec '"+me.audio_codec+"'");
+			me.close_audio();
+			return;
+		}
+		me.log("using audio codec string for "+me.audio_codec+": "+codec_string);
+
+		//Create a SourceBuffer:
+		var asb = null;
+		try {
+			asb = me.media_source.addSourceBuffer(codec_string);
+		} catch (e) {
+			me.error("audio setup error for '"+codec_string+"':", e);
+			me.close_audio();
+			return;
+		}
+		me.audio_source_buffer = asb;
+		asb.mode = "sequence";
+		if (this.debug) {
+			MediaSourceUtil.addSourceBufferEventDebugListeners(asb, "audio");
+		}
+		asb.addEventListener('error', 				function(e) { audio_error("audio buffer"); });
+		me.audio_source_ready = true;
+		me._send_sound_start();
+	});
+}
+
+XpraClient.prototype.close_audio = function() {
+	if (this.protocol) {
+		this.send(["sound-control", "stop"]);
+	}
+	if (this.audio_framework=="http-stream") {
+		this._close_audio_httpstream();
+	}
+	else if (this.audio_framework=="mediasource") {
+		this._close_audio_mediasource();
+	}
+	else {
+		this._close_audio_aurora();
+	}
+}
+
+XpraClient.prototype._close_audio_httpstream = function() {
+	this._remove_audio_element();
+}
+
+XpraClient.prototype._close_audio_aurora = function() {
+	if(this.audio_aurora_ctx) {
+		//this.audio_aurora_ctx.close();
+		this.audio_aurora_ctx = null;
+	}
+}
+
+XpraClient.prototype._close_audio_mediasource = function() {
+	this.log("close_audio_mediasource: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", video="+this.audio);
+	this.audio_source_ready = false;
+	if(this.audio) {
+		this.send(["sound-control", "stop"]);
+		if(this.media_source) {
+			try {
+				if(this.audio_source_buffer) {
+					this.media_source.removeSourceBuffer(this.audio_source_buffer);
+					this.audio_source_buffer = null;
+				}
+				if(this.media_source.readyState=="open") {
+					this.media_source.endOfStream();
+				}
+			} catch(e) {
+				this.warn("audio media source EOS error:", e);
+			}
+			this.media_source = null;
+		}
+		this._remove_audio_element();
+	}
+}
+
+XpraClient.prototype._remove_audio_element = function() {
+	if (this.audio) {
+		this.audio.src = "";
+		this.audio.load();
+		try {
+			document.body.removeChild(this.audio);
+		}
+		catch (e) {
+			this.debug("audio", "failed to remove audio from page:", e);
+		}
+		this.audio = null;
 	}
 }
 
@@ -2353,6 +2553,9 @@ XpraClient.prototype.push_audio_buffer = function(buf) {
 }
 
 
+/**
+ * Clipboard
+ */
 XpraClient.prototype.get_clipboard_buffer = function() {
 	return this.clipboard_buffer;
 }
@@ -2414,6 +2617,9 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	ctx.send(packet);
 }
 
+/**
+ * File transfers and printing
+ */
 XpraClient.prototype._process_send_file = function(packet, ctx) {
 	var basefilename = packet[1];
 	var mimetype = packet[2];

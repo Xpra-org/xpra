@@ -20,7 +20,7 @@
  * The contents of the window is an image, which gets updated
  * when we receive pixels from the server.
  */
-function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, tray, client_properties, geometry_cb, mouse_move_cb, mouse_click_cb, set_focus_cb, window_closed_cb, htmldiv) {
+function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, tray, client_properties, geometry_cb, mouse_move_cb, mouse_down_cb, mouse_up_cb, mouse_scroll_cb, set_focus_cb, window_closed_cb, htmldiv) {
 	// use me in jquery callbacks as we lose 'this'
 	var me = this;
 	// there might be more than one client
@@ -47,7 +47,9 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	//callbacks start null until we finish init:
 	this.geometry_cb = null;
 	this.mouse_move_cb = null;
-	this.mouse_click_cb = null;
+	this.mouse_down_cb = null;
+	this.mouse_up_cb = null;
+	this.mouse_scroll_cb = null;
 	this.window_closed_cb = null;
 
 	//xpra specific attributes:
@@ -76,21 +78,17 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.w = w;
 	this.h = h;
 
-	// last mouse position
-	this.last_mouse_x = null;
-	this.last_mouse_y = null;
-	// wheel accumulators:
-	this.wheel_delta_x = 0;
-	this.wheel_delta_y = 0;
-
 	// get offsets
 	this.leftoffset = parseInt(jQuery(this.div).css('border-left-width'), 10);
 	this.rightoffset = parseInt(jQuery(this.div).css('border-right-width'), 10);
 	this.topoffset = parseInt(jQuery(this.div).css('border-top-width'), 10);
 	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
 
-	this.mousedown_event = null;
 	// Hook up the events we want to receive:
+	this.mouse_move_cb = mouse_move_cb || null;
+	this.mouse_down_cb = mouse_down_cb || null;
+	this.mouse_up_cb = mouse_up_cb || null;
+	this.mouse_scroll_cb = mouse_scroll_cb || null;
 	jQuery(this.canvas).mousedown(function (e) {
 		me.on_mousedown(e);
 	});
@@ -101,10 +99,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		me.on_mousemove(e);
 	});
 
-	// now safe to assign the callbacks:
 	this.geometry_cb = geometry_cb || null;
-	this.mouse_move_cb = mouse_move_cb || null;
-	this.mouse_click_cb = mouse_click_cb || null;
 	this.window_closed_cb = window_closed_cb || null;
 
 	// update metadata that is safe before window is drawn
@@ -303,129 +298,31 @@ XpraWindow.prototype.updateFocus = function() {
 	}
 }
 
-XpraWindow.prototype.getMouse = function(e) {
-	// get mouse position take into account scroll
-	var mx = e.clientX + jQuery(document).scrollLeft();
-	var my = e.clientY + jQuery(document).scrollTop();
-
-	// check last mouse position incase the event
-	// hasn't provided it - bug #854
-	if(isNaN(mx) || isNaN(my)) {
-		if(!isNaN(this.last_mouse_x) && !isNaN(this.last_mouse_y)) {
-			mx = this.last_mouse_x;
-			my = this.last_mouse_y;
-		} else {
-			// should we avoid sending NaN to the server?
-			mx = 0;
-			my = 0;
-		}
-	} else {
-		this.last_mouse_x = mx;
-		this.last_mouse_y = my;
-	}
-
-	var mbutton = 0;
-	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
-		mbutton = Math.max(0, e.which);
-	else if ("button" in e)  // IE, Opera (zero based)
-		mbutton = Math.max(0, e.button)+1;
-	//show("getmouse: button="+mbutton+", which="+e.which+", button="+e.button);
-
-	if (this.client.server_is_desktop) {
-		//substract window offset since the desktop's top-left corner should be at 0,0:
-		var pos = jQuery(this.div).position()
-		mx -= pos.left;
-		my -= pos.top;
-	}
-
-	// We return a simple javascript object (a hash) with x and y defined
-	return {x: mx, y: my, button: mbutton};
-};
-
+/**
+ * Mouse: delegate to client, telling it which window triggered the event.
+ */
 XpraWindow.prototype.on_mousemove = function(e) {
-	var mouse = this.getMouse(e),
-			mx = Math.round(mouse.x),
-			my = Math.round(mouse.y);
-
-	var modifiers = [];
-	var buttons = [];
-	this.handle_mouse_move(mx, my, modifiers, buttons);
-
+	this.mouse_move_cb(this.client, e, this);
+	e.preventDefault();
+	return false;
 };
 
 XpraWindow.prototype.on_mousedown = function(e) {
-	var mouse = this.getMouse(e),
-			mx = Math.round(mouse.x),
-			my = Math.round(mouse.y);
-
-	// pass the click to the area:
-	var modifiers = [];
-	var buttons = [];
-	this.mousedown_event = e;
-	var me = this;
-	setTimeout(function() {
-		me.handle_mouse_click(mouse.button, true, mx, my, modifiers, buttons);
-	}, 0);
+	this.mouse_down_cb(this.client, e, this);
+	e.preventDefault();
+	return false;
 };
 
 XpraWindow.prototype.on_mouseup = function(e) {
-	// if not handling it ourselves, pass it down:
-	var mouse = this.getMouse(e),
-			mx = Math.round(mouse.x),
-			my = Math.round(mouse.y);
-	var modifiers = [];
-	var buttons = [];
-	this.mousedown_event = null;
-	var me = this;
-	setTimeout(function() {
-		me.handle_mouse_click(mouse.button, false, mx, my, modifiers, buttons);
-	}, 0);
+	this.mouse_up_cb(this.client, e, this);
+	e.preventDefault();
+	return false;
 };
 
 XpraWindow.prototype.on_mousescroll = function(e) {
-	var mouse = this.getMouse(e),
-			mx = Math.round(mouse.x),
-			my = Math.round(mouse.y);
-	var modifiers = [];
-	var buttons = [];
-	var wheel = Utilities.normalizeWheel(e);
-	this.debug("mouse", "normalized wheel event:", wheel);
-	//clamp to prevent event floods:
-	var px = Math.min(1200, wheel.pixelX);
-	var py = Math.min(1200, wheel.pixelY);
-	var apx = Math.abs(px);
-	var apy = Math.abs(py);
-	//generate a single event if we can, or add to accumulators:
-	if (apx>=40 && apx<=160) {
-		this.wheel_delta_x = (px>0) ? 120 : -120;
-	}
-	else {
-		this.wheel_delta_x += px;
-	}
-	if (apy>=40 && apy<=160) {
-		this.wheel_delta_y = (py>0) ? 120 : -120;
-	}
-	else {
-		this.wheel_delta_y += py;
-	}
-	//send synthetic click+release as many times as needed:
-	var wx = Math.abs(this.wheel_delta_x);
-	var wy = Math.abs(this.wheel_delta_y);
-	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
-	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
-	while (wx>=120) {
-		wx -= 120;
-		this.handle_mouse_click(btn_x, true, mx, my, modifiers, buttons);
-		this.handle_mouse_click(btn_x, false, mx, my, modifiers, buttons);
-	}
-	while (wy>=120) {
-		wy -= 120;
-		this.handle_mouse_click(btn_y, true, mx, my, modifiers, buttons);
-		this.handle_mouse_click(btn_y, false, mx, my, modifiers, buttons);
-	}
-	//store left overs:
-	this.wheel_delta_x = (this.wheel_delta_x>=0) ? wx : -wx;
-	this.wheel_delta_y = (this.wheel_delta_y>=0) ? wy : -wy;
+	this.mouse_scroll_cb(this.client, e, this);
+	e.preventDefault();
+	return false;
 }
 
 /**
@@ -879,11 +776,11 @@ XpraWindow.prototype.resize = function(w, h) {
 	this.move_resize(this.x, this.y, w, h);
 };
 
-XpraWindow.prototype.initiate_moveresize = function(x_root, y_root, direction, button, source_indication) {
+XpraWindow.prototype.initiate_moveresize = function(mousedown_event, x_root, y_root, direction, button, source_indication) {
 	var dir_str = MOVERESIZE_DIRECTION_STRING[direction];
 	this.log("initiate_moveresize", dir_str, [x_root, y_root, direction, button, source_indication]);
-	if (direction==MOVERESIZE_MOVE) {
-		var e = this.mousedown_event;
+	if (direction==MOVERESIZE_MOVE && mousedown_event) {
+		var e = mousedown_event;
 		e.type = "mousedown.draggable";
 		e.target = this.div[0];
 		this.div.trigger(e);
@@ -930,15 +827,6 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 	// mouse click event is from canvas just for this window so no need to check
 	// internal geometry anymore
 	this.mouse_click_cb(this, button, pressed, mx, my, modifiers, buttons);
-};
-
-/**
- * Handle mouse move from this window's canvas,
- * then we fire "mouse_move_cb" (if it is set).
- */
-XpraWindow.prototype.handle_mouse_move = function(mx, my, modifiers, buttons) {
-	this.debug("mouse", "got mouse move to ", mx, my);
-	this.mouse_move_cb(this, mx, my, modifiers, buttons);
 };
 
 
