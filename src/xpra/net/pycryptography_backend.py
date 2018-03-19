@@ -58,7 +58,6 @@ def init():
     ENCRYPTION_CIPHERS[:] = ["AES"]
 
 def get_info():
-    global backend
     import cryptography
     return {"backend"                       : "python-cryptography",
             "python-cryptography"           : {
