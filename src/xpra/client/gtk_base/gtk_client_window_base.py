@@ -192,6 +192,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._current_frame_extents = None
         self._screen = -1
         self._frozen = False
+        self.send_iconify_timer = None
         self.remove_pointer_overlay_timer = None
         self.show_pointer_overlay_timer = None
         self.moveresize_timer = None
@@ -740,22 +741,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             if iconified:
                 #usually means it is unmapped
                 self._unfocus()
-                if not self._override_redirect:
+                if not self._override_redirect and not self.send_iconify_timer:
                     #tell server, but wait a bit to try to prevent races:
-                    def tell_server():
-                        if self._iconified:
-                            self.send("unmap-window", self._id, True, self._window_state)
-                            self._window_state = {}
-                    #calculate a good delay to prevent races causing minimize/unminimize loops:
-                    delay = 150
-                    spl = tuple(self._client.server_ping_latency)
-                    if len(spl)>0:
-                        worst = max([x for _,x in spl])
-                        delay += int(1000*worst)
-                        delay = min(1000, delay)
-                    statelog("telling server about iconification with %sms delay", delay)
-                    self.timeout_add(delay, tell_server)
+                    self.schedule_send_iconify()
             else:
+                self.cancel_send_iconifiy_timer()
                 self._frozen = False
                 self.process_map_event()
         statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s", state_updates, actual_updates, server_updates)
@@ -767,6 +757,29 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.send_configure_event(True)
         if self._window_state:
             self.timeout_add(25, send_updated_window_state)
+
+    def schedule_send_iconify(self):
+        #calculate a good delay to prevent races causing minimize/unminimize loops:
+        delay = 150
+        spl = tuple(self._client.server_ping_latency)
+        if len(spl)>0:
+            worst = max([x for _,x in spl])
+            delay += int(1000*worst)
+            delay = min(1000, delay)
+        statelog("telling server about iconification with %sms delay", delay)
+        self.send_iconify_timer = self.timeout_add(delay, self.send_iconify)
+
+    def send_iconify(self):
+        self.send_iconify_timer = None
+        if self._iconified:
+            self.send("unmap-window", self._id, True, self._window_state)
+            self._window_state = {}
+
+    def cancel_send_iconifiy_timer(self):
+        sit = self.send_iconify_timer
+        if sit:
+            self.send_iconify_timer = None
+            self.source_remove(sit)
 
 
     def set_command(self, command):
@@ -1729,6 +1742,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         log.warn("Warning: window destroy called twice!")
 
     def destroy(self):
+        self.cancel_send_iconifiy_timer()
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()
         self.cancel_focus_timer()
