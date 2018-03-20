@@ -291,10 +291,18 @@ class WindowBackingBase(object):
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        if not self.webp_decoder or WEBP_PILLOW or ("BGRX" not in self.RGB_MODES):
+        rgb_format = options.strget("rgb_format")
+        has_alpha = options.boolget("has_alpha", False)
+        if has_alpha:
+            paint_format = "BGRA"
+        elif rgb_format.startswith("BGR"):
+            paint_format = "RGB"
+        else:
+            paint_format = "BGR"
+        #log("paint_webp%s rgb_format=%s, has_alpha=%s, paint_format=%s, RGB_MODES=%s", (len(img_data), x, y, width, height, options, callbacks), rgb_format, has_alpha, paint_format, self.RGB_MODES)
+        if not self.webp_decoder or WEBP_PILLOW or paint_format not in self.RGB_MODES:
             #if webp is enabled, then Pillow should be able to take care of it:
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
-        has_alpha = options.boolget("has_alpha", False)
         buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, options.strget("rgb_format"))
         #replace with the actual rgb format we get from the decoder:
         options[b"rgb_format"] = rgb_format
