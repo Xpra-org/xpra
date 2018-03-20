@@ -159,7 +159,13 @@ Requires:			xpra-common = %{version}-%{build_no}%{dist}
 Requires:			python2-lz4
 Requires:			python2-rencode
 Requires:			python2-pillow
+%if 0%{?fedora}<28
 Requires:			libvpx-xpra
+%else
+Requires:			libvpx
+Conflicts:			libvpx-xpra
+Obsoletes:          libvpx-xpra
+%endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
@@ -200,7 +206,9 @@ BuildRequires:		libXcomposite-devel
 BuildRequires:		libXdamage-devel
 BuildRequires:		libXrandr-devel
 BuildRequires:		libXext-devel
+%if 0%{?fedora}<28
 BuildRequires:		libvpx-xpra-devel
+%endif
 BuildRequires:		pygtk2-devel
 BuildRequires:		pygobject2-devel
 BuildRequires:		turbojpeg-devel
@@ -292,7 +300,13 @@ Requires:			python3-pillow
 Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
+%if 0%{?fedora}<28
 Requires:			libvpx-xpra
+%else
+Requires:			libvpx
+Conflicts:			libvpx-xpra
+Obsoletes:          libvpx-xpra
+%endif
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
