@@ -73,7 +73,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sat Jan 27 2017 Antoine Martin <antoine@devloop.org.uk> 1.7.0-1
+* Sat Jan 27 2018 Antoine Martin <antoine@devloop.org.uk> 1.7.0-1
 - new upstream release
 
 * Tue Jan 24 2017 Antoine Martin <antoine@devloop.org.uk> 1.6.1-1
