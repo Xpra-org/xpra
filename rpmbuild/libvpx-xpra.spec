@@ -26,6 +26,9 @@ Requires: pkgconfig
 This package contains the development files for %{name}.
 
 
+%global debug_package %{nil}
+
+
 %prep
 %setup -q -n libvpx-%{version}
 
