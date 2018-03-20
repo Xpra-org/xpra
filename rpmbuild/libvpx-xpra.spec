@@ -6,7 +6,7 @@ Summary:     vpx library for xpra
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     http://www.webmproject.org/code/
-Source0:     http://downloads.webmproject.org/releases/webm/libvpx-%{version}.tar.bz2
+Source0:     http://downloads.webmproject.org/releases/webm/libvpx-%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
