@@ -66,7 +66,9 @@ from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.server.window.region import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
-from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send, argb_swap, rgb_reformat
+from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+from xpra.codecs.rgb_transform import rgb_reformat
+from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_codec
 from xpra.codecs.codec_constants import LOSSY_PIXEL_FORMATS
 from xpra.net import compression

@@ -6,6 +6,7 @@
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import WindowBackingBase
 from xpra.gtk_common.gobject_compat import import_glib
+from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.log import Logger
 log = Logger("tray")
 
@@ -165,6 +166,9 @@ class ClientTray(ClientWidgetBase):
         has_alpha = enc=="rgb32"
         tw = self.tray_widget
         if tw:
+            #some tray implementations can't deal with memoryviews..
+            if isinstance(pixels, (memoryview, _buffer, bytearray)):
+                pixels = memoryview_to_bytes(pixels)
             tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
 

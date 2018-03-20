@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,10 +8,10 @@ from xpra.log import Logger
 log = Logger("window", "encoding")
 
 from xpra.net import compression
-from xpra.codecs.argb.argb import bgra_to_rgb, bgra_to_rgba, argb_to_rgb, argb_to_rgba, r210_to_rgbx, r210_to_rgb, bgr565_to_rgbx, bgr565_to_rgb  #@UnresolvedImport
 from xpra.codecs.loader import get_codec
 from xpra.util import envbool
-from xpra.os_util import memoryview_to_bytes, bytestostr, strtobytes, monotonic_time
+from xpra.codecs.rgb_transform import rgb_reformat
+from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
 pixels_to_bytes = memoryview_to_bytes
 try:
@@ -126,137 +126,6 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp
-
-
-def argb_swap(image, rgb_formats, supports_transparency):
-    """ use the argb codec to do the RGB byte swapping """
-    pixel_format = bytestostr(image.get_pixel_format())
-    #try to fallback to argb module
-    #if we have one of the target pixel formats:
-    pixels = image.get_pixels()
-    assert pixels, "failed to get pixels from %s" % image
-    rs = image.get_rowstride()
-    if pixel_format=="r210":
-        #r210 never contains any transparency at present
-        #if supports_transparency and "RGBA" in rgb_formats:
-        #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
-        #    image.set_pixels(r210_to_rgba(pixels))
-        #    image.set_pixel_format("RGBA")
-        #    return True
-        if "RGB" in rgb_formats:
-            log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(r210_to_rgb(pixels))
-            image.set_pixel_format("RGB")
-            image.set_rowstride(rs*3//4)
-            return True
-        if "RGBX" in rgb_formats:
-            log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(r210_to_rgbx(pixels))
-            image.set_pixel_format("RGBX")
-            return True
-    elif pixel_format=="BGR565":
-        if "RGB" in rgb_formats:
-            log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(bgr565_to_rgb(pixels))
-            image.set_pixel_format("RGB")
-            image.set_rowstride(rs*3//2)
-            return True
-        if "RGBX" in rgb_formats:
-            log("argb_swap: bgr565_to_rgbx for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(bgr565_to_rgbx(pixels))
-            image.set_pixel_format("RGBX")
-            image.set_rowstride(rs*2)
-            return True
-    elif pixel_format in ("BGRX", "BGRA"):
-        if supports_transparency and "RGBA" in rgb_formats:
-            log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(bgra_to_rgba(pixels))
-            image.set_pixel_format("RGBA")
-            return True
-        if "RGB" in rgb_formats:
-            log("argb_swap: bgra_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(bgra_to_rgb(pixels))
-            image.set_pixel_format("RGB")
-            image.set_rowstride(rs*3//4)
-            return True
-    elif pixel_format in ("XRGB", "ARGB"):
-        if supports_transparency and "RGBA" in rgb_formats:
-            log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(argb_to_rgba(pixels))
-            image.set_pixel_format("RGBA")
-            return True
-        if "RGB" in rgb_formats:
-            log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(argb_to_rgb(pixels))
-            image.set_pixel_format("RGB")
-            image.set_rowstride(rs*3//4)
-            return True
-    warn_encoding_once(bytestostr(pixel_format)+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
-    return False
-
-
-#source format  : [(PIL input format, output format), ..]
-PIL_conv = {
-             "XRGB"   : [("XRGB", "RGB")],
-             #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
-             #try with alpha first:
-             "BGRA"   : [("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")],
-             }
-#as above but for clients which cannot handle alpha:
-PIL_conv_noalpha = {
-             "XRGB"   : [("XRGB", "RGB")],
-             #try to drop alpha channel since it isn't used:
-             "BGRX"   : [("BGRX", "RGB"), ("BGRX", "RGBX")],
-             #try with alpha first:
-             "BGRA"   : [("BGRX", "RGB"), ("BGRA", "RGBA"), ("BGRX", "RGBX")],
-             }
-
-
-def rgb_reformat(image, rgb_formats, supports_transparency):
-    """ convert the RGB pixel data into a format supported by the client """
-    #need to convert to a supported format!
-    PIL = get_codec("PIL")
-    pixel_format = bytestostr(image.get_pixel_format())
-    pixels = image.get_pixels()
-    assert pixels, "failed to get pixels from %s" % image
-    if not PIL or pixel_format in ("r210", "BGR565"):
-        #try to fallback to argb module
-        #(required for r210 which is not handled by PIL directly)
-        log("rgb_reformat: using argb_swap for %s", image)
-        return argb_swap(image, rgb_formats, supports_transparency)
-    if supports_transparency:
-        modes = PIL_conv.get(pixel_format)
-    else:
-        modes = PIL_conv_noalpha.get(pixel_format)
-    assert modes, "no PIL conversion from %s" % (pixel_format)
-    target_rgb = [(im,om) for (im,om) in modes if om in rgb_formats]
-    if len(target_rgb)==0:
-        log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
-        #try argb module:
-        if argb_swap(image, rgb_formats, supports_transparency):
-            return True
-        warning_key = "rgb_reformat(%s, %s, %s)" % (pixel_format, rgb_formats, supports_transparency)
-        warn_encoding_once(warning_key, "cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
-        return False
-    input_format, target_format = target_rgb[0]
-    start = monotonic_time()
-    w = image.get_width()
-    h = image.get_height()
-    #PIL cannot use the memoryview directly:
-    if isinstance(pixels, memoryview):
-        pixels = pixels.tobytes()
-    log("rgb_reformat: converting %s from %s to %s using PIL", image, input_format, target_format)
-    img = PIL.Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
-    rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
-    data = img.tobytes("raw", target_format)
-    assert len(data)==rowstride*h, "expected %s bytes in %s format but got %s" % (rowstride*h, len(data))
-    image.set_pixels(data)
-    image.set_rowstride(rowstride)
-    image.set_pixel_format(target_format)
-    end = monotonic_time()
-    log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s", image, rgb_formats, supports_transparency, pixel_format, len(pixels), target_format, len(data), (end-start)*1000.0, rowstride)
-    return True
 
 
 def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):

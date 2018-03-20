@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -291,25 +291,29 @@ class WindowBackingBase(object):
         return False
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
-        rgb_format = options.strget("rgb_format")
-        has_alpha = options.boolget("has_alpha", False)
-        if has_alpha:
-            paint_format = "BGRA"
-        elif rgb_format.startswith("BGR"):
-            paint_format = "RGB"
-        else:
-            paint_format = "BGR"
-        #log("paint_webp%s rgb_format=%s, has_alpha=%s, paint_format=%s, RGB_MODES=%s", (len(img_data), x, y, width, height, options, callbacks), rgb_format, has_alpha, paint_format, self.RGB_MODES)
-        if not self.webp_decoder or WEBP_PILLOW or paint_format not in self.RGB_MODES:
+        if not self.webp_decoder or WEBP_PILLOW:
             #if webp is enabled, then Pillow should be able to take care of it:
             return self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
-        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, options.strget("rgb_format"))
-        #replace with the actual rgb format we get from the decoder:
-        options[b"rgb_format"] = rgb_format
+        rgb_format = options.strget("rgb_format")
+        has_alpha = options.boolget("has_alpha", False)
+        #log("paint_webp%s rgb_format=%s, has_alpha=%s, RGB_MODES=%s", (len(img_data), x, y, width, height, options, callbacks), rgb_format, has_alpha, self.RGB_MODES)
+        buffer_wrapper, width, height, stride, has_alpha, rgb_format = self.webp_decoder.decompress(img_data, has_alpha, rgb_format)
         def free_buffer(*_args):
             buffer_wrapper.free()
         callbacks.append(free_buffer)
         data = buffer_wrapper.get_pixels()
+        #if the backing can't handle this format,
+        #ie: tray only supports RGBA
+        if rgb_format not in self.RGB_MODES:
+            from xpra.codecs.rgb_transform import rgb_reformat
+            from xpra.codecs.image_wrapper import ImageWrapper
+            img = ImageWrapper(x, y, width, height, data, rgb_format, len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
+            #log("rgb_reformat(%s, %s, %s) %i bytes", img, self.RGB_MODES, has_alpha and self._alpha_enabled, len(img_data))
+            rgb_reformat(img, self.RGB_MODES, has_alpha and self._alpha_enabled)
+            rgb_format = img.get_pixel_format()
+            data = img.get_pixels()
+        #replace with the actual rgb format we get from the decoder:
+        options[b"rgb_format"] = rgb_format
         return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):

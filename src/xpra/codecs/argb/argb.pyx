@@ -1,12 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: boundscheck=False, wraparound=False, cdivision=True
 from __future__ import absolute_import
 
+from xpra.os_util import bytestostr
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
@@ -377,3 +378,79 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
         argb_out[i*4+R] = r
         argb_out[i*4+A] = a
     return memoryview(output_buf)
+
+
+#give warning message just once per key then ignore:
+encoding_warnings = set()
+def warn_encoding_once(key, message):
+    global encoding_warnings
+    if key not in encoding_warnings:
+        log.warn("Warning: %s", message)
+        encoding_warnings.add(key)
+
+
+def argb_swap(image, rgb_formats, supports_transparency):
+    """ use the argb codec to do the RGB byte swapping """
+    pixel_format = bytestostr(image.get_pixel_format())
+    #try to fallback to argb module
+    #if we have one of the target pixel formats:
+    pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
+    rs = image.get_rowstride()
+    if pixel_format=="r210":
+        #r210 never contains any transparency at present
+        #if supports_transparency and "RGBA" in rgb_formats:
+        #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
+        #    image.set_pixels(r210_to_rgba(pixels))
+        #    image.set_pixel_format("RGBA")
+        #    return True
+        if "RGB" in rgb_formats:
+            log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(r210_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//4)
+            return True
+        if "RGBX" in rgb_formats:
+            log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(r210_to_rgbx(pixels))
+            image.set_pixel_format("RGBX")
+            return True
+    elif pixel_format=="BGR565":
+        if "RGB" in rgb_formats:
+            log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgr565_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//2)
+            return True
+        if "RGBX" in rgb_formats:
+            log("argb_swap: bgr565_to_rgbx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgr565_to_rgbx(pixels))
+            image.set_pixel_format("RGBX")
+            image.set_rowstride(rs*2)
+            return True
+    elif pixel_format in ("BGRX", "BGRA"):
+        if supports_transparency and "RGBA" in rgb_formats:
+            log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgra_to_rgba(pixels))
+            image.set_pixel_format("RGBA")
+            return True
+        if "RGB" in rgb_formats:
+            log("argb_swap: bgra_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgra_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//4)
+            return True
+    elif pixel_format in ("XRGB", "ARGB"):
+        if supports_transparency and "RGBA" in rgb_formats:
+            log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(argb_to_rgba(pixels))
+            image.set_pixel_format("RGBA")
+            return True
+        if "RGB" in rgb_formats:
+            log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(argb_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//4)
+            return True
+    warn_encoding_once(bytestostr(pixel_format)+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
+    return False
