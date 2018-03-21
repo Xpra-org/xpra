@@ -413,6 +413,20 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-decorator">
+		<branch repo="pypi.python.org"
+			module="/packages/70/f1/cb9373195639db13063f55eb06116310ad691e1fd125e6af057734dc44ea/decorator-4.2.1.tar.gz"
+			hash="sha256:7d46dd9f3ea1cf5f06ee0e4e1277ae618cf48dfb10ada7c8427cd46c42702a0e"
+			version="4.2.1">
+		</branch>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-gssapi">
 		<branch repo="pypi.python.org"
 			module="/packages/c9/88/8306f545a9c2425f18678fa8f3ff369df2615168b2aaf3495f32dd609225/gssapi-1.4.1.tar.gz"
@@ -420,10 +434,10 @@
 			version="1.4.1">
 		</branch>
 		<dependencies>
-			<dep package="python3"/>
+			<dep package="python3-decorator"/>
 		</dependencies>
 		<after>
-			<dep package="python3"/>
+			<dep package="python3-decorator"/>
 		</after>
 	</distutils>
 
