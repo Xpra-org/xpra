@@ -25,7 +25,7 @@ from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.os_util import Queue, SIGNAMES, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, AtomicInteger, \
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, first_time, AtomicInteger, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
@@ -868,8 +868,9 @@ class ProxyInstanceProcess(Process):
                 #no video encoder!
                 enc_pillow = get_codec("enc_pillow")
                 if not enc_pillow:
-                    from xpra.server.picture_encode import warn_encoding_once
-                    warn_encoding_once("no-video-no-PIL", "no video encoder found for rgb format %s, sending as plain RGB!" % rgb_format)
+                    if first_time("no-video-no-PIL-%s" % rgb_format):
+                        enclog.warn("Warning: no video encoder found for rgb format %s", rgb_format)
+                        enclog.warn(" sending as plain RGB")
                     return passthrough(True)
                 enclog("no video encoder available: sending as jpeg")
                 coding, compressed_data, client_options, _, _, _, _ = enc_pillow.encode("jpeg", image, quality, speed, False)

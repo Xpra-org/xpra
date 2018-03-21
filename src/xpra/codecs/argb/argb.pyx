@@ -8,6 +8,7 @@
 from __future__ import absolute_import
 
 from xpra.os_util import bytestostr
+from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
@@ -380,15 +381,6 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     return memoryview(output_buf)
 
 
-#give warning message just once per key then ignore:
-encoding_warnings = set()
-def warn_encoding_once(key, message):
-    global encoding_warnings
-    if key not in encoding_warnings:
-        log.warn("Warning: %s", message)
-        encoding_warnings.add(key)
-
-
 def argb_swap(image, rgb_formats, supports_transparency):
     """ use the argb codec to do the RGB byte swapping """
     pixel_format = bytestostr(image.get_pixel_format())
@@ -452,5 +444,8 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
             return True
-    warn_encoding_once(bytestostr(pixel_format)+"-format-not-handled", "no matching argb function: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
+    warning_key = "format-not-handled-%s" % bytestostr(pixel_format)
+    if first_time(warning_key):
+        log.warn("Warning: no matching argb function,")
+        log.warn(" cannot convert %s to one of: %s", pixel_format, rgb_formats)
     return False

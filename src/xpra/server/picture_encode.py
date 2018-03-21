@@ -9,7 +9,7 @@ log = Logger("window", "encoding")
 
 from xpra.net import compression
 from xpra.codecs.loader import get_codec
-from xpra.util import envbool
+from xpra.util import envbool, first_time
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.os_util import memoryview_to_bytes, strtobytes, monotonic_time
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -20,15 +20,6 @@ except:
     mmap_write = None               #no mmap
 
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
-
-
-#give warning message just once per key then ignore:
-encoding_warnings = set()
-def warn_encoding_once(key, message):
-    global encoding_warnings
-    if key not in encoding_warnings:
-        log.warn("Warning: "+message)
-        encoding_warnings.add(key)
 
 
 def webp_encode(image, supports_transparency, quality, speed, content_type):
@@ -130,12 +121,14 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
 
 def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):
     if mmap_write is None:
-        warn_encoding_once("mmap_write missing", "cannot use mmap!")
+        if first_time("mmap_write missing"):
+            log.warn("Warning: cannot use mmap, no write method support")
         return None
     if image.get_pixel_format() not in rgb_formats:
         if not rgb_reformat(image, rgb_formats, supports_transparency):
             warning_key = "mmap_send(%s)" % image.get_pixel_format()
-            warn_encoding_once(warning_key, "cannot use mmap to send %s" % image.get_pixel_format())
+            if first_time(warning_key):
+                log.warn("Waening: cannot use mmap to send %s" % image.get_pixel_format())
             return None
     start = monotonic_time()
     data = image.get_pixels()
