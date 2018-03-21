@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -59,6 +59,8 @@ cdef extern from "sys/ioctl.h":
 
 def get_interface_speed(int sockfd, char *ifname):
     """ returns the ethtool speed in bps, or 0 """
+    if sockfd==0:
+        return 0
     cdef ifreq ifr
     cdef ethtool_cmd edata
     ifr.ifr_ifrn.ifrn_name = ifname

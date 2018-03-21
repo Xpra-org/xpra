@@ -21,29 +21,12 @@ import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
 
 import comtypes                                         #@UnresolvedImport
+from comtypes import client                             #@UnresolvedImport
 from comtypes.automation import VARIANT                 #@UnresolvedImport
 from comtypes.persist import IPropertyBag, IErrorLog    #@UnresolvedImport
 from ctypes import POINTER
+from xpra.platform.win32.comtypes_util import QuietenLogging
 
-
-def quiet_load_tlb(tlb_filename):
-    log("quiet_load_tlb(%s)", tlb_filename)
-    #suspend logging during comtypes.client._code_cache and loading of tlb files:
-    #also set minimum to INFO for all of comtypes
-    loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
-    saved_levels = [x.getEffectiveLevel() for x in loggers]
-    try:
-        for logger in loggers:
-            logger.setLevel(logging.WARNING)
-        log("loading module from %s", tlb_filename)
-        from comtypes import client                  #@UnresolvedImport
-        client._generate.__verbose__ = False
-        module = client.GetModule(tlb_filename)
-        log("%s=%s", tlb_filename, module)
-        return module
-    finally:
-        for i, logger in enumerate(loggers):
-            logger.setLevel(saved_levels[i])
 
 #load directshow:
 win32_tlb_dir = os.path.join(tlb_dir, "win32")
@@ -54,7 +37,9 @@ directshow_tlb = os.environ.get("XPRA_DIRECTSHOW_TLB", directshow_tlb)
 log("directshow_tlb=%s", directshow_tlb)
 if not os.path.exists(directshow_tlb):
     raise ImportError("DirectShow.tlb is missing")
-directshow = quiet_load_tlb(directshow_tlb)
+with QuietenLogging():
+    directshow = client.GetModule(directshow_tlb)
+log("directshow: %s", directshow)
 log("directshow: %s", dir(directshow))
 
 CLSID_VideoInputDeviceCategory  = comtypes.GUID("{860BB310-5D01-11d0-BD3B-00A0C911CE86}")

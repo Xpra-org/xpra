@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("network", "protocol")
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool, csv
-from xpra.os_util import WIN32, PYTHON2
+from xpra.os_util import WIN32, PYTHON2, POSIX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 
 
@@ -354,8 +354,12 @@ class SocketConnection(Connection):
         except:
             pass
         try:
-            fd = s.fileno()
-            info["fileno"] = fd
+            if POSIX:
+                fd = s.fileno()
+            else:
+                fd = 0
+            if fd:
+                info["fileno"] = fd
             from xpra.platform.netdev_query import get_interface_speed
             #ie: self.local = ("192.168.1.7", "14500")
             if self.local and len(self.local)==2:
@@ -364,6 +368,7 @@ class SocketConnection(Connection):
                 #ie: iface = "eth0"
                 if iface and iface!="lo":
                     s = get_interface_speed(fd, iface)
+                    log("get_interface_speed(%i, %s)=%s", fd, iface, s)
                     if s>0:
                         info["speed"] = s
         except:

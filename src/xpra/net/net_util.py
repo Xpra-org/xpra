@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -395,6 +395,7 @@ def get_info():
 def main():
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
+    from xpra.platform.netdev_query import get_interface_speed
     from xpra.log import enable_color, add_debug_category, enable_debug_for
     with program_context("Network-Info", "Network Info"):
         enable_color()
@@ -407,9 +408,14 @@ def main():
         print("Network interfaces found:")
         for iface in get_interfaces():
             if if_nametoindex:
-                print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
+                s = "* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface))
             else:
-                print("* %s" % iface)
+                s = "* %s" % iface
+            speed = get_interface_speed(0, iface)
+            if speed>0:
+                from xpra.simple_stats import std_unit
+                s += " (speed=%sbps)" % std_unit(speed)
+            print(s)
 
         def pver(v):
             if type(v) in (tuple, list):
