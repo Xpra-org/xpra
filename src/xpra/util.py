@@ -831,6 +831,6 @@ _once_only = set()
 def first_time(key):
     global _once_only
     if key not in _once_only:
-        _once_only.append(key)
+        _once_only.add(key)
         return True
     return False
