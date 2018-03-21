@@ -757,7 +757,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             try:
                 #split on colon
                 for x in str(e).split(":", 2):
-                    authlog.error(" %s", x)
+                    authlog.error(" %s", x.lstrip(" "))
             except:
                 authlog.error(" %s", e)
             return False
