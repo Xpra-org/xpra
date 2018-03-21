@@ -613,8 +613,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog("processing challenge: %s", packet[1:])
         if not self.validate_challenge_packet(packet):
             return
+        authlog("challenge handlers: %s", self.challenge_handlers)
         for name, method in self.challenge_handlers.items():
             try:
+                authlog("calling challenge handler %s", name)
                 if method(packet):
                     return
             except Exception as e:
