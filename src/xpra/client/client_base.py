@@ -705,13 +705,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             kerberos.authGSSClientStep(ctx, "")
         except Exception as e:
             authlog("kerberos.authGSSClientStep", exc_info=True)
-            log.error("Error: kerberos client authentication failure:")
+            authlog.error("Error: kerberos client authentication failure:")
             try:
                 for x in e.args:
-                    try:
-                        log.error(" %s", csv(x))
-                    except:
-                        log.error(" %s", x)
+                    if isinstance(x, (list, tuple)):
+                        try:
+                            log.error(" %s", csv(x))
+                            continue
+                        except:
+                            pass
+                    authlog.error(" %s", x)
             except Exception as e:
                 log.error(" %s", e)
                 #log.error(" %s", dir(e))
@@ -746,8 +749,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             token = ctx.step()
         except Exception as e:
             authlog("gssapi failure", exc_info=True)
-            log.error("Error: gssapi client authentication failure:")
-            log.error(" %s", e)
+            authlog.error("Error: gssapi client authentication failure:")
+            authlog.error(" %s", e)
             return False
         authlog("gss token=%s", repr(token))
         self.send_challenge_reply(packet, token)
