@@ -69,14 +69,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.defaults_init()
         FilePrintMixin.__init__(self)
         self._init_done = False
-        self.default_challenge_methods = OrderedDict({
-            "uri"       : self.process_challenge_uri,
-            "file"      : self.process_challenge_file,
-            "env"       : self.process_challenge_env,
-            "kerberos"  : self.process_challenge_kerberos,
-            "gss"       : self.process_challenge_gss,
-            "prompt"    : self.process_challenge_prompt,
-            })
+        #insert in order:
+        dcm = OrderedDict()
+        dcm["uri"]      = self.process_challenge_uri
+        dcm["file"]     = self.process_challenge_file
+        dcm["env"]      = self.process_challenge_env
+        dcm["kerberos"] = self.process_challenge_kerberos
+        dcm["gss"]      = self.process_challenge_gss
+        dcm["prompt"]   = self.process_challenge_prompt
+        self.default_challenge_methods = dcm
 
 
     def defaults_init(self):
