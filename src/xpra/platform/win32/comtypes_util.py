@@ -7,25 +7,24 @@
 import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
 
-import comtypes                                         #@UnresolvedImport
-assert comtypes
-from comtypes import client                  #@UnresolvedImport
-
 
 class QuietenLogging(object):
 
     def __init__(self, *_args):
         self.loggers = [logging.getLogger(x) for x in ("comtypes.client._code_cache", "comtypes.client._generate")]
         self.saved_levels = [x.getEffectiveLevel() for x in self.loggers]
-        self.verbose = getattr(client._generate, "__verbose__", None)
 
     def __enter__(self):
-        client._generate.__verbose__ = False
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
+        from comtypes import client                  #@UnresolvedImport
+        self.verbose = getattr(client._generate, "__verbose__", None)
+        if self.verbose is not None:
+            client._generate.__verbose__ = False
 
     def __exit__(self, *_args):
         if self.verbose is not None:
+            from comtypes import client                  #@UnresolvedImport
             client._generate.__verbose__ = self.verbose
         for i, logger in enumerate(self.loggers):
             logger.setLevel(self.saved_levels[i])
