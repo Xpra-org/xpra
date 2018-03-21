@@ -878,6 +878,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--env", action="append",
                       dest="env", default=list(defaults.env or []),
                       help="Define environment variables which will apply to this process and all subprocesses, can be specified multiple times. Default: %s." % csv(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
+    group.add_option("--challenge-handlers", action="store",
+                      dest="challenge_handlers", default=defaults.challenge_handlers,
+                      help="Which handlers to use for processing server authentication challenges. Default: %default.")
     group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect (useful to secure TCP mode). Default: %s." % csv(defaults.password_file))

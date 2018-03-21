@@ -30,7 +30,7 @@ class Authenticator(SysAuthenticatorBase):
         self.uid = ipop("uid")
         self.gid = ipop("gid")
         username = kwargs.pop("username", username)
-        kwargs["prompt"] = kwargs.pop("prompt", "token")
+        kwargs["prompt"] = kwargs.pop("prompt", "GSS token")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
         log("gss auth: service=%s, username=%s", self.service, username)
 

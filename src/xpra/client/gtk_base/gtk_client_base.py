@@ -25,10 +25,11 @@ filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
+authlog = Logger("client", "auth")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, std, csv, \
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, csv, \
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
@@ -47,7 +48,6 @@ from xpra.gtk_common.gtk_util import get_gtk_version_info, scaled_image, get_def
 from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
-from xpra.client.client_base import PASSWORD_PROMPT
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.session_info import SessionInfo
 from xpra.platform.paths import get_icon_filename
@@ -221,26 +221,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         gdk.notify_startup_complete()
 
 
-    def _process_challenge(self, packet):
-        if not self.validate_challenge_packet(packet):
-            return
-        digest = packet[3]
-        if digest.startswith(b"kerberos:"):
-            self.process_kerberos_challenge(packet)
-            return
-        if digest.startswith(b"gss:"):
-            self.process_gss_challenge(packet)
-            return
-        prompt = "password"
-        if len(packet)>=6:
-            prompt = std(packet[5])
-        password = self.load_password(prompt)
-        if password:
-            self.send_challenge_reply(packet, password)
-            return
-        if not PASSWORD_PROMPT:
-            self.quit(EXIT_PASSWORD_REQUIRED)
-            return
+    def do_process_challenge_prompt(self, packet, prompt="password"):
         dialog = gtk.Dialog("Server Authentication",
                None,
                DIALOG_MODAL | DESTROY_WITH_PARENT)
@@ -284,6 +265,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             from xpra.platform.darwin.gui import enable_focus_workaround
             enable_focus_workaround()
         dialog.show()
+        return True
 
 
     def parse_border(self, border_str, extra_args):

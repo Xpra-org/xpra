@@ -28,7 +28,7 @@ class Authenticator(SysAuthenticatorBase):
         self.uid = ipop("uid")
         self.gid = ipop("gid")
         username = kwargs.pop("username", username)
-        kwargs["prompt"] = kwargs.pop("prompt", "token")
+        kwargs["prompt"] = kwargs.pop("prompt", "kerberos token")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
         log("kerberos-token auth: service=%s, username=%s", self.service, username)
 

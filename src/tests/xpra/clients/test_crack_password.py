@@ -27,10 +27,6 @@ class TryLogin(CommandConnectClient):
         self.stop_cb = stop_cb
         self.cracked_cb = cracked_cb
 
-    def load_password(self):
-        log.info("testing with %s", self.password)
-        return self.password
-
     def run(self):
         XpraClientBase.run(self)
 

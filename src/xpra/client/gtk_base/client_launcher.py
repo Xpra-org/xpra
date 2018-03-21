@@ -672,11 +672,7 @@ class ApplicationWindow:
         log("start_XpraClient() client initialized")
 
         if self.config.password:
-            #pass the password to the class directly:
-            def load_password(*_args):
-                return self.config.password
-            self.client.password_file = "FAKE-PASSWORD-FILE-FOR-LAUNCHER"
-            self.client.load_password = load_password
+            self.client.password = self.config.password
         #override exit code:
         warn_and_quit_save = self.client.warn_and_quit
         quit_save = self.client.quit

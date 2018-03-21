@@ -711,6 +711,35 @@ Authentication module to use for the \fBbind\-rfb\fP sockets.
 Just like the \fBauth\fP switch, except this one only applies
 to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).
 .TP
+\fB\-\-challenge\-handlers\fP=\fIMODULES\fP
+Configures which challenge handlers are used by the client and in
+which order.
+The default value is: \fIall\fP which corresponds to:
+\fIuri,file,env,kerberos,gss,prompt\fP.
+Note: some of these modules will fall through to others if they are
+enable to supply the challenge requested (\fIuri\fP, \fIfile\fP,
+\fIkerberos\fP and \fIgss\fP), others do not (\fIenv\fP and \fIprompt\fP).
+.RS
+.IP \fBuri\fP
+Use the password specified on the connection string, if any.
+.IP \fBfile\fP
+Loads the password from the file specified with the
+\fPpassword\-file switch.
+.IP \fBenv\fP
+Use the password specified using the \fIXPRA_PASSWORD\fP
+environment variable.
+.IP \fBkerberos\fP
+Request a kerberos token for the service specified.
+.IP \fBgss\fP
+Request a gss token for the service specified.
+.IP \fBprompt\fP
+Prompt the user for the value.
+Terminal clients prompt using text input, GUI clients
+use a dialog.
+.RE
+.PP
+.TP
+
 \fB\-\-min\-port\fP=\fIPORT\fP
 The minimum port number allowed when creating UDP and TCP sockets.
 You can use a lower value to allow unprivileged users to bind to

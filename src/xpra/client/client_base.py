@@ -9,6 +9,7 @@ import os
 import sys
 import socket
 import string
+from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("client")
@@ -28,7 +29,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS, WIN32
-from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc
+from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 
@@ -39,13 +40,14 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_U
 
 
 EXTRA_TIMEOUT = 10
+KERBEROS_SERVICES = os.environ.get("XPRA_KERBEROS_SERVICES", "*").split(",")
+GSS_SERVICES = os.environ.get("XPRA_GSS_SERVICES", "*").split(",")
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
-PASSWORD_PROMPT = envbool("XPRA_PASSWORD_PROMPT", True)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
+AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
@@ -67,6 +69,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.defaults_init()
         FilePrintMixin.__init__(self)
         self._init_done = False
+        self.default_challenge_methods = OrderedDict({
+            "uri"       : self.process_challenge_uri,
+            "file"      : self.process_challenge_file,
+            "env"       : self.process_challenge_env,
+            "kerberos"  : self.process_challenge_kerberos,
+            "gss"       : self.process_challenge_gss,
+            "prompt"    : self.process_challenge_prompt,
+            })
+
 
     def defaults_init(self):
         #skip warning when running the client
@@ -84,6 +95,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.hello_extra = {}
         self.compression_level = 0
         self.display = None
+        self.challenge_handlers = OrderedDict()
         self.username = None
         self.password = None
         self.password_file = ()
@@ -131,7 +143,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.encryption:
             crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
-
+        #register the authentication challenge handlers:
+        ch = tuple(x.strip().lower() for x in (opts.challenge_handlers or "").split(","))
+        def has_h(name):
+            return "all" in ch or name in ch
+        for ch_name in ch:
+            if ch_name=="all":
+                self.challenge_handlers.update(self.default_challenge_methods)
+                break
+            method = self.default_challenge_methods.get(ch_name)
+            if method:
+                self.challenge_handlers[ch_name] = method
+                continue
+            log.warn("Warning: unknown challenge handler '%s'", ch_name)
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
             detailed = []
@@ -340,25 +364,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def make_hello_base(self):
         capabilities = flatten_dict(get_network_caps())
-        try:
-            if WIN32:
-                import winkerberos as kerberos
-            else:
-                import kerberos
-            assert kerberos
-        except ImportError:
-            authlog("no kerberos", exc_info=True)
-        else:
-            authlog("got kerberos support")
-            capabilities["digest"].append("kerberos")
-        try:
-            import gssapi
-            assert gssapi
-        except ImportError:
-            authlog("no gssapi", exc_info=True)
-        else:
-            authlog("got gss support")
-            capabilities["digest"].append("gss")
+        #add "kerberos" and "gss" if enabled:
+        default_on = "all" in self.challenge_handlers or "auto" in self.challenge_handlers
+        for auth in ("kerberos", "gss"):
+            if default_on or auth in self.challenge_handlers:
+                capabilities["digest"].append(auth)
         capabilities.update(FilePrintMixin.get_caps(self))
         capabilities.update({
                 "version"               : XPRA_VERSION,
@@ -596,69 +606,136 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if self.exit_code!=0:
             self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
 
+
+    ########################################
+    # Authentication
     def _process_challenge(self, packet):
         authlog("processing challenge: %s", packet[1:])
         if not self.validate_challenge_packet(packet):
             return
-        digest = packet[3]
-        if digest.startswith("kerberos:"):
-            self.process_kerberos_challenge(packet)
-            return
-        if digest.startswith("gss:"):
-            self.process_kerberos_challenge(packet)
-            return
+        for name, method in self.challenge_handlers.items():
+            try:
+                if method(packet):
+                    return
+            except Exception as e:
+                authlog("%s(%s)", method, packet, exc_info=True)
+                authlog.error("Error in %s challenge handler:", name)
+                authlog.error(" %s", e)
+                continue
+        self.quit(EXIT_PASSWORD_REQUIRED)
+
+    def process_challenge_uri(self, packet):
+        if self.password:
+            self.send_challenge_reply(packet, self.password)
+            #clearing it to allow other modules to process further challenges: 
+            self.password = None
+            return True
+        return False
+
+    def process_challenge_env(self, packet):
+        k = "XPRA_PASSWORD"
+        password = os.environ.get(k)
+        authlog("process_challenge_env() %s=%s", k, obsc(password))
+        if password:
+            self.send_challenge_reply(packet, password)
+            return True
+        return False
+
+    def process_challenge_file(self, packet):
+        if self.password_index<len(self.password_file):
+            password_file = self.password_file[self.password_index]
+            self.password_index += 1
+            filename = os.path.expanduser(password_file)
+            password = load_binary_file(filename)
+            authlog("password read from file %i '%s': %s", self.password_index, password_file, obsc(password))
+            self.send_challenge_reply(packet, password)
+            return True
+        return False
+
+    def process_challenge_prompt(self, packet):
         prompt = "password"
+        digest = packet[3]
+        if digest.startswith(b"gss:") or digest.startswith(b"kerberos:"):
+            prompt = "%s token" % (digest.split(b":", 1)[0])
         if len(packet)>=6:
             prompt = std(packet[5])
-        password = self.load_password(prompt)
-        if not password:
-            self.quit(EXIT_PASSWORD_REQUIRED)
-        else:
-            self.send_challenge_reply(packet, password)
+        return self.do_process_challenge_prompt(packet, prompt)
 
-    def process_kerberos_challenge(self, packet):
+    def do_process_challenge_prompt(self, packet, prompt="password"):
+        authlog("do_process_challenge_prompt() isatty=%s", sys.stdin.isatty())
+        if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
+            import getpass
+            authlog("stdin isatty, using password prompt")
+            password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
+            authlog("password read from tty via getpass: %s", obsc(password))
+            self.send_challenge_reply(packet, password)
+            return True
+        return False
+
+    def process_challenge_kerberos(self, packet):
+        digest = packet[3]
+        if not digest.startswith(b"kerberos:"):
+            authlog("%s is not a kerberos challenge", digest)
+            #not a kerberos challenge
+            return False
         try:
             if WIN32:
                 import winkerberos as kerberos
             else:
                 import kerberos
         except ImportError as e:
-            log.error("Error: kerberos authentication not supported:")
-            log.error(" %s", e)
-            self.quit(EXIT_UNSUPPORTED)
-            return
-        digest = packet[3]
-        assert digest.startswith(b"kerberos:")
+            if first_time("no-kerberos"):
+                authlog.warn("Warning: kerberos challenge handler is not supported:")
+                authlog.warn(" %s", e)
+            return False
         service = bytestostr(digest.split(b":", 1)[1])
+        if service not in KERBEROS_SERVICES and "*" not in KERBEROS_SERVICES:
+            authlog.warn("Warning: invalid kerberos request for service '%s'", service)
+            authlog.warn(" services supported: %s", csv(KERBEROS_SERVICES))
+            return False
         authlog("kerberos service=%s", service)
         r, ctx = kerberos.authGSSClientInit(service)
         if r!=1:
             log.error("Error: kerberos GSS client init failed")
-            self.quit(EXIT_INTERNAL_ERROR)
-            return
+            return False
         try:
             kerberos.authGSSClientStep(ctx, "")
         except Exception as e:
             authlog("kerberos.authGSSClientStep", exc_info=True)
-            log.error("Error: kerberos client failure:")
-            log.error(" %s", e)
-            self.quit(EXIT_INTERNAL_ERROR)
-            return
+            log.error("Error: kerberos client authentication failure:")
+            try:
+                for x in e.args:
+                    try:
+                        log.error(" %s", csv(x))
+                    except:
+                        log.error(" %s", x)
+            except Exception as e:
+                log.error(" %s", e)
+                #log.error(" %s", dir(e))
+            return False
         token = kerberos.authGSSClientResponse(ctx)
         authlog("kerberos token=%s", token)
         self.send_challenge_reply(packet, token)
+        return True
 
-    def process_gss_challenge(self, packet):
+    def process_challenge_gss(self, packet):
+        digest = packet[3]
+        if not digest.startswith(b"gss:"):
+            #not a gss challenge
+            authlog("%s is not a gss challenge", digest)
+            return False
         try:
             import gssapi
         except ImportError as e:
-            log.error("Error: gss authentication not supported:")
-            log.error(" %s", e)
-            self.quit(EXIT_UNSUPPORTED)
-            return
-        digest = packet[3]
-        assert digest.startswith(b"gss:")
+            if first_time("no-kerberos"):
+                log.warn("Warning: gss authentication not supported:")
+                log.warn(" %s", e)
+            return False
         service = bytestostr(digest.split(b":", 1)[1])
+        if service not in GSS_SERVICES and "*" not in GSS_SERVICES:
+            authlog.warn("Warning: invalid GSS request for service '%s'", service)
+            authlog.warn(" services supported: %s", csv(GSS_SERVICES))
+            return False
         authlog("gss service=%s", service)
         service_name = gssapi.Name(service)
         try:
@@ -666,12 +743,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             token = ctx.step()
         except Exception as e:
             authlog("gssapi failure", exc_info=True)
-            log.error("Error: gssapi client failure:")
+            log.error("Error: gssapi client authentication failure:")
             log.error(" %s", e)
-            self.quit(EXIT_INTERNAL_ERROR)
-            return
+            return False
         authlog("gss token=%s", repr(token))
         self.send_challenge_reply(packet, token)
+        return True
+
 
     def auth_error(self, code, message, server_message="authentication failed"):
         authlog.error("Error: authentication failed:")
@@ -755,6 +833,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 
+    ########################################
+    # Encryption
     def set_server_encryption(self, caps, key):
         cipher = caps.strget("cipher")
         cipher_iv = caps.strget("cipher.iv")
@@ -794,30 +874,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not key:
             raise InitExit(1, "no encryption key")
         return key.strip(b"\n\r")
-
-    def load_password(self, prompt="password"):
-        authlog("load_password() existing value found: %s", bool(self.password))
-        if self.password:
-            return self.password
-        password = os.environ.get('XPRA_PASSWORD')
-        if self.password_index<len(self.password_file):
-            password_file = self.password_file[self.password_index]
-            self.password_index += 1
-            filename = os.path.expanduser(password_file)
-            password = load_binary_file(filename)
-            authlog("password read from file %i '%s': %s", self.password_index, password_file, obsc(password))
-        else:
-            authlog("load_password() PASSWORD_PROMPT=%s, isatty=%s", PASSWORD_PROMPT, sys.stdin.isatty())
-        if not password and PASSWORD_PROMPT:
-            try:
-                if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
-                    import getpass
-                    authlog("stdin isatty, using password prompt")
-                    password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
-                    authlog("password read from tty via getpass: %s", obsc(password))
-            except Exception:
-                authlog("password request failure", exc_info=True)
-        return password
 
     def _process_hello(self, packet):
         self.remove_packet_handlers("challenge")

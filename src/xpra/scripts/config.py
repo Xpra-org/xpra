@@ -506,6 +506,7 @@ OPTION_TYPES = {
                     "open-url"          : str,
                     "file-transfer"     : str,
                     "printing"          : str,
+                    "challenge-handlers": str,
                     #ssl options:
                     "ssl"               : str,
                     "ssl-key"           : str,
@@ -647,6 +648,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "socket-dir", "socket-dirs",
                   "border", "window-close", "max-size", "desktop-scaling",
                   "file-transfer", "file-size-limit", "download-path", "open-command", "open-files", "printing", "open-url",
+                  "challenge-handlers",
                   "dbus-proxy",
                   "remote-logging",
                   "lpadmin", "lpinfo",
@@ -871,6 +873,7 @@ def get_defaults():
                     "open-url"          : "auto",
                     "file-transfer"     : "auto",
                     "printing"          : "yes",
+                    "challenge-handlers": "all",
                     #ssl options:
                     "ssl"               : "auto",
                     "ssl-key"           : "",
