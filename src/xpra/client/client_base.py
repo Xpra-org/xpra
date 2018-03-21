@@ -687,6 +687,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             else:
                 import kerberos
         except ImportError as e:
+            authlog("import (win)kerberos", exc_info=True)
             if first_time("no-kerberos"):
                 authlog.warn("Warning: kerberos challenge handler is not supported:")
                 authlog.warn(" %s", e)
@@ -699,7 +700,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         authlog("kerberos service=%s", service)
         r, ctx = kerberos.authGSSClientInit(service)
         if r!=1:
-            log.error("Error: kerberos GSS client init failed")
+            authlog.error("Error: kerberos GSS client init failed")
             return False
         try:
             kerberos.authGSSClientStep(ctx, "")
@@ -715,9 +716,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                         except:
                             pass
                     authlog.error(" %s", x)
-            except Exception as e:
-                log.error(" %s", e)
-                #log.error(" %s", dir(e))
+            except Exception:
+                authlog.error(" %s", e)
             return False
         token = kerberos.authGSSClientResponse(ctx)
         authlog("kerberos token=%s", token)
@@ -733,9 +733,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             import gssapi
         except ImportError as e:
+            authlog("import gssapi", exc_info=True)
             if first_time("no-kerberos"):
-                log.warn("Warning: gss authentication not supported:")
-                log.warn(" %s", e)
+                authlog.warn("Warning: gss authentication not supported:")
+                authlog.warn(" %s", e)
             return False
         service = bytestostr(digest.split(b":", 1)[1])
         if service not in GSS_SERVICES and "*" not in GSS_SERVICES:
