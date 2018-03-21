@@ -66,6 +66,8 @@ OSX = sys.platform.startswith("darwin")
 LINUX = sys.platform.startswith("linux")
 NETBSD = sys.platform.startswith("netbsd")
 FREEBSD = sys.platform.startswith("freebsd")
+OPENBSD = sys.platform.startswith("openbsd")
+
 PYTHON3 = sys.version_info[0] == 3
 POSIX = os.name=="posix"
 
@@ -190,7 +192,7 @@ vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = False
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
-v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD)
+v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
@@ -1471,7 +1473,10 @@ else:
             libexec_scripts.append("scripts/auth_dialog")
         if libexec_scripts:
             add_data_files("%s/xpra/" % libexec, libexec_scripts)
-    add_data_files("share/man/man1",      ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
+    man_path = "share/man"
+    if OPENBSD:
+        man_path = "man"
+    add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
     add_data_files("share/xpra/icons",    glob.glob("icons/*"))
     add_data_files("share/applications",  ["xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
@@ -1743,7 +1748,7 @@ if OSX:
                 ))
 
 monotonic_time_pkgconfig = pkgconfig()
-if not OSX and not WIN32:
+if not OSX and not WIN32 and not OPENBSD:
     add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
 cython_add(Extension("xpra.monotonic_time",
             ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
