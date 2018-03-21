@@ -680,7 +680,7 @@ if trace_thread:
         return saved_make_thread(trace_target, name, daemon, args)
     make_thread.make_thread = make_trace_daemon_thread
 else:
-    def do_start_trace(*args):
+    def do_start_trace():
         print("starting trace")
         pcg.start()
     #trace main thread
@@ -691,7 +691,7 @@ else:
 
 if runtime>0:
     def force_exit(*args):
-        print("runtime %s expired, using SIGINT to force exit" % runtime)
+        print("force_exit(%s) runtime %s expired, using SIGINT to force exit" % (args, runtime))
         import signal
         os.kill(os.getpid(), signal.SIGINT)
     gobject.timeout_add((runtime+delay)*1000, force_exit)
