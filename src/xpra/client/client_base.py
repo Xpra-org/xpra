@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS, WIN32
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS, WIN32, OSX
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -732,6 +732,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         try:
             import gssapi
+            if OSX and False:
+                from gssapi.raw import (cython_converters, cython_types, oids)
+                assert (cython_converters, cython_types, oids)
         except ImportError as e:
             authlog("import gssapi", exc_info=True)
             if first_time("no-kerberos"):
@@ -751,7 +754,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         except Exception as e:
             authlog("gssapi failure", exc_info=True)
             authlog.error("Error: gssapi client authentication failure:")
-            authlog.error(" %s", e)
+            try:
+                #split on colon
+                for x in str(e).split(":", 2):
+                    authlog.error(" %s", x)
+            except:
+                authlog.error(" %s", e)
             return False
         authlog("gss token=%s", repr(token))
         self.send_challenge_reply(packet, token)
