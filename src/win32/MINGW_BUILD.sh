@@ -209,6 +209,8 @@ fi
 if [ -e "${DIST}/lib/cx_Logging.pyd" ]; then
 	mv "${DIST}/lib/cx_Logging.pyd" "${DIST}/"
 fi
+#fixup cx freeze wrongly including an empty dir:
+rm -fr "${DIST}/lib/comtypes/gen"
 
 if [ "${BUNDLE_OPENGL}" == "1" ]; then
 	if [ -e "${DIST}/OpenGL" ]; then
