@@ -9,6 +9,7 @@ import os
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
+from xpra.os_util import strtobytes
 from xpra.log import Logger
 log = Logger("util", "network")
 
@@ -57,17 +58,24 @@ cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
 
-def get_interface_speed(int sockfd, char *ifname):
+def get_interface_speed(int sockfd, ifname):
     """ returns the ethtool speed in bps, or 0 """
     if sockfd==0:
         return 0
+    if len(ifname)>=IFNAMSIZ:
+        log.warn("Warning: invalid interface name '%s'", ifname)
+        log.warn(" maximum length is %i", IFNAMSIZ)
+        return 0
     cdef ifreq ifr
     cdef ethtool_cmd edata
-    ifr.ifr_ifrn.ifrn_name = ifname
+    bifname = strtobytes(ifname)
+    cdef char *cifname = bifname
+    ifr.ifr_ifrn.ifrn_name = cifname
     ifr.ifr_ifru.ifru_data = <void*> &edata
     edata.cmd = ETHTOOL_GSET
     cdef int r = ioctl(sockfd, SIOCETHTOOL, &ifr)
     if r < 0:
         log.info("no ethtool interface speed available for %s", ifname)
         return 0
+    #log("get_interface_speed(%i, %s)=%i", sockfd, ifname, edata.speed*1000*1000)
     return edata.speed*1000*1000
