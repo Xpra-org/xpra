@@ -368,11 +368,12 @@ class SocketConnection(Connection):
                 #ie: iface = "eth0"
                 if iface and iface!="lo":
                     s = get_interface_speed(fd, iface)
-                    log("get_interface_speed(%i, %s)=%s", fd, iface, s)
                     if s>0:
                         info["speed"] = s
-        except:
-            pass
+        except Exception as e:
+            log("do_get_socket_info() error querying socket speed", exc_info=True)
+            log.error("Error querying socket speed:")
+            log.error(" %s", e)
         opts = {
                 "SOCKET" : get_socket_options(self._socket, socket.SOL_SOCKET, SOCKET_OPTIONS),
                 }
