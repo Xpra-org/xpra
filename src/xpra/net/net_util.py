@@ -393,7 +393,7 @@ def get_info():
 
 
 def main():
-    from xpra.util import print_nested_dict
+    from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
     from xpra.platform.netdev_query import get_interface_speed
     from xpra.log import enable_color, add_debug_category, enable_debug_for
@@ -437,7 +437,15 @@ def main():
             return str(v)
 
         print("Gateways found:")
-        print_nested_dict(get_gateways())
+        for gt,idefs in get_gateways().items():
+            print("* %s" % gt)      #ie: "INET"
+            for i, idef in enumerate(idefs):
+                try:
+                    if isinstance(idef, (list, tuple)):
+                        print(" [%i]           %s" % (i, csv(idef)))
+                        continue
+                except:
+                    print(" [%i]           %s" % (i, idef))
 
         print("")
         print("Protocol Capabilities:")
