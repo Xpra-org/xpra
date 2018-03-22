@@ -7,6 +7,9 @@
 import logging
 logging.getLogger("comtypes").setLevel(logging.INFO)
 
+from xpra.util import envbool
+SILENCE_COMTYPES = envbool("XPRA_SILENCE_COMTYPES", True)
+
 
 class QuietenLogging(object):
 
@@ -15,6 +18,8 @@ class QuietenLogging(object):
         self.saved_levels = [x.getEffectiveLevel() for x in self.loggers]
 
     def __enter__(self):
+        if not SILENCE_COMTYPES:
+            return
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
         from comtypes import client                  #@UnresolvedImport
@@ -23,6 +28,8 @@ class QuietenLogging(object):
             client._generate.__verbose__ = False
 
     def __exit__(self, *_args):
+        if not SILENCE_COMTYPES:
+            return
         if self.verbose is not None:
             from comtypes import client                  #@UnresolvedImport
             client._generate.__verbose__ = self.verbose
