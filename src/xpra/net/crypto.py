@@ -194,7 +194,7 @@ def get_rand_str(l):
     #too short: we would not feed enough random data to HMAC
     assert l>=32, "salt is too short: only %i bytes" % l
     #too long: limit the amount of random data we request from the system
-    assert l<256, "salt is too long: %i bytes" % l
+    assert l<1024, "salt is too long: %i bytes" % l
     #all server versions support a client salt,
     #they also tell us which digest to use:
     return os.urandom(l)
