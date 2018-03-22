@@ -1407,10 +1407,13 @@ if WIN32:
 
     if webcam_ENABLED:
         add_data_files('',      ['win32\\DirectShow.tlb'])
-        add_modules("comtypes.gen.stdole", "comtypes.gen.DirectShowLib")
 
     remove_packages(*external_excludes)
     external_includes.append("mmap")
+    external_includes.append("comtypes")    #used by webcam and netdev_query
+    remove_packages("comtypes.gen")         #this is generated at runtime
+                                            #but we still have to remove the empty directory by hand
+                                            #afterwards because cx_freeze does weird things (..)
     remove_packages(#not used on win32:
                     #we handle GL separately below:
                     "OpenGL", "OpenGL_accelerate",
