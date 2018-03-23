@@ -399,6 +399,34 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-future">
+		<branch repo="pypi.python.org"
+			module="/packages/00/2b/8d082ddfed935f3608cc61140df6dcbf0edea1bc3ab52fb6c29ae3e81e85/future-0.16.0.tar.gz"
+			hash="sha256:e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb"
+			version="0.16.0">
+		</branch>
+		<dependencies>
+			<dep package="python"/>
+		</dependencies>
+		<after>
+			<dep package="python"/>
+		</after>
+	</distutils>
+
+	<distutils id="python-u2f">
+		<branch repo="pypi.python.org"
+			module="/packages/5e/84/12044502227f40ed51e40997bf1a86e07504a0cf0fcc3bdefccc78ce93aa/pyu2f-0.1.2.tar.gz"
+			hash="sha256:fa94083c695a4b52baf55d81894b2cb748fe16f2dd087df86341925c71871cd2"
+			version="0.1.2">
+		</branch>
+		<dependencies>
+			<dep package="python-future"/>
+		</dependencies>
+		<after>
+			<dep package="python-future"/>
+		</after>
+	</distutils>
+
 	<distutils id="python-kerberos">
 		<branch repo="pypi.python.org"
 			module="/packages/34/18/9c86fdfdb27e0f7437b7d5a9e22975dcc382637b2a68baac07843be512fc/kerberos-1.3.0.tar.gz"
@@ -647,6 +675,7 @@
 		  <dep package="python-deprecation"/>
 		  <dep package="python-lz4"/>
 		  <dep package="python-lzo"/>
+		  <dep package="python-u2f"/>
 		  <dep package="python-kerberos"/>
 		  <dep package="python-gssapi"/>
 		  <dep package="python-ipaddress"/>
