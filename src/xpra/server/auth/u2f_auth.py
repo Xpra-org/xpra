@@ -81,7 +81,7 @@ class Authenticator(SysAuthenticator):
         except Exception as e:
             log("authenticate failed", exc_info=True)
             log.error("Error: authentication failed:")
-            log.error(" %s", e)
+            log.error(" %s", str(e) or type(e))
             return False
 
 
