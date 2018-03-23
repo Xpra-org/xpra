@@ -498,6 +498,11 @@ class ServerCore(object):
                         "file"      : file_auth,
                         "exec"      : exec_auth,
                         }
+        try:
+            from xpra.server.auth import u2f_auth
+            AUTH_MODULES["u2f"] = u2f_auth
+        except ImportError:
+            authlog("cannot load u2f auth: %s", exc_info=True)
         if POSIX and not OSX:
             from xpra.server.auth import peercred_auth, hosts_auth
             AUTH_MODULES["peercred"] = peercred_auth
@@ -505,36 +510,37 @@ class ServerCore(object):
         try:
             from xpra.server.auth import sqlite_auth
             AUTH_MODULES["sqlite"] = sqlite_auth
-        except Exception as e:
-            authlog("cannot load sql auth: %s", e)
+        except Exception:
+            authlog("cannot load sql auth: %s", exc_info=True)
         try:
             from xpra.server.auth import kerberos_password_auth
             AUTH_MODULES["kerberos-password"] = kerberos_password_auth
         except Exception as e:
-            authlog("cannot load kerberos-password auth: %s", e)
+            authlog("cannot load kerberos-password auth", exc_info=True)
         try:
             from xpra.server.auth import kerberos_token_auth
             AUTH_MODULES["kerberos-token"] = kerberos_token_auth
-        except Exception as e:
-            authlog("cannot load kerberos-token auth: %s", e)
+        except Exception:
+            authlog("cannot load kerberos-token auth", exc_info=True)
         try:
             from xpra.server.auth import gss_auth
             AUTH_MODULES["gss"] = gss_auth
         except Exception as e:
-            authlog("cannot load kerberos-token auth: %s", e)
+            authlog("cannot load kerberos-token auth", exc_info=True)
         if WIN32:
             try:
                 from xpra.server.auth import win32_auth
                 AUTH_MODULES["win32"] = win32_auth
             except Exception as e:
+                authlog("cannot load win32 auth", exc_info=True)
                 authlog.error("Error: cannot load the MS Windows authentication module:")
                 authlog.error(" %s", e)
         else:
             try:
                 from xpra.server.auth import pam_auth
                 AUTH_MODULES["pam"] = pam_auth
-            except Exception as e:
-                authlog("cannot load pam auth: %s", e)
+            except Exception:
+                authlog("cannot load pam auth", exc_info=True)
         if auth=="sys":
             #resolve virtual "sys" auth:
             if WIN32:

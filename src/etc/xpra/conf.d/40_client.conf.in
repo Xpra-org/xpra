@@ -7,6 +7,13 @@
 #opengl = gtk, native
 opengl = auto
 
+# How we handle server authentication requests:
+#authentication-handlers=all
+#authentication-handlers=none
+#authentication-handlers=env,file
+#authentication-handlers=env,file,kerberos,gss,u2f,prompt
+authentication-handlers=auto
+
 # Client window title:
 title = @title@ on @client-machine@
 

@@ -11,7 +11,7 @@ import socket
 import string
 from collections import OrderedDict
 
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")
@@ -76,6 +76,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         dcm["env"]      = self.process_challenge_env
         dcm["kerberos"] = self.process_challenge_kerberos
         dcm["gss"]      = self.process_challenge_gss
+        dcm["u2f"]      = self.process_challenge_u2f
         dcm["prompt"]   = self.process_challenge_prompt
         self.default_challenge_methods = dcm
 
@@ -367,7 +368,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         capabilities = flatten_dict(get_network_caps())
         #add "kerberos" and "gss" if enabled:
         default_on = "all" in self.challenge_handlers or "auto" in self.challenge_handlers
-        for auth in ("kerberos", "gss"):
+        for auth in ("kerberos", "gss", "u2f"):
             if default_on or auth in self.challenge_handlers:
                 capabilities["digest"].append(auth)
         capabilities.update(FilePrintMixin.get_caps(self))
@@ -734,7 +735,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             import gssapi
             if OSX and False:
                 from gssapi.raw import (cython_converters, cython_types, oids)
-                assert (cython_converters, cython_types, oids)
+                assert cython_converters and cython_types and oids
         except ImportError as e:
             authlog("import gssapi", exc_info=True)
             if first_time("no-kerberos"):
@@ -763,6 +764,31 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         authlog("gss token=%s", repr(token))
         self.send_challenge_reply(packet, token)
+        return True
+
+    def process_challenge_u2f(self, packet):
+        import binascii
+        import logging
+        if not is_debug_enabled("auth"):
+            logging.getLogger("pyu2f.hardware").setLevel(logging.INFO)
+            logging.getLogger("pyu2f.hidtransport").setLevel(logging.INFO)
+        from pyu2f import model
+        from pyu2f.u2f import GetLocalU2FInterface
+        dev = GetLocalU2FInterface()
+        APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
+        key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE",
+                                    "584f1a158d83d965713467a37f3b33b6aca6f4feb9e18899432d4be68fcd46773d2a6fba6d3b8cfe49838abcf1b7ae28adad6fbead538f018519bee023faa2d3")
+        authlog("process_challenge_u2f key_handle=%s", key_handle_str)
+        key_handle = binascii.unhexlify(key_handle_str)
+        key = model.RegisteredKey(key_handle)
+        #use server salt as challenge directly
+        challenge = packet[1]
+        authlog.info("activate your U2F device for authentication")
+        response = dev.Authenticate(APP_ID, challenge, [key])
+        sig = response.signature_data
+        client_data = response.client_data
+        authlog("process_challenge_u2f client data=%s, signature=%s", client_data, binascii.hexlify(sig))
+        self.do_send_challenge_reply(bytes(sig), client_data.origin)
         return True
 
 
@@ -845,6 +871,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.auth_error(EXIT_UNSUPPORTED, "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
             return
         authlog("%s(%s, %s)=%s", actual_digest, repr(password), repr(salt), repr(challenge_response))
+        self.do_send_challenge_reply(challenge_response, client_salt)
+
+    def do_send_challenge_reply(self, challenge_response, client_salt):
         self.password_sent = True
         self.send_hello(challenge_response, client_salt)
 

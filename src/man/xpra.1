@@ -676,6 +676,8 @@ for testing.
 validates a kerberos ticket obtained by the client.
 .IP \fBgss\fP
 validates a GSS ticket obtained by the client.
+.IP \fBu2f\fP
+requests a U2F token from the client.
 .RE
 .PP
 .TP
@@ -715,7 +717,7 @@ to VSOCK sockets (sockets defined using the \fBbind\-vsock\fP switch).
 Configures which challenge handlers are used by the client and in
 which order.
 The default value is: \fIall\fP which corresponds to:
-\fIuri,file,env,kerberos,gss,prompt\fP.
+\fIuri,file,env,kerberos,gss,u2f,prompt\fP.
 Note: some of these modules will fall through to others if they are
 enable to supply the challenge requested (\fIuri\fP, \fIfile\fP,
 \fIkerberos\fP and \fIgss\fP), others do not (\fIenv\fP and \fIprompt\fP).
@@ -732,6 +734,8 @@ environment variable.
 Request a kerberos token for the service specified.
 .IP \fBgss\fP
 Request a gss token for the service specified.
+.IP \fBu2f\fP
+Requests a token from a U2F device.
 .IP \fBprompt\fP
 Prompt the user for the value.
 Terminal clients prompt using text input, GUI clients
