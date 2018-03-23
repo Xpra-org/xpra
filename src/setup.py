@@ -1590,7 +1590,7 @@ else:
     if OSX:
         #pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
-        external_includes += ["kerberos"]
+        external_includes += ["kerberos", "future", "pyu2f"]
         if not PYTHON3:
             external_includes += ["urllib2"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
