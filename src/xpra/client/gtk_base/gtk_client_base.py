@@ -235,31 +235,32 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             a.add(widget)
             a.set_padding(padding, padding, padding, padding)
             dialog.vbox.pack_start(a)
+        pango = import_pango()
+        title = gtk.Label("Server Authentication")
+        title.modify_font(pango.FontDescription("sans 14"))
+        add(title, 16)
+        add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
+        password_input = gtk.Entry()
+        password_input.set_max_length(255)
+        password_input.set_width_chars(32)
+        password_input.set_visibility(False)
+        add(password_input, 10)
+        dialog.vbox.show_all()
+        dialog.password_input = password_input
         def handle_response(dialog, response):
             if OSX:
                 from xpra.platform.darwin.gui import disable_focus_workaround
                 disable_focus_workaround()
-            password = password_input.get_text()
+            password = dialog.password_input.get_text()
             dialog.hide()
             dialog.destroy()
             if response!=RESPONSE_ACCEPT or not password:
                 self.quit(EXIT_PASSWORD_REQUIRED)
                 return
             self.send_challenge_reply(packet, password)
-        pango = import_pango()
-        title = gtk.Label("Server Authentication")
-        title.modify_font(pango.FontDescription("sans 14"))
-        add(title, 16)
-        add(gtk.Label(self.get_challenge_prompt(prompt)), 10)
         def password_activate(*_args):
             handle_response(dialog, RESPONSE_ACCEPT)
-        password_input = gtk.Entry()
-        password_input.set_max_length(255)
-        password_input.set_width_chars(32)
-        password_input.set_visibility(False)
         password_input.connect("activate", password_activate)
-        add(password_input, 10)
-        dialog.vbox.show_all()
         dialog.connect("response", handle_response)
         if OSX:
             from xpra.platform.darwin.gui import enable_focus_workaround
