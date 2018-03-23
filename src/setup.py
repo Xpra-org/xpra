@@ -1409,6 +1409,7 @@ if WIN32:
         add_data_files('',      ['win32\\DirectShow.tlb'])
 
     remove_packages(*external_excludes)
+    external_includes.append("pyu2f")
     external_includes.append("mmap")
     external_includes.append("comtypes")    #used by webcam and netdev_query
     remove_packages("comtypes.gen")         #this is generated at runtime
