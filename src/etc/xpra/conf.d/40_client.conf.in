@@ -8,11 +8,10 @@
 opengl = auto
 
 # How we handle server authentication requests:
-#challenge-handlers=all
 #challenge-handlers=none
 #challenge-handlers=env,file
 #challenge-handlers=env,file,kerberos,gss,u2f,prompt
-challenge-handlers=auto
+challenge-handlers=all
 
 # Client window title:
 title = @title@ on @client-machine@
