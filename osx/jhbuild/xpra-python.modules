@@ -675,6 +675,7 @@
 		  <dep package="python-deprecation"/>
 		  <dep package="python-lz4"/>
 		  <dep package="python-lzo"/>
+		  <dep package="python-future"/>
 		  <dep package="python-u2f"/>
 		  <dep package="python-kerberos"/>
 		  <dep package="python-gssapi"/>
