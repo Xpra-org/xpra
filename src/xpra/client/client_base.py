@@ -624,7 +624,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             except Exception as e:
                 authlog("%s(%s)", method, packet, exc_info=True)
                 authlog.error("Error in %s challenge handler:", name)
-                authlog.error(" %s", e)
+                authlog.error(" %s", str(e) or type(e))
                 continue
         self.quit(EXIT_PASSWORD_REQUIRED)
 
