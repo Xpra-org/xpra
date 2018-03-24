@@ -56,28 +56,30 @@ def deadly_signal(signum, _frame):
     os._exit(128 + signum)
 
 
-def _save_int(prop_name, pid):
-    import gtk
+def _root_prop_set(prop_name, ptype="u32", value=0):
+    from xpra.gtk_common.gtk_util import get_default_root_window
     from xpra.x11.gtk_x11.prop import prop_set
-    prop_set(gtk.gdk.get_default_root_window(), prop_name, "u32", pid)
+    prop_set(get_default_root_window(), prop_name, ptype, value)
+def _root_prop_get(prop_name, ptype="u32"):
+    from xpra.gtk_common.gtk_util import get_default_root_window
+    from xpra.x11.gtk_x11.prop import prop_get
+    return prop_get(get_default_root_window(), prop_name, ptype)
+
+def _save_int(prop_name, pid):
+    _root_prop_set(prop_name, "u32", pid)
 
 def _get_int(prop_name):
-    import gtk
-    from xpra.x11.gtk_x11.prop import prop_get
-    return prop_get(gtk.gdk.get_default_root_window(), prop_name, "u32")
+    return _root_prop_get(prop_name, "u32")
 
 def _save_str(prop_name, s):
-    import gtk
-    from xpra.x11.gtk_x11.prop import prop_set
-    prop_set(gtk.gdk.get_default_root_window(), prop_name, "latin1", s.decode("latin1"))
+    _root_prop_set(prop_name, "latin1", s.decode("latin1"))
 
 def _get_str(prop_name):
-    import gtk
-    from xpra.x11.gtk_x11.prop import prop_get
-    v = prop_get(gtk.gdk.get_default_root_window(), prop_name, "latin1")
+    v = _root_prop_get(prop_name, "latin1")
     if v is not None:
         return v.encode("latin1")
     return v
+
 
 def save_xvfb_pid(pid):
     _save_int("_XPRA_SERVER_PID", pid)
