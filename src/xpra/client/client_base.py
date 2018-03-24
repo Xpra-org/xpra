@@ -28,7 +28,7 @@ from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_sal
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
-from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, BITS, WIN32, OSX
+from xpra.os_util import get_machine_id, get_user_uuid, load_binary_file, SIGNAMES, PYTHON3, strtobytes, bytestostr, hexstr, monotonic_time, osexpand, BITS, WIN32, OSX
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, nonl, std, envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc, first_time
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -776,8 +776,27 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from pyu2f.u2f import GetLocalU2FInterface
         dev = GetLocalU2FInterface()
         APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
-        key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE",
-                                    "584f1a158d83d965713467a37f3b33b6aca6f4feb9e18899432d4be68fcd46773d2a6fba6d3b8cfe49838abcf1b7ae28adad6fbead538f018519bee023faa2d3")
+        #ie: "584f1a158d83d965713467a37f3b33b6aca6f4feb9e18899432d4be68fcd46773d2a6fba6d3b8cfe49838abcf1b7ae28adad6fbead538f018519bee023faa2d3"
+        key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
+        authlog("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
+        if not key_handle_str:
+            #try to load the key handle from the user conf dir(s):
+            from xpra.platform.paths import get_user_conf_dirs
+            info = self._protocol.get_info(False)
+            authlog.info("connection info=%s", info)
+            key_handle_filenames = []
+            for hostinfo in ("-%s" % info.get("host", ""), ""):
+                key_handle_filenames += [os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo) for d in get_user_conf_dirs()]
+            for filename in key_handle_filenames:
+                p = osexpand(filename)
+                key_handle_str = load_binary_file(p)
+                authlog("key_handle_str(%s)=%s", p, key_handle_str)
+                if key_handle_str:
+                    key_handle_str = key_handle_str.rstrip(b" \n\r")
+                    break
+            if not key_handle_str:
+                authlog.warn("Warning: no U2F key handle found")
+                return False
         authlog("process_challenge_u2f key_handle=%s", key_handle_str)
         key_handle = binascii.unhexlify(key_handle_str)
         key = model.RegisteredKey(key_handle)

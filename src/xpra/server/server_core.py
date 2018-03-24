@@ -1362,7 +1362,10 @@ class ServerCore(object):
             authlog.warn(" %s", msg)
             self.timeout_add(1000, self.disconnect_client, proto, msg)
 
-        username = c.strget("username", "unknown")
+        username = c.strget("username")
+        if not username:
+            import getpass
+            username = getpass.getuser()
         #authenticator:
         if not proto.authenticators:
             try:
