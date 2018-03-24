@@ -172,14 +172,13 @@ def close_gtk_display():
             d.close()
 
 def kill_xvfb(xvfb_pid):
-    if xvfb_pid:
-        log = get_util_logger()
-        log.info("killing xvfb with pid %s", xvfb_pid)
-        try:
-            os.kill(xvfb_pid, signal.SIGTERM)
-        except OSError as e:
-            log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
-            log.info(" %s", e)
+    log = get_util_logger()
+    log.info("killing xvfb with pid %s", xvfb_pid)
+    try:
+        os.kill(xvfb_pid, signal.SIGTERM)
+    except OSError as e:
+        log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
+        log.info(" %s", e)
     from xpra.x11.vfb_util import PRIVATE_XAUTH
     xauthority = os.environ.get("XAUTHORITY")
     if PRIVATE_XAUTH and xauthority and os.path.exists(xauthority):
@@ -774,7 +773,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     if not proxying:
         def close_display():
             close_gtk_display()
-            kill_xvfb(xvfb_pid)
+            if xvfb_pid:
+                kill_xvfb(xvfb_pid)
         add_cleanup(close_display)
     else:
         close_display = None
