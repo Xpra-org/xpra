@@ -71,8 +71,13 @@ def main():
         if not os.path.exists(conf_dir):
             os.mkdir(conf_dir)
 
-        from pyu2f.u2f import GetLocalU2FInterface
-        dev = GetLocalU2FInterface()
+        from pyu2f.u2f import GetLocalU2FInterface      #@UnresolvedImport
+        try:
+            dev = GetLocalU2FInterface()
+        except Exception as e:
+            error("Failed to open local U2F device:",
+                  "%s" % (str(e) or type(e)))
+            return 1
 
         info("Please activate your U2F device now to generate a new key")
         registered_keys = []
