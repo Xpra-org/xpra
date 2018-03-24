@@ -5,12 +5,18 @@
 # later version. See the file COPYING for details.
 
 import sys
-import kerberos
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.util import xor
+from xpra.os_util import WIN32
 assert init and log #tests will disable logging from here
+
+if WIN32:
+    import winkerberos as kerberos
+else:
+    import kerberos
+
 
 def init(opts):
     pass
