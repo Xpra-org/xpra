@@ -399,6 +399,48 @@
 		</after>
 	</distutils>
 
+	<distutils id="python-pyasn1">
+		<branch repo="pypi.python.org"
+			module="/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz"
+			hash="sha256:d258b0a71994f7770599835249cece1caef3c70def868c4915e6e5ca49b67d15"
+			version="0.4.2">
+		</branch>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+	<distutils id="python3-pyasn1-modules">
+		<branch repo="pypi.python.org"
+			module="/packages/ab/76/36ab0e099e6bd27ed95b70c2c86c326d3affa59b9b535c63a2f892ac9f45/pyasn1-modules-0.2.1.tar.gz"
+			hash="sha256:af00ea8f2022b6287dc375b2c70f31ab5af83989fc6fe9eacd4976ce26cd7ccc"
+			version="0.2.1">
+		</branch>
+		<dependencies>
+			<dep package="python3-pyasn1"/>
+		</dependencies>
+		<after>
+			<dep package="python3-pyasn1"/>
+		</after>
+	</distutils>
+
+	<distutils id="python3-ldap">
+		<branch repo="pypi.python.org"
+			module="/packages/c1/52/dfb508364bce92bb2a6ccbe718b69c8857b5d6fcd6af259ab0c36ee68730/python-ldap-3.0.0.tar.gz"
+			hash="sha256:86746b912a2cd37a54b06c694f021b0c8556d4caeab75ef50435ada152e2fbe1"
+			version="3.0.0">
+		</branch>
+		<dependencies>
+			<dep package="python3-pyasn1"/>
+		</dependencies>
+		<after>
+			<dep package="python3-pyasn1"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-future">
 		<branch repo="pypi.python.org"
 			module="/packages/00/2b/8d082ddfed935f3608cc61140df6dcbf0edea1bc3ab52fb6c29ae3e81e85/future-0.16.0.tar.gz"
@@ -677,6 +719,9 @@
 		  <dep package="python3-deprecation"/>
 		  <dep package="python3-lz4"/>
 		  <dep package="python3-lzo"/>
+		  <dep package="python3-pyasn1"/>
+		  <dep package="python3-pyasn1-modules"/>
+		  <dep package="python3-ldap"/>
 		  <dep package="python3-future"/>
 		  <dep package="python3-u2f"/>
 		  <dep package="python3-kerberos"/>
