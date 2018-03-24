@@ -15,7 +15,7 @@ assert init and log #tests will disable logging from here
 if WIN32:
     import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
 else:
-    import kerberos                         #@Reimport
+    import kerberos                         #@UnresolvedImport @Reimport
 
 
 def init(opts):
