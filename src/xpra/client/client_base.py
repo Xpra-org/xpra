@@ -699,15 +699,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             authlog.warn(" services supported: %s", csv(KERBEROS_SERVICES))
             return False
         authlog("kerberos service=%s", service)
-        r, ctx = kerberos.authGSSClientInit(service)
-        if r!=1:
-            authlog.error("Error: kerberos GSS client init failed")
-            return False
-        try:
-            kerberos.authGSSClientStep(ctx, "")
-        except Exception as e:
-            authlog("kerberos.authGSSClientStep", exc_info=True)
-            authlog.error("Error: kerberos client authentication failure:")
+        def log_kerberos_exception(e):
             try:
                 for x in e.args:
                     if isinstance(x, (list, tuple)):
@@ -719,6 +711,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     authlog.error(" %s", x)
             except Exception:
                 authlog.error(" %s", e)
+        try:
+            r, ctx = kerberos.authGSSClientInit(service)
+            assert r==1, "return code %s" % r
+        except Exception as e:
+            authlog("kerberos.authGSSClientInit(%s)", service, exc_info=True)
+            authlog.error("Error: cannot initialize kerberos client:")
+            log_kerberos_exception(e)
+            return False
+        try:
+            kerberos.authGSSClientStep(ctx, "")
+        except Exception as e:
+            authlog("kerberos.authGSSClientStep", exc_info=True)
+            authlog.error("Error: kerberos client authentication failure:")
+            log_kerberos_exception(e)
             return False
         token = kerberos.authGSSClientResponse(ctx)
         authlog("kerberos token=%s", token)
