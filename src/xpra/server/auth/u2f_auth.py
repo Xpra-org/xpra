@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 from cryptography.hazmat.backends import default_backend
 
 from xpra.util import csv, engs
-from xpra.os_util import hexstr, osexpand, load_binary_file
+from xpra.os_util import hexstr, osexpand, load_binary_file, getuid
 from xpra.net.crypto import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.paths import get_user_conf_dirs
@@ -42,7 +42,12 @@ class Authenticator(SysAuthenticator):
             log("u2f_auth: public key from configuration=%s", key_hexstring)
             key_strs["command-option"] = key_hexstring
         #try to load public keys from the user conf dir(s):
-        conf_dirs = get_user_conf_dirs(self.get_uid())
+        if getuid()==0:
+            #root: use the uid of the username specified:
+            uid = self.get_uid()
+        else:
+            uid = getuid()
+        conf_dirs = get_user_conf_dirs(uid)
         log("u2f: will try to load public keys from %s", csv(conf_dirs))
         for d in conf_dirs:
             ed = osexpand(d)
