@@ -32,7 +32,6 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
         pass
     ctypedef CARD32 Time
-    ctypedef CARD32 Atom
     ctypedef int Bool
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
