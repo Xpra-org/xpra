@@ -180,9 +180,10 @@
 
 	<distutils id="python-pyasn1">
 		<branch repo="pypi.python.org"
-			module="/packages/3c/a6/4d6c88aa1694a06f6671362cb3d0350f0d856edea4685c300785200d1cd9/pyasn1-0.3.7.tar.gz"
-			hash="sha256:187f2a66d617683f8e82d5c00033b7c8a0287e1da88a9d577aebec321cad4965"
-			version="0.3.7"/>
+			module="/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz"
+			hash="sha256:d258b0a71994f7770599835249cece1caef3c70def868c4915e6e5ca49b67d15"
+			version="0.4.2">
+		</branch>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -396,20 +397,6 @@
 		<after>
 			<dep package="python"/>
 			<dep package="lzo"/>
-		</after>
-	</distutils>
-
-	<distutils id="python-pyasn1">
-		<branch repo="pypi.python.org"
-			module="/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz"
-			hash="sha256:d258b0a71994f7770599835249cece1caef3c70def868c4915e6e5ca49b67d15"
-			version="0.4.2">
-		</branch>
-		<dependencies>
-			<dep package="python"/>
-		</dependencies>
-		<after>
-			<dep package="python"/>
 		</after>
 	</distutils>
 
