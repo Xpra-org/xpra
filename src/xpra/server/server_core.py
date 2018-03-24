@@ -499,6 +499,11 @@ class ServerCore(object):
                         "exec"      : exec_auth,
                         }
         try:
+            from xpra.server.auth import ldap_auth
+            AUTH_MODULES["ldap"] = ldap_auth
+        except ImportError:
+            authlog("cannot load ldap auth: %s", exc_info=True)
+        try:
             from xpra.server.auth import u2f_auth
             AUTH_MODULES["u2f"] = u2f_auth
         except ImportError:
