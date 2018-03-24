@@ -13,9 +13,9 @@ from xpra.os_util import WIN32
 assert init and log #tests will disable logging from here
 
 if WIN32:
-    import winkerberos as kerberos
+    import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
 else:
-    import kerberos
+    import kerberos                         #@Reimport
 
 
 def init(opts):
