@@ -247,6 +247,7 @@ Requires:			python2-xpra = %{version}-%{build_no}%{dist}
 Requires:			pygtk2
 Requires:			python2-pyopengl
 Requires:			pygtkglext
+%{Recommends}:		python2-pyu2f
 %if 0%{?fedora}
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
@@ -369,6 +370,7 @@ Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
+Recommends:			python3-pyu2f
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
