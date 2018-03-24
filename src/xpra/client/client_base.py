@@ -767,6 +767,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return True
 
     def process_challenge_u2f(self, packet):
+        digest = packet[3]
+        if not digest.startswith(b"u2f:"):
+            authlog("%s is not a u2f challenge", digest)
+            return False
         import binascii
         import logging
         if not is_debug_enabled("auth"):
@@ -776,14 +780,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from pyu2f.u2f import GetLocalU2FInterface
         dev = GetLocalU2FInterface()
         APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
-        #ie: "584f1a158d83d965713467a37f3b33b6aca6f4feb9e18899432d4be68fcd46773d2a6fba6d3b8cfe49838abcf1b7ae28adad6fbead538f018519bee023faa2d3"
         key_handle_str = os.environ.get("XPRA_U2F_KEY_HANDLE")
         authlog("process_challenge_u2f XPRA_U2F_KEY_HANDLE=%s", key_handle_str)
         if not key_handle_str:
             #try to load the key handle from the user conf dir(s):
             from xpra.platform.paths import get_user_conf_dirs
             info = self._protocol.get_info(False)
-            authlog.info("connection info=%s", info)
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):
                 key_handle_filenames += [os.path.join(d, "u2f-keyhandle%s.hex" % hostinfo) for d in get_user_conf_dirs()]

@@ -28,12 +28,13 @@ assert init and log #tests will disable logging from here
 
 
 PUB_KEY_DER_PREFIX = binascii.a2b_hex("3059301306072a8648ce3d020106082a8648ce3d030107034200")
+APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 
 
 class Authenticator(SysAuthenticator):
 
     def __init__(self, username, **kwargs):
-        self.app_id = kwargs.pop("app_id", "Xpra")
+        self.app_id = kwargs.pop("app_id", APP_ID)
         key_hexstring = kwargs.pop("public_key", "")
         SysAuthenticator.__init__(self, username, **kwargs)
         self.public_keys = OrderedDict()

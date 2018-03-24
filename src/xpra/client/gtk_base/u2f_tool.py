@@ -15,7 +15,7 @@ from xpra.platform.paths import get_user_conf_dirs
 from xpra.log import Logger
 log = Logger("auth", "util")
 
-APP_ID = u"Xpra"
+APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 
 
 def main():
