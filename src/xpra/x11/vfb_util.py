@@ -13,11 +13,12 @@ import sys
 import os.path
 
 from xpra.scripts.config import InitException, get_Xdummy_confdir
-from xpra.util import envbool
+from xpra.util import envbool, envint
 from xpra.os_util import setsid, shellsub, close_fds, setuidgid, getuid, getgid, strtobytes, osexpand, monotonic_time, POSIX, OSX
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
+VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_RESOLUTION", "8192x4096").replace(",", "x").split("x", 1))
 assert len(DEFAULT_VFB_RESOLUTION)==2
 DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024").replace(",", "x").split("x", 1))
@@ -332,7 +333,7 @@ def verify_display_ready(xvfb, display_name, shadowing_check=True):
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(strtobytes(display_name), 3) # 3s timeout
+        wait_for_x_server(strtobytes(display_name), VFB_WAIT)
     except Exception as e:
         log = _vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
