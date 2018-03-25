@@ -159,9 +159,9 @@
 
 	<distutils id="python3-cryptography" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/78/c5/7188f15a92413096c93053d5304718e1f6ba88b818357d05d19250ebff85/cryptography-2.1.4.tar.gz"
-			hash="sha256:e4d967371c5b6b2e67855066471d844c5d52d210c36c28d49a8507b96e2c5291"
-			version="2.1.4"/>
+			module="/packages/fd/2c/a9e42f90bda9ebadf4790ed699e44edd630614f1590eb42e11de64a0b9c1/cryptography-2.2.1.tar.gz"
+			hash="sha256:dddad9d322a3f0867009ff9f25477b8f7c0bdbedf143704b384c9472f11cb2d3"
+			version="2.2.1"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="openssl"/>
@@ -280,11 +280,10 @@
 	</distutils>
 
 	<distutils id="python3-websocket-client" python3="1">
-		<branch repo="github.com"
-			module="/websocket-client/websocket-client/archive/v0.46.0.tar.gz"
-			hash="sha256:0fc5d25d5b6ce61fe359ebfb69bf2e16056f0aabc314b0fd6aecaa6fec689c28"
-			checkoutdir="websocket-client-0.46.0"
-			version="0.46.0"/>
+		<branch repo="pypi.python.org"
+			module="/packages/c9/bb/8d3dd9063cfe0cd5d03fe6a1f74ddd948f384e9c1eff0eb978f3976a7d27/websocket_client-0.47.0.tar.gz"
+			hash="sha256:a453dc4dfa6e0db3d8fd7738a308a88effe6240c59f3226eb93e8f020c216149"
+			version="0.47.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
