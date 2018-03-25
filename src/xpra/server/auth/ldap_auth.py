@@ -63,12 +63,12 @@ class Authenticator(SysAuthenticatorBase):
         log("check(%s)", obsc(password))
         def emsg(e):
             try:
-                log.error(" LDAP Error: %s", e.message["desc"])
+                log.warn(" LDAP Error: %s", e.message["desc"])
                 if "info" in e.message:
-                    log.error("  %s", e.message["info"])
+                    log.warn("  %s", e.message["info"])
             except:
                 #python3: no way to get to the message dict?
-                log.error(" %s", e)
+                log.warn(" %s", e)
         try:
             assert self.username and password
             if self.tls:
@@ -108,7 +108,7 @@ class Authenticator(SysAuthenticatorBase):
             emsg(e)
         except ldap.LDAPError as e:
             log("check(..)", exc_info=True)
-            log.error("Error: ldap authentication failed:")
+            log.warn("Error: ldap authentication failed:")
             emsg(e)
             return False
 
