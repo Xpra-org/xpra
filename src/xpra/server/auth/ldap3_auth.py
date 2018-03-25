@@ -10,7 +10,7 @@ from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM     #@Unresol
 
 from xpra.util import csv, obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
-from xpra.log import enable_debug_for
+from xpra.log import enable_debug_for, is_debug_enabled
 assert init and log #tests will disable logging from here
 
 def init(opts):
@@ -75,19 +75,23 @@ class Authenticator(SysAuthenticatorBase):
                 tls = Tls(validate=self.tls_validate, version=self.tls_version, ca_certs_file=self.cacert)
                 log("TLS=%s", tls)
             server = Server(self.host, port=self.port, tls=tls, use_ssl=self.tls, get_info=ALL)
-            log("check Server(%s)=%s", (self.host, self.port, self.tls), server)
+            log("ldap3 Server(%s)=%s", (self.host, self.port, self.tls), server)
             conn = Connection(server, user=self.username, password=password, authentication=authentication, receive_timeout=10)
-            log("check Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
+            log("ldap3 Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
             if self.tls:
                 conn.start_tls()
             r = conn.bind()
-            log("check %s.bind()=%s", conn, r)
+            log("ldap3 %s.bind()=%s", conn, r)
             if not r:
                 return False
-            log("check who_am_i()=%s", conn.extend.standard.who_am_i())
+            if is_debug_enabled("auth"):
+                log("ldap3 server info:")
+                for l in server.info.splitlines():
+                    log(" %s", l)
+            log("ldap3 who_am_i()=%s", conn.extend.standard.who_am_i())
             return True
         except Exception as e:
-            log("check(..)", exc_info=True)
+            log("ldap3 check(..)", exc_info=True)
             log.error("Error: ldap3 authentication failed:")
             log.error(" %s", e)
             return False
