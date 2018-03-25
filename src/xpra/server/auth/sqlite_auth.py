@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
-import sqlite3
 
 from xpra.util import parse_simple_dict, csv
 from xpra.os_util import getuid, getgid
@@ -38,6 +37,7 @@ class Authenticator(SysAuthenticator):
             log.error("Error: sqlauth cannot find the database file '%s'", self.filename)
             return None
         log("sqlauth.get_password() found database file '%s'", self.filename)
+        import sqlite3
         try:
             conn = sqlite3.connect(self.filename)
             cursor = conn.cursor()
@@ -54,6 +54,7 @@ class Authenticator(SysAuthenticator):
         return tuple(str(x[0]) for x in data)
 
     def get_sessions(self):
+        import sqlite3
         try:
             conn = sqlite3.connect(self.filename)
             cursor = conn.cursor()
@@ -86,6 +87,7 @@ class Authenticator(SysAuthenticator):
 
 def exec_database_sql_script(cursor_cb, filename, *sqlargs):
     log("exec_database_sql_script%s", (cursor_cb, filename, sqlargs))
+    import sqlite3
     try:
         conn = sqlite3.connect(filename)
         cursor = conn.cursor()

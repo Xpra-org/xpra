@@ -6,7 +6,6 @@
 
 import os
 import sys
-import ldap
 import socket
 
 from xpra.util import envint, obsc
@@ -68,6 +67,13 @@ class Authenticator(SysAuthenticatorBase):
             except:
                 #python3: no way to get to the message dict?
                 log.warn(" %s", e)
+        try:
+            import ldap
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use ldap authentication:")
+            log.warn(" %s", e)
+            return False
         try:
             assert self.username and password
             if self.tls:

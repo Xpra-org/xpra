@@ -6,21 +6,14 @@
 
 import os
 import sys
-from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM     #@UnresolvedImport
 
-from xpra.util import csv, obsc
+from xpra.util import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.log import enable_debug_for, is_debug_enabled
 assert init and log #tests will disable logging from here
 
 def init(opts):
     pass
-
-MECHANISM = {
-    "SIMPLE"    : SIMPLE,
-    "SASL"      : SASL,
-    "NTLM"      : NTLM,
-    }
 
 
 LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
@@ -45,7 +38,7 @@ class Authenticator(SysAuthenticatorBase):
             default_port = 389
         self.port = int(kwargs.pop("port", default_port))
         self.authentication = kwargs.pop("authentication", "NTLM").upper()
-        assert self.authentication in MECHANISM, "invalid authentication mechanism '%s', must be one of: %s" % (self.authentication, csv(MECHANISM.keys()))
+        assert self.authentication in ("SIMPLE", "SASL", "NTLM"), "invalid authentication mechanism '%s'" % self.authentication
         username = kwargs.pop("username", username)
         SysAuthenticatorBase.__init__(self, username, **kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s",
@@ -69,6 +62,18 @@ class Authenticator(SysAuthenticatorBase):
     def check(self, password):
         log("check(%s)", obsc(password))
         try:
+            from ldap3 import Server, Connection, Tls, ALL, SIMPLE, SASL, NTLM     #@UnresolvedImport
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use ldap3 authentication:")
+            log.warn(" %s", e)
+            return False
+        try:
+            MECHANISM = {
+                "SIMPLE"    : SIMPLE,
+                "SASL"      : SASL,
+                "NTLM"      : NTLM,
+                }
             authentication = MECHANISM[self.authentication]
             tls = None
             if self.tls:

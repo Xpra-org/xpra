@@ -12,11 +12,6 @@ from xpra.util import xor
 from xpra.os_util import WIN32
 assert init and log #tests will disable logging from here
 
-if WIN32:
-    import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
-else:
-    import kerberos                         #@UnresolvedImport @Reimport
-
 
 def init(opts):
     pass
@@ -54,6 +49,16 @@ class Authenticator(SysAuthenticatorBase):
         return SysAuthenticatorBase.get_challenge(self, ["xor"])
 
     def check(self, password):
+        try:
+            if WIN32:
+                import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
+            else:
+                import kerberos                         #@UnresolvedImport @Reimport
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use kerberos password authentication:")
+            log.warn(" %s", e)
+            return False
         try:
             kerberos.checkPassword(self.username, password, self.service, self.realm)
             return True

@@ -12,11 +12,6 @@ from xpra.util import xor
 from xpra.os_util import WIN32
 assert init and log #tests will disable logging from here
 
-if WIN32:
-    import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
-else:
-    import kerberos                         #@UnresolvedImport @Reimport
-
 
 def init(opts):
     pass
@@ -59,6 +54,16 @@ class Authenticator(SysAuthenticatorBase):
     def check(self, token):
         log("check(%r)", token)
         assert self.challenge_sent
+        try:
+            if WIN32:
+                import winkerberos as kerberos          #@UnresolvedImport @UnusedImport
+            else:
+                import kerberos                         #@UnresolvedImport @Reimport
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use kerberos token authentication:")
+            log.warn(" %s", e)
+            return False
         v, ctx = kerberos.authGSSServerInit(self.service)
         if v!=1:
             log.error("Error: kerberos GSS server init failed for service '%s'", self.service)

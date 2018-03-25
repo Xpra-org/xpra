@@ -13,12 +13,6 @@ import base64
 from collections import OrderedDict
 from hashlib import sha256
 
-#python-cryptography to verify signatures:
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import load_der_public_key
-from cryptography.hazmat.backends import default_backend
-
 from xpra.util import csv, engs
 from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, POSIX
 from xpra.net.crypto import get_salt
@@ -61,6 +55,9 @@ class Authenticator(SysAuthenticator):
                         key_hexstring = key_hexstring.rstrip(b" \n\r")
                         key_strs[f] = key_hexstring
                         log("u2f_auth: loaded public key from file '%s': %s", f, key_hexstring)
+        #load public keys:
+        from cryptography.hazmat.primitives.serialization import load_der_public_key
+        from cryptography.hazmat.backends import default_backend
         for origin, key_hexstring in key_strs.items():
             try:
                 key = binascii.unhexlify(key_hexstring)
@@ -115,6 +112,8 @@ class Authenticator(SysAuthenticator):
                 struct.pack('>I', counter) + \
                 client_param
         #check all the public keys:
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import ec
         errors = OrderedDict()
         for origin, public_key in self.public_keys.items():
             verifier = public_key.verifier(sig, ec.ECDSA(hashes.SHA256()))

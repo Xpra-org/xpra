@@ -6,9 +6,6 @@
 
 import sys
 
-from gssapi import creds as gsscreds
-from gssapi import sec_contexts as gssctx
-
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.util import xor
@@ -55,6 +52,14 @@ class Authenticator(SysAuthenticatorBase):
     def check(self, token):
         log("check(%s)", repr(token))
         assert self.challenge_sent
+        try:
+            from gssapi import creds as gsscreds
+            from gssapi import sec_contexts as gssctx
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use gss authentication:")
+            log.warn(" %s", e)
+            return False
         server_creds = gsscreds.Credentials(usage='accept')
         server_ctx = gssctx.SecurityContext(creds=server_creds)
         server_ctx.step(token)

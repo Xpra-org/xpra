@@ -1,8 +1,7 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
 
 import os
 import sys
@@ -14,12 +13,6 @@ assert init and log #tests will disable logging from here
 
 LIBWRAP = os.environ.get("XPRA_LIBWRAP", "libwrap.so.0")
 
-libwrap = CDLL(LIBWRAP)
-assert libwrap
-hosts_ctl = libwrap.hosts_ctl
-hosts_ctl.argtypes = [c_char_p, c_char_p, c_char_p, c_char_p]
-hosts_ctl.restype = c_int
-
 PRG_NAME = b"xpra"
 prg = c_char_p(PRG_NAME)
 UNKNOWN = b""
@@ -27,6 +20,12 @@ unknown = c_char_p(UNKNOWN)
 
 
 def check_host(peername, host):
+    libwrap = CDLL(LIBWRAP)
+    assert libwrap
+    hosts_ctl = libwrap.hosts_ctl
+    hosts_ctl.argtypes = [c_char_p, c_char_p, c_char_p, c_char_p]
+    hosts_ctl.restype = c_int
+
     log("check_host(%s, %s)", peername, host)
     #name = c_char_p(username)
     c_host = c_char_p(strtobytes(host))
