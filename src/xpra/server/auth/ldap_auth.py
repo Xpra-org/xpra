@@ -9,10 +9,9 @@ import sys
 import ldap
 import socket
 
-from xpra.util import xor, envint, obsc
+from xpra.util import envint, obsc
 from xpra.os_util import bytestostr
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
-from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.log import is_debug_enabled, enable_debug_for
 assert init and log #tests will disable logging from here
 
@@ -114,6 +113,8 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
+    from xpra.util import xor
+    from xpra.net.crypto import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP-Password-Auth", "LDAP-Password-Authentication"):
         for x in list(argv):
@@ -122,7 +123,7 @@ def main(argv):
                 argv.remove(x)
         if len(argv) not in (3,4,5,6,7):
             sys.stderr.write("%s invalid arguments\n" % argv[0])
-            sys.stderr.write("usage: %s username password [server]\n" % argv[0])
+            sys.stderr.write("usage: %s username password [host] [port] [tls] [username_format]\n" % argv[0])
             return 1
         username = argv[1]
         password = argv[2]
