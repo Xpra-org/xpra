@@ -12,7 +12,7 @@ import os
 import platform as python_platform
 assert python_platform
 from xpra.util import csv
-from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, osexpand, getuid, getgid, get_username_for_uid
+from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, is_Debian, osexpand, getuid, getgid, get_username_for_uid
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -55,6 +55,9 @@ def has_sound_support():
 
 def get_xorg_bin():
     # Detect Xorg Binary
+    if os.uname()[4].startsWith("arm") and is_Debian() and os.path.exists("/usr/bin/Xorg"):
+        #Raspbian breaks if we use a different binary..
+        return "/usr/bin/Xorg"
     for p in (
               "/usr/libexec/Xorg",              #fedora 22+
               "/usr/lib/xorg/Xorg",             #ubuntu 16.10
