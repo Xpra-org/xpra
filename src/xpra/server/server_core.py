@@ -1052,7 +1052,7 @@ class ServerCore(object):
         except:
             c = int(v[0])
         import binascii
-        netlog("guess_header_protocol(%s)", binascii.hexlify(strtobytes(v)))
+        netlog.info("guess_header_protocol(%s)", binascii.hexlify(strtobytes(v)))
         if c==0x16:
             return "ssl", "SSL packet?"
         s = bytestostr(v)

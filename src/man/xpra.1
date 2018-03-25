@@ -679,7 +679,11 @@ validates a GSS ticket obtained by the client.
 .IP \fBu2f\fP
 requests a U2F token from the client.
 .IP \fBldap\fP
-validates the username and password against an LDAP server.
+validates the username and password against an LDAP server,
+using the \fIpython\-ldap\fP library.
+.IP \fBldap\fP
+validates the username and password against an LDAP server,
+using the python \fIldap3\fP library.
 .RE
 .PP
 .TP
