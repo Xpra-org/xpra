@@ -414,6 +414,20 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-ldap3" python3="1">
+		<branch repo="pypi.python.org"
+			module="/packages/24/36/89162b1b2245031b17d52a2100758c32bf1ac0b1cf0b51014ad2d10bb01c/ldap3-2.4.1.tar.gz"
+			hash="sha256:e8fe0d55a8cecb725748c831ffac2873df94c05b2d7eb867ea167c0500bbc6a8"
+			version="2.4.1">
+		</branch>
+		<dependencies>
+			<dep package="python-pyasn1"/>
+		</dependencies>
+		<after>
+			<dep package="python-pyasn1"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-ldap" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/c1/52/dfb508364bce92bb2a6ccbe718b69c8857b5d6fcd6af259ab0c36ee68730/python-ldap-3.0.0.tar.gz"
@@ -708,6 +722,7 @@
 		  <dep package="python3-lzo"/>
 		  <dep package="python3-pyasn1"/>
 		  <dep package="python3-pyasn1-modules"/>
+		  <dep package="python3-ldap3"/>
 		  <dep package="python3-ldap"/>
 		  <dep package="python3-future"/>
 		  <dep package="python3-u2f"/>
