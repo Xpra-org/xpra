@@ -276,12 +276,6 @@ cdef extern from "X11/extensions/Xdamage.h":
 
 cdef extern from "X11/extensions/Xfixes.h":
     Bool XFixesQueryExtension(Display *, int *event_base, int *error_base)
-    ctypedef struct XFixesCursorNotify:
-        char* subtype
-        Window XID
-        int cursor_serial
-        int time
-        char* cursor_name
     ctypedef struct XFixesCursorImage:
         short x
         short y
