@@ -4,14 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 import ldap
 import socket
 
-from xpra.util import obsc
+from xpra.util import xor, envint, obsc
+from xpra.os_util import bytestostr
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.net.crypto import get_salt, get_digests, gendigest
-from xpra.util import xor, envint
 from xpra.log import is_debug_enabled, enable_debug_for
 assert init and log #tests will disable logging from here
 
@@ -21,6 +22,8 @@ def init(opts):
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
 LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
 LDAP_TRACE_LEVEL = envint("XPRA_LDAP_TRACE_LEVEL")
+LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
+LDAP_ENCODING = os.environ.get("XPRA_LDAP_ENCODING", "utf-8")
 
 
 class Authenticator(SysAuthenticatorBase):
@@ -28,6 +31,8 @@ class Authenticator(SysAuthenticatorBase):
     def __init__(self, username, **kwargs):
         self.tls = bool(int(kwargs.pop("tls", "0")))
         self.host = kwargs.pop("host", "localhost")
+        self.cacert = kwargs.pop("cacert", LDAP_CACERTFILE)
+        self.encoding = kwargs.pop("encoding", LDAP_ENCODING)
         if self.tls:
             default_port = 636
         else:
@@ -36,7 +41,8 @@ class Authenticator(SysAuthenticatorBase):
         self.username_format = kwargs.pop("username_format", "cn=%username, o=%domain")
         #self.username_format = kwargs.pop("username_format", "%username@%domain")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
-        log("ldap auth: host=%s, port=%i, username_format=%s", self.host, self.port, self.username_format)
+        log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
+            self.host, self.port, self.tls, self.username_format, self.cacert, self.encoding)
 
     def get_uid(self):
         return self.uid
@@ -73,6 +79,8 @@ class Authenticator(SysAuthenticatorBase):
             conn = ldap.initialize(server, trace_level=LDAP_TRACE_LEVEL or is_debug_enabled("auth"))
             conn.protocol_version = LDAP_PROTOCOL_VERSION
             conn.set_option(ldap.OPT_REFERRALS, LDAP_REFERRALS)
+            if self.cacert:
+                conn.set_option(ldap.OPT_X_TLS_CACERTFILE, self.cacert)
             log("ldap.open(%s)=%s", server, conn)
             try:
                 domain = socket.getfqdn().split(".", 1)[1]
@@ -80,6 +88,14 @@ class Authenticator(SysAuthenticatorBase):
                 domain = "localdomain"
             user = self.username_format.replace("%username", self.username).replace("%domain", domain)
             log("user=%s", user)
+            try:
+                #password should be the result of a digest function,
+                #ie: xor will return bytes..
+                p = bytestostr(password)
+                password = p.encode(self.encoding)
+                log("ldap encoded password as %s", self.encoding)
+            except:
+                pass
             v = conn.simple_bind_s(user, password)
             log("simple_bind_s(%s, %s)=%s", user, obsc(password), v)
             return True
