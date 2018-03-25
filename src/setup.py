@@ -1599,6 +1599,10 @@ else:
         PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.xposix")
+        #for u2f on python2:
+        if not PYTHON3:
+            modules.append("UserList")
+            modules.append("UserString")
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
         modules.append("xpra.scripts.gtk_info")
