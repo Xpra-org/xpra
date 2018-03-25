@@ -52,9 +52,12 @@ def main():
     from xpra.platform import program_context
     with program_context("Network-Speed", "Network Speed Query Tool"):
         from xpra.net.net_util import get_interfaces
+        from xpra.simple_stats import std_unit
         interfaces = get_interfaces()
         for iface in interfaces:
             s = get_interface_speed(0, iface)
+            if s:
+                s = "%sbps" % std_unit(s)
             print("%s : %s" % (iface, s))
 
 if __name__ == "__main__":
