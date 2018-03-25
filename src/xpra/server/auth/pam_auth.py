@@ -6,7 +6,6 @@
 import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
-from xpra.util import csv
 assert init and log #tests will disable logging from here
 
 
@@ -32,7 +31,8 @@ class Authenticator(SysAuthenticator):
 
     def get_challenge(self, digests):
         if "xor" not in digests:
-            raise Exception("pam authenticator requires the 'xor' digest, not %s" % csv(digests))
+            log.error("Error: pam authentication requires the 'xor' digest")
+            return None
         return SysAuthenticator.get_challenge(self, ["xor"])
 
     def __repr__(self):
