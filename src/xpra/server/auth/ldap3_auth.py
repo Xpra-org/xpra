@@ -77,13 +77,13 @@ class Authenticator(SysAuthenticatorBase):
             server = Server(self.host, port=self.port, tls=tls, use_ssl=self.tls, get_info=ALL)
             log("check Server(%s)=%s", (self.host, self.port, self.tls), server)
             conn = Connection(server, user=self.username, password=password, authentication=authentication, receive_timeout=10)
+            log("check Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
             if self.tls:
                 conn.start_tls()
             r = conn.bind()
             log("check %s.bind()=%s", conn, r)
             if not r:
                 return False
-            log("check Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
             log("check who_am_i()=%s", conn.extend.standard.who_am_i())
             return True
         except Exception as e:
