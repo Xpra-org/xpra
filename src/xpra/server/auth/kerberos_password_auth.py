@@ -48,16 +48,10 @@ class Authenticator(SysAuthenticatorBase):
         return "kerberos-password"
 
     def get_challenge(self, digests):
-        assert not self.challenge_sent
-        if self.salt is not None:
-            log.error("Error: authentication challenge already sent!")
-            return None
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")
             return None
-        self.salt = get_salt()
-        self.challenge_sent = True
-        return self.salt, "xor"
+        return SysAuthenticatorBase.get_challenge(self, ["xor"])
 
     def check(self, password):
         try:
