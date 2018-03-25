@@ -504,6 +504,11 @@ class ServerCore(object):
         except ImportError:
             authlog("cannot load ldap auth: %s", exc_info=True)
         try:
+            from xpra.server.auth import ldap3_auth
+            AUTH_MODULES["ldap3"] = ldap3_auth
+        except ImportError:
+            authlog("cannot load ldap3 auth: %s", exc_info=True)
+        try:
             from xpra.server.auth import u2f_auth
             AUTH_MODULES["u2f"] = u2f_auth
         except ImportError:
