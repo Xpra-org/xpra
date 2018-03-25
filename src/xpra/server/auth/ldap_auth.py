@@ -20,6 +20,7 @@ def init(opts):
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
 LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
+LDAP_TRACE_LEVEL = envint("XPRA_LDAP_TRACE_LEVEL")
 
 
 class Authenticator(SysAuthenticatorBase):
@@ -52,7 +53,7 @@ class Authenticator(SysAuthenticatorBase):
         try:
             assert self.username and password
             server = "ldap://%s:%i" % (self.host, self.port)
-            conn = ldap.initialize(server, trace_level=is_debug_enabled("auth"))
+            conn = ldap.initialize(server, trace_level=LDAP_TRACE_LEVEL or is_debug_enabled("auth"))
             conn.protocol_version = LDAP_PROTOCOL_VERSION
             conn.set_option(ldap.OPT_REFERRALS, LDAP_REFERRALS)
             log("ldap.open(%s)=%s", server, conn)
