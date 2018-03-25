@@ -11,12 +11,15 @@ import socket
 from xpra.util import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
 from xpra.net.crypto import get_salt, get_digests, gendigest
-from xpra.util import xor
+from xpra.util import xor, envint
 from xpra.log import is_debug_enabled, enable_debug_for
 assert init and log #tests will disable logging from here
 
 def init(opts):
     pass
+
+LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
+LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
 
 
 class Authenticator(SysAuthenticatorBase):
@@ -50,8 +53,8 @@ class Authenticator(SysAuthenticatorBase):
             assert self.username and password
             server = "ldap://%s:%i" % (self.host, self.port)
             conn = ldap.initialize(server, trace_level=is_debug_enabled("auth"))
-            conn.protocol_version = 3
-            conn.set_option(ldap.OPT_REFERRALS, 0)
+            conn.protocol_version = LDAP_PROTOCOL_VERSION
+            conn.set_option(ldap.OPT_REFERRALS, LDAP_REFERRALS)
             log("ldap.open(%s)=%s", server, conn)
             try:
                 domain = socket.getfqdn().split(".", 1)[1]
