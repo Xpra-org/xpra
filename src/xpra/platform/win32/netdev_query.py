@@ -12,6 +12,8 @@ def get_interface_info(iface):
     from xpra.platform.win32.comtypes_util import QuietenLogging
     with QuietenLogging():
         try:
+            from comtypes import CoInitialize               #@UnresolvedImport
+            CoInitialize()
             from comtypes.client import CreateObject        #@UnresolvedImport
             o = CreateObject("WbemScripting.SWbemLocator")
             s = o.ConnectServer(".", "root\\cimv2")
