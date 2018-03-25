@@ -25,6 +25,7 @@ class Authenticator(SysAuthenticatorBase):
         self.host = kwargs.pop("host", "localhost")
         self.port = int(kwargs.pop("port", "389"))
         self.username_format = kwargs.pop("username_format", "cn=%username, o=%domain")
+        #self.username_format = kwargs.pop("username_format", "%username@%domain")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
         log("ldap auth: host=%s, port=%i, username_format=%s", self.host, self.port, self.username_format)
 
@@ -47,8 +48,10 @@ class Authenticator(SysAuthenticatorBase):
         log("check(%s)", obsc(password))
         try:
             assert self.username and password
-            server = "ldap://%s:%d" % (self.host, self.port)
+            server = "ldap://%s:%i" % (self.host, self.port)
             conn = ldap.initialize(server, trace_level=is_debug_enabled("auth"))
+            conn.protocol_version = 3
+            conn.set_option(ldap.OPT_REFERRALS, 0)
             log("ldap.open(%s)=%s", server, conn)
             try:
                 domain = socket.getfqdn().split(".", 1)[1]
@@ -59,6 +62,12 @@ class Authenticator(SysAuthenticatorBase):
             v = conn.simple_bind_s(user, password)
             log("simple_bind_s(%s, %s)=%s", user, obsc(password), v)
             return True
+        except ldap.INVALID_CREDENTIALS:
+            log("check(..)", exc_info=True)
+            return False
+        except ldap.SERVER_DOWN:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: LDAP server at %s:%i is unreachable", self.host, self.port)
         except ldap.LDAPError as e:
             log("check(..)", exc_info=True)
             log.error("Error: ldap authentication failed:")
@@ -95,8 +104,9 @@ def main(argv):
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
         response = xor(password, combined_salt)
-        a.authenticate(response, client_salt)
-    return 0
+        r = a.authenticate(response, client_salt)
+        print("success: %s" % r)
+        return int(not r)
 
 
 if __name__ == "__main__":
