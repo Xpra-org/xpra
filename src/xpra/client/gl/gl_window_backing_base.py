@@ -359,6 +359,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def gl_init_textures(self):
         assert self.offscreen_fbo is None
         assert self.shaders is None
+        assert glGenFramebuffers, "no framebuffer support"
         self.textures = glGenTextures(N_TEXTURES)
         self.offscreen_fbo = glGenFramebuffers(1)
         self.tmp_fbo = glGenFramebuffers(1)
