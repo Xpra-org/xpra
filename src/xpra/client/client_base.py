@@ -181,21 +181,22 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         raise Exception("override me!")
 
 
+    def handle_deadly_signal(self, signum, _frame=None):
+        sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
+        sys.stderr.flush()
+        self.cleanup()
+        os._exit(128 + signum)
+    def handle_app_signal(self, signum, _frame=None):
+        sys.stderr.write("\ngot signal %s, exiting\n" % SIGNAMES.get(signum, signum))
+        sys.stderr.flush()
+        signal.signal(signal.SIGINT, self.handle_deadly_signal)
+        signal.signal(signal.SIGTERM, self.handle_deadly_signal)
+        self.signal_cleanup()
+        self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
+
     def install_signal_handlers(self):
-        def deadly_signal(signum, _frame):
-            sys.stderr.write("\ngot deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-            sys.stderr.flush()
-            self.cleanup()
-            os._exit(128 + signum)
-        def app_signal(signum, _frame):
-            sys.stderr.write("\ngot signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-            sys.stderr.flush()
-            signal.signal(signal.SIGINT, deadly_signal)
-            signal.signal(signal.SIGTERM, deadly_signal)
-            self.signal_cleanup()
-            self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, "exit on signal %s" % SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, app_signal)
-        signal.signal(signal.SIGTERM, app_signal)
+        signal.signal(signal.SIGINT, self.handle_app_signal)
+        signal.signal(signal.SIGTERM, self.handle_app_signal)
 
     def signal_disconnect_and_quit(self, exit_code, reason):
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
