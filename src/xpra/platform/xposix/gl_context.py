@@ -13,6 +13,7 @@ from xpra.gtk_common.gobject_compat import get_xid
 from xpra.gtk_common.gtk_util import display_get_default, make_temp_window
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
+from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 
 
 DOUBLE_BUFFERED = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
@@ -128,6 +129,8 @@ class GLXContext(object):
         self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
+        self.props["vendor"] = glGetString(GL_VENDOR)
+        self.props["renderer"] = glGetString(GL_RENDERER)
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
     def check_support(self, force_enable=False):
