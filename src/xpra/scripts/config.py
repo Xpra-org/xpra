@@ -55,7 +55,7 @@ def has_sound_support():
 
 def get_xorg_bin():
     # Detect Xorg Binary
-    if os.uname()[4].startsWith("arm") and is_Debian() and os.path.exists("/usr/bin/Xorg"):
+    if os.uname()[4].startswith("arm") and is_Debian() and os.path.exists("/usr/bin/Xorg"):
         #Raspbian breaks if we use a different binary..
         return "/usr/bin/Xorg"
     for p in (
