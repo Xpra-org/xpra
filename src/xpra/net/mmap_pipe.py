@@ -269,7 +269,7 @@ def mmap_write(mmap_area, mmap_size, data):
         #[+++++++++**********E--------------]
         mmap_area.seek(end)
         mmap_area.write(memoryview_to_bytes(data))
-        data = [(end, l)]
+        chunks = [(end, l)]
         mmap_data_end.value = end+l
     else:
         """ data does not fit in first chunk alone """
@@ -279,7 +279,7 @@ def mmap_write(mmap_area, mmap_size, data):
             #[*******E----------S+++++++++-------]
             mmap_area.seek(8)
             mmap_area.write(memoryview_to_bytes(data))
-            data = [(8, l)]
+            chunks = [(8, l)]
             mmap_data_end.value = 8+l
         else:
             """ split in 2 chunks: wrap around the end of the mmap buffer """
@@ -290,7 +290,7 @@ def mmap_write(mmap_area, mmap_size, data):
             mmap_area.seek(8)
             mmap_area.write(memoryview_to_bytes(data[chunk:]))
             l2 = l-chunk
-            data = [(end, chunk), (8, l2)]
+            chunks = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8+l2
     log("sending damage with mmap: %s", data)
-    return data, mmap_free_size
+    return chunks, mmap_free_size
