@@ -29,7 +29,7 @@ authlog = Logger("client", "auth")
 
 from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable)
-from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, csv, \
+from xpra.util import updict, pver, iround, flatten_dict, envbool, typedict, repr_ellipsized, csv, first_time, \
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID
 from xpra.os_util import bytestostr, strtobytes, hexstr, WIN32, OSX, POSIX, PYTHON3
 from xpra.simple_stats import std_unit
@@ -577,11 +577,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     wm_name = None
                 try:
                     if len(v)==8:
-                        framelog.warn("Warning: invalid frame extents value '%s'", v)
-                        if wm_name:
-                            framelog.warn(" this is probably a bug in '%s'", wm_name)
+                        if first_time("invalid-frame-extents"):
+                            framelog.warn("Warning: invalid frame extents value '%s'", v)
+                            if wm_name:
+                                framelog.warn(" this is probably a bug in '%s'", wm_name)
+                            framelog.warn(" using '%s' instead", v)
                         v = v[4:]
-                        framelog.warn(" using '%s' instead", v)
                     l, r, t, b = v
                     wfs["frame"] = (l, r, t, b)
                     wfs["offset"] = (l, t)
