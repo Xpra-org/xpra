@@ -69,7 +69,7 @@ def check_support(force_enable=False, check_colormap=False):
     for want_alpha in (GL_ALPHA_SUPPORTED, not GL_ALPHA_SUPPORTED):
         for double_buffered in (CAN_DOUBLE_BUFFER, not CAN_DOUBLE_BUFFER):
             display_mode = get_DISPLAY_MODE(want_alpha, double_buffered)
-            log("get_DISPLAY_MODE(%s, %s)=%s", want_alpha, double_buffered)
+            log("get_DISPLAY_MODE(%s, %s)=%s", want_alpha, double_buffered, display_mode)
             glconfig = Config_new_by_mode(display_mode)
             log("Config_new_by_mode(%s)=%s", display_mode, glconfig)
             if glconfig:
