@@ -70,7 +70,7 @@ class FilePrintServer(StubServerMixin):
             "lpadmin"              : self.lpadmin,
             "lpinfo"               : self.lpinfo,
             "add-printer-options"  : self.add_printer_options,
-            },
+            }
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             d.update(get_info())
