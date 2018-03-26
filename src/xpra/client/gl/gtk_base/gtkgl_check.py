@@ -110,6 +110,10 @@ def check_support(force_enable=False, check_colormap=False):
 
     if TEST_GTKGL_RENDERING:
         gl_props = test_gtkgl_rendering(glconfig, force_enable, check_colormap)
+        if not gl_props:
+            #if we fail the test rendering, don't return anything
+            #so the client will know this backend should not be used
+            return {}
         props.update(gl_props)
     else:
         log("gtkgl rendering test skipped")
