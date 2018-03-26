@@ -172,12 +172,6 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
 
 
 def OpenGL_safety_check():
-    #Ubuntu 12.04 will just crash on you if you try:
-    from xpra.os_util import is_Ubuntu, getUbuntuVersion
-    if is_Ubuntu():
-        rnum = getUbuntuVersion()
-        if rnum<=[12, 4]:
-            return "Ubuntu %s is too buggy" % rnum
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
