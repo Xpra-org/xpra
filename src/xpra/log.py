@@ -42,6 +42,27 @@ def get_all_loggers():
                 a.add(v)
     return a
 
+
+class FullDebugContext(object):
+
+    def __enter__(self):
+        global debug_enabled_categories
+        self.debug_enabled_categories = debug_enabled_categories
+        debug_enabled_categories = set(debug_enabled_categories)
+        debug_enabled_categories.add("all")
+        self.enabled = []
+        for x in get_all_loggers():
+            if not x.is_debug_enabled():
+                self.enabled.append(x)
+                x.enable_debug()
+
+    def __exit__(self, *_args):
+        for x in self.enabled:
+            x.disable_debug()
+        global debug_enabled_categories
+        debug_enabled_categories = self.debug_enabled_categories
+
+
 debug_enabled_categories = set()
 debug_disabled_categories = set()
 def add_debug_category(*cat):
