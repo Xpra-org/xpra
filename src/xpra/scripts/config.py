@@ -12,7 +12,8 @@ import os
 import platform as python_platform
 assert python_platform
 from xpra.util import csv
-from xpra.os_util import WIN32, OSX, PYTHON2, is_CentOS, is_RedHat, is_Fedora, is_Debian, osexpand, getuid, getgid, get_username_for_uid
+from xpra.os_util import (WIN32, OSX, PYTHON2, osexpand, getuid, getgid, get_username_for_uid,
+    is_CentOS, is_RedHat, is_Fedora, is_Debian, is_Ubuntu, getUbuntuVersion)
 
 def warn(msg):
     sys.stderr.write(msg+"\n")
@@ -161,7 +162,6 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
     else:
         debug("Xdummy support unspecified, will try to detect")
 
-    from xpra.os_util import is_Ubuntu, getUbuntuVersion
     if is_Ubuntu():
         rnum = getUbuntuVersion()
         if rnum==[16, 10]:
