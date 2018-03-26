@@ -164,10 +164,10 @@ class WindowDamageHandler(object):
 
         #try XShm:
         try:
-            shm = self.get_xshm_handle()
-            #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
-            if shm is not None:
-                with xsync:
+            with xsync:
+                shm = self.get_xshm_handle()
+                #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
+                if shm is not None:
                     shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
                 #logger("get_image(..) XShm image: %s", shm_image)
                 if shm_image:
