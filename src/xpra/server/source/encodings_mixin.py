@@ -135,7 +135,13 @@ class EncodingsMixin(StubServerMixin):
             return
         now = monotonic_time()
         self.calculate_last_time = now
-        self.statistics.bytes_sent.append((now, self.protocol._conn.output_bytecount))
+        p = self.protocol
+        if not p:
+            return
+        conn = p._conn
+        if not conn:
+            return
+        self.statistics.bytes_sent.append((now, conn.output_bytecount))
         self.statistics.update_averages()
         self.update_bandwidth_limits()
         wids = tuple(self.calculate_window_ids)  #make a copy so we don't clobber new wids
