@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -210,24 +210,25 @@ class X11ServerCore(GTKServerBase):
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
         #if some x11 atoms aren't defined, so we define them in advance:
-        for wtype in ["",
-                      "_NORMAL",
-                      "_DESKTOP",
-                      "_DOCK",
-                      "_TOOLBAR",
-                      "_MENU",
-                      "_UTILITY",
-                      "_SPLASH",
-                      "_DIALOG",
-                      "_DROPDOWN_MENU",
-                      "_POPUP_MENU",
-                      "_TOOLTIP",
-                      "_NOTIFICATION",
-                      "_COMBO",
-                      "_DND",
-                      "_NORMAL"
-                      ]:
-            X11Core.get_xatom("_NET_WM_WINDOW_TYPE"+wtype)
+        atom_names = tuple("_NET_WM_WINDOW_TYPE"+wtype for wtype in (
+            "",
+            "_NORMAL",
+            "_DESKTOP",
+            "_DOCK",
+            "_TOOLBAR",
+            "_MENU",
+            "_UTILITY",
+            "_SPLASH",
+            "_DIALOG",
+            "_DROPDOWN_MENU",
+            "_POPUP_MENU",
+            "_TOOLTIP",
+            "_NOTIFICATION",
+            "_COMBO",
+            "_DND",
+            "_NORMAL"
+            ))
+        X11Core.intern_atoms(atom_names)
 
 
     def set_keyboard_layout_group(self, grp):

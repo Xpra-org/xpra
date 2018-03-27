@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,8 @@ from __future__ import absolute_import
 
 import os
 import time
+from libc.stdlib cimport malloc, free
+from libc.stdint cimport uintptr_t
 
 from xpra.util import dump_exc, envbool
 from xpra.os_util import strtobytes
@@ -33,8 +35,10 @@ cdef extern from "X11/Xlib.h":
         pass
     ctypedef CARD32 Time
     ctypedef int Bool
+    ctypedef int Status
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
+    Status XInternAtoms(Display *display, char **names, int count, Bool only_if_exists, Atom *atoms_return)
     char *XGetAtomName(Display *display, Atom atom)
 
     int XFree(void * data)
@@ -105,6 +109,23 @@ cdef class _X11CoreBindings:
         string = bstr
         assert self.display!=NULL, "display is closed"
         return XInternAtom(self.display, string, False)
+
+    def intern_atoms(self, atom_names):
+        cdef int count = len(atom_names)
+        cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
+        assert names!=NULL
+        cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
+        assert atoms_return!=NULL
+        from ctypes import create_string_buffer, addressof
+        str_names = tuple(create_string_buffer(str(x)) for x in atom_names)
+        cdef uintptr_t ptr = 0
+        for i, x in enumerate(str_names):
+            ptr = addressof(x)
+            names[i] = <char*> ptr
+        cdef Status s = XInternAtoms(self.display, names, count, 0, atoms_return)
+        free(names)
+        free(atoms_return)
+        assert s!=0, "failed to intern some atoms"
 
     def get_xatom(self, str_or_int):
         return self.xatom(str_or_int)
