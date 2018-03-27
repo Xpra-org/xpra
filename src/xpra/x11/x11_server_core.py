@@ -11,15 +11,11 @@ import os
 from xpra.gtk_common.gobject_compat import import_gdk
 gdk = import_gdk()
 
+from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-RandR = RandRBindings()
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
-X11Keyboard = X11KeyboardBindings()
-from xpra.x11.bindings.core_bindings import X11CoreBindings     #@UnresolvedImport
-X11Core = X11CoreBindings()
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
-X11Window = X11WindowBindings()
-from xpra.gtk_common.error import XError, xswallow, xsync, trap
+from xpra.gtk_common.error import XError, xswallow, xsync, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
@@ -28,6 +24,12 @@ from xpra.x11.common import MAX_WINDOW_SIZE
 from xpra.os_util import StringIOClass, monotonic_time, PYTHON3
 from xpra.util import engs, csv
 from xpra.net.compression import Compressed
+
+set_context_check(verify_sync)
+RandR = RandRBindings()
+X11Keyboard = X11KeyboardBindings()
+X11Core = X11CoreBindings()
+X11Window = X11WindowBindings()
 
 if PYTHON3:
     unicode = str           #@ReservedAssignment
@@ -97,10 +99,11 @@ class X11ServerCore(GTKServerBase):
         self.current_xinerama_config = None
         #x11 keyboard bits:
         self.current_keyboard_group = None
-        clean_keyboard_state()
-        self.x11_init()
+        with xsync:
+            self.x11_init()
 
     def x11_init(self):
+        clean_keyboard_state()
         if self.fake_xinerama:
             self.libfakeXinerama_so = find_libfakeXinerama()
         else:
@@ -270,7 +273,8 @@ class X11ServerCore(GTKServerBase):
         GTKServerBase.do_cleanup(self)
         if self.fake_xinerama:
             cleanup_fakeXinerama()
-        clean_keyboard_state()
+        with xswallow:
+            clean_keyboard_state()
 
 
     def get_uuid(self):
@@ -434,7 +438,8 @@ class X11ServerCore(GTKServerBase):
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
-        X11Keyboard.unpress_all_keys()
+        with xswallow:
+            X11Keyboard.unpress_all_keys()
 
 
     def get_cursor_sizes(self):
@@ -645,7 +650,8 @@ class X11ServerCore(GTKServerBase):
                 except Exception:
                     screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
-            root_w, root_h = RandR.get_screen_size()
+            with xsync:
+                root_w, root_h = RandR.get_screen_size()
             screenlog("RandR.get_screen_size()=%s,%s", root_w, root_h)
             screenlog("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
             if root_w!=w or root_h!=h:

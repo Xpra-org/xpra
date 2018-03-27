@@ -36,30 +36,36 @@ class Keyboard(KeyboardBase):
             log.warn("keyboard bindings are not available, expect keyboard mapping problems")
             return {}, [], []
         try:
-            mod_mappings = self.keyboard_bindings.get_modifier_mappings()
-            if mod_mappings:
-                #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
-                log("modifier mappings=%s", mod_mappings)
-                meanings = {}
-                for modifier,keys in mod_mappings.items():
-                    for _,keyname in keys:
-                        meanings[keyname] = modifier
-                #probably a GTK bug? but easier to put here
-                mod_missing = []
-                numlock_mod = meanings.get("Num_Lock", [])
-                if numlock_mod:
-                    mod_missing.append(numlock_mod)
-                return  meanings, [], mod_missing
+            from xpra.gtk_common.error import xsync
+            with xsync:
+                mod_mappings = self.keyboard_bindings.get_modifier_mappings()
+                if mod_mappings:
+                    #ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
+                    log("modifier mappings=%s", mod_mappings)
+                    meanings = {}
+                    for modifier,keys in mod_mappings.items():
+                        for _,keyname in keys:
+                            meanings[keyname] = modifier
+                    #probably a GTK bug? but easier to put here
+                    mod_missing = []
+                    numlock_mod = meanings.get("Num_Lock", [])
+                    if numlock_mod:
+                        mod_missing.append(numlock_mod)
+                    return  meanings, [], mod_missing
         except Exception:
             log.error("failed to use native get_modifier_mappings", exc_info=True)
+        return {}, [], []
 
     def get_x11_keymap(self):
         if not self.keyboard_bindings:
             return  {}
         try:
-            return self.keyboard_bindings.get_keycode_mappings()
+            from xpra.gtk_common.error import xsync
+            with xsync:
+                return self.keyboard_bindings.get_keycode_mappings()
         except Exception:
-            log.error("failed to use raw x11 keymap", exc_info=True)
+            log.error("Error: failed to use raw x11 keymap", exc_info=True)
+        return  {}
 
 
     def get_keymap_spec(self):

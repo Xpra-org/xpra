@@ -14,5 +14,5 @@ cdef extern from "X11/Xlib.h":
 cdef class _X11CoreBindings:
     cdef Display * display
     cdef char * display_name
-    cdef Atom xatom(self, str_or_int)
+    cdef Atom xatom(self, str_or_int) except -1
 #    def get_error_text(self, code)

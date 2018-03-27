@@ -890,6 +890,7 @@ cdef class _XImageBindings(_X11CoreBindings):
         return self.has_xshm
 
     def get_XShmWrapper(self, xwindow):
+        self.context_check()
         cdef XWindowAttributes attrs
         if XGetWindowAttributes(self.display, xwindow, &attrs)==0:
             return None
@@ -898,10 +899,13 @@ cdef class _XImageBindings(_X11CoreBindings):
         return xshm
 
     def get_ximage(self, drawable, x, y, width, height):      #@DuplicatedSignature
+        self.context_check()
         return get_image(self.display, drawable, x, y, width, height)
 
     def get_xcomposite_pixmap(self, xwindow):
+        self.context_check()
         return xcomposite_name_window_pixmap(self.display, xwindow)
 
     def get_xwindow_pixmap_wrapper(self, xwindow):
+        self.context_check()
         return window_pixmap_wrapper(self.display, xwindow)

@@ -391,7 +391,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def add_system_tray(self):
         # Tray handler:
         try:
-            self._tray = SystemTray()
+            with xsync:
+                self._tray = SystemTray()
         except Exception as e:
             log.error("cannot setup tray forwarding: %s", e, exc_info=True)
 
@@ -407,10 +408,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._add_new_window(window)
 
         root = gdk.get_default_root_window()
-        for window in get_children(root):
-            xid = get_xwindow(window)
-            if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
-                self._add_new_or_window(window)
+        with xsync:
+            for window in get_children(root):
+                xid = get_xwindow(window)
+                if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
+                    self._add_new_or_window(window)
 
     def _lookup_window(self, wid):
         assert isinstance(wid, int), "window id value '%s' is a %s and not a number" % (wid, type(wid))

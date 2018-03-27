@@ -451,6 +451,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
             add_x_event_type_name(event, name)
 
     def select_xi2_events(self):
+        self.context_check()
         cdef Window win = XDefaultRootWindow(self.display)
         log("select_xi2_events() root window=%#x", win)
         assert XI_LASTEVENT<MAX_XI_EVENTS, "bug: source needs to be updated, XI_LASTEVENT=%i" % XI_LASTEVENT
@@ -581,6 +582,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
 
     def get_devices(self, show_all=True, show_disabled=False):
         log("get_devices(%s, %s)", show_all, show_disabled)
+        self.context_check()
         global XI_USE
         cdef int ndevices, i, j
         cdef XIDeviceInfo *devices

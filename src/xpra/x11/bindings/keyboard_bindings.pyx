@@ -276,6 +276,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
 
     cpdef int setxkbmap(self, rules_name, model, layout, variant, options) except -1:
+        self.context_check()
         log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
         if not self.hasXkb():
             log.error("Error: no Xkb support in this X11 server, cannot set keymap")
@@ -555,6 +556,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return self._parse_keycode(keycode_str)
 
     cdef xmodmap_setkeycodes(self, keycodes, new_keysyms):
+        self.context_check()
         cdef KeySym keysym                      #@DuplicatedSignature
         cdef KeySym* ckeysyms
         cdef int num_codes, keycode, i, first_keycode, last_keycode
@@ -629,6 +631,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             returns a dict: {keycode, [keysyms]}
             for all the keycodes
         """
+        self.context_check()
         cdef int keysyms_per_keycode                    #@DuplicatedSignature
         cdef XModifierKeymap* keymap
         cdef KeySym * keyboard_map
@@ -715,6 +718,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
             returns a dict: {modifier_index, [keycodes]}
             for all keycodes (see above for list)
         """
+        self.context_check()
         cdef int keysyms_per_keycode                    #@DuplicatedSignature
         cdef XModifierKeymap* keymap                    #@DuplicatedSignature
         cdef KeySym * keyboard_map                      #@DuplicatedSignature
@@ -916,6 +920,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return self.native_xmodmap(xmodmap_data)
 
     def grab_key(self, xwindow, keycode, modifiers):
+        self.context_check()
         XGrabKey(self.display, keycode, modifiers,
                  xwindow,
                  # Really, grab the key even if it's also in another window we own
@@ -928,14 +933,15 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
                  GrabModeAsync)
 
     def ungrab_all_keys(self):
-        cdef Window root_window
-        root_window = XDefaultRootWindow(self.display)
+        self.context_check()
+        cdef Window root_window = XDefaultRootWindow(self.display)
         XUngrabKey(self.display, AnyKey, AnyModifier, root_window)
 
 
     cdef Atom get_xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
+        self.context_check()
         cdef char* string
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
@@ -977,21 +983,25 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
     def xtest_fake_key(self, keycode, is_press):
         if not self.hasXTest():
             return False
+        self.context_check()
         return XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
     def xtest_fake_button(self, button, is_press):
         if not self.hasXTest():
             return False
+        self.context_check()
         return XTestFakeButtonEvent(self.display, button, is_press, 0)
 
     def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
         if not self.hasXTest():
             return False
+        self.context_check()
         return XTestFakeMotionEvent(self.display, screen, x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0):
         if not self.hasXTest():
             return False
+        self.context_check()
         return XTestFakeRelativeMotionEvent(self.display, x, y, delay)
 
 
@@ -1033,6 +1043,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
     def get_cursor_image(self):
         if not self.hasXFixes():
             return None
+        self.context_check()
         cdef XFixesCursorImage* image = NULL
         cdef int n, i = 0
         cdef unsigned char r, g, b, a
@@ -1088,8 +1099,8 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
 
 
     def query_pointer(self):
-        cdef Window root_window
-        root_window = XDefaultRootWindow(self.display)
+        self.context_check()
+        cdef Window root_window = XDefaultRootWindow(self.display)
         cdef Window root, child
         cdef int root_x, root_y
         cdef int win_x, win_y

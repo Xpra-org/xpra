@@ -177,6 +177,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         return v
 
     cdef _set_screen_size(self, width, height):
+        self.context_check()
         cdef Window window
         cdef XRRScreenConfiguration *config
         cdef int num_sizes = 0                          #@DuplicatedSignature
@@ -258,6 +259,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         return self._get_screen_size()
 
     def _get_screen_size(self):
+        self.context_check()
         cdef Window window                              #@DuplicatedSignature
         cdef XRRScreenSize *xrrs                        #@DuplicatedSignature
         cdef Rotation original_rotation
@@ -312,6 +314,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         return "%sx%s" % (w, h)
 
     def add_screen_size(self, unsigned int w, unsigned int h):
+        self.context_check()
         log("add_screen_size(%i, %i)", w, h)
         cdef Window window
         cdef XRRModeInfo *new_mode
@@ -418,6 +421,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             del self._added_modes[name]
 
     def remove_mode(self, RRMode mode):
+        self.context_check()
         cdef RROutput output = self.get_current_output()
         log("remove_mode(%i) output=%i", mode, output)
         if mode and output:
@@ -425,6 +429,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             XRRDestroyMode(self.display, mode)
 
     cdef RROutput get_current_output(self):
+        self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
         try:
             rsc = XRRGetScreenResourcesCurrent(self.display, window)
@@ -437,6 +442,7 @@ cdef class _RandRBindings(_X11CoreBindings):
             XRRFreeScreenResources(rsc)
 
     def xrr_set_screen_size(self, w, h, xdpi, ydpi):
+        self.context_check()
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
         wmm = iround(w*25.4/xdpi)

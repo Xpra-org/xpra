@@ -62,11 +62,13 @@ USE_X11_BINDINGS = envbool("XPRA_USE_X11_BINDINGS", True)
 SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
 if POSIX and USE_X11_BINDINGS:
     try:
+        from xpra.gtk_common.error import xsync, verify_sync
         from xpra.x11.gtk_x11.prop import prop_get, prop_set
         from xpra.x11.bindings.window_bindings import constants, X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
-        from xpra.x11.bindings.core_bindings import X11CoreBindings
-        from xpra.gtk_common.error import xsync
+        from xpra.x11.bindings.core_bindings import X11CoreBindings, set_context_check
         from xpra.x11.gtk_x11.send_wm import send_wm_workspace
+
+        set_context_check(verify_sync)
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
         HAS_X11_BINDINGS = True

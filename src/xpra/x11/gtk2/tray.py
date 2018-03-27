@@ -101,18 +101,21 @@ class SystemTray(gobject.GObject):
     def cleanup(self):
         log("SystemTray.cleanup()")
         root = gdk.get_default_root_window()
-        owner = X11Window.XGetSelectionOwner(SELECTION)
-        if owner==self.tray_window.xid:
-            X11Window.XSetSelectionOwner(0, SELECTION)
-            log("SystemTray.cleanup() reset %s selection owner to %#x", SELECTION, X11Window.XGetSelectionOwner(SELECTION))
-        else:
-            log.warn("Warning: we were no longer the tray selection owner")
-        remove_event_receiver(self.tray_window, self)
         def undock(window):
             log("undocking %s", window)
             X11Window.Unmap(window.xid)
             X11Window.Reparent(window.xid, root.xid, 0, 0)
-        for window, tray_window in self.tray_windows.items():
+        with xswallow:
+            owner = X11Window.XGetSelectionOwner(SELECTION)
+            if owner==self.tray_window.xid:
+                X11Window.XSetSelectionOwner(0, SELECTION)
+                log("SystemTray.cleanup() reset %s selection owner to %#x", SELECTION, X11Window.XGetSelectionOwner(SELECTION))
+            else:
+                log.warn("Warning: we were no longer the tray selection owner")
+        remove_event_receiver(self.tray_window, self)
+        tray_windows = self.tray_windows
+        self.tray_windows = {}
+        for window, tray_window in tray_windows.items():
             with xswallow:
                 undock(window)
             tray_window.destroy()

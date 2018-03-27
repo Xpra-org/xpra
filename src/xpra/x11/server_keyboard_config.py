@@ -360,31 +360,32 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         if not self.enabled:
             return
-        clean_keyboard_state()
-        #keycodes:
-        keycode_to_keynames = X11Keyboard.get_keycode_mappings()
-        self.keycode_translation = {}
-        for keycode, keynames in keycode_to_keynames.items():
-            for keyname in keynames:
-                self.keycode_translation[keyname] = keycode
-        self.add_gtk_keynames()
-        log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
-        #modifiers:
-        self.keynames_for_mod = {}
-        #ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
-        mod_mappings = X11Keyboard.get_modifier_mappings()
-        log("set_default_keymap: using modifier mappings=%s", mod_mappings)
-        for modifier, mappings in mod_mappings.items():
-            keynames = []
-            for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
-                if len(m)==2:
-                    keynames.append(m[1])   #ie: 'Control_L'
-            self.keynames_for_mod[modifier] = set(keynames)
-        self.compute_modifier_keynames()
-        self.compute_client_modifier_keycodes()
-        log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
-        log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
-        log("set_default_keymap: modifier_map=%s", self.modifier_map)
+        with xsync:
+            clean_keyboard_state()
+            #keycodes:
+            keycode_to_keynames = X11Keyboard.get_keycode_mappings()
+            self.keycode_translation = {}
+            for keycode, keynames in keycode_to_keynames.items():
+                for keyname in keynames:
+                    self.keycode_translation[keyname] = keycode
+            self.add_gtk_keynames()
+            log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
+            #modifiers:
+            self.keynames_for_mod = {}
+            #ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
+            mod_mappings = X11Keyboard.get_modifier_mappings()
+            log("set_default_keymap: using modifier mappings=%s", mod_mappings)
+            for modifier, mappings in mod_mappings.items():
+                keynames = []
+                for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
+                    if len(m)==2:
+                        keynames.append(m[1])   #ie: 'Control_L'
+                self.keynames_for_mod[modifier] = set(keynames)
+            self.compute_modifier_keynames()
+            self.compute_client_modifier_keycodes()
+            log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
+            log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
+            log("set_default_keymap: modifier_map=%s", self.modifier_map)
 
 
     def get_keycode(self, client_keycode, keyname, modifiers):
@@ -522,27 +523,28 @@ class KeyboardConfig(KeyboardConfigBase):
             log("change_mask(%s, %s, %s) failed=%s", modifiers, press, info, failed)
             return failed
 
-        current = filtered_modifiers_set(self.get_current_mask())
-        wanted = filtered_modifiers_set(modifier_list or [])
-        if current==wanted:
-            return
-        log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
-        fr = change_mask(current.difference(wanted), False, "remove")
-        fa = change_mask(wanted.difference(current), True, "add")
-        if fr:
-            log.warn("Warning: failed to remove the following modifiers:")
-            log.warn(" %s", csv(fr))
-        elif fa:
-            log.warn("Warning: failed to add the following modifiers:")
-            log.warn(" %s", csv(fa))
-        else:
-            return  #all good!
-        #this should never happen.. but if it does?
-        #something didn't work, use the big hammer and start again from scratch:
-        log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
-        X11Keyboard.unpress_all_keys()
-        log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
-        #and try to set the modifiers one last time:
-        current = filtered_modifiers_set(self.get_current_mask())
-        change_mask(current.difference(wanted), False, "remove")
-        change_mask(wanted.difference(current), True, "add")
+        with xsync:
+            current = filtered_modifiers_set(self.get_current_mask())
+            wanted = filtered_modifiers_set(modifier_list or [])
+            if current==wanted:
+                return
+            log("make_keymask_match(%s) current mask: %s, wanted: %s, ignoring=%s/%s, keys_pressed=%s", modifier_list, current, wanted, ignored_modifier_keycode, ignored_modifier_keynames, self.keys_pressed)
+            fr = change_mask(current.difference(wanted), False, "remove")
+            fa = change_mask(wanted.difference(current), True, "add")
+            if fr:
+                log.warn("Warning: failed to remove the following modifiers:")
+                log.warn(" %s", csv(fr))
+            elif fa:
+                log.warn("Warning: failed to add the following modifiers:")
+                log.warn(" %s", csv(fa))
+            else:
+                return  #all good!
+            #this should never happen.. but if it does?
+            #something didn't work, use the big hammer and start again from scratch:
+            log.warn(" keys still pressed=%s", X11Keyboard.get_keycodes_down())
+            X11Keyboard.unpress_all_keys()
+            log.warn(" doing a full keyboard reset, keys now pressed=%s", X11Keyboard.get_keycodes_down())
+            #and try to set the modifiers one last time:
+            current = filtered_modifiers_set(self.get_current_mask())
+            change_mask(current.difference(wanted), False, "remove")
+            change_mask(wanted.difference(current), True, "add")

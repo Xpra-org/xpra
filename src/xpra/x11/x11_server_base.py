@@ -258,10 +258,11 @@ class X11ServerBase(X11ServerCore):
         if not self._xsettings_enabled:
             return
         log("set_xsettings(%s)", v)
-        if self._xsettings_manager is None:
-            from xpra.x11.xsettings import XSettingsManager
-            self._xsettings_manager = XSettingsManager()
-        self._xsettings_manager.set_settings(v)
+        with xsync:
+            if self._xsettings_manager is None:
+                from xpra.x11.xsettings import XSettingsManager
+                self._xsettings_manager = XSettingsManager()
+            self._xsettings_manager.set_settings(v)
 
     def init_all_server_settings(self):
         log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)

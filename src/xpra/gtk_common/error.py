@@ -27,6 +27,8 @@
 # super-fast connections to the X server, everything running on fast
 # computers... does being this careful to avoid sync's actually matter?)
 
+import traceback
+
 __all__ = ["XError", "trap"]
 
 
@@ -192,3 +194,14 @@ class XSwallowContext(object):
         return True
 
 xswallow = XSwallowContext()
+
+
+def verify_sync():
+    if trap.depth<=0:
+        log.error("Error: unmanaged X11 context")
+        stack = traceback.extract_stack()[:-1]
+        s = traceback.format_list(stack)
+        for x in s:
+            for v in x.splitlines():
+                log.error(" %s", v)
+        #raise Exception("unmanaged context")

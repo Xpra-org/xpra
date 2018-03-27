@@ -19,6 +19,7 @@ def get_x11_property(atom_name):
     if not display:
         return b""
     try:
+        from xpra.gtk_common.error import xswallow
         from xpra.x11.bindings.posix_display_source import X11DisplayContext    #@UnresolvedImport
         from xpra.x11.bindings.window_bindings import X11WindowBindings
     except ImportError as e:
@@ -27,22 +28,23 @@ def get_x11_property(atom_name):
         return b""
     try:
         with X11DisplayContext(display) as dc:
-            X11Window = X11WindowBindings()
-            root = X11Window.getDefaultRootWindow()
-            log("getDefaultRootWindow()=%#x", root)
-            try:
-                prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")
-            except Exception as e:
-                log("cannot get X11 property '%s': %s", atom_name, e)
+            with xswallow:
+                X11Window = X11WindowBindings()
+                root = X11Window.getDefaultRootWindow()
+                log("getDefaultRootWindow()=%#x", root)
+                try:
+                    prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")
+                except Exception as e:
+                    log("cannot get X11 property '%s': %s", atom_name, e)
+                    return b""
+                log("XGetWindowProperty(..)=%s", prop)
+                if prop:
+                    from xpra.os_util import strtobytes
+                    from xpra.x11.prop_conv import prop_decode
+                    v = prop_decode(dc.display, "latin1", prop)
+                    log("get_x11_property(%s)=%s", atom_name, v)
+                    return strtobytes(v)
                 return b""
-            log("XGetWindowProperty(..)=%s", prop)
-            if prop:
-                from xpra.os_util import strtobytes
-                from xpra.x11.prop_conv import prop_decode
-                v = prop_decode(dc.display, "latin1", prop)
-                log("get_x11_property(%s)=%s", atom_name, v)
-                return strtobytes(v)
-            return b""
     except Exception:
         log.error("Error: cannot get X11 property '%s'", atom_name, exc_info=True)
         log.error(" for python %s", sys.version_info)

@@ -57,6 +57,22 @@ def X11CoreBindings():
         singleton = _X11CoreBindings()
     return singleton
 
+#for debugging, we can hook this function which will log the caller:
+def caller_logger(*args):
+    import sys
+    f = sys._getframe(1)
+    c = f.f_code
+    log.info("noop: %s %s %s %s", c.co_name, f.f_back, c.co_filename, f.f_lineno)
+
+def noop(*args):
+    pass
+
+cdef object context_check = noop
+def set_context_check(fn):
+    global context_check
+    context_check = fn
+
+
 cdef class _X11CoreBindings:
 
     def __cinit__(self):
@@ -68,15 +84,20 @@ cdef class _X11CoreBindings:
         if envbool("XPRA_X_SYNC", False):
             XSynchronize(self.display, True)
 
+    def context_check(self):
+        global context_check
+        context_check()
+
     def get_display_name(self):
         return self.display_name
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    cdef Atom xatom(self, str_or_int):
+    cdef Atom xatom(self, str_or_int) except -1:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
+        self.context_check()
         cdef char* string
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
@@ -89,6 +110,7 @@ cdef class _X11CoreBindings:
         return self.xatom(str_or_int)
 
     def XGetAtomName(self, Atom atom):
+        self.context_check()
         v = XGetAtomName(self.display, atom)
         return v[:]
 
