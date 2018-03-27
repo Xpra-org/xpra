@@ -998,6 +998,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         opts.start = opts.start_child = [] 
     elif opts.exit_with_children:
         assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+    elif opts.start_child:
+        log.warn("Warning: the 'start-child' option is used,")
+        log.warn(" but 'exit-with-children' is not enabled,")
+        log.warn(" use 'start' instead")
 
     try:
         app._ssl_wrap_socket = wrap_socket_fn
