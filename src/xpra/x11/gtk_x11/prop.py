@@ -107,21 +107,23 @@ def get_python_type(scalar_type):
     #ie: get_python_type("STRING") = "latin1"
     return PYTHON_TYPES.get(scalar_type)
 
+def _to_atom(_disp, a):
+    return struct.pack("@I", _get_xatom(a))
+
+def _to_visual(_disp, c):
+    return struct.pack("=I", get_xvisual(c))
+
+def _to_window(_disp, w):
+    return struct.pack("=I", get_xwindow(w))
+
+def get_window(disp, w):
+    return get_pywindow(disp, struct.unpack("=I", d)[0])
 
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
-    "atom": (str, "ATOM", 32,
-             lambda _disp, a: struct.pack("@I", _get_xatom(a)),
-              _get_atom,
-             b""),
-    "visual": (gdk.Visual, "VISUALID", 32,
-               lambda _disp, c: struct.pack("=I", get_xvisual(c)),
-               unsupported,
-               b""),
-    "window": (gdk.Window, "WINDOW", 32,
-               lambda _disp, c: struct.pack("=I", get_xwindow(c)),
-               lambda disp, d: get_pywindow(disp, struct.unpack("=I", d)[0]),
-               b""),
+    "atom": (str, "ATOM", 32, _to_atom, _get_atom, b""),
+    "visual": (gdk.Visual, "VISUALID", 32, _to_visual, unsupported, b""),
+    "window": (gdk.Window, "WINDOW", 32, _to_window, get_window, b""),
     "xsettings-settings": (tuple, "_XSETTINGS_SETTINGS", 8,
                            set_xsettings,
                            get_xsettings,
