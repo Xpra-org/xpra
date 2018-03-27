@@ -146,7 +146,8 @@ class NetworkState(StubClientMixin):
         else:
             self.cancel_ping_echo_timeout_timer()
         log("check_server_echo(%s) last=%s, server_ok=%s (last_ping_echoed_time=%s)", ping_sent_time, last, self._server_ok, self.last_ping_echoed_time)
-        self.server_connection_state_change()
+        if last!=self._server_ok:
+            self.server_connection_state_change()
         return False
 
     def cancel_ping_echo_timeout_timer(self):
