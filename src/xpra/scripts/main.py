@@ -1257,6 +1257,11 @@ def ssl_wrap_socket_fn(opts, server_side=True):
     wrap_socket = context.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
+        if WIN32:
+            #on win32, setting the tcp socket to blocking doesn't work?
+            #we still hit the following errors that we need to retry:
+            from xpra.net import bytestreams
+            bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
         tcp_socket.setblocking(True)
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)

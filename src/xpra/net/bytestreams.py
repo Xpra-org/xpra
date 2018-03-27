@@ -76,6 +76,7 @@ def set_continue_wait(v):
     global continue_wait
     continue_wait = v
 
+CAN_RETRY_EXCEPTIONS = ()
 
 def can_retry(e):
     if isinstance(e, socket.timeout):
@@ -86,6 +87,9 @@ def can_retry(e):
         can_continue = CONTINUE_ERRNO.get(code)
         if can_continue:
             return can_continue
+
+        if isinstance(e, CAN_RETRY_EXCEPTIONS):
+            return str(e)
 
         abort = ABORT.get(code, code)
         if abort is not None:
