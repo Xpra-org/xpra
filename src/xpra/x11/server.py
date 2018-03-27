@@ -382,7 +382,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def add_system_tray(self):
         # Tray handler:
         try:
-            self._tray = SystemTray()
+            with xsync:
+                self._tray = SystemTray()
         except Exception as e:
             log.error("cannot setup tray forwarding: %s", e, exc_info=True)
 
@@ -398,10 +399,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._add_new_window(window)
 
         root = gdk.get_default_root_window()
-        for window in get_children(root):
-            xid = get_xwindow(window)
-            if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
-                self._add_new_or_window(window)
+        with xsync:
+            for window in get_children(root):
+                xid = get_xwindow(window)
+                if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
+                    self._add_new_or_window(window)
 
 
     def parse_hello_ui_window_settings(self, ss, c):
@@ -1198,9 +1200,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def set_xsettings(self, v):
         settingslog("set_xsettings(%s)", v)
-        if self._xsettings_manager is None:
-            self._xsettings_manager = XSettingsManager()
-        self._xsettings_manager.set_settings(v)
+        with xsync:
+            if self._xsettings_manager is None:
+                self._xsettings_manager = XSettingsManager()
+            self._xsettings_manager.set_settings(v)
 
 
     def _get_antialias_hintstyle(self, antialias):

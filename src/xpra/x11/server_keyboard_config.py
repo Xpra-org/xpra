@@ -317,31 +317,31 @@ class KeyboardConfig(KeyboardConfigBase):
         """
         if not self.enabled:
             return
-        self.is_native_keymap = False
-        clean_keyboard_state()
-        #keycodes:
-        keycode_to_keynames = X11Keyboard.get_keycode_mappings()
-        self.keycode_translation = {}
-        for keycode, keynames in keycode_to_keynames.items():
-            for keyname in keynames:
-                self.keycode_translation[keyname] = keycode
-        self.add_gtk_keynames()
-        log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
-        #modifiers:
-        self.keynames_for_mod = {}
-        #ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
-        mod_mappings = X11Keyboard.get_modifier_mappings()
-        log("set_default_keymap: using modifier mappings=%s", mod_mappings)
-        for modifier, mappings in mod_mappings.items():
-            keynames = []
-            for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
-                if len(m)==2:
-                    keynames.append(m[1])   #ie: 'Control_L'
-            self.keynames_for_mod[modifier] = set(keynames)
-        self.compute_modifier_keynames()
-        log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
-        log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
-        log("set_default_keymap: modifier_map=%s", self.modifier_map)
+        with xsync:
+            clean_keyboard_state()
+            #keycodes:
+            keycode_to_keynames = X11Keyboard.get_keycode_mappings()
+            self.keycode_translation = {}
+            for keycode, keynames in keycode_to_keynames.items():
+                for keyname in keynames:
+                    self.keycode_translation[keyname] = keycode
+            self.add_gtk_keynames()
+            log("set_default_keymap: keycode_translation=%s", self.keycode_translation)
+            #modifiers:
+            self.keynames_for_mod = {}
+            #ie: {'control': [(37, 'Control_L'), (105, 'Control_R')], ...}
+            mod_mappings = X11Keyboard.get_modifier_mappings()
+            log("set_default_keymap: using modifier mappings=%s", mod_mappings)
+            for modifier, mappings in mod_mappings.items():
+                keynames = []
+                for m in mappings:      #ie: (37, 'Control_L'), (105, 'Control_R')
+                    if len(m)==2:
+                        keynames.append(m[1])   #ie: 'Control_L'
+                self.keynames_for_mod[modifier] = set(keynames)
+            self.compute_modifier_keynames()
+            log("set_default_keymap: keynames_for_mod=%s", self.keynames_for_mod)
+            log("set_default_keymap: keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
+            log("set_default_keymap: modifier_map=%s", self.modifier_map)
 
 
     def get_keycode(self, client_keycode, keyname, modifiers):

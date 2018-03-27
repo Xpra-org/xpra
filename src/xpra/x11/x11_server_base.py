@@ -90,7 +90,8 @@ class X11ServerBase(GTKServerBase):
         self.randr = opts.resize_display
         self.fake_xinerama = opts.fake_xinerama
         self.current_xinerama_config = None
-        self.x11_init()
+        with xsync:
+            self.x11_init()
         GTKServerBase.init(self, opts)
 
     def x11_init(self):
@@ -357,7 +358,8 @@ class X11ServerBase(GTKServerBase):
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
-        X11Keyboard.unpress_all_keys()
+        with xswallow:
+            X11Keyboard.unpress_all_keys()
 
 
     def get_cursor_data(self):
@@ -520,7 +522,8 @@ class X11ServerBase(GTKServerBase):
             with xsync:
                 RandR.set_screen_size(w, h)
             screenlog("calling RandR.get_screen_size()")
-            root_w, root_h = RandR.get_screen_size()
+            with xsync:
+                root_w, root_h = RandR.get_screen_size()
             screenlog("RandR.get_screen_size()=%s,%s", root_w, root_h)
             screenlog("RandR.get_vrefresh()=%s", RandR.get_vrefresh())
             if root_w!=w or root_h!=h:
