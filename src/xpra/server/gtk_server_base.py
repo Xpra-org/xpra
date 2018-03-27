@@ -53,7 +53,7 @@ class GTKServerBase(ServerBase):
         keymap = get_default_keymap()
         keymap.connect("keys-changed", self._keys_changed)
 
-    def signal_quit(self, signum, frame):
+    def signal_quit(self, signum, frame=None):
         gtk_main_quit_on_fatal_exceptions_disable()
         ServerBase.signal_quit(self, signum, frame)
 

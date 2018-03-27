@@ -125,7 +125,7 @@ class ProxyInstanceProcess(Process):
             else:
                 log.error("unexpected proxy server message: %s", m)
 
-    def signal_quit(self, signum, _frame):
+    def signal_quit(self, signum, frame=None):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
         self.exit = True

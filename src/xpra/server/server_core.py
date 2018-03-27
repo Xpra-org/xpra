@@ -273,13 +273,13 @@ class ServerCore(object):
 
     ######################################################################
     # run / stop:
-    def signal_quit(self, signum, _frame):
+    def signal_quit(self, signum, _frame=None):
         sys.stdout.write("\n")
         sys.stdout.flush()
         self._closing = True
         log.info("got signal %s, exiting", SIGNAMES.get(signum, signum))
-        signal.signal(signal.SIGINT, deadly_signal)
-        signal.signal(signal.SIGTERM, deadly_signal)
+        self._signal_add(signal.SIGINT, deadly_signal)
+        self._signal_add(signal.SIGTERM, deadly_signal)
         self.idle_add(self.clean_quit)
         self.idle_add(sys.exit, 128+signum)
 
@@ -319,12 +319,21 @@ class ServerCore(object):
     def do_quit(self):
         raise NotImplementedError()
 
+    def _signal_add(self, sig, handler):
+        if POSIX and PYTHON3:
+            #workaround for python3
+            from xpra.gtk_common.gobject_compat import import_glib
+            glib = import_glib()
+            glib.unix_signal_add(glib.PRIORITY_HIGH, sig, handler, sig)
+        else:
+            signal.signal(sig, handler)
+        
+
     def run(self):
         self.print_run_info()
         self.print_screen_info()
-        #SIGINT breaks GTK3.. (but there are no py3k servers yet!)
-        signal.signal(signal.SIGINT, self.signal_quit)
-        signal.signal(signal.SIGTERM, self.signal_quit)
+        self._signal_add(signal.SIGINT, self.signal_quit)
+        self._signal_add(signal.SIGTERM, self.signal_quit)
         def start_ready_callbacks():
             for x in self._when_ready:
                 try:
