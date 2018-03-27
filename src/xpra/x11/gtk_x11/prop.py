@@ -117,7 +117,7 @@ def _to_window(_disp, w):
     return struct.pack("=I", get_xwindow(w))
 
 def get_window(disp, w):
-    return get_pywindow(disp, struct.unpack("=I", d)[0])
+    return get_pywindow(disp, struct.unpack("=I", w)[0])
 
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
