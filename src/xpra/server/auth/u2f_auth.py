@@ -14,7 +14,7 @@ from collections import OrderedDict
 from hashlib import sha256
 
 from xpra.util import csv, engs
-from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, POSIX
+from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, strtobytes, POSIX
 from xpra.net.crypto import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.paths import get_user_conf_dirs
@@ -94,7 +94,7 @@ class Authenticator(SysAuthenticator):
 
     def authenticate(self, challenge_response=None, client_salt=None):
         log("authenticate(%s, %s)", repr(challenge_response), repr(client_salt))
-        user_presence, counter = struct.unpack(">BI", challenge_response[:5])
+        user_presence, counter = struct.unpack(">BI", strtobytes(challenge_response)[:5])
         sig = challenge_response[5:]
         log("u2f user_presence=%s, counter=%s, signature=%s", user_presence, counter, hexstr(sig))
         app_param = sha256(self.app_id.encode('utf8')).digest()
