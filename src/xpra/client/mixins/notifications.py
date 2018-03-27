@@ -25,6 +25,9 @@ class NotificationClient(StubClientMixin):
     def __init__(self):
         StubClientMixin.__init__(self)
         self.client_supports_notifications = False
+        self.server_notifications = False
+        self.server_notifications_close = False
+        self.server_notifications_actions = False
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
