@@ -955,7 +955,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog("init_opengl: backend options: %s", backends)
             gl_client_window_module = None
             for impl in backends:
-                opengllog("attempting to load %s OpenGL backend", impl)
+                opengllog("attempting to load '%s' OpenGL backend", impl)
                 GL_CLIENT_WINDOW_MODULE = "xpra.client.gl.gtk%s.%sgl_client_window" % (gtk_version(), impl)
                 opengllog("importing %s", GL_CLIENT_WINDOW_MODULE)
                 try:
