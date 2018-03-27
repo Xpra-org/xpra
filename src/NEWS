@@ -1,7 +1,8 @@
-v1.0.11 (2018-03-15)
+v1.0.11 (2018-03-27)
 ======================
 	-- fix refresh loop with video region
 	-- fix NVENC codec compatibility with Cython 0.28
+	-- fix unmanaged X11 calls causing GTK crashes
 	-- disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
 

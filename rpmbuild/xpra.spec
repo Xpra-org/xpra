@@ -612,9 +612,10 @@ fi
 
 
 %changelog
-* Thu Mar 15 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
+* Tue Mar 27 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
 - fix refresh loop with video region
 - fix NVENC codec compatibility with Cython 0.28
+- fix unmanaged X11 calls causing GTK crashes
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
 * Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
