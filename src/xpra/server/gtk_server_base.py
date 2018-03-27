@@ -12,7 +12,6 @@ import os.path
 from xpra.log import Logger
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
-clipboardlog = Logger("server", "clipboard")
 cursorlog = Logger("server", "cursor")
 netlog = Logger("network")
 notifylog = Logger("notify")
@@ -205,39 +204,6 @@ class GTKServerBase(ServerBase):
 
     def _process_configure_window(self, proto, packet):
         log.info("_process_configure_window(%s, %s)", proto, packet)
-
-
-    def send_clipboard_packet(self, *parts):
-        #overriden so we can inject the nesting check:
-        if self.clipboard_nesting_check("sending", parts[0], self._clipboard_client):
-            ServerBase.send_clipboard_packet(self, *parts)
-
-    def process_clipboard_packet(self, ss, packet):
-        #overriden so we can inject the nesting check:
-        def do_check():
-            if self.clipboard_nesting_check("receiving", packet[0], ss):
-                ServerBase.process_clipboard_packet(self, ss, packet)
-        #the nesting check calls gtk, so we must call it from the main thread:
-        self.idle_add(do_check)
-
-    def clipboard_nesting_check(self, action, packet_type, ss):
-        clipboardlog("clipboard_nesting_check(%s, %s, %s)", action, packet_type, ss)
-        cc = self._clipboard_client
-        if cc is None:
-            clipboardlog("not %s clipboard packet '%s': no clipboard client", action, packet_type)
-            return False
-        if not cc.clipboard_enabled:
-            clipboardlog("not %s clipboard packet '%s': client %s has clipboard disabled", action, packet_type, cc)
-            return False
-        from xpra.clipboard.clipboard_base import nesting_check
-        if not nesting_check():
-            #turn off clipboard at our end:
-            self.set_clipboard_enabled_status(ss, False)
-            #if we can, tell the client to do the same:
-            if ss.clipboard_set_enabled:
-                ss.send_clipboard_enabled("probable clipboard loop detected")
-            return  False
-        return True
 
 
     def get_notification_icon(self, icon_string):
