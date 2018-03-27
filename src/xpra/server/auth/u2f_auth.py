@@ -44,6 +44,7 @@ class Authenticator(SysAuthenticator):
             uid = getuid()
         conf_dirs = get_user_conf_dirs(uid)
         log("u2f: will try to load public keys from %s", csv(conf_dirs))
+        #load public keys:
         for d in conf_dirs:
             ed = osexpand(d)
             if os.path.exists(ed) and os.path.isdir(ed):
@@ -55,7 +56,7 @@ class Authenticator(SysAuthenticator):
                         key_hexstring = key_hexstring.rstrip(b" \n\r")
                         key_strs[f] = key_hexstring
                         log("u2f_auth: loaded public key from file '%s': %s", f, key_hexstring)
-        #load public keys:
+        #parse public key data:
         from cryptography.hazmat.primitives.serialization import load_der_public_key
         from cryptography.hazmat.backends import default_backend
         for origin, key_hexstring in key_strs.items():
@@ -95,7 +96,7 @@ class Authenticator(SysAuthenticator):
     def authenticate(self, challenge_response=None, client_salt=None):
         log("authenticate(%s, %s)", repr(challenge_response), repr(client_salt))
         user_presence, counter = struct.unpack(">BI", strtobytes(challenge_response)[:5])
-        sig = challenge_response[5:]
+        sig = strtobytes(challenge_response[5:])
         log("u2f user_presence=%s, counter=%s, signature=%s", user_presence, counter, hexstr(sig))
         app_param = sha256(self.app_id.encode('utf8')).digest()
         server_challenge_b64 = base64.urlsafe_b64encode(self.salt).decode()
