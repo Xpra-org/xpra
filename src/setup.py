@@ -616,13 +616,11 @@ def make_constants(*paths, **kwargs):
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
-    if "optimize" in kw:
-        optimize = kw["optimize"]
-        del kw["optimize"]
+    optimize = kw.pop("optimize", None)
+    if optimize and not debug_ENABLED:
         if type(optimize)==bool:
             optimize = int(optimize)*3
-        if not debug_ENABLED:
-            add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
+        add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
     ignored_flags = kw.pop("ignored_flags", [])
     ignored_tokens = kw.pop("ignored_tokens", [])
 
@@ -2247,7 +2245,7 @@ if v4l2_ENABLED:
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 if cython_bencode_ENABLED:
-    bencode_pkgconfig = pkgconfig(optimize=not debug_ENABLED)
+    bencode_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig))
