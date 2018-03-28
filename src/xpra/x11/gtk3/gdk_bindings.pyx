@@ -29,7 +29,8 @@ verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
 from libc.stdint cimport uintptr_t
-from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_display_for, get_raw_display_for
+from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_raw_display_for
+from xpra.gtk_common.gtk3.gdk_bindings import get_display_for
 
 
 ###################################
@@ -435,7 +436,7 @@ cdef GdkAtom get_gdkatom(display_source, xatom):
     gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
     return gdk_atom
 
-cpdef get_pyatom(display_source, xatom):
+def get_pyatom(display_source, xatom):
     cdef GdkAtom gdk_atom = get_gdkatom(display_source, xatom)
     if gdk_atom==GDK_NONE:
         return ""
@@ -471,7 +472,7 @@ cdef _query_tree(pywindow):
         pyparent = None
     return (pyparent, pychildren)
 
-cpdef get_children(pywindow):
+def get_children(pywindow):
     (pyparent, pychildren) = _query_tree(pywindow)
     return pychildren
 
@@ -593,7 +594,7 @@ names_to_event_type = {}
 #sometimes we may want to debug routing for certain X11 event types
 debug_route_events = []
 
-cpdef get_error_text(code):
+def get_error_text(code):
     if type(code)!=int:
         return code
     cdef Display * display                              #@DuplicatedSignature

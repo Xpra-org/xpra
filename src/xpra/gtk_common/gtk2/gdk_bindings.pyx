@@ -108,7 +108,7 @@ cdef extern from "gtk-2.0/gtk/gtkselection.h":
         cGdkDisplay   *display
 
 
-cpdef get_display_for(obj):
+def get_display_for(obj):
     if obj is None:
         raise TypeError("Cannot get a display: instance is None!")
     if isinstance(obj, gdk.Display):

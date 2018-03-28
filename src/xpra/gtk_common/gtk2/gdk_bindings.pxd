@@ -20,7 +20,6 @@ cdef object wrap(cGObject * contents)
 cdef cGObject *unwrap(box, pyclass) except? NULL
 cdef void *pyg_boxed_get(v)
 
-cpdef get_display_for(obj)
 cdef cGdkDisplay * get_raw_display_for(obj) except? NULL
 
 #def sanitize_gtkselectiondata(obj)

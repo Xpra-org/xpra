@@ -83,7 +83,6 @@ cdef extern from "X11/Xlib.h":
         pass
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
-    char *XGetAtomName(Display *display, Atom atom)
 
     Window XDefaultRootWindow(Display * display)
 
@@ -362,14 +361,14 @@ cdef extern from "X11/extensions/Xdamage.h":
 
 
 
-cpdef _munge_packed_ints_to_longs(data):
+cdef _munge_packed_ints_to_longs(data):
     assert len(data) % sizeof(int) == 0
     n = len(data) / sizeof(int)
     format_from = "@" + "i" * n
     format_to = "@" + "l" * n
     return struct.pack(format_to, *struct.unpack(format_from, data))
 
-cpdef _munge_packed_longs_to_ints(data):
+cdef _munge_packed_longs_to_ints(data):
     assert len(data) % sizeof(long) == 0
     n = len(data) / sizeof(long)
     format_from = "@" + "l" * n
@@ -443,30 +442,9 @@ cdef class _X11WindowBindings(_X11CoreBindings):
                 raise ValueError("%s v%i.%i not supported; required: v%i.%i"
                                  % (extension, cmajor, cminor, major, minor))
 
-    cdef get_xatom(self, str_or_int):
-        """Returns the X atom corresponding to the given Python string or Python
-        integer (assumed to already be an X atom)."""
-        self.context_check()
-        cdef char* string
-        if isinstance(str_or_int, int):
-            i = int(str_or_int)
-            assert i>=0, "invalid int atom value %s" % str_or_int
-            return <Atom> i
-        if isinstance(str_or_int, long):
-            l = long(str_or_int)
-            assert l>=0, "invalid long atom value %s" % str_or_int
-            return <Atom> l
-        assert isinstance(str_or_int, str), "argument is not a string or number: %s" % type(str_or_int)
-        atom_string = strtobytes(str_or_int)
-        return XInternAtom(self.display, atom_string, False)
-
     def getDefaultRootWindow(self):
         return XDefaultRootWindow(self.display)
 
-
-    cpdef XGetAtomName(self, Atom atom):
-        v = XGetAtomName(self.display, atom)
-        return v[:]
 
     def MapWindow(self, Window xwindow):
         self.context_check()
@@ -729,13 +707,13 @@ cdef class _X11WindowBindings(_X11CoreBindings):
 
     def XGetSelectionOwner(self, atom):
         self.context_check()
-        return XGetSelectionOwner(self.display, self.get_xatom(atom))
+        return XGetSelectionOwner(self.display, self.xatom(atom))
 
     def XSetSelectionOwner(self, Window xwindow, atom, time=None):
         self.context_check()
         if time is None:
             time = CurrentTime
-        return XSetSelectionOwner(self.display, self.get_xatom(atom), xwindow, time)
+        return XSetSelectionOwner(self.display, self.xatom(atom), xwindow, time)
 
     def sendClientMessage(self, Window xtarget, Window xwindow, int propagate, int event_mask,
                           message_type, data0=0, data1=0, data2=0, data3=0, data4=0):
@@ -749,13 +727,13 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         e.type = ClientMessage
         e.xany.display = self.display
         e.xany.window = xwindow
-        e.xclient.message_type = self.get_xatom(message_type)
+        e.xclient.message_type = self.xatom(message_type)
         e.xclient.format = 32
-        e.xclient.data.l[0] = cast_to_long(self.get_xatom(data0))
-        e.xclient.data.l[1] = cast_to_long(self.get_xatom(data1))
-        e.xclient.data.l[2] = cast_to_long(self.get_xatom(data2))
-        e.xclient.data.l[3] = cast_to_long(self.get_xatom(data3))
-        e.xclient.data.l[4] = cast_to_long(self.get_xatom(data4))
+        e.xclient.data.l[0] = cast_to_long(self.xatom(data0))
+        e.xclient.data.l[1] = cast_to_long(self.xatom(data1))
+        e.xclient.data.l[2] = cast_to_long(self.xatom(data2))
+        e.xclient.data.l[3] = cast_to_long(self.xatom(data3))
+        e.xclient.data.l[4] = cast_to_long(self.xatom(data4))
         cdef Status s
         s = XSendEvent(self.display, xtarget, propagate, event_mask, &e)
         if s == 0:
@@ -770,7 +748,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         e.type = ButtonPress
         e.xany.display = self.display
         e.xany.window = xtarget
-        #e.xclient.message_type = get_xatom(message_type)
+        #e.xclient.message_type = xatom(message_type)
         e.xclient.format = 32
         if button==1:
             e.xbutton.button = Button1
@@ -804,7 +782,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         e.xany.display = self.display
         e.xany.window = xwindow
         e.xany.type = ClientMessage
-        e.xclient.message_type = self.get_xatom("_XEMBED")
+        e.xclient.message_type = self.xatom("_XEMBED")
         e.xclient.format = 32
         e.xclient.data.l[0] = CurrentTime
         e.xclient.data.l[1] = opcode
@@ -815,7 +793,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
 
-    cpdef sendConfigureNotify(self, Window xwindow):
+    def sendConfigureNotify(self, Window xwindow):
         self.context_check()
         cdef Window root_window
         root_window = XDefaultRootWindow(self.display)
@@ -895,7 +873,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
 
-    cpdef addXSelectInput(self, Window xwindow, add_mask):
+    def addXSelectInput(self, Window xwindow, add_mask):
         self.context_check()
         cdef XWindowAttributes curr
         XGetWindowAttributes(self.display, xwindow, &curr)
@@ -937,13 +915,13 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         cdef Status status
         cdef Atom xreq_type = AnyPropertyType
         if req_type:
-            xreq_type = self.get_xatom(req_type)
+            xreq_type = self.xatom(req_type)
         # This is the most bloody awful API I have ever seen.  You will probably
         # not be able to understand this code fully without reading
         # XGetWindowProperty's man page at least 3 times, slowly.
         status = XGetWindowProperty(self.display,
                                      xwindow,
-                                     self.get_xatom(property),
+                                     self.xatom(property),
                                      0,
                                      # This argument has to be divided by 4.  Thus
                                      # speaks the spec.
@@ -997,7 +975,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         cdef Atom xreq_type = AnyPropertyType
         status = XGetWindowProperty(self.display,
                                      xwindow,
-                                     self.get_xatom(property),
+                                     self.xatom(property),
                                      0,
                                      # This argument has to be divided by 4.  Thus
                                      # speaks the spec.
@@ -1020,7 +998,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
 
     def XDeleteProperty(self, Window xwindow, property):
         self.context_check()
-        XDeleteProperty(self.display, xwindow, self.get_xatom(property))
+        XDeleteProperty(self.display, xwindow, self.xatom(property))
 
     def XChangeProperty(self, Window xwindow, property, value):
         "Set a property on a window."
@@ -1035,8 +1013,8 @@ cdef class _X11WindowBindings(_X11CoreBindings):
         data_str = data
         #print("XChangeProperty(%#x, %s, %s) data=%s" % (xwindow, property, value, str([hex(x) for x in data_str])))
         XChangeProperty(self.display, xwindow,
-                         self.get_xatom(property),
-                         self.get_xatom(type),
+                         self.xatom(property),
+                         self.xatom(type),
                          format,
                          PropModeReplace,
                          <unsigned char *>data_str,

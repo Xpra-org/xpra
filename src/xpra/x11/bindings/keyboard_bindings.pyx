@@ -275,7 +275,7 @@ cdef class _X11KeyboardBindings(_X11CoreBindings):
         return "X11KeyboardBindings(%s)" % self.display_name
 
 
-    cpdef int setxkbmap(self, rules_name, model, layout, variant, options) except -1:
+    def setxkbmap(self, rules_name, model, layout, variant, options):
         self.context_check()
         log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
         if not self.hasXkb():
