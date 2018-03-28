@@ -420,6 +420,7 @@ class ServerCore(object):
 
 
     def init_html_proxy(self, opts):
+        httplog("init_html_proxy(..) options: tcp_proxy=%s, html='%s'", opts.tcp_proxy, opts.html)
         self._tcp_proxy = opts.tcp_proxy
         #opts.html can contain a boolean, "auto" or the path to the webroot
         www_dir = None
@@ -433,35 +434,36 @@ class ServerCore(object):
                 #we need a socket!
                 if self._html:
                     #html was enabled, so log an error:
-                    log.error("Error: cannot use the html server without a socket")
+                    httplog.error("Error: cannot use the html server without a socket")
                 self._html = False
+        httplog("init_html_proxy(..) html=%s", self._html)
         if self._html is not False:
             try:
                 from xpra.net.websocket import WebSocketConnection
                 assert WebSocketConnection
                 self._html = True
             except ImportError as e:
-                log("importing WebSocketConnection", exc_info=True)
+                httplog("importing WebSocketConnection", exc_info=True)
                 if self._html is None:  #auto mode
-                    log.info("html server unavailable, cannot find websockify module")
+                    httplog.info("html server unavailable, cannot find websockify module")
                 else:
-                    log.error("Error: cannot import websockify connection handler:")
-                    log.error(" %s", e)
-                    log.error(" the html server will not be available")
+                    httplog.error("Error: cannot import websockify connection handler:")
+                    httplog.error(" %s", e)
+                    httplog.error(" the html server will not be available")
                 self._html = False
         #make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
         self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
         self._http_headers_dir = os.path.abspath(os.path.join(self._www_dir, "../http-headers"))
         if not os.path.exists(self._www_dir) and self._html:
-            log.error("Error: cannot find the html web root")
-            log.error(" '%s' does not exist", self._www_dir)
+            httplog.error("Error: cannot find the html web root")
+            httplog.error(" '%s' does not exist", self._www_dir)
             self._html = False
         if self._html:
-            log.info("serving html content from: %s", self._www_dir)
+            httplog.info("serving html content from: %s", self._www_dir)
         if self._html and self._tcp_proxy:
-            log.warn("Warning: the built in html server is enabled,")
-            log.warn(" disabling the tcp-proxy option")
+            httplog.warn("Warning: the built in html server is enabled,")
+            httplog.warn(" disabling the tcp-proxy option")
             self._tcp_proxy = False
 
 
