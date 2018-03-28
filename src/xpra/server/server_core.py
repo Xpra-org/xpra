@@ -1045,7 +1045,7 @@ class ServerCore(object):
         else:
             http = line1.find(b"HTTP/")>0
             is_ssl = False
-        if http:
+        if http and self._html:
             self.start_http_socket(socktype, conn, is_ssl, peek_data)
             return False, conn, None
         if self._tcp_proxy:
