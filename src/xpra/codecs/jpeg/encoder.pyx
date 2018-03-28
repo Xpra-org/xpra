@@ -47,7 +47,6 @@ cdef extern from "turbojpeg.h":
 
     int TJFLAG_BOTTOMUP
     int TJFLAG_FASTUPSAMPLE
-    int TJFLAG_FASTUPSAMPLE
     int TJFLAG_FASTDCT
     int TJFLAG_ACCURATEDCT
 

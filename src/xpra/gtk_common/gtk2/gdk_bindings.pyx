@@ -23,6 +23,7 @@ from libc.stdint cimport uintptr_t
 cdef extern from "gdk/gdk.h":
     ctypedef unsigned int gboolean
     ctypedef char gchar
+    ctypedef void* GdkAtom
     GdkAtom gdk_atom_intern(const gchar *atom_name, gboolean only_if_exists)
 
 # Serious black magic happens here (I owe these guys beers):
@@ -92,10 +93,6 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
     ctypedef struct cGdkWindow "GdkWindow":
         pass
-
-    ctypedef struct _GdkAtom:
-        pass
-    ctypedef _GdkAtom* GdkAtom
 
 
 cdef extern from "gtk-2.0/gtk/gtkselection.h":
