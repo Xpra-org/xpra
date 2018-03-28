@@ -1237,17 +1237,23 @@ the keyboard directly (games, etc.).
 Tells the server to process all keyboard input untranslated.
 Both the client and the server must be using the same type of keyboard
 interface. (ie: both using X11)
+.TP
 \fB\-\-keyboard\-layout\fP=\fILAYOUTSTRING\fP
 The keyboard layout is normally detected automatically.
 This option overrides it.
+.TP
 \fB\-\-keyboard\-layouts\fP=\fILAYOUTS\fP
 The list of keyboard layouts to enable.
+.TP
 \fB\-\-keyboard\-variant\fP=\fIVARIANT\fP
 Override for the keyboard layout variant.
+.TP
 \fB\-\-keyboard\-variants\fP=\fIVARIANTS\fP
 Override for the keyboard layout variants.
+.TP
 \fB\-\-keyboard\-options\fP=\fIOPTIONS\fP
 Override for the keyboard options sent to the server.
+.TP
 \fB\-\-sound\-source\fP=\fIPLUGIN\fP
 Specifies the GStreamer sound plugin used for capturing the sound stream.
 This affects "speaker forwarding" on the server, and "microphone" forwarding
@@ -1288,12 +1294,6 @@ Will be replaced by the remote server's hostname.
 .RE
 .PP
 
-.TP
-\fB\-\-client\-toolkit\fP=\fITOOLKIT\fP
-Specifies the client toolkit to use.  This changes the user interface toolkit
-used to draw the windows and may affect the availability of other features.
-The 'gtk2' toolkit is the one with the most features.
-Use the special value 'help' to get a list of options.
 .TP
 \fB\-\-border\fP=\fIBORDER\fP
 Specifies the color and size of the border to draw inside every xpra window.
