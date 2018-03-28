@@ -167,7 +167,7 @@ class ClientTray(ClientWidgetBase):
         tw = self.tray_widget
         if tw:
             #some tray implementations can't deal with memoryviews..
-            if isinstance(pixels, (memoryview, _buffer, bytearray)):
+            if isinstance(pixels, (memoryview, _buffer or bytearray, bytearray)):
                 pixels = memoryview_to_bytes(pixels)
             tw.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
 
