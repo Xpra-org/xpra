@@ -369,10 +369,6 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
 
     GdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
-    ctypedef struct _GdkAtom:
-        pass
-    ctypedef _GdkAtom* GdkAtom
-    GdkAtom GDK_NONE
     # FIXME: this should have stricter type checking
     object PyGdkAtom_New(GdkAtom)
     Atom gdk_x11_get_xatom_by_name(char *atom_name)
