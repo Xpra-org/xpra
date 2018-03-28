@@ -77,6 +77,7 @@ from xpra.net import compression
 INFINITY = float("inf")
 TRANSPARENCY_ENCODINGS = ("webp", "png", "rgb32")
 LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L")
+REFRESH_ENCODINGS = ("webp", "png", "rgb24", "rgb32", "jpeg2000")
 
 """
 We create a Window Source for each window we send pixels for.
@@ -659,7 +660,7 @@ class WindowSource(WindowIconSource):
             ropts = set(self.client_refresh_encodings)
         else:
             #sane defaults:
-            ropts = set(("webp", "png", "rgb24", "rgb32", "jpeg2000"))  #default encodings for auto-refresh
+            ropts = set(REFRESH_ENCODINGS)  #default encodings for auto-refresh
         if self.refresh_quality<100 and self.image_depth>16:
             ropts.add("jpeg")
         are = None
@@ -1693,8 +1694,9 @@ class WindowSource(WindowIconSource):
         if self.can_refresh() and regions and ret>0:
             now = monotonic_time()
             options = self.get_refresh_options()
-            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s", 1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions)
-            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=self.get_refresh_exclude(), get_best_encoding=self.get_refresh_encoding)
+            refresh_exclude = self.get_refresh_exclude()
+            refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s", 1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
+            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 
     def get_refresh_encoding(self, w, h, speed, quality, coding):
