@@ -13,6 +13,7 @@ import signal
 from xpra.util import envbool
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -190,7 +191,7 @@ class CoreX11WindowModel(WindowModelStub):
     def __init__(self, client_window):
         log("new window %#x", client_window.xid)
         super(CoreX11WindowModel, self).__init__()
-        self.xid = client_window.xid
+        self.xid = get_xwindow(client_window)
         self.client_window = client_window
         self.client_window_saved_events = self.client_window.get_events()
         self._composite = None

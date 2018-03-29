@@ -39,9 +39,9 @@ from xpra.util import (AdHocStruct, typedict, envint, envbool, nonl, csv,
                        MOVERESIZE_SIZE_RIGHT,
                        MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
                        MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE)
-from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, get_xid, is_gtk3
+from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, import_cairo, is_gtk3
 from xpra.gtk_common.gobject_util import no_arg_signal
-from xpra.gtk_common.gtk_util import (get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default, drag_status,
+from xpra.gtk_common.gtk_util import (get_xwindow, get_pixbuf_from_data, get_default_root_window, is_realized, display_get_default, drag_status,
     newTargetEntry, drag_context_targets, drag_context_actions, drag_dest_window, drag_widget_get_data,
     gio_File, query_info_async, load_contents_async, load_contents_finish,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS, SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
@@ -251,7 +251,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #TODO: use a generic window handle function
             #this only used for debugging for now
             if w and POSIX:
-                return get_xid(w)
+                return get_xwindow(w)
             return 0
         dest_window = xid(drag_dest_window(context))
         source_window = xid(context.get_source_window())
@@ -819,7 +819,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #(if the default is used, you cannot override the window icon)
             self.set_wmclass(wmclass_name, wmclass_class)
         elif HAS_X11_BINDINGS:
-            xid = get_xid(self.get_window())
+            xid = get_xwindow(self.get_window())
             with xsync:
                 X11Window.setClassHint(xid, wmclass_class, wmclass_name)
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
@@ -829,7 +829,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not HAS_X11_BINDINGS or not XSHAPE:
             return
         def do_set_shape():
-            xid = get_xid(self.get_window())
+            xid = get_xwindow(self.get_window())
             x_off, y_off = shape.get("x", 0), shape.get("y", 0)
             for kind, name in SHAPE_KIND.items():       #@UndefinedVariable
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
@@ -1147,7 +1147,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             workspacelog("window workspace unchanged: %s", wn(workspace))
             return
         gdkwin = self.get_window()
-        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", get_xid(gdkwin), self.is_mapped(), gdkwin.is_visible())
+        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s", get_xwindow(gdkwin), self.is_mapped(), gdkwin.is_visible())
         with xsync:
             send_wm_workspace(root, gdkwin, workspace)
 
@@ -1172,9 +1172,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return default_value        #window is not realized yet
         value = self.xget_u32_property(target, prop)
         if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), get_xid(target))
+            workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), get_xwindow(target))
             return value
-        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, get_xid(target), wn(default_value))
+        workspacelog("do_get_workspace %s unset on window %#x, returning default value=%s", prop, get_xwindow(target), wn(default_value))
         return  default_value
 
 
@@ -1426,8 +1426,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         statelog("initiate_moveresize_X11%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction), button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
         root = self.get_window().get_screen().get_root_window()
-        root_xid = get_xid(root)
-        xwin = get_xid(self.get_window())
+        root_xid = get_xwindow(root)
+        xwin = get_xwindow(self.get_window())
         with xsync:
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",

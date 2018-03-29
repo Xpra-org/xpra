@@ -20,7 +20,8 @@ xinputlog = Logger("posix", "xinput")
 
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
-from xpra.gtk_common.gobject_compat import get_xid, is_gtk3
+from xpra.gtk_common.gtk_util import get_xwindow
+from xpra.gtk_common.gobject_compat import is_gtk3
 
 try:
     from xpra.x11.bindings.window_bindings import X11WindowBindings
@@ -457,7 +458,7 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
             #try to load it:
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings       #@UnresolvedImport
             device_bell = X11KeyboardBindings().device_bell
-        device_bell(get_xid(window), device, bell_class, bell_id, percent, bell_name)
+        device_bell(get_xwindow(window), device, bell_class, bell_id, percent, bell_name)
     try:
         from xpra.gtk_common.error import xsync
         with xsync:
@@ -477,7 +478,7 @@ def _send_client_message(window, message_type, *values):
         X11Window = X11WindowBindings()
         root_xid = X11Window.getDefaultRootWindow()
         if window:
-            xid = get_xid(window)
+            xid = get_xwindow(window)
         else:
             xid = root_xid
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]

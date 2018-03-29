@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.server.source.client_connection import ClientConnection
-from xpra.gtk_common.gobject_compat import get_xid
+from xpra.gtk_common.gtk_util import get_xwindow
 from xpra.gtk_common.error import xsync
 from xpra.x11.gtk_x11.prop import prop_get, get_python_type
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
@@ -16,7 +16,7 @@ log = Logger("x11", "server")
 
 
 def get_x11_window_value(filter_object, window):
-    xid = get_xid(window)
+    xid = get_xwindow(window)
     #log("get_x11_window_value(%s, %s) xid=%#x", filter_object, window, xid)
     with xsync:
         x11type = window_bindings.GetWindowPropertyType(xid, filter_object.property_name)

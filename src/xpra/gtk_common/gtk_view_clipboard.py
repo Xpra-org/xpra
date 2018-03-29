@@ -13,10 +13,9 @@ gdk = import_gdk()
 pango = import_pango()
 gobject = import_gobject()
 
-from xpra.gtk_common.gtk_util import TableBuilder, label, GetClipboard
+from xpra.gtk_common.gtk_util import TableBuilder, label, get_xwindow, GetClipboard
 from xpra.platform.paths import get_icon
 from xpra.platform.features import CLIPBOARDS
-from xpra.gtk_common.gobject_compat import get_xid
 
 
 class ClipboardInstance(object):
@@ -222,7 +221,7 @@ class ClipboardStateInfoWindow(object):
         if icon:
             self.window.set_icon(icon)
         try:
-            self.add_event("ALL", "window=%s, xid=%#x" % (self.window, get_xid(self.window.get_window())))
+            self.add_event("ALL", "window=%s, xid=%#x" % (self.window, get_xwindow(self.window.get_window())))
         except:
             self.add_event("ALL", "window=%s" % self.window)
 

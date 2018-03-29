@@ -13,6 +13,7 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
+from xpra.gtk_common.gtk_util import get_xwindow
 
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk2.selection import ManagerSelection
@@ -165,7 +166,7 @@ def wm_check(display, wm_name, upgrading=False):
             continue
         def xid(w):
             if w:
-                return "%#x" % w.xid
+                return "%#x" % get_xwindow(w)
             return None
         log("_NET_SUPPORTING_WM_CHECK for screen %i: %s (root=%s)", i, xid(ewmh_wm), xid(root))
         if ewmh_wm:

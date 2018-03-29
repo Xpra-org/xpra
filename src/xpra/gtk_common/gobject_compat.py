@@ -72,13 +72,6 @@ def try_import_GdkX11():
     return None
 
 
-def get_xid(window):
-    if is_gtk3():
-        return window.get_xid()
-    else:
-        return window.xid
-
-
 def import_gobject2():
     import gobject
     return gobject

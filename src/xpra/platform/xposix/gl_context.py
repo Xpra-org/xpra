@@ -9,8 +9,7 @@ log = Logger("opengl")
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
-from xpra.gtk_common.gobject_compat import get_xid
-from xpra.gtk_common.gtk_util import display_get_default, make_temp_window
+from xpra.gtk_common.gtk_util import display_get_default, get_xwindow, make_temp_window
 from ctypes import c_int, byref, cast, POINTER
 from OpenGL import GLX
 from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
@@ -150,7 +149,7 @@ class GLXContext(object):
 
     def get_paint_context(self, gdk_window):
         assert self.context and gdk_window
-        return GLXWindowContext(self.context, get_xid(gdk_window))
+        return GLXWindowContext(self.context, get_xwindow(gdk_window))
 
     def destroy(self):
         c = self.context

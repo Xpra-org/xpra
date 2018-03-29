@@ -20,7 +20,7 @@ from xpra.server.rfb.rfb_server import RFBServer
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import xswallow
-from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
+from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size, get_xwindow
 from xpra.x11.gtk2.models.model_stub import WindowModelStub
 from xpra.x11.gtk2.gdk_bindings import (
                                add_catchall_receiver,       #@UnresolvedImport
@@ -94,7 +94,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         self.resize_exact = resize_exact
 
     def __repr__(self):
-        return "DesktopModel(%#x)" % (self.client_window.xid)
+        return "DesktopModel(%#x)" % get_xwindow(self.client_window)
 
 
     def setup(self):
