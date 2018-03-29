@@ -410,7 +410,11 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
     cdef register_parser(self):
         log("register_parser()")
         if self.opcode>0:
-            from xpra.x11.gtk2.gdk_bindings import add_x_event_parser
+            from xpra.gtk_common.gobject_compat import is_gtk3
+            if is_gtk3():
+                from xpra.x11.gtk3.gdk_bindings import add_x_event_parser
+            else:
+                from xpra.x11.gtk2.gdk_bindings import add_x_event_parser
             add_x_event_parser(self.opcode, self.parse_xi_event)
 
     cdef register_gdk_events(self):
@@ -418,7 +422,11 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         if self.opcode<=0:
             return
         global XI_EVENT_NAMES
-        from xpra.x11.gtk2.gdk_bindings import add_x_event_signal, add_x_event_type_name
+        from xpra.gtk_common.gobject_compat import is_gtk3
+        if is_gtk3():
+            from xpra.x11.gtk3.gdk_bindings import add_x_event_signal, add_x_event_type_name
+        else:
+            from xpra.x11.gtk2.gdk_bindings import add_x_event_signal, add_x_event_type_name
         for e, xi_event_name in {
             XI_DeviceChanged    : "device-changed",
             XI_KeyPress         : "key-press",
