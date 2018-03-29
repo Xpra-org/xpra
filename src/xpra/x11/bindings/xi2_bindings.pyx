@@ -381,7 +381,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
             log.warn("Warning: no XI2 %i.%i support,", major, minor)
             log.warn(" server supports version %i.%i only", rmajor, rminor)
             return 0, 0
-        log("get_xi_version%s=%i", (major, minor), (rmajor, rminor))
+        log("get_xi_version%s=%s", (major, minor), (rmajor, rminor))
         return rmajor, rminor
 
     cdef int get_xi_opcode(self, int major=2, int minor=2):
