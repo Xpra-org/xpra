@@ -192,7 +192,8 @@ class X11ServerBase(X11ServerCore):
                 self.input_devices = "uinput"
                 xtest = XTestPointerDevice()
                 ox, oy = 100, 100
-                xtest.move_pointer(0, ox, oy)
+                with xsync:
+                    xtest.move_pointer(0, ox, oy)
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
                 nx, ny = 200, 200
                 self.pointer_device.move_pointer(0, nx, ny)
