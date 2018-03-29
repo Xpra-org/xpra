@@ -16,6 +16,7 @@ dbuslog = Logger("posix", "dbus")
 traylog = Logger("posix", "tray")
 menulog = Logger("posix", "menu")
 mouselog = Logger("posix", "mouse")
+xinputlog = Logger("posix", "xinput")
 
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv
@@ -587,7 +588,7 @@ class XI2_Window(object):
             if xid==0 or xid==root:
                 break
             windows.append(xid)
-        log("get_parent_windows(%#x)=%s", oxid, csv(hex(x) for x in windows))
+        xinputlog("get_parent_windows(%#x)=%s", oxid, csv(hex(x) for x in windows))
         return windows
 
 
@@ -596,7 +597,7 @@ class XI2_Window(object):
         client = window._client
         if client.readonly:
             return
-        log("do_xi_button(%s) server_input_devices=%s", event, client.server_input_devices)
+        xinputlog("do_xi_button(%s) server_input_devices=%s", event, client.server_input_devices)
         if client.server_input_devices=="xi" or (client.server_input_devices=="uinput" and client.server_precise_wheel):
             #skip synthetic scroll events,
             #as the server should synthesize them from the motion events
@@ -877,7 +878,7 @@ class ClientExtras(object):
 
     def setup_xi(self):
         if self.client.server_input_devices not in ("xi", "uinput"):
-            log.info("server does not support xi input devices")
+            xinputlog.info("server does not support xi input devices")
             if self.client.server_input_devices:
                 log.info(" server uses: %s", self.client.server_input_devices)
             return
@@ -896,9 +897,9 @@ class ClientExtras(object):
                     if devices:
                         self.client.send_input_devices("xi", devices)
         except Exception as e:
-            log("enable_xi2()", exc_info=True)
-            log.error("Error: cannot enable XI2 events")
-            log.error(" %s", e)
+            xinputlog("enable_xi2()", exc_info=True)
+            xinputlog.error("Error: cannot enable XI2 events")
+            xinputlog.error(" %s", e)
         else:
             #register our enhanced event handlers:
             self.add_xi2_method_overrides()
