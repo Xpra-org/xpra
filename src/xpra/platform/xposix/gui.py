@@ -574,7 +574,9 @@ class XI2_Window(object):
         self.window = None
 
     def configured(self, *_args):
-        self.windows = self.get_parent_windows(self.xid)
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            self.windows = self.get_parent_windows(self.xid)
         for window in self.windows:
             self.XI2.connect(window, "XI_Motion", self.do_xi_motion)
             self.XI2.connect(window, "XI_ButtonPress", self.do_xi_button)
