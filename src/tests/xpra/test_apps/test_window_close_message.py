@@ -14,11 +14,11 @@ def main():
 	def close(*args):
 		from xpra.x11.gtk2 import gdk_display_source
 		assert gdk_display_source
-		from xpra.gtk_common.gobject_compat import get_xid
+		from xpra.gtk_common.gtk_util import get_xwindow
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = window.get_window().get_screen().get_root_window()
-		root_xid = get_xid(root)
+		root_xid = get_xwindow(root)
 		xwin = get_xid(window.get_window())
 		SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]

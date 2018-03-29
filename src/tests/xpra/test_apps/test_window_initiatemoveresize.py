@@ -24,9 +24,9 @@ def main():
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
-		from xpra.gtk_common.gobject_compat import get_xid
-		root_xid = get_xid(root)
-		xwin = get_xid(window.get_window())
+		from xpra.gtk_common.gtk_util import get_xwindow
+		root_xid = get_xwindow(root)
+		xwin = get_xwindow(window.get_window())
 		X11Core = X11CoreBindings()
 		X11Core.UngrabPointer()
 		X11Window = X11WindowBindings()

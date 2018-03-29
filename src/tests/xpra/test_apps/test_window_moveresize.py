@@ -36,12 +36,12 @@ class MoveWindow(gtk.Window):
 		new_x, new_y, new_width, new_height = self.get_new_geometry()
 		from xpra.x11.gtk2 import gdk_display_source
 		assert gdk_display_source
-		from xpra.gtk_common.gobject_compat import get_xid
+		from xpra.gtk_common.gtk_util import get_xwindow
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = self.get_window().get_screen().get_root_window()
-		root_xid = get_xid(root)
-		xwin = get_xid(self.get_window())
+		root_xid = get_xwindow(root)
+		xwin = get_xwindow(self.get_window())
 		SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask
