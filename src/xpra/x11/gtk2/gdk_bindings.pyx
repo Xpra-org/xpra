@@ -920,8 +920,8 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
 
     try:
         pyev = parse_xevent(e_gdk)
-    except Exception as e:
-        log.error("Error parsing X11 event", exc_info=True)
+    except Exception as exc:
+        log.error("Error parsing X11 event: %s", exc, exc_info=True)
         return GDK_FILTER_CONTINUE
     log("parse_event(..)=%s", pyev)
     if not pyev:
