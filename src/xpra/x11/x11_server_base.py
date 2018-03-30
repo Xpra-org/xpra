@@ -138,17 +138,25 @@ class UInputPointerDevice(UInputDevice):
 
 class UInputTouchpadDevice(UInputDevice):
 
+    def __init__(self, device, device_path, root_w, root_h):
+        UInputDevice.__init__(self, device, device_path)
+        self.root_w = root_w
+        self.root_h = root_h
+
     def __repr__(self):
         return "UInput touchpad device %s" % self.device_path
 
     def move_pointer(self, screen_no, x, y, *_args):
         mouselog("UInputTouchpadDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
         import uinput
-        #self.device.emit(uinput.BTN_TOUCH, 1, syn=False)
-        self.device.emit(uinput.ABS_X, x, syn=False)
-        self.device.emit(uinput.ABS_Y, y, syn=False)
-        #self.device.emit(uinput.ABS_PRESSURE, 255, syn=False)
-        #self.device.emit(uinput.BTN_TOUCH, 0, syn=True)
+        self.device.emit(uinput.BTN_TOUCH, 1, syn=False)
+        self.device.emit(uinput.ABS_X, x*(2**24)//self.root_w, syn=False)
+        self.device.emit(uinput.ABS_Y, y*(2**24)//self.root_h, syn=False)
+        self.device.emit(uinput.ABS_PRESSURE, 255, syn=False)
+        self.device.emit(uinput.BTN_TOUCH, 0, syn=True)
+        with xsync:
+            cx, cy = X11Keyboard.query_pointer()
+            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
 
 
 def _get_antialias_hintstyle(antialias):
@@ -190,6 +198,12 @@ class X11ServerBase(X11ServerCore):
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
 
+    def configure_best_screen_size(self):
+        root_w, root_h = X11ServerCore.configure_best_screen_size(self)
+        if self.touchpad_device:
+            self.touchpad_device.root_w = root_w
+            self.touchpad_device.root_h = root_h
+        return root_w, root_h
 
     def last_client_exited(self):
         self.reset_settings()
@@ -213,7 +227,8 @@ class X11ServerBase(X11ServerCore):
             uinput_device = touchpad.get("uinput")
             device_path = touchpad.get("device")
             if uinput_device:
-                self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path)
+                root_w, root_h = self.get_root_window_size()
+                self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
         try:
             mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:

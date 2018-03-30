@@ -68,7 +68,7 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     conf_files = []
     for i, dev_type in (
         (0, "pointer"),
-        #(1, "touchpad"),
+        (1, "touchpad"),
         ) :
         f = save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid)
         conf_files.append(f)

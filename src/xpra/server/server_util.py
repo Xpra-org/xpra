@@ -364,10 +364,10 @@ def create_uinput_touchpad_device(uuid, uid):
     import uinput
     events = (
         uinput.BTN_TOUCH,
-        uinput.BTN_TOOL_PEN,
         uinput.ABS_X + (0, 2**24-1, 0, 0),
         uinput.ABS_Y + (0, 2**24-1, 0, 0),
-        uinput.ABS_PRESSURE + (0, 2**24-1, 0, 0),
+        uinput.ABS_PRESSURE + (0, 255, 0, 0),
+        #uinput.BTN_TOOL_PEN,
         )
     name = "Xpra Virtual Touchpad %s" % uuid
     return create_uinput_device(uuid, uid, events, name)

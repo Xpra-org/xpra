@@ -513,7 +513,7 @@ class X11ServerCore(GTKServerBase):
         screenlog("maximum client resolution is %sx%s (current server resolution is %sx%s)", max_w, max_h, root_w, root_h)
         if max_w<=0 or max_h<=0:
             #invalid - use fallback
-            return  root_w, root_h
+            return root_w, root_h
         return self.set_screen_size(max_w, max_h)
 
     def get_best_screen_size(self, desired_w, desired_h, bigger=True):
@@ -619,7 +619,7 @@ class X11ServerCore(GTKServerBase):
         #(many apps will only query xinerama again if they get a randr notification)
         if (w==root_w and h==root_h) and not xinerama_changed:
             screenlog.info("best resolution matching %sx%s is unchanged: %sx%s", desired_w, desired_h, w, h)
-            return  root_w, root_h
+            return root_w, root_h
         try:
             if (w==root_w and h==root_h) and xinerama_changed:
                 #xinerama was changed, but the RandR resolution will not be...
@@ -687,7 +687,7 @@ class X11ServerCore(GTKServerBase):
             self.idle_add(show_dpi)
         except Exception as e:
             screenlog.error("ouch, failed to set new resolution: %s", e, exc_info=True)
-        return  root_w, root_h
+        return root_w, root_h
 
 
     def _process_server_settings(self, _proto, packet):
