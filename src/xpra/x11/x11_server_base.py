@@ -28,7 +28,7 @@ from xpra.os_util import hexstr
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 
 MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
-SCALED_FONT_ANTIALIAS = envbool("XRV_SCALED_FONT_ANTIALIAS", False)
+SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
 class UInputPointerDevice(object):
