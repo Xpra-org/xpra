@@ -31,7 +31,7 @@ MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
-class UInputPointerDevice(object):
+class UInputDevice(object):
 
     def __init__(self, device, device_path):
         self.device = device
@@ -50,27 +50,6 @@ class UInputPointerDevice(object):
                     self.wheel_motion(4, 1)
         except:
             log.warn("cannot query XInput protocol version", exc_info=True)
-
-    def __repr__(self):
-        return "UInput device %s" % self.device_path
-
-    def move_pointer(self, screen_no, x, y, *_args):
-        mouselog("UInput.move_pointer(%i, %s, %s)", screen_no, x, y)
-        #calculate delta:
-        with xsync:
-            cx, cy = X11Keyboard.query_pointer()
-            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
-            dx = x-cx
-            dy = y-cy
-            mouselog("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
-        import uinput
-        #self.device.emit(uinput.ABS_X, x, syn=(dy==0))
-        #self.device.emit(uinput.ABS_Y, y, syn=True)
-        if dx or dy:
-            if dx!=0:
-                self.device.emit(uinput.REL_X, dx, syn=(dy==0))
-            if dy!=0:
-                self.device.emit(uinput.REL_Y, dy, syn=True)
 
     def click(self, button, pressed, *_args):
         import uinput
@@ -116,7 +95,8 @@ class UInputPointerDevice(object):
         if button in (4, 5):
             val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
         else:
-            log.warn("Warning: %s cannot handle wheel motion %i", self, button)
+            log.warn("Warning: %s", self)
+            log.warn(" cannot handle wheel motion %i", button)
             log.warn(" this event has been dropped")
             return
         delta = self.wheel_delta+val
@@ -132,6 +112,43 @@ class UInputPointerDevice(object):
 
     def has_precise_wheel(self):
         return True
+
+class UInputPointerDevice(UInputDevice):
+
+    def __repr__(self):
+        return "UInput pointer device %s" % self.device_path
+
+    def move_pointer(self, screen_no, x, y, *_args):
+        mouselog("UInputPointerDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
+        #calculate delta:
+        with xsync:
+            cx, cy = X11Keyboard.query_pointer()
+            mouselog("X11Keyboard.query_pointer=%s, %s", cx, cy)
+            dx = x-cx
+            dy = y-cy
+            mouselog("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
+        import uinput
+        #self.device.emit(uinput.ABS_X, x, syn=(dy==0))
+        #self.device.emit(uinput.ABS_Y, y, syn=True)
+        if dx or dy:
+            if dx!=0:
+                self.device.emit(uinput.REL_X, dx, syn=(dy==0))
+            if dy!=0:
+                self.device.emit(uinput.REL_Y, dy, syn=True)
+
+class UInputTouchpadDevice(UInputDevice):
+
+    def __repr__(self):
+        return "UInput touchpad device %s" % self.device_path
+
+    def move_pointer(self, screen_no, x, y, *_args):
+        mouselog("UInputTouchpadDevice.move_pointer(%i, %s, %s)", screen_no, x, y)
+        import uinput
+        #self.device.emit(uinput.BTN_TOUCH, 1, syn=False)
+        self.device.emit(uinput.ABS_X, x, syn=False)
+        self.device.emit(uinput.ABS_Y, y, syn=False)
+        #self.device.emit(uinput.ABS_PRESSURE, 255, syn=False)
+        #self.device.emit(uinput.BTN_TOUCH, 0, syn=True)
 
 
 def _get_antialias_hintstyle(antialias):
@@ -182,37 +199,45 @@ class X11ServerBase(X11ServerCore):
         #(this runs in the main thread - before the main loop starts)
         #for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
+        touchpad = devices.get("touchpad")
+        mouselog("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
         self.input_devices = "xtest"
         if pointer:
-            mouselog("init_virtual_devices(%s) got pointer=%s", devices, pointer)
             uinput_device = pointer.get("uinput")
-            #name = pointer.get("name")
             device_path = pointer.get("device")
             if uinput_device:
                 self.input_devices = "uinput"
-                xtest = XTestPointerDevice()
-                ox, oy = 100, 100
-                with xsync:
-                    xtest.move_pointer(0, ox, oy)
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
-                nx, ny = 200, 200
-                self.pointer_device.move_pointer(0, nx, ny)
-                def verify_uinput_moved():
-                    pos = None  #@UnusedVariable
-                    with xswallow:
-                        pos = X11Keyboard.query_pointer()
-                        mouselog("X11Keyboard.query_pointer=%s", pos)
-                    if pos==(ox, oy):
-                        mouselog.warn("Warning: %s failed verification", self.pointer_device)
-                        mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
-                        mouselog.warn(" usign XTest fallback")
-                        self.pointer_device = xtest
-                        self.input_devices = "xtest"
-                self.timeout_add(1000, verify_uinput_moved)
+                self.verify_uinput_pointer_device()
+        if self.input_devices=="uinput" and touchpad:
+            uinput_device = touchpad.get("uinput")
+            device_path = touchpad.get("device")
+            if uinput_device:
+                self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path)
         try:
             mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:
             mouselog("cannot get pointer device class from %s: %s", self.pointer_device, e)
+
+    def verify_uinput_pointer_device(self):
+        xtest = XTestPointerDevice()
+        ox, oy = 100, 100
+        with xsync:
+            xtest.move_pointer(0, ox, oy)
+        nx, ny = 200, 200
+        self.pointer_device.move_pointer(0, nx, ny)
+        def verify_uinput_moved():
+            pos = None  #@UnusedVariable
+            with xswallow:
+                pos = X11Keyboard.query_pointer()
+                mouselog("X11Keyboard.query_pointer=%s", pos)
+            if pos==(ox, oy):
+                mouselog.warn("Warning: %s failed verification", self.pointer_device)
+                mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
+                mouselog.warn(" usign XTest fallback")
+                self.pointer_device = xtest
+                self.input_devices = "xtest"
+        self.timeout_add(1000, verify_uinput_moved)
 
 
     def dpi_changed(self):

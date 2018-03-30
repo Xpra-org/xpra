@@ -312,14 +312,37 @@ def has_uinput():
         return False
     return True
 
-def create_uinput_pointer_device(uuid, uid):
+def create_uinput_device(uuid, uid, events, name):
     log = get_util_logger()
+    import uinput
+    BUS_USB = 0x03
+    #BUS_VIRTUAL = 0x06
+    VENDOR = 0xffff
+    PRODUCT = 0x1000
+    #our xpra_udev_product_version script will use the version attribute to set
+    #the udev OWNER value
+    VERSION = uid
     try:
-        import uinput
-    except (ImportError, NameError) as e:
-        log.error("Error: cannot access python uinput module:")
-        log.error(" %s", e)
+        device = uinput.Device(events, name=name, bustype=BUS_USB, vendor=VENDOR, product=PRODUCT, version=VERSION)
+    except OSError as e:
+        log("uinput.Device creation failed", exc_info=True)
+        if os.getuid()==0:
+            #running as root, this should work!
+            log.error("Error: cannot open uinput,")
+            log.error(" make sure that the kernel module is loaded")
+            log.error(" and that the /dev/uinput device exists:")
+            log.error(" %s", e)
+        else:
+            log.info("cannot access uinput: %s", e)
         return None
+    dev_path = get_uinput_device_path(device)
+    if not dev_path:
+        device.destroy()
+        return None
+    return name, device, dev_path
+
+def create_uinput_pointer_device(uuid, uid):
+    import uinput
     events = (
         uinput.REL_X,
         uinput.REL_Y,
@@ -334,44 +357,45 @@ def create_uinput_pointer_device(uuid, uid):
         uinput.BTN_FORWARD,
         uinput.BTN_BACK,
         )
-    BUS_USB = 0x03
-    #BUS_VIRTUAL = 0x06
-    VENDOR = 0xffff
-    PRODUCT = 0x1000
-    #our xpra_udev_product_version script will use the version attribute to set
-    #the udev OWNER value
-    VERSION = uid
     name = "Xpra Virtual Pointer %s" % uuid
-    try:
-        uinput_pointer = uinput.Device(events, name=name, bustype=BUS_USB, vendor=VENDOR, product=PRODUCT, version=VERSION)
-    except OSError as e:
-        log("uinput.Device creation failed", exc_info=True)
-        if os.getuid()==0:
-            #running as root, this should work!
-            log.error("Error: cannot open uinput,")
-            log.error(" make sure that the kernel module is loaded")
-            log.error(" and that the /dev/uinput device exists:")
-            log.error(" %s", e)
-        else:
-            log.info("cannot access uinput: %s", e)
-        return None
-    dev_path = get_uinput_device_path(uinput_pointer)
-    if not dev_path:
-        uinput_pointer.destroy()
-        return None
-    return name, uinput_pointer, dev_path
+    return create_uinput_device(uuid, uid, events, name)
+
+def create_uinput_touchpad_device(uuid, uid):
+    import uinput
+    events = (
+        uinput.BTN_TOUCH,
+        uinput.BTN_TOOL_PEN,
+        uinput.ABS_X + (0, 2**24-1, 0, 0),
+        uinput.ABS_Y + (0, 2**24-1, 0, 0),
+        uinput.ABS_PRESSURE + (0, 2**24-1, 0, 0),
+        )
+    name = "Xpra Virtual Touchpad %s" % uuid
+    return create_uinput_device(uuid, uid, events, name)
+
 
 def create_uinput_devices(uinput_uuid, uid):
-    d = create_uinput_pointer_device(uinput_uuid, uid)
-    if not d:
+    log = get_util_logger()
+    try:
+        import uinput
+        assert uinput
+    except (ImportError, NameError) as e:
+        log.error("Error: cannot access python uinput module:")
+        log.error(" %s", e)
         return {}
-    name, uinput_pointer, dev_path = d
-    return {
-        "pointer" : {
+    pointer = create_uinput_pointer_device(uinput_uuid, uid)
+    touchpad = create_uinput_touchpad_device(uinput_uuid, uid)
+    if not pointer or not touchpad:
+        return {}
+    def i(device):
+        name, uinput_pointer, dev_path = device
+        return {
             "name"      : name,
             "uinput"    : uinput_pointer,
             "device"    : dev_path,
             }
+    return {
+        "pointer"   : i(pointer),
+        "touchpad"  : i(touchpad),
         }
 
 def create_input_devices(uinput_uuid, uid):

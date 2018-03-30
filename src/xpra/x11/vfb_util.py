@@ -65,32 +65,41 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     for d in dirs:
         makedir(d)
 
-    #create individual device files,
-    #only pointer for now:
-    i = 0
-    dev_type = "pointer"
-    name = "Xpra Virtual Pointer %s" % device_uuid
+    conf_files = []
+    for i, dev_type in (
+        (0, "pointer"),
+        #(1, "touchpad"),
+        ) :
+        f = save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid)
+        conf_files.append(f)
+    def cleanup_input_conf_files():
+        for f in conf_files:
+            os.unlink(f)
+    cleanups.insert(0, cleanup_input_conf_files)
+    return cleanups
+
+#create individual device files:
+def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid):
+    upper_dev_type = dev_type[:1].upper()+dev_type[1:]   #ie: Pointer
+    product_name = "Xpra Virtual %s %s" % (upper_dev_type, device_uuid)
+    identifier = "xpra-virtual-%s" % dev_type
     conf_file = os.path.join(xorg_conf_dir, "%02i-%s.conf" % (i, dev_type))
     with open(conf_file, "wb") as f:
         f.write(b"""Section "InputClass"
-    Identifier "xpra-virtual-%s"
-    MatchProduct "%s"
-    MatchUSBID "ffff:ffff"
-    MatchIsPointer "True"
-    Driver "libinput"
-    Option "AccelProfile" "flat"
-    Option "Ignore" "False"
+Identifier "%s"
+MatchProduct "%s"
+MatchUSBID "ffff:ffff"
+MatchIs%s "True"
+Driver "libinput"
+Option "AccelProfile" "flat"
+Option "Ignore" "False"
 EndSection
-""" % (dev_type, name))
+""" % (identifier, product_name, upper_dev_type))
         os.fchown(f.fileno(), uid, gid)
-        #Option "AccelerationProfile" "-1"
-        #Option "AccelerationScheme" "none"
-        #Option "AccelSpeed" "-1"
-    def cleanup_conf_file():
-        log("cleanup_conf_file: %s", conf_file)
-        os.unlink(conf_file)
-    cleanups.insert(0, cleanup_conf_file)
-    return cleanups
+    #Option "AccelerationProfile" "-1"
+    #Option "AccelerationScheme" "none"
+    #Option "AccelSpeed" "-1"
+    return conf_file
 
 
 def get_xauthority_path(display_name, username, uid, gid):

@@ -85,6 +85,8 @@ class X11ServerCore(GTKServerBase):
         self.screen_number = display_get_default().get_default_screen().get_number()
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
+        self.touchpad_device = None
+        self.pointer_device_map = {}
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
 
@@ -308,6 +310,7 @@ class X11ServerCore(GTKServerBase):
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
                     "wheel.precise"             : self.pointer_device.has_precise_wheel(),
+                    "touchpad-device"              : bool(self.touchpad_device),
                     })
             if self.randr:
                 sizes = RandR.get_xrr_screen_sizes()
@@ -784,6 +787,40 @@ class X11ServerCore(GTKServerBase):
 
     def setup_input_devices(self):
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
+        xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
+        #xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
+        xinputlog("setup_input_devices() pointer device=%s", self.pointer_device)
+        xinputlog("setup_input_devices() touchpad device=%s", self.touchpad_device)
+        self.pointer_device_map = {}
+        if not self.touchpad_device:
+            #no need to assign anything, we only have one device anyway
+            return
+        #if we find any absolute pointer devices,
+        #map them to the "touchpad_device"
+        XIModeAbsolute = 1
+        for deviceid, device_data in self.input_devices_data.items():
+            name = device_data.get("name")
+            #xinputlog("[%i]=%s", deviceid, device_data)
+            xinputlog("[%i]=%s", deviceid, name)
+            if device_data.get("use")!="slave pointer":
+                continue
+            classes = device_data.get("classes")
+            if not classes:
+                continue
+            #look for absolute pointer devices:
+            touchpad_axes = []
+            for i, defs in classes.items():
+                xinputlog(" [%i]=%s", i, defs)
+                mode = defs.get("mode")
+                label = defs.get("label")
+                if not mode or mode!=XIModeAbsolute:
+                    continue
+                if defs.get("min", -1)==0 and defs.get("max", -1)==(2**24-1):
+                    touchpad_axes.append((i, label))
+            if len(touchpad_axes)==2:
+                xinputlog.info("found touchpad device: %s", name)
+                xinputlog("axes: %s", touchpad_axes)
+                self.pointer_device_map[deviceid] = self.touchpad_device
 
 
     def _process_wheel_motion(self, proto, packet):
@@ -794,10 +831,20 @@ class X11ServerCore(GTKServerBase):
             self.do_process_mouse_common(proto, wid, pointer)
             self.pointer_device.wheel_motion(button, distance/1000.0)
 
+    def get_pointer_device(self, deviceid):
+        #mouselog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
+        if self.input_devices_data:
+            device_data = self.input_devices_data.get(deviceid)
+            if device_data:
+                mouselog("get_pointer_device(%i) device=%s", deviceid, device_data.get("name"))
+        device = self.pointer_device_map.get(deviceid) or self.pointer_device
+        return device
+
+
     def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
         screen_no = self.get_screen_number(wid)
-        device = self.pointer_device
+        device = self.get_pointer_device(deviceid)
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s", wid, pos, deviceid, screen_no, device)
         x, y = pos
         try:
@@ -810,10 +857,6 @@ class X11ServerCore(GTKServerBase):
         log("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
         if self.readonly:
             return
-        if self.input_devices_data:
-            device_data = self.input_devices_data.get(deviceid)
-            if device_data:
-                mouselog("process_mouse_common from device=%s", device_data.get("name"))
         pos = self.root_window.get_pointer()[-3:-1]
         uuid = None
         if proto:
@@ -843,7 +886,7 @@ class X11ServerCore(GTKServerBase):
         self.button_action(pointer, button, pressed, deviceid)
 
     def button_action(self, _pointer, button, pressed, deviceid=-1, *args):
-        device = self.pointer_device
+        device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
         try:
             with xsync:

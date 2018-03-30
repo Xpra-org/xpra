@@ -328,10 +328,12 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
     cdef int opcode
     cdef object events
     cdef object event_handlers
+    cdef object device_cache
 
     def __init__(self):
         self.opcode = -1
         self.event_handlers = {}
+        self.device_cache = {}
         self.reset_events()
 
     def __repr__(self):
@@ -486,7 +488,6 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         XFlush(self.display)
 
     def parse_xi_event(self, display, uintptr_t _cookie):
-        log("parse_xi_event(%s)", _cookie)
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
         cdef XIDeviceEvent *device_e
         cdef XIHierarchyEvent *hierarchy_e
@@ -495,6 +496,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         cdef XIRawEvent *raw
         cdef int i = 0, j = 0
         if not XGetEventData(self.display, cookie):
+            log("parse_xi_event(%#x) no event data", _cookie)
             return None
         xie = <XIEvent*> cookie.data
         device_e = <XIDeviceEvent*> cookie.data
@@ -503,13 +505,14 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         global XI_EVENT_NAMES
         event_name = XI_EVENT_NAMES.get(xi_type)
         if not event_name:
-            log("unknown XI2 event code: %i", xi_type)
+            log("parse_xi_event(%#x) unknown XI2 event code: %i", _cookie, xi_type)
             return None
 
         #don't parse the same thing again:
         if len(self.events)>0:
             last_event = self.events[-1]
             if last_event.serial==xie.serial and last_event.type==etype:
+                log("parse_xi_event(%#x) repeated %s event skipped (%s)", _cookie, last_event.name, event_name)
                 return None
 
         pyev = X11Event(event_name)
@@ -520,12 +523,14 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         pyev.time = int(xie.time)
         pyev.window = int(XDefaultRootWindow(self.display))
 
+        device_info = None
         if xi_type in (XI_KeyPress, XI_KeyRelease,
                        XI_ButtonPress, XI_ButtonRelease,
                        XI_Motion,
                        XI_TouchBegin, XI_TouchUpdate, XI_TouchEnd):
             device = <XIDeviceEvent*> cookie.data
             #pyev.source = device.sourceid    #always 0
+            device_info = self.device_cache.get(device.deviceid)
             pyev.device = device.deviceid
             pyev.detail = device.detail
             pyev.flags = device.flags
@@ -583,9 +588,10 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
         self.events.append(pyev)
 
         handler = self.event_handlers.get(pyev.window, {}).get(event_name)
-        log("parse_xi_event: %s, handler=%s", pyev, handler)
         if handler:
-            handler(pyev)
+            log("parse_xi_event: %s, device_info=%s, handler=%s", pyev, device_info, handler)
+            handler(pyev, device_info)
+        log("parse_xi_event: no handler for %s", event_name)
         return None
 
     def get_devices(self, show_all=True, show_disabled=False):
@@ -623,6 +629,7 @@ cdef class _X11XI2Bindings(_X11CoreBindings):
             log("[%i] %s: %s", device.deviceid, device.name, info)
             dinfo[device.deviceid] = info
         XIFreeDeviceInfo(devices)
+        self.device_cache = dinfo
         return dinfo
 
     def get_device_properties(self, deviceid):
