@@ -325,7 +325,7 @@ class WindowClient(StubClientMixin):
                 packet =  ["wheel-motion", wid,
                            button, idist,
                            pointer, modifiers, buttons] + list(args)
-                mouselog.info("%s", packet)
+                mouselog("send_wheel_delta(..) %s", packet)
                 self.send_positional(packet)
             return 0
         else:
