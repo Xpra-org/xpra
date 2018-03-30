@@ -384,9 +384,11 @@ def create_uinput_devices(uinput_uuid, uid):
         return {}
     pointer = create_uinput_pointer_device(uinput_uuid, uid)
     touchpad = create_uinput_touchpad_device(uinput_uuid, uid)
-    if not pointer or not touchpad:
+    if not pointer and not touchpad:
         return {}
     def i(device):
+        if not device:
+            return {}
         name, uinput_pointer, dev_path = device
         return {
             "name"      : name,
