@@ -1078,7 +1078,7 @@ cdef class _X11WindowBindings(_X11CoreBindings):
             XFree(children)
         if parent == XNone:
             return 0
-        return parent
+        return int(parent)
 
     def getSizeHints(self, Window xwindow):
         self.context_check()
