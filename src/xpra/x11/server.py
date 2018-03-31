@@ -633,8 +633,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if self._wm:
                 toplevel = self._wm.get_property("toplevel")
             focuslog("reset_focus() %s / %s had focus (toplevel=%s)", self._has_focus, had_focus, toplevel)
-            with xsync:
-                self._clear_keys_pressed()
+            self._clear_keys_pressed()
             # FIXME: kind of a hack:
             self._has_focus = 0
             #toplevel may be None during cleanup!
@@ -975,7 +974,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
     """ override so we can raise the window under the cursor
         (gtk raise does not change window stacking, just focus) """
     def _move_pointer(self, wid, pos, *args):
-        if wid>=0:
+        if wid>0:
             window = self._lookup_window(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)

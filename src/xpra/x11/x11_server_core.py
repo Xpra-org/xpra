@@ -437,8 +437,9 @@ class X11ServerCore(GTKServerBase):
         #clear all the keys we know about:
         if len(self.keys_pressed)>0:
             keylog("clearing keys pressed: %s", self.keys_pressed)
-            for keycode in self.keys_pressed.keys():
-                X11Keyboard.xtest_fake_key(keycode, False)
+            with xsync:
+                for keycode in self.keys_pressed.keys():
+                    X11Keyboard.xtest_fake_key(keycode, False)
             self.keys_pressed = {}
         #this will take care of any remaining ones we are not aware of:
         #(there should not be any - but we want to be certain)
