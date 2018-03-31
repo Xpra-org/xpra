@@ -1233,6 +1233,10 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 		y = Math.round(mouse.y);
 	var modifiers = [];
 	var buttons = [];
+	var wid = 0;
+	if (window) {
+		wid = window.wid;
+	}
 	var wheel = Utilities.normalizeWheel(e);
 	this.debug("mouse", "normalized wheel event:", wheel);
 	//clamp to prevent event floods:
@@ -1240,6 +1244,21 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	var py = Math.min(1200, wheel.pixelY);
 	var apx = Math.abs(px);
 	var apy = Math.abs(py);
+	if (this.server_precise_wheel) {
+        if (apx>0) {
+    		var btn_x = (px>=0) ? 6 : 7;
+            var xdist = Math.round(px*1000/120);
+            this.send(["wheel-motion", wid, btn_x, -xdist,
+            	(x, y), modifiers, buttons]);
+        }
+        if (apy>0) {
+    		var btn_y = (py>=0) ? 5 : 4;
+            var ydist = Math.round(py*1000/120);
+            this.send(["wheel-motion", wid, btn_y, -ydist,
+                (x, y), modifiers, buttons]);
+        }
+        return;
+	}
 	//generate a single event if we can, or add to accumulators:
 	if (apx>=40 && apx<=160) {
 		this.wheel_delta_x = (px>0) ? 120 : -120;
@@ -1258,10 +1277,6 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	var wy = Math.abs(this.wheel_delta_y);
 	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
 	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
-	var wid = 0;
-	if (window) {
-		wid = window.wid;
-	}
 	while (wx>=120) {
 		wx -= 120;
 		this.send(["button-action", wid, btn_x, true, [x, y], modifiers, buttons]);
@@ -1563,6 +1578,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
     ctx.server_resize_exact = hello["resize_exact"] || false;
     ctx.server_screen_sizes = hello["screen-sizes"] || [];
     console.log("server screen sizes:", ctx.server_screen_sizes)
+
+    ctx.server_precise_wheel = hello["wheel.precise"] || false;
 
 	ctx.remote_open_files = Boolean(hello["open-files"]);
 	ctx.remote_file_transfer = Boolean(hello["file-transfer"]);
