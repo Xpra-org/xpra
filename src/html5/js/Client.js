@@ -1869,7 +1869,7 @@ XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
 			direction = packet[4],
 			button = packet[5],
 			source_indication = packet[6];
-        win.initiate_moveresize(this.mousedown_event, x_root, y_root, direction, button, source_indication)
+        win.initiate_moveresize(ctx.mousedown_event, x_root, y_root, direction, button, source_indication)
 	}
 }
 
