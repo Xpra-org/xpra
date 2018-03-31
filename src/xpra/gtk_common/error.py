@@ -29,7 +29,7 @@
 
 import traceback
 
-__all__ = ["XError", "trap"]
+__all__ = ["XError", "trap", "xsync", "xswallow"]
 
 
 from xpra.util import envbool
@@ -91,7 +91,7 @@ class _ErrorManager(object):
         gdk.error_trap_push()
         self.depth += 1
 
-    def _exit(self, need_sync):
+    def _exit(self, need_sync=True):
         assert self.depth >= 0
         self.depth -= 1
         if self.depth == 0 and need_sync:
@@ -167,7 +167,7 @@ class XSyncContext(object):
     def __exit__(self, e_typ, _e_val, _trcbak):
         #log("xsync.exit%s", (e_typ, e_val, trcbak))
         try:
-            trap._exit(True)
+            trap._exit()
         except XError as ee:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
@@ -187,7 +187,7 @@ class XSwallowContext(object):
     def __exit__(self, *_args):
         #log("xswallow.exit%s", (e_typ, e_val, trcbak))
         try:
-            trap._exit(True)
+            trap._exit()
         except XError as ee:
             log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
         #don't raise exceptions:
