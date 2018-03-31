@@ -34,7 +34,7 @@ __all__ = ["XError", "trap"]
 
 from xpra.util import envbool
 #run xpra in synchronized mode to debug X11 errors:
-XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", True)
+XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 
 from xpra.log import Logger
 log = Logger("x11", "util")
