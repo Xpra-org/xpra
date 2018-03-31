@@ -680,7 +680,6 @@ class XI2_Window(object):
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s", event, device, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
             packet = ["pointer-position", wid, pointer, modifiers, buttons] + self.get_pointer_extra_args(event)
-            xinputlog.info("%s", packet)
             client.send_mouse_position(packet)
         #now see if we have anything to send as a wheel event:
         if dx!=0 or dy!=0:
