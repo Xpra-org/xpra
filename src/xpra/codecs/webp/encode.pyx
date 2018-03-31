@@ -408,7 +408,8 @@ def compress(image, int quality=50, int speed=50, supports_alpha=False, content_
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
     cdef WebPPreset preset = DEFAULT_PRESET
-    if width*height<8192:
+    #only use icon for small squarish rectangles
+    if width*height<=2304 and abs(width-height)<=16:
         preset = PRESET_SMALL
     preset = CONTENT_TYPE_PRESET.get(content_type, preset)
     cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
