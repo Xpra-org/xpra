@@ -32,5 +32,7 @@ BLACKLIST = {
     "vendor"    : [
         "VMware, Inc.",
         "Humper",
+        #to disable nvidia, uncomment this:
+        #"NVIDIA Corporation",
         ]
     }
