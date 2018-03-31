@@ -17,7 +17,7 @@ from xpra.util import envbool, envint
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 75)
-cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 40)
+cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 40)
 assert SUBSAMPLING_THRESHOLD<=LOSSLESS_THRESHOLD, "lossless threshold must be higher than subsampling threshold"
 assert LOSSLESS_THRESHOLD>=0 and LOSSLESS_THRESHOLD<=100, "invalid lossless threshold: %i" % LOSSLESS_THRESHOLD
 
