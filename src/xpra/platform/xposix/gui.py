@@ -720,6 +720,7 @@ class ClientExtras(object):
         self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
+        self.xi_setup_failures = 0
         if client.input_devices in ("xi", "auto"):
             #this would trigger warnings with our temporary opengl windows:
             #only enable it after we have connected:
@@ -906,20 +907,31 @@ class ClientExtras(object):
             self.client.send_input_devices("xi", devices)
 
     def setup_xi(self):
+        self.client.timeout_add(100, self.do_setup_xi)
+
+    def do_setup_xi(self):
         if self.client.server_input_devices not in ("xi", "uinput"):
             xinputlog.info("server does not support xi input devices")
             if self.client.server_input_devices:
                 log.info(" server uses: %s", self.client.server_input_devices)
-            return
+            return False
         try:
-            from xpra.gtk_common.error import xsync
+            from xpra.gtk_common.error import xsync, XError
+            assert X11WindowBindings, "no X11 window bindings"
+            assert X11XI2Bindings, "no XI2 window bindings"
+            XI2 = X11XI2Bindings()
+            #this may fail when windows are being destroyed,
+            #ie: when another client disconnects because we are stealing the session
+            try:
+                with xsync:
+                    XI2.select_xi2_events()
+            except XError:
+                self.xi_setup_failures += 1
+                xinputlog("select_xi2_events() failed, attempt %i", self.xi_setup_failures,exc_info=True)
+                return self.xi_setup_failures<10    #try again
             with xsync:
-                assert X11WindowBindings, "no X11 window bindings"
-                assert X11XI2Bindings, "no XI2 window bindings"
-                X11XI2Bindings().gdk_inject()
+                XI2.gdk_inject()
                 self.init_x11_filter()
-                XI2 = X11XI2Bindings()
-                XI2.select_xi2_events()
                 if self.client.server_input_devices:
                     XI2.connect(0, "XI_HierarchyChanged", self.do_xi_devices_changed)
                     devices = XI2.get_devices()
@@ -932,6 +944,7 @@ class ClientExtras(object):
         else:
             #register our enhanced event handlers:
             self.add_xi2_method_overrides()
+        return False
 
     def add_xi2_method_overrides(self):
         global WINDOW_ADD_HOOKS
