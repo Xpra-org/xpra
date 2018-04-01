@@ -551,7 +551,7 @@ class XI2_Window(object):
         self.XI2 = X11XI2Bindings()
         self.X11Window = X11WindowBindings()
         self.window = window
-        self.xid = window.get_window().xid
+        self.xid = get_xwindow(window.get_window())
         self.windows = ()
         self.motion_valuators = {}
         window.connect("configure-event", self.configured)
