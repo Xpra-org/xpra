@@ -627,19 +627,21 @@ class X11ServerCore(GTKServerBase):
                 #and we need a RandR change to force applications to re-query it
                 #so we temporarily switch to another resolution to force
                 #the change! (ugly! but this works)
-                temp = {}
-                for tw,th in RandR.get_xrr_screen_sizes():
-                    if tw!=w or th!=h:
-                        #use the number of extra pixels as key:
-                        #(so we can choose the closest resolution)
-                        temp[abs((tw*th) - (w*h))] = (tw, th)
+                with xsync:
+                    temp = {}
+                    for tw,th in RandR.get_xrr_screen_sizes():
+                        if tw!=w or th!=h:
+                            #use the number of extra pixels as key:
+                            #(so we can choose the closest resolution)
+                            temp[abs((tw*th) - (w*h))] = (tw, th)
                 if len(temp)==0:
                     screenlog.warn("cannot find a temporary resolution for Xinerama workaround!")
                 else:
                     k = sorted(temp.keys())[0]
                     tw, th = temp[k]
                     screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
-                    RandR.set_screen_size(tw, th)
+                    with xsync:
+                        RandR.set_screen_size(tw, th)
             with xsync:
                 RandR.get_screen_size()
             #Xdummy with randr 1.2:
