@@ -304,13 +304,13 @@ class ClipboardProtocolHelperBase(object):
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
         target_data = None
-        if len(packet)>=3:
-            targets = packet[2]
-        if len(packet)>=8:
-            target_data = {}
-            target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
-            raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-            target_data[target] = raw_data
+        if proxy._can_receive:
+            if len(packet)>=3:
+                targets = packet[2]
+            if len(packet)>=8:
+                target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
+                raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+                target_data = {target : raw_data}
         #older versions always claimed the selection when the token is received:
         claim = True
         if len(packet)>=10:
@@ -583,6 +583,9 @@ class ClipboardProxy(gtk.Invisible):
         self._clipboard = GetClipboard(selection)
         self._enabled = True
         self._have_token = False
+        #enabled later during setup
+        self._can_send = False
+        self._can_receive = False
         #this workaround is only needed on win32 AFAIK:
         self._strip_nullbyte = WIN32
         #clients that need a new token for every owner-change: (ie: win32 and osx)
