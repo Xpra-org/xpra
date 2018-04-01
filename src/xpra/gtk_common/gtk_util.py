@@ -401,7 +401,7 @@ else:
         return widget.size_request()
 
     def get_xwindow(w):
-        return w.xid
+        return int(w.xid)
     #gtk2:
     if gtk.gtk_version<(2,18):
         raise Exception("your version of GTK is too old: %s" % str(gtk.gtk_version))
