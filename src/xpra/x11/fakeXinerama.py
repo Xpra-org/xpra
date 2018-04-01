@@ -81,6 +81,9 @@ def save_fakeXinerama_config(supported=True, source="", ss=[]):
         #we assume that no other process is going to overwrite the deprecated .fakexinerama
         log("fake xinerama config unchanged")
         return False
+    log("fake xinerama config changed:")
+    log(" old=%s", current_xinerama_config)
+    log(" new=%s", config)
     current_xinerama_config = config
     data.append("")
     contents = "\n".join(data)
