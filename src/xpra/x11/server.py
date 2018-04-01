@@ -251,113 +251,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.last_client_configure_event = 0
         self.snc_timer = 0
 
-
-    def init_packet_handlers(self):
-        X11ServerBase.init_packet_handlers(self)
-        self._authenticated_ui_packet_handlers["window-signal"] = self._process_window_signal
-
-
-    def get_server_mode(self):
-        return "X11"
-
-
-    def server_event(self, *args):
-        X11ServerBase.server_event(self, *args)
-        self.emit("server-event", args)
-
-
-    def make_hello(self, source):
-        capabilities = X11ServerBase.make_hello(self, source)
-        if source.wants_features:
-            capabilities["pointer.grabs"] = True
-            updict(capabilities, "window", {
-                "decorations"            : True,
-                "frame-extents"          : True,
-                "raise"                  : True,
-                "resize-counter"         : True,
-                "configure.skip-geometry": True,
-                "configure.pointer"      : True,
-                "signals"                : WINDOW_SIGNALS,
-                "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
-                })
-        return capabilities
-
-
-    def do_get_info(self, proto, server_sources, window_ids):
-        info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
-        info.setdefault("state", {}).update({
-                                             "focused"  : self._has_focus,
-                                             "grabbed"  : self._has_grab,
-                                             })
-        return info
-
-    def get_ui_info(self, proto, wids=None, *args):
-        info = X11ServerBase.get_ui_info(self, proto, wids, *args)
-        #_NET_WM_NAME:
-        wm = self._wm
-        if wm:
-            info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
-        return info
-
-    def get_window_info(self, window):
-        info = X11ServerBase.get_window_info(self, window)
-        info.update({
-                     "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
-                     "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
-                     "shown"    : self._desktop_manager.is_shown(window),
-                     })
-        try:
-            info["client-geometry"] = self._desktop_manager.window_geometry(window)
-        except:
-            pass        #OR or tray window
-        return info
-
-
-    def set_screen_geometry_attributes(self, w, h):
-        #only run the default code if there are no clients,
-        #when we have clients, this should have been done already
-        #in the code that synchonizes the screen resolution
-        if len(self._server_sources)==0:
-            X11ServerBase.set_screen_geometry_attributes(self, w, h)
-
-    def set_desktops(self, names):
-        if self._wm:
-            self._wm.set_desktop_list(names)
-
-    def set_workarea(self, workarea):
-        if self._wm:
-            self._wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
-
-    def set_desktop_geometry(self, width, height):
-        if self._wm:
-            self._wm.set_desktop_geometry(width, height)
-
-    def set_dpi(self, xdpi, ydpi):
-        if self._wm:
-            self._wm.set_dpi(xdpi, ydpi)
-
-
-    def get_transient_for(self, window):
-        transient_for = window.get_property("transient-for")
-        log("get_transient_for window=%s, transient_for=%s", window, transient_for)
-        if transient_for is None:
-            return None
-        xid = get_xwindow(transient_for)
-        log("transient_for.xid=%#x", xid)
-        for w,wid in self._window_to_id.items():
-            if w.get_property("xid")==xid:
-                log("found match, window id=%s", wid)
-                return wid
-        root = get_default_root_window()
-        if get_xwindow(root)==xid:
-            log("transient-for using root")
-            return -1       #-1 is the backwards compatible marker for root...
-        log("not found transient_for=%s, xid=%#x", transient_for, xid)
-        return  None
-
-    def is_shown(self, window):
-        return self._desktop_manager.is_shown(window)
-
     def do_cleanup(self):
         if self._tray:
             self._tray.cleanup()
@@ -388,6 +281,106 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._has_grab = 0
             self.X11_ungrab()
 
+
+    def init_packet_handlers(self):
+        X11ServerBase.init_packet_handlers(self)
+        self._authenticated_ui_packet_handlers.update({
+            "window-signal"         : self._process_window_signal,
+            })
+
+
+    def get_server_mode(self):
+        return "X11"
+
+
+    def server_event(self, *args):
+        X11ServerBase.server_event(self, *args)
+        self.emit("server-event", args)
+
+
+    def make_hello(self, source):
+        capabilities = X11ServerBase.make_hello(self, source)
+        if source.wants_features:
+            capabilities["pointer.grabs"] = True
+            updict(capabilities, "window", {
+                "decorations"            : True,
+                "frame-extents"          : True,
+                "raise"                  : True,
+                "resize-counter"         : True,
+                "configure.skip-geometry": True,
+                "configure.pointer"      : True,
+                "signals"                : WINDOW_SIGNALS,
+                "dragndrop"              : True,
+                "states"                 : ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"],
+                })
+        return capabilities
+
+
+    ##########################################################################
+    # info:
+    #
+    def do_get_info(self, proto, server_sources, window_ids):
+        info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
+        info.setdefault("state", {}).update({
+                                             "focused"  : self._has_focus,
+                                             "grabbed"  : self._has_grab,
+                                             })
+        return info
+
+    def get_ui_info(self, proto, wids=None, *args):
+        info = X11ServerBase.get_ui_info(self, proto, wids, *args)
+        #_NET_WM_NAME:
+        wm = self._wm
+        if wm:
+            info.setdefault("state", {})["window-manager-name"] = wm.get_net_wm_name()
+        return info
+
+    def get_window_info(self, window):
+        info = X11ServerBase.get_window_info(self, window)
+        info.update({
+                     "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
+                     "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
+                     "shown"    : self._desktop_manager.is_shown(window),
+                     })
+        try:
+            info["client-geometry"] = self._desktop_manager.window_geometry(window)
+        except:
+            pass        #OR or tray window
+        return info
+
+
+    ##########################################################################
+    # Manage the virtual screen:
+    #
+
+    def set_screen_geometry_attributes(self, w, h):
+        #only run the default code if there are no clients,
+        #when we have clients, this should have been done already
+        #in the code that synchonizes the screen resolution
+        if len(self._server_sources)==0:
+            X11ServerBase.set_screen_geometry_attributes(self, w, h)
+
+    def set_desktops(self, names):
+        wm = self._wm
+        if wm:
+            wm.set_desktop_list(names)
+
+    def set_workarea(self, workarea):
+        wm = self._wm
+        if wm:
+            wm.set_workarea(workarea.x, workarea.y, workarea.width, workarea.height)
+
+    def set_desktop_geometry(self, width, height):
+        wm = self._wm
+        if wm:
+            wm.set_desktop_geometry(width, height)
+
+    def set_dpi(self, xdpi, ydpi):
+        wm = self._wm
+        if wm:
+            wm.set_dpi(xdpi, ydpi)
+
+
     def add_system_tray(self):
         # Tray handler:
         try:
@@ -395,6 +388,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
                 self._tray = SystemTray()
         except Exception as e:
             log.error("cannot setup tray forwarding: %s", e, exc_info=True)
+
+
+    ##########################################################################
+    # Manage windows:
+    #
+
+    def is_shown(self, window):
+        return self._desktop_manager.is_shown(window)
 
     def load_existing_windows(self):
 
@@ -417,6 +418,24 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def _lookup_window(self, wid):
         assert isinstance(wid, int), "window id value '%s' is a %s and not a number" % (wid, type(wid))
         return self._id_to_window.get(wid)
+
+    def get_transient_for(self, window):
+        transient_for = window.get_property("transient-for")
+        log("get_transient_for window=%s, transient_for=%s", window, transient_for)
+        if transient_for is None:
+            return None
+        xid = get_xwindow(transient_for)
+        log("transient_for.xid=%#x", xid)
+        for w,wid in self._window_to_id.items():
+            if w.get_property("xid")==xid:
+                log("found match, window id=%s", wid)
+                return wid
+        root = get_default_root_window()
+        if get_xwindow(root)==xid:
+            log("transient-for using root")
+            return -1       #-1 is the backwards compatible marker for root...
+        log("not found transient_for=%s, xid=%#x", transient_for, xid)
+        return  None
 
 
     def parse_hello_ui_window_settings(self, ss, _caps):
@@ -1028,6 +1047,12 @@ class XpraServer(gobject.GObject, X11ServerBase):
             image = window.get_image(x, y, width, height)
             if image:
                 self.update_root_overlay(window, x, y, image)
+
+
+    ##########################################################################
+    # paint the root overlay
+    # so the server-side root window gets updated if this feature is enabled
+    #
 
     def update_root_overlay(self, window, x, y, image):
         overlaywin = gdk.window_foreign_new(self.root_overlay)
