@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os.path
 
+from xpra.util import envbool
 from xpra.os_util import OSX, POSIX, shellsub, getuid, getgid, get_util_logger, osexpand
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
@@ -342,6 +343,8 @@ def create_uinput_device(uuid, uid, events, name):
     return name, device, dev_path
 
 def create_uinput_pointer_device(uuid, uid):
+    if not envbool("XPRA_UINPUT_POINTER", True):
+        return
     import uinput
     events = (
         uinput.REL_X,
@@ -361,6 +364,8 @@ def create_uinput_pointer_device(uuid, uid):
     return create_uinput_device(uuid, uid, events, name)
 
 def create_uinput_touchpad_device(uuid, uid):
+    if not envbool("XPRA_UINPUT_TOUCHPAD", True):
+        return
     import uinput
     events = (
         uinput.BTN_TOUCH,
