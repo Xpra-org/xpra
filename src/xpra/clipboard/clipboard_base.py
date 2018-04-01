@@ -323,6 +323,7 @@ class ClipboardProtocolHelperBase(object):
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def _get_clipboard_from_remote_handler(self, _proxy, selection, target):
+        assert self.can_receive
         if must_discard(target):
             log("invalid target '%s'", target)
             return None
@@ -342,6 +343,7 @@ class ClipboardProtocolHelperBase(object):
         return result
 
     def _clipboard_got_contents(self, request_id, dtype, dformat, data):
+        assert self.can_receive
         loop = self._clipboard_outstanding_requests.get(request_id)
         log("got clipboard contents for id=%s len=%s, loop=%s (type=%s, format=%s)",
               request_id, len(data or []), loop, dtype, dformat)
@@ -483,6 +485,10 @@ class ClipboardProtocolHelperBase(object):
             if selection not in self.disabled_by_loop:
                 l = log.warn
             l("Warning: ignoring clipboard request for '%s' (disabled)", name)
+            no_contents()
+            return
+        if not proxy._can_send:
+            log("request for %s but sending is disabled, sending 'none' back", name)
             no_contents()
             return
         if TEST_DROP_CLIPBOARD_REQUESTS>0 and (request_id % TEST_DROP_CLIPBOARD_REQUESTS)==0:
@@ -661,7 +667,7 @@ class ClipboardProxy(gtk.Invisible):
         log("clipboard: %s owner_changed, enabled=%s, can-send=%s, can-receive=%s, have_token=%s, greedy_client=%s, block_owner_change=%s", bytestostr(self._selection), self._enabled, self._can_send, self._can_receive, self._have_token, self._greedy_client, self._block_owner_change)
         if not self._enabled or self._block_owner_change:
             return
-        if self._have_token or self._greedy_client:
+        if self._have_token or (self._greedy_client and self._can_send):
             if self._have_token or DELAY_SEND_TOKEN<0:
                 #token ownership will change or told not to wait
                 glib.idle_add(self.emit_token)
