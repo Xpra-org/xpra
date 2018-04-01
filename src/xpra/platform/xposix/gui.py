@@ -953,9 +953,9 @@ class ClientExtras(object):
 
     def get_resource_manager(self):
         try:
-            import gtk.gdk
-            root = gtk.gdk.get_default_root_window()
+            from xpra.gtk_common.gtk_util import get_default_root_window
             from xpra.x11.gtk_x11.prop import prop_get
+            root = get_default_root_window()
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
             if value is not None:
                 return value.encode("utf-8")
