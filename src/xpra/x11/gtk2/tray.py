@@ -133,7 +133,8 @@ class SystemTray(gobject.GObject):
             log.warn("setup tray: using rgb visual fallback")
             colormap, visual = screen.get_rgb_colormap(), screen.get_rgb_visual()
         assert colormap is not None and visual is not None, "failed to obtain visual or colormap"
-        owner = X11Window.XGetSelectionOwner(SELECTION)
+        with xswallow:
+            owner = X11Window.XGetSelectionOwner(SELECTION)
         log("setup tray: current selection owner=%#x", owner)
         if owner!=XNone:
             raise Exception("%s already owned by %s" % (SELECTION, owner))

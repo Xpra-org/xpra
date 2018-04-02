@@ -112,12 +112,13 @@ class X11ServerBase(GTKServerBase):
         self.query_opengl()
 
     def init_randr(self):
-        self.randr = RandR.has_randr()
-        if self.randr and len(RandR.get_screen_sizes())<=1:
-            #disable randr when we are dealing with a Xvfb
-            #with only one resolution available
-            #since we don't support adding them on the fly yet
-            self.randr = False
+        with xsync:
+            self.randr = RandR.has_randr()
+            if self.randr and len(RandR.get_screen_sizes())<=1:
+                #disable randr when we are dealing with a Xvfb
+                #with only one resolution available
+                #since we don't support adding them on the fly yet
+                self.randr = False
         if self.randr:
             display = gdk.display_get_default()
             i=0
@@ -194,7 +195,8 @@ class X11ServerBase(GTKServerBase):
     def init_keyboard(self):
         GTKServerBase.init_keyboard(self)
         #clear all modifiers
-        clean_keyboard_state()
+        with xsync:
+            clean_keyboard_state()
 
 
     def init_packet_handlers(self):
@@ -388,7 +390,8 @@ class X11ServerBase(GTKServerBase):
     def get_max_screen_size(self):
         from xpra.x11.gtk2.models import MAX_WINDOW_SIZE
         max_w, max_h = self.root_window.get_size()
-        sizes = RandR.get_screen_sizes()
+        with xsync:
+            sizes = RandR.get_screen_sizes()
         if self.randr and len(sizes)>=1:
             for w,h in sizes:
                 max_w = max(max_w, w)
@@ -464,16 +467,17 @@ class X11ServerBase(GTKServerBase):
         #try to find the best screen size to resize to:
         new_size = None
         closest = {}
-        for w,h in RandR.get_screen_sizes():
-            if w<desired_w or h<desired_h:
-                distance = abs(w-desired_w)*abs(h-desired_h)
-                closest[distance] = (w, h)
-                continue            #size is too small for client
-            if new_size:
-                ew,eh = new_size
-                if ew*eh<w*h:
-                    continue        #we found a better (smaller) candidate already
-            new_size = w,h
+        with xsync:
+            for w,h in RandR.get_screen_sizes():
+                if w<desired_w or h<desired_h:
+                    distance = abs(w-desired_w)*abs(h-desired_h)
+                    closest[distance] = (w, h)
+                    continue            #size is too small for client
+                if new_size:
+                    ew,eh = new_size
+                    if ew*eh<w*h:
+                        continue        #we found a better (smaller) candidate already
+                new_size = w,h
         if not new_size:
             screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
             if len(closest)>0:
@@ -535,7 +539,8 @@ class X11ServerBase(GTKServerBase):
                     msg += " (best match for %sx%s)" % (desired_w, desired_h)
                 screenlog.info(msg)
             def show_dpi():
-                wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
+                with xsync:
+                    wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
                 screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
                 actual_xdpi = iround(root_w * 25.4 / wmm)
                 actual_ydpi = iround(root_h * 25.4 / hmm)
