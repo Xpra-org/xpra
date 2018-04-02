@@ -342,7 +342,9 @@ class SoundPipeline(gobject.GObject):
                         if l.startswith("\n"):
                             l = l.strip("\n")+" "
                             for lp in l.split(". "):
-                                self.gstlogwarn(" %s", lp.strip())
+                                lp = lp.strip()
+                                if lp:
+                                    self.gstlogwarn(" %s", lp)
                         else:
                             self.gstlogwarn("                  %s", l.strip("\n\r"))
         else:
