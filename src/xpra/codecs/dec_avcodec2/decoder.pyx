@@ -12,7 +12,10 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr
+
+import sys
+WIN32 = sys.platform.startswith("win")
 
 
 ctypedef unsigned long size_t
