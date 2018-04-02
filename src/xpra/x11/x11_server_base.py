@@ -521,7 +521,8 @@ class X11ServerBase(GTKServerBase):
                     k = sorted(temp.keys())[0]
                     tw, th = temp[k]
                     screenlog.info("temporarily switching to %sx%s as a Xinerama workaround", tw, th)
-                    RandR.set_screen_size(tw, th)
+                    with xsync:
+                        RandR.set_screen_size(tw, th)
             screenlog("calling RandR.set_screen_size(%s, %s)", w, h)
             with xsync:
                 RandR.set_screen_size(w, h)
