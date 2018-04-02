@@ -100,7 +100,7 @@ class SystemTray(gobject.GObject):
 
     def cleanup(self):
         log("SystemTray.cleanup()")
-        root = gdk.get_default_root_window()
+        root = gtk.gdk.get_default_root_window()
         def undock(window):
             log("undocking %s", window)
             X11Window.Unmap(window.xid)
