@@ -5,6 +5,8 @@ Maintainer: Antoine Martin <antoine@nagafix.co.uk>
 Build-Depends: debhelper (>= 9), dh-python, python-all-dev, python3-all-dev
               ,liblz4-dev (>= 0.0~r131~)
               ,pkg-config
+              ,python-pkgconfig,
+              ,python-pytest-runner
               ,python-nose
               ,python3-nose
               ,python-setuptools
