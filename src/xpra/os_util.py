@@ -265,7 +265,9 @@ def load_binary_file(filename):
     try:
         with open(filename, "rb") as f:
             return f.read()
-    except:
+    except Exception as e:
+        get_util_logger().warn("Warning: failed to load '%s':", filename)
+        get_util_logger().warn(" %s", e)
         return None
 
 #here so we can override it when needed
