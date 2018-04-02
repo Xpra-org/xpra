@@ -21,7 +21,8 @@ SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 SSL_PEEK = PYTHON2 and envbool("XPRA_SSL_PEEK", True)
-
+#this is more proper but would break the proxy server:
+SOCKET_SHUTDOWN = envbool("XPRA_SOCKET_SHUTDOWN", False)
 
 #on some platforms (ie: OpenBSD), reading and writing from sockets
 #raises an IOError but we should continue if the error code is EINTR
@@ -317,8 +318,11 @@ class SocketConnection(Connection):
             s.settimeout(0)
         except:
             pass
-        #this is more proper but would break the proxy server:
-        #s.shutdown(socket.SHUT_RDWR)
+        if SOCKET_SHUTDOWN:
+            try:
+                s.shutdown(socket.SHUT_RDWR)
+            except:
+                log("%s.shutdown(SHUT_RDWR)", s, exc_info=True)
         s.close()
         log("%s.close() done", self)
 
