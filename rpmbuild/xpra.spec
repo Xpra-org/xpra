@@ -618,6 +618,8 @@ fi
 - fix unmanaged X11 calls causing GTK crashes
 - fix padding issues with large passwords
 - fix webp paint errors with OpenGL disabled
+- disable ffmpeg encoder (compatibility issues with newer ffmpeg versions)
+- remove duplicated declarations in Cython files
 - log password file loading failure details
 - remove outdated option from the man page, fix missing paragraphs
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)

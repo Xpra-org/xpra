@@ -4,11 +4,13 @@ xpra (1.0.11-1) UNRELEASED; urgency=low
   * fix unmanaged X11 calls causing GTK crashes
   * fix padding issues with large passwords
   * fix webp paint errors with OpenGL disabled
+  * disable ffmpeg encoder (compatibility issues with newer ffmpeg versions)
+  * remove duplicated declarations in Cython files
   * log password file loading failure details
   * remove outdated option from the man page, fix missing paragraphs
   * disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Apr 2018 13:45:57 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 02 Apr 2018 19:25:06 +0700
 
 xpra (1.0.10-1) UNRELEASED; urgency=low
   * fix crash with invalid tray docking requests
