@@ -199,10 +199,6 @@ class VideoSubregion(object):
         #re-schedule the video region refresh (if we have regions to fresh):
         if self.refresh_regions:
             def refresh():
-
-    def nonvideo_refresh(self, non_video):
-        self.refresh_cb(non_video)
-        return False
                 #runs via timeout_add, safe to call UI!
                 self.refresh_timer = None
                 regions = self.refresh_regions
@@ -216,6 +212,9 @@ class VideoSubregion(object):
                 self.refresh_cb(regions)
             self.refresh_timer = self.timeout_add(delay, refresh)
 
+    def nonvideo_refresh(self, non_video):
+        self.refresh_cb(non_video)
+        return False
 
     def novideoregion(self, msg="", *args):
         sslog("novideoregion: "+msg, *args)
