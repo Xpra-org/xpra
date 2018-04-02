@@ -10,7 +10,7 @@ export CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
 %:
 	dh $@ --with python2 --with quilt
 
-BUILDOPTS= --without-enc_xvid --without-csc_opencl --without-csc_opencv --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
+BUILDOPTS= --without-enc_xvid --without-csc_opencl --without-csc_opencv --without-enc_ffmpeg --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 override_dh_auto_build:
 	dh_auto_build -- $(BUILDOPTS)

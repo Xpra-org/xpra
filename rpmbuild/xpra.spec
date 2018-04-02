@@ -30,7 +30,7 @@
 
 #some of these dependencies may get turned off (empty) on some platforms:
 %define systemd 0
-%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_opencv --without-enc_xvid
+%define build_args --with-Xdummy --without-csc_opencl --without-enc_x265 --without-webp --without-csc_opencv --without-enc_xvid --without-enc_ffmpeg
 %define requires_xorg xorg-x11-server-utils, xorg-x11-drv-dummy, xorg-x11-xauth
 %define requires_websockify , python-websockify
 %define requires_lzo , %{py2prefix}-lzo
