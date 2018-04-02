@@ -11,7 +11,7 @@
 	<key>CFBundleName</key>
 	<string>Xpra</string>
 	<key>CFBundleGetInfoString</key>
-	<string>%VERSION%-r%REVISION% (c) 2012-2017 http://xpra.org/</string>
+	<string>%VERSION%-r%REVISION% (c) 2012-2018 http://xpra.org/</string>
 	<key>CFBundleIconFile</key>
 	<string>xpra.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -27,7 +27,7 @@
 	<key>CFBundleSignature</key>
 	<string>xpra</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright 2012-2017 Antoine Martin antoine@devloop.org.uk, GNU General Public License.</string>
+	<string>Copyright 2012-2018 Antoine Martin antoine@devloop.org.uk, GNU General Public License.</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.5</string>
 	<key>LSUIElement</key>
