@@ -347,10 +347,15 @@ class SocketConnection(Connection):
         if not s:
             return None
         info = {
-                "family"        : FAMILY_STR.get(s.family, int(s.family)),
                 "proto"         : s.proto,
-                "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
                 }
+        try:
+            info.update({
+                "family"        : FAMILY_STR.get(s.family, int(s.family)),
+                "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
+                })
+        except Exception:
+            log("do_get_socket_info()", exc_info=True)
         if self.nodelay is not None:
             info["nodelay"] = self.nodelay
         try:
