@@ -152,9 +152,9 @@
 	</autotools>
 
 	<autotools id="x264" autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s" autogenargs="--enable-pic --enable-shared --enable-static" autogen-sh="configure">
-		<branch module="/pub/x264/snapshots/x264-snapshot-20171222-2245-stable.tar.bz2"
-			version="20171222-2245-stable"
-			hash="sha256:420a2d0dc817f2fa7247c30c253f94c041fc4c41a9c04fd39f4a0e6867cb89fb"
+		<branch module="/pub/x264/snapshots/x264-snapshot-20180401-2245-stable.tar.bz2"
+			version="20180401-2245-stable"
+			hash="sha256:56c76d689ed424496bf58d15859a6bf84b72f4269326045ad107671db419bfda"
 			repo="download.videolan.org"/>
 		<dependencies>
 			<dep package="yasm"/>
