@@ -149,7 +149,7 @@ def gendigest(digest, password, salt):
     salt = memoryview_to_bytes(salt)
     password = strtobytes(password)
     if digest=="xor":
-        salt = salt.ljust(16, "\x00")[:len(password)]
+        salt = salt.ljust(len(password), "\x00")[:len(password)]
         return memoryview_to_bytes(xor(password, salt))
     digestmod = get_digest_module(digest)
     if not digestmod:
