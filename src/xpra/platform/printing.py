@@ -89,6 +89,7 @@ if not WIN32:
         from xpra.platform.pycups_printing import get_printers, print_files, printing_finished, init_printing, cleanup_printing, get_info
         assert get_printers and print_files and printing_finished and init_printing, cleanup_printing
     except Exception as e:
+        log("cannot load pycups", exc_info=True)
         err("Error: printing disabled:")
         err(" %s", e)
         del e
