@@ -44,6 +44,8 @@ def get_queue_time(default_value=450, prefix=""):
 
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
+IGNORED_INPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
+IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "").split(",")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), "0")=="1"
 
@@ -666,7 +668,16 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
                 filters.append(match)
             match = match.lower()
             log("trying to match '%s' in devices=%s", match, devices)
-            matches = dict((k,v) for k,v in devices.items() if bytestostr(k).lower().find(match)>=0 or bytestostr(v).lower().find(match)>=0)
+            kl = bytestostr(k).strip().lower()
+            vl = bytestostr(v).strip().lower()
+            ignore = ()
+            if input_or_output is True:
+                ignore = IGNORED_INPUT_DEVICES
+            elif input_or_output is False:
+                ignore = IGNORED_OUTPUT_DEVICES
+            else:
+                ignore = IGNORED_INPUT_DEVICES+IGNORED_OUTPUT_DEVICES
+            matches = dict((k,v) for k,v in devices.items() if (kl.find(match)>=0 or vl.find(match)>=0) and vl not in ignore)
             #log("matches(%s, %s)=%s", devices, match, matches)
             if len(matches)==1:
                 log("found name match for '%s': %s", match, tuple(matches.items())[0])
