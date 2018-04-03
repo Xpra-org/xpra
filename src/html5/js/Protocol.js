@@ -388,7 +388,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 		var actual_size = bdata.length;
 		//convert string to a byte array:
 		var cdata = [];
-		for (var i=0; i<bdata.length; i++)
+		for (var i=0; i<actual_size; i++)
 			cdata.push(ord(bdata[i]));
 		var level = 0;
 		/*

@@ -32,8 +32,8 @@ $(function() {
 		$('.notifications').prepend(a);
 		if (icon) {
 			var encoding = icon[0],
-				w = icon[1],
-				h = icon[2],
+				//w = icon[1],
+				//h = icon[2],
 				img_data = icon[3];
 			if (encoding=="png") {
 				var src = "data:image/"+encoding+";base64," + window.btoa(img_data);

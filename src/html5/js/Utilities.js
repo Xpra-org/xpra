@@ -211,7 +211,7 @@ var Utilities = {
 		  if (isIOSChrome) {
 			  return true;
 		  }
-		  else if (isChromium !== null && isChromium !== undefined && vendorName === "Google Inc." && isOpera == false && isIEedge == false) {
+		  else if (isChromium !== null && isChromium !== undefined && vendorName === "Google Inc." && isOpera === false && isIEedge === false) {
 			  return true;
 		  }
 		  else {
@@ -223,7 +223,6 @@ var Utilities = {
 	},
 
 	getSimpleUserAgentString : function() {
-		var ua = navigator.userAgent.toLowerCase();
 		if (Utilities.isFirefox()) {
 			return "Firefox";
 		}
