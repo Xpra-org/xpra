@@ -1738,7 +1738,7 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 		ctx._window_mouse_up,
 		ctx._window_mouse_scroll,
 		ctx._tray_set_focus,
-		ctx._tray_closed,
+		ctx._tray_closed
 		);
 	ctx.id_to_window[wid] = win;
 	ctx.send_tray_configure(wid);
@@ -1989,11 +1989,12 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
  */
 XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	//TODO: add UI switch to disable notifications
-	var dbus_id = packet[1];
+	//unused:
+	//var dbus_id = packet[1];
+	//var app_name = packet[3];
+	//var app_icon = packet[5];
 	var nid = packet[2];
-	var app_name = packet[3];
 	var replaces_nid = packet[4];
-	var app_icon = packet[5];
 	var summary = packet[6];
 	var body = packet[7];
 	var expire_timeout = packet[8];
@@ -2621,8 +2622,8 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	// since we use a synchronous clipboard,
 	// but older servers may still request it..
 	var request_id = packet[1],
-		selection = packet[2],
-		target = packet[3];
+		selection = packet[2];
+		//target = packet[3];
 
 	var packet;
 	var clipboard_buffer = ctx.get_clipboard_buffer();
