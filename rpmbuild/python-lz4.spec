@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        1.0.0
-Release:        1%{?dist}
+Release:        2.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -91,6 +91,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Apr 03 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.21.6-2.xpra1
+- Force upgrade of broken Fedora 28 package, which is missing the new python "deprecation" dependency
+
 * Mon Feb 05 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.21.6-1
 - New upstream release
 
