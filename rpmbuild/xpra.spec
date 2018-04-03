@@ -311,8 +311,8 @@ Obsoletes:          libvpx-xpra
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
-Requires:			python3-netifaces
 Requires:			python3-gobject
+Recommends:			python3-netifaces
 Recommends:			dbus-python
 Recommends:			python3-avahi
 %if 0%{?fedora}
