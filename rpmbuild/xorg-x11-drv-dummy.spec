@@ -1,6 +1,7 @@
 %global tarball xf86-video-dummy
 %global moduledir %(pkg-config xorg-server --variable=moduledir )
 %global driverdir %{moduledir}/drivers
+%{!?make_build: %global make_build make}
 
 %undefine _hardened_build
 
