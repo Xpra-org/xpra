@@ -1180,7 +1180,7 @@ class WindowSource(WindowIconSource):
         self._damage_delayed_expired = False
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = now, regions, actual_encoding, options or {}
-        damagelog("damage%-24s wid=%s, scheduling batching expiry for sequence %s in %.1f ms", (x, y, w, h, options), self.wid, self._sequence, delay)
+        damagelog("damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms", (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         self.expire_timer = self.timeout_add(delay, self.expire_delayed_region, delay)
 
