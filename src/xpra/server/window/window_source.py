@@ -686,8 +686,8 @@ class WindowSource(WindowIconSource):
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
         pcmult = float(min(20, 0.5+self.statistics.packet_count))/20.0
-        max_rgb_threshold = 128*1024
-        min_rgb_threshold = 4096
+        max_rgb_threshold = 32*1024
+        min_rgb_threshold = 2048
         cv = self.global_statistics.congestion_value
         if cv>0.1:
             max_rgb_threshold = int(32*1024/(1+cv))
