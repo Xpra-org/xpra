@@ -9,6 +9,8 @@
 
 $(function() {
 
+	window.notification_timers = {};
+
 	window.doNotification = function(type, nid, title, message, timeout, icon, actions, hints, onAction, onClose){
 		console.debug("doNotification", type, nid, title, message, timeout, icon, actions, hints, onAction, onClose);
 		var nID = 'notification' + nid;
@@ -42,6 +44,7 @@ $(function() {
 		}
 
 		a.on('click', '.dismiss', function() {
+			window.cancelNotificationTimer(nid);
 			a.removeClass('visible').addClass('hidden');
 			a.on('transitionend webkitTransitionEnd', $.debounce(250, function() {
 					a.trigger('dismissed');
@@ -70,6 +73,7 @@ $(function() {
 					a.data('timeLeft', tleft);
 				}
 			}, 1000);
+			window.notification_timers[nid] = it;
 		}
 		return a;
 	};
@@ -87,18 +91,33 @@ $(function() {
 		});
 		return notification_button;
 	}
-	
+
+	window.cancelNotificationTimer = function(nid) {
+		var timer = window.notification_timers[nid];
+		if (timer) {
+			window.clearInterval(timer);
+			delete window.notification_timers[nid];
+		}
+	}
+	window.cancelNotificationTimers = function() {
+		for (var nid in window.notification_timers) {
+			window.cancelNotificationTimer(nid);
+		}
+	}
 
 	window.closeNotification = function(nid) {
+		window.cancelNotificationTimer(nid);
 		var nID = 'notification' + nid;
 		$('.notifications').find('#'+nID).find('.dismiss').trigger('click');
 	}
 
 	window.clearNotifications = function(){
+		window.cancelNotificationTimers();
 		$('.notifications').find('.dismiss').trigger('click');
 	};
 
 	window.removeNotifications = function(){
+		window.cancelNotificationTimers();
 		$('.notifications').empty();
 	};
 });
