@@ -75,11 +75,13 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     algo = "not"
     l = len(pixels)
     if l>=512 and speed<100:
-        if l>=32768:
+        if l>=4096:
+            #speed=99 -> level=1, speed=0 -> level=9
             level = 1+max(0, min(8, int(100-speed)//12))
         else:
-            #fewer pixels, make it more likely we won't bother compressing (speed>90):
-            level = max(0, min(5, int(110-speed)//20))
+            #fewer pixels, make it more likely we won't bother compressing
+            #and use a lower level (max=5)
+            level = max(0, min(5, int(115-speed)//20))
     if level>0:
         if rgb_lz4 and compression.use_lz4:
             cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True, level=level)
