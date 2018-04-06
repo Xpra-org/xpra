@@ -95,10 +95,11 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         GTKRootWindowModel.__init__(self, root_window)
         screen = root_window.get_screen()
         screen.connect("size-changed", self._screen_size_changed)
+        self.geometry = root_window.get_geometry()[2:4]
         self.capture = None
 
     def __repr__(self):
-        return "GTKX11RootWindowModel(%#x)" % get_xwindow(self.window)
+        return "GTKX11RootWindowModel(%#x - %s)" % (get_xwindow(self.window), self.geometry)
 
     def suspend(self):
         self.close_capture()
@@ -115,7 +116,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def get_dimensions(self):
         #used by get_window_info only
-        return self.window.get_geometry()[2:4]
+        return self.geometry[2:4]
 
     def _screen_size_changed(self, screen):
         log("screen size changed: %s, closing current capture instance %s", screen, self.capture)
@@ -123,8 +124,8 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def get_image(self, x, y, width, height):
         image = None
+        ox, oy, ww, wh = self.geometry
         if not self.capture:
-            ww, wh = self.get_geometry()[2:4]
             if USE_NVFBC:
                 try:
                     if USE_NVFBC_CUDA:
@@ -142,7 +143,14 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
             if not self.capture:
                 self.capture = GTKImageCapture(self)
             log("shadow image capture=%s", self.capture)
-        return image or self.capture.get_image(x, y, width, height)
+        image = image or self.capture.get_image(ox+x, oy+y, width, height)
+        if ox>0 or oy>0:
+            #all we want to do here is adjust x and y...
+            #FIXME: this is inefficient and may take a copy of the pixels:
+            from xpra.codecs.image_wrapper import ImageWrapper
+            ix, iy, iw, ih, depth = image.get_geometry()
+            return ImageWrapper(ix-ox, iy-oy, iw, ih, image.get_pixels(), image.get_pixel_format(), depth, image.get_rowstride(), image.get_bytesperpixel(), image.get_planes(), thread_safe=True, palette=None)
+        return image
 
 
 #FIXME: warning: this class inherits from ServerBase twice..
@@ -195,7 +203,31 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def makeRootWindowModels(self):
         log("makeRootWindowModels() root=%s", self.root)
-        return (GTKX11RootWindowModel(self.root),)
+        screen = self.root.get_screen()
+        n = screen.get_n_monitors()
+        models = []
+        for i in range(n):
+            geom = screen.get_monitor_geometry(i)
+            x, y, width, height = geom.x, geom.y, geom.width, geom.height
+            model = GTKX11RootWindowModel(self.root)
+            if hasattr(screen, "get_monitor_plug_name"):
+                plug_name = screen.get_monitor_plug_name(i)
+                if plug_name or n>1:
+                    model.title = plug_name or str(i)
+            model.geometry = (x, y, width, height)
+            models.append(model)
+        log("makeRootWindowModels()=%s", models)
+        return models
+
+    def _adjust_pointer(self, proto, wid, pointer):
+        pointer = X11ServerCore._adjust_pointer(self, proto, wid, pointer)
+        window = self._id_to_window.get(wid)
+        if window:
+            ox, oy = window.geometry[:2]
+            x, y = pointer
+            return x+ox, y+oy
+        return pointer
+
 
     def send_updated_screen_size(self):
         log("send_updated_screen_size")

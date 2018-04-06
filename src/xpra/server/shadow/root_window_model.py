@@ -74,6 +74,11 @@ class RootWindowModel(object):
         return self.internal_property_names
 
     def get_property(self, prop):
+        #subclasses can define properties as attributes:
+        attr_name = prop.replace("-", "_")
+        if hasattr(self, attr_name):
+            return getattr(self, attr_name)
+        #otherwise fallback to default behaviour:
         if prop=="title":
             return prettify_plug_name(self.window.get_screen().get_display().get_name())
         elif prop=="client-machine":
