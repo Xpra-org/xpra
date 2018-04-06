@@ -658,7 +658,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True, input_or_
         ignore = IGNORED_INPUT_DEVICES+IGNORED_OUTPUT_DEVICES
     if ignore and devices:
         #filter out the ignore list:
-        filtered = []
+        filtered = {}
         for k,v in devices.items():
             kl = bytestostr(k).strip().lower()
             vl = bytestostr(v).strip().lower()
