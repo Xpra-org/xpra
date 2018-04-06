@@ -206,8 +206,6 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
             bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
         bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
-        if self.soft_bandwidth_limit<=0:
-            return
         #figure out how to distribute the bandwidth amongst the windows,
         #we use the window size,
         #(we should actually use the number of bytes actually sent: framerate, compression, etc..)
@@ -223,9 +221,12 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
         total_weight = sum(window_weight.values())
         for wid, ws in self.window_sources.items():
-            weight = window_weight.get(wid)
-            if weight is not None:
-                ws.bandwidth_limit = max(1, bandwidth_limit*weight//total_weight)
+            if bandwidth_limit==0:
+                ws.bandwidth_limit = 0
+            else:
+                weight = window_weight.get(wid)
+                if weight is not None:
+                    ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
 
     def parse_hello(self, c):
