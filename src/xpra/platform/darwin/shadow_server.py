@@ -85,7 +85,7 @@ class ShadowServer(GTKShadowServerBase):
         from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
-    def makeRootWindowModel(self):
+    def makeRootWindowModels(self):
         return (OSXRootWindowModel(self.root),)
 
 

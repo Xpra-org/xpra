@@ -194,7 +194,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
 
     def makeRootWindowModels(self):
-        log("makeRootWindowModel() root=%s", self.root)
+        log("makeRootWindowModels() root=%s", self.root)
         return (GTKX11RootWindowModel(self.root),)
 
     def send_updated_screen_size(self):
