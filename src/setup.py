@@ -1604,8 +1604,6 @@ else:
             modules.append("UserString")
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
-        modules.append("xpra.scripts.gtk_info")
-        modules.append("xpra.scripts.show_webcam")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
@@ -1902,6 +1900,8 @@ if crypto_ENABLED and (OSX or WIN32):
 #special case for client: cannot use toggle_packages which would include gtk3, etc:
 if client_ENABLED:
     add_modules("xpra.client", "xpra.client.mixins")
+    add_modules("xpra.scripts.gtk_info")
+    add_modules("xpra.scripts.show_webcam")
 toggle_packages((client_ENABLED and (gtk2_ENABLED or gtk3_ENABLED)) or (PYTHON3 and sound_ENABLED) or server_ENABLED, "xpra.gtk_common")
 toggle_packages(client_ENABLED and gtk2_ENABLED, "xpra.client.gtk2")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3")
