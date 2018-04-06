@@ -512,7 +512,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             and returns username, password, host, port
             missing arguments will be empty (username and password) or 0 (port)
         """
-        upos = host.find("@")
+        upos = host.rfind("@")
         username = None
         password = None
         port = default_port
@@ -644,9 +644,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     elif protocol=="socket":
         #use the socketfile specified:
         if afterproto.find("@")>=0:
-            parts = afterproto.split("@", 1)
-            parse_username_and_password(parts[0])
-            sockfile = parts[1]
+            parts = afterproto.split("@")
+            parse_username_and_password("@".join(parts[:-1]))
+            sockfile = parts[-1]
         else:
             sockfile = afterproto
         desc.update({
@@ -717,9 +717,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         return desc
     elif WIN32 or display_name.startswith("named-pipe:"):
         if afterproto.find("@")>=0:
-            parts = afterproto.split("@", 1)
-            parse_username_and_password(parts[0])
-            pipe_name = parts[1]
+            parts = afterproto.split("@")
+            parse_username_and_password("@".join(parts[:-1]))
+            pipe_name = parts[-1]
         else:
             pipe_name = afterproto
         desc.update({
