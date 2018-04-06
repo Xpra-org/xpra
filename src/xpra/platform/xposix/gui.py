@@ -584,10 +584,10 @@ class XI2_Window(object):
             self.XI2.connect(window, "XI_DeviceChanged", self.do_xi_device_changed)
             self.XI2.connect(window, "XI_HierarchyChanged", self.do_xi_hierarchy_changed)
 
-    def do_xi_device_changed(self, *args):
+    def do_xi_device_changed(self, *_args):
         self.motion_valuators = {}
 
-    def do_xi_hierarchy_changed(self, *args):
+    def do_xi_hierarchy_changed(self, *_args):
         self.motion_valuators = {}
 
 
