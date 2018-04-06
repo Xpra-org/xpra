@@ -16,6 +16,7 @@ from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.net.compression import Compressed
 
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 
@@ -45,8 +46,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def cleanup(self):
         self.cleanup_tray()
-        GTKServerBase.cleanup(self)
+        #root window models aren't like regular window models
+        #(which get cleaned up using the unmanage signal)
+        for model in self._id_to_window.values():
+            model.cleanup()
         ShadowServerBase.cleanup(self)
+        GTKServerBase.cleanup(self)
 
 
     def client_startup_complete(self, ss):
@@ -70,6 +75,18 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.stop_poll_pointer_position()
         ShadowServerBase.stop_refresh(self)
 
+    def refresh(self):
+        if not self.mapped:
+            self.refresh_timer = None
+            return False
+        for window in self._id_to_window.values():
+            w, h = window.get_dimensions()
+            self._damage(window, 0, 0, w, h)
+        return True
+
+
+    ############################################################################
+    # pointer polling
 
     def stop_poll_pointer_position(self):
         ppt = self.pointer_position_timer
@@ -85,16 +102,27 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
 
     def poll_pointer_position(self):
-        wid = self._window_to_id.get(self.root_window_model)
-        if not wid:
-            self.pointer_position_timer = None
-            return False
         x, y = self.root.get_pointer()[-3:-1]
-        mouselog("poll_pointer_position() wid=%i, position=%s", wid, (x, y))
+        #find the window model containing the pointer:
         if self.last_pointer_position!=(x, y):
             self.last_pointer_position = (x, y)
-            for ss in self._server_sources.values():
-                ss.update_mouse(wid, x, y, x, y)
+            rwm = None
+            rx, ry = 0, 0
+            for wid, window in self._id_to_window.items():
+                wx, wy, ww, wh = window.get_geometry()
+                if x>=wx and x<(wx+ww) and y>=wy and y<(wy+wh):
+                    rwm = window
+                    rx = x-wx
+                    ry = y-wy
+                    break
+            if rwm:
+                mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
+                for ss in self._server_sources.values():
+                    ss.update_mouse(wid, x, y, rx, ry)
+            else:
+                mouselog("poll_pointer_position() model not found for position=%s", (x, y))
+        else:
+            mouselog("poll_pointer_position() unchanged position=%s", (x, y))
         return True
 
 
@@ -231,3 +259,17 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if self.tray_menu_shown:
             self.tray_menu.popdown()
             self.tray_menu_shown = False
+
+
+    ############################################################################
+    # screenshot
+    def do_make_screenshot_packet(self):
+        #from PIL import Image
+        #TODO
+        #img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
+        #get_image(self, x, y, width, height):
+        assert len(self._id_to_window)==1, "multi root window screenshot not implemented yet"
+        rwm = self._id_to_window.values()[0]
+        w, h, encoding, rowstride, data = rwm.take_screenshot()
+        assert encoding=="png"  #use fixed encoding for now
+        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]

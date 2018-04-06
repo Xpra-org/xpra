@@ -324,14 +324,15 @@ class ShadowServer(GTKShadowServerBase):
         return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)
 
 
-    def makeRootWindowModel(self):
-        return Win32RootWindowModel(self.root, self.pixel_depth)
+    def makeRootWindowModels(self):
+        return (Win32RootWindowModel(self.root, self.pixel_depth),)
 
 
     def refresh(self):
         v = GTKShadowServerBase.refresh(self)
         if v and SEAMLESS:
-            self.root_window_model.refresh_shape()
+            for rwm in self._id_to_window.values():
+                rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
 

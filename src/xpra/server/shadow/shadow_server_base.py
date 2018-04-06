@@ -10,7 +10,6 @@ from xpra.log import Logger
 log = Logger("shadow")
 notifylog = Logger("notify")
 
-from xpra.net.compression import Compressed
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.rfb.rfb_server import RFBServer
@@ -28,12 +27,11 @@ class ShadowServerBase(RFBServer):
 
     def __init__(self, root_window):
         self.root = root_window
-        self.root_window_model = None
         self.mapped = False
         self.pulseaudio = False
         self.sharing = True
         self.refresh_delay = REFRESH_DELAY
-        self.timer = None
+        self.refresh_timer = None
         self.notifications = False
         self.notifier = None
         DamageBatchConfig.ALWAYS = True             #always batch
@@ -48,10 +46,6 @@ class ShadowServerBase(RFBServer):
 
     def cleanup(self):
         self.stop_refresh()
-        rwm = self.root_window_model
-        if rwm:
-            rwm.cleanup()
-            self.root_window_model = None
         n = self.notifier
         if n:
             n.cleanup()
@@ -65,7 +59,7 @@ class ShadowServerBase(RFBServer):
         return "shadow"
 
     def print_screen_info(self):
-        w, h = self.root_window_model.get_dimensions()
+        w, h = self.root.get_geometry()[2:4]
         display = os.environ.get("DISPLAY")
         self.do_print_screen_info(display, w, h)
 
@@ -83,8 +77,6 @@ class ShadowServerBase(RFBServer):
         info = {
             "notifications" : self.notifications,
             }
-        if self.root_window_model:
-            info["root-window"] = self.root_window_model.get_info()
         return info
 
 
@@ -110,7 +102,8 @@ class ShadowServerBase(RFBServer):
     ############################################################################
     # notifications
     def notify_setup_error(self, exception):
-        log.info("notification forwarding is not available")
+        notifylog("notify_setup_error(%s)", exception)
+        notifylog.info("notification forwarding is not available")
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
@@ -157,7 +150,7 @@ class ShadowServerBase(RFBServer):
 
     def start_refresh(self):
         self.mapped = True
-        self.timer = self.timeout_add(self.refresh_delay, self.refresh)
+        self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v):
         assert v>0 and v<10000
@@ -173,19 +166,14 @@ class ShadowServerBase(RFBServer):
         self.cancel_refresh_timer()
 
     def cancel_refresh_timer(self):
-        t = self.timer
+        t = self.refresh_timer
         log("cancel_refresh_timer() timer=%s", t)
         if t:
-            self.timer = None
+            self.refresh_timer = None
             self.source_remove(t)
 
     def refresh(self):
-        if not self.mapped:
-            self.timer = None
-            return False
-        w, h = self.root_window_model.get_dimensions()
-        self._damage(self.root_window_model, 0, 0, w, h)
-        return True
+        raise NotImplementedError()
 
     ############################################################################
 
@@ -225,21 +213,22 @@ class ShadowServerBase(RFBServer):
         self.keyboard_config = server_source.set_default_keymap()
 
     def load_existing_windows(self):
-        self.root_window_model = self.makeRootWindowModel()
-        log("load_existing_windows() root window model=%s", self.root_window_model)
-        self._add_new_window(self.root_window_model)
-        w, h = self.root_window_model.get_dimensions()
-        self.min_mmap_size = w*h*4*2        #at least big enough for 2 frames of BGRX pixel data
+        self.min_mmap_size = 1024*1024*4*2
+        for i,model in enumerate(self.makeRootWindowModels()):
+            log("load_existing_windows() root window model %i: %s", i, model)
+            self._add_new_window(model)
+            #at least big enough for 2 frames of BGRX pixel data:
+            w, h = model.get_dimensions()
+            self.min_mmap_size = max(self.min_mmap_size, w*h*4*2)
 
-    def makeRootWindowModel(self):
-        return RootWindowModel(self.root)
+    def makeRootWindowModels(self):
+        return (RootWindowModel(self.root),)
 
     def send_initial_windows(self, ss, sharing=False):
         log("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
         for wid in sorted(self._id_to_window.keys()):
             window = self._id_to_window[wid]
-            assert window == self.root_window_model, "expected window to be %s, but got %s" % (self.root_window_model, window)
-            w, h = self.root_window_model.get_dimensions()
+            w, h = window.get_dimensions()
             ss.new_window("new-window", wid, window, 0, 0, w, h, self.client_properties.get(wid, {}).get(ss.uuid))
 
 
@@ -248,14 +237,12 @@ class ShadowServerBase(RFBServer):
         self._send_new_window_packet(window)
 
     def _send_new_window_packet(self, window):
-        assert window == self.root_window_model
-        geometry = self.root.get_geometry()[:4]
+        geometry = window.get_geometry()
         self._do_send_new_window_packet("new-window", window, geometry)
 
     def _process_window_common(self, wid):
         window = self._id_to_window.get(wid)
         assert window is not None
-        assert window == self.root_window_model
         return window
 
     def _process_map_window(self, proto, packet):
@@ -264,7 +251,7 @@ class ShadowServerBase(RFBServer):
         self._window_mapped_at(proto, wid, window, (x, y, width, height))
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, self.root_window_model, packet[6])
+            self._set_client_properties(proto, wid, window, packet[6])
         self.start_refresh()
 
     def _process_unmap_window(self, proto, packet):
@@ -273,7 +260,7 @@ class ShadowServerBase(RFBServer):
         for ss in self._server_sources.values():
             ss.unmap_window(wid, window)
         self._window_mapped_at(proto, wid, window, None)
-        self.root_window_model.suspend()
+        window.suspend()
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
@@ -281,7 +268,7 @@ class ShadowServerBase(RFBServer):
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, self.root_window_model, packet[6])
+            self._set_client_properties(proto, wid, window, packet[6])
 
     def _process_close_window(self, proto, packet):
         wid = packet[1]
@@ -290,9 +277,7 @@ class ShadowServerBase(RFBServer):
 
 
     def do_make_screenshot_packet(self):
-        w, h, encoding, rowstride, data = self.root_window_model.take_screenshot()
-        assert encoding=="png"  #use fixed encoding for now
-        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
+        raise NotImplementedError()
 
 
     def make_dbus_server(self):

@@ -86,7 +86,7 @@ class ShadowServer(GTKShadowServerBase):
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
     def makeRootWindowModel(self):
-        return  OSXRootWindowModel(self.root)
+        return (OSXRootWindowModel(self.root),)
 
 
     def screen_refresh_callback(self, _count, rects, info):
@@ -104,8 +104,10 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
+        assert len(self._id_to_window)==1, "cannot handle more than one root window"
+        rwm = self._id_to_window.values()[1]
         for x, y, w, h in rlist:
-            self._damage(self.root_window_model, int(x), int(y), int(w), int(h))
+            self._damage(rwm, int(x), int(y), int(w), int(h))
 
     def start_refresh(self):
         #don't use the timer, get damage notifications:

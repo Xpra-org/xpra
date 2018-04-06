@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -193,9 +193,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return None
 
 
-    def makeRootWindowModel(self):
+    def makeRootWindowModels(self):
         log("makeRootWindowModel() root=%s", self.root)
-        return GTKX11RootWindowModel(self.root)
+        return (GTKX11RootWindowModel(self.root),)
 
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
