@@ -194,7 +194,7 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         #calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0
         if BANDWIDTH_DETECTION:
-            bandwidth_limit = max(MIN_BANDWIDTH, self.statistics.avg_congestion_send_speed)
+            bandwidth_limit = self.statistics.avg_congestion_send_speed
             bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
             if bandwidth_limit>20*1024*1024:
                 #ignore congestion speed if greater 20Mbps
@@ -202,6 +202,8 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         if self.bandwidth_limit>0:
             #command line options could overrule what we detect?
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
+        if bandwidth_limit>0:
+            bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
         self.soft_bandwidth_limit = bandwidth_limit
         bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
         if self.soft_bandwidth_limit<=0:
