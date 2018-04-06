@@ -1228,6 +1228,7 @@ if WIN32:
                            #codecs:
                            "opus", "opusparse", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
+                           "autodetect",
                            #untested: a52dec, voaacenc
                            )
             add_dir(os.path.join("lib", "gstreamer-1.0"), [("libgst%s.dll" % x) for x in GST_PLUGINS])
