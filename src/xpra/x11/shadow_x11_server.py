@@ -26,6 +26,7 @@ geomlog = Logger("geometry")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
+MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 USE_NVFBC = envbool("XPRA_NVFBC", True)
 USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 if USE_NVFBC:
@@ -95,7 +96,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         GTKRootWindowModel.__init__(self, root_window)
         screen = root_window.get_screen()
         screen.connect("size-changed", self._screen_size_changed)
-        self.geometry = root_window.get_geometry()[2:4]
+        self.geometry = root_window.get_geometry()[:4]
         self.capture = None
 
     def __repr__(self):
@@ -203,6 +204,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def makeRootWindowModels(self):
         log("makeRootWindowModels() root=%s", self.root)
+        if not MULTI_WINDOW:
+            return (GTKX11RootWindowModel(self.root),)
         screen = self.root.get_screen()
         n = screen.get_n_monitors()
         models = []
