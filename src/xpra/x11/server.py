@@ -702,21 +702,10 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _lost_window(self, window, wm_exiting=False):
-        wid = self._window_to_id[window]
-        windowlog("lost_window: %s - %s", wid, window)
-        for ss in self._server_sources.values():
-            ss.lost_window(wid, window)
-        del self._window_to_id[window]
-        del self._id_to_window[wid]
-        for ss in self._server_sources.values():
-            ss.remove_window(wid, window)
+        wid = self._remove_window(window)
         self.cancel_configure_damage(wid)
         if not wm_exiting:
             self.repaint_root_overlay()
-        try:
-            del self.client_properties[wid]
-        except KeyError:
-            pass
 
     def _contents_changed(self, window, event):
         if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):

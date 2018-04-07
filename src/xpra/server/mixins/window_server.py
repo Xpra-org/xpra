@@ -100,6 +100,21 @@ class WindowServer(StubServerMixin):
             ss.window_metadata(wid, window, pspec.name)
 
 
+    def _remove_window(self, window):
+        wid = self._window_to_id[window]
+        log("remove_window: %s - %s", wid, window)
+        for ss in self._server_sources.values():
+            ss.lost_window(wid, window)
+        del self._window_to_id[window]
+        del self._id_to_window[wid]
+        for ss in self._server_sources.values():
+            ss.remove_window(wid, window)
+        try:
+            del self.client_properties[wid]
+        except KeyError:
+            pass
+        return wid
+
     def _add_new_window_common(self, window):
         props = window.get_dynamic_property_names()
         metalog("add_new_window_common(%s) watching for dynamic properties: %s", window, props)

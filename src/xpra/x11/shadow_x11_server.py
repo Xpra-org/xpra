@@ -12,8 +12,9 @@ from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time
 from xpra.util import envbool, envint, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
+from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
+from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel, get_rgb_rawdata, take_png_screenshot
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
 XImage = XImageBindings()
@@ -79,23 +80,52 @@ class XImageCapture(object):
             end = monotonic_time()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 
+
 class GTKImageCapture(object):
-    def __init__(self, root_window_model):
-        self.root_window_model = root_window_model
+    def __init__(self, window):
+        self.window = window
 
     def clean(self):
         pass
 
     def get_image(self, x, y, width, height):
-        return GTKRootWindowModel.get_image(self.root_window_model, x, y, width, height)
+        v = get_rgb_rawdata(self.window, x, y, width, height)
+        if v is None:
+            return None
+        return ImageWrapper(*v)
+
+    def take_screenshot(self):
+        return take_png_screenshot(self.window)
+
+
+def setup_capture(window):
+    ww, wh = window.get_geometry()[2:4]
+    capture = None
+    if USE_NVFBC:
+        try:
+            if USE_NVFBC_CUDA:
+                capture = NvFBC_CUDACapture()
+            else:
+                capture = NvFBC_SysCapture()
+            capture.init_context(ww, wh)
+            image = capture.get_image(0, 0, ww, wh)
+            assert image
+        except Exception as e:
+            log("get_image() NvFBC test failed", exc_info=True)
+            log("not using %s: %s", capture, e)
+            capture = None
+    if not capture and XImage.has_XShm() and USE_XSHM:
+        capture = XImageCapture(get_xwindow(window))
+    if not capture:
+        capture = GTKImageCapture(window)
+    log("setup_capture(%s)=%s", window, capture)
+    return capture
 
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
 
     def __init__(self, root_window):
         GTKRootWindowModel.__init__(self, root_window)
-        screen = root_window.get_screen()
-        screen.connect("size-changed", self._screen_size_changed)
         self.geometry = root_window.get_geometry()[:4]
         self.capture = None
 
@@ -119,38 +149,18 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         #used by get_window_info only
         return self.geometry[2:4]
 
-    def _screen_size_changed(self, screen):
-        log("screen size changed: %s, closing current capture instance %s", screen, self.capture)
-        self.close_capture()
-
     def get_image(self, x, y, width, height):
         image = None
-        ox, oy, ww, wh = self.geometry
         if not self.capture:
-            if USE_NVFBC:
-                try:
-                    if USE_NVFBC_CUDA:
-                        self.capture = NvFBC_CUDACapture()
-                    else:
-                        self.capture = NvFBC_SysCapture()
-                    self.capture.init_context(ww, wh)
-                    image = self.capture.get_image(x, y, width, height)
-                except Exception as e:
-                    log("get_image() NvFBC test failed", exc_info=True)
-                    log("not using %s: %s", self.capture, e)
-                    self.capture = None
-            if not self.capture and XImage.has_XShm() and USE_XSHM:
-                self.capture = XImageCapture(get_xwindow(self.window))
-            if not self.capture:
-                self.capture = GTKImageCapture(self)
-            log("shadow image capture=%s", self.capture)
+            self.capture = setup_capture(self.window)
+            assert self.capture, "no capture method available"
+        ox, oy = self.geometry[:2]
         image = image or self.capture.get_image(ox+x, oy+y, width, height)
         if ox>0 or oy>0:
             #all we want to do here is adjust x and y...
             #FIXME: this is inefficient and may take a copy of the pixels:
-            from xpra.codecs.image_wrapper import ImageWrapper
-            ix, iy, iw, ih, depth = image.get_geometry()
-            return ImageWrapper(ix-ox, iy-oy, iw, ih, image.get_pixels(), image.get_pixel_format(), depth, image.get_rowstride(), image.get_bytesperpixel(), image.get_planes(), thread_safe=True, palette=None)
+            # but the XImageCapture cannot share buffers, so adjusting coordinates is not enough
+            image = ImageWrapper(x, y, width, height, image.get_pixels(), image.get_pixel_format(), image.get_depth(), image.get_rowstride(), image.get_bytesperpixel(), image.get_planes(), thread_safe=True, palette=None)
         return image
 
 
@@ -235,16 +245,15 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
         X11ServerCore.send_updated_screen_size(self)
-        for wid, window in self._id_to_window.items():
-            w, h = window.get_dimensions()
-            geomlog("%i new window dimensions: %s", wid, (w, h))
-            for ss in self._server_sources.values():
-                #first, make sure the size-hints are updated:
-                ss.window_metadata(wid, window, "size-hints")
-                #tell client to resize now:
-                ss.resize_window(wid, window, w, h)
-                #refresh to ensure the client gets the new window contents:
-                ss.damage(wid, window, 0, 0, w, h)
+        #remove all existing models and re-create them:
+        for model in self._id_to_window.values():
+            model.close_capture()
+            self._remove_window(model)
+        for model in self.makeRootWindowModels():
+            self._add_new_window(model)
+        sharing = len(self._server_sources)>1
+        for ss in self._server_sources.values():
+            self.send_initial_windows(ss, sharing)
 
 
     def last_client_exited(self):
