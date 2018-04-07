@@ -433,7 +433,7 @@ class WindowClient(StubClientMixin):
         if len(packet)>=5:
             metadata = typedict(packet[4])
         traylog("tray %i metadata=%s", wid, metadata)
-        assert wid not in self._id_to_window, "we already have a window %s" % wid
+        assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
         app_id = wid
         tray = self.setup_system_tray(self, app_id, wid, w, h, metadata)
         traylog("process_new_tray(%s) tray=%s", packet, tray)
@@ -625,7 +625,7 @@ class WindowClient(StubClientMixin):
         assert w>=0 and h>=0 and w<32768 and h<32768
         metadata = self.cook_metadata(True, packet[6])
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
-        assert wid not in self._id_to_window, "we already have a window %s" % wid
+        assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
         if w<1 or h<1:
             log.error("window dimensions are wrong: %sx%s", w, h)
             w, h = 1, 1

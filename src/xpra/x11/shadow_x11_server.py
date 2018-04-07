@@ -251,9 +251,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             self._remove_window(model)
         for model in self.makeRootWindowModels():
             self._add_new_window(model)
-        sharing = len(self._server_sources)>1
-        for ss in self._server_sources.values():
-            self.send_initial_windows(ss, sharing)
 
 
     def last_client_exited(self):
@@ -307,3 +304,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk%i/x11-shadow" % (2+is_gtk3())
         return info
+
+    def do_make_screenshot_packet(self):
+        capture = GTKImageCapture(self.root)
+        w, h, encoding, rowstride, data = capture.take_screenshot()
+        assert encoding=="png"  #use fixed encoding for now
+        from xpra.net.compression import Compressed
+        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]

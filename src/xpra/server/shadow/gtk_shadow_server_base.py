@@ -264,10 +264,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     ############################################################################
     # screenshot
     def do_make_screenshot_packet(self):
-        #from PIL import Image
-        #TODO
-        #img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", image.get_pixel_format(), image.get_rowstride())
-        #get_image(self, x, y, width, height):
         assert len(self._id_to_window)==1, "multi root window screenshot not implemented yet"
         rwm = self._id_to_window.values()[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
