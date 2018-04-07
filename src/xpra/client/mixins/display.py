@@ -425,7 +425,7 @@ class DisplayClient(StubClientMixin):
         return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
 
     def update_screen_size(self):
-        self.screen_size_change_pending = False
+        self.screen_size_change_timer = None
         screen_settings = self.get_screen_settings()
         screenlog("update_screen_size()     new settings=%s", screen_settings)
         screenlog("update_screen_size() current settings=%s", self._last_screen_settings)
@@ -485,7 +485,7 @@ class DisplayClient(StubClientMixin):
         if not self.can_scale:
             scalinglog("scale_change(%s, %s) ignored, scaling is disabled", xchange, ychange)
             return
-        if self.screen_size_change_pending:
+        if self.screen_size_change_timer:
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
         if monotonic_time()<self.scale_change_embargo:
