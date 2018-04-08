@@ -105,7 +105,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
         assert len(self._id_to_window)==1, "cannot handle more than one root window"
-        rwm = self._id_to_window.values()[1]
+        rwm = self._id_to_window.values()[0]
         for x, y, w, h in rlist:
             self._damage(rwm, int(x), int(y), int(w), int(h))
 
@@ -126,7 +126,7 @@ class ShadowServer(GTKShadowServerBase):
         GTKShadowServerBase.start_refresh(self)
 
     def stop_refresh(self):
-        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.timer)
+        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.refresh_timer)
         if self.refresh_registered:
             try:
                 err = CG.CGUnregisterScreenRefreshCallback(self.screen_refresh_callback, None)
