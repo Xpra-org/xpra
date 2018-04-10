@@ -194,10 +194,22 @@
 
 	<distutils id="python3-pillow" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/0f/57/25be1a4c2d487942c3ed360f6eee7f41c5b9196a09ca71c54d1a33c968d9/Pillow-5.0.0.tar.gz"
-			hash="sha256:12f29d6c23424f704c66b5b68c02fe0b571504459605cfe36ab8158359b0e1bb"
-			version="5.0.0"/>
+			module="/packages/89/b8/2f49bf71cbd0e9485bb36f72d438421b69b7356180695ae10bd4fd3066f5/Pillow-5.1.0.tar.gz"
+			hash="sha256:cee9bc75bff455d317b6947081df0824a8f118de2786dc3d74a3503fd631f4ef"
+			version="5.1.0"/>
 		<dependencies>
+			<dep package="python"/>
+			<dep package="libwebp"/>
+			<dep package="libpng"/>
+			<dep package="libjpeg"/>
+		</dependencies>
+		<after>
+			<dep package="python"/>
+			<dep package="libwebp"/>
+			<dep package="libpng"/>
+			<dep package="libjpeg"/>
+		</after>
+	</distutils>
 			<dep package="python3"/>
 			<dep package="libwebp"/>
 			<dep package="libpng"/>
