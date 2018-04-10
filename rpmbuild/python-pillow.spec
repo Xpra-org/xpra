@@ -1,3 +1,4 @@
+%{!?__python2: %global __python2 /usr/bin/python2}
 %global py2_incdir %{_includedir}/python%{python_version}
 %global py3_incdir %{_includedir}/python%{python3_version}
 
@@ -194,6 +195,9 @@ PIL image wrapper for Qt.
 %endif
 
 
+%global debug_package %{nil}
+
+
 %prep
 %setup -q -n Pillow-%{version}
 %if %{with_python3}
@@ -205,7 +209,7 @@ cp -a . %{py3dir}
 %build
 # Build Python 2 modules
 find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python}|'
-CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 %if %{with_webp} == 0
 #couldn't find a better way to disable webp:
 #(--disable-webp is ignored)
@@ -235,13 +239,11 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
-install -m 644 libImaging/*.h $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
 %{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
 
 %if %{with_python3}
 pushd %{py3dir}
 install -d $RPM_BUILD_ROOT/%{py3_incdir}/Imaging
-install -m 644 libImaging/*.h $RPM_BUILD_ROOT/%{py3_incdir}/Imaging
 %{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
 popd
 %endif
@@ -261,9 +263,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %files devel
 %{py2_incdir}/Imaging/
-
-%files doc
-%doc Scripts
 
 %files tk
 %{python_sitearch}/PIL/_imagingtk*
@@ -285,9 +284,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 
 %files -n %{name3}-devel
 %{py3_incdir}/Imaging/
-
-%files -n %{name3}-doc
-%doc Scripts
 
 %files -n %{name3}-tk
 %{python3_sitearch}/PIL/_imagingtk*
