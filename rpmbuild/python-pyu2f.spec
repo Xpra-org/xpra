@@ -13,13 +13,13 @@
 %define debug_package %{nil}
 
 Name:           python2-pyu2f
-Version:        0.1.2
+Version:        0.1.3
 Release:        1
 URL:            https://github.com/google/pyu2f
 Summary:        Python based U2F host library for Linux
 License:        BSD
 Group:          Development/Libraries/Python
-Source:        	https://pypi.python.org/packages/5e/84/12044502227f40ed51e40997bf1a86e07504a0cf0fcc3bdefccc78ce93aa/pyu2f-%{version}.tar.gz
+Source:			https://pypi.python.org/packages/10/ab/c1ec4cf20eb48281b54b0b0d86fdf8676cdf108f159018cce27bd065c6ec/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -37,7 +37,7 @@ pyu2f provides functionality for interacting with a U2F device over USB.
 %endif
 
 %prep
-%setup -q -n pyu2f-0.1.2
+%setup -q -n pyu2f-0.1.3
 
 %build
 %{__python2} ./setup.py build
