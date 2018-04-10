@@ -198,18 +198,6 @@
 			hash="sha256:cee9bc75bff455d317b6947081df0824a8f118de2786dc3d74a3503fd631f4ef"
 			version="5.1.0"/>
 		<dependencies>
-			<dep package="python"/>
-			<dep package="libwebp"/>
-			<dep package="libpng"/>
-			<dep package="libjpeg"/>
-		</dependencies>
-		<after>
-			<dep package="python"/>
-			<dep package="libwebp"/>
-			<dep package="libpng"/>
-			<dep package="libjpeg"/>
-		</after>
-	</distutils>
 			<dep package="python3"/>
 			<dep package="libwebp"/>
 			<dep package="libpng"/>
