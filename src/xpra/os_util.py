@@ -266,8 +266,10 @@ def load_binary_file(filename):
         with open(filename, "rb") as f:
             return f.read()
     except Exception as e:
-        get_util_logger().warn("Warning: failed to load '%s':", filename)
-        get_util_logger().warn(" %s", e)
+        from xpra.log import Logger
+        log = Logger("util")
+        log.warn("Warning: failed to load '%s':", filename)
+        log.warn(" %s", e)
         return None
 
 #here so we can override it when needed
