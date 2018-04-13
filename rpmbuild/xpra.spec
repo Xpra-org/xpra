@@ -612,6 +612,9 @@ fi
 
 
 %changelog
+* Fri Apr 13 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-2
+- rebuild with logging backport fix
+
 * Mon Apr 02 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
 - fix refresh loop with video region
 - fix NVENC codec compatibility with Cython 0.28

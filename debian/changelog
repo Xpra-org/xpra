@@ -1,4 +1,10 @@
+xpra (1.0.11-2) UNRELEASED; urgency=low
+  * rebuild with logging backport fix
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 13 Apr 2018 22:08:48 +0900
+
 xpra (1.0.11-1) UNRELEASED; urgency=low
+
   * fix refresh loop with video region
   * fix NVENC codec compatibility with Cython 0.28
   * fix unmanaged X11 calls causing GTK crashes
