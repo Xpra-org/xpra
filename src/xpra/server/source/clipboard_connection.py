@@ -86,6 +86,7 @@ class ClipboardConnection(StubSourceMixin):
                 log.warn("Warning: %s", msg)
                 #disable if this rate is sustained for more than S seconds:
                 events = [x for x in self.clipboard_stats if x>(now-MAX_CLIPBOARD_LIMIT_DURATION)]
+                log("%i events in the last %i seconds: %s", len(events), MAX_CLIPBOARD_LIMIT_DURATION, events)
                 if len(events)>=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION:
                     log.warn(" limit sustained for more than %i seconds,", MAX_CLIPBOARD_LIMIT_DURATION)
                     log.warn(" the clipboard is now disabled")
