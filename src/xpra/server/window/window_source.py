@@ -1443,7 +1443,10 @@ class WindowSource(WindowIconSource):
                     #better, so replace with merged regions:
                     regions = merged_rects
 
-            if len(regions)==1:
+            if not regions:
+                #nothing left after removing the exclude region
+                return
+            elif len(regions)==1:
                 merged = regions[0]
             else:
                 merged = merge_all(regions)
