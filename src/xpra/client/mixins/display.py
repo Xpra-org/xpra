@@ -49,7 +49,7 @@ class DisplayClient(StubClientMixin):
         self.dpi = 0
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
-        self.scale_change_embargo = 0
+        self.scale_change_embargo = float("inf")
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = None
@@ -240,6 +240,8 @@ class DisplayClient(StubClientMixin):
                 log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
                 log.warn(" you may see strange behavior,")
                 log.warn(" please see http://xpra.org/trac/wiki/Xdummy#Configuration")
+        #now that we have the server's screen info, allow scale changes:
+        self.scale_change_embargo = 0
         self.set_max_packet_size()
 
     def set_max_packet_size(self):
