@@ -859,25 +859,9 @@ class GTKTrayMenuBase(object):
         scaling_submenu = gtk.Menu()
         scaling_submenu.updating = False
         self.popup_menu_workaround(scaling_submenu)
-        def scalecmp(v):
-            return abs(self.client.xscale-v)<0.1
         from xpra.client.mixins.display import SCALING_OPTIONS
-        def scalingitem(scalingvalue=1.0):
-            pct = iround(100.0*scalingvalue)
-            label = {100 : "None"}.get(pct, "%i%%" % pct)
-            c = CheckMenuItem(label)
-            c.scalingvalue = scalingvalue
-            c.set_draw_as_radio(True)
-            c.set_active(scalecmp(scalingvalue))
-            def scaling_activated(item):
-                if scaling_submenu.updating:
-                    return
-                ensure_item_selected(scaling_submenu, item)
-                self.client.scaleset(item.scalingvalue, item.scalingvalue)
-            c.connect('activate', scaling_activated)
-            return c
         for x in SCALING_OPTIONS:
-            scaling_submenu.append(scalingitem(x))
+            scaling_submenu.append(self.make_scalingvaluemenuitem(scaling_submenu, x))
         def scaling_changed(*args):
             log("scaling_changed%s updating selected tray menu item", args)
             #find the nearest scaling option to show as current:
@@ -891,6 +875,26 @@ class GTKTrayMenuBase(object):
             scaling_submenu.updating = False
         self.client.connect("scaling-changed", scaling_changed)
         return scaling_submenu
+
+    def make_scalingvaluemenuitem(self, scaling_submenu, scalingvalue=1.0):
+        def scalecmp(v):
+            return abs(self.client.xscale-v)<0.1
+        pct = iround(100.0*scalingvalue)
+        label = {100 : "None"}.get(pct, "%i%%" % pct)
+        c = CheckMenuItem(label)
+        c.scalingvalue = scalingvalue
+        c.set_draw_as_radio(True)
+        c.set_active(False)
+        def scaling_activated(item):
+            if scaling_submenu.updating:
+                return
+            ensure_item_selected(scaling_submenu, item)
+            self.client.scaleset(item.scalingvalue, item.scalingvalue)
+        c.connect('activate', scaling_activated)
+        def set_active_state():
+            c.set_active(scalecmp(scalingvalue))
+        self.client.after_handshake(set_active_state)
+        return c
 
 
     def make_qualitymenuitem(self):
