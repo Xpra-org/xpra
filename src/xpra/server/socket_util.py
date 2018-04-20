@@ -14,6 +14,7 @@ from xpra.platform.dotxpra import DotXpra, norm_makepath
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
+GROUP = os.environ.get("XPRA_GROUP", "xpra")
 
 
 def add_cleanup(f):
@@ -63,14 +64,14 @@ def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="60
     uid = getuid()
     username = get_username_for_uid(uid)
     groups = get_groups(username)
-    if uid==0 or "xpra" in groups:
-        group_id = get_group_id("xpra")
+    if uid==0 or GROUP in groups:
+        group_id = get_group_id(GROUP)
         if group_id>=0:
             try:
                 os.lchown(sockpath, -1, group_id)
             except Exception as e:
                 log = get_network_logger()
-                log.warn("Warning: failed to set 'xpra' group ownership")
+                log.warn("Warning: failed to set '%s' group ownership", GROUP)
                 log.warn(" on socket '%s':", sockpath)
                 log.warn(" %s", e)
             #don't know why this doesn't work:
