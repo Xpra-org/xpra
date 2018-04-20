@@ -1818,7 +1818,13 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
                 #those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
                 args.append("--%s=%s" % (x, ",".join(str(x) for x in ov)))
         elif ftype==bool:
-            args.append("--%s=%s" % (x, ["no", "yes"][int(ov)]))
+            if compat and x in ("exit-with-children", "use-display", "mmap-group"):
+                #older servers don't take a bool value for those options,
+                #it is disabled unless specified:
+                if ov:
+                    args.append("--%s" % x)
+            else:
+                args.append("--%s=%s" % (x, ["no", "yes"][int(ov)]))
         elif ftype in (int, float, str):
             args.append("--%s=%s" % (x, ov))
         else:
