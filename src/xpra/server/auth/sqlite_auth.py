@@ -152,6 +152,7 @@ def authenticate(filename, username, password):
     sessions = a.get_sessions()
     assert sessions
     print("success, found %i session%s: %s" % (len(sessions), engs(sessions), sessions))
+    return 0
 
 def main(argv):
     def usage(msg="invalid number of arguments"):
