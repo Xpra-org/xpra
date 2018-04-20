@@ -61,7 +61,7 @@ def make_test_image(pixel_format, w, h):
 
 
 def testdecoder(decoder_module, full):
-    codecs = tuple(decoder_module.get_encodings())
+    codecs = list(decoder_module.get_encodings())
     for encoding in tuple(codecs):
         try:
             testdecoding(decoder_module, encoding, full)
