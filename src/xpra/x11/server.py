@@ -57,6 +57,7 @@ from xpra.x11.x11_server_base import X11ServerBase
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
+CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", True)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
@@ -845,6 +846,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self.repaint_root_overlay()
 
     def _clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
+        if not CLAMP_WINDOW_TO_ROOT:
+            return x, y, w, h
         rw, rh = self.get_root_window_size()
         #clamp to root window size
         if x>=rw or y>=rh:
