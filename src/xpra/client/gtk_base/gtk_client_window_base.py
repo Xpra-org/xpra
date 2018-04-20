@@ -95,7 +95,7 @@ CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
 HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX)
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
-CLIP_WINDOW_TO_SCREEN = envbool("XPRA_CLIP_WINDOW_TO_SCREEN", True)
+CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 
 OSX_FOCUS_WORKAROUND = envbool("XPRA_OSX_FOCUS_WORKAROUND", True)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
@@ -1733,7 +1733,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         ay = y - (oy - ry)
         geomlog("window origin=%ix%i, root origin=%ix%i, actual position=%ix%i", ox, oy, rx, ry, ax, ay)
         #validate against edge of screen (ensure window is shown):
-        if CLIP_WINDOW_TO_SCREEN:
+        if CLAMP_WINDOW_TO_SCREEN:
             if (ax + w)<0:
                 ax = -w + 1
             elif ax >= mw:
