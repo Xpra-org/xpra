@@ -180,6 +180,8 @@ Recommends:			python-inotify
 Recommends:			opencv-python
 Recommends:			python-avahi
 %endif
+%{Recommends}:      python2-ldap
+%{Recommends}:      python2-ldap3
 %{Recommends}:		dbus-python
 %{Recommends}:		dbus-x11
 %{Recommends}:		python2-netifaces
@@ -319,6 +321,8 @@ Recommends:			python3-avahi
 Recommends:			python3-lzo
 Recommends:         python3-kerberos
 Recommends:         python3-gssapi
+Recommends:         python3-ldap
+Recommends:         python3-ldap3
 Requires:			libwebp
 BuildRequires:		libwebp-devel
 %endif
