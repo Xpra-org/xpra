@@ -7,7 +7,7 @@
 import sys
 import os
 
-from xpra.util import parse_simple_dict, csv
+from xpra.util import parse_simple_dict, csv, engs
 from xpra.os_util import getuid, getgid
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 assert init and log #tests will disable logging from here
@@ -144,6 +144,15 @@ def list_users(filename):
     sql = "SELECT %s FROM users" % csv(fields)
     return exec_database_sql_script(cursor_callback, filename, sql)
 
+def authenticate(filename, username, password):
+    a = Authenticator(username, filename=filename)
+    passwords = a.get_passwords()
+    assert passwords
+    assert password in passwords
+    sessions = a.get_sessions()
+    assert sessions
+    print("success, found %i session%s: %s" % (len(sessions), engs(sessions), sessions))
+
 def main(argv):
     def usage(msg="invalid number of arguments"):
         print(msg)
@@ -152,6 +161,7 @@ def main(argv):
         print(" %s databasefile list" % sys.argv[0])
         print(" %s databasefile add username password [uid, gid, displays, env_options, session_options" % sys.argv[0])
         print(" %s databasefile remove username [password]" % sys.argv[0])
+        print(" %s databasefile authenticate username password" % sys.argv[0])
         return 1
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
@@ -176,6 +186,10 @@ def main(argv):
             if l!=3:
                 return usage()
             return list_users(filename)
+        elif cmd=="authenticate":
+            if l!=5:
+                return usage()
+            return authenticate(filename, *argv[3:])
         else:
             return usage("invalid command '%s'" % cmd)
     return 0
