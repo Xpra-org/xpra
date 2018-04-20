@@ -238,7 +238,7 @@ def get_abi_version():
 
 def get_version():
     v = vpx_codec_version_str()
-    vstr = v.decode("latin1")
+    vstr = bytestostr(v)
     log("vpx_codec_version_str()=%s", vstr)
     return vstr
 

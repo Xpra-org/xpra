@@ -132,7 +132,7 @@ def get_abi_version():
 
 def get_version():
     v = vpx_codec_version_str()
-    return v.decode("latin1")
+    return bytestostr(v)
 
 def get_type():
     return "vpx"
