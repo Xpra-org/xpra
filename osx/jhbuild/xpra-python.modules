@@ -3,6 +3,7 @@
 <?xml-stylesheet type="text/xsl" href="moduleset.xsl"?>
 <moduleset>
 
+	<repository type="tarball" name="files.pythonhosted.org" href="https://files.pythonhosted.org"/>
 	<repository type="tarball" name="pypi.python.org" href="https://pypi.python.org"/>
 	<repository type="tarball" name="xpra.org" href="http://xpra.org"/>
 	<repository type="tarball" name="ftp.gnome.org" default="yes" href="ftp://ftp.gnome.org/pub/gnome/sources/"/>
@@ -456,7 +457,7 @@
 	</distutils>
 
 	<distutils id="python-u2f">
-		<branch repo="pypi.python.org"
+		<branch repo="files.pythonhosted.org"
 			module="/packages/10/ab/c1ec4cf20eb48281b54b0b0d86fdf8676cdf108f159018cce27bd065c6ec/pyu2f-0.1.3.tar.gz"
 			hash="sha256:06786a54353fd370b2dd4684c6dc5beb8a1ac1b61ad3564bbd5eb410bcfdf66a"
 			version="0.1.3">
