@@ -361,10 +361,10 @@
 	</distutils>
 
 	<distutils id="python-lz4">
-		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/f8/57/db2e6cce835279d574a9f28b0235c0040515dc4b737db8cea18910186676/lz4-1.0.0.tar.gz"
-			hash="sha256:60d0e0b59f4cb1a465738b0ed54f7451f0263b6f5a4b83ef0b5710d57c408f94"
-			version="1.0.0"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/e7/b9/12bd58967c5df38e22e9db0c17d732fc456fd09d4b89b147ff1c73e59c5b/lz4-1.1.0.tar.gz"
+			hash="sha256:9ede632d668995d6148942022c025c0f7ea0d97c275c099f9ad156e02cc1711e"
+			version="1.1.0"/>
 		<dependencies>
 			<dep package="lz4"/>
 			<dep package="python"/>
