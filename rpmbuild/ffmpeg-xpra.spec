@@ -1,6 +1,6 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     3.4.2
+Version:     4.0
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
@@ -101,7 +101,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc COPYING* CREDITS doc/ffserver.conf
+%doc COPYING* CREDITS
 %{_libdir}/xpra/libavcodec.so.*
 %{_libdir}/xpra/libavfilter.so.*
 %{_libdir}/xpra/libavformat.so.*
@@ -145,6 +145,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Apr 21 2018 Antoine Martin <antoine@devloop.org.uk> 4.0-1
+- new upstream release
+
 * Sun Mar 18 2018 Antoine Martin <antoine@devloop.org.uk> 3.4.2-1
 - new upstream release
 
