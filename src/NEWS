@@ -2,6 +2,7 @@ v2.3 (2017-01-23)
 ======================
 	-- stackable authentication modules
 	-- tcp wrappers authentication module
+	-- gss, kerberos and ldap authentication modules
 	-- notifications actions forwarding, custom icons
 	-- forward signals sent to windows client side
 	-- forward requests to open URLs or files on the server side
