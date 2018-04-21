@@ -286,7 +286,6 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_AAC
 
     #init and free:
-    void avcodec_register_all()
     AVCodec *avcodec_find_encoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
@@ -415,8 +414,7 @@ cdef extern from "libavformat/avformat.h":
         int         flags       #AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_GLOBALHEADER, AVFMT_NOTIMESTAMPS, AVFMT_VARIABLE_FPS, AVFMT_NODIMENSIONS, AVFMT_NOSTREAMS, AVFMT_ALLOW_FLUSH, AVFMT_TS_NONSTRICT, AVFMT_TS_NEGATIVE More...
         int         (*query_codec)(AVCodecID id, int std_compliance)
 
-    void av_register_all()
-    AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
+    const AVOutputFormat *av_muxer_iterate(void **opaque)
     int avformat_alloc_output_context2(AVFormatContext **ctx, AVOutputFormat *oformat, const char *format_name, const char *filename)
     void avformat_free_context(AVFormatContext *s)
 
@@ -595,11 +593,11 @@ def flagscsv(flag_dict, value=0):
 
 
 def get_muxer_formats():
-    av_register_all()
     cdef AVOutputFormat *fmt = NULL
+    cdef void* opaque = NULL
     formats = {}
     while True:
-        fmt = av_oformat_next(fmt)
+        fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
             break
         name = fmt.name
@@ -611,8 +609,9 @@ print_nested_dict(get_muxer_formats(), print_fn=log.debug)
 
 cdef AVOutputFormat* get_av_output_format(name):
     cdef AVOutputFormat *fmt = NULL
+    cdef void* opaque = NULL
     while True:
-        fmt = av_oformat_next(fmt)
+        fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
             break
         if name==fmt.name:
@@ -623,7 +622,6 @@ cdef AVOutputFormat* get_av_output_format(name):
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
-avcodec_register_all()
 CODECS = []
 if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264+mp4")
@@ -767,7 +765,6 @@ cdef class Encoder(object):
         self.buffers = []
 
         codec = self.encoding.split("+")[0]
-        avcodec_register_all()
         cdef AVCodecID video_codec_id
         if codec=="h264":
             video_codec_id = AV_CODEC_ID_H264

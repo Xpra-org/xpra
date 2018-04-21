@@ -189,7 +189,7 @@ pillow_ENABLED          = DEFAULT
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_ENABLED            = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
-enc_ffmpeg_ENABLED      = False
+enc_ffmpeg_ENABLED      = pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
