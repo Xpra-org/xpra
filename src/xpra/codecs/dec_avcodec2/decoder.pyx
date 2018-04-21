@@ -27,6 +27,9 @@ cdef extern from "string.h":
     void * memset(void * ptr, int value, size_t num) nogil
     void free(void * ptr) nogil
 
+cdef extern from "register_compat.h":
+    void register_all()
+
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
 
@@ -85,7 +88,6 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_MPEG4
 
     #init and free:
-    void avcodec_register_all()
     AVCodec *avcodec_find_decoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
@@ -134,7 +136,7 @@ for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
-avcodec_register_all()
+register_all()
 CODECS = []
 if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
@@ -323,7 +325,7 @@ cdef class Decoder:
             return  False
         self.actual_pix_fmt = self.pix_fmt
 
-        avcodec_register_all()
+        register_all()
 
         cdef AVCodecID CodecID
         if self.encoding=="h264":
