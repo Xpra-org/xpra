@@ -2188,7 +2188,7 @@ if libav_common:
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
-    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil")
+    avcodec2_pkgconfig = pkgconfig("avcodec", "avutil", "avformat")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
                 **avcodec2_pkgconfig))
