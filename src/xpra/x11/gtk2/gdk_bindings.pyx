@@ -339,6 +339,7 @@ cdef extern from "X11/extensions/XKBproto.h":
 
 # gdk_region_get_rectangles (pygtk bug #517099)
 cdef extern from "gtk-2.0/gdk/gdktypes.h":
+    ctypedef void* GdkAtom
     ctypedef struct cGdkVisual "GdkVisual":
         pass
     Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
@@ -353,9 +354,6 @@ cdef extern from "gtk-2.0/gdk/gdktypes.h":
 
     cGdkDisplay * gdk_x11_lookup_xdisplay(Display *)
 
-    ctypedef struct _GdkAtom:
-        pass
-    ctypedef _GdkAtom* GdkAtom
     GdkAtom GDK_NONE
     # FIXME: this should have stricter type checking
     object PyGdkAtom_New(GdkAtom)
