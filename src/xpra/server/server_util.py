@@ -364,7 +364,7 @@ def create_uinput_pointer_device(uuid, uid):
     return create_uinput_device(uuid, uid, events, name)
 
 def create_uinput_touchpad_device(uuid, uid):
-    if not envbool("XPRA_UINPUT_TOUCHPAD", True):
+    if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return
     import uinput
     events = (
