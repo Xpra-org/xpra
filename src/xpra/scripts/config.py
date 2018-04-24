@@ -753,6 +753,21 @@ def get_default_systemd_run():
     #but with newer kernels, it is working again..
     return "auto"
 
+def get_default_pulseaudio_command():
+    if WIN32 or OSX:
+        return []
+    cmd = ["pulseaudio", "--start", "-n", "--daemonize=false", "--system=false",
+                                    "--exit-idle-time=-1", "--load=module-suspend-on-idle",
+                                    "'--load=module-null-sink sink_name=\"Xpra-Speaker\" sink_properties=device.description=\"Xpra\\ Speaker\"'",
+                                    "'--load=module-null-sink sink_name=\"Xpra-Microphone\" sink_properties=device.description=\"Xpra\\ Microphone\"'",
+                                    "'--load=module-native-protocol-unix socket=$XPRA_PULSE_SERVER'",
+                                    "--load=module-dbus-protocol",
+                                    "--load=module-x11-publish",
+                                    "--log-level=2", "--log-target=stderr"]
+    if not is_Ubuntu() or getUbuntuVersion()>[16]:
+        cmd.append("--enable-memfd=no")
+    return cmd
+
 
 GLOBAL_DEFAULTS = None
 #lowest common denominator here
@@ -761,7 +776,7 @@ def get_defaults():
     global GLOBAL_DEFAULTS
     if GLOBAL_DEFAULTS is not None:
         return GLOBAL_DEFAULTS
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, DEFAULT_PULSEAUDIO_COMMAND, \
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS, \
                                         DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET
     from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts
     try:
@@ -825,7 +840,7 @@ def get_defaults():
                     "clipboard-filter-file" : "",
                     "remote-clipboard"  : "CLIPBOARD",
                     "local-clipboard"   : "CLIPBOARD",
-                    "pulseaudio-command": " ".join(DEFAULT_PULSEAUDIO_COMMAND),
+                    "pulseaudio-command": " ".join(get_default_pulseaudio_command()),
                     "bandwidth-limit"   : "auto",
                     "encryption"        : "",
                     "tcp-encryption"    : "",

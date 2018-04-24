@@ -798,9 +798,9 @@ def build_xpra_conf(install_dir):
         return ["no", "yes"][int(b)]
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
-    from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
+    from xpra.platform.features import DEFAULT_SSH_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO
+    from xpra.scripts.config import get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command, DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
     if WIN32:
@@ -840,7 +840,7 @@ def build_xpra_conf(install_dir):
             'remote_logging'        : "both",
             'start_env'             : start_env,
             'pulseaudio'            : bstr(DEFAULT_PULSEAUDIO),
-            'pulseaudio_command'    : pretty_cmd(DEFAULT_PULSEAUDIO_COMMAND),
+            'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
             'conf_dir'              : conf_dir,
             'bind'                  : bind,
