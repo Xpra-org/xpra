@@ -1338,7 +1338,12 @@ def parse_display_name(error_cb, opts, display_name):
             #ssh:HOST:DISPLAY or ssh/HOST/DISPLAY
             host = separator.join(parts[1:-1])
             if parts[-1]:
-                display = ":" + parts[-1]
+                s = parts[-1]
+                try:
+                    assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
+                    display = ":" + s       #ie: ":10.0"
+                except ValueError:
+                    display = s             #ie: "tcp://somehost:10000/"
                 desc["display"] = display
                 opts.display = display
                 desc["display_as_args"] = [display]
