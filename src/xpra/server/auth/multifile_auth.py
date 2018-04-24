@@ -119,7 +119,7 @@ class Authenticator(FileAuthenticatorBase):
         return entry[0]
 
     def authenticate_hmac(self, challenge_response, client_salt=None):
-        log("authenticate_hmac(%s, %s)", challenge_response, client_salt)
+        log("authenticate_hmac(%r, %r)", challenge_response, client_salt)
         self.sessions = None
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")
@@ -133,7 +133,7 @@ class Authenticator(FileAuthenticatorBase):
             return None
         log("authenticate: auth-info(%s)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry
-        log("multifile authenticate_hmac(%s) password='%s', hex(salt)=%s", challenge_response, fpassword, hexstr(salt))
+        log("multifile authenticate_hmac password='%r', hex(salt)=%s", fpassword, hexstr(salt))
         if not verify_digest(self.digest, fpassword, salt, challenge_response):
             log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
             return False
