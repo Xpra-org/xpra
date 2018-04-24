@@ -764,7 +764,7 @@ def get_default_pulseaudio_command():
                                     "--load=module-dbus-protocol",
                                     "--load=module-x11-publish",
                                     "--log-level=2", "--log-target=stderr"]
-    if not is_Ubuntu() or getUbuntuVersion()>[16]:
+    if not is_Ubuntu() or getUbuntuVersion()>[16, 4]:
         cmd.append("--enable-memfd=no")
     return cmd
 
