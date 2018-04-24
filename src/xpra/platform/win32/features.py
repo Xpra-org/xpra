@@ -15,7 +15,7 @@ CLIPBOARD_GREEDY = True
 CLIPBOARD_NATIVE_CLASS = "xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
 
 #these don't make sense on win32:
-DEFAULT_PULSEAUDIO_COMMAND = ""
+DEFAULT_PULSEAUDIO_COMMAND = []
 DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS = []
 PRINT_COMMAND = ""
 DEFAULT_SSH_COMMAND="plink -ssh -agent"
