@@ -1224,7 +1224,7 @@ if WIN32:
                            #muxers:
                            "gdp", "matroska", "ogg", "isomp4",
                            "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
-                           "coreelements", "directsoundsink", "directsoundsrc", "wasapi",
+                           "coreelements", "directsound", "directsoundsink", "directsoundsrc", "wasapi",
                            #codecs:
                            "opus", "opusparse", "flac", "lame", "mad", "mpg123", "speex", "faac", "faad",
                            "volume", "vorbis", "wavenc", "wavpack", "wavparse",
