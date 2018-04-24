@@ -572,7 +572,11 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         #TODO: parse those attributes
         for x in ("?", "#"):
             s = s.split(x)[0]
-        display = ":" + s
+        try:
+            assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
+            display = ":" + s       #ie: ":10.0"
+        except ValueError:
+            display = s             #ie: "tcp://somehost:10000/"
         desc["display"] = display
         opts.display = display
         desc["display_as_args"] = [display]
