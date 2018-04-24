@@ -332,7 +332,7 @@ class ProxyInstanceProcess(Process):
             log.warn("Warning: failed to create socket directory '%s'", d)
             log.warn(" %s", e)
         try:
-            sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, None, 0o600)
+            sock, self.control_socket_cleanup = create_unix_domain_socket(sockpath, 0o600)
             sock.listen(5)
         except Exception as e:
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)

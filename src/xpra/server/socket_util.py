@@ -31,23 +31,9 @@ def get_network_logger():
     return network_logger
 
 
-def create_unix_domain_socket(sockpath, mmap_group=False, socket_permissions="600"):
-    if mmap_group:
-        #when using the mmap group option, use '660'
-        umask = 0o117
-    else:
-        #parse octal mode given as config option:
-        try:
-            if type(socket_permissions)==int:
-                sperms = socket_permissions
-            else:
-                #assume octal string:
-                sperms = int(socket_permissions, 8)
-            assert sperms>=0 and sperms<=0o777
-        except ValueError:
-            raise ValueError("invalid socket permissions (must be an octal number): '%s'" % socket_permissions)
-        #now convert this to a umask!
-        umask = 0o777-sperms
+def create_unix_domain_socket(sockpath, socket_permissions=0o600):
+    #convert this to a umask!
+    umask = 0o777-socket_permissions
     listener = socket.socket(socket.AF_UNIX)
     listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     #bind the socket, using umask to set the correct permissions
@@ -349,27 +335,43 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
                 #wait for all the threads to do their job:
                 for t in threads:
                     t.join(WAIT_PROBE_TIMEOUT+1)
-            #now we can re-check quickly:
-            #(they should all be DEAD or UNKNOWN):
-            for sockpath in sockpaths:
-                state = dotxpra.get_server_state(sockpath, 1)
-                log("state(%s)=%s", sockpath, state)
-                checkstate(sockpath, state)
-                try:
-                    if os.path.exists(sockpath):
-                        os.unlink(sockpath)
-                except:
-                    pass
-            #now try to create all the sockets:
-            for sockpath in sockpaths:
-                #create it:
-                try:
-                    sock, cleanup_socket = create_unix_domain_socket(sockpath, mmap_group, socket_permissions)
-                    log.info("created unix domain socket: %s", sockpath)
-                    defs.append((("unix-domain", sock, sockpath), cleanup_socket))
-                except Exception as e:
-                    handle_socket_error(sockpath, e)
-                    del e
+            if sockpaths:
+                #now we can re-check quickly:
+                #(they should all be DEAD or UNKNOWN):
+                for sockpath in sockpaths:
+                    state = dotxpra.get_server_state(sockpath, 1)
+                    log("state(%s)=%s", sockpath, state)
+                    checkstate(sockpath, state)
+                    try:
+                        if os.path.exists(sockpath):
+                            os.unlink(sockpath)
+                    except:
+                        pass
+                #socket permissions:
+                if mmap_group:
+                    #when using the mmap group option, use '660'
+                    sperms = 0o660
+                else:
+                    #parse octal mode given as config option:
+                    try:
+                        if type(socket_permissions)==int:
+                            sperms = socket_permissions
+                        else:
+                            #assume octal string:
+                            sperms = int(socket_permissions, 8)
+                        assert sperms>=0 and sperms<=0o777, "invalid socket permission value %s" % oct(sperms)
+                    except ValueError:
+                        raise ValueError("invalid socket permissions (must be an octal number): '%s'" % socket_permissions)
+                #now try to create all the sockets:
+                for sockpath in sockpaths:
+                    #create it:
+                    try:
+                        sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
+                        log.info("created unix domain socket: %s", sockpath)
+                        defs.append((("unix-domain", sock, sockpath), cleanup_socket))
+                    except Exception as e:
+                        handle_socket_error(sockpath, sperms, e)
+                        del e
     except:
         for sock, cleanup_socket in defs:
             try:
@@ -382,24 +384,26 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber, mm
         raise
     return defs
 
-def handle_socket_error(sockpath, e):
+def handle_socket_error(sockpath, sperms, e):
     log = get_network_logger()
     log("socket creation error", exc_info=True)
     if sockpath.startswith("/var/run/xpra") or sockpath.startswith("/run/xpra"):
-        log.warn("Warning: cannot create socket '%s'", sockpath)
-        log.warn(" %s", e)
+        log.info("cannot create group socket '%s'", sockpath)
+        log.info(" %s", e)
         dirname = sockpath[:sockpath.find("xpra")+len("xpra")]
         if not os.path.exists(dirname):
-            log.warn(" %s does not exist", dirname)
-        if POSIX:
+            log.info(" %s does not exist", dirname)
+        #only show extra information if the socket permissions
+        #would have been accessible by the group:
+        if POSIX and (sperms & 0o40):
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
-            log.warn(" user '%s' is a member of groups: %s", username, csv(groups) or "no groups!")
+            log.info(" user '%s' is a member of groups: %s", username, csv(groups) or "no groups!")
             if "xpra" not in groups:
-                log.warn("  missing 'xpra' group membership?")
+                log.info("  add 'xpra' group membership to enable group socket sharing")
             for x in path_permission_info(dirname):
-                log.warn("  %s", x)
+                log.info("  %s", x)
     elif sockpath.startswith("/var/run/user") or sockpath.startswith("/run/user"):
         log.warn("Warning: cannot create socket '%s':", sockpath)
         log.warn(" %s", e)
