@@ -899,7 +899,6 @@ class ClipboardProxy(gtk.Invisible):
             global sanitize_gtkselectiondata
             if selection_data and sanitize_gtkselectiondata(selection_data):
                 selection_data = None
-                return
             if selection_data is None:
                 cb(None, None, None)
                 return
