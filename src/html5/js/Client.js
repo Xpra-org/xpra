@@ -1217,6 +1217,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 		this._window_set_focus(window);
 	}
 	var button = mouse.button;
+	this.debug("mouse", "click:", button, pressed, x, y);
 	var me = this;
 	setTimeout(function() {
 		me.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
