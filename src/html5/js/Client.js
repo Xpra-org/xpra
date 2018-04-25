@@ -1218,6 +1218,12 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	}
 	var button = mouse.button;
 	this.debug("mouse", "click:", button, pressed, x, y);
+	if (button==4) {
+		button = 8;
+	}
+	else if (button==5) {
+		button = 9;
+	}
 	var me = this;
 	setTimeout(function() {
 		me.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
