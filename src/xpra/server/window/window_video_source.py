@@ -1719,8 +1719,10 @@ class WindowVideoSource(WindowSource):
                     if match_pct>=self.scroll_min_percent:
                         return self.encode_scrolling(scroll_data, image, options)
                 except Exception:
-                    scrolllog.error("Error during scrolling detection")
-                    scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
+                    scrolllog("do_video_encode%s scrolling detection", (encoding, image, options), exc_info=True)
+                    if not self.is_cancelled():
+                        scrolllog.error("Error during scrolling detection")
+                        scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
                     #make sure we start again from scratch next time:
                     scroll_data.free()
                     self.scroll_data = None
