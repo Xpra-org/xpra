@@ -693,8 +693,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     "-Wno-deprecated-register",
                     "-Wno-unused-command-line-argument",
                     ]
-        else:
-            assert get_gcc_version()>=[4, 4], "gcc version too old"
+        elif get_gcc_version()>=[4, 4]:
             eifd = ["-Werror"]
             if is_Debian() or is_Ubuntu() or is_Raspbian():
                 #needed on Debian and Ubuntu to avoid this error:
@@ -705,6 +704,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 eifd += ["-fno-strict-aliasing"]
             elif FREEBSD:
                 eifd += ["-Wno-error=unused-function"]
+        else:
+            #older versions of OSX ship an old gcc,
+            #not much we can do with this:
+            eifd = []
         for eif in eifd:
             add_to_keywords(kw, 'extra_compile_args', eif)
     if PIC_ENABLED:
