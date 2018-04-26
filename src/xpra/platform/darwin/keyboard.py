@@ -1,11 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 
-from xpra.gtk_common.gtk_util import META_MASK, CONTROL_MASK
+from xpra.gtk_common.gtk_util import SHIFT_MASK, LOCK_MASK, META_MASK, CONTROL_MASK, SUPER_MASK, HYPER_MASK
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 
@@ -26,7 +27,7 @@ KEYS_TRANSLATION_OPTIONS = {
     }
 #keys we always want to swap,
 #irrespective of the swap-keys option:
-ALWAYS_SWAP = ["Alt_L", "Alt_R"]
+ALWAYS_SWAP = os.environ.get("XPRA_MACOS_KEYS_ALWAYS_SWAP", "Alt_L,Alt_R").split(",")
 
 
 #data extracted from:
@@ -80,6 +81,8 @@ class Keyboard(KeyboardBase):
         self.swap_keys = True
         self.meta_modifier = None
         self.control_modifier = None
+        self.super_modifier = None
+        self.hyper_modifier = None
         self.num_lock_modifier = None
         self.num_lock_state = True
         self.num_lock_keycode = NUM_LOCK_KEYCODE
@@ -137,8 +140,10 @@ class Keyboard(KeyboardBase):
         KeyboardBase.set_modifier_mappings(self, mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
         self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
+        self.super_modifier = self.modifier_keys.get("Super_L") or self.modifier_keys.get("Super_R")
+        self.hyper_modifier = self.modifier_keys.get("Hyper_L") or self.modifier_keys.get("Hyper_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
-        log("set_modifier_mappings(%s) meta=%s, control=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.num_lock_modifier)
+        log("set_modifier_mappings(%s) meta=%s, control=%s, super=%s, hyper=%s, numlock=%s", mappings, self.meta_modifier, self.control_modifier, self.super_modifier, self.hyper_modifier, self.num_lock_modifier)
         #find the keysyms and keycodes to use for each key we may translate:
         for orig_keysym, keysyms in KEYS_TRANSLATION_OPTIONS.items():
             new_def = self.find_translation(keysyms)
@@ -186,20 +191,25 @@ class Keyboard(KeyboardBase):
 
 
     def mask_to_names(self, mask):
-        names = KeyboardBase.mask_to_names(self, mask)
-        log("mask_to_names names=%s, meta mod=%s, control mod=%s, num lock mod=%s, num lock state=%s",
-            names, self.meta_modifier, self.control_modifier, self.num_lock_modifier, self.num_lock_state)
-        if self.swap_keys and self.meta_modifier is not None and self.control_modifier is not None:
-            #clear both:
-            for x in (self.control_modifier, self.meta_modifier):
-                if x in names:
-                    names.remove(x)
-            #re-add as needed:
-            if mask & META_MASK:
-                names.append(self.control_modifier)
-            if mask & CONTROL_MASK:
-                names.append(self.meta_modifier)
-        #deal with numlock:
+        if self.swap_keys:
+            meta = self.meta_modifier
+            control = self.control_modifier
+        else:
+            control = self.meta_modifier
+            meta = self.control_modifier
+        modmap = {
+            SHIFT_MASK      : "shift",
+            LOCK_MASK       : "lock",
+            SUPER_MASK      : self.super_modifier,
+            HYPER_MASK      : self.hyper_modifier,
+            META_MASK       : meta,
+            CONTROL_MASK    : control,
+            }
+        names = []
+        for modmask, modname in modmap.items():
+            if (mask & modmask) and modname:
+                names.append(modname)
+        #don't trust GTK with numlock:
         if self.num_lock_modifier is not None:
             if self.num_lock_state and self.num_lock_modifier not in names:
                 names.append(self.num_lock_modifier)
