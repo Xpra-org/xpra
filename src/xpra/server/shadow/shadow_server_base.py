@@ -208,7 +208,8 @@ class ShadowServerBase(RFBServer):
         """ don't override the existing desktop """
         pass
 
-    def set_keymap(self, server_source, _force=False):
+    def set_keymap(self, server_source, force=False):
+        log("set_keymap%s", (server_source, force))
         log.info("shadow server: setting default keymap translation")
         self.keyboard_config = server_source.set_default_keymap()
 
