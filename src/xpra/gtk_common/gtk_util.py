@@ -253,6 +253,8 @@ if is_gtk3():
     MOD3_MASK       = mt.MOD3_MASK
     MOD4_MASK       = mt.MOD4_MASK
     MOD5_MASK       = mt.MOD5_MASK
+    SUPER_MASK      = mt.SUPER_MASK
+    HYPER_MASK      = mt.HYPER_MASK
 
     BUTTON_MASK = {mt.BUTTON1_MASK : 1,
                    mt.BUTTON2_MASK : 2,
@@ -511,6 +513,8 @@ else:
     MOD3_MASK       = gdk.MOD3_MASK
     MOD4_MASK       = gdk.MOD4_MASK
     MOD5_MASK       = gdk.MOD5_MASK
+    SUPER_MASK      = gdk.SUPER_MASK
+    HYPER_MASK      = gdk.HYPER_MASK
 
     BUTTON_MASK = {gdk.BUTTON1_MASK : 1,
                    gdk.BUTTON2_MASK : 2,
