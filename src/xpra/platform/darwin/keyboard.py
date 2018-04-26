@@ -192,11 +192,11 @@ class Keyboard(KeyboardBase):
 
     def mask_to_names(self, mask):
         if self.swap_keys:
-            meta = self.meta_modifier
-            control = self.control_modifier
-        else:
             control = self.meta_modifier
             meta = self.control_modifier
+        else:
+            meta = self.meta_modifier
+            control = self.control_modifier
         modmap = {
             SHIFT_MASK      : "shift",
             LOCK_MASK       : "lock",
