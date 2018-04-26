@@ -45,6 +45,9 @@ class XImageCapture(object):
         self.xwindow = xwindow
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
 
+    def __repr__(self):
+        return "XImageCapture(%#x)" % self.xwindow
+
     def clean(self):
         self.close_xshm()
 
@@ -124,10 +127,10 @@ def setup_capture(window):
 
 class GTKX11RootWindowModel(GTKRootWindowModel):
 
-    def __init__(self, root_window):
+    def __init__(self, root_window, capture=None):
         GTKRootWindowModel.__init__(self, root_window)
         self.geometry = root_window.get_geometry()[:4]
-        self.capture = None
+        self.capture = capture
 
     def __repr__(self):
         return "GTKX11RootWindowModel(%#x - %s)" % (get_xwindow(self.window), self.geometry)
@@ -157,10 +160,10 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         ox, oy = self.geometry[:2]
         image = image or self.capture.get_image(ox+x, oy+y, width, height)
         if ox>0 or oy>0:
-            #all we want to do here is adjust x and y...
-            #FIXME: this is inefficient and may take a copy of the pixels:
-            # but the XImageCapture cannot share buffers, so adjusting coordinates is not enough
-            image = ImageWrapper(x, y, width, height, image.get_pixels(), image.get_pixel_format(), image.get_depth(), image.get_rowstride(), image.get_bytesperpixel(), image.get_planes(), thread_safe=True, palette=None)
+            #adjust x and y of where the image is displayed on the client (target_x and target_y)
+            #not where the image lives within the current buffer (x and y)
+            image.set_target_x(x)
+            image.set_target_y(y)
         return image
 
 
@@ -219,10 +222,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         screen = self.root.get_screen()
         n = screen.get_n_monitors()
         models = []
+        capture = None
+        if not USE_NVFBC:
+            capture = setup_capture(self.root)
         for i in range(n):
             geom = screen.get_monitor_geometry(i)
             x, y, width, height = geom.x, geom.y, geom.width, geom.height
-            model = GTKX11RootWindowModel(self.root)
+            model = GTKX11RootWindowModel(self.root, capture)
             if hasattr(screen, "get_monitor_plug_name"):
                 plug_name = screen.get_monitor_plug_name(i)
                 if plug_name or n>1:

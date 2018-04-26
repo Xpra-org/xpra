@@ -250,6 +250,8 @@ cdef class XImageWrapper(object):
     cdef XImage *image                              #@DuplicatedSignature
     cdef unsigned int x
     cdef unsigned int y
+    cdef unsigned int target_x
+    cdef unsigned int target_y
     cdef unsigned int width                                  #@DuplicatedSignature
     cdef unsigned int height                                 #@DuplicatedSignature
     cdef unsigned int depth                                  #@DuplicatedSignature
@@ -269,6 +271,8 @@ cdef class XImageWrapper(object):
         self.pixels = NULL
         self.x = x
         self.y = y
+        self.target_x = x
+        self.target_y = y
         self.width = width
         self.height = height
         self.depth = depth
@@ -329,6 +333,18 @@ cdef class XImageWrapper(object):
 
     def get_geometry(self):
         return self.x, self.y, self.width, self.height, self.depth
+
+    def get_target_x(self):
+        return self.target_x
+
+    def get_target_y(self):
+        return self.target_y
+
+    def set_target_x(self, target_x):
+        self.target_x = target_x
+
+    def set_target_y(self, target_y):
+        self.target_y = target_y
 
     def get_x(self):
         return self.x

@@ -1963,7 +1963,10 @@ class WindowSource(WindowIconSource):
         if self.is_cancelled(sequence) or self.suspended:
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
             return  None
-        x, y, w, h, _ = image.get_geometry()
+        x = image.get_target_x()
+        y = image.get_target_y()
+        w = image.get_width()
+        h = image.get_height()
         assert w>0 and h>0, "invalid dimensions: %sx%s" % (w, h)
 
         #more useful is the actual number of bytes (assuming 32bpp)

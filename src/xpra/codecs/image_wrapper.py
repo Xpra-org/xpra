@@ -25,6 +25,8 @@ class ImageWrapper(object):
     def __init__(self, x, y, width, height, pixels, pixel_format, depth, rowstride, bytesperpixel=4, planes=PACKED, thread_safe=True, palette=None):
         self.x = x
         self.y = y
+        self.target_x = x
+        self.target_y = y
         self.width = width
         self.height = height
         self.pixels = pixels
@@ -55,6 +57,18 @@ class ImageWrapper(object):
 
     def get_y(self):
         return self.y
+
+    def get_target_x(self):
+        return self.target_x
+
+    def get_target_y(self):
+        return self.target_y
+
+    def set_target_x(self, target_x):
+        self.target_x = target_x
+
+    def set_target_y(self, target_y):
+        self.target_y = target_y
 
     def get_width(self):
         return self.width
