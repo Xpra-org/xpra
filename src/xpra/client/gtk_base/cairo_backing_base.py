@@ -12,7 +12,7 @@ glib            = import_glib()
 
 from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
-from xpra.client.window_backing_base import WindowBackingBase
+from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
 from xpra.codecs.loader import get_codec
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
@@ -134,6 +134,24 @@ class CairoBackingBase(WindowBackingBase):
 
     def _do_paint_rgb(self, *args):
         raise NotImplementedError()
+
+
+    def paint_scroll(self, img_data, _options, callbacks):
+        #Warning: unused as this causes strange visual corruption
+        self.idle_add(self.do_paint_scroll, img_data, callbacks)
+
+    def do_paint_scroll(self, scrolls, callbacks):
+        old_backing = self._backing
+        w, h = self.size
+        ww, wh = self.render_size
+        self.init(ww, wh, w, h)
+        gc = gdk_cairo_context(cairo.Context(self._backing))
+        gc.set_operator(cairo.OPERATOR_SOURCE)
+        for sx,sy,sw,sh,xdelta,ydelta in scrolls:
+            gc.set_source_surface(old_backing, xdelta, ydelta)
+            gc.rectangle(sx+xdelta, sy+ydelta, sw, sh)
+            gc.fill()
+        fire_paint_callbacks(callbacks)
 
 
     def nasty_rgb_via_png_paint(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format):
