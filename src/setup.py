@@ -690,6 +690,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     #"-Wno-sometimes-uninitialized",
                     #cython adds rpath to the compilation command??
                     #and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
+                    "-Wno-deprecated-register",
                     "-Wno-unused-command-line-argument",
                     ]
         else:
