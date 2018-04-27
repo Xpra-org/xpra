@@ -19,6 +19,7 @@ mouselog = Logger("win32", "mouse")
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
+from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
 from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWindowLongW,
                                         ClipCursor, GetCursorPos,
                                         GetDC, ReleaseDC,
@@ -116,17 +117,6 @@ assert WHEEL_DELTA>0
 
 log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, GEOMETRY=%s, LANGCHANGE=%s, DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
     CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, GEOMETRY, LANGCHANGE, DPI_AWARE, DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
-
-
-KNOWN_EVENTS = {}
-POWER_EVENTS = {}
-for x in dir(win32con):
-    if x.endswith("_EVENT"):
-        v = getattr(win32con, x)
-        KNOWN_EVENTS[v] = x
-    if x.startswith("PBT_"):
-        v = getattr(win32con, x)
-        POWER_EVENTS[v] = x
 
 
 def do_init():

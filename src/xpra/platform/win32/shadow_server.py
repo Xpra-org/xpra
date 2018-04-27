@@ -26,7 +26,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
-from xpra.platform.win32.win32_events import get_win32_event_listener
+from xpra.platform.win32.win32_events import get_win32_event_listener, POWER_EVENTS
 from xpra.platform.win32.gdi_screen_capture import GDICapture
 
 #user32:
@@ -282,7 +282,7 @@ class ShadowServer(GTKShadowServerBase):
         #to prevent servers spinning wildly on non-blocking sockets:
         set_continue_wait(5)
         #TODO: deal with those messages?
-        #el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
+        el.add_event_callback(win32con.WM_POWERBROADCAST,   self.power_broadcast_event)
         #el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
         #these are bound to callbacks in the client,
         #but on the server we just ignore them:
@@ -302,6 +302,14 @@ class ShadowServer(GTKShadowServerBase):
         if self.pixel_depth not in (24, 30, 32):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         GTKShadowServerBase.init(self, opts)
+
+
+    def power_broadcast_event(self, wParam, lParam):
+        log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
+        if wParam==win32con.PBT_APMSUSPEND:
+            log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
+        elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:
+            log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
 
     def guess_session_name(self, _procs):

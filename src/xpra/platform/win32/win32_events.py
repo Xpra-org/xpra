@@ -28,6 +28,16 @@ except Exception as e:
     wtsapi32 = None
 NOTIFY_FOR_THIS_SESSION = 0
 
+KNOWN_EVENTS = {}
+POWER_EVENTS = {}
+for x in dir(win32con):
+    if x.endswith("_EVENT"):
+        v = getattr(win32con, x)
+        KNOWN_EVENTS[v] = x
+    if x.startswith("PBT_"):
+        v = getattr(win32con, x)
+        POWER_EVENTS[v] = x
+
 #no idea where we're supposed to get those from:
 WM_WTSSESSION_CHANGE        = 0x02b1
 WM_DWMNCRENDERINGCHANGED    = 0x031F
