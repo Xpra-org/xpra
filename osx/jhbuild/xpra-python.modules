@@ -395,7 +395,6 @@
 			<dep package="lzo"/>
 		</dependencies>
 		<after>
-			<dep package="python"/>
 			<dep package="lzo"/>
 		</after>
 	</distutils>
