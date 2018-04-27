@@ -9,5 +9,3 @@
              return -1;  /* we don't support more than 2 channels */
          }
          gfp->num_channels = num_channels;
-@@ -132,7 +132,7 @@ lame_get_scale(const lame_global_flags * gfp)
- }
