@@ -17,7 +17,7 @@ shapelog = Logger("shape")
 netlog = Logger("network")
 
 from collections import namedtuple
-from xpra.util import XPRA_APP_ID
+from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.codecs.codec_constants import CodecStateException, TransientCodecException
 from xpra.server.gtk_server_base import GTKServerBase
@@ -308,6 +308,9 @@ class ShadowServer(GTKShadowServerBase):
         log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
         if wParam==win32con.PBT_APMSUSPEND:
             log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
+            for source in self._server_sources.values():
+                source.may_notify(XPRA_IDLE_NOTIFICATION_ID, "Server Suspending",
+                                  "This Xpra server is going to suspend,\nthe connection is likely to be interrupted soon.", expire_timeout=10*1000, icon_name="shutdown")
         elif wParam==win32con.PBT_APMRESUMEAUTOMATIC:
             log.info("WM_POWERBROADCAST: PBT_APMRESUMEAUTOMATIC")
 
