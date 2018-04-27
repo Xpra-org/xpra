@@ -13,13 +13,13 @@
 %define debug_package %{nil}
 
 Name:           python2-pyu2f
-Version:        0.1.3
+Version:        0.1.4
 Release:        1
 URL:            https://github.com/google/pyu2f
 Summary:        Python based U2F host library for Linux
 License:        BSD
 Group:          Development/Libraries/Python
-Source:			https://pypi.python.org/packages/10/ab/c1ec4cf20eb48281b54b0b0d86fdf8676cdf108f159018cce27bd065c6ec/pyu2f-%{version}.tar.gz
+Source:			https://files.pythonhosted.org/packages/b0/6d/0fd9107b92c792e62cdeaeca2dfe40928898509aba82d81656d53e610c64/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -37,7 +37,7 @@ pyu2f provides functionality for interacting with a U2F device over USB.
 %endif
 
 %prep
-%setup -q -n pyu2f-0.1.3
+%setup -q -n pyu2f-0.1.4
 
 %build
 %{__python2} ./setup.py build
@@ -73,5 +73,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sat Mar 24 2018 Antoine Martin <antoine@devloop.org.uk> - 0.1.4
+- new upstream release
+
 * Sat Mar 24 2018 Antoine Martin <antoine@devloop.org.uk> - 0.1.2
 - initial packaging for xpra
