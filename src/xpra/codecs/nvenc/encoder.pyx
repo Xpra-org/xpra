@@ -125,21 +125,23 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_SUPPORT_LOOKAHEAD
         NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ
         NV_ENC_CAPS_SUPPORT_10BIT_ENCODE
-        #SDK 8:
-        #NV_ENC_CAPS_NUM_MAX_LTR_FRAMES
+        NV_ENC_CAPS_NUM_MAX_LTR_FRAMES
+        NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION
+        NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY
+        NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE
+        NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP,
+        
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
         NV_ENC_DEVICE_TYPE_DIRECTX
         NV_ENC_DEVICE_TYPE_CUDA
-        #SDK 8:
-        #NV_ENC_DEVICE_TYPE_OPENGL
+        NV_ENC_DEVICE_TYPE_OPENGL
 
     ctypedef enum NV_ENC_INPUT_RESOURCE_TYPE:
         NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX
         NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
         NV_ENC_INPUT_RESOURCE_TYPE_CUDAARRAY
-        #SDK 8:
-        #NV_ENC_INPUT_RESOURCE_TYPE_OPENGL_TEX
+        NV_ENC_INPUT_RESOURCE_TYPE_OPENGL_TEX
 
     ctypedef enum NV_ENC_MEMORY_HEAP:
         NV_ENC_MEMORY_HEAP_AUTOSELECT
@@ -409,7 +411,7 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_CREATE_INPUT_BUFFER_VER
         uint32_t    width           #[in]: Input buffer width
         uint32_t    height          #[in]: Input buffer width
-        NV_ENC_MEMORY_HEAP memoryHeap       #[in]: Input buffer memory heap
+        NV_ENC_MEMORY_HEAP memoryHeap       #[in]: Deprecated. Do not use
         NV_ENC_BUFFER_FORMAT bufferFmt      #[in]: Input buffer format
         uint32_t    reserved        #[in]: Reserved and must be set to 0
         void        *inputBuffer    #[out]: Pointer to input buffer
@@ -420,7 +422,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_CREATE_BITSTREAM_BUFFER:
         uint32_t    version         #[in]: Struct version. Must be set to ::NV_ENC_CREATE_BITSTREAM_BUFFER_VER
         uint32_t    size            #[in]: Size of the bitstream buffer to be created
-        NV_ENC_MEMORY_HEAP memoryHeap      #[in]: Output buffer memory heap
+        NV_ENC_MEMORY_HEAP memoryHeap      #[in]: Deprecated. Do not use
         uint32_t    reserved        #[in]: Reserved and must be set to 0
         void        *bitstreamBuffer#[out]: Pointer to the output bitstream buffer
         void        *bitstreamBufferPtr #[out]: Reserved and should not be used
@@ -490,8 +492,8 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    separateColourPlaneFlag     #[in]: Set to 1 to enable 4:4:4 separate colour planes
         uint32_t    disableDeblockingFilterIDC  #[in]: Specifies the deblocking filter mode. Permissible value range: [0,2]
         uint32_t    numTemporalLayers   #[in]: Specifies max temporal layers to be used for hierarchical coding. Valid value range is [1,::NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS]
-        uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header. Currently reserved and must be set to 0.
-        uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header. Currently reserved and must be set to 0.
+        uint32_t    spsId               #[in]: Specifies the SPS id of the sequence header.
+        uint32_t    ppsId               #[in]: Specifies the PPS id of the picture header.
         NV_ENC_H264_ADAPTIVE_TRANSFORM_MODE adaptiveTransformMode   #[in]: Specifies the AdaptiveTransform Mode. Check support for AdaptiveTransform mode using ::NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM caps.
         NV_ENC_H264_FMO_MODE fmoMode    #[in]: Specified the FMO Mode. Check support for FMO using ::NV_ENC_CAPS_SUPPORT_FMO caps.
         NV_ENC_H264_BDIRECT_MODE bdirectMode    #[in]: Specifies the BDirect mode. Check support for BDirect mode using ::NV_ENC_CAPS_SUPPORT_BDIRECT_MODE caps.
@@ -578,17 +580,16 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    enableMaxQP         #[in]: Set this to 1 if maximum QP used for rate control.
         uint32_t    enableInitialRCQP   #[in]: Set this to 1 if user suppplied initial QP is used for rate control.
         uint32_t    enableAQ            #[in]: Set this to 1 to enable adaptive quantization.
-        uint32_t    enableExtQPDeltaMap #[in]: Set this to 1 to enable additional QP modifier for each MB supplied by client though signed byte array pointed to by NV_ENC_PIC_PARAMS::qpDeltaMap
+        uint32_t    reservedBitField1   #[in]: Reserved bitfields and must be set to 0
         uint32_t    reservedBitFields[27] #[in]: Reserved bitfields and must be set to 0
         NV_ENC_QP   minQP               #[in]: Specifies the minimum QP used for rate control. Client must set NV_ENC_CONFIG::enableMinQP to 1.
         NV_ENC_QP   maxQP               #[in]: Specifies the maximum QP used for rate control. Client must set NV_ENC_CONFIG::enableMaxQP to 1.
         NV_ENC_QP   initialRCQP         #[in]: Specifies the initial QP used for rate control. Client must set NV_ENC_CONFIG::enableInitialRCQP to 1.
         uint32_t    temporallayerIdxMask#[in]: Specifies the temporal layers (as a bitmask) whose QPs have changed. Valid max bitmask is [2^NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS - 1]
         uint8_t     temporalLayerQP[8]  #[in]: Specifies the temporal layer QPs used for rate control. Temporal layer index is used as as the array index
-        #SDK 8:
-        #uint8_t     targetQuality       #[in]: Target CQ (Constant Quality) level for VBR mode (range 0-51 with 0-automatic)
-        #uint8_t     targetQualityLSB    #[in]: Fractional part of target quality (as 8.8 fixed point format)
-        #uint16_t    lookaheadDepth      #[in]: Maximum depth of lookahead with range 0-32 (only used if enableLookahead=1)
+        uint8_t     targetQuality       #[in]: Target CQ (Constant Quality) level for VBR mode (range 0-51 with 0-automatic)
+        uint8_t     targetQualityLSB    #[in]: Fractional part of target quality (as 8.8 fixed point format)
+        uint16_t    lookaheadDepth      #[in]: Maximum depth of lookahead with range 0-32 (only used if enableLookahead=1)
         uint32_t    reserved[9]
 
     ctypedef struct NV_ENC_CONFIG:
@@ -1018,8 +1019,11 @@ CAPS_NAMES = {
         NV_ENC_CAPS_SUPPORT_LOOKAHEAD           : "SUPPORT_LOOKAHEAD",
         NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ         : "SUPPORT_TEMPORAL_AQ",
         NV_ENC_CAPS_SUPPORT_10BIT_ENCODE        : "SUPPORT_10BIT_ENCODE",
-        #SDK 8:
-        #NV_ENC_CAPS_NUM_MAX_LTR_FRAMES          : "NUM_MAX_LTR_FRAMES",
+        NV_ENC_CAPS_NUM_MAX_LTR_FRAMES          : "NUM_MAX_LTR_FRAMES",
+        NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION : "SUPPORT_WEIGHTED_PREDICTION",
+        NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY  : "DYNAMIC_QUERY_ENCODER_CAPACITY",
+        NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE     : "SUPPORT_BFRAME_REF_MODE",
+        NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP  : "SUPPORT_EMPHASIS_LEVEL_MAP",
         }
 
 PIC_TYPES = {
