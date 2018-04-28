@@ -83,6 +83,7 @@ cdef extern from "NvFBC.h":
 
     ctypedef int NVFBC_BUFFER_FORMAT
     NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_ARGB    #Data will be converted to ARGB unsigned byte format. 32 bpp
+    NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_BGRA    #Data will be converted to BGRA unsigned byte format. 32 bpp
     NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_RGB     #Data will be converted to RGB unsigned byte format. 24 bpp
     NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_YUV420P #Data will be converted to YUV 420 planar format using HDTV weights according to ITU-R BT.709.  12 bpp.
     NVFBC_BUFFER_FORMAT NVFBC_BUFFER_FORMAT_YUV444P #Data will be converted to YUV 444 planar format using HDTV weights according to ITU-R BT.709.  24 bpp
@@ -466,6 +467,7 @@ def get_info():
 
 PIXEL_FORMAT_CONST = {
     "XRGB"      : NVFBC_BUFFER_FORMAT_ARGB,
+    "BGRX"      : NVFBC_BUFFER_FORMAT_BGRA,
     "RGB"       : NVFBC_BUFFER_FORMAT_RGB,
     "YUV420P"   : NVFBC_BUFFER_FORMAT_YUV420P,
     "YUV444P"   : NVFBC_BUFFER_FORMAT_YUV444P,
