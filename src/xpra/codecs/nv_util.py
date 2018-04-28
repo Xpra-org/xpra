@@ -125,33 +125,37 @@ def identify_cards():
                     except:
                         pass
                     return i
-                for prop, fn_name, args, conv in (
-                       ("name",                     "nvmlDeviceGetName",                    (),     strtobytes),
-                       ("serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
-                       ("uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
-                       ("pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
-                       ("memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
-                       ("pcie-link-generation-max", "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
-                       ("pcie-link-width-max",      "nvmlDeviceGetMaxPcieLinkWidth",        (),     int),
-                       ("pcie-link-generation",     "nvmlDeviceGetCurrPcieLinkGeneration",  (),     int),
-                       ("pcie-link-width",          "nvmlDeviceGetCurrPcieLinkWidth",       (),     int),
-                       ("clock-info-graphics",      "nvmlDeviceGetClockInfo",               (0,),   int),
-                       ("clock-info-sm",            "nvmlDeviceGetClockInfo",               (1,),   int),
-                       ("clock-info-mem",           "nvmlDeviceGetClockInfo",               (2,),   int),
-                       ("clock-info-graphics-max",  "nvmlDeviceGetMaxClockInfo",            (0,),   int),
-                       ("clock-info-sm-max",        "nvmlDeviceGetMaxClockInfo",            (1,),   int),
-                       ("clock-info-mem-max",       "nvmlDeviceGetMaxClockInfo",            (2,),   int),
-                       ("fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
-                       ("temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
-                       ("power-state",              "nvmlDeviceGetPowerState",              (),     int),
-                       ("vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
+                for prefix, prop, fn_name, args, conv in (
+                       ("", "name",                     "nvmlDeviceGetName",                    (),     strtobytes),
+                       ("", "serial",                   "nvmlDeviceGetSerial",                  (),     strtobytes),
+                       ("", "uuid",                     "nvmlDeviceGetUUID",                    (),     strtobytes),
+                       ("", "pci",                      "nvmlDeviceGetPciInfo",                 (),     pciinfo),
+                       ("", "memory",                   "nvmlDeviceGetMemoryInfo",              (),     meminfo),
+                       ("pcie-link", "generation-max",  "nvmlDeviceGetMaxPcieLinkGeneration",   (),     int),
+                       ("pcie-link", "width-max",       "nvmlDeviceGetMaxPcieLinkWidth",        (),     int),
+                       ("pcie-link", "generation",      "nvmlDeviceGetCurrPcieLinkGeneration",  (),     int),
+                       ("pcie-link", "width",           "nvmlDeviceGetCurrPcieLinkWidth",       (),     int),
+                       ("clock-info", "graphics",       "nvmlDeviceGetClockInfo",               (0,),   int),
+                       ("clock-info", "sm",             "nvmlDeviceGetClockInfo",               (1,),   int),
+                       ("clock-info", "mem",            "nvmlDeviceGetClockInfo",               (2,),   int),
+                       ("clock-info", "graphics-max",   "nvmlDeviceGetMaxClockInfo",            (0,),   int),
+                       ("clock-info", "sm-max",         "nvmlDeviceGetMaxClockInfo",            (1,),   int),
+                       ("clock-info", "mem-max",        "nvmlDeviceGetMaxClockInfo",            (2,),   int),
+                       ("", "fan-speed",                "nvmlDeviceGetFanSpeed",                (),     int),
+                       ("", "temperature",              "nvmlDeviceGetTemperature",             (0,),   int),
+                       ("", "power-state",              "nvmlDeviceGetPowerState",              (),     int),
+                       ("", "vbios-version",            "nvmlDeviceGetVbiosVersion",            (),     strtobytes),
                        ):
                     try:
                         fn = getattr(pynvml, fn_name)
                         v = fn(handle, *args)
                         if conv:
                             v = conv(v)
-                        props[prop] = v
+                        if prefix:
+                            d = props.setdefault(prefix, {})
+                        else:
+                            d = props
+                        d[prop] = v
                     except Exception as e:
                         log("identify_cards() cannot query %s using %s on device %i with handle %s: %s", prop, fn, i, handle, e)
                         continue
