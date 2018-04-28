@@ -12,7 +12,7 @@ from xpra.util import pver, print_nested_dict, engs, envbool, csv
 from xpra.os_util import bytestostr, strtobytes
 
 
-MAX_TESTED = 384
+MAX_TESTED = 396
 
 nvml_init_warned = False
 def wrap_nvml_init(nvmlInit):
