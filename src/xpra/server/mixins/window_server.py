@@ -158,7 +158,7 @@ class WindowServer(StubServerMixin):
 
     def _damage(self, window, x, y, width, height, options=None):
         wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
+        for ss in tuple(self._server_sources.values()):
             ss.damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet):
