@@ -746,11 +746,6 @@ cdef class NvFBC_CUDACapture:
         log("clean()")
         cuda_context = self.cuda_context
         self.cuda_context = None
-        if cuda_context:
-            try:
-                cuda_context.push()
-            except:
-                log("%s.push()", cuda_context, exc_info=True)
         if self.setup:
             self.setup = False
             if self.context:
@@ -784,7 +779,6 @@ class CUDAImageWrapper(ImageWrapper):
         cdef double elapsed
         cdef double start = monotonic_time()
         #size = self.rowstride*self.height*len(self.pixel_format)
-        self.cuda_context.push()
         size = self.buffer_size
         #TODO: download just pixel_len bytes, not the whole buffer... (which may be quite a lot bigger)
         host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
@@ -797,7 +791,6 @@ class CUDAImageWrapper(ImageWrapper):
         log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, size, int(1000*elapsed), size/elapsed/1024/1024)
         #self.cuda_device_buffer.free()
         self.cuda_device_buffer = None
-        self.cuda_context.pop()
 
     def freeze(self):
         self.may_download()
