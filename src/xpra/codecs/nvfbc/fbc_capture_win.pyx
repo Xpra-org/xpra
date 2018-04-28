@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -81,6 +81,9 @@ cdef extern from "NvFBC/nvFBC.h":
     NVFBCRESULT NVFBC_ERROR_INVALID_TARGET              # The target adapter idx can not be used for NVFBC capture. It may not correspond to an NVIDIA GPU, or may not be attached to desktop.
     NVFBCRESULT NVFBC_ERROR_NVAPI_FAILURE               # NvAPI Error
     NVFBCRESULT NVFBC_ERROR_DYNAMIC_DISABLE             # NvFBC is dynamically disabled. Cannot continue to capture
+    NVFBCRESULT NVFBC_ERROR_IPC_FAILURE                 # NVFBC encountered an error in state management
+    NVFBCRESULT NVFBC_ERROR_CURSOR_CAPTURE_FAILURE      # Hardware cursor capture failed
+    
 
     ctypedef int NVFBC_STATE
     NVFBC_STATE NVFBC_STATE_DISABLE
@@ -110,7 +113,7 @@ cdef extern from "NvFBC/nvFBC.h":
         #DWORD   bReservedBits           #[out] Reserved, do not use.
         DWORD   dwWaitModeUsed          #[out] The mode used for this Grab operation (blocking or non-blocking), based on the grab flags passed by the application.
                                         # Actual blocking mode can differ from application's request if incorrect grab flags are passed.
-        #NvU32   dwReserved2[11]         #[in] Resereved, should be set to 0.
+        #NvU32   dwReserved2[11]         #[out] Resereved, should be set to 0.
 
     # Defines the parameters to be used with NvFBC_GetStatusEx API
     ctypedef struct NvFBCStatusEx:
@@ -119,7 +122,8 @@ cdef extern from "NvFBC/nvFBC.h":
         NvU32  bCurrentlyCapturing      #[out] Indicates if NVFBC is currently capturing for the Adapter ordinal specified in dwAdapterIdx.
         NvU32  bCanCreateNow            #[out] Deprecated. Do not use.
         NvU32  bSupportMultiHead        #[out] MultiHead grab supported.
-        NvU32  bSupport16x16DiffMap     #[out] 16x16 difference map supported.
+        NvU32  bSupportConfigurableDiffMap     #[out] Difference map with configurable blocksize supported. Supported sizes 16x16, 32x32, 64x64, 128x128(default)
+        NvU32  bSupportImageClassification     #[out] Generation of 'classification map' demarkating high frequency content in the captured image is supported
         #NvU32  bReservedBits            #[in]  Reserved, do not use.
         NvU32  dwNvFBCVersion           #[out] Indicates the highest NvFBC interface version supported by the loaded NVFBC library.
         NvU32  dwAdapterIdx             #[in]  Adapter Ordinal corresponding to the display to be grabbed. IGNORED if bCapturePID is set
@@ -361,6 +365,8 @@ ERRORS = {
     NVFBC_ERROR_INVALID_TARGET          : "INVALID_TARGET",
     NVFBC_ERROR_NVAPI_FAILURE           : "NVAPI_FAILURE",
     NVFBC_ERROR_DYNAMIC_DISABLE         : "DYNAMIC_DISABLE",
+    NVFBC_ERROR_IPC_FAILURE             : "IPC_FAILURE",
+    NVFBC_ERROR_CURSOR_CAPTURE_FAILURE  : "CURSOR_CAPTURE_FAILURE",
     }
 
 
@@ -429,7 +435,7 @@ def get_status(int adapter=0):
         "currently-capturing"   : bool(status.bCurrentlyCapturing),
         "can-create-now"        : bool(status.bCanCreateNow),
         "support-multihead"     : bool(status.bSupportMultiHead),
-        "support-16x16diffmap"  : bool(status.bSupport16x16DiffMap),
+        "support-diffmap"       : bool(status.bSupportConfigurableDiffMap),
         "version"               : int(status.dwNvFBCVersion),
         "adapter"               : int(status.dwAdapterIdx),
         }
