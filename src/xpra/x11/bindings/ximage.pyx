@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -758,7 +758,7 @@ cdef class XShmImageWrapper(XImageWrapper):
 
     def freeze(self):                               #@DuplicatedSignature
         #we just force a restride, which will allocate a new pixel buffer:
-        cdef newstride = roundup(self.width*len(self.pixel_format), 4)
+        cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
         self.timestamp = int(monotonic_time()*1000)
         return self.restride(newstride)
 
