@@ -11,13 +11,13 @@ import os
 import sys
 import numpy
 import array
-from collections import deque
+from collections import deque, OrderedDict
 
 from pycuda import driver
 
 from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr
-from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool
-from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, \
+from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
+from xpra.codecs.cuda_common.cuda_context import init_all_devices, get_devices, select_device, get_device_info, \
                 get_cuda_info, get_pycuda_info, device_info, reset_state, \
                 get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO
 from xpra.codecs.codec_constants import video_spec, TransientCodecException
@@ -2743,6 +2743,7 @@ def init_module():
         if LOSSLESS_ENABLED:
             LOSSLESS_ENABLED = False
     #check NVENC availibility by creating a context:
+    device_warnings = OrderedDict()
     for client_key in try_keys:
         if client_key:
             #this will set the global key object used by all encoder contexts:
@@ -2776,8 +2777,10 @@ def init_module():
                                        }.get(e, e)
                 codec_query = codecs.get(nvenc_encoding_name)
                 if not codec_query:
-                    log("%s is not supported on this device", e)
-                    FAILED_ENCODINGS.add(e)
+                    wkey = "nvenc:%s-%s" % (device_id, nvenc_encoding_name)
+                    if first_time(wkey):
+                        log.warn("Warning: NVENC on device %s:", get_device_info(device_id) or device_id)
+                        log(" does not support %s", nvenc_encoding_name)
                     continue
                 #ensure MAX_SIZE is set:
                 cmax = MAX_SIZE.get(e)
@@ -2809,13 +2812,19 @@ def init_module():
                         yuv444_support = YUV444_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
                         YUV444_CODEC_SUPPORT[encoding] = yuv444_support
                         if YUV444_ENABLED and not yuv444_support:
-                            log.warn("Warning: hardware or nvenc library version does not support YUV444 with %s", encoding)
+                            wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "YUV444")
+                            if first_time(wkey):
+                                device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("YUV444")
+                            log("no support for YUV444 with %s", encoding)
                         log("%s YUV444 support: %s", encoding, YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED))
                         #check for lossless:
                         lossless_support = yuv444_support and LOSSLESS_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE)
                         LOSSLESS_CODEC_SUPPORT[encoding] = lossless_support
                         if LOSSLESS_ENABLED and not lossless_support:
-                            log.warn("Warning: hardware or nvenc library version does not support lossless mode with %s", encoding)
+                            wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "lossless")
+                            if first_time(wkey):
+                                device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("lossless")
+                            log("no support for lossless mode with %s", encoding)
                         log("%s lossless support: %s", encoding, LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED))
                     except NVENCException as e:
                         log("encoder %s failed: %s", test_encoder, e)
@@ -2841,6 +2850,11 @@ def init_module():
                 finally:
                     if test_encoder:
                         test_encoder.clean()
+    if device_warnings:
+        for device_id, encoding_warnings in device_warnings.items():
+            log.warn("Warning: NVENC on device %s:", get_device_info(device_id) or device_id)
+            for encoding, warnings in encoding_warnings.items():
+                log.warn(" %s encoding does not support %s mode", encoding, " or ".join(warnings))
     if success:
         #pick the first valid license key:
         if len(valid_keys)>0:
