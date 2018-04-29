@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import envint
 from xpra.codecs.codec_constants import get_subsampling_divs, LOSSY_PIXEL_FORMATS
 
 from xpra.log import Logger
 scorelog = Logger("score")
+
+GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 
 
 def get_quality_score(csc_format, csc_spec, encoder_spec, scaling, target_quality=100, min_quality=0):
@@ -176,10 +179,14 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, sca
         ee_score += encoder_spec.score_boost
     #edge resistance score: average of csc and encoder score:
     er_score = (ecsc_score + ee_score) / 2.0
-    score = int((qscore+sscore+er_score+sizescore+client_score_delta)*runtime_score/100.0/4.0)
-    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i - %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, score=%2i",
+    #gpu vs cpu
+    gpu_score = max(0, GPU_BIAS-50)*encoder_spec.gpu_cost//50
+    cpu_score = max(0, 50-GPU_BIAS)*encoder_spec.cpu_cost//50
+    score = int((qscore+sscore+er_score+sizescore+client_score_delta+gpu_score+cpu_score)*runtime_score//100//5)
+    scorelog("get_score(%-7s, %-24r, %-24r, %5i, %5i) quality: %2i, speed: %2i, setup: %2i - %2i runtime: %2i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%2i",
              enc_in_format, csc_spec, encoder_spec, width, height,
-             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta, score)
+             qscore, sscore, ecsc_score, ee_score, runtime_score, scaling, encoder_scaling, enc_width, enc_height, sizescore, client_score_delta,
+             cpu_score, gpu_score, score)
     return score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec
 
 def get_encoder_dimensions(encoder_spec, width, height, scaling=(1,1)):
