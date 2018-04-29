@@ -105,13 +105,14 @@ def setup_capture(window):
     capture = None
     if USE_NVFBC:
         try:
+            log("setup_capture(%s) USE_NVFBC_CUDA=%s", window, USE_NVFBC_CUDA)
             if USE_NVFBC_CUDA:
                 capture = NvFBC_CUDACapture()
             else:
                 capture = NvFBC_SysCapture()
             capture.init_context(ww, wh)
             image = capture.get_image(0, 0, ww, wh)
-            assert image
+            assert image, "test capture failed"
         except Exception as e:
             log("get_image() NvFBC test failed", exc_info=True)
             log("not using %s: %s", capture, e)
