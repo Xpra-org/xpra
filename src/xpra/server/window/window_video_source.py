@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -782,10 +782,13 @@ class WindowVideoSource(WindowSource):
         #TODO: encode delay can be derived rather than hard-coded
         encode_delay = 50
         av_delay = max(0, av_delay - encode_delay)
-        must_freeze = av_delay>=0 or coding in self.video_encodings
+        #freeze if:
+        # * we want av-sync
+        # * the video encoder needs a thread safe image
+        #   (the xshm backing may change from underneath us if we don't freeze it)
+        must_freeze = av_delay>0 or ((coding in self.video_encodings or coding=="auto") and not image.is_thread_safe())
         if must_freeze:
-            newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
-            image.restride(newstride)
+            image.freeze()
         def call_encode(ew, eh, eimage, encoding, eflush):
             self._sequence += 1
             sequence = self._sequence
