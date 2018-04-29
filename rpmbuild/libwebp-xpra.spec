@@ -62,6 +62,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %doc AUTHORS COPYING PATENTS README
 %{_libdir}/xpra/libwebp.so.*
+%{_libdir}/xpra/libwebpdemux.so.*
 
 %files devel
 %defattr(-,root,root,-)
@@ -69,7 +70,11 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/libwebp.a
 %{_libdir}/xpra/libwebp.la
 %{_libdir}/xpra/libwebp.so
+%{_libdir}/xpra/libwebpdemux.a
+%{_libdir}/xpra/libwebpdemux.la
+%{_libdir}/xpra/libwebpdemux.so
 %{_libdir}/xpra/pkgconfig/libwebp.pc
+%{_libdir}/xpra/pkgconfig/libwebpdemux.pc
 
 
 %changelog
