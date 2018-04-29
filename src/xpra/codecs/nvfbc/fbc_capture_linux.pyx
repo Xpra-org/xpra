@@ -34,7 +34,8 @@ except:
 from libc.stdint cimport uintptr_t, uint8_t, int64_t, uint32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
 
-DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
+SYS_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_SYS_PIXEL_FORMAT", "RGB")
+CUDA_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_CUDA_PIXEL_FORMAT", "BGRX")
 CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 
 
@@ -483,7 +484,7 @@ cdef class NvFBC_SysCapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format=DEFAULT_PIXEL_FORMAT):
+    def init_context(self, int width=-1, int height=-1, pixel_format=SYS_PIXEL_FORMAT):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         global PIXEL_FORMAT_CONST, INIT_DONE
         assert INIT_DONE, "module not initialized"
@@ -576,7 +577,7 @@ cdef class NvFBC_CUDACapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format="XRGB"):
+    def init_context(self, int width=-1, int height=-1, pixel_format=CUDA_PIXEL_FORMAT):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         assert select_device, "CUDA is missing"
         if pixel_format not in PIXEL_FORMAT_CONST:
