@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, monotonic_time
 
 def clone_plane(plane):
@@ -143,7 +144,10 @@ class ImageWrapper(object):
         return 0
 
     def may_restride(self):
-        return self.restride(self.width*self.get_bytesperpixel())
+        newstride = roundup(self.width*self.bytesperpixel, 4)
+        if self.rowstride>newstride:
+            return self.restride(newstride)
+        return False
 
     def restride(self, rowstride):
         assert not self.freed
