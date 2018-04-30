@@ -27,7 +27,7 @@
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_rebuild
-fi
+%fi
 %else
 %define with_cuda 0
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc 
