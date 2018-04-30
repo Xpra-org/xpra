@@ -935,10 +935,6 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "xpra/codecs/nvenc/encoder.c",
                    "xpra/codecs/nvfbc/fbc_capture_linux.cpp",
                    "xpra/codecs/nvfbc/fbc_capture_win.cpp",
-                   "xpra/codecs/cuda_common/ARGB_to_NV12.fatbin",
-                   "xpra/codecs/cuda_common/ARGB_to_YUV444.fatbin",
-                   "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
-                   "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
                    "xpra/codecs/jpeg/encoder.c",
@@ -964,6 +960,13 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
                    "etc/xpra/xpra.conf",
                    #special case for the generated xpra conf files in build (see #891):
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
+    if cuda_rebuild_ENABLED:
+        CLEAN_FILES += [
+            "xpra/codecs/cuda_common/ARGB_to_NV12.fatbin",
+            "xpra/codecs/cuda_common/ARGB_to_YUV444.fatbin",
+            "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
+            "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
+            ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
         if ext in (".c", ".cpp", ".pxi"):
@@ -2071,6 +2074,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
         reason = should_rebuild(cuda_src, cuda_bin)
         if not reason:
             continue
+        print("rebuilding %s: %s" % (kernel, reason))
         cmd = [nvcc,
                '-fatbin',
                #"-cubin",
