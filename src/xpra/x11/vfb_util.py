@@ -23,7 +23,7 @@ DEFAULT_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_VFB_
 assert len(DEFAULT_VFB_RESOLUTION)==2
 DEFAULT_DESKTOP_VFB_RESOLUTION = tuple(int(x) for x in os.environ.get("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024").replace(",", "x").split("x", 1))
 assert len(DEFAULT_DESKTOP_VFB_RESOLUTION)==2
-PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", True)
+PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
 
