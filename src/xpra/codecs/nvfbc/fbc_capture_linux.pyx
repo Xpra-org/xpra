@@ -11,7 +11,7 @@ import os
 import sys
 
 from xpra.os_util import WIN32
-from xpra.util import csv
+from xpra.util import csv, roundup
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
@@ -569,11 +569,9 @@ cdef class NvFBC_CUDACapture:
     cdef NVFBC_SESSION_HANDLE context
     cdef uint8_t setup
     cdef object pixel_format
-    cdef uint32_t buffer_size
     cdef int cuda_device_id
     cdef object cuda_device
     cdef object cuda_context
-    cdef object cuda_device_buffer
 
     cdef object __weakref__
 
@@ -642,25 +640,41 @@ cdef class NvFBC_CUDACapture:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
-        info = get_frame_grab_info(&grab_info)
         cdef double end = monotonic_time()
         log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwWidth, int((end-start)*1000))
+        info = get_frame_grab_info(&grab_info)
         log("NvFBCCudaGrabFrame: info=%s", info)
-        if not self.cuda_device_buffer or self.buffer_size!=grab_info.dwByteSize:
-            #allocate CUDA device memory:
-            self.buffer_size = grab_info.dwByteSize
-            self.cuda_device_buffer = driver.mem_alloc(self.buffer_size)
-            log("buffer_size=%#x, cuda device buffer=%s", self.buffer_size, self.cuda_device_buffer)
-        stream = driver.Stream()
-        log("memcpy_dtod_async(%#x, %#x, %#x, %s)", int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size, stream)
-        driver.memcpy_dtod_async(int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size, stream)
+        assert x+width<=grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, grab_info.dwWidth)
+        assert y+height<=grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, grab_info.dwHeight)
+        #allocate CUDA device memory:
         cdef int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        cdef int stride = int(grab_info.dwWidth*Bpp)
-        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, stride, Bpp)
+        stream = driver.Stream()
+        cdef int src_pitch = int(grab_info.dwWidth*Bpp)
+        #FIXME: use a smaller dst_pitch
+        # (without getting a segfault..)
+        #dst_pitch = roundup(width*Bpp, 16)
+        dst_pitch = src_pitch
+        buffer_size = height*dst_pitch
+        cuda_device_buffer = driver.mem_alloc(buffer_size)
+        log("buffer_size=%s, cuda device buffer=%s, pitch=%i", buffer_size, cuda_device_buffer, dst_pitch)
+        log("Memcpy2D: to %#x, from %#x, size=%s, %s", int(cuda_device_buffer), int(cuDevicePtr), buffer_size, stream)
+        copy = driver.Memcpy2D()
+        copy.set_src_device(int(cuDevicePtr))
+        copy.src_x_in_bytes = x*Bpp
+        copy.src_y = y
+        copy.src_pitch = src_pitch
+        copy.width_in_bytes = width*Bpp  #min(src_pitch, dst_pitch)
+        copy.height = height
+        copy.set_dst_device(cuda_device_buffer)
+        copy.dst_x_in_bytes = 0
+        copy.dst_y = 0
+        copy.dst_pitch = dst_pitch
+        copy(stream)
+        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, src_pitch, Bpp)
         image.stream = stream
-        image.cuda_device_buffer = self.cuda_device_buffer
+        image.cuda_device_buffer = cuda_device_buffer
         image.cuda_context = self.cuda_context
-        image.buffer_size = self.buffer_size
+        image.buffer_size = buffer_size
         return image
 
     def clean(self):                        #@DuplicatedSignature
@@ -683,9 +697,6 @@ cdef class NvFBC_CUDACapture:
                 cuda_context.detach()
             except:
                 log("%s.pop() or detach()", cuda_context, exc_info=True)
-        #don't free it - an imagewrapper may still use it:
-        #TODO: we should invalidate it
-        self.cuda_device_buffer = None
 
 
 class CUDAImageWrapper(ImageWrapper):
@@ -721,11 +732,10 @@ class CUDAImageWrapper(ImageWrapper):
         driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)
         self.wait_for_stream()
         elapsed = monotonic_time()-start
-        self.pixels = host_buffer.tostring()
+        self.pixels = host_buffer.tobytes()
         self.downloaded = True
         elapsed = monotonic_time()-start
         log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, size, int(1000*elapsed), size/elapsed/1024/1024)
-        #self.cuda_device_buffer.free()
         self.cuda_device_buffer = None
         self.cuda_context.pop()
 

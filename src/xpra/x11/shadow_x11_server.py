@@ -225,9 +225,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         screen = self.root.get_screen()
         n = screen.get_n_monitors()
         models = []
-        capture = None
-        if not USE_NVFBC:
-            capture = setup_capture(self.root)
+        capture = setup_capture(self.root)
         for i in range(n):
             geom = screen.get_monitor_geometry(i)
             x, y, width, height = geom.x, geom.y, geom.width, geom.height
