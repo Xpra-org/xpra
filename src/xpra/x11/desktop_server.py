@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 import os
-import gtk.gdk
+import gtk
+from gtk import gdk
 import gobject
 import socket
 
@@ -281,7 +282,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def x11_init(self):
         X11ServerBase.x11_init(self)
         assert init_x11_filter() is True
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         screens = display.get_n_screens()
         for n in range(screens):
             screen = display.get_screen(n)
@@ -402,17 +403,18 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def load_existing_windows(self):
         #at present, just one  window is forwarded:
         #the root window covering the whole display
-        display = gtk.gdk.display_get_default()
+        display = gdk.display_get_default()
         screens = display.get_n_screens()
-        for n in range(screens):
-            screen = display.get_screen(n)
-            root = screen.get_root_window()
-            model = DesktopModel(root, self.randr_exact_size)
-            model.setup()
-            windowlog("adding root window model %s", model)
-            X11ServerBase._add_new_window_common(self, model)
-            model.managed_connect("client-contents-changed", self._contents_changed)
-            model.managed_connect("resized", self._window_resized_signaled)
+        with xsync:
+            for n in range(screens):
+                screen = display.get_screen(n)
+                root = screen.get_root_window()
+                model = DesktopModel(root, self.randr_exact_size)
+                model.setup()
+                windowlog("adding root window model %s", model)
+                X11ServerBase._add_new_window_common(self, model)
+                model.managed_connect("client-contents-changed", self._contents_changed)
+                model.managed_connect("resized", self._window_resized_signaled)
 
 
     def _window_resized_signaled(self, window):
