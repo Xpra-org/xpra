@@ -36,7 +36,7 @@ class KeyboardHelper(object):
         #the platform class which allows us to map the keys:
         from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
-        log.info("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
+        log("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
         key_repeat = self.keyboard.get_keyboard_repeat()
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
@@ -209,7 +209,7 @@ class KeyboardHelper(object):
             keyname = keyspec[len(keyspec)-1]
             shortcuts.setdefault(keyname, []).append((modifiers, action, args))
             log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
-        log.info("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
         print_nested_dict(shortcuts, print_fn=log.info)
         return  shortcuts
 
