@@ -19,7 +19,7 @@ LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
 
 class KeyboardHelper(object):
 
-    def __init__(self, net_send, keyboard_sync, shortcut_modifiers, key_shortcuts, raw, layout, layouts, variant, variants, options):
+    def __init__(self, net_send, keyboard_sync=True, shortcut_modifiers="auto", key_shortcuts=[], raw=False, layout="", layouts=[], variant="", variants=[], options=""):
         self.reset_state()
         self.send = net_send
         self.locked = False
@@ -36,7 +36,7 @@ class KeyboardHelper(object):
         #the platform class which allows us to map the keys:
         from xpra.platform.keyboard import Keyboard
         self.keyboard = Keyboard()
-        log("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
+        log.info("KeyboardHelper(%s) keyboard=%s", (net_send, keyboard_sync, key_shortcuts, raw, layout, layouts, variant, variants, options), self.keyboard)
         key_repeat = self.keyboard.get_keyboard_repeat()
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
@@ -62,6 +62,7 @@ class KeyboardHelper(object):
         self.xkbmap_query = ""
         self.xkbmap_query_struct = {}
         self.xkbmap_layout_groups = LAYOUT_GROUPS
+        self.xkbmap_raw = False
 
         self.hash = None
 
@@ -208,13 +209,14 @@ class KeyboardHelper(object):
             keyname = keyspec[len(keyspec)-1]
             shortcuts.setdefault(keyname, []).append((modifiers, action, args))
             log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
-        log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
-        print_nested_dict(shortcuts, print_fn=log)
+        log.info("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
+        print_nested_dict(shortcuts, print_fn=log.info)
         return  shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
+        log.info("key_handled_as_shortcut: shortcut(%s)=%s", key_name, shortcuts)
         if not shortcuts:
             return False
         if len(shortcuts)>1:
