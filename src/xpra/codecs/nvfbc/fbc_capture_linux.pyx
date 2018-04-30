@@ -651,10 +651,13 @@ cdef class NvFBC_CUDACapture:
             self.buffer_size = grab_info.dwByteSize
             self.cuda_device_buffer = driver.mem_alloc(self.buffer_size)
             log("buffer_size=%#x, cuda device buffer=%s", self.buffer_size, self.cuda_device_buffer)
-        log("memcpy_dtod(%#x, %#x, %#x)", int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
-        driver.memcpy_dtod(int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size)
-        Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwWidth*Bpp), Bpp)
+        stream = driver.Stream()
+        log("memcpy_dtod_async(%#x, %#x, %#x, %s)", int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size, stream)
+        driver.memcpy_dtod_async(int(self.cuda_device_buffer), int(cuDevicePtr), self.buffer_size, stream)
+        cdef int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
+        cdef int stride = int(grab_info.dwWidth*Bpp)
+        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, stride, Bpp)
+        image.stream = stream
         image.cuda_device_buffer = self.cuda_device_buffer
         image.cuda_context = self.cuda_context
         image.buffer_size = self.buffer_size
@@ -689,10 +692,20 @@ class CUDAImageWrapper(ImageWrapper):
 
     def __init__(self, *args):
         ImageWrapper.__init__(self, *args)
+        self.stream = None
         self.cuda_device_buffer = None
         self.cuda_context = None
         self.buffer_size = 0
         self.downloaded = False
+
+    def wait_for_stream(self):
+        done = self.stream.is_done()
+        if done:
+            return
+        now = monotonic_time()
+        self.stream.synchronize()
+        end = monotonic_time()
+            
 
     def may_download(self):
         if self.pixels is not None or self.downloaded:
@@ -705,7 +718,8 @@ class CUDAImageWrapper(ImageWrapper):
         self.cuda_context.push()
         size = self.buffer_size
         host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
-        driver.memcpy_dtoh(host_buffer, self.cuda_device_buffer)
+        driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)
+        self.wait_for_stream()
         elapsed = monotonic_time()-start
         self.pixels = host_buffer.tostring()
         self.downloaded = True
@@ -720,6 +734,7 @@ class CUDAImageWrapper(ImageWrapper):
         return True
 
     def get_gpu_buffer(self):
+        self.wait_for_stream()
         return self.cuda_device_buffer
 
     def has_pixels(self):
