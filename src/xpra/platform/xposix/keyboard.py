@@ -21,7 +21,7 @@ class Keyboard(KeyboardBase):
             from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
             self.keyboard_bindings = X11KeyboardBindings()
         except Exception as e:
-            log.error("Error: failed load posix keyboard bindings")
+            log.error("Error: failed to load posix keyboard bindings")
             log.error(" %s", e)
             self.keyboard_bindings = None
 
