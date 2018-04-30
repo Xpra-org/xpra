@@ -87,6 +87,9 @@ class GTKImageCapture(object):
     def __init__(self, window):
         self.window = window
 
+    def __repr__(self):
+        return "GTKImageCapture(%s)" % self.window
+
     def clean(self):
         pass
 
@@ -133,7 +136,7 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
         self.capture = capture
 
     def __repr__(self):
-        return "GTKX11RootWindowModel(%#x - %s)" % (get_xwindow(self.window), self.geometry)
+        return "GTKX11RootWindowModel(%#x - %s - %s)" % (get_xwindow(self.window), self.geometry, self.capture)
 
     def suspend(self):
         self.close_capture()
