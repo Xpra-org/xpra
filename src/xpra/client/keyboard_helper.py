@@ -8,7 +8,6 @@
 import os
 from xpra.log import Logger
 log = Logger("keyboard")
-log.enable_debug()
 
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
