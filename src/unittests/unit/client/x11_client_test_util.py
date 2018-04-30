@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ class X11ClientTestUtil(ServerTestUtil):
 		return xvfb, self.do_run_client(client_display, *args)
 
 	def do_run_client(self, client_display, *args):
-		from xpra.scripts.server import xauth_add
+		from xpra.x11.vfb_util import xauth_add
 		xauth_add(client_display)
 		env = self.get_run_env()
 		env["DISPLAY"] = client_display
