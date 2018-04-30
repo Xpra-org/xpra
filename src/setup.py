@@ -667,7 +667,10 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 elif token[:2] in ignored_flags:
                     pass
                 elif token[:2] in flag_map:
-                    add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+                    if len(token)>2:
+                        add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+                    else:
+                        print("Warning: invalid token '%s'" % token)
                 elif token.startswith("-W"):
                     add_to_keywords(kw, 'extra_compile_args', token)
                 else:# throw others to extra_link_args
