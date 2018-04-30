@@ -14,7 +14,7 @@
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
 %define update_firewall 1
 %define run_tests 1
@@ -23,7 +23,11 @@
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
 %define with_cuda 1
+%if 0%{?fedora}<28
 %define build_args %{DEFAULT_BUILD_ARGS}
+%else
+%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_rebuild
+fi
 %else
 %define with_cuda 0
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc 
