@@ -8,6 +8,7 @@
 import os
 from xpra.log import Logger
 log = Logger("keyboard")
+log.enable_debug()
 
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
@@ -210,13 +211,13 @@ class KeyboardHelper(object):
             shortcuts.setdefault(keyname, []).append((modifiers, action, args))
             log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
         log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
-        print_nested_dict(shortcuts, print_fn=log.info)
-        return  shortcuts
+        print_nested_dict(shortcuts, print_fn=log)
+        return shortcuts
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
-        log.info("key_handled_as_shortcut: shortcut(%s)=%s", key_name, shortcuts)
+        log("key_handled_as_shortcut: shortcut(%s)=%s", key_name, shortcuts)
         if not shortcuts:
             return False
         if len(shortcuts)>1:
