@@ -482,11 +482,11 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             windowlog("cannot map window %s: already removed!", wid)
             return
         geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
+        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=8:
             self._set_window_state(proto, wid, window, packet[7])
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        self._window_mapped_at(proto, wid, window, (x, y, w, h))
         self._damage(window, 0, 0, w, h)
 
 
