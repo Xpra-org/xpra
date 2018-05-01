@@ -254,22 +254,23 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def makeRootWindowModels(self):
         log("makeRootWindowModels() root=%s", self.root)
-        if not MULTI_WINDOW:
-            return (GTKX11RootWindowModel(self.root),)
-        screen = self.root.get_screen()
-        n = screen.get_n_monitors()
-        models = []
         self.capture = setup_capture(self.root)
-        for i in range(n):
-            geom = screen.get_monitor_geometry(i)
-            x, y, width, height = geom.x, geom.y, geom.width, geom.height
-            model = GTKX11RootWindowModel(self.root, self.capture)
-            if hasattr(screen, "get_monitor_plug_name"):
-                plug_name = screen.get_monitor_plug_name(i)
-                if plug_name or n>1:
-                    model.title = plug_name or str(i)
-            model.geometry = (x, y, width, height)
-            models.append(model)
+        if not MULTI_WINDOW:
+            models = (GTKX11RootWindowModel(self.root, self.capture),)
+        else:
+            models = []
+            screen = self.root.get_screen()
+            n = screen.get_n_monitors()
+            for i in range(n):
+                geom = screen.get_monitor_geometry(i)
+                x, y, width, height = geom.x, geom.y, geom.width, geom.height
+                model = GTKX11RootWindowModel(self.root, self.capture)
+                if hasattr(screen, "get_monitor_plug_name"):
+                    plug_name = screen.get_monitor_plug_name(i)
+                    if plug_name or n>1:
+                        model.title = plug_name or str(i)
+                model.geometry = (x, y, width, height)
+                models.append(model)
         log("makeRootWindowModels()=%s", models)
         return models
 
