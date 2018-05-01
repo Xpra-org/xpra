@@ -46,6 +46,7 @@ cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
 cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
+cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 
 cdef int QP_MAX_VALUE = 51   #newer versions of ffmpeg can decode up to 63
 
@@ -2195,9 +2196,9 @@ cdef class Encoder:
         cdef unsigned long input_size
         if self.kernel:
             #copy to input buffer, CUDA kernel converts into output buffer:
-            if gpu_buffer and stride<=self.inputPitch:
+            if GPU_MEMCOPY and gpu_buffer and stride<=self.inputPitch:
                 driver.memcpy_dtod(self.cudaInputBuffer, int(gpu_buffer), stride*h)
-                log("GPU memcopy from %#x to %#x", int(gpu_buffer), int(self.cudaInputBuffer))
+                log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaInputBuffer))
             else:
                 stride = self.copy_image(image, self.inputBuffer, self.inputPitch, False)
                 driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
@@ -2205,9 +2206,9 @@ cdef class Encoder:
             input_size = self.inputPitch * self.input_height
         else:
             #go direct to the CUDA "output" buffer:
-            if gpu_buffer and stride<=self.outputPitch:
+            if GPU_MEMCOPY and gpu_buffer and stride<=self.outputPitch:
                 driver.memcpy_dtod(self.cudaOutputBuffer, int(gpu_buffer), stride*h)
-                log("GPU memcopy from %#x to %#x", int(gpu_buffer), int(self.cudaOutputBuffer))
+                log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaOutputBuffer))
             else:
                 stride = self.copy_image(image, self.inputBuffer, self.inputPitch, True)
                 driver.memcpy_htod(self.cudaOutputBuffer, self.inputBuffer)
@@ -2310,7 +2311,6 @@ cdef class Encoder:
         log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (end - start)*1000.0)
 
     cdef NV_ENC_INPUT_PTR map_input_resource(self):
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
         #map buffer so nvenc can access it:
         memset(&mapInputResource, 0, sizeof(NV_ENC_MAP_INPUT_RESOURCE))
@@ -2319,8 +2319,7 @@ cdef class Encoder:
         mapInputResource.mappedBufferFmt = self.bufferFmt
         if DEBUG_API:
             log("nvEncMapInputResource(%#x) inputHandle=%#x", <uintptr_t> &mapInputResource, <uintptr_t> self.inputHandle)
-        with nogil:
-            r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
+        cdef NVENCSTATUS r = self.functionList.nvEncMapInputResource(self.context, &mapInputResource)
         raiseNVENC(r, "mapping input resource")
         cdef NV_ENC_INPUT_PTR mappedResource = mapInputResource.mappedResource
         if DEBUG_API:
@@ -2330,9 +2329,7 @@ cdef class Encoder:
     cdef unmap_input_resource(self, NV_ENC_INPUT_PTR mappedResource):
         if DEBUG_API:
             log("nvEncUnmapInputResource(%#x)", <uintptr_t> mappedResource)
-        cdef int r
-        with nogil:
-            r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
+        cdef int r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
     cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0):
@@ -2408,9 +2405,7 @@ cdef class Encoder:
         data = (<char *> lockOutputBuffer.bitstreamBufferPtr)[:size]
         if DEBUG_API:
             log("nvEncUnlockBitstream(%#x)", <uintptr_t> self.bitstreamBuffer)
-        if lockOutputBuffer.bitstreamBufferPtr!=NULL:
-            with nogil:
-                r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
+        r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
         raiseNVENC(r, "unlocking output buffer")
 
         #update info:
