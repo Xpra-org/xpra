@@ -31,6 +31,8 @@ AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
 AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
+LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
+
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 
 DELTA = envbool("XPRA_DELTA", True)
@@ -492,7 +494,7 @@ class WindowSource(WindowIconSource):
 
     def go_idle(self):
         self.is_idle = True
-        self.lock_batch_delay(500)
+        self.lock_batch_delay(LOCKED_BATCH_DELAY)
 
     def no_idle(self):
         self.is_idle = True
