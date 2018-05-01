@@ -2218,7 +2218,9 @@ cdef class Encoder:
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
         assert mappedResource!=NULL
         try:
-            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp())
+            timestamp = image.get_timestamp()
+            image.free()
+            return self.nvenc_compress(input_size, mappedResource, timestamp)
         finally:
             self.unmap_input_resource(mappedResource)
 
