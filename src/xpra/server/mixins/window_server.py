@@ -226,9 +226,10 @@ class WindowServer(StubServerMixin):
         ss = self._server_sources.get(proto)
         if not ss:
             return
-        ws = ss.make_window_source(wid, window)
-        ws.mapped_at = coords
-        #log("window %i mapped at %s for client %s", wid, coords, ss)
+        if coords:
+            ss.map_window(wid, window, coords)
+        else:
+            ss.unmap_window(wid, window)
 
     def get_transient_for(self, _window):
         return  None

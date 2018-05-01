@@ -425,10 +425,16 @@ class WindowsMixin(StubServerMixin):
         if ws:
             ws.cancel_damage()
 
+
+    def map_window(self, wid, window, coords):
+        ws = self.make_window_source(wid, window)
+        ws.map(coords)
+
     def unmap_window(self, wid, _window):
         ws = self.window_sources.get(wid)
         if ws:
             ws.unmap()
+
 
     def raise_window(self, wid, window):
         if not self.can_send_window(window):

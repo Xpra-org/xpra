@@ -150,7 +150,8 @@ class ShadowServerBase(RFBServer):
 
     def start_refresh(self):
         self.mapped = True
-        self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
+        if not self.refresh_timer:
+            self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v):
         assert v>0 and v<10000
@@ -258,10 +259,11 @@ class ShadowServerBase(RFBServer):
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
         window = self._process_window_common(wid)
-        for ss in self._server_sources.values():
-            ss.unmap_window(wid, window)
         self._window_mapped_at(proto, wid, window, None)
-        window.suspend()
+        #TODO: deal with more than one window / more than one client
+        #and stop refresh if all the windows are unmapped everywhere
+        if len(self._server_sources)<=1 and len(self._id_to_window)<=1:
+            self.stop_refresh()
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]

@@ -157,9 +157,6 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
     def __repr__(self):
         return "GTKX11RootWindowModel(%#x - %s - %s)" % (get_xwindow(self.window), self.geometry, self.capture)
 
-    def suspend(self):
-        self.close_capture()
-
     def cleanup(self):
         self.close_capture()
         GTKRootWindowModel.cleanup(self)

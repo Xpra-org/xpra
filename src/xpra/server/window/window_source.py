@@ -809,9 +809,14 @@ class WindowSource(WindowIconSource):
         return self.encoding
 
 
+    def map(self, mapped_at):
+        self.mapped_at = mapped_at
+        self.no_idle()
+
     def unmap(self):
         self.cancel_damage()
         self.statistics.reset()
+        self.go_idle()
 
 
     def cancel_damage(self):
@@ -1088,6 +1093,7 @@ class WindowSource(WindowIconSource):
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
+            log("window dimensions changed: %ix%i", ww, wh)
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
