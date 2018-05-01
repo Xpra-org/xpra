@@ -2183,7 +2183,7 @@ cdef class Encoder:
         h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
         stride = image.get_rowstride()
-        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%#x", image, options, self.kernel_name, int(gpu_buffer))
+        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%#x", image, options, self.kernel_name, int(gpu_buffer or 0))
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
