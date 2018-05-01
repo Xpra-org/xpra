@@ -544,10 +544,8 @@ cdef class NvFBC_SysCapture:
             ret = function_list.nvFBCToSysGrabFrame(self.context, &self.grab)
         self.raiseNvFBC(ret, "NvFBCToSysGrabFrame")
         log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &self.grab, ret)
-        info = get_frame_grab_info(&self.grab_info)
         cdef double end = monotonic_time()
-        log("NvFBCToSysGrabFrame: framebuffer=%#x, size=%#x, elapsed=%ims", <uintptr_t> self.framebuffer, self.grab_info.dwByteSize, int((end-start)*1000))
-        log("NvFBCToSysGrabFrame: info=%s", info)
+        log("NvFBCToSysGrabFrame: framebuffer=%#x, info=%s, elapsed=%ims", <uintptr_t> self.framebuffer, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         log("get_image%s", (x, y, width, height))
@@ -673,9 +671,7 @@ cdef class NvFBC_CUDACapture:
         elif res!=0:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
         cdef double end = monotonic_time()
-        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", self.grab_info.dwHeight*self.grab_info.dwWidth, int((end-start)*1000))
-        info = get_frame_grab_info(&self.grab_info)
-        log("NvFBCCudaGrabFrame: info=%s", info)
+        log("NvFBCCudaGrabFrame: info=%s, elapsed=%ims", get_frame_grab_info(&self.grab_info), int((end-start)*1000))
 
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
@@ -691,7 +687,7 @@ cdef class NvFBC_CUDACapture:
         buffer_size = height*dst_pitch
         cuda_device_buffer = driver.mem_alloc(buffer_size)
         log("buffer_size=%s, cuda device buffer=%s, pitch=%i", buffer_size, cuda_device_buffer, dst_pitch)
-        log("Memcpy2D: to %#x, from %#x, size=%s, %s, frame=%i", int(cuda_device_buffer), int(self.cuDevicePtr), buffer_size, stream, self.frames)
+        log("Memcpy2D: to %#x, from %#x, size=%s, %s, frame=%i, allocated images: %i", int(cuda_device_buffer), int(self.cuDevicePtr), buffer_size, stream, self.frames, len(self.images))
         copy = driver.Memcpy2D()
         copy.set_src_device(int(self.cuDevicePtr))
         copy.src_x_in_bytes = x*Bpp
@@ -803,7 +799,13 @@ class CUDAImageWrapper(ImageWrapper):
         return ImageWrapper.get_sub_image(self, *args)
 
     def free(self):
-        self.cuda_device_buffer = None
+        cdb = self.cuda_device_buffer
+        if cdb:
+            self.cuda_device_buffer = None
+            cdb.free()
+        self.stream = None
+        self.cuda_context = None
+        self.buffer_size = 0
         return ImageWrapper.free(self)
 
     def clean(self):
