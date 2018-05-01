@@ -14,7 +14,6 @@ from weakref import WeakSet
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
@@ -32,10 +31,13 @@ except:
     select_device = None
 
 
-from libc.stdint cimport uintptr_t, uint8_t, int64_t, uint32_t, uint64_t
+from libc.stdint cimport uintptr_t, uint32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
 
-SYS_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_SYS_PIXEL_FORMAT", "RGB")
+from xpra.buffers.membuf cimport padbuf, MemBuf
+
+
+SYS_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_SYS_PIXEL_FORMAT", "BGRX")
 CUDA_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_CUDA_PIXEL_FORMAT", "BGRX")
 CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 
@@ -43,7 +45,9 @@ CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 ctypedef uintptr_t CUdeviceptr
 
 cdef extern from "string.h":
-    void* memset(void * ptr, int value, size_t num)
+    void * memcpy(void * destination, void * source, size_t num) nogil
+    void * memset(void * ptr, int value, size_t num) nogil
+
 
 cdef extern from "NvFBC.h":
     int NVFBC_VERSION_MAJOR
@@ -476,10 +480,12 @@ PIXEL_FORMAT_CONST = {
 
 cdef class NvFBC_SysCapture:
     cdef NVFBC_SESSION_HANDLE context
-    cdef uint8_t *framebuffer
-    cdef uint8_t has_context
-    cdef uint8_t has_session
+    cdef uintptr_t framebuffer
+    cdef int has_context
+    cdef int has_session
     cdef object pixel_format
+    cdef NVFBC_FRAME_GRAB_INFO grab_info
+    cdef NVFBC_TOSYS_GRAB_FRAME_PARAMS grab
 
     cdef object __weakref__
 
@@ -526,31 +532,54 @@ cdef class NvFBC_SysCapture:
     def __dealloc__(self):
         self.clean()
 
-    def get_image(self, x=0, y=0, width=0, height=0):
-        log("get_image%s", (x, y, width, height))
+    def refresh(self):
         cdef double start = monotonic_time()
-        cdef NVFBC_FRAME_GRAB_INFO grab_info
-        memset(&grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
-        cdef NVFBC_TOSYS_GRAB_FRAME_PARAMS grab
-        memset(&grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
-        grab.dwVersion = NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER
-        grab.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT
-        grab.pFrameGrabInfo = &grab_info
+        memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
+        memset(&self.grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
+        self.grab.dwVersion = NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER
+        self.grab.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT
+        self.grab.pFrameGrabInfo = &self.grab_info
         cdef NVFBCSTATUS ret
         with nogil:
-            ret = function_list.nvFBCToSysGrabFrame(self.context, &grab)
+            ret = function_list.nvFBCToSysGrabFrame(self.context, &self.grab)
         self.raiseNvFBC(ret, "NvFBCToSysGrabFrame")
-        log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &grab, ret)
-        info = get_frame_grab_info(&grab_info)
+        log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &self.grab, ret)
+        info = get_frame_grab_info(&self.grab_info)
         cdef double end = monotonic_time()
-        log("NvFBCToSysGrabFrame: framebuffer=%#x, size=%#x, elapsed=%ims", <uintptr_t> self.framebuffer, grab_info.dwByteSize, int((end-start)*1000))
+        log("NvFBCToSysGrabFrame: framebuffer=%#x, size=%#x, elapsed=%ims", <uintptr_t> self.framebuffer, self.grab_info.dwByteSize, int((end-start)*1000))
         log("NvFBCToSysGrabFrame: info=%s", info)
-        start = monotonic_time()
+
+    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+        log("get_image%s", (x, y, width, height))
+        assert x>=0 and y>=0
+        assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
+        assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
+        cdef double start = monotonic_time()
         #TODO: only copy when the next frame is going to overwrite the buffer,
         #or when closing the context
-        Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        buf = self.framebuffer[:grab_info.dwByteSize]
-        image = ImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), buf, self.pixel_format, Bpp*8, int(grab_info.dwWidth*Bpp), Bpp)
+        cdef unsigned int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
+        cdef unsigned int grab_stride = self.grab_info.dwWidth*Bpp
+        cdef unsigned int stride = grab_stride
+        cdef MemBuf buf
+        cdef uintptr_t buf_ptr = 0
+        cdef uintptr_t grab_ptr = <uintptr_t> (self.framebuffer+x*Bpp+y*grab_stride)
+        if x>0 or y>0 or self.grab_info.dwWidth-width>512 or self.grab_info.dwHeight-height>512:
+            #copy sub-image with smaller stride:
+            stride = roundup(width*Bpp, 16)
+            buf = padbuf(stride*height, stride)
+            buf_ptr = <uintptr_t> buf.get_mem()
+            for _ in range(height):
+                memcpy(<void *> buf_ptr, <void *> grab_ptr, width*Bpp)
+                grab_ptr += grab_stride
+                buf_ptr += stride
+        else:
+            #copy whole:
+            size = self.grab_info.dwByteSize
+            buf = padbuf(size, stride)
+            buf_ptr = <uintptr_t> buf.get_mem()
+            with nogil:
+                memcpy(<void *> buf_ptr, <void *> grab_ptr, size)
+        image = ImageWrapper(0, 0, width, height, memoryview(buf), self.pixel_format, Bpp*8, stride, Bpp)
         end = monotonic_time()
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
@@ -566,7 +595,7 @@ cdef class NvFBC_SysCapture:
 
 cdef class NvFBC_CUDACapture:
     cdef NVFBC_SESSION_HANDLE context
-    cdef uint8_t setup
+    cdef int setup
     cdef object pixel_format
     cdef int cuda_device_id
     cdef object cuda_device
@@ -651,6 +680,7 @@ cdef class NvFBC_CUDACapture:
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
         assert self.cuDevicePtr
+        assert x>=0 and y>=0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         #allocate CUDA device memory:
