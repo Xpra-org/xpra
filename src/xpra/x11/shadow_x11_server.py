@@ -57,26 +57,41 @@ class XImageCapture(object):
             with xsync:
                 xshm.cleanup()
 
+    def _err(self, e, op="capture pixels"):
+        if getattr(e, "msg", None)=="BadMatch":
+            log("BadMatch - temporary error in %s of window #%x", op, self.xwindow, exc_info=True)
+        else:
+            log.warn("Warning: failed to %s of window %#x:", self.xwindow)
+            log.warn(" %s", e)
+        self.close_xshm()
+
+    def refresh(self):
+        if self.xshm:
+            #discard to ensure we will call XShmGetImage next time around
+            self.xshm.discard()
+            return
+        try:
+            with xsync:
+                log("%s.refresh() xshm=%s", self, self.xshm)
+                self.xshm = XImage.get_XShmWrapper(self.xwindow)
+                self.xshm.setup()
+        except Exception as e:
+            self.xshm = None
+            self._err(e, "xshm setup")
+        return True
+
     def get_image(self, x, y, width, height):
+        if self.xshm is None:
+            log("no xshm, cannot get image")
+            return None
         try:
             start = monotonic_time()
             with xsync:
                 log("X11 shadow get_image, xshm=%s", self.xshm)
-                if self.xshm is None:
-                    self.xshm = XImage.get_XShmWrapper(self.xwindow)
-                    self.xshm.setup()
                 image = self.xshm.get_image(self.xwindow, x, y, width, height)
-                #discard to ensure we will call XShmGetImage next time around
-                self.xshm.discard()
                 return image
         except Exception as e:
-            if getattr(e, "msg", None)=="BadMatch":
-                log("BadMatch - temporary error?", exc_info=True)
-            else:
-                log.warn("Warning: failed to capture pixels of window %#x:", self.xwindow)
-                log.warn(" %s", e)
-            #cleanup and hope for the best!
-            self.close_xshm()
+            self._err(e)
             return None
         finally:
             end = monotonic_time()
@@ -91,6 +106,9 @@ class GTKImageCapture(object):
         return "GTKImageCapture(%s)" % self.window
 
     def clean(self):
+        pass
+
+    def refresh(self):
         pass
 
     def get_image(self, x, y, width, height):
@@ -114,6 +132,7 @@ def setup_capture(window):
             else:
                 capture = NvFBC_SysCapture()
             capture.init_context(ww, wh)
+            capture.refresh()
             image = capture.get_image(0, 0, ww, wh)
             assert image, "test capture failed"
         except Exception as e:
@@ -179,10 +198,25 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.__init__(self)
         self.session_type = "shadow"
         self.cursor_poll_timer = None
+        self.capture = None
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
         X11ServerCore.do_init(self, opts)
+
+    def cleanup(self):
+        GTKShadowServerBase.cleanup(self)
+        X11ServerCore.cleanup(self)
+        capture = self.capture
+        if capture:
+            self.capture = None
+            capture.clean()
+
+    def refresh(self):
+        if self.capture:
+            self.capture.refresh()
+        return GTKShadowServerBase.refresh(self)
+
 
     def start_refresh(self):
         GTKShadowServerBase.start_refresh(self)
@@ -225,11 +259,11 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         screen = self.root.get_screen()
         n = screen.get_n_monitors()
         models = []
-        capture = setup_capture(self.root)
+        self.capture = setup_capture(self.root)
         for i in range(n):
             geom = screen.get_monitor_geometry(i)
             x, y, width, height = geom.x, geom.y, geom.width, geom.height
-            model = GTKX11RootWindowModel(self.root, capture)
+            model = GTKX11RootWindowModel(self.root, self.capture)
             if hasattr(screen, "get_monitor_plug_name"):
                 plug_name = screen.get_monitor_plug_name(i)
                 if plug_name or n>1:

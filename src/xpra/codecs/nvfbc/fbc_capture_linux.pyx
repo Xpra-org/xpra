@@ -39,9 +39,7 @@ CUDA_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_CUDA_PIXEL_FORMAT", "BGRX")
 CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
 
 
-ctypedef unsigned long DWORD
-ctypedef int BOOL
-ctypedef unsigned long CUdeviceptr
+ctypedef uintptr_t CUdeviceptr
 
 cdef extern from "string.h":
     void* memset(void * ptr, int value, size_t num)
@@ -572,6 +570,9 @@ cdef class NvFBC_CUDACapture:
     cdef int cuda_device_id
     cdef object cuda_device
     cdef object cuda_context
+    cdef CUdeviceptr cuDevicePtr
+    cdef NVFBC_FRAME_GRAB_INFO grab_info
+    cdef NVFBC_TOCUDA_GRAB_FRAME_PARAMS grab
 
     cdef object __weakref__
 
@@ -588,6 +589,7 @@ cdef class NvFBC_CUDACapture:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
         cf = driver.ctx_flags
+        self.cuDevicePtr = 0
         self.cuda_context = d.make_context(flags=cf.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
         self.context = create_context()
@@ -619,37 +621,37 @@ cdef class NvFBC_CUDACapture:
     def __dealloc__(self):
         self.clean()
 
-    def get_image(self, x=0, y=0, width=0, height=0):
-        log("get_image%s", (x, y, width, height))
+    def refresh(self):
         cdef double start = monotonic_time()
-        cdef CUdeviceptr cuDevicePtr = 0
-        cdef NVFBC_FRAME_GRAB_INFO grab_info
-        memset(&grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
-        cdef NVFBC_TOCUDA_GRAB_FRAME_PARAMS grab
-        memset(&grab, 0, sizeof(NVFBC_TOCUDA_GRAB_FRAME_PARAMS))
-        grab.dwVersion = NVFBC_TOCUDA_GRAB_FRAME_PARAMS_VER
-        grab.pCUDADeviceBuffer = &cuDevicePtr
-        grab.pFrameGrabInfo = &grab_info
-        grab.dwFlags = NVFBC_TOCUDA_GRAB_FLAGS_NOWAIT
+        memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
+        memset(&self.grab, 0, sizeof(NVFBC_TOCUDA_GRAB_FRAME_PARAMS))
+        self.grab.dwVersion = NVFBC_TOCUDA_GRAB_FRAME_PARAMS_VER
+        self.grab.pCUDADeviceBuffer = &self.cuDevicePtr
+        self.grab.pFrameGrabInfo = &self.grab_info
+        self.grab.dwFlags = NVFBC_TOCUDA_GRAB_FLAGS_NOWAIT
         cdef NVFBCSTATUS res
         with nogil:
-            res = function_list.nvFBCToCudaGrabFrame(self.context, &grab)
-        log("NvFBCCudaGrabFrame(%#x)=%i", <uintptr_t> &grab, res)
-        log("cuDevicePtr=%#x", <uintptr_t> cuDevicePtr)
+            res = function_list.nvFBCToCudaGrabFrame(self.context, &self.grab)
+        log("NvFBCCudaGrabFrame(%#x)=%i", <uintptr_t> &self.grab, res)
+        log("cuDevicePtr=%#x", <uintptr_t> self.cuDevicePtr)
         if res<0:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
         cdef double end = monotonic_time()
-        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", grab_info.dwHeight*grab_info.dwWidth, int((end-start)*1000))
-        info = get_frame_grab_info(&grab_info)
+        log("NvFBCCudaGrabFrame: size=%#x, elapsed=%ims", self.grab_info.dwHeight*self.grab_info.dwWidth, int((end-start)*1000))
+        info = get_frame_grab_info(&self.grab_info)
         log("NvFBCCudaGrabFrame: info=%s", info)
-        assert x+width<=grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, grab_info.dwWidth)
-        assert y+height<=grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, grab_info.dwHeight)
+
+    def get_image(self, x=0, y=0, width=0, height=0):
+        log("get_image%s", (x, y, width, height))
+        assert self.cuDevicePtr
+        assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
+        assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         #allocate CUDA device memory:
         cdef int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
         stream = driver.Stream()
-        cdef int src_pitch = int(grab_info.dwWidth*Bpp)
+        cdef int src_pitch = int(self.grab_info.dwWidth*Bpp)
         #FIXME: use a smaller dst_pitch
         # (without getting a segfault..)
         #dst_pitch = roundup(width*Bpp, 16)
@@ -657,9 +659,9 @@ cdef class NvFBC_CUDACapture:
         buffer_size = height*dst_pitch
         cuda_device_buffer = driver.mem_alloc(buffer_size)
         log("buffer_size=%s, cuda device buffer=%s, pitch=%i", buffer_size, cuda_device_buffer, dst_pitch)
-        log("Memcpy2D: to %#x, from %#x, size=%s, %s", int(cuda_device_buffer), int(cuDevicePtr), buffer_size, stream)
+        log("Memcpy2D: to %#x, from %#x, size=%s, %s", int(cuda_device_buffer), int(self.cuDevicePtr), buffer_size, stream)
         copy = driver.Memcpy2D()
-        copy.set_src_device(int(cuDevicePtr))
+        copy.set_src_device(int(self.cuDevicePtr))
         copy.src_x_in_bytes = x*Bpp
         copy.src_y = y
         copy.src_pitch = src_pitch
@@ -670,7 +672,7 @@ cdef class NvFBC_CUDACapture:
         copy.dst_y = 0
         copy.dst_pitch = dst_pitch
         copy(stream)
-        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, src_pitch, Bpp)
+        image = CUDAImageWrapper(0, 0, int(self.grab_info.dwWidth), int(self.grab_info.dwHeight), None, self.pixel_format, Bpp*8, src_pitch, Bpp)
         image.stream = stream
         image.cuda_device_buffer = cuda_device_buffer
         image.cuda_context = self.cuda_context
@@ -679,6 +681,7 @@ cdef class NvFBC_CUDACapture:
 
     def clean(self):                        #@DuplicatedSignature
         log("clean()")
+        self.cuDevicePtr = 0
         cuda_context = self.cuda_context
         self.cuda_context = None
         if cuda_context:
