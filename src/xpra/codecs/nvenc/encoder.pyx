@@ -2391,7 +2391,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "error during picture encoding")
         cdef double encode_end = monotonic_time()
-        log("compress_image(..) encoded in %.1f ms", (encode_end-start)*1000.0)
+        log("compress_image(..) NVENC encoded to %s in %.1f ms", self.encoding, (encode_end-start)*1000.0)
 
         memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
         #lock output buffer:
