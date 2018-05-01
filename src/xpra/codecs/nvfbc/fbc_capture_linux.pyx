@@ -657,10 +657,7 @@ cdef class NvFBC_CUDACapture:
         cdef int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
         stream = driver.Stream()
         cdef int src_pitch = int(self.grab_info.dwWidth*Bpp)
-        #FIXME: use a smaller dst_pitch
-        # (without getting a segfault..)
-        #dst_pitch = roundup(width*Bpp, 16)
-        dst_pitch = src_pitch
+        dst_pitch = roundup(width*Bpp, 16)
         buffer_size = height*dst_pitch
         cuda_device_buffer = driver.mem_alloc(buffer_size)
         log("buffer_size=%s, cuda device buffer=%s, pitch=%i", buffer_size, cuda_device_buffer, dst_pitch)
@@ -670,7 +667,7 @@ cdef class NvFBC_CUDACapture:
         copy.src_x_in_bytes = x*Bpp
         copy.src_y = y
         copy.src_pitch = src_pitch
-        copy.width_in_bytes = width*Bpp  #min(src_pitch, dst_pitch)
+        copy.width_in_bytes = width*Bpp
         copy.height = height
         copy.set_dst_device(cuda_device_buffer)
         copy.dst_x_in_bytes = 0
