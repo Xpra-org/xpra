@@ -9,6 +9,7 @@ from __future__ import absolute_import
 
 import os
 import sys
+from weakref import WeakSet
 
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
@@ -573,6 +574,8 @@ cdef class NvFBC_CUDACapture:
     cdef CUdeviceptr cuDevicePtr
     cdef NVFBC_FRAME_GRAB_INFO grab_info
     cdef NVFBC_TOCUDA_GRAB_FRAME_PARAMS grab
+    cdef unsigned long frames
+    cdef object images
 
     cdef object __weakref__
 
@@ -589,6 +592,8 @@ cdef class NvFBC_CUDACapture:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
         cf = driver.ctx_flags
+        self.images = WeakSet()
+        self.frames = 0
         self.cuDevicePtr = 0
         self.cuda_context = d.make_context(flags=cf.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
@@ -659,7 +664,7 @@ cdef class NvFBC_CUDACapture:
         buffer_size = height*dst_pitch
         cuda_device_buffer = driver.mem_alloc(buffer_size)
         log("buffer_size=%s, cuda device buffer=%s, pitch=%i", buffer_size, cuda_device_buffer, dst_pitch)
-        log("Memcpy2D: to %#x, from %#x, size=%s, %s", int(cuda_device_buffer), int(self.cuDevicePtr), buffer_size, stream)
+        log("Memcpy2D: to %#x, from %#x, size=%s, %s, frame=%i", int(cuda_device_buffer), int(self.cuDevicePtr), buffer_size, stream, self.frames)
         copy = driver.Memcpy2D()
         copy.set_src_device(int(self.cuDevicePtr))
         copy.src_x_in_bytes = x*Bpp
@@ -672,18 +677,26 @@ cdef class NvFBC_CUDACapture:
         copy.dst_y = 0
         copy.dst_pitch = dst_pitch
         copy(stream)
-        image = CUDAImageWrapper(0, 0, int(self.grab_info.dwWidth), int(self.grab_info.dwHeight), None, self.pixel_format, Bpp*8, src_pitch, Bpp)
+        image = CUDAImageWrapper(0, 0, width, height, None, self.pixel_format, Bpp*8, dst_pitch, Bpp)
         image.stream = stream
         image.cuda_device_buffer = cuda_device_buffer
         image.cuda_context = self.cuda_context
         image.buffer_size = buffer_size
+        self.frames += 1
+        self.images.add(image)
         return image
 
     def clean(self):                        #@DuplicatedSignature
-        log("clean()")
-        self.cuDevicePtr = 0
         cuda_context = self.cuda_context
         self.cuda_context = None
+        cdef NVFBC_SESSION_HANDLE context = self.context
+        self.context = 0
+        images = tuple(self.images)
+        log("%s.clean() setup=%s, cuDevicePtr=%#x, cuda_context=%s, nvfbc context=%#x, images=%s", self, self.setup, self.cuDevicePtr, cuda_context, context, images)
+        self.cuDevicePtr = 0
+        self.images = WeakSet()
+        for image in images:
+            image.clean()
         if cuda_context:
             try:
                 cuda_context.push()
@@ -691,9 +704,8 @@ cdef class NvFBC_CUDACapture:
                 log("%s.push()", cuda_context, exc_info=True)
         if self.setup:
             self.setup = False
-            if self.context:
-                close_context(self.context)
-                self.context = 0
+            if context:
+                close_context(context)
         if cuda_context:
             try:
                 cuda_context.pop()
@@ -719,26 +731,24 @@ class CUDAImageWrapper(ImageWrapper):
         now = monotonic_time()
         self.stream.synchronize()
         end = monotonic_time()
-            
+
 
     def may_download(self):
-        if self.pixels is not None or self.downloaded:
+        if self.pixels is not None or self.downloaded or self.freed:
             return
         assert self.cuda_device_buffer, "no device buffer"
         assert self.cuda_context, "no cuda context"
         cdef double elapsed
         cdef double start = monotonic_time()
-        #size = self.rowstride*self.height*len(self.pixel_format)
         self.cuda_context.push()
-        size = self.buffer_size
-        host_buffer = driver.pagelocked_empty(size, dtype=numpy.byte)
+        host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)
         driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)
         self.wait_for_stream()
         elapsed = monotonic_time()-start
         self.pixels = host_buffer.tobytes()
         self.downloaded = True
         elapsed = monotonic_time()-start
-        log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, size, int(1000*elapsed), size/elapsed/1024/1024)
+        log("may_download() from %s to %s, size=%s, elapsed=%ims - %iMB/s", self.cuda_device_buffer, host_buffer, self.buffer_size, int(1000*elapsed), self.buffer_size/elapsed/1024/1024)
         self.cuda_device_buffer = None
         self.cuda_context.pop()
 
@@ -768,6 +778,13 @@ class CUDAImageWrapper(ImageWrapper):
     def free(self):
         self.cuda_device_buffer = None
         return ImageWrapper.free(self)
+
+    def clean(self):
+        try:
+            self.wait_for_stream()
+        except driver.LogicError:
+            log("%s.clean()", self, exc_info=True)
+        self.free()
 
 
 def init_module():
