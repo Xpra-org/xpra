@@ -2182,7 +2182,7 @@ cdef class Encoder:
         h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
         stride = image.get_rowstride()
-        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%s", image, options, self.kernel_name, gpu_buffer)
+        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%#x", image, options, self.kernel_name, int(gpu_buffer))
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
@@ -2197,7 +2197,7 @@ cdef class Encoder:
             #copy to input buffer, CUDA kernel converts into output buffer:
             if gpu_buffer and stride<=self.inputPitch:
                 driver.memcpy_dtod(self.cudaInputBuffer, int(gpu_buffer), stride*h)
-                log("GPU memcopy from %s to %s", gpu_buffer, self.cudaInputBuffer)
+                log("GPU memcopy from %#x to %#x", int(gpu_buffer), int(self.cudaInputBuffer))
             else:
                 stride = self.copy_image(image, self.inputBuffer, self.inputPitch, False)
                 driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
@@ -2207,7 +2207,7 @@ cdef class Encoder:
             #go direct to the CUDA "output" buffer:
             if gpu_buffer and stride<=self.outputPitch:
                 driver.memcpy_dtod(self.cudaOutputBuffer, int(gpu_buffer), stride*h)
-                log("GPU memcopy from %s to %s", gpu_buffer, self.cudaOutputBuffer)
+                log("GPU memcopy from %#x to %#x", int(gpu_buffer), int(self.cudaOutputBuffer))
             else:
                 stride = self.copy_image(image, self.inputBuffer, self.inputPitch, True)
                 driver.memcpy_htod(self.cudaOutputBuffer, self.inputBuffer)
@@ -2390,8 +2390,6 @@ cdef class Encoder:
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "error during picture encoding")
-        cdef double encode_end = monotonic_time()
-        log("compress_image(..) NVENC encoded to %s in %.1f ms", self.encoding, (encode_end-start)*1000.0)
 
         memset(&lockOutputBuffer, 0, sizeof(NV_ENC_LOCK_BITSTREAM))
         #lock output buffer:
@@ -2415,8 +2413,6 @@ cdef class Encoder:
                 r = self.functionList.nvEncUnlockBitstream(self.context, self.bitstreamBuffer)
         raiseNVENC(r, "unlocking output buffer")
 
-        cdef double download_end = monotonic_time()
-        log("compress_image(..) download took %.1f ms", (download_end-encode_end)*1000.0)
         #update info:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
@@ -2435,11 +2431,12 @@ cdef class Encoder:
         cdef double end = monotonic_time()
         self.frames += 1
         self.last_frame_times.append((start, end))
-        elapsed = end-start
+        cdef double elapsed = end-start
         self.time += elapsed
-        log("compress_image(..) %s %s returning %s bytes (%.1f%%) for %s frame %i took %.1fms",
+        #log("memory: %iMB free, %iMB total", self.free_memory//1024//1024, self.total_memory//1024//1024)
+        log("compress_image(..) %s %s returning %s bytes (%.1f%%) for %s %s frame %i took %.1fms",
             get_type(), get_version(),
-            size, 100.0*size/input_size, PIC_TYPES.get(picParams.pictureType, picParams.pictureType), self.frames, 1000.0*elapsed)
+            size, 100.0*size/input_size, self.encoding, PIC_TYPES.get(picParams.pictureType, picParams.pictureType), self.frames, 1000.0*elapsed)
         return data, client_options
 
 
