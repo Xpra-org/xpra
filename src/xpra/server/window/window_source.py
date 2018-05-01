@@ -167,6 +167,7 @@ class WindowSource(WindowIconSource):
         if window.is_shadow():
             self.max_delta_size = -1
 
+        self.is_idle = False
         self.is_OR = window.is_OR()
         self.is_tray = window.is_tray()
         self.is_shadow = window.is_shadow()
@@ -413,6 +414,7 @@ class WindowSource(WindowIconSource):
                 buckets_info[i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
         #remove large default dict:
         info.update({
+                "idle"                  : self.is_idle,
                 "dimensions"            : self.window_dimensions,
                 "suspended"             : self.suspended or False,
                 "content"               : self.content_type,
@@ -489,9 +491,11 @@ class WindowSource(WindowIconSource):
 
 
     def go_idle(self):
+        self.is_idle = True
         self.lock_batch_delay(500)
 
     def no_idle(self):
+        self.is_idle = True
         self.unlock_batch_delay()
 
     def lock_batch_delay(self, delay):

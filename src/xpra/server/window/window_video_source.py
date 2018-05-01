@@ -992,8 +992,11 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         elapsed = monotonic_time()-self._last_pipeline_check
-        if not force_reload and elapsed<0.75:
-            scorelog("cannot score: only %ims since last check", 1000*elapsed)
+        max_elapsed = 0.75
+        if self.is_idle:
+            max_elapsed = 60
+        if not force_reload and elapsed<max_elapsed:
+            scorelog("cannot score: only %ims since last check (idle=%s)", 1000*elapsed, self.is_idle)
             #already checked not long ago
             return
         if not self.pixel_format:
