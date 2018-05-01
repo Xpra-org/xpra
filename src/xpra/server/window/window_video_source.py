@@ -1666,7 +1666,9 @@ class WindowVideoSource(WindowSource):
         src_format = image.get_pixel_format()
         stride = image.get_rowstride()
         if self.pixel_format!=src_format:
-            videolog.warn("image pixel format changed from %s to %s", self.pixel_format, src_format)
+            if self.is_cancelled():
+                return None
+            videolog.warn("Warning: image pixel format unexpectedly changed from %s to %s", self.pixel_format, src_format)
             self.pixel_format = src_format
 
         if SAVE_VIDEO_FRAMES:
