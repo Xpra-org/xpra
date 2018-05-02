@@ -1575,11 +1575,12 @@ cdef class Encoder:
     def get_target_pixel_format(self, quality):
         global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
         v = None
-        if NATIVE_RGB and self.src_format in ("BGRX", "BGRA"):
+        hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
+        nativergb = NATIVE_RGB and hasyuv444
+        if nativergb and self.src_format in ("BGRX", "BGRA"):
             v = "BGRX"
         else:
             x,y = self.scaling
-            hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
             hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
             if hasyuv444:
                 #NVENC and the client can handle it,
