@@ -742,7 +742,7 @@ cdef class NvFBC_CUDACapture:
         log("NvFBCCudaGrabFrame: info=%s", info)
         #or when closing the context
         Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp)
+        image = CUDAImageWrapper(0, 0, int(grab_info.dwWidth), int(grab_info.dwHeight), None, self.pixel_format, Bpp*8, int(grab_info.dwBufferWidth*Bpp), Bpp, False, None)
         image.cuda_device_buffer = self.cuda_device_buffer
         image.cuda_context = self.cuda_context
         image.buffer_size = self.max_buffer_size
@@ -799,9 +799,8 @@ class CUDAImageWrapper(ImageWrapper):
         self.cuda_device_buffer = None
 
     def freeze(self):
-        self.may_download()
+        #this image is already a copy when we get it
         return True
-
 
     def may_restride(self):
         #don't restride unless we have to

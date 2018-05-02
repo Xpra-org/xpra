@@ -2218,11 +2218,7 @@ cdef class Encoder:
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
         assert mappedResource!=NULL
         try:
-            timestamp = image.get_timestamp()
-            #non thread-safe images will be freed later by the caller
-            if image.is_thread_safe():
-                image.free()
-            return self.nvenc_compress(input_size, mappedResource, timestamp)
+            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp())
         finally:
             self.unmap_input_resource(mappedResource)
 

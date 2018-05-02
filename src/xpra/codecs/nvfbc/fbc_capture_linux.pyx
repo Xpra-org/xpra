@@ -702,7 +702,7 @@ cdef class NvFBC_CUDACapture:
         copy.dst_y = 0
         copy.dst_pitch = dst_pitch
         copy(stream)
-        image = CUDAImageWrapper(0, 0, width, height, None, self.pixel_format, Bpp*8, dst_pitch, Bpp)
+        image = CUDAImageWrapper(0, 0, width, height, None, self.pixel_format, Bpp*8, dst_pitch, Bpp, ImageWrapper.PACKED, False, None)
         image.stream = stream
         image.cuda_device_buffer = cuda_device_buffer
         image.cuda_context = self.cuda_context
@@ -773,7 +773,7 @@ class CUDAImageWrapper(ImageWrapper):
         ctx.pop()
 
     def freeze(self):
-        self.may_download()
+        #this image is already a copy when we get it
         return True
 
     def get_gpu_buffer(self):
