@@ -2183,7 +2183,7 @@ cdef class Encoder:
         h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
         stride = image.get_rowstride()
-        log("compress_image(%s, %s) kernel_name=%s, GPU buffer=%#x", image, options, self.kernel_name, int(gpu_buffer or 0))
+        log("compress_image(%s, %s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i", image, options, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
@@ -2227,7 +2227,8 @@ cdef class Encoder:
             self.unmap_input_resource(mappedResource)
 
     cdef unsigned int copy_image(self, image, target_buffer, unsigned int target_stride, int strict_stride) except -1:
-        log("copy_image(%s, %s, %i, %i)", image, target_buffer, target_stride, strict_stride)
+        if DEBUG_API:
+            log("copy_image(%s, %s, %i, %i)", image, target_buffer, target_stride, strict_stride)
         cdef unsigned int image_stride = image.get_rowstride()
         cdef unsigned int h = image.get_height()
         cdef unsigned int i, stride, min_stride
@@ -2270,7 +2271,8 @@ cdef class Encoder:
                 y = i*image_stride
                 buf[x:x+min_stride] = pixels[y:y+min_stride]
         cdef double end = monotonic_time()
-        log("copy_image: %i bytes uploaded in %ims", copy_len, int(1000*(end-start)))
+        cdef double elapsed = end-start
+        log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, int(1000*elapsed), copy_len/elapsed//1024//1024)
         return stride
 
     cdef exec_kernel(self, unsigned int w, unsigned int h, unsigned int stride):
@@ -2308,11 +2310,18 @@ cdef class Encoder:
         args = (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
                self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
                numpy.int32(w), numpy.int32(h))
-        log("calling %s%s with block=%s, grid=%s", self.kernel, args, (blockw,blockh,1), (gridw, gridh))
+        if DEBUG_API:
+            def lf(v):
+                if isinstance(v, driver.DeviceAllocation):
+                    return hex(int(x))
+                return int(v)
+            log_args = tuple(lf(v) for v in args)
+            log("calling %s%s with block=%s, grid=%s", self.kernel_name, args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         self.cuda_context.synchronize()
         cdef double end = monotonic_time()
-        log("compress_image(..) kernel %s took %.1f ms", self.kernel_name, (end - start)*1000.0)
+        cdef elapsed = end-start
+        log("exec_kernel:  kernel %13s took %3.1f ms: %5i MPixels/s", self.kernel_name, elapsed*1000.0, (w*h)/elapsed//1024//1024)
 
     cdef NV_ENC_INPUT_PTR map_input_resource(self):
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource
@@ -2433,7 +2442,7 @@ cdef class Encoder:
         cdef double elapsed = end-start
         self.time += elapsed
         #log("memory: %iMB free, %iMB total", self.free_memory//1024//1024, self.total_memory//1024//1024)
-        log("compress_image(..) %s %s returning %s bytes (%.1f%%) for %s %s frame %i took %.1fms",
+        log("compress_image(..) %5s %3s returning %9s bytes (%.1f%%) for %4s %s-frame no %6i took %3.1fms",
             get_type(), get_version(),
             size, 100.0*size/input_size, self.encoding, PIC_TYPES.get(picParams.pictureType, picParams.pictureType), self.frames, 1000.0*elapsed)
         return data, client_options
