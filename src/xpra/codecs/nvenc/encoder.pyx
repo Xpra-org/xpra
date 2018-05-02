@@ -2219,7 +2219,9 @@ cdef class Encoder:
         assert mappedResource!=NULL
         try:
             timestamp = image.get_timestamp()
-            image.free()
+            #non thread-safe images will be freed later by the caller
+            if image.is_thread_safe():
+                image.free()
             return self.nvenc_compress(input_size, mappedResource, timestamp)
         finally:
             self.unmap_input_resource(mappedResource)
