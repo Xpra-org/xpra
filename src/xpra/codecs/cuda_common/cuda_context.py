@@ -37,6 +37,12 @@ def device_info(d):
         return "None"
     return "%s @ %s" % (d.name(), d.pci_bus_id())
 
+def device_name(d):
+    if not d:
+        return "None"
+    return d.name()
+
+
 def get_pycuda_version():
     return pycuda.VERSION
 
@@ -67,6 +73,10 @@ DEVICE_INFO = {}
 def get_device_info(i):
     global DEVICE_INFO
     return DEVICE_INFO.get(i, None)
+DEVICE_NAME = {}
+def get_device_name(i):
+    global DEVICE_NAME
+    return DEVICE_NAME.get(i, None)
 
 
 PREFS = None
@@ -115,7 +125,7 @@ def get_pref(name):
 
 DEVICES = None
 def init_all_devices():
-    global DEVICES, DEVICE_INFO
+    global DEVICES, DEVICE_INFO, DEVICE_NAME
     if DEVICES is not None:
         return DEVICES
     log.info("CUDA initialization (this may take a few seconds)")
@@ -150,6 +160,7 @@ def init_all_devices():
                     continue
             log(" + testing device %s: %s", i, devinfo)
             DEVICE_INFO[i] = devinfo
+            DEVICE_NAME[i] = device_name(device)
             host_mem = device.get_attribute(da.CAN_MAP_HOST_MEMORY)
             if not host_mem:
                 log.warn("skipping device %s (cannot map host memory)", devinfo)
