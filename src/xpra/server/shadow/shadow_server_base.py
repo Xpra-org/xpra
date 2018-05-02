@@ -25,7 +25,8 @@ NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 
 class ShadowServerBase(RFBServer):
 
-    def __init__(self, root_window):
+    def __init__(self, root_window, capture=None):
+        self.capture = capture
         self.root = root_window
         self.mapped = False
         self.pulseaudio = False
@@ -50,6 +51,10 @@ class ShadowServerBase(RFBServer):
         if n:
             n.cleanup()
             self.notifier = None
+        capture = self.capture
+        if capture:
+            self.capture = None
+            capture.clean()
 
 
     def guess_session_name(self, _procs):

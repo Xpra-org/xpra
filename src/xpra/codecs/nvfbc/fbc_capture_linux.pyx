@@ -546,6 +546,7 @@ cdef class NvFBC_SysCapture:
         log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &self.grab, ret)
         cdef double end = monotonic_time()
         log("NvFBCToSysGrabFrame: framebuffer=%#x, info=%s, elapsed=%ims", <uintptr_t> self.framebuffer, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
+        return bool(self.grab_info.bIsNewFrame)
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         log("get_image%s", (x, y, width, height))
@@ -672,6 +673,7 @@ cdef class NvFBC_CUDACapture:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
         cdef double end = monotonic_time()
         log("NvFBCCudaGrabFrame: info=%s, elapsed=%ims", get_frame_grab_info(&self.grab_info), int((end-start)*1000))
+        return bool(self.grab_info.bIsNewFrame)
 
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))

@@ -69,7 +69,7 @@ class XImageCapture(object):
         if self.xshm:
             #discard to ensure we will call XShmGetImage next time around
             self.xshm.discard()
-            return
+            return True
         try:
             with xsync:
                 log("%s.refresh() xshm=%s", self, self.xshm)
@@ -109,7 +109,7 @@ class GTKImageCapture(object):
         pass
 
     def refresh(self):
-        pass
+        return True
 
     def get_image(self, x, y, width, height):
         v = get_rgb_rawdata(self.window, x, y, width, height)
@@ -195,7 +195,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.__init__(self)
         self.session_type = "shadow"
         self.cursor_poll_timer = None
-        self.capture = None
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
@@ -204,15 +203,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)
-        capture = self.capture
-        if capture:
-            self.capture = None
-            capture.clean()
-
-    def refresh(self):
-        if self.capture:
-            self.capture.refresh()
-        return GTKShadowServerBase.refresh(self)
 
 
     def start_refresh(self):

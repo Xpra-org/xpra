@@ -79,6 +79,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.mapped:
             self.refresh_timer = None
             return False
+        if self.capture:
+            if not self.capture.refresh():
+                #capture doesn't have any screen updates,
+                #so we can skip calling damage
+                #(this shortcut is only used with nvfbc)
+                return True
         for window in self._id_to_window.values():
             w, h = window.get_dimensions()
             self._damage(window, 0, 0, w, h)

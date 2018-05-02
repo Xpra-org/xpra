@@ -595,6 +595,9 @@ cdef class NvFBC_SysCapture:
     def __dealloc__(self):
         self.clean()
 
+    def refresh(self):
+        return True
+
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
         cdef double start = monotonic_time()
@@ -703,6 +706,9 @@ cdef class NvFBC_CUDACapture:
 
     def __dealloc__(self):
         self.clean()
+
+    def refresh(self):
+        return True
 
     def get_image(self, x=0, y=0, width=0, height=0):
         log("get_image%s", (x, y, width, height))
