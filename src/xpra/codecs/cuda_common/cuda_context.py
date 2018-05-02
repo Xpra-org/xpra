@@ -227,7 +227,7 @@ def select_device(preferred_device_id=-1, preferred_device_name=None, min_comput
     ok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is True]
     nok_devices = [device_id for device_id in devices if DEVICE_STATE.get(device_id, True) is not True]
     for list_name, device_list in {"OK" : ok_devices, "failing" : nok_devices}.items():
-        selected_device_id = None
+        selected_device_id = -1
         selected_device = None
         log("will test %s device%s from %s list: %s", len(device_list), engs(device_list), list_name, device_list)
         for device_id in device_list:
