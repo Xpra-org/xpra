@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import gtk
 from gtk import gdk
 import gobject
 import socket
