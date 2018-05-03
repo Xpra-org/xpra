@@ -99,35 +99,14 @@ def init_capture(pixel_depth=32):
 
 class Win32RootWindowModel(RootWindowModel):
 
-    def __init__(self, root, pixel_depth=32):
-        RootWindowModel.__init__(self, root)
-        self.pixel_depth = pixel_depth
-        self.capture = init_capture(pixel_depth)
-        log("Win32RootWindowModel(%s, %i) capture=%s", root, pixel_depth, self.capture)
+    def __init__(self, root, capture):
+        RootWindowModel.__init__(self, root, capture)
+        log("Win32RootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
         if SEAMLESS:
             self.property_names.append("shape")
             self.dynamic_property_names.append("shape")
             self.rectangles = self.get_shape_rectangles(logit=True)
             self.shape_notify = []
-
-    def cleanup(self):
-        RootWindowModel.cleanup(self)
-        self.cleanup_capture()
-
-    def cleanup_capture(self):
-        c = self.capture
-        if c:
-            self.capture = None
-            c.clean()
-
-    def get_info(self):
-        c = self.capture
-        info = {}
-        if c:
-            info["capture"] = c.get_info()
-        info["pixel-depth"] = self.pixel_depth
-        return info
-
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()
@@ -249,8 +228,6 @@ class Win32RootWindowModel(RootWindowModel):
         return w, h
 
     def get_image(self, x, y, width, height):
-        if not self.capture:
-            self.capture = init_capture(self.pixel_depth)
         try:
             return self.capture.get_image(x, y, width, height)
         except CodecStateException as e:
@@ -336,7 +313,8 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def makeRootWindowModels(self):
-        return (Win32RootWindowModel(self.root, self.pixel_depth),)
+        self.capture = init_capture(self.pixel_depth)
+        return (Win32RootWindowModel(self.root, self.capture),)
 
 
     def refresh(self):

@@ -15,14 +15,19 @@ from xpra.os_util import get_generic_os_name
 
 class RootWindowModel(object):
 
-    def __init__(self, root_window):
+    def __init__(self, root_window, capture=None):
         self.window = root_window
+        self.capture = capture
         self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon", "shadow"]
         self.dynamic_property_names = []
         self.internal_property_names = ["content-type"]
 
     def get_info(self):
-        return {}
+        info = {}
+        c = self.capture
+        if c:
+            info["capture"] = c.get_info()
+        return info
 
     def cleanup(self):
         pass
