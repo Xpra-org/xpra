@@ -13,7 +13,7 @@ from weakref import WeakSet
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.nvfbc.cuda_image_wrapper CudaImageWrapper
+from xpra.codecs.nvfbc.cuda_image_wrapper import CUDAImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
