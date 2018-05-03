@@ -1165,7 +1165,7 @@ class WindowSource(WindowIconSource):
         # - no packets backlog from the client
         # - the amount of pixels waiting to be encoded is less than one full frame refresh
         # - no more than 10 regions waiting to be encoded
-        if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<=ww*wh and enc_backlog_count<=10):
+        if not self.must_batch(delay) and (packets_backlog==0 and pixels_encoding_backlog<ww*wh and enc_backlog_count<=10):
             #send without batching:
             damagelog("damage%-24s wid=%s, sending now with sequence %s", (x, y, w, h, options), self.wid, self._sequence)
             actual_encoding = options.get("encoding")
