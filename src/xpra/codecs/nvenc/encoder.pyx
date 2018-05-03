@@ -2313,7 +2313,7 @@ cdef class Encoder:
         if DEBUG_API:
             def lf(v):
                 if isinstance(v, driver.DeviceAllocation):
-                    return hex(int(x))
+                    return hex(int(v))
                 return int(v)
             log_args = tuple(lf(v) for v in args)
             log("calling %s%s with block=%s, grid=%s", self.kernel_name, args, (blockw,blockh,1), (gridw, gridh))
