@@ -10,12 +10,14 @@ from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
 notifylog = Logger("notify")
+log = Logger("shadow")
 
 from xpra.util import envint
 from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
 
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
@@ -80,15 +82,45 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.refresh_timer = None
             return False
         if self.capture:
-            if not self.capture.refresh():
-                #capture doesn't have any screen updates,
-                #so we can skip calling damage
-                #(this shortcut is only used with nvfbc)
-                return True
+            try:
+                if not self.capture.refresh():
+                    #capture doesn't have any screen updates,
+                    #so we can skip calling damage
+                    #(this shortcut is only used with nvfbc)
+                    return False
+            except TransientCodecException as e:
+                log("refresh()", exc_info=True)
+                log.warn("Warning: transient codec exception:")
+                log.warn(" %s", e)
+                self.recreate_window_models()
+                return False
+            except CodecStateException:
+                log("refresh()", exc_info=True)
+                log.warn("Warning: codec state exception:")
+                log.warn(" %s", e)
+                self.recreate_window_models()
+                return False
         for window in self._id_to_window.values():
             w, h = window.get_dimensions()
             self._damage(window, 0, 0, w, h)
         return True
+
+
+    ############################################################################
+    # handle monitor changes
+
+    def send_updated_screen_size(self):
+        log("send_updated_screen_size")
+        GTKServerBase.send_updated_screen_size(self)
+        self.recreate_window_models()
+
+    def recreate_window_models(self):
+        #remove all existing models and re-create them:
+        for model in self._id_to_window.values():
+            model.close_capture()
+            self._remove_window(model)
+        for model in self.makeRootWindowModels():
+            self._add_new_window(model)
 
 
     ############################################################################
