@@ -62,7 +62,7 @@ class OSXRootCapture(object):
 class OSXRootWindowModel(RootWindowModel):
 
     def __init__(self, root_window):
-        RootWindowModel.__init__(root_window, OSXRootCapture())
+        RootWindowModel.__init__(self, root_window, OSXRootCapture())
 
     def take_screenshot(self):
         log("grabbing screenshot")
