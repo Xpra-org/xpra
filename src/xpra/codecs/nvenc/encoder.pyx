@@ -1496,7 +1496,7 @@ cdef class Encoder:
             preset_speed = PRESET_SPEED.get(name, 50)
             preset_quality = PRESET_QUALITY.get(name, 50)
             is_lossless = name in LOSSLESS_PRESETS
-            log("preset %16s: speed=%3i, quality=%3i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, self.lossless)
+            log("preset %16s: speed=%5i, quality=%5i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, bool(self.lossless))
             if is_lossless and self.pixel_format!="YUV444P":
                 continue
             if preset_speed>=0 and preset_quality>=0:
@@ -2805,53 +2805,53 @@ def init_module():
                 assert colorspaces, "cannot use NVENC: no colorspaces available"
                 src_format = colorspaces[0]
                 dst_formats = get_output_colorspaces(encoding, src_format)
+                test_encoder = None
                 try:
-                    try:
-                        test_encoder = Encoder()
-                        test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 100, (1,1), options)
-                        success = True
+                    test_encoder = Encoder()
+                    test_encoder.init_context(1920, 1080, src_format, dst_formats, encoding, 50, 100, (1,1), options)
+                    success = True
+                    if client_key:
+                        log("the license key '%s' is valid", client_key)
+                        valid_keys.append(client_key)
+                    #check for YUV444 support
+                    yuv444_support = YUV444_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
+                    YUV444_CODEC_SUPPORT[encoding] = bool(yuv444_support)
+                    if YUV444_ENABLED and not yuv444_support:
+                        wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "YUV444")
+                        if first_time(wkey):
+                            device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("YUV444")
+                        log("no support for YUV444 with %s", encoding)
+                    log("%s YUV444 support: %s", encoding, YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED))
+                    #check for lossless:
+                    lossless_support = yuv444_support and LOSSLESS_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE)
+                    LOSSLESS_CODEC_SUPPORT[encoding] = lossless_support
+                    if LOSSLESS_ENABLED and not lossless_support:
+                        wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "lossless")
+                        if first_time(wkey):
+                            device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("lossless")
+                        log("no support for lossless mode with %s", encoding)
+                    log("%s lossless support: %s", encoding, LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED))
+                except NVENCException as e:
+                    log("encoder %s failed: %s", test_encoder, e)
+                    #special handling for license key issues:
+                    if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
                         if client_key:
-                            log("the license key '%s' is valid", client_key)
-                            valid_keys.append(client_key)
-                        #check for YUV444 support
-                        yuv444_support = YUV444_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_YUV444_ENCODE)
-                        YUV444_CODEC_SUPPORT[encoding] = bool(yuv444_support)
-                        if YUV444_ENABLED and not yuv444_support:
-                            wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "YUV444")
-                            if first_time(wkey):
-                                device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("YUV444")
-                            log("no support for YUV444 with %s", encoding)
-                        log("%s YUV444 support: %s", encoding, YUV444_CODEC_SUPPORT.get(encoding, YUV444_ENABLED))
-                        #check for lossless:
-                        lossless_support = yuv444_support and LOSSLESS_ENABLED and test_encoder.query_encoder_caps(test_encoder.get_codec(), <NV_ENC_CAPS> NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE)
-                        LOSSLESS_CODEC_SUPPORT[encoding] = lossless_support
-                        if LOSSLESS_ENABLED and not lossless_support:
-                            wkey = "nvenc:%s-%s-%s" % (device_id, encoding, "lossless")
-                            if first_time(wkey):
-                                device_warnings.setdefault(device_id, OrderedDict()).setdefault(encoding, []).append("lossless")
-                            log("no support for lossless mode with %s", encoding)
-                        log("%s lossless support: %s", encoding, LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED))
-                    except NVENCException as e:
-                        log("encoder %s failed: %s", test_encoder, e)
-                        #special handling for license key issues:
-                        if e.code==NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY:
-                            if client_key:
-                                log("invalid license key '%s' (skipped)", client_key)
-                                failed_keys.append(client_key)
-                            else:
-                                log("a license key is required")
-                        elif e.code==NV_ENC_ERR_INVALID_VERSION:
-                            #we can bail out already:
-                            raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
+                            log("invalid license key '%s' (skipped)", client_key)
+                            failed_keys.append(client_key)
                         else:
-                            #it seems that newer version will fail with
-                            #seemingly random errors when we supply the wrong key
-                            log.warn("error during NVENC encoder test: %s", e)
-                            if client_key:
-                                log(" license key '%s' may not be valid (skipped)", client_key)
-                                failed_keys.append(client_key)
-                            else:
-                                log(" a license key may be required")
+                            log("a license key is required")
+                    elif e.code==NV_ENC_ERR_INVALID_VERSION:
+                        #we can bail out already:
+                        raise Exception("version mismatch, you need a newer/older codec build or newer/older drivers")
+                    else:
+                        #it seems that newer version will fail with
+                        #seemingly random errors when we supply the wrong key
+                        log.warn("error during NVENC encoder test: %s", e)
+                        if client_key:
+                            log(" license key '%s' may not be valid (skipped)", client_key)
+                            failed_keys.append(client_key)
+                        else:
+                            log(" a license key may be required")
                 finally:
                     if test_encoder:
                         test_encoder.clean()
