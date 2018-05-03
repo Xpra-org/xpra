@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,19 +8,18 @@
 from __future__ import absolute_import
 
 import os
-import sys
 from weakref import WeakSet
 
 from xpra.os_util import WIN32
 from xpra.util import csv, roundup
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.nvfbc.cuda_image_wrapper CudaImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
 
 from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
 
 try:
-    import numpy
     from pycuda import driver
     from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
 except ImportError:
@@ -33,7 +32,6 @@ except:
 
 from libc.stdint cimport uintptr_t, uint32_t, uint64_t
 from xpra.monotonic_time cimport monotonic_time
-
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
 
@@ -550,7 +548,7 @@ cdef class NvFBC_SysCapture:
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         log("get_image%s", (x, y, width, height))
-        assert x>=0 and y>=0
+        assert x>=0 and y>=0 and width>0 and height>0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         cdef double start = monotonic_time()
@@ -562,15 +560,16 @@ cdef class NvFBC_SysCapture:
         cdef MemBuf buf
         cdef uintptr_t buf_ptr = 0
         cdef uintptr_t grab_ptr = <uintptr_t> (self.framebuffer+x*Bpp+y*grab_stride)
-        if x>0 or y>0 or self.grab_info.dwWidth-width>512 or self.grab_info.dwHeight-height>512:
+        if x>0 or y>0 or self.grab_info.dwWidth-width>16 or self.grab_info.dwHeight-height>16:
             #copy sub-image with smaller stride:
             stride = roundup(width*Bpp, 16)
             buf = padbuf(stride*height, stride)
             buf_ptr = <uintptr_t> buf.get_mem()
-            for _ in range(height):
-                memcpy(<void *> buf_ptr, <void *> grab_ptr, width*Bpp)
-                grab_ptr += grab_stride
-                buf_ptr += stride
+            with nogil:
+                for _ in range(height):
+                    memcpy(<void *> buf_ptr, <void *> grab_ptr, width*Bpp)
+                    grab_ptr += grab_stride
+                    buf_ptr += stride
         else:
             #copy whole:
             size = self.grab_info.dwByteSize
@@ -673,10 +672,10 @@ cdef class NvFBC_CUDACapture:
         log("NvFBCCudaGrabFrame: cuDevicePtr=%#x, info=%s, elapsed=%ims", <uintptr_t> self.cuDevicePtr, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)
 
-    def get_image(self, x=0, y=0, width=0, height=0):
+    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         log("nvfbc cuda get_image%s", (x, y, width, height))
         assert self.cuDevicePtr
-        assert x>=0 and y>=0
+        assert x>=0 and y>=0 and width>0 and height>0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         #allocate CUDA device memory:
@@ -737,85 +736,6 @@ cdef class NvFBC_CUDACapture:
                 cuda_context.detach()
             except:
                 log("%s.pop() or detach()", cuda_context, exc_info=True)
-
-
-class CUDAImageWrapper(ImageWrapper):
-
-    def __init__(self, *args):
-        ImageWrapper.__init__(self, *args)
-        self.stream = None
-        self.cuda_device_buffer = None
-        self.cuda_context = None
-        self.buffer_size = 0
-
-    def wait_for_stream(self):
-        s = self.stream
-        if s and not s.is_done():
-            self.stream.synchronize()
-
-
-    def may_download(self):
-        ctx = self.cuda_context
-        if self.pixels is not None or not ctx or self.freed:
-            return
-        assert self.cuda_device_buffer, "bug: no device buffer"
-        cdef double elapsed
-        cdef double start = monotonic_time()
-        ctx.push()
-        host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)
-        driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)
-        self.wait_for_stream()
-        elapsed = monotonic_time()-start
-        self.pixels = host_buffer.tobytes()
-        elapsed = monotonic_time()-start
-        log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s", int(self.cuda_device_buffer), host_buffer, self.buffer_size, int(1000*elapsed), self.buffer_size/elapsed/1024/1024)
-        self.free_cuda()
-        ctx.pop()
-
-    def freeze(self):
-        #this image is already a copy when we get it
-        return True
-
-    def get_gpu_buffer(self):
-        self.wait_for_stream()
-        return self.cuda_device_buffer
-
-    def has_pixels(self):
-        return self.pixels is not None
-
-    def get_pixels(self):
-        self.may_download()
-        return ImageWrapper.get_pixels(self)
-
-    def clone_pixel_data(self):
-        self.may_download()
-        return ImageWrapper.clone_pixel_data(self)
-
-    def get_sub_image(self, *args):
-        self.may_download()
-        return ImageWrapper.get_sub_image(self, *args)
-
-    def free_cuda(self):
-        cdb = self.cuda_device_buffer
-        if not cdb:
-            return
-        log("%s.free_cuda() cuda_device_buffer=%#x", self, int(cdb or 0))
-        self.cuda_device_buffer = None
-        cdb.free()
-        self.stream = None
-        self.cuda_context = None
-        self.buffer_size = 0
-
-    def free(self):
-        self.free_cuda()
-        return ImageWrapper.free(self)
-
-    def clean(self):
-        try:
-            self.wait_for_stream()
-        except driver.LogicError:
-            log("%s.clean()", self, exc_info=True)
-        self.free()
 
 
 def init_module():
