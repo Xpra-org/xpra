@@ -47,10 +47,10 @@ class ShadowServerBase(RFBServer):
 
     def cleanup(self):
         self.stop_refresh()
-        n = self.notifier
-        if n:
-            n.cleanup()
-            self.notifier = None
+        self.cleanup_notifier()
+        self.cleanup_capture()
+
+    def cleanup_capture(self):
         capture = self.capture
         if capture:
             self.capture = None
@@ -106,6 +106,12 @@ class ShadowServerBase(RFBServer):
 
     ############################################################################
     # notifications
+    def cleanup_notifier(self):
+        n = self.notifier
+        if n:
+            self.notifier = None
+            n.cleanup()
+
     def notify_setup_error(self, exception):
         notifylog("notify_setup_error(%s)", exception)
         notifylog.info("notification forwarding is not available")

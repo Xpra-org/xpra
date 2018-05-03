@@ -157,16 +157,6 @@ class GTKX11RootWindowModel(GTKRootWindowModel):
     def __repr__(self):
         return "GTKX11RootWindowModel(%#x - %s - %s)" % (get_xwindow(self.window), self.geometry, self.capture)
 
-    def cleanup(self):
-        self.close_capture()
-        GTKRootWindowModel.cleanup(self)
-
-    def close_capture(self):
-        capture = self.capture
-        if self.capture:
-            self.capture = None
-            capture.clean()
-
     def get_dimensions(self):
         #used by get_window_info only
         return self.geometry[2:4]

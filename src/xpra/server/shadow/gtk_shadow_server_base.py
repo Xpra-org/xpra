@@ -117,8 +117,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def recreate_window_models(self):
         #remove all existing models and re-create them:
         for model in self._id_to_window.values():
-            model.close_capture()
             self._remove_window(model)
+        self.cleanup_capture()
         for model in self.makeRootWindowModels():
             self._add_new_window(model)
 
