@@ -7,7 +7,7 @@
 import os
 import ctypes
 
-from ctypes.wintypes import RECT
+from ctypes.wintypes import RECT, POINT
 
 from xpra.log import Logger
 from xpra.util import envbool, prettify_plug_name
@@ -35,6 +35,7 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         GetWindowThreadProcessId,
                                         GetSystemMetrics,
                                         SetPhysicalCursorPos,
+                                        GetPhysicalCursorPos,
                                         mouse_event)
 
 NOEVENT = object()
@@ -305,6 +306,11 @@ class ShadowServer(GTKShadowServerBase):
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
+
+    def get_pointer_position(self):
+        pos = POINT()
+        GetPhysicalCursorPos(ctypes.byref(pos))
+        return pos.x, pos.y
 
     def do_process_mouse_common(self, proto, wid, pointer, *_args):
         #adjust pointer position for offset in client:

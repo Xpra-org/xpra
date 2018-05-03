@@ -578,7 +578,7 @@ cdef class NvFBC_SysCapture:
         memset(&params, 0, sizeof(NVFBC_TOSYS_SETUP_PARAMS))
         params.dwVersion = NVFBC_TOSYS_SETUP_PARAMS_VER
         params.eMode = SYS_PIXEL_FORMAT_CONST[pixel_format]
-        params.bWithHWCursor = True
+        params.bWithHWCursor = False
         params.bDiffMap = False
         params.ppBuffer = <void**> &self.framebuffer
         params.ppDiffMap = NULL

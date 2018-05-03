@@ -139,8 +139,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if POLL_POINTER>0:
             self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
 
+    def get_pointer_position(self):
+        return self.root.get_pointer()[-3:-1]
+
     def poll_pointer_position(self):
-        x, y = self.root.get_pointer()[-3:-1]
+        x, y = self.get_pointer_position()
         #find the window model containing the pointer:
         if self.last_pointer_position!=(x, y):
             self.last_pointer_position = (x, y)
