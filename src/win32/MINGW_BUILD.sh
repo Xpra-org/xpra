@@ -115,6 +115,10 @@ mkdir ${DIST} >& /dev/null
 
 if [ "${DO_CLEAN}" == "1" ]; then
 	rm -fr "build"
+	#clean sometimes errors on removing pyd files,
+	#so do it with rm instead:
+	find xpra/ -name "*.pyd" -exec rm {} \;
+	${PYTHON} ./setup.py clean 
 fi
 
 if [ "${DO_SERVICE}" == "1" ]; then
