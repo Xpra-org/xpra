@@ -2272,6 +2272,9 @@ cdef class Encoder:
                 buf[x:x+min_stride] = pixels[y:y+min_stride]
         cdef double end = monotonic_time()
         cdef double elapsed = end-start
+        if elapsed==0:
+            #mswindows monotonic time minimum precision is 1ms...
+            elapsed = 0.0001
         log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, int(1000*elapsed), copy_len/elapsed//1024//1024)
         return stride
 
@@ -2321,6 +2324,9 @@ cdef class Encoder:
         self.cuda_context.synchronize()
         cdef double end = monotonic_time()
         cdef elapsed = end-start
+        if elapsed==0:
+            #mswindows monotonic time minimum precision is 1ms...
+            elapsed = 0.0001
         log("exec_kernel:  kernel %13s took %3.1f ms: %5i MPixels/s", self.kernel_name, elapsed*1000.0, (w*h)/elapsed//1024//1024)
 
     cdef NV_ENC_INPUT_PTR map_input_resource(self):
