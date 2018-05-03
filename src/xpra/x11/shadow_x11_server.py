@@ -11,9 +11,9 @@ from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time
 from xpra.util import envbool, envint, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
-from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
-from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel, get_rgb_rawdata, take_png_screenshot
+from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync
 XImage = XImageBindings()
@@ -98,29 +98,6 @@ class XImageCapture(object):
             log("X11 shadow captured %s pixels at %i MPixels/s using %s", width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 
 
-class GTKImageCapture(object):
-    def __init__(self, window):
-        self.window = window
-
-    def __repr__(self):
-        return "GTKImageCapture(%s)" % self.window
-
-    def clean(self):
-        pass
-
-    def refresh(self):
-        return True
-
-    def get_image(self, x, y, width, height):
-        v = get_rgb_rawdata(self.window, x, y, width, height)
-        if v is None:
-            return None
-        return ImageWrapper(*v)
-
-    def take_screenshot(self):
-        return take_png_screenshot(self.window)
-
-
 def setup_capture(window):
     ww, wh = window.get_geometry()[2:4]
     capture = None
@@ -147,12 +124,11 @@ def setup_capture(window):
     return capture
 
 
-class GTKX11RootWindowModel(GTKRootWindowModel):
+class GTKX11RootWindowModel(RootWindowModel):
 
     def __init__(self, root_window, capture=None):
-        GTKRootWindowModel.__init__(self, root_window)
+        RootWindowModel.__init__(self, root_window, capture)
         self.geometry = root_window.get_geometry()[:4]
-        self.capture = capture
 
     def __repr__(self):
         return "GTKX11RootWindowModel(%#x - %s - %s)" % (get_xwindow(self.window), self.geometry, self.capture)

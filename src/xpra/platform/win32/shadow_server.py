@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,7 +19,6 @@ netlog = Logger("network")
 from collections import namedtuple
 from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
-from xpra.codecs.codec_constants import CodecStateException, TransientCodecException
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -226,24 +225,6 @@ class Win32RootWindowModel(RootWindowModel):
         w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
         h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
         return w, h
-
-    def get_image(self, x, y, width, height):
-        try:
-            return self.capture.get_image(x, y, width, height)
-        except CodecStateException as e:
-            log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
-            #maybe we should exit here?
-            log.warn("Warning: %s", e)
-            del e
-        except TransientCodecException as e:
-            log("%s.get_image%s", self.capture, (x, y, width, height), exc_info=True)
-            log.warn("Warning: %s", e)
-            del e
-        self.cleanup_capture()
-        return None
-
-    def take_screenshot(self):
-        return self.capture.take_screenshot()
 
 
 class ShadowServer(GTKShadowServerBase):

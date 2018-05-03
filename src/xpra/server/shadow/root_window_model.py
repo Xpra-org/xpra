@@ -29,6 +29,12 @@ class RootWindowModel(object):
             info["capture"] = c.get_info()
         return info
 
+    def take_screenshot(self):
+        return self.capture.take_screenshot()
+
+    def get_image(self, *args):
+        return self.capture.get_image(*args)
+
     def cleanup(self):
         pass
 
@@ -66,8 +72,6 @@ class RootWindowModel(object):
         w, h = self.get_dimensions()
         return (0, 0, w, h)
 
-    def get_image(self, x, y, width, height):
-        raise NotImplementedError()
 
     def get_property_names(self):
         return self.property_names

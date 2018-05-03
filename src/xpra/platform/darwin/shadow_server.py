@@ -43,11 +43,20 @@ def patch_picture_encode():
     picture_encode.pixels_to_bytes = pixels_to_bytes
 
 
-class OSXRootWindowModel(RootWindowModel):
+class OSXRootCapture(object):
 
     def get_image(self, x, y, width, height):
         rect = (x, y, width, height)
         return get_CG_imagewrapper(rect)
+
+    def get_info(self):
+        return {}
+
+
+class OSXRootWindowModel(RootWindowModel):
+
+    def __init__(self, root_window):
+        RootWindowModel.__init__(root_window, OSXRootCapture())
 
     def take_screenshot(self):
         log("grabbing screenshot")

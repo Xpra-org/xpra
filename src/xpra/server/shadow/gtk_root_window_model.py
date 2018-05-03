@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,6 @@ log = Logger("shadow")
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.gtk_util import get_pixbuf_from_window, is_gtk3
-from xpra.server.shadow.root_window_model import RootWindowModel
 
 
 def get_rgb_rawdata(window, x, y, width, height):
@@ -54,10 +53,18 @@ def take_png_screenshot(window):
     return w, h, "png", rowstride, b"".join(buf)
 
 
-class GTKRootWindowModel(RootWindowModel):
+class GTKImageCapture(object):
+    def __init__(self, window):
+        self.window = window
 
     def __repr__(self):
-        return "GTKRootWindowModel(%s)" % self.window
+        return "GTKImageCapture(%s)" % self.window
+
+    def clean(self):
+        pass
+
+    def refresh(self):
+        return True
 
     def get_image(self, x, y, width, height):
         v = get_rgb_rawdata(self.window, x, y, width, height)

@@ -219,6 +219,7 @@ class GDICapture(object):
         out.close()
         return screenshot
 
+
 def main():
     import sys
     import os.path
@@ -233,6 +234,7 @@ def main():
         filename = os.path.join(get_download_dir(), "gdi-screenshot-%i.png" % time.time())
         with open(filename, 'wb') as f:
             f.write(image[4])
+
 
 if __name__ == "__main__":
     main()
