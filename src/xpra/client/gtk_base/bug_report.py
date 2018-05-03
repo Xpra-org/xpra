@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2014 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ gdk = import_gdk()
 pango = import_pango()
 
 from xpra.gtk_common.gtk_util import window_defaults, gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file, get_display_info, get_default_root_window, \
-                                    JUSTIFY_LEFT, WIN_POS_CENTER, STATE_NORMAL, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
+                                    JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE, choose_file, get_gtk_version_info
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes
 from xpra.log import Logger
@@ -161,8 +161,8 @@ class BugReport(object):
         if not take_screenshot_fn:
             #default: gtk screen capture
             try:
-                from xpra.server.shadow.gtk_root_window_model import GTKRootWindowModel
-                rwm = GTKRootWindowModel(get_default_root_window())
+                from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
+                rwm = GTKImageCapture(get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
             except:
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)

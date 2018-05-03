@@ -126,7 +126,7 @@ def setup_capture(window):
 
 class GTKX11RootWindowModel(RootWindowModel):
 
-    def __init__(self, root_window, capture=None):
+    def __init__(self, root_window, capture):
         RootWindowModel.__init__(self, root_window, capture)
         self.geometry = root_window.get_geometry()[:4]
 
@@ -138,12 +138,8 @@ class GTKX11RootWindowModel(RootWindowModel):
         return self.geometry[2:4]
 
     def get_image(self, x, y, width, height):
-        image = None
-        if not self.capture:
-            self.capture = setup_capture(self.window)
-            assert self.capture, "no capture method available"
         ox, oy = self.geometry[:2]
-        image = image or self.capture.get_image(ox+x, oy+y, width, height)
+        image = self.capture.get_image(ox+x, oy+y, width, height)
         if ox>0 or oy>0:
             #adjust x and y of where the image is displayed on the client (target_x and target_y)
             #not where the image lives within the current buffer (x and y)

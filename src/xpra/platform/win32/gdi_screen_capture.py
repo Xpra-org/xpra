@@ -92,6 +92,9 @@ class GDICapture(object):
             "depth" : self.bit_depth,
             }
 
+    def refresh(self):
+        return True
+
     def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
