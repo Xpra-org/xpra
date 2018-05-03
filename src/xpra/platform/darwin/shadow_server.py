@@ -120,7 +120,7 @@ class ShadowServer(GTKShadowServerBase):
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
         assert len(self._id_to_window)==1, "cannot handle more than one root window"
-        rwm = self._id_to_window.values()[0]
+        rwm = tuple(self._id_to_window.values())[0]
         for x, y, w, h in rlist:
             self._damage(rwm, int(x), int(y), int(w), int(h))
 
