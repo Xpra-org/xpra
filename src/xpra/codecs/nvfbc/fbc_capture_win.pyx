@@ -622,7 +622,7 @@ cdef class NvFBC_SysCapture:
         if (res!=0 and self.grab_info.bMustRecreate) or res==NVFBC_ERROR_INVALIDATED_SESSION:
             raise TransientCodecException("NvFBC context invalidated")
         raiseNvFBC(res, "NvFBCToSysGrabFrame")
-        info = get_frame_grab_info(&self.grab_info)
+        log("NvFBCToSysGrabFrame() info=%s", get_frame_grab_info(&self.grab_info))
         return True
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
@@ -653,7 +653,7 @@ cdef class NvFBC_SysCapture:
                     buf_ptr += stride
         else:
             #copy whole:
-            size = self.grab_info.dwByteSize
+            size = self.grab_info.dwBufferWidth*self.grab_info.dwHeight*Bpp
             buf = padbuf(size, stride)
             buf_ptr = <uintptr_t> buf.get_mem()
             with nogil:
