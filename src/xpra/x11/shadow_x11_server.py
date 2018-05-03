@@ -271,17 +271,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return pointer
 
 
-    def send_updated_screen_size(self):
-        log("send_updated_screen_size")
-        X11ServerCore.send_updated_screen_size(self)
-        #remove all existing models and re-create them:
-        for model in self._id_to_window.values():
-            model.close_capture()
-            self._remove_window(model)
-        for model in self.makeRootWindowModels():
-            self._add_new_window(model)
-
-
     def last_client_exited(self):
         GTKShadowServerBase.last_client_exited(self)
         X11ServerCore.last_client_exited(self)
