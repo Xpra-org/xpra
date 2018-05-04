@@ -14,6 +14,27 @@ LPCTSTR = LPCSTR
 LRESULT = c_long
 DEVMODE = c_void_p
 LPDWORD = POINTER(DWORD)
+HCURSOR = HANDLE
+HICON = HANDLE
+HBRUSH = HANDLE
+
+class CURSORINFO(Structure):
+    _fields_ = [
+        ("cbSize",          DWORD),
+        ("flags",           DWORD),
+        ("hCursor",         HCURSOR),
+        ("ptScreenPos",     POINT),
+    ]
+
+class ICONINFO(Structure):
+    _fields_ = [
+        ("fIcon",           BOOL),
+        ("xHotspot",        DWORD),
+        ("yHotspot",        DWORD),
+        ("hbmMask",         HBITMAP),
+        ("hbmColor",        HBITMAP),
+    ]
+PICONINFO = POINTER(ICONINFO)
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
@@ -69,6 +90,9 @@ GetPhysicalCursorPos.restype = BOOL
 SetPhysicalCursorPos = user32.SetPhysicalCursorPos
 SetPhysicalCursorPos.argtypes = [INT, INT]
 SetPhysicalCursorPos.restype = BOOL
+GetCursorInfo = user32.GetCursorInfo
+GetCursorInfo.argtypes = [POINTER(CURSORINFO)]
+GetCursorInfo.restype = BOOL
 LogicalToPhysicalPoint = user32.LogicalToPhysicalPoint
 LogicalToPhysicalPoint.argtypes = [HWND, POINTER(POINT)]
 LogicalToPhysicalPoint.restype = BOOL
@@ -125,6 +149,15 @@ GetDC.restype = HDC
 ReleaseDC = user32.ReleaseDC
 ReleaseDC.argtypes = [HWND, HDC]
 ReleaseDC.restype = c_int
+DrawIcon = user32.DrawIcon
+DrawIcon.argtypes = [HDC, INT, INT, HICON]
+DrawIcon.restype = BOOL
+DrawIconEx = user32.DrawIconEx
+DrawIconEx.argtypes = [HDC, INT, INT, HICON, INT, INT, UINT, HBRUSH, UINT]
+DrawIconEx.restype = BOOL
+GetIconInfo = user32.GetIconInfo
+GetIconInfo.argtypes = [HICON, PICONINFO]
+GetIconInfo.restype = BOOL
 PostQuitMessage = user32.PostQuitMessage
 OpenWindowStationW = user32.OpenWindowStationW
 OpenWindowStationW.restype = HWINSTA

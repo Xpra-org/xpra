@@ -11,9 +11,11 @@ from ctypes.wintypes import RECT, POINT
 
 from xpra.log import Logger
 from xpra.util import envbool, prettify_plug_name
+from xpra.platform.win32.constants import DI_NORMAL, CURSOR_SHOWING
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
+cursorlog = Logger("cursor")
 netlog = Logger("network")
 
 from collections import namedtuple
@@ -23,7 +25,7 @@ from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.gui import get_desktop_name
+from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
 from xpra.platform.win32.keyboard_config import KeyboardConfig, fake_key
 from xpra.platform.win32.win32_events import get_win32_event_listener, POWER_EVENTS
 from xpra.platform.win32.gdi_screen_capture import GDICapture
@@ -36,6 +38,9 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         GetSystemMetrics,
                                         SetPhysicalCursorPos,
                                         GetPhysicalCursorPos,
+                                        GetCursorInfo, CURSORINFO,
+                                        GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject, ReleaseDC, DeleteDC, DrawIcon, DrawIconEx, GetBitmapBits,
+                                        GetIconInfo, ICONINFO,
                                         mouse_event)
 
 NOEVENT = object()
@@ -54,9 +59,61 @@ BUTTON_EVENTS = {
                  }
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
+CURSORS = envbool("XPRA_CURSORS", False)
 SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
+
+
+def get_cursor_data(hCursor):
+    w, h = get_fixed_cursor_size()
+    x, y = 0, 0
+    dc = None
+    memdc = None
+    bitmap = None
+    old_handle = None
+    pixels = None
+    try:
+        dc = GetDC(None)
+        assert dc, "failed to get a drawing context"
+        memdc = CreateCompatibleDC(dc)
+        assert memdc, "failed to get a compatible drawing context from %s" % dc
+        bitmap = CreateCompatibleBitmap(dc, w, h)
+        assert bitmap, "failed to get a compatible bitmap from %s" % dc
+        old_handle = SelectObject(memdc, bitmap)
+        ii = ICONINFO()
+        GetIconInfo(hCursor, ctypes.byref(ii))
+        x = ii.xHotspot
+        y = ii.yHotspot
+        cursorlog("get_cursor_data(%#x) hotspot: %ix%i", hCursor, x, y)
+        #DrawIcon(memdc, 0, 0, hCursor)
+        DrawIconEx(memdc, 0, 0, hCursor, 0, 0, 0, 0, DI_NORMAL)
+        Bpp = 4
+        rowstride = w*Bpp
+        buf_size = rowstride*h
+        buf = ctypes.create_string_buffer(b"", buf_size)
+        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)", hCursor, bitmap, buf_size, ctypes.addressof(buf))
+        r = GetBitmapBits(bitmap, buf_size, ctypes.byref(buf))
+        if r==0:
+            cursorlog.error("Error: failed to copy screen bitmap data")
+        elif r!=buf_size:
+            cursorlog.warn("Warning: invalid cursor buffer size, got %i bytes but expected %i", r, buf_size)
+        else:
+            pixels = buf.raw
+    except Exception as e:
+        cursorlog("get_cursor_data(%#x)", hCursor, exc_info=True)
+        cursorlog.error("Error: failed to grab cursor:")
+        cursorlog.error(" %s", e)
+    finally:
+        if old_handle:
+            SelectObject(memdc, old_handle)
+        if bitmap:
+            DeleteObject(bitmap)
+        if memdc:
+            DeleteDC(memdc)
+        if dc:
+            ReleaseDC(None, dc)
+    return (0, 0, w, h, x, y, hCursor, pixels, "")
 
 
 def init_capture(pixel_depth=32):
@@ -233,6 +290,8 @@ class ShadowServer(GTKShadowServerBase):
     def __init__(self):
         GTKShadowServerBase.__init__(self)
         self.keycodes = {}
+        self.cursor_handle = None
+        self.cursor_data = None
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
@@ -306,6 +365,36 @@ class ShadowServer(GTKShadowServerBase):
                 rwm.refresh_shape()
         log("refresh()=%s", v)
         return v
+
+    def poll_pointer_position(self):
+        GTKShadowServerBase.poll_pointer_position(self)
+        if CURSORS:
+            self.poll_cursor_data()
+        return True
+
+    def poll_cursor_data(self):
+        ci = CURSORINFO()
+        ci.cbSize = ctypes.sizeof(CURSORINFO)
+        GetCursorInfo(ctypes.byref(ci))
+        cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
+        if ci.flags & CURSOR_SHOWING:
+            handle = int(ci.hCursor)
+        else:
+            handle = None    
+        if handle!=self.cursor_handle:
+            self.cursor_handle = handle
+            if handle is None:
+                self.cursor_data = None
+            else:
+                cd = get_cursor_data(handle)
+                if cd:
+                    w, h = get_fixed_cursor_size()
+                    self.cursor_data = (cd, ((w,h), [(w,h), ]))
+            for ss in self._server_sources.values():
+                ss.send_cursor()
+
+    def get_cursor_data(self):
+        return self.cursor_data
 
     def get_pointer_position(self):
         pos = POINT()
