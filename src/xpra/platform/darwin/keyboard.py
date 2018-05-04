@@ -75,6 +75,7 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
+        KeyboardBase.__init__(self)
         self.init_vars()
 
     def init_vars(self):
