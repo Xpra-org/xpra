@@ -175,6 +175,8 @@ if [ "${DO_CUDA}" == "1" ]; then
 	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_YUV444 || exit 1
 	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" ARGB_to_NV12 || exit 1
 	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" ARGB_to_YUV444 || exit 1
+else
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
 fi
 
 echo "* Building Python ${PYTHON_MAJOR_VERSION} Cython modules"
