@@ -238,7 +238,8 @@ class WindowsMixin(StubSourceMixin):
         self.cursor_timer = None
         cd = self.get_cursor_data_cb()
         if cd and cd[0]:
-            cursor_data, cursor_sizes = cd
+            cursor_data = list(cd[0])
+            cursor_sizes = cd[1]
             #skip first two fields (if present) as those are coordinates:
             if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
                 cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
@@ -254,6 +255,7 @@ class WindowsMixin(StubSourceMixin):
                     from xpra.codecs.loader import get_codec
                     PIL = get_codec("PIL")
                     assert PIL
+                    cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'", len(cpixels), w, h, name)
                     img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                     buf = BytesIOClass()
                     img.save(buf, "PNG")
@@ -265,7 +267,7 @@ class WindowsMixin(StubSourceMixin):
                     cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
                     encoding = "raw"
                 cursor_data[7] = cpixels
-            cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%i with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
+            cursorlog("do_send_cursor(..) %sx%s %s cursor name=%s, serial=%#x with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
             args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
             if self.cursor_encodings and encoding:
                 args = [encoding] + args
