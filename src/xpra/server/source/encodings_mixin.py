@@ -16,7 +16,7 @@ proxylog = Logger("proxy")
 statslog = Logger("stats")
 
 
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
@@ -34,7 +34,7 @@ MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 Store information about the client's support for encodings.
 Runs the encode thread.
 """
-class EncodingsMixin(StubServerMixin):
+class EncodingsMixin(StubSourceMixin):
 
     def __init__(self, core_encodings, encodings, default_encoding, scaling_control,
                  default_quality, default_min_quality,

@@ -13,7 +13,7 @@ cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
 
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.net.compression import Compressed
 from xpra.os_util import monotonic_time, BytesIOClass, strtobytes
@@ -32,7 +32,7 @@ Handle window forwarding:
 - events
 etc
 """
-class WindowsMixin(StubServerMixin):
+class WindowsMixin(StubSourceMixin):
 
     def __init__(self, get_transient_for, get_focus, get_cursor_data_cb,
                  get_window_id,
