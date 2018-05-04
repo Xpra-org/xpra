@@ -30,7 +30,7 @@ def parse_image_data(data):
     return None
 
 def parse_image_path(path):
-    if os.path.exists(path):
+    if path and os.path.exists(path):
         try:
             from PIL import Image
             img = Image.open(path)
