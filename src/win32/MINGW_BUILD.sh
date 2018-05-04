@@ -118,7 +118,13 @@ if [ "${DO_CLEAN}" == "1" ]; then
 	#clean sometimes errors on removing pyd files,
 	#so do it with rm instead:
 	find xpra/ -name "*.pyd" -exec rm {} \;
-	${PYTHON} ./setup.py clean 
+	CLEAN_LOG="clean.log"
+	${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
+	if [ "$?" != "0" ]; then
+		echo "ERROR: clean failed, see ${CLEAN_LOG}:"
+		tail -n 20 "${CLEAN_LOG}"
+		exit 1
+	fi
 fi
 
 if [ "${DO_SERVICE}" == "1" ]; then
