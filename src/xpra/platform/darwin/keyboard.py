@@ -81,7 +81,7 @@ class Keyboard(KeyboardBase):
     def init_vars(self):
         self.swap_keys = True
         self.meta_modifier = None
-        self.control_modifier = None
+        self.control_modifier = "control"
         self.super_modifier = None
         self.hyper_modifier = None
         self.num_lock_modifier = None
@@ -140,7 +140,7 @@ class Keyboard(KeyboardBase):
     def set_modifier_mappings(self, mappings):
         KeyboardBase.set_modifier_mappings(self, mappings)
         self.meta_modifier = self.modifier_keys.get("Meta_L") or self.modifier_keys.get("Meta_R")
-        self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R")
+        self.control_modifier = self.modifier_keys.get("Control_L") or self.modifier_keys.get("Control_R") or "control"
         self.super_modifier = self.modifier_keys.get("Super_L") or self.modifier_keys.get("Super_R")
         self.hyper_modifier = self.modifier_keys.get("Hyper_L") or self.modifier_keys.get("Hyper_R")
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")
