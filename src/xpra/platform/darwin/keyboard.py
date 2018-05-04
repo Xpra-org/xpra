@@ -216,7 +216,7 @@ class Keyboard(KeyboardBase):
                 names.append(self.num_lock_modifier)
             elif not self.num_lock_state and self.num_lock_modifier in names:
                 names.remove(self.num_lock_modifier)
-        log("mask_to_names(%s)=%s", mask, names)
+        log("mask_to_names(%s)=%s swap_keys=%s, modmap=%s, num_lock_state=%s, num_lock_modifier=%s", mask, names, self.swap_keys, modmap, self.num_lock_state, self.num_lock_modifier)
         return names
 
     def process_key_event(self, send_key_action_cb, wid, key_event):
