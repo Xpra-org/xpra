@@ -59,7 +59,6 @@ BUTTON_EVENTS = {
                  }
 
 SEAMLESS = envbool("XPRA_WIN32_SEAMLESS", False)
-CURSORS = envbool("XPRA_CURSORS", False)
 SHADOW_NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
@@ -82,18 +81,20 @@ def get_cursor_data(hCursor):
         assert bitmap, "failed to get a compatible bitmap from %s" % dc
         old_handle = SelectObject(memdc, bitmap)
         ii = ICONINFO()
-        GetIconInfo(hCursor, ctypes.byref(ii))
+        if not GetIconInfo(hCursor, ctypes.byref(ii)):
+            raise WindowsError()
         x = ii.xHotspot
         y = ii.yHotspot
-        cursorlog("get_cursor_data(%#x) hotspot: %ix%i", hCursor, x, y)
-        #DrawIcon(memdc, 0, 0, hCursor)
-        DrawIconEx(memdc, 0, 0, hCursor, 0, 0, 0, 0, DI_NORMAL)
+        cursorlog("get_cursor_data(%#x) hotspot at %ix%i", hCursor, x, y)
+        #if not DrawIcon(memdc, 0, 0, hCursor):
+        if not DrawIconEx(memdc, 0, 0, hCursor, 0, 0, 0, 0, DI_NORMAL):
+            raise WindowsError()
         Bpp = 4
         rowstride = w*Bpp
         buf_size = rowstride*h
         buf = ctypes.create_string_buffer(b"", buf_size)
-        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)", hCursor, bitmap, buf_size, ctypes.addressof(buf))
         r = GetBitmapBits(bitmap, buf_size, ctypes.byref(buf))
+        cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)=%i", hCursor, bitmap, buf_size, ctypes.addressof(buf), r)
         if r==0:
             cursorlog.error("Error: failed to copy screen bitmap data")
         elif r!=buf_size:
@@ -370,13 +371,13 @@ class ShadowServer(GTKShadowServerBase):
         ci = CURSORINFO()
         ci.cbSize = ctypes.sizeof(CURSORINFO)
         GetCursorInfo(ctypes.byref(ci))
-        cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
+        #cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
         if not (ci.flags & CURSOR_SHOWING):
-            cursorlog("do_get_cursor_data() cursor not shown")
+            #cursorlog("do_get_cursor_data() cursor not shown")
             return None
         handle = int(ci.hCursor)
         if handle==self.cursor_handle and self.last_cursor_data:
-            cursorlog("do_get_cursor_data() cursor handle unchanged")
+            #cursorlog("do_get_cursor_data() cursor handle unchanged")
             return self.last_cursor_data
         self.cursor_handle = handle
         cd = get_cursor_data(handle)

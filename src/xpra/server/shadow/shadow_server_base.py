@@ -25,6 +25,7 @@ REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 CURSORS = envbool("XPRA_CURSORS", True)
+SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 class ShadowServerBase(RFBServer):
@@ -260,6 +261,20 @@ class ShadowServerBase(RFBServer):
                     if prev[i]!=self.last_cursor_data[i]:
                         diff.append(fields[i])
                 cursorlog("poll_cursor() attributes changed: %s", diff)
+            if SAVE_CURSORS:
+                ci = self.last_cursor_data[0]
+                if ci:
+                    w = ci[2]
+                    h = ci[3]
+                    serial = ci[6]
+                    pixels = ci[7]
+                    cursorlog("saving cursor %#x with size %ix%i, %i bytes", serial, w, h, len(pixels))
+                    from xpra.os_util import BytesIOClass
+                    from PIL import Image
+                    img = Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
+                    out = BytesIOClass()
+                    img.save("cursor-%#x.png" % serial, format="PNG")
+                    out.close()
             for ss in self._server_sources.values():
                 ss.send_cursor()
 
