@@ -271,12 +271,13 @@ class ShadowServerBase(RFBServer):
                     pixels = ci[7]
                     cursorlog("saving cursor %#x with size %ix%i, %i bytes", serial, w, h, len(pixels))
                     from PIL import Image
-                    img = Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
+                    img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
                     img.save("cursor-%#x.png" % serial, format="PNG")
             for ss in self._server_sources.values():
                 ss.send_cursor()
 
     def do_get_cursor_data(self):
+        #this method is overriden in subclasses with platform specific code
         return None
 
     def get_cursor_data(self):
