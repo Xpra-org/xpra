@@ -195,7 +195,14 @@ class PixmapBacking(GTK2WindowBacking):
             context.set_operator(cairo.OPERATOR_SOURCE)
             context.paint()
             if self.pointer_overlay:
-                x, y, size, start_time = self.pointer_overlay[2:]
+                px, py, size, start_time = self.pointer_overlay[2:]
+                x = px
+                y = py
+                if self.cursor_data:
+                    xhot = self.cursor_data[5]
+                    yhot = self.cursor_data[6]
+                    x = px-xhot
+                    y = py-yhot
                 elapsed = max(0, monotonic_time()-start_time)
                 if elapsed<6:
                     alpha = max(0, (5.0-elapsed)/5.0)

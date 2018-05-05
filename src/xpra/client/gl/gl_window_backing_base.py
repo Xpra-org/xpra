@@ -693,14 +693,15 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisable(GL_TEXTURE_RECTANGLE_ARB)
 
     def draw_pointer(self):
-        x, y, _, _, size, start_time = self.pointer_overlay
+        px, py, _, _, size, start_time = self.pointer_overlay
         elapsed = monotonic_time()-start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s", self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
         if elapsed>=CURSOR_IDLE_TIMEOUT:
             #timeout - stop showing it:
             self.pointer_overlay = None
             return
-
+        x = px
+        y = py
         if not self.cursor_data:
             #paint a fake one:
             alpha = max(0, (5.0-elapsed)/5.0)
@@ -717,6 +718,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
         cw = self.cursor_data[3]
         ch = self.cursor_data[4]
+        xhot = self.cursor_data[5]
+        yhot = self.cursor_data[6]
+        x = px-xhot
+        y = py-yhot
         if TEXTURE_CURSOR:
             #paint the texture containing the cursor:
             glActiveTexture(GL_TEXTURE0)
