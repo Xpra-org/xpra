@@ -245,7 +245,8 @@ class ShadowServerBase(RFBServer):
 
     def poll_cursor(self):
         prev = self.last_cursor_data
-        self.last_cursor_data = self.do_get_cursor_data()
+        curr = self.do_get_cursor_data()
+        self.last_cursor_data = curr
         def cmpv(lcd):
             if not lcd:
                 return None
@@ -253,16 +254,16 @@ class ShadowServerBase(RFBServer):
             if v and len(v)>2:
                 return v[2:]
             return None
-        if cmpv(prev)!=cmpv(self.last_cursor_data):
+        if cmpv(prev)!=cmpv(curr):
             fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
-            if len(prev or [])==len(self.last_cursor_data or []) and len(prev or [])==len(fields):
+            if len(prev or [])==len(curr or []) and len(prev or [])==len(fields):
                 diff = []
                 for i in range(len(prev)):
-                    if prev[i]!=self.last_cursor_data[i]:
+                    if prev[i]!=curr[i]:
                         diff.append(fields[i])
                 cursorlog("poll_cursor() attributes changed: %s", diff)
-            if SAVE_CURSORS:
-                ci = self.last_cursor_data[0]
+            if SAVE_CURSORS and curr:
+                ci = curr[0]
                 if ci:
                     w = ci[2]
                     h = ci[3]
