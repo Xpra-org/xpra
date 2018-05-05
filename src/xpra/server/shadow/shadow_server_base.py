@@ -269,12 +269,9 @@ class ShadowServerBase(RFBServer):
                     serial = ci[6]
                     pixels = ci[7]
                     cursorlog("saving cursor %#x with size %ix%i, %i bytes", serial, w, h, len(pixels))
-                    from xpra.os_util import BytesIOClass
                     from PIL import Image
                     img = Image.frombuffer("RGB", (w, h), pixels, "raw", "BGRX", 0, 1)
-                    out = BytesIOClass()
                     img.save("cursor-%#x.png" % serial, format="PNG")
-                    out.close()
             for ss in self._server_sources.values():
                 ss.send_cursor()
 
