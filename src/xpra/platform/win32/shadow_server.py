@@ -39,7 +39,7 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         SetPhysicalCursorPos,
                                         GetPhysicalCursorPos,
                                         GetCursorInfo, CURSORINFO,
-                                        GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject, ReleaseDC, DeleteDC, DrawIcon, DrawIconEx, GetBitmapBits,
+                                        GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject, ReleaseDC, DeleteDC, DrawIconEx, GetBitmapBits,
                                         GetIconInfo, ICONINFO,
                                         mouse_event)
 
@@ -87,7 +87,7 @@ def get_cursor_data(hCursor):
         y = ii.yHotspot
         cursorlog("get_cursor_data(%#x) hotspot at %ix%i", hCursor, x, y)
         #if not DrawIcon(memdc, 0, 0, hCursor):
-        if not DrawIconEx(memdc, 0, 0, hCursor, 0, 0, 0, 0, DI_NORMAL):
+        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, DI_NORMAL):
             raise WindowsError()
         Bpp = 4
         rowstride = w*Bpp
@@ -114,7 +114,7 @@ def get_cursor_data(hCursor):
             DeleteDC(memdc)
         if dc:
             ReleaseDC(None, dc)
-    return (0, 0, w, h, x, y, hCursor, pixels, "")
+    return [w, h, x, y, hCursor, pixels, ""]
 
 
 def init_capture(pixel_depth=32):
@@ -386,7 +386,7 @@ class ShadowServer(GTKShadowServerBase):
             return self.last_cursor_data
         w, h = get_fixed_cursor_size()
         return (
-            cd,
+            [ci.ptScreenPos.x, ci.ptScreenPos.y]+cd,
             ((w,h), [(w,h), ]),
             )
 
