@@ -766,6 +766,7 @@ class WindowVideoSource(WindowSource):
 
         rgb_request_time = monotonic_time()
         image = self.window.get_image(x, y, w, h)
+        log.info("get_image%s=%s", (x, y, w, h), image)
         if image is None:
             log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
             return
@@ -1291,7 +1292,7 @@ class WindowVideoSource(WindowSource):
         if self.do_check_pipeline(encodings, width, height, src_format):
             return True  #OK!
 
-        videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s", (encoding, width, height, src_format), encodings)
+        videolog.warn("check_pipeline%s setting up a new pipeline as check failed - encodings=%s", (encoding, width, height, src_format), encodings)
         #cleanup existing one if needed:
         csce = self._csc_encoder
         if csce:
@@ -1662,6 +1663,7 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
+        log.info("do_video_encode(%s, %s, %s)", encoding, image, options)
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
         stride = image.get_rowstride()

@@ -12,15 +12,12 @@ mouselog = Logger("mouse")
 notifylog = Logger("notify")
 log = Logger("shadow")
 
-from xpra.util import envint
 from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
-
-POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
 
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
@@ -30,7 +27,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
-        self.pointer_position_timer = None
         #for managing the systray
         self.tray_menu = None
         self.tray_menu_shown = False
@@ -68,14 +64,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.set_tray_icon("server-notconnected")
         GTKServerBase.last_client_exited(self)
 
-
-    def start_refresh(self):
-        self.start_poll_pointer_position()
-        ShadowServerBase.start_refresh(self)
-
-    def stop_refresh(self):
-        self.stop_poll_pointer_position()
-        ShadowServerBase.stop_refresh(self)
 
     def refresh(self):
         if not self.mapped:
@@ -123,48 +111,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self._add_new_window(model)
 
 
-    ############################################################################
-    # pointer polling
-
-    def stop_poll_pointer_position(self):
-        ppt = self.pointer_position_timer
-        if ppt:
-            self.pointer_position_timer = None
-            self.source_remove(ppt)
-
-    def start_poll_pointer_position(self):
-        #the pointer position timer:
-        self.last_pointer_position = None
-        self.pointer_position_timer = None
-        if POLL_POINTER>0:
-            self.pointer_position_timer = self.timeout_add(POLL_POINTER, self.poll_pointer_position)
-
     def get_pointer_position(self):
         return self.root.get_pointer()[-3:-1]
-
-    def poll_pointer_position(self):
-        x, y = self.get_pointer_position()
-        #find the window model containing the pointer:
-        if self.last_pointer_position!=(x, y):
-            self.last_pointer_position = (x, y)
-            rwm = None
-            rx, ry = 0, 0
-            for wid, window in self._id_to_window.items():
-                wx, wy, ww, wh = window.get_geometry()
-                if x>=wx and x<(wx+ww) and y>=wy and y<(wy+wh):
-                    rwm = window
-                    rx = x-wx
-                    ry = y-wy
-                    break
-            if rwm:
-                mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
-                for ss in self._server_sources.values():
-                    ss.update_mouse(wid, x, y, rx, ry)
-            else:
-                mouselog("poll_pointer_position() model not found for position=%s", (x, y))
-        else:
-            mouselog("poll_pointer_position() unchanged position=%s", (x, y))
-        return True
 
 
     def get_notification_tray(self):

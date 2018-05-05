@@ -9,6 +9,8 @@ import os
 from xpra.log import Logger
 log = Logger("shadow")
 notifylog = Logger("notify")
+mouselog = Logger("mouse")
+cursorlog = Logger("cursor")
 
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -21,6 +23,8 @@ from xpra.util import envint, envbool, DONE
 
 REFRESH_DELAY = envint("XPRA_SHADOW_REFRESH_DELAY", 50)
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
+POLL_POINTER = envint("XPRA_POLL_POINTER", 20)
+CURSORS = envbool("XPRA_CURSORS", True)
 
 
 class ShadowServerBase(RFBServer):
@@ -35,6 +39,9 @@ class ShadowServerBase(RFBServer):
         self.refresh_timer = None
         self.notifications = False
         self.notifier = None
+        self.pointer_last_position = None
+        self.pointer_poll_timer = None
+        self.last_cursor_data = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
         RFBServer.init(self)
@@ -88,9 +95,6 @@ class ShadowServerBase(RFBServer):
     def get_window_position(self, _window):
         #we export the whole desktop as a window:
         return 0, 0
-
-    def get_cursor_data(self):
-        return None
 
     def watch_keymap_changes(self):
         pass
@@ -163,6 +167,7 @@ class ShadowServerBase(RFBServer):
         self.mapped = True
         if not self.refresh_timer:
             self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
+        self.start_poll_pointer()
 
     def set_refresh_delay(self, v):
         assert v>0 and v<10000
@@ -176,6 +181,7 @@ class ShadowServerBase(RFBServer):
         log("stop_refresh() mapped=%s", self.mapped)
         self.mapped = False
         self.cancel_refresh_timer()
+        self.cancel_poll_pointer()
 
     def cancel_refresh_timer(self):
         t = self.refresh_timer
@@ -186,6 +192,81 @@ class ShadowServerBase(RFBServer):
 
     def refresh(self):
         raise NotImplementedError()
+
+
+    ############################################################################
+    # pointer polling
+
+    def get_pointer_position(self):
+        raise NotImplementedError()
+
+    def start_poll_pointer(self):
+        #the pointer position timer:
+        if POLL_POINTER>0:
+            self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
+
+    def cancel_poll_pointer(self):
+        ppt = self.pointer_poll_timer
+        if ppt:
+            self.pointer_poll_timer = None
+            self.source_remove(ppt)
+
+    def poll_pointer(self):
+        self.poll_pointer_position()
+        if CURSORS:
+            self.poll_cursor()
+        return True
+
+
+    def poll_pointer_position(self):
+        x, y = self.get_pointer_position()
+        #find the window model containing the pointer:
+        if self.pointer_last_position!=(x, y):
+            self.pointer_last_position = (x, y)
+            rwm = None
+            rx, ry = 0, 0
+            for wid, window in self._id_to_window.items():
+                wx, wy, ww, wh = window.get_geometry()
+                if x>=wx and x<(wx+ww) and y>=wy and y<(wy+wh):
+                    rwm = window
+                    rx = x-wx
+                    ry = y-wy
+                    break
+            if rwm:
+                mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
+                for ss in self._server_sources.values():
+                    ss.update_mouse(wid, x, y, rx, ry)
+            else:
+                mouselog("poll_pointer_position() model not found for position=%s", (x, y))
+        else:
+            mouselog("poll_pointer_position() unchanged position=%s", (x, y))
+
+
+    def poll_cursor(self):
+        prev = self.last_cursor_data
+        self.last_cursor_data = self.do_get_cursor_data()
+        def cmpv(v):
+            if v and len(v)>2:
+                return v[2:]
+            return None
+        if cmpv(prev)!=cmpv(self.last_cursor_data):
+            fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
+            if len(prev or [])==len(self.last_cursor_data or []) and len(prev or [])==len(fields):
+                diff = []
+                for i in range(len(prev)):
+                    if prev[i]!=self.last_cursor_data[i]:
+                        diff.append(fields[i])
+                cursorlog("poll_cursor() attributes changed: %s", diff)
+            for ss in self._server_sources.values():
+                ss.send_cursor()
+
+    def do_get_cursor_data(self):
+        return None
+
+    def get_cursor_data(self):
+        #return cached value we get from polling:
+        return self.last_cursor_data
+
 
     ############################################################################
 

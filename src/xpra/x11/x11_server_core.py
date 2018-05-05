@@ -155,13 +155,13 @@ class X11ServerCore(GTKServerBase):
 
     def init_cursor(self):
         #cursor:
-        self.default_cursor_data = None
+        self.default_cursor_image = None
         self.last_cursor_serial = None
-        self.last_cursor_data = None
+        self.last_cursor_image = None
         self.send_cursor_pending = False
         def get_default_cursor():
-            self.default_cursor_data = X11Keyboard.get_cursor_image()
-            cursorlog("get_default_cursor=%s", self.default_cursor_data)
+            self.default_cursor_image = X11Keyboard.get_cursor_image()
+            cursorlog("get_default_cursor=%s", self.default_cursor_image)
         trap.swallow_synced(get_default_cursor)
         X11Keyboard.selectCursorChange(True)
 
@@ -316,8 +316,8 @@ class X11ServerCore(GTKServerBase):
                 sizes = RandR.get_xrr_screen_sizes()
                 if len(sizes)>1:
                     capabilities["screen-sizes"] = sizes
-            if self.default_cursor_data and source.wants_default_cursor:
-                capabilities["cursor.default"] = self.default_cursor_data
+            if self.default_cursor_image and source.wants_default_cursor:
+                capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
     def do_get_info(self, proto, server_sources, window_ids):
@@ -354,7 +354,7 @@ class X11ServerCore(GTKServerBase):
         except:
             pass
         #cursor:
-        log("do_get_info: adding cursor=%s", self.last_cursor_data)
+        log("do_get_info: adding cursor=%s", self.last_cursor_image)
         info.setdefault("cursor", {}).update(self.get_cursor_info())
         with xswallow:
             sinfo.update({
@@ -379,10 +379,10 @@ class X11ServerCore(GTKServerBase):
     def get_cursor_info(self):
         #(NOT from UI thread)
         #copy to prevent race:
-        cd = self.last_cursor_data
+        cd = self.last_cursor_image
         if cd is None:
             return {"" : "None"}
-        cinfo = {"is_default"   : bool(self.default_cursor_data and len(self.default_cursor_data)>=8 and len(cd)>=8 and cd[7]==cd[7])}
+        cinfo = {"is_default"   : bool(self.default_cursor_image and len(self.default_cursor_image)>=8 and len(cd)>=8 and cd[7]==cd[7])}
         #all but pixels:
         for i, x in enumerate(("x", "y", "width", "height", "xhot", "yhot", "serial", None, "name")):
             if x:
@@ -451,7 +451,7 @@ class X11ServerCore(GTKServerBase):
         display = display_get_default()
         return display.get_default_cursor_size(), display.get_maximal_cursor_size()
 
-    def do_get_cursor_data(self):
+    def get_cursor_image(self):
         #must be called from the UI thread!
         try:
             with xsync:
@@ -463,18 +463,18 @@ class X11ServerCore(GTKServerBase):
 
     def get_cursor_data(self):
         #must be called from the UI thread!
-        cursor_data = self.do_get_cursor_data()
-        if cursor_data is None:
+        cursor_image = self.get_cursor_image()
+        if cursor_image is None:
             cursorlog("get_cursor_data() failed to get cursor image")
             return None, []
-        self.last_cursor_data = cursor_data
-        pixels = self.last_cursor_data[7]
-        cursorlog("get_cursor_data() cursor=%s", cursor_data[:7]+["%s bytes" % len(pixels)]+cursor_data[8:])
-        if self.default_cursor_data is not None and str(pixels)==str(self.default_cursor_data[7]):
+        self.last_cursor_image = cursor_image
+        pixels = self.last_cursor_image[7]
+        cursorlog("get_cursor_image() cursor=%s", cursor_image[:7]+["%s bytes" % len(pixels)]+cursor_image[8:])
+        if self.default_cursor_image is not None and str(pixels)==str(self.default_cursor_image[7]):
             cursorlog("get_cursor_data(): default cursor - clearing it")
-            cursor_data = None
+            cursor_image = None
         cursor_sizes = self.get_cursor_sizes()
-        return (cursor_data, cursor_sizes)
+        return (cursor_image, cursor_sizes)
 
 
     def get_max_screen_size(self):

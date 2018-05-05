@@ -366,35 +366,25 @@ class ShadowServer(GTKShadowServerBase):
         log("refresh()=%s", v)
         return v
 
-    def poll_pointer_position(self):
-        GTKShadowServerBase.poll_pointer_position(self)
-        if CURSORS:
-            self.poll_cursor_data()
-        return True
-
-    def poll_cursor_data(self):
+    def do_get_cursor_data(self):
         ci = CURSORINFO()
         ci.cbSize = ctypes.sizeof(CURSORINFO)
         GetCursorInfo(ctypes.byref(ci))
         cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
-        if ci.flags & CURSOR_SHOWING:
-            handle = int(ci.hCursor)
-        else:
-            handle = None    
-        if handle!=self.cursor_handle:
-            self.cursor_handle = handle
-            if handle is None:
-                self.cursor_data = None
-            else:
-                cd = get_cursor_data(handle)
-                if cd:
-                    w, h = get_fixed_cursor_size()
-                    self.cursor_data = (cd, ((w,h), [(w,h), ]))
-            for ss in self._server_sources.values():
-                ss.send_cursor()
-
-    def get_cursor_data(self):
-        return self.cursor_data
+        if not (ci.flags & CURSOR_SHOWING):
+            return None
+        handle = int(ci.hCursor)
+        if handle==self.cursor_handle and self.last_cursor_data:
+            return self.last_cursor_data
+        self.cursor_handle = handle
+        cd = get_cursor_data(handle)
+        if not cd:
+            return self.last_cursor_data
+        w, h = get_fixed_cursor_size()
+        return (
+            cd,
+            ((w,h), [(w,h), ]),
+            )
 
     def get_pointer_position(self):
         pos = POINT()

@@ -156,7 +156,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         GTKShadowServerBase.__init__(self)
         X11ServerCore.__init__(self)
         self.session_type = "shadow"
-        self.cursor_poll_timer = None
 
     def init(self, opts):
         GTKShadowServerBase.init(self, opts)
@@ -165,15 +164,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def cleanup(self):
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)
-
-
-    def start_refresh(self):
-        GTKShadowServerBase.start_refresh(self)
-        self.start_poll_cursor()
-
-    def stop_refresh(self):
-        GTKShadowServerBase.stop_refresh(self)
-        self.stop_poll_cursor()
 
 
     def make_tray_widget(self):
@@ -238,38 +228,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.last_client_exited(self)
 
 
-    def start_poll_cursor(self):
-        #the cursor poll timer:
-        self.cursor_poll_timer = None
-        if POLL_CURSOR>0:
-            self.cursor_poll_timer = self.timeout_add(POLL_CURSOR, self.poll_cursor)
-
-    def stop_poll_cursor(self):
-        cpt = self.cursor_poll_timer
-        if cpt:
-            self.cursor_poll_timer = None
-            self.source_remove(cpt)
-
-    def poll_cursor(self):
-        prev = self.last_cursor_data
-        X11ServerCore.get_cursor_data(self)
-        def cmpv(v):
-            if v and len(v)>2:
-                return v[2:]
-            return None
-        if cmpv(prev)!=cmpv(self.last_cursor_data):
-            fields = ("x", "y", "width", "height", "xhot", "yhot", "serial", "pixels", "name")
-            if len(prev or [])==len(self.last_cursor_data or []) and len(prev or [])==len(fields):
-                diff = []
-                for i in range(len(prev)):
-                    if prev[i]!=self.last_cursor_data[i]:
-                        diff.append(fields[i])
-                cursorlog("poll_cursor() attributes changed: %s", diff)
-            for ss in self._server_sources.values():
-                ss.send_cursor()
-        return True
-
-    def get_cursor_data(self):
+    def do_get_cursor_data(self):
         return X11ServerCore.get_cursor_data(self)
 
 
