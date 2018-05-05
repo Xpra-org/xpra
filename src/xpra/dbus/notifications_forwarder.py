@@ -60,7 +60,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         if replaces_nid==0:
             nid = self.next_id()
         else:
-            nid = replaces_nid
+            nid = int(replaces_nid)
         log("Notify%s counter=%i, callback=%s", (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout), self.counter, self.notify_callback)
         self.active_notifications.add(nid)
         if self.notify_callback:
@@ -132,7 +132,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def CloseNotification(self, nid):
         log("CloseNotification(%s) callback=%s", nid, self.close_callback)
         try:
-            self.active_notifications.remove(nid)
+            self.active_notifications.remove(int(nid))
         except KeyError:
             return
         else:
