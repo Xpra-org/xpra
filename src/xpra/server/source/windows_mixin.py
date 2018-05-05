@@ -21,6 +21,7 @@ from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPR
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
+SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
@@ -259,9 +260,13 @@ class WindowsMixin(StubSourceMixin):
                     img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
                     buf = BytesIOClass()
                     img.save(buf, "PNG")
-                    cpixels = Compressed("png cursor", buf.getvalue(), can_inline=True)
+                    pngdata = buf.getvalue()
                     buf.close()
+                    cpixels = Compressed("png cursor", pngdata, can_inline=True)
                     encoding = "png"
+                    if SAVE_CURSORS:
+                        with open("raw-cursor-%#x.png" % serial, "wb") as f:
+                            f.write(pngdata)
                 elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
                     cpixels = self.compressed_wrapper("cursor", pixels)
                     cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
