@@ -14,7 +14,8 @@ log = Logger("paint")
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.client.paint_colors import get_paint_box_color
-from xpra.os_util import memoryview_to_bytes, monotonic_time, _buffer
+from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
+from xpra.os_util import memoryview_to_bytes, _buffer
 from xpra.util import csv, envbool
 
 
@@ -181,45 +182,14 @@ class PixmapBacking(GTK2WindowBacking):
     def cairo_draw_from_drawable(self, context, drawable):
         if drawable is None:
             return
-        try:
-            ww, wh = self.render_size
-            w, h = self.size
-            if ww==0 or w==0 or wh==0 or h==0:
-                return False
-            if w!=ww or h!=wh:
-                context.scale(float(ww)/w, float(wh)/h)
-            x, y = self.offsets[:2]
-            if x!=0 or y!=0:
-                context.translate(x, y)
-            context.set_source_pixmap(drawable, 0, 0)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            if self.pointer_overlay:
-                px, py, size, start_time = self.pointer_overlay[2:]
-                x = px
-                y = py
-                if self.cursor_data:
-                    xhot = self.cursor_data[5]
-                    yhot = self.cursor_data[6]
-                    x = px-xhot
-                    y = py-yhot
-                elapsed = max(0, monotonic_time()-start_time)
-                if elapsed<6:
-                    alpha = max(0, (5.0-elapsed)/5.0)
-                    log("cairo_draw_from_drawable(%s, %s) drawing pointer with cairo at %s with alpha=%s", context, drawable, self.pointer_overlay, alpha)
-                    context.set_source_rgba(0, 0, 0, alpha)
-                    context.set_line_width(1)
-                    context.move_to(x-size, y)
-                    context.line_to(x+size, y)
-                    context.stroke()
-                    context.move_to(x, y-size)
-                    context.line_to(x, y+size)
-                    context.stroke()
-                else:
-                    self.pointer_overlay = None
-            return True
-        except KeyboardInterrupt:
-            raise
-        except:
-            log.error("cairo_draw_from_drawable(%s, %s)", context, drawable, exc_info=True)
-            return False
+        ww, wh = self.render_size
+        w, h = self.size
+        if ww==0 or w==0 or wh==0 or h==0:
+            return
+        x, y = self.offsets[:2]
+
+        setup_cairo_context(context, ww, wh, w, h, x, y)
+        context.set_source_pixmap(drawable, x, y)
+        context.paint()
+        if self.pointer_overlay:
+            cairo_paint_pointer_overlay(context, *self.pointer_overlay[2:])

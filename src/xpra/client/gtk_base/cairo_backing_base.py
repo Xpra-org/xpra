@@ -14,6 +14,7 @@ from xpra.gtk_common.gtk_util import cairo_set_source_pixbuf, gdk_cairo_context
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.client.gtk_base.gtk_window_backing_base import GTK_ALPHA_SUPPORTED
+from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
 from xpra.codecs.loader import get_codec
 from xpra.os_util import BytesIOClass, memoryview_to_bytes, strtobytes
 
@@ -193,20 +194,15 @@ class CairoBackingBase(WindowBackingBase):
         #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
         #except:
         #    log.error("clip:", exc_info=True)
-        try:
-            if self.render_size!=self.size:
-                ww, wh = self.render_size
-                w, h = self.size
-                context.scale(float(ww)/w, float(wh)/h)
-            x, y = self.offsets[:2]
-            if x!=0 or y!=0:
-                context.translate(x, y)
-            context.set_source_surface(self._backing, 0, 0)
-            context.set_operator(cairo.OPERATOR_SOURCE)
-            context.paint()
-            return True
-        except KeyboardInterrupt:
-            raise
-        except:
-            log.error("cairo_draw(%s)", context, exc_info=True)
-            return False
+        ww, wh = self.render_size
+        w, h = self.size
+        if ww==0 or w==0 or wh==0 or h==0:
+            return
+        x, y = self.offsets[:2]
+
+        setup_cairo_context(context, ww, wh, w, h, x, y)
+        context.set_source_surface(self._backing, 0, 0)
+        context.paint()
+        if self.pointer_overlay:
+            log.info("self.pointer_overlay=%s", self.pointer_overlay)
+            cairo_paint_pointer_overlay(context, *self.pointer_overlay[2:])
