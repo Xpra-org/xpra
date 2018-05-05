@@ -58,6 +58,7 @@ missing_cursor_names = set()
 METADATA_SUPPORTED = os.environ.get("XPRA_METADATA_SUPPORTED")
 USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", True)
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
+SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
@@ -793,7 +794,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ssize = cursor_data[10]
             smax = cursor_data[11]
             cursorlog("server cursor sizes: default=%s, max=%s", ssize, smax)
-        cursorlog("new %s cursor at %s,%s with serial=%s, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", encoding, xhot, yhot, serial, w, h, len(pixels), csize, (cmaxw, cmaxh))
+        cursorlog("new %s cursor at %s,%s with serial=%#x, dimensions: %sx%s, len(pixels)=%s, default cursor size is %s, maximum=%s", encoding, xhot, yhot, serial, w, h, len(pixels), csize, (cmaxw, cmaxh))
         fw, fh = get_fixed_cursor_size()
         if fw>0 and fh>0 and (w!=fw or h!=fh):
             #OS wants a fixed cursor size! (win32 does, and GTK doesn't do this for us)
@@ -831,6 +832,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 x, y = sx, sy
             else:
                 cursor_pixbuf = pixbuf
+        if SAVE_CURSORS:
+            cursor_pixbuf.save("cursor-%#x.png" % serial, "png")
         #clamp to pixbuf size:
         w = cursor_pixbuf.get_width()
         h = cursor_pixbuf.get_height()
