@@ -1677,7 +1677,6 @@ class WindowVideoSource(WindowSource):
             from PIL import Image
             img_data = image.get_pixels()
             rgb_format = image.get_pixel_format() #ie: BGRA
-            stride = image.get_rowstride()
             img = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(img_data), "raw", rgb_format.replace("BGRX", "BGRA"), stride)
             kwargs = {}
             if SAVE_VIDEO_FRAMES=="jpeg":
@@ -1715,7 +1714,10 @@ class WindowVideoSource(WindowSource):
                         newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
                         image.restride(newstride)
                     bpp = image.get_bytesperpixel()
-                    scroll_data.update(image.get_pixels(), x, y, w, h, image.get_rowstride(), bpp)
+                    pixels = image.get_pixels()
+                    if not pixels:
+                        return None
+                    scroll_data.update(pixels, x, y, w, h, stride, bpp)
                     max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
                     scroll_data.calculate(max_distance)
                     #marker telling us not to invalidate the scroll data from here on:
