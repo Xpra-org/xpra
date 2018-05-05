@@ -245,7 +245,10 @@ class ShadowServerBase(RFBServer):
     def poll_cursor(self):
         prev = self.last_cursor_data
         self.last_cursor_data = self.do_get_cursor_data()
-        def cmpv(v):
+        def cmpv(lcd):
+            if not lcd:
+                return None
+            v = lcd[0]
             if v and len(v)>2:
                 return v[2:]
             return None

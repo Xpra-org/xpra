@@ -372,13 +372,16 @@ class ShadowServer(GTKShadowServerBase):
         GetCursorInfo(ctypes.byref(ci))
         cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
         if not (ci.flags & CURSOR_SHOWING):
+            cursorlog("do_get_cursor_data() cursor not shown")
             return None
         handle = int(ci.hCursor)
         if handle==self.cursor_handle and self.last_cursor_data:
+            cursorlog("do_get_cursor_data() cursor handle unchanged")
             return self.last_cursor_data
         self.cursor_handle = handle
         cd = get_cursor_data(handle)
         if not cd:
+            cursorlog("do_get_cursor_data() no cursor data")
             return self.last_cursor_data
         w, h = get_fixed_cursor_size()
         return (
