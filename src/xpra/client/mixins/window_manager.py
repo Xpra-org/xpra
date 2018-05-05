@@ -54,6 +54,7 @@ DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu(
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
+SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -401,6 +402,10 @@ class WindowClient(StubClientMixin):
             encoding = new_cursor[0]
             pixels = new_cursor[8]
             if encoding==b"png":
+                if SAVE_CURSORS:
+                    serial = new_cursor[7]
+                    with open("raw-cursor-%#x.png" % serial, 'wb') as f:
+                        f.write(pixels)
                 from PIL import Image
                 buf = BytesIOClass(pixels)
                 img = Image.open(buf)
