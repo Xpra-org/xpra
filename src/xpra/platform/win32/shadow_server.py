@@ -12,7 +12,7 @@ from ctypes.wintypes import RECT, POINT, MAX_PATH
 from xpra.log import Logger
 from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name
-from xpra.platform.win32.constants import DI_MASK, DI_NORMAL, DI_IMAGE, CURSOR_SHOWING
+from xpra.platform.win32.constants import DI_NORMAL, CURSOR_SHOWING
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
