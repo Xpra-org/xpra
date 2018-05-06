@@ -44,6 +44,7 @@ class WindowPerformanceStatistics(object):
     DEFAULT_TARGET_LATENCY = 0.1
 
     def reset(self):
+        self.init_time = monotonic_time()
         self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
                                                             #(ack_time, no of pixels, decoding_time*1000*1000)
         self.encoding_stats = deque(maxlen=NRECS)           #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)

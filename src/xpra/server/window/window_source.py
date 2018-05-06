@@ -1909,21 +1909,23 @@ class WindowSource(WindowIconSource):
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
                 decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-                latency = netlatency + sendlatency + decode + ACK_TOLERANCE
-                eta = end_send_at + latency/1000.0
                 now = monotonic_time()
-                if now>eta:
+                live_time = int(1000*(now-self.statistics.init_time))
+                ack_tolerance = ACK_TOLERANCE + max(0, 200-live_time//10)
+                latency = netlatency + sendlatency + decode + ack_tolerance
+                eta = end_send_at + latency/1000.0
+                if now>eta and (live_time>=1000 or pixels>=4096):
                     actual = int(1000*(now-start_send_at))
                     actual_send_latency = actual-netlatency-decode
                     late_pct = actual_send_latency*100//(1+sendlatency)
-                    if pixels<=4096:
+                    if pixels<=4096 or actual_send_latency<=0:
                         #small packets can really skew things, don't bother
                         #(this also filters out scroll packets which are tiny)
                         send_speed = 0
                     else:
                         send_speed = bytecount*8*1000//actual_send_latency
                     #statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps", latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode, ACK_TOLERANCE)), late_pct, send_speed)
+                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (damage_packet_sequence, (now-eta)*1000, latency, (netlatency, sendlatency, decode, ack_tolerance)), late_pct, send_speed)
         if self._damage_delayed is not None and self._damage_delayed_expired:
             def call_may_send_delayed():
                 self.cancel_may_send_timer()
