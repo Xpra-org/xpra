@@ -271,6 +271,8 @@ class WindowPerformanceStatistics(object):
             return 0
         bits = sum(v[1] for v in recs) * 8
         elapsed = recs[-1][0]-recs[0][0]
+        if elapsed==0:
+            return 0
         return bits/elapsed
 
     def get_damage_pixels(self, elapsed=1):
