@@ -40,7 +40,7 @@ from xpra.os_util import monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, AtomicInteger
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
-MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 1*1024*1024)
+MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 
 counter = AtomicInteger()
 
@@ -219,14 +219,13 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
                 weight = ww*wh + ws.statistics.get_damage_pixels()
             window_weight[wid] = weight
         bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
-        total_weight = sum(window_weight.values())
+        total_weight = max(1, sum(window_weight.values()))
         for wid, ws in self.window_sources.items():
             if bandwidth_limit==0:
                 ws.bandwidth_limit = 0
             else:
-                weight = window_weight.get(wid)
-                if weight is not None:
-                    ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
+                weight = window_weight.get(wid, 0)
+                ws.bandwidth_limit = max(MIN_BANDWIDTH//10, bandwidth_limit*weight//total_weight)
 
 
     def parse_hello(self, c):
