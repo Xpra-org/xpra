@@ -97,7 +97,7 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE)
     def ClearKeysPressed(self):
         self.log(".ClearKeysPressed()")
-        self.server._clear_keys_pressed()
+        self.server.clear_keys_pressed()
 
     @dbus.service.method(INTERFACE, in_signature='ii')
     def SetKeyboardRepeat(self, repeat_delay, repeat_interval):

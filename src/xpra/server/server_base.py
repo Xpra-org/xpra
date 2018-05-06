@@ -833,9 +833,9 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
             #so it is now safe to clear them:
             #(this may fail during shutdown - which is ok)
             try:
-                self._clear_keys_pressed()
+                self.clear_keys_pressed()
             except:
-                pass
+                log("last_client_exited", exc_info=True)
             self._focus(None, 0, [])
             self.reset_icc_profile()
 

@@ -288,7 +288,7 @@ class InputServer(StubServerMixin):
             for ss in self._server_sources.values():
                 ss.keys_changed()
 
-    def _clear_keys_pressed(self):
+    def clear_keys_pressed(self):
         pass
 
     def get_keyboard_config(self, _props):

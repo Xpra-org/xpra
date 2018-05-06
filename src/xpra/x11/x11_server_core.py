@@ -430,8 +430,8 @@ class X11ServerCore(GTKServerBase):
             self.idle_add(reenable_keymap_changes)
 
 
-    def _clear_keys_pressed(self):
-        keylog("_clear_keys_pressed()")
+    def clear_keys_pressed(self):
+        keylog("clear_keys_pressed()")
         #make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()
         #clear all the keys we know about:

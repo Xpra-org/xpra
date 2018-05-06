@@ -59,7 +59,7 @@ keyboard = [
        'xpra.server.*._keys_changed',       #in both XpraServer and Source
        'xpra.server.*._process_key*',       #process_key_action, process_key_repeat
        'xpra.server.*._key_repeat*',        #_key_repeat, _key_repeat_timeout
-       'xpra.server.*._clear_keys_pressed',
+       'xpra.server.*.clear_keys_pressed',
        'xpra.server.*._handle_key',
        'xpra.server.*.get_keycode',         #in both ServerBase and Source
        'xpra.client.*.get*_keymap*',
