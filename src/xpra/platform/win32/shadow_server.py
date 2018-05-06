@@ -7,17 +7,17 @@
 import os
 import ctypes
 
-from ctypes.wintypes import RECT, POINT, MAX_PATH
+from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
 from xpra.log import Logger
 from xpra.os_util import strtobytes
-from xpra.util import envbool, prettify_plug_name
-from xpra.platform.win32.constants import DI_NORMAL, CURSOR_SHOWING
+from xpra.util import envbool, prettify_plug_name, csv
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
 cursorlog = Logger("cursor")
 netlog = Logger("network")
+keylog = Logger("keyboard")
 
 from collections import namedtuple
 from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
@@ -44,6 +44,7 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         GetIconInfo, ICONINFO, Bitmap,
                                         GetIconInfoExW, ICONINFOEXW,
                                         GetObjectA,
+                                        GetKeyboardState, SetKeyboardState,
                                         mouse_event)
 
 NOEVENT = object()
@@ -110,7 +111,7 @@ def get_cursor_data(hCursor):
             cursorlog("cursor is animated!")
 
         #if not DrawIcon(memdc, 0, 0, hCursor):
-        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, DI_NORMAL):
+        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, win32con.DI_NORMAL):
             raise WindowsError()
 
         buf_size = bm.bmWidthBytes*h
@@ -409,7 +410,7 @@ class ShadowServer(GTKShadowServerBase):
         ci.cbSize = ctypes.sizeof(CURSORINFO)
         GetCursorInfo(ctypes.byref(ci))
         #cursorlog("GetCursorInfo handle=%#x, last handle=%#x", ci.hCursor or 0, self.cursor_handle or 0)
-        if not (ci.flags & CURSOR_SHOWING):
+        if not (ci.flags & win32con.CURSOR_SHOWING):
             #cursorlog("do_get_cursor_data() cursor not shown")
             return None
         handle = int(ci.hCursor)
@@ -443,6 +444,21 @@ class ShadowServer(GTKShadowServerBase):
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
             log.error(" %s", e)
+
+    def clear_keys_pressed(self):
+        keystate = (BYTE*256)()
+        if GetKeyboardState(keystate):
+            vknames = {}
+            for vkconst in (x for x in dir(win32con) if x.startswith("VK_")):
+                vknames[getattr(win32con, vkconst)] = vkconst[3:]
+            pressed = []
+            for i in range(256):
+                if keystate[i]:
+                    pressed.append(vknames.get(i, i))
+            keylog("keys still pressed: %s", csv(pressed))
+            #clear all: (this does not affect lock modifiers: caps , num, scroll)
+            keystate = (BYTE*256)()
+            SetKeyboardState(keystate)
 
     def get_keyboard_config(self, props):
         return KeyboardConfig()

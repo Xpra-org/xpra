@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char, byref
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE, HMENU
 #imported from this module but not used here:
 assert GetLastError
@@ -15,6 +15,7 @@ LRESULT = c_long
 DEVMODE = c_void_p
 PDWORD = POINTER(DWORD)
 LPDWORD = POINTER(DWORD)
+PBYTE = POINTER(BYTE)
 HCURSOR = HANDLE
 HICON = HANDLE
 HBRUSH = HANDLE
@@ -195,7 +196,15 @@ GetMessageA = user32.GetMessageA
 TranslateMessage = user32.TranslateMessage
 DispatchMessageA = user32.DispatchMessageA
 MapVirtualKeyW = user32.MapVirtualKeyW
+GetKeyboardState = user32.GetKeyboardState
+GetKeyboardState.argtypes = [PBYTE]
+GetKeyboardState.restype = BOOL
+SetKeyboardState = user32.SetKeyboardState
+SetKeyboardState.argtypes = [PBYTE]
+SetKeyboardState.restype = BOOL
 GetAsyncKeyState = user32.GetAsyncKeyState
+GetAsyncKeyState.argtypes = [INT]
+GetAsyncKeyState.restype = SHORT
 VkKeyScanW = user32.VkKeyScanW
 VkKeyScanW.argtypes = [WCHAR]
 keybd_event = user32.keybd_event

@@ -50,6 +50,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             model.cleanup()
         ShadowServerBase.cleanup(self)
         GTKServerBase.cleanup(self)
+        self.clear_keys_pressed()
 
 
     def client_startup_complete(self, ss):
