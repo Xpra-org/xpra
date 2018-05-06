@@ -31,6 +31,9 @@ AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
 AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 
+INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 40)
+INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
+
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
@@ -223,8 +226,8 @@ class WindowSource(WindowIconSource):
         self._fixed_min_speed = default_encoding_options.get("min-speed", 0)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
-        self._current_quality = self._fixed_quality or 40
-        self._current_speed = self._fixed_speed or 40
+        self._current_quality = self._fixed_quality or INITIAL_QUALITY
+        self._current_speed = self._fixed_speed or INITIAL_SPEED
         self._want_alpha = False
         self._lossless_threshold_base = 85
         self._lossless_threshold_pixel_boost = 20
