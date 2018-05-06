@@ -500,7 +500,7 @@ class WindowSource(WindowIconSource):
         self.lock_batch_delay(LOCKED_BATCH_DELAY)
 
     def no_idle(self):
-        self.is_idle = True
+        self.is_idle = False
         self.unlock_batch_delay()
 
     def lock_batch_delay(self, delay):
