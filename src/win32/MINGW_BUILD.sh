@@ -117,7 +117,10 @@ if [ "${DO_CLEAN}" == "1" ]; then
 	rm -fr "build"
 	#clean sometimes errors on removing pyd files,
 	#so do it with rm instead:
+	#python2:
 	find xpra/ -name "*.pyd" -exec rm {} \;
+	#python3:
+	find xpra/ -name "*-cpython-*dll" -exec rm {} \;
 	CLEAN_LOG="clean.log"
 	${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
 	if [ "$?" != "0" ]; then
