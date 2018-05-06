@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_wchar, byref
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT
-from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE
+from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char, byref
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR
+from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE, HMENU
 #imported from this module but not used here:
 assert GetLastError
 
 LPCTSTR = LPCSTR
 LRESULT = c_long
 DEVMODE = c_void_p
+PDWORD = POINTER(DWORD)
 LPDWORD = POINTER(DWORD)
 HCURSOR = HANDLE
 HICON = HANDLE
@@ -36,6 +37,86 @@ class ICONINFO(Structure):
     ]
 PICONINFO = POINTER(ICONINFO)
 
+class ICONINFOEXA(Structure):
+    _fields_ = [
+        ("cbSize",          DWORD),
+        ("fIcon",           BOOL),
+        ("xHotspot",        DWORD),
+        ("yHotspot",        DWORD),
+        ("hbmMask",         HBITMAP),
+        ("hbmColor",        HBITMAP),
+        ("wResID",          WORD),
+        ("sxModName",       c_char*MAX_PATH),
+        ("szResName",       c_char*MAX_PATH),
+    ]
+PICONINFOEXA = POINTER(ICONINFOEXA)
+class ICONINFOEXW(Structure):
+    _fields_ = [
+        ("cbSize",          DWORD),
+        ("fIcon",           BOOL),
+        ("xHotspot",        DWORD),
+        ("yHotspot",        DWORD),
+        ("hbmMask",         HBITMAP),
+        ("hbmColor",        HBITMAP),
+        ("wResID",          WORD),
+        ("sxModName",       WCHAR*MAX_PATH),
+        ("szResName",       WCHAR*MAX_PATH),
+    ]
+PICONINFOEXW = POINTER(ICONINFOEXW)
+
+class Bitmap(Structure):
+    _fields_ = [
+        ("bmType",          LONG),
+        ("bmWidth",         LONG),
+        ("bmHeight",        LONG),
+        ("bmWidthBytes",    LONG),
+        ("bmPlanes",        WORD),
+        ("bmBitsPixel",     WORD),
+        ("bmBits",          LPVOID)
+        ]
+
+class CIEXYZ(Structure):
+    _fields_ = [
+        ('ciexyzX', DWORD),
+        ('ciexyzY', DWORD),
+        ('ciexyzZ', DWORD),
+    ]
+
+class CIEXYZTRIPLE(Structure):
+    _fields_ = [
+        ('ciexyzRed',   CIEXYZ),
+        ('ciexyzBlue',  CIEXYZ),
+        ('ciexyzGreen', CIEXYZ),
+    ]
+
+class BITMAPV5HEADER(Structure):
+    _fields_ = [
+        ('bV5Size',             DWORD),
+        ('bV5Width',            LONG),
+        ('bV5Height',           LONG),
+        ('bV5Planes',           WORD),
+        ('bV5BitCount',         WORD),
+        ('bV5Compression',      DWORD),
+        ('bV5SizeImage',        DWORD),
+        ('bV5XPelsPerMeter',    LONG),
+        ('bV5YPelsPerMeter',    LONG),
+        ('bV5ClrUsed',          DWORD),
+        ('bV5ClrImportant',     DWORD),
+        ('bV5RedMask',          DWORD),
+        ('bV5GreenMask',        DWORD),
+        ('bV5BlueMask',         DWORD),
+        ('bV5AlphaMask',        DWORD),
+        ('bV5CSType',           DWORD),
+        ('bV5Endpoints',        CIEXYZTRIPLE),
+        ('bV5GammaRed',         DWORD),
+        ('bV5GammaGreen',       DWORD),
+        ('bV5GammaBlue',        DWORD),
+        ('bV5Intent',           DWORD),
+        ('bV5ProfileData',      DWORD),
+        ('bV5ProfileSize',      DWORD),
+        ('bV5Reserved',         DWORD),
+    ]
+
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA
 GetConsoleScreenBufferInfo = kernel32.GetConsoleScreenBufferInfo
@@ -58,7 +139,9 @@ GetProcessHeap.argtypes = []
 CloseHandle = kernel32.CloseHandle
 CloseHandle.argtypes = [HANDLE]
 CloseHandle.restype = BOOL
-
+GetProductInfo = kernel32.GetProductInfo
+GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
+GetProductInfo.restype  = BOOL
 
 user32 = WinDLL("user32", use_last_error=True)
 RegisterClassExA = user32.RegisterClassExA
@@ -114,7 +197,7 @@ DispatchMessageA = user32.DispatchMessageA
 MapVirtualKeyW = user32.MapVirtualKeyW
 GetAsyncKeyState = user32.GetAsyncKeyState
 VkKeyScanW = user32.VkKeyScanW
-VkKeyScanW.argtypes = [c_wchar]
+VkKeyScanW.argtypes = [WCHAR]
 keybd_event = user32.keybd_event
 GetKeyState = user32.GetKeyState
 GetKeyState.restype = SHORT
@@ -143,6 +226,8 @@ UpdateWindow = user32.UpdateWindow
 DestroyIcon = user32.DestroyIcon
 LoadImageW = user32.LoadImageW
 CreateIconIndirect = user32.CreateIconIndirect
+CreateIconIndirect.restype = HICON
+CreateIconIndirect.argtypes = [POINTER(ICONINFO)]
 GetDC = user32.GetDC
 GetDC.argtypes = [HWND]
 GetDC.restype = HDC
@@ -158,6 +243,15 @@ DrawIconEx.restype = BOOL
 GetIconInfo = user32.GetIconInfo
 GetIconInfo.argtypes = [HICON, PICONINFO]
 GetIconInfo.restype = BOOL
+GetIconInfoExA = user32.GetIconInfoExA
+GetIconInfoExA.argtypes = [HICON, PICONINFOEXA]
+GetIconInfoExA.restype = BOOL
+GetIconInfoExW = user32.GetIconInfoExW
+GetIconInfoExW.argtypes = [HICON, PICONINFOEXW]
+GetIconInfoExW.restype = BOOL
+CopyIcon = user32.CopyIcon
+CopyIcon.argtypes = [HICON]
+CopyIcon.restype = HICON
 PostQuitMessage = user32.PostQuitMessage
 OpenWindowStationW = user32.OpenWindowStationW
 OpenWindowStationW.restype = HWINSTA
@@ -185,6 +279,12 @@ OpenInputDesktop.argtypes = [DWORD, BOOL, ACCESS_MASK]
 GetUserObjectInformationA = user32.GetUserObjectInformationA
 GetUserObjectInformationA.restype = BOOL
 GetUserObjectInformationA.argtypes = [HANDLE, INT, LPVOID, DWORD, LPDWORD]
+CreatePopupMenu = user32.CreatePopupMenu
+CreatePopupMenu.restype = HMENU
+CreatePopupMenu.argtypes = []
+AppendMenu = user32.AppendMenuW
+AppendMenu.restype = BOOL
+AppendMenu.argtypes = [HMENU, UINT, UINT, LPCWSTR]
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC
@@ -194,6 +294,7 @@ CreateCompatibleBitmap = gdi32.CreateCompatibleBitmap
 CreateCompatibleBitmap.argtypes = [HDC, c_int, c_int]
 CreateCompatibleBitmap.restype = HBITMAP
 CreateBitmap = gdi32.CreateBitmap
+CreateBitmap.argtypes = [INT, INT, UINT, UINT, POINTER(c_void_p)]
 CreateBitmap.restype = HBITMAP
 GetBitmapBits = gdi32.GetBitmapBits
 GetBitmapBits.argtypes = [HGDIOBJ, LONG, LPVOID]
@@ -214,6 +315,8 @@ GetStockObject.restype = HGDIOBJ
 SetPixelV = gdi32.SetPixelV
 DeleteDC = gdi32.DeleteDC
 CreateDIBSection = gdi32.CreateDIBSection
+CreateDIBSection.restype = HBITMAP
+CreateDIBSection.argtypes = [HANDLE, POINTER(BITMAPV5HEADER), UINT, POINTER(c_void_p), HANDLE, DWORD]
 DeleteObject = gdi32.DeleteObject
 DeleteObject.argtypes = [HGDIOBJ]
 DeleteObject.restype = BOOL
@@ -244,6 +347,9 @@ BeginPaint.restype = HDC
 EndPaint = user32.EndPaint
 EndPaint.argtypes = [HWND, c_void_p]
 EndPaint.restype = HDC
+GetObjectA = gdi32.GetObjectA
+GetObjectA.argtypes = [HGDIOBJ, INT, LPVOID]
+GetObjectA.restype = INT
 
 #wrap EnumDisplayMonitors to hide the callback function:
 MonitorEnumProc = WINFUNCTYPE(BOOL, HMONITOR, HDC, POINTER(RECT), LPARAM)

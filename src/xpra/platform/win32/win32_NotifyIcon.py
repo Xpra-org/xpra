@@ -9,7 +9,7 @@
 
 import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, HBITMAP, WCHAR, LONG, WORD, HANDLE, INT, DWORD
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
 
 from xpra.util import csv, nonl, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
@@ -19,9 +19,11 @@ from xpra.platform.win32.common import (GUID, WNDCLASSEX, WNDPROC,
                                         GetCursorPos,
                                         PostMessageA,
                                         CreateWindowExA,
+                                        CreatePopupMenu, AppendMenu,
                                         LoadIconA,
                                         DefWindowProcA, RegisterWindowMessageA,
                                         RegisterClassExA,
+                                        ICONINFO, BITMAPV5HEADER,
                                         LoadImageW, CreateIconIndirect,
                                         GetDC, ReleaseDC,
                                         CreateBitmap, CreateDIBSection,
@@ -37,13 +39,9 @@ sprintf = ctypes.cdll.msvcrt.sprintf
 
 
 def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, dwSpMinorVersion=0):
-    from xpra.platform.win32.common import kernel32
-    GetProductInfo = kernel32.GetProductInfo
-    PDWORD = POINTER(DWORD)
-    GetProductInfo.argtypes = [DWORD, DWORD, DWORD, DWORD, PDWORD]
-    GetProductInfo.restype  = BOOL
     product_type = DWORD(0)
-    v = GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, byref(product_type))
+    from xpra.platform.win32.common import GetProductInfo as k32GetProductInfo
+    v = k32GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, byref(product_type))
     log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, product_type)
     return bool(v)
 #win7 is actually 6.1:
@@ -53,17 +51,6 @@ except AttributeError as e:
     #likely running on win XP:
     log("cannot query GetProductInfo", exc_info=True)
     raise ImportError("cannot query GetProductInfo: %s" % e)
-
-class ICONINFO(Structure):
-    _fields_ = [
-        ('fIcon',       BOOL),
-        ('xHotspot',    DWORD),
-        ('yHotspot',    DWORD),
-        ('hbmMask',     HBITMAP),
-        ('hbmColor',    HBITMAP),
-    ]
-CreateIconIndirect.restype = HICON
-CreateIconIndirect.argtypes = [POINTER(ICONINFO)]
 
 if ISWIN7ORHIGHER:
     MAX_TIP_SIZE = 128
@@ -96,51 +83,6 @@ Shell_NotifyIconW.argtypes = [DWORD, POINTER(NOTIFYICONDATA)]
 
 BI_RGB = 0
 BI_BITFIELDS = 0x00000003
-class CIEXYZ(Structure):
-    _fields_ = [
-        ('ciexyzX', DWORD),
-        ('ciexyzY', DWORD),
-        ('ciexyzZ', DWORD),
-    ]
-class CIEXYZTRIPLE(Structure):
-    _fields_ = [
-        ('ciexyzRed',   CIEXYZ),
-        ('ciexyzBlue',  CIEXYZ),
-        ('ciexyzGreen', CIEXYZ),
-    ]
-class BITMAPV5HEADER(Structure):
-    _fields_ = [
-        ('bV5Size',             DWORD),
-        ('bV5Width',            LONG),
-        ('bV5Height',           LONG),
-        ('bV5Planes',           WORD),
-        ('bV5BitCount',         WORD),
-        ('bV5Compression',      DWORD),
-        ('bV5SizeImage',        DWORD),
-        ('bV5XPelsPerMeter',    LONG),
-        ('bV5YPelsPerMeter',    LONG),
-        ('bV5ClrUsed',          DWORD),
-        ('bV5ClrImportant',     DWORD),
-        ('bV5RedMask',          DWORD),
-        ('bV5GreenMask',        DWORD),
-        ('bV5BlueMask',         DWORD),
-        ('bV5AlphaMask',        DWORD),
-        ('bV5CSType',           DWORD),
-        ('bV5Endpoints',        CIEXYZTRIPLE),
-        ('bV5GammaRed',         DWORD),
-        ('bV5GammaGreen',       DWORD),
-        ('bV5GammaBlue',        DWORD),
-        ('bV5Intent',           DWORD),
-        ('bV5ProfileData',      DWORD),
-        ('bV5ProfileSize',      DWORD),
-        ('bV5Reserved',         DWORD),
-    ]
-
-CreateDIBSection.restype = HBITMAP
-CreateDIBSection.argtypes = [HANDLE, POINTER(BITMAPV5HEADER), UINT, POINTER(c_void_p), HANDLE, DWORD]
-
-CreateBitmap.restype = HBITMAP
-CreateBitmap.argtypes = [INT, INT, UINT, UINT, POINTER(c_void_p)]
 
 XPRA_GUID = GUID()
 XPRA_GUID.Data1 = XPRA_GUID1
@@ -506,12 +448,6 @@ def main():
     from xpra.platform.win32.common import user32
 
     def click_callback(button, pressed):
-        CreatePopupMenu = user32.CreatePopupMenu
-        CreatePopupMenu.restype = ctypes.wintypes.HMENU
-        CreatePopupMenu.argtypes = []
-        AppendMenu = user32.AppendMenuW
-        AppendMenu.restype = ctypes.wintypes.BOOL
-        AppendMenu.argtypes = [ctypes.wintypes.HMENU, ctypes.wintypes.UINT, ctypes.wintypes.UINT, ctypes.wintypes.LPCWSTR]
         menu = CreatePopupMenu()
         AppendMenu(menu, win32con.MF_STRING, 1024, u"Generate balloon")
         AppendMenu(menu, win32con.MF_STRING, 1025, u"Exit")

@@ -7,11 +7,12 @@
 import os
 import ctypes
 
-from ctypes.wintypes import RECT, POINT
+from ctypes.wintypes import RECT, POINT, MAX_PATH
 
 from xpra.log import Logger
+from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name
-from xpra.platform.win32.constants import DI_NORMAL, CURSOR_SHOWING
+from xpra.platform.win32.constants import DI_MASK, DI_NORMAL, DI_IMAGE, CURSOR_SHOWING
 log = Logger("shadow", "win32")
 traylog = Logger("tray")
 shapelog = Logger("shape")
@@ -40,7 +41,9 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         GetPhysicalCursorPos,
                                         GetCursorInfo, CURSORINFO,
                                         GetDC, CreateCompatibleDC, CreateCompatibleBitmap, SelectObject, DeleteObject, ReleaseDC, DeleteDC, DrawIconEx, GetBitmapBits,
-                                        GetIconInfo, ICONINFO,
+                                        GetIconInfo, ICONINFO, Bitmap,
+                                        GetIconInfoExW, ICONINFOEXW,
+                                        GetObjectA,
                                         mouse_event)
 
 NOEVENT = object()
@@ -65,7 +68,7 @@ NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 
 
 def get_cursor_data(hCursor):
-    w, h = get_fixed_cursor_size()
+    #w, h = get_fixed_cursor_size()
     x, y = 0, 0
     dc = None
     memdc = None
@@ -73,6 +76,26 @@ def get_cursor_data(hCursor):
     old_handle = None
     pixels = None
     try:
+        ii = ICONINFO()
+        ii.cbSize = ctypes.sizeof(ICONINFO)
+        if not GetIconInfo(hCursor, ctypes.byref(ii)):
+            raise WindowsError()
+        x = ii.xHotspot
+        y = ii.yHotspot
+        cursorlog("get_cursor_data(%#x) hotspot at %ix%i, hbmColor=%#x, hbmMask=%#x", hCursor, x, y, ii.hbmColor, ii.hbmMask)
+        iie = ICONINFOEXW()
+        iie.cbSize = ctypes.sizeof(ICONINFOEXW)
+        if not GetIconInfoExW(hCursor, ctypes.byref(iie)):
+            raise WindowsError()
+        name = iie.szResName[:MAX_PATH]
+        cursorlog("wResID=%i, sxModName=%s, szResName=%s", iie.wResID, iie.sxModName[:MAX_PATH], name)
+        bm = Bitmap()
+        if not GetObjectA(ii.hbmColor, ctypes.sizeof(Bitmap), ctypes.byref(bm)):
+            raise WindowsError()
+        cursorlog("cursor bitmap: type=%i, width=%i, height=%i, width bytes=%i, planes=%i, bits pixel=%i, bits=%#x",
+                  bm.bmType, bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, bm.bmPlanes, bm.bmBitsPixel, bm.bmBits or 0)
+        w = bm.bmWidth
+        h = bm.bmHeight
         dc = GetDC(None)
         assert dc, "failed to get a drawing context"
         memdc = CreateCompatibleDC(dc)
@@ -80,31 +103,46 @@ def get_cursor_data(hCursor):
         bitmap = CreateCompatibleBitmap(dc, w, h)
         assert bitmap, "failed to get a compatible bitmap from %s" % dc
         old_handle = SelectObject(memdc, bitmap)
-        ii = ICONINFO()
-        if not GetIconInfo(hCursor, ctypes.byref(ii)):
-            raise WindowsError()
-        x = ii.xHotspot
-        y = ii.yHotspot
-        cursorlog("get_cursor_data(%#x) hotspot at %ix%i", hCursor, x, y)
+
+        #check if icon is animated:
+        UINT_MAX = 2**32-1
+        if not DrawIconEx(memdc, 0, 0, hCursor, w, h, UINT_MAX, 0, 0):
+            cursorlog("cursor is animated!")
+
         #if not DrawIcon(memdc, 0, 0, hCursor):
         if not DrawIconEx(memdc, 0, 0, hCursor, w, h, 0, 0, DI_NORMAL):
             raise WindowsError()
-        Bpp = 4
-        rowstride = w*Bpp
-        buf_size = rowstride*h
+
+        buf_size = bm.bmWidthBytes*h
         buf = ctypes.create_string_buffer(b"", buf_size)
         r = GetBitmapBits(bitmap, buf_size, ctypes.byref(buf))
         cursorlog("get_cursor_data(%#x) GetBitmapBits(%#x, %#x, %#x)=%i", hCursor, bitmap, buf_size, ctypes.addressof(buf), r)
         if r==0:
             cursorlog.error("Error: failed to copy screen bitmap data")
+            return None
         elif r!=buf_size:
             cursorlog.warn("Warning: invalid cursor buffer size, got %i bytes but expected %i", r, buf_size)
+            return None
         else:
-            pixels = buf.raw
+            pixels = bytearray(strtobytes(buf.raw))
+            has_alpha = False
+            has_pixels = False
+            for i in range(len(pixels)//4):
+                has_pixels = has_pixels or pixels[i*4]!=0 or pixels[i*4+1]!=0 or pixels[i*4+2]!=0
+                has_alpha = has_alpha or pixels[i*4+3]!=0
+                if has_pixels and has_alpha:
+                    break
+            if has_pixels and not has_alpha:
+                #generate missing alpha - don't ask me why
+                for i in range(len(pixels)//4):
+                    if pixels[i*4]!=0 or pixels[i*4+1]!=0 or pixels[i*4+2]!=0:
+                        pixels[i*4+3] = 0xff
+        return [0, 0, w, h, x, y, hCursor, bytes(pixels), strtobytes(name)]
     except Exception as e:
         cursorlog("get_cursor_data(%#x)", hCursor, exc_info=True)
         cursorlog.error("Error: failed to grab cursor:")
         cursorlog.error(" %s", e)
+        return None
     finally:
         if old_handle:
             SelectObject(memdc, old_handle)
@@ -114,7 +152,6 @@ def get_cursor_data(hCursor):
             DeleteDC(memdc)
         if dc:
             ReleaseDC(None, dc)
-    return [w, h, x, y, hCursor, pixels, ""]
 
 
 def init_capture(pixel_depth=32):
@@ -384,9 +421,11 @@ class ShadowServer(GTKShadowServerBase):
         if not cd:
             cursorlog("do_get_cursor_data() no cursor data")
             return self.last_cursor_data
+        cd[0] = ci.ptScreenPos.x
+        cd[1] = ci.ptScreenPos.y
         w, h = get_fixed_cursor_size()
         return (
-            [ci.ptScreenPos.x, ci.ptScreenPos.y]+cd,
+            cd,
             ((w,h), [(w,h), ]),
             )
 
