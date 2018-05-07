@@ -24,7 +24,7 @@ except ImportError as e:
     set_image_surface_data = None
 
 
-CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
+CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", True)
 
 
 """
