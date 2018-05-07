@@ -43,10 +43,6 @@ class CairoBacking(CairoBackingBase):
     def __repr__(self):
         return "gtk3.CairoBacking(%s)" % self._backing
 
-    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        #don't use the native decoder... which would give us RGB data
-        return self.paint_image("jpeg", img_data, x, y, width, height, options, callbacks)
-
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
         log("cairo._do_paint_rgb(%s, %s, %s %s,%s,%s,%s,%s,%s,%s) set_image_surface_data=%s, use pixbuf=%s", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), type(img_data), x, y, width, height, rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
