@@ -774,15 +774,30 @@ fi
 
 
 %changelog
-* Tue Jan 23 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
+* Tue May 08 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
 - stackable authentication modules
 - tcp wrappers authentication module
-- notifications actions forwarding, custom icons
+- gss, kerberos, ldap and u2f authentication modules
+- request access to the session
+- pulseaudio server per session to prevent audio leaking
+- better network bandwidth utilization and congestion management
+- faster encoding and decoding: YUV for webp and jpeg, encoder hints, better vsync
+- notifications actions forwarding, custom icons, expose warnings
+- upload notification and management
+- shadow servers multi window mode
+- tighter client OS integratioin
+- client window positioning and multi-screen support
+- unique application icon used as tray icon
+- multi stop or attach
+- control start commands
 - forward signals sent to windows client side
 - forward requests to open URLs or files on the server side
+- html5 client improvements: top bar, debugging, etc
 - custom http headers, support content security policy
-- start a pulseaudio server per session
-- file transfer dialog: reject, accept or open
+- python3 port improvements
+- bug fixes: settings synchronization, macos keyboard mapping, etc
+- packaging: switch back to ffmpeg system libraries, support GTK3 on macos
+- structural improvements: refactoring, fewer synchronized X11 calls, etc
 
 
 * Mon Dec 11 2017 Antoine Martin <antoine@devloop.org.uk> 2.2-1

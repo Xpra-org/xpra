@@ -1,14 +1,29 @@
 xpra (2.3-1) UNRELEASED; urgency=low
   * stackable authentication modules
   * tcp wrappers authentication module
-  * notifications actions forwarding, custom icons
+  * gss, kerberos, ldap and u2f authentication modules
+  * request access to the session
+  * pulseaudio server per session to prevent audio leaking
+  * better network bandwidth utilization and congestion management
+  * faster encoding and decoding: YUV for webp and jpeg, encoder hints, better vsync
+  * notifications actions forwarding, custom icons, expose warnings
+  * upload notification and management
+  * shadow servers multi window mode
+  * tighter client OS integratioin
+  * client window positioning and multi-screen support
+  * unique application icon used as tray icon
+  * multi stop or attach
+  * control start commands
   * forward signals sent to windows client side
   * forward requests to open URLs or files on the server side
+  * html5 client improvements: top bar, debugging, etc
   * custom http headers, support content security policy
-  * start a pulseaudio server per session
-  * file transfer dialog: reject, accept or open
+  * python3 port improvements
+  * bug fixes: settings synchronization, macos keyboard mapping, etc
+  * packaging: switch back to ffmpeg system libraries, support GTK3 on macos
+  * structural improvements: refactoring, fewer synchronized X11 calls, etc
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 23 Jan 2018 08:19:12 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 08 May 2018 00:20:15 +0700
 
 xpra (2.2-1) UNRELEASED; urgency=low
   * support RFB clients (ie: VNC) with bind-rfb or rfb-upgrade options
