@@ -28,6 +28,7 @@ from __future__ import absolute_import
 
 import cairo
 from xpra.buffers.membuf cimport object_as_buffer
+from libc.stdint cimport uintptr_t
 
 
 cdef extern from "Python.h":
@@ -36,6 +37,9 @@ cdef extern from "Python.h":
     void * PyCapsule_Import(const char *name, int no_block)
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+
+cdef extern from "string.h":
+    void* memcpy(void * destination, void * source, size_t num)
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:
@@ -58,6 +62,8 @@ cdef extern from "cairo/cairo.h":
     int cairo_image_surface_get_height (cairo_surface_t *surface)
     int cairo_image_surface_get_stride (cairo_surface_t *surface)
 
+    void cairo_surface_flush (cairo_surface_t *surface)
+    void cairo_surface_mark_dirty (cairo_surface_t *surface)
 
 cdef extern from "pycairo/pycairo.h":
     ctypedef struct Pycairo_CAPI_t:
@@ -88,6 +94,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     if not isinstance(image_surface, cairo.ImageSurface):
         raise TypeError("object %r is not a %r" % (image_surface, cairo.ImageSurface))
     cdef cairo_surface_t * surface = (<PycairoImageSurface *> image_surface).surface
+    cairo_surface_flush(surface)
     cdef unsigned char * data = cairo_image_surface_get_data(surface)
     #get surface attributes:
     cdef cairo_format_t format = cairo_image_surface_get_format(surface)
@@ -96,32 +103,56 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
     assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
-    cdef int x,y
-    cdef srci, dsti
+    cdef int x, y
+    cdef int srci, dsti
+    cdef uintptr_t src, dst
     #just deal with the formats we care about:
-    if format==CAIRO_FORMAT_RGB24 and rgb_format=="RGB":
-        #cairo's RGB24 format is actually stored as BGR!
-        for y in range(height):
-            for x in range(width):
-                srci = x*4 + y*istride
-                dsti = x*3 + y*stride
-                data[srci + 0] = cbuf[dsti + 2]     #B
-                data[srci + 1] = cbuf[dsti + 1]     #G
-                data[srci + 2] = cbuf[dsti + 0]     #R
-                data[srci + 3] = 255                #X
-        return
+    if format==CAIRO_FORMAT_RGB24:
+        #cairo's RGB24 format is actually stored as BGR on little endian
+        if rgb_format=="BGR":
+            for y in range(height):
+                for x in range(width):
+                    srci = x*3 + y*stride
+                    dsti = x*4 + y*istride
+                    data[dsti + 0] = cbuf[srci + 0]     #B
+                    data[dsti + 1] = cbuf[srci + 1]     #G
+                    data[dsti + 2] = cbuf[srci + 2]     #R
+                    data[dsti + 3] = 255                #X
+        elif rgb_format=="RGB":
+            for y in range(height):
+                for x in range(width):
+                    srci = x*3 + y*stride
+                    dsti = x*4 + y*istride
+                    data[dsti + 0] = cbuf[srci + 2]     #B
+                    data[dsti + 1] = cbuf[srci + 1]     #G
+                    data[dsti + 2] = cbuf[srci + 0]     #R
+                    data[dsti + 3] = 255                #X
+        else:
+            raise ValueError("unhandled RGB format '%s'" % rgb_format)
     #note: this one is currently unused because it doesn't work
     #and I don't know why
     #(we just disable 'rgb32' for gtk3... and fallback to png)
-    elif format==CAIRO_FORMAT_ARGB32 and rgb_format=="RGBA":
-        for x in range(width):
+    elif format==CAIRO_FORMAT_ARGB32:
+        if rgb_format in ("RGBA", "RGBX"):
+            for x in range(width):
+                for y in range(height):
+                    data[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
+                    data[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
+                    data[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
+                    data[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
+        elif rgb_format in ("BGRA", "BGRX"):
             for y in range(height):
-                data[x*4 + 0 + y*istride] = cbuf[x*4 + 3 + y*stride]    #A
-                data[x*4 + 1 + y*istride] = cbuf[x*4 + 0 + y*stride]    #R
-                data[x*4 + 2 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
-                data[x*4 + 3 + y*istride] = cbuf[x*4 + 2 + y*stride]    #B
-        return
-    print("ERROR: cairo workaround not implemented for %s / %s" % (rgb_format, CAIRO_FORMAT.get(format, "unknown")))
+                src = (<uintptr_t> cbuf) + y*stride
+                dst = (<uintptr_t> data) + y*istride
+                memcpy(<void*> dst, <void*> src, stride)
+            cairo_surface_mark_dirty(surface)
+            return
+        else:
+            raise ValueError("unhandled RGB format '%s'" % rgb_format)
+    else:
+        raise ValueError("unhandled cairo format '%s'" % format)
+    cairo_surface_mark_dirty(surface)
+    return
 
 cdef Pycairo_CAPI_t * Pycairo_CAPI
 Pycairo_CAPI = <Pycairo_CAPI_t*> PyCapsule_Import("cairo.CAPI", 0);
