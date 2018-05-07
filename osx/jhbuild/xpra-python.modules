@@ -64,10 +64,10 @@
 	</distutils>
 
 	<distutils id="python-netifaces">
-		<branch repo="pypi.python.org"
-			module="/packages/72/01/ba076082628901bca750bf53b322a8ff10c1d757dc29196a8e6082711c9d/netifaces-0.10.6.tar.gz"
+		<branch repo="files.pythonhosted.org"
+			module="/packages/81/39/4e9a026265ba944ddf1fea176dbb29e0fe50c43717ba4fcf3646d099fe38/netifaces-0.10.7.tar.gz"
 			hash="sha256:0c4da523f36d36f1ef92ee183f2512f3ceb9a9d2a45f7d19cda5a42c6689ebe0"
-			version="0.10.6"/>
+			version="0.10.7"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
