@@ -88,7 +88,7 @@ def get_pactl_info_line(prefix):
                 log.warn(" %s", bytestostr(x))
         return    ""
     stat = ""
-    for line in strtobytes(out).splitlines():
+    for line in bytestostr(out).splitlines():
         if line.startswith(prefix):
             stat = line[len(prefix):].strip()
             break
@@ -96,19 +96,19 @@ def get_pactl_info_line(prefix):
     return stat
 
 def get_default_sink():
-    return get_pactl_info_line(b"Default Sink:")
+    return get_pactl_info_line("Default Sink:")
 
 def get_pactl_server():
-    return get_pactl_info_line(b"Server String:")
+    return get_pactl_info_line("Server String:")
 
 def get_pulse_cookie_hash():
-    v = get_pactl_info_line(b"Cookie:")
+    v = get_pactl_info_line("Cookie:")
     try:
         import hashlib
-        return strtobytes(hashlib.sha256(v).hexdigest())
+        return strtobytes(hashlib.sha256(strtobytes(v)).hexdigest())
     except:
         pass
-    return ""
+    return b""
 
 def get_pulse_server(may_start_it=True):
     xp = get_pulse_server_x11_property()
