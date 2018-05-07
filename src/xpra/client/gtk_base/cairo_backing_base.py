@@ -204,5 +204,7 @@ class CairoBackingBase(WindowBackingBase):
         context.set_source_surface(self._backing, 0, 0)
         context.paint()
         if self.pointer_overlay:
-            log.info("self.pointer_overlay=%s", self.pointer_overlay)
-            cairo_paint_pointer_overlay(context, *self.pointer_overlay[2:])
+            px, py, size, start_time = self.pointer_overlay[2:]
+            spx = round(w*px/ww)
+            spy = round(h*py/wh)
+            cairo_paint_pointer_overlay(context, spx, spy, size, start_time)
