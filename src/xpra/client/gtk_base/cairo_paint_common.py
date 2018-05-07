@@ -24,7 +24,7 @@ def cairo_paint_pointer_overlay(context, x, y, size, start_time):
     if elapsed>6:
         return
     alpha = max(0, (5.0-elapsed)/5.0)
-    log("cairo_paint_pointer_overlay%s drawing pointer with cairo at with alpha=%s", (context, x, y, size, start_time), alpha)
+    log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s", (context, x, y, size, start_time), alpha)
     context.set_source_rgba(0, 0, 0, alpha)
     context.set_line_width(1)
     context.move_to(x-size, y)
