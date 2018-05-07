@@ -41,6 +41,8 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_BGR0
     AVPixelFormat AV_PIX_FMT_ARGB
     AVPixelFormat AV_PIX_FMT_BGRA
+    AVPixelFormat AV_PIX_FMT_ABGR
+    AVPixelFormat AV_PIX_FMT_RGBA
     AVPixelFormat AV_PIX_FMT_GBRP
     AVPixelFormat AV_PIX_FMT_BGR24
     AVPixelFormat AV_PIX_FMT_NONE
@@ -96,7 +98,9 @@ FORMAT_OPTIONS = [
     ("0RGB",    AV_PIX_FMT_0RGB,       (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
     ("BGR0",    AV_PIX_FMT_BGR0,       (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
     ("ARGB",    AV_PIX_FMT_ARGB,       (4, 0, 0, 0),       (1, 0, 0, 0),       "XRGB"  ),
+    ("RGBA",    AV_PIX_FMT_RGBA,       (4, 0, 0, 0),       (1, 0, 0, 0),       "RGBX"  ),
     ("BGRA",    AV_PIX_FMT_BGRA,       (4, 0, 0, 0),       (1, 0, 0, 0),       "BGRX"  ),
+    ("ABGR",    AV_PIX_FMT_ABGR,       (4, 0, 0, 0),       (1, 0, 0, 0),       "XBGR"  ),
     ("YUV420P", AV_PIX_FMT_YUV420P,    (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
     ("YUV422P", AV_PIX_FMT_YUV422P,    (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
     ("YUV444P", AV_PIX_FMT_YUV444P,    (1, 1, 1, 0),       (1, 1, 1, 0),       "YUV444P"),
