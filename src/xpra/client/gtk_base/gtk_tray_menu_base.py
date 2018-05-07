@@ -1292,7 +1292,7 @@ class GTKTrayMenuBase(object):
             def uniq(seq):
                 seen = set()
                 return [x for x in seq if not (x in seen or seen.add(x))]
-            log.info("keyboard layouts: %s", u",".join(bytestostr(x) for x in uniq(layouts)))
+            log("keyboard layouts: %s", u",".join(bytestostr(x) for x in uniq(layouts)))
             auto = kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:
