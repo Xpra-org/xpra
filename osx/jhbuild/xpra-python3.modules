@@ -240,11 +240,11 @@
 	</distutils>
 
 	<distutils id="python3-numpy" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/bf/2d/005e45738ab07a26e621c9c12dc97381f372e06678adf7dc3356a69b5960/numpy-1.13.3.zip"
-			checkoutdir="numpy-1.13.3"
-			version="1.13.3"
-			hash="sha256:36ee86d5adbabc4fa2643a073f93d5504bdfed37a149a3a49f4dde259f35a750"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/b0/2b/497c2bb7c660b2606d4a96e2035e92554429e139c6c71cdff67af66b58d2/numpy-1.14.3.zip"
+			checkoutdir="numpy-1.14.3"
+			version="1.14.3"
+			hash="sha256:9016692c7d390f9d378fc88b7a799dc9caa7eb938163dda5276d3f3d6f75debf"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
