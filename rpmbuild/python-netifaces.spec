@@ -14,7 +14,7 @@
 Summary: Getting network addresses from Python
 Vendor: http://alastairs-place.net/netifaces/
 Name: python2-netifaces
-Version: 0.10.6
+Version: 0.10.7
 Release: 1%{?dist}
 License: GPL3
 Requires: python
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue May 08 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.10.7-1
+- new upstream release
+
 * Mon Apr 02 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.10.6-1
 - new upstream release
 
