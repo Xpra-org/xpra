@@ -111,8 +111,8 @@ def create(filename):
     sql = ("CREATE TABLE users ("
            "username VARCHAR NOT NULL, "
            "password VARCHAR, "
-           "uid INTEGER NOT NULL, "
-           "gid INTEGER NOT NULL, "
+           "uid VARCHAR, "
+           "gid VARCHAR, "
            "displays VARCHAR, "
            "env_options VARCHAR, "
            "session_options VARCHAR)")
