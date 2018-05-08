@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 2.3
+%define version 2.4
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -774,6 +774,9 @@ fi
 
 
 %changelog
+* Wed May 09 2018 Antoine Martin <antoine@devloop.org.uk> 2.4-1
+- TODO
+
 * Tue May 08 2018 Antoine Martin <antoine@devloop.org.uk> 2.3-1
 - stackable authentication modules
 - tcp wrappers authentication module
