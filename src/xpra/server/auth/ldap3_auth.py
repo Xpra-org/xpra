@@ -8,7 +8,7 @@ import os
 import sys
 
 from xpra.util import obsc
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.log import enable_debug_for, is_debug_enabled
 assert init and log #tests will disable logging from here
 
@@ -25,6 +25,8 @@ class Authenticator(SysAuthenticatorBase):
         self.tls = bool(int(kwargs.pop("tls", "0")))
         self.host = kwargs.pop("host", "localhost")
         self.cacert = kwargs.pop("cacert", LDAP_CACERTFILE)
+        self.uid = parse_uid(kwargs.pop("uid", None))
+        self.gid = parse_gid(kwargs.pop("gid", None))
         self.tls_version = None
         self.tls_validate = None
         if self.tls:
@@ -51,7 +53,7 @@ class Authenticator(SysAuthenticatorBase):
         return self.gid
 
     def __repr__(self):
-        return "ldap"
+        return "ldap3"
 
     def get_challenge(self, digests):
         if "xor" not in digests:

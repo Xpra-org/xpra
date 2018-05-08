@@ -1,52 +1,20 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-import os
-
+from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
-from xpra.os_util import strtobytes, hexstr, POSIX
+from xpra.os_util import strtobytes, hexstr
 from xpra.util import parse_simple_dict
 from xpra.net.crypto import verify_digest
 
 
 def init(opts):
     file_init(opts)
-
-
-def getuid(v):
-    if v:
-        try:
-            return int(v)
-        except:
-            log("uid '%s' is not an int", v)
-    if POSIX:
-        try:
-            import pwd
-            return pwd.getpwnam(v or "nobody").pw_uid
-        except Exception as e:
-            log.error("Error: cannot find uid of '%s': %s", v, e)
-        return os.getuid()
-    return -1
-
-def getgid(v):
-    if v:
-        try:
-            return int(v)
-        except:
-            log("gid '%s' is not an int", v)
-    if POSIX:
-        try:
-            import grp          #@UnresolvedImport
-            return grp.getgrnam(v or "nobody").gr_gid
-        except Exception as e:
-            log.error("Error: cannot find gid of '%s': %s", v, e)
-        return os.getgid()
-    return -1
 
 
 def parse_auth_line(line):
@@ -57,11 +25,13 @@ def parse_auth_line(line):
     username = ldata[0]
     password = ldata[1]
     if len(ldata)>=5:
-        uid = getuid(ldata[2])
-        gid = getgid(ldata[3])
+        uid = parse_uid(ldata[2])
+        gid = parse_gid(ldata[3])
         displays = ldata[4].split(b",")
     else:
-        uid, gid = -1, -1
+        #this will use the default value, usually "nobody":
+        uid = parse_uid(None)
+        gid = parse_gid(None)
         displays = []
     env_options = {}
     session_options = {}

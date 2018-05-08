@@ -6,7 +6,7 @@
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.util import xor
 assert init and log #tests will disable logging from here
@@ -18,14 +18,9 @@ def init(opts):
 class Authenticator(SysAuthenticatorBase):
 
     def __init__(self, username, **kwargs):
-        def ipop(k):
-            try:
-                return int(kwargs.pop(k, 0))
-            except ValueError:
-                return 0
         self.service = kwargs.pop("service", "")
-        self.uid = ipop("uid")
-        self.gid = ipop("gid")
+        self.uid = parse_uid(kwargs.pop("uid", None))
+        self.gid = parse_gid(kwargs.pop("gid", None))
         username = kwargs.pop("username", username)
         kwargs["prompt"] = kwargs.pop("prompt", "GSS token")
         SysAuthenticatorBase.__init__(self, username, **kwargs)

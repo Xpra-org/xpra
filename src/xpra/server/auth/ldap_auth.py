@@ -10,7 +10,7 @@ import socket
 
 from xpra.util import envint, obsc
 from xpra.os_util import bytestostr
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
 assert init and log #tests will disable logging from here
 
@@ -31,6 +31,8 @@ class Authenticator(SysAuthenticatorBase):
         self.host = kwargs.pop("host", "localhost")
         self.cacert = kwargs.pop("cacert", LDAP_CACERTFILE)
         self.encoding = kwargs.pop("encoding", LDAP_ENCODING)
+        self.uid = parse_uid(kwargs.pop("uid", None))
+        self.gid = parse_gid(kwargs.pop("gid", None))
         if self.tls:
             default_port = 636
         else:

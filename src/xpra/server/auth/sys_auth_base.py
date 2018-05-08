@@ -3,15 +3,19 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import envint
 from collections import deque
 from xpra.net.crypto import get_salt, choose_digest, verify_digest, gendigest
-from xpra.os_util import hexstr
+from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger
 log = Logger("auth")
 
 USED_SALT_CACHE_SIZE = envint("XPRA_USED_SALT_CACHE_SIZE", 1024*1024)
+DEFAULT_UID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_UID", "nobody")
+DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
 
 socket_dir = None
@@ -20,6 +24,39 @@ def init(opts):
     global socket_dir, socket_dirs
     socket_dir = opts.socket_dir
     socket_dirs = opts.socket_dirs
+
+
+def parse_uid(v):
+    if v:
+        try:
+            return int(v)
+        except:
+            log("uid '%s' is not an int", v)
+    if POSIX:
+        try:
+            import pwd
+            return pwd.getpwnam(v or DEFAULT_UID).pw_uid
+        except Exception as e:
+            log("parse_uid(%s)", v, exc_info=True)
+            log.error("Error: cannot find uid of '%s': %s", v, e)
+        return os.getuid()
+    return -1
+
+def parse_gid(v):
+    if v:
+        try:
+            return int(v)
+        except:
+            log("gid '%s' is not an int", v)
+    if POSIX:
+        try:
+            import grp          #@UnresolvedImport
+            return grp.getgrnam(v or DEFAULT_GID).gr_gid
+        except Exception as e:
+            log("parse_gid(%s)", v, exc_info=True)
+            log.error("Error: cannot find gid of '%s': %s", v, e)
+        return os.getgid()
+    return -1
 
 
 class SysAuthenticatorBase(object):
@@ -149,6 +186,7 @@ class SysAuthenticatorBase(object):
         v = uid, gid, displays, {}, {}
         log("%s.get_sessions()=%s", self, v)
         return v
+
 
 class SysAuthenticator(SysAuthenticatorBase):
 

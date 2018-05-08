@@ -6,7 +6,7 @@
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.util import xor
 from xpra.os_util import WIN32
@@ -22,13 +22,8 @@ class Authenticator(SysAuthenticatorBase):
     def __init__(self, username, **kwargs):
         self.service = kwargs.pop("service", "")
         self.realm = kwargs.pop("realm", "")
-        def ipop(k):
-            try:
-                return int(kwargs.pop(k, 0))
-            except ValueError:
-                return 0
-        self.uid = ipop("uid")
-        self.gid = ipop("gid")
+        self.uid = parse_uid(kwargs.pop("uid", None))
+        self.gid = parse_gid(kwargs.pop("gid", None))
         username = kwargs.pop("username", username)
         SysAuthenticatorBase.__init__(self, username, **kwargs)
         log("kerberos-password auth: service=%s, realm=%s, username=%s", self.service, self.realm, username)

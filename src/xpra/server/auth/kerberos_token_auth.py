@@ -6,7 +6,7 @@
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, init, log, parse_uid, parse_gid
 from xpra.net.crypto import get_salt, get_digests, gendigest
 from xpra.util import xor
 from xpra.os_util import WIN32
@@ -26,8 +26,8 @@ class Authenticator(SysAuthenticatorBase):
             except ValueError:
                 return 0
         self.service = kwargs.pop("service", "")
-        self.uid = ipop("uid")
-        self.gid = ipop("gid")
+        self.uid = parse_uid(kwargs.pop("uid", None))
+        self.gid = parse_gid(kwargs.pop("gid", None))
         username = kwargs.pop("username", username)
         kwargs["prompt"] = kwargs.pop("prompt", "kerberos token")
         SysAuthenticatorBase.__init__(self, username, **kwargs)
