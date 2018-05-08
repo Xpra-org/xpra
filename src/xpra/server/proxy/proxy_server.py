@@ -21,7 +21,7 @@ authlog = Logger("proxy", "auth")
 
 
 from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, typedict
-from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, WIN32, POSIX
+from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, getuid, getgid, WIN32, POSIX
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -224,11 +224,15 @@ class ProxyServer(ServerCore):
             self.send_disconnect(client_proto, reason, *extras)
         uid, gid, displays, env_options, session_options = sessions
         if POSIX:
-            if uid==0 or gid==0:
-                log.error("Error: proxy instances cannot run as root")
-                log.error(" use a different uid and gid (ie: nobody)")
-                disconnect(AUTHENTICATION_ERROR, "cannot run proxy instances as root")
-                return
+            if getuid()==0:
+                if uid==0 or gid==0:
+                    log.error("Error: proxy instances cannot run as root")
+                    log.error(" use a different uid and gid (ie: nobody)")
+                    disconnect(AUTHENTICATION_ERROR, "cannot run proxy instances as root")
+                    return
+            else:
+                uid = getuid()
+                gid = getgid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
             log("username(%i)=%s, groups=%s", uid, username, groups)
