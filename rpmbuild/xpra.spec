@@ -183,9 +183,9 @@ Recommends:         python2-gssapi
 Recommends:			python-inotify
 Recommends:			opencv-python
 Recommends:			python-avahi
+Recommends:         python2-ldap
+Recommends:         python2-ldap3
 %endif
-%{Recommends}:      python2-ldap
-%{Recommends}:      python2-ldap3
 %{Recommends}:		dbus-python
 %{Recommends}:		dbus-x11
 %{Recommends}:		python2-netifaces
