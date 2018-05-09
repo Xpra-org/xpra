@@ -361,6 +361,23 @@ def show_encoding_help(opts):
     return 0
 
 
+def make_desktop_server():
+    from xpra.x11.desktop_server import XpraDesktopServer
+    return XpraDesktopServer()
+
+def make_server(clobber):
+    from xpra.x11.server import XpraServer
+    return XpraServer(clobber)
+
+def make_shadow_server():
+    from xpra.platform.shadow_server import ShadowServer
+    return ShadowServer()
+
+def make_proxy_server():
+    from xpra.server.proxy.proxy_server import ProxyServer
+    return ProxyServer()
+
+
 def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
     try:
         cwd = os.getcwd()
@@ -892,11 +909,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
 
     kill_dbus = None
     if shadowing:
-        from xpra.platform.shadow_server import ShadowServer
-        app = ShadowServer()
+        app = make_shadow_server()
     elif proxying:
-        from xpra.server.proxy.proxy_server import ProxyServer
-        app = ProxyServer()
+        app = make_proxy_server()
     else:
         if not check_xvfb():
             return  1
@@ -985,12 +1000,10 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 if not wm_check(display, opts.wm_name, upgrading):
                     return 1
             log("XShape=%s", X11Window.displayHasXShape())
-            from xpra.x11.server import XpraServer
-            app = XpraServer(clobber)
+            app = make_server(clobber)
         else:
             assert starting_desktop and not PYTHON3
-            from xpra.x11.desktop_server import XpraDesktopServer
-            app = XpraDesktopServer()
+            app = make_desktop_server()
         app.init_virtual_devices(devices)
 
     if proxying or upgrading:
