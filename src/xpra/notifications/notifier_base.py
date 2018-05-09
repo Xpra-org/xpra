@@ -39,8 +39,13 @@ class NotifierBase(object):
             icon_data = icon[3]
             from xpra.platform.paths import get_xpra_tmp_dir
             tmp = osexpand(get_xpra_tmp_dir())
-            if not os.path.exists(tmp):
-                os.mkdir(tmp, 0o700)
+            d = tmp
+            missing = []
+            while d and not os.path.exists(d):
+                missing.append(d)
+                d = os.path.dirname(d)
+            for d in reversed(missing):
+                os.mkdir(d, 0o700)
             temp = tempfile.NamedTemporaryFile(mode='w+b', suffix='.png', prefix='xpra-notification-icon-', dir=tmp, delete=False)
             temp.write(icon_data)
             temp.close()
