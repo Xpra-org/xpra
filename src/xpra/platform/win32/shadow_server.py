@@ -23,7 +23,7 @@ from collections import namedtuple
 from xpra.util import XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
+from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase, MULTI_WINDOW
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
@@ -45,6 +45,7 @@ from xpra.platform.win32.common import (EnumWindows, EnumWindowsProc, FindWindow
                                         GetIconInfoExW, ICONINFOEXW,
                                         GetObjectA,
                                         GetKeyboardState, SetKeyboardState,
+                                        EnumDisplayMonitors, GetMonitorInfo,
                                         mouse_event)
 
 NOEVENT = object()
@@ -72,6 +73,14 @@ def get_root_window_size():
     w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
     h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
     return w, h
+
+def get_monitors():
+    monitors = []
+    for m in EnumDisplayMonitors():
+        mi = GetMonitorInfo(m)
+        monitors.append(mi)
+    return monitors
+
 
 def get_cursor_data(hCursor):
     #w, h = get_fixed_cursor_size()
@@ -321,12 +330,6 @@ class Win32RootWindowModel(RootWindowModel):
             return shape
         return RootWindowModel.get_property(self, prop)
 
-    def get_dimensions(self):
-        return self.get_root_window_size()
-
-    def get_root_window_size(self):
-        return get_root_window_size()
-
 
 class ShadowServer(GTKShadowServerBase):
 
@@ -396,10 +399,50 @@ class ShadowServer(GTKShadowServerBase):
         return Win32Tray(self, XPRA_APP_ID, self.tray_menu, "Xpra Shadow Server", "server-notconnected", None, self.tray_click_callback, None, self.tray_exit_callback)
 
 
-    def makeRootWindowModels(self):
+    def setup_capture(self):
         w, h = get_root_window_size()
-        self.capture = init_capture(w, h, self.pixel_depth)
-        return (Win32RootWindowModel(self.root, self.capture),)
+        return init_capture(w, h, self.pixel_depth)
+
+    def makeRootWindowModels(self):
+        log("makeRootWindowModels() root=%s", self.root)
+        self.capture = self.setup_capture()
+        if not MULTI_WINDOW:
+            return (RootWindowModel(self.root, self.capture),)
+        models = []
+        monitors = get_monitors()
+        for monitor in monitors:
+            geom = monitor["Monitor"]
+            x1, y1, x2, y2 = geom
+            assert x1<x2 and y1<y2
+            model = RootWindowModel(self.root, self.capture)
+            model.title = monitor["Device"]
+            model.geometry = x1, y1, x2-x1, y2-y1
+            models.append(model)
+            log("makeRootWindowModels: model(%s)=%s", monitor, model)
+        log("makeRootWindowModels()=%s", models)
+        return models
+
+    def makeRootWindowModelsOld(self):
+        log("makeRootWindowModels() root=%s", self.root)
+        self.capture = self.setup_capture()
+        if not MULTI_WINDOW:
+            return (RootWindowModel(self.root, self.capture),)
+        models = []
+        #monitors = get_monitors()
+        screen = self.root.get_screen()
+        n = screen.get_n_monitors()
+        for i in range(n):
+            geom = screen.get_monitor_geometry(i)
+            x, y, width, height = geom.x, geom.y, geom.width, geom.height
+            model = RootWindowModel(self.root, self.capture)
+            if hasattr(screen, "get_monitor_plug_name"):
+                plug_name = screen.get_monitor_plug_name(i)
+                if plug_name or n>1:
+                    model.title = plug_name or str(i)
+            model.geometry = (x, y, width, height)
+            models.append(model)
+        log("makeRootWindowModels()=%s", models)
+        return models
 
 
     def refresh(self):

@@ -24,7 +24,7 @@ from xpra.server.window.region import rectangle
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 
-from libc.stdint cimport uint8_t, uint16_t, int16_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, int16_t, uint16_t, int16_t, uint64_t, uintptr_t
 
 cdef extern from "stdlib.h":
     void* malloc(size_t __size)
@@ -65,12 +65,12 @@ cdef class ScrollData:
     cdef uint64_t *a1        #checksums of reference picture
     cdef uint64_t *a2        #checksums of latest picture
     cdef uint8_t matched
-    cdef uint16_t x
-    cdef uint16_t y
+    cdef int16_t x
+    cdef int16_t y
     cdef uint16_t width
     cdef uint16_t height
 
-    def __cinit__(self, uint16_t x=0, uint16_t y=0, uint16_t width=0, uint16_t height=0):
+    def __cinit__(self, int16_t x=0, int16_t y=0, uint16_t width=0, uint16_t height=0):
         self.x = x
         self.y = y
         self.width = width
@@ -94,7 +94,7 @@ cdef class ScrollData:
         for i,v in enumerate(arr):
             self.a2[i] = <uint64_t> abs(v)
 
-    def update(self, pixels, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t rowstride, uint8_t bpp=4):
+    def update(self, pixels, int16_t x, int16_t y, uint16_t width, uint16_t height, uint16_t rowstride, uint8_t bpp=4):
         """
             Add a new image to compare with,
             checksum its rows into a2,
@@ -324,7 +324,7 @@ cdef class ScrollData:
         return line_defs
 
 
-    def invalidate(self, int16_t x, int16_t y, int16_t w, int16_t h):
+    def invalidate(self, int16_t x, int16_t y, uint16_t w, uint16_t h):
         if self.a2==NULL:
             #nothing to invalidate!
             return
@@ -357,7 +357,7 @@ cdef class ScrollData:
     def get_best_match(self):
         if self.a1==NULL or self.a2==NULL:
             return 0, 0
-        cdef int16_t max_hits = 0
+        cdef uint16_t max_hits = 0
         cdef int d = 0
         cdef unsigned int i
         cdef uint16_t r = 2*self.height

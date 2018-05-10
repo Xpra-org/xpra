@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char, byref
+from ctypes import WinDLL, POINTER, WINFUNCTYPE, GetLastError, Structure, c_ulong, c_ushort, c_ubyte, c_int, c_long, c_void_p, c_size_t, c_char, byref, sizeof
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE, SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE
 from ctypes.wintypes import HANDLE, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ, LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA, HINSTANCE, HMENU
 #imported from this module but not used here:
@@ -117,6 +117,31 @@ class BITMAPV5HEADER(Structure):
         ('bV5ProfileSize',      DWORD),
         ('bV5Reserved',         DWORD),
     ]
+
+CCHDEVICENAME = 32
+class MONITORINFOEX(Structure):
+    _fields_ = [
+        ('cbSize', DWORD),
+        ('rcMonitor', RECT),
+        ('rcWork', RECT),
+        ('dwFlags', DWORD),
+        ('szDevice', WCHAR * CCHDEVICENAME),
+        ]
+
+def GetMonitorInfo(hmonitor):
+    info = MONITORINFOEX()
+    info.szDevice = ""
+    info.cbSize = sizeof(MONITORINFOEX)
+    if not GetMonitorInfoW(hmonitor, byref(info)):
+        raise WindowsError()
+    monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
+    work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
+    return  {
+        "Work"      : work,
+        "Monitor"   : monitor,
+        "Flags"     : info.dwFlags,
+        "Device"    : info.szDevice or "",
+        }
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 SetConsoleTitleA = kernel32.SetConsoleTitleA

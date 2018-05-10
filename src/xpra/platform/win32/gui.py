@@ -28,12 +28,13 @@ from xpra.platform.win32.common import (GetSystemMetrics, SetWindowLongW, GetWin
                                         GetModuleHandleA,
                                         GetKeyState, GetWindowRect,
                                         GetDoubleClickTime,
-                                        MonitorFromWindow, GetMonitorInfoW, EnumDisplayMonitors,
+                                        MonitorFromWindow, EnumDisplayMonitors,
                                         UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
                                         SetConsoleCtrlHandler,
                                         GetDeviceCaps,
                                         GetIntSystemParametersInfo,
                                         GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
+                                        GetMonitorInfo,
                                         user32)
 from xpra.util import AdHocStruct, csv, envint, envbool
 from xpra.os_util import PYTHON2, PYTHON3
@@ -45,7 +46,7 @@ SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY",
 
 
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, WCHAR, POINT, RECT
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
 
 if PYTHON3:
     from ctypes import CDLL, pythonapi, c_void_p, py_object
@@ -75,28 +76,6 @@ except:
     #win XP:
     DwmGetWindowAttribute = None
 
-CCHDEVICENAME = 32
-class MONITORINFOEX(ctypes.Structure):
-    _fields_ = [('cbSize', DWORD),
-                ('rcMonitor', RECT),
-                ('rcWork', RECT),
-                ('dwFlags', DWORD),
-                ('szDevice', WCHAR * CCHDEVICENAME)]
-MONITORINFOEX_size = ctypes.sizeof(MONITORINFOEX)
-def GetMonitorInfo(hmonitor):
-    info = MONITORINFOEX()
-    info.szDevice = ""
-    info.cbSize = MONITORINFOEX_size
-    if not GetMonitorInfoW(hmonitor, byref(info)):
-        raise ctypes.WinError(ctypes.get_last_error())
-    monitor = info.rcMonitor.left, info.rcMonitor.top, info.rcMonitor.right, info.rcMonitor.bottom
-    work = info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom
-    return  {
-        "Work"      : work,
-        "Monitor"   : monitor,
-        "Flags"     : info.dwFlags,
-        "Device"    : info.szDevice or "",
-        }
 
 WINDOW_HOOKS = envbool("XPRA_WIN32_WINDOW_HOOKS", True)
 GROUP_LEADER = WINDOW_HOOKS and envbool("XPRA_WIN32_GROUP_LEADER", True)

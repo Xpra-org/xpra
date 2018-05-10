@@ -11,7 +11,6 @@ from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time
 from xpra.util import envbool, envint, XPRA_APP_ID
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
-from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
@@ -26,7 +25,6 @@ geomlog = Logger("geometry")
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
-MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 USE_NVFBC = envbool("XPRA_NVFBC", True)
 USE_NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 if USE_NVFBC:
@@ -124,30 +122,6 @@ def setup_capture(window):
     return capture
 
 
-class GTKX11RootWindowModel(RootWindowModel):
-
-    def __init__(self, root_window, capture):
-        RootWindowModel.__init__(self, root_window, capture)
-        self.geometry = root_window.get_geometry()[:4]
-
-    def __repr__(self):
-        return "GTKX11RootWindowModel(%#x - %s - %s)" % (get_xwindow(self.window), self.geometry, self.capture)
-
-    def get_dimensions(self):
-        #used by get_window_info only
-        return self.geometry[2:4]
-
-    def get_image(self, x, y, width, height):
-        ox, oy = self.geometry[:2]
-        image = self.capture.get_image(ox+x, oy+y, width, height)
-        if ox>0 or oy>0:
-            #adjust x and y of where the image is displayed on the client (target_x and target_y)
-            #not where the image lives within the current buffer (x and y)
-            image.set_target_x(x)
-            image.set_target_y(y)
-        return image
-
-
 #FIXME: warning: this class inherits from ServerBase twice..
 #so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
@@ -165,6 +139,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         GTKShadowServerBase.cleanup(self)
         X11ServerCore.cleanup(self)
 
+
+    def setup_capture(self):
+        return setup_capture(self.root)
 
     def make_tray_widget(self):
         from xpra.platform.xposix.gui import get_native_system_tray_classes
@@ -189,29 +166,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         for c, e in errs:
             traylog.error(" %s: %s", c, e)
         return None
-
-
-    def makeRootWindowModels(self):
-        log("makeRootWindowModels() root=%s", self.root)
-        self.capture = setup_capture(self.root)
-        if not MULTI_WINDOW:
-            models = (GTKX11RootWindowModel(self.root, self.capture),)
-        else:
-            models = []
-            screen = self.root.get_screen()
-            n = screen.get_n_monitors()
-            for i in range(n):
-                geom = screen.get_monitor_geometry(i)
-                x, y, width, height = geom.x, geom.y, geom.width, geom.height
-                model = GTKX11RootWindowModel(self.root, self.capture)
-                if hasattr(screen, "get_monitor_plug_name"):
-                    plug_name = screen.get_monitor_plug_name(i)
-                    if plug_name or n>1:
-                        model.title = plug_name or str(i)
-                model.geometry = (x, y, width, height)
-                models.append(model)
-        log("makeRootWindowModels()=%s", models)
-        return models
 
     def _adjust_pointer(self, proto, wid, pointer):
         pointer = X11ServerCore._adjust_pointer(self, proto, wid, pointer)

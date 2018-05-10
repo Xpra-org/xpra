@@ -12,12 +12,17 @@ mouselog = Logger("mouse")
 notifylog = Logger("notify")
 log = Logger("shadow")
 
+from xpra.util import envbool
 from xpra.os_util import POSIX, OSX
 from xpra.gtk_common.gobject_compat import is_gtk3
+from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
 from xpra.net.compression import Compressed
+
+
+MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
 
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
@@ -110,6 +115,31 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.cleanup_capture()
         for model in self.makeRootWindowModels():
             self._add_new_window(model)
+
+
+    def setup_capture(self):
+        raise NotImplementedError()
+
+    def makeRootWindowModels(self):
+        log("makeRootWindowModels() root=%s", self.root)
+        self.capture = self.setup_capture()
+        if not MULTI_WINDOW:
+            return (RootWindowModel(self.root, self.capture),)
+        models = []
+        screen = self.root.get_screen()
+        n = screen.get_n_monitors()
+        for i in range(n):
+            geom = screen.get_monitor_geometry(i)
+            x, y, width, height = geom.x, geom.y, geom.width, geom.height
+            model = RootWindowModel(self.root, self.capture)
+            if hasattr(screen, "get_monitor_plug_name"):
+                plug_name = screen.get_monitor_plug_name(i)
+                if plug_name or n>1:
+                    model.title = plug_name or str(i)
+            model.geometry = (x, y, width, height)
+            models.append(model)
+        log("makeRootWindowModels()=%s", models)
+        return models
 
 
     def get_pointer_position(self):

@@ -17,10 +17,14 @@ class RootWindowModel(object):
 
     def __init__(self, root_window, capture=None):
         self.window = root_window
+        self.geometry = root_window.get_geometry()[:4]
         self.capture = capture
         self.property_names = ["title", "class-instance", "client-machine", "window-type", "size-hints", "icon", "shadow"]
         self.dynamic_property_names = []
         self.internal_property_names = ["content-type"]
+
+    def __repr__(self):
+        return "RootWindowModel(%s - %s)" % (self.geometry, self.capture)
 
     def get_info(self):
         info = {}
@@ -32,8 +36,15 @@ class RootWindowModel(object):
     def take_screenshot(self):
         return self.capture.take_screenshot()
 
-    def get_image(self, *args):
-        return self.capture.get_image(*args)
+    def get_image(self, x, y, width, height):
+        ox, oy = self.geometry[:2]
+        image = self.capture.get_image(ox+x, oy+y, width, height)
+        if ox>0 or oy>0:
+            #adjust x and y of where the image is displayed on the client (target_x and target_y)
+            #not where the image lives within the current buffer (x and y)
+            image.set_target_x(x)
+            image.set_target_y(y)
+        return image
 
     def cleanup(self):
         pass
@@ -66,7 +77,8 @@ class RootWindowModel(object):
         pass
 
     def get_dimensions(self):
-        return self.window.get_geometry()[2:4]
+        #used by get_window_info only
+        return self.geometry[2:4]
 
     def get_geometry(self):
         w, h = self.get_dimensions()

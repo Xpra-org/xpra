@@ -78,7 +78,7 @@ class GDICapture(object):
 
     def __init__(self):
         self.metrics = None
-        self.wnd, self.dc, self.memdc, self.bitmap = None, None, None, None
+        self.wnd, self.dc, self.memdc = None, None, None
         self.bit_depth = 32
         self.bitblt_err_time = 0
         self.disabled_dwm_composition = DISABLE_DWM_COMPOSITION and set_dwm_composition(DWM_EC_DISABLECOMPOSITION)
@@ -98,10 +98,6 @@ class GDICapture(object):
     def clean(self):
         if self.disabled_dwm_composition:
             set_dwm_composition(DWM_EC_ENABLECOMPOSITION)
-        bitmap = self.bitmap
-        if bitmap:
-            self.bitmap = None
-            DeleteObject(bitmap)
         dc = self.dc
         wnd = self.wnd
         if dc and wnd:
@@ -120,6 +116,7 @@ class GDICapture(object):
             #new metrics, start from scratch:
             self.metrics = metrics
             self.clean()
+        log("get_image%s metrics=%s", (x, y, width, height), metrics)
         dx, dy, dw, dh = metrics
         if width==0:
             width = dw
@@ -143,9 +140,9 @@ class GDICapture(object):
             self.bit_depth = GetDeviceCaps(self.dc, win32con.BITSPIXEL)
             self.memdc = CreateCompatibleDC(self.dc)
             assert self.memdc, "failed to get a compatible drawing context from %s" % self.dc
-            self.bitmap = CreateCompatibleBitmap(self.dc, width, height)
-            assert self.bitmap, "failed to get a compatible bitmap from %s" % self.dc
-        r = SelectObject(self.memdc, self.bitmap)
+        bitmap = CreateCompatibleBitmap(self.dc, width, height)
+        assert bitmap, "failed to get a compatible bitmap from %s" % self.dc
+        r = SelectObject(self.memdc, bitmap)
         if r==0:
             log.error("Error: cannot select bitmap object")
             return None
@@ -170,8 +167,8 @@ class GDICapture(object):
         rowstride = roundup(width*self.bit_depth//8, 2)
         buf_size = rowstride*height
         pixels = ctypes.create_string_buffer(b"", buf_size)
-        log("GetBitmapBits(%#x, %#x, %#x)", self.bitmap, buf_size, ctypes.addressof(pixels))
-        r = GetBitmapBits(self.bitmap, buf_size, ctypes.byref(pixels))
+        log("GetBitmapBits(%#x, %#x, %#x)", bitmap, buf_size, ctypes.addressof(pixels))
+        r = GetBitmapBits(bitmap, buf_size, ctypes.byref(pixels))
         if r==0:
             log.error("Error: failed to copy screen bitmap data")
             return None
@@ -179,6 +176,7 @@ class GDICapture(object):
             log.warn("Warning: truncating pixel buffer, got %i bytes but expected %i", r, buf_size)
             pixels = pixels[:r]
         log("get_image GetBitmapBits took %ims", (time.time()-bitblt_time)*1000)
+        DeleteObject(bitmap)
         assert pixels, "no pixels returned from GetBitmapBits"
         if self.bit_depth==32:
             rgb_format = "BGRX"
@@ -193,7 +191,7 @@ class GDICapture(object):
         else:
             raise Exception("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth//8
-        v = ImageWrapper(x, y, width, height, pixels, rgb_format, self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
+        v = ImageWrapper(0, 0, width, height, pixels, rgb_format, self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
         if self.bit_depth==8:
             count = GetSystemPaletteEntries(self.dc, 0, 0, None)
             log("palette size: %s", count)
