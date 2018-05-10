@@ -416,6 +416,17 @@ def main():
                 from xpra.simple_stats import std_unit
                 s += " (speed=%sbps)" % std_unit(speed)
             print(s)
+            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable
+            for addr, defs in addresses.items():
+                if addr in (socket.AF_INET, socket.AF_INET6):
+                    for d in defs:
+                        ip = d.get("addr")
+                        if ip:
+                            stype = {
+                                socket.AF_INET  : "IPv4",
+                                socket.AF_INET6 : "IPv6",
+                                }[addr]
+                            print(" * %s:     %s" % (stype, ip))
 
         def pver(v):
             if type(v) in (tuple, list):
