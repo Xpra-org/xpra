@@ -9,6 +9,7 @@ from xpra.util import envbool
 
 AVAHI = envbool("XPRA_AVAHI", True)
 ZEROCONF = envbool("XPRA_ZEROCONF", True)
+SHOW_INTERFACE = envbool("XPRA_MDNS_SHOW_INTERFACE", True)            #publishes the name of the interface we broadcast from
 
 
 def get_listener_class():

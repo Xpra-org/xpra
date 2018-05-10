@@ -10,6 +10,7 @@ log = Logger("network", "mdns")
 
 from zeroconf import ServiceBrowser, Zeroconf		#@UnresolvedImport
 
+
 class ZeroconfListener(object):
 
 	def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None):

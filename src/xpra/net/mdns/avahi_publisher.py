@@ -13,15 +13,13 @@ try:
 except:
     #not available in all versions of the bindings?
     DBusException = Exception
-from xpra.net.mdns import XPRA_MDNS_TYPE
+from xpra.net.mdns import XPRA_MDNS_TYPE, SHOW_INTERFACE
 
 from xpra.log import Logger
 log = Logger("network", "mdns")
 
 from xpra.dbus.common import init_system_bus
 from xpra.net.net_util import get_iface, if_nametoindex, if_indextoname
-
-SHOW_INTERFACE = True            #publishes the name of the interface we broadcast from
 
 
 def get_interface_index(host):
@@ -45,7 +43,7 @@ def get_interface_index(host):
     return index
 
 
-class AvahiPublishers:
+class AvahiPublishers(object):
     """
     Aggregates a number of AvahiPublisher(s).
     This takes care of constructing the appropriate AvahiPublisher
@@ -110,7 +108,7 @@ class AvahiPublishers:
             publisher.stop()
 
 
-class AvahiPublisher:
+class AvahiPublisher(object):
 
     def __init__(self, bus, name, port, stype=XPRA_MDNS_TYPE, domain="", host="", text=[], interface=avahi.IF_UNSPEC):
         log("AvahiPublisher%s", (bus, name, port, stype, domain, host, text, interface))

@@ -424,19 +424,22 @@ def mdns_publish(display_name, mode, listen_on, text_dict={}):
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return
-    PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
     try:
         from xpra.net import mdns
         assert mdns
+        PREFER_PYBONJOUR = envbool("XPRA_PREFER_PYBONJOUR", False) or WIN32 or OSX
+        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", False)
         if PREFER_PYBONJOUR:
             from xpra.net.mdns.pybonjour_publisher import BonjourPublishers as MDNSPublishers, get_interface_index
+        elif PREFER_ZEROCONF:
+            from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers as MDNSPublishers, get_interface_index
         else:
             from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
         MDNS_WARNING = True
         log = get_network_logger()
         log("mdns import failure", exc_info=True)
-        log.warn("Warning: failed to load the mdns %s publisher:", ["avahi", "pybonjour"][PREFER_PYBONJOUR])
+        log.warn("Warning: failed to load the mdns publisher")
         log.warn(" %s", e)
         log.warn(" either fix your installation or use the 'mdns=no' option")
         return
