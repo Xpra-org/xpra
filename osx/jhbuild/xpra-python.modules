@@ -577,10 +577,10 @@
 	</distutils>
 
 	<distutils id="python-pyobjc-core">
-		<branch repo="pypi.python.org"
-			module="/packages/a6/af/bde88e81e5428f7561911da2207f5efd3b4b2aa2bd0263b63302b840e23c/pyobjc-core-4.1.tar.gz"
-			hash="sha256:e42d3558b65485f896e272e48e108d4df8ccd7f130f552dddb4a47732dd0ee65"
-			version="4.1"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/92/80/38e3259d6753a0c96694fbc69dc7e82c6ddcfb3c9e418c77d3536cc34106/pyobjc-core-4.2.1.tar.gz"
+			hash="sha256:a712eae1d89f952d3814df90eed7b6afcb5816db24d1a86b4f97e0810534119e"
+			version="4.2.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -590,10 +590,10 @@
 	</distutils>
 
 	<distutils id="python-pyobjc-framework-cocoa">
-		<branch repo="pypi.python.org"
-			module="/packages/8e/39/ef763cbc0825baec366171c4552c53adb38a866bd94922594946869ccb0e/pyobjc-framework-Cocoa-4.1.tar.gz"
-			hash="sha256:9a221f0549067b402b85a9c3425cd962870f94b404e2e3a543fc0029d124fddf"
-			version="4.1"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/d3/8a/03aed701a151563bc3bbe0eb004a66d16b580d9e95207be75d9d3c3f2b6d/pyobjc-framework-Cocoa-4.2.1.tar.gz"
+			hash="sha256:8ef446b1803b2392ce4df1a3600e8d5f1bc577206d57e30142c8425555009000"
+			version="4.2.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -603,10 +603,10 @@
 	</distutils>
 
 	<distutils id="python-pyobjc-framework-quartz">
-		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/26/95/77a6c495d46b18aa5995ed8215d2ad6fc840e426abfcb2ad9bf07c17cba9/pyobjc-framework-Quartz-4.1.tar.gz"
-			hash="sha256:a0e1e3a3ff2422372c961c1d9384c4734dec715da32b1d9be76a5c237cde1709"
-			version="4.1"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/9e/51/c92736169128f7ced926a6f8dd2bc09b9b40c6cbc901ea684fc4db443e26/pyobjc-framework-Quartz-4.2.1.tar.gz"
+			hash="sha256:11161f7c5d0602786f9b401183fe2f8e19291813d5d07fdfc0681b3e8ae00f07"
+			version="4.2.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
@@ -616,10 +616,10 @@
 	</distutils>
 
 	<distutils id="python-pyobjc-framework-avfoundation">
-		<branch repo="pypi.python.org"
-			module="https://pypi.python.org/packages/53/59/191f0195309b28701e00ade44db07d882cebaf3dcab9609ff10aff1ef04e/pyobjc-framework-AVFoundation-4.1.tar.gz"
-			hash="sha256:5b41d0e5943a9ad12ebf144e6e117ae768b80245ccc92be97c00153c5c34ac15"
-			version="4.1"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/32/06/aeb323e2b638c4c6d5ef5b20725026c12db3c68326de36f2b6ca332beaf7/pyobjc-framework-AVFoundation-4.2.1.tar.gz"
+			hash="sha256:fef56ca8e0c136141971ca3aec2fa5c7f873dfcff43960de97943639af132dbb"
+			version="4.2.1"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
