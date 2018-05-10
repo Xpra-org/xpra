@@ -68,6 +68,11 @@ SHADOW_GDI = envbool("XPRA_SHADOW_GDI", True)
 NVFBC_CUDA = envbool("XPRA_NVFBC_CUDA", True)
 
 
+def get_root_window_size():
+    w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
+    h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
+    return w, h
+
 def get_cursor_data(hCursor):
     #w, h = get_fixed_cursor_size()
     x, y = 0, 0
@@ -155,7 +160,7 @@ def get_cursor_data(hCursor):
             ReleaseDC(None, dc)
 
 
-def init_capture(pixel_depth=32):
+def init_capture(w, h, pixel_depth=32):
     capture = None
     if SHADOW_NVFBC:
         try:
@@ -177,8 +182,9 @@ def init_capture(pixel_depth=32):
                     else:
                         from xpra.codecs.nvfbc.fbc_capture_win import NvFBC_SysCapture
                         capture = NvFBC_SysCapture()
-                    capture.init_context(-1, -1, pixel_format)
+                    capture.init_context(w, h, pixel_format)
             except Exception as e:
+                capture = None
                 log("NvFBC_Capture", exc_info=True)
                 log.warn("Warning: NvFBC screen capture initialization failed:")
                 log.warn(" %s", e)
@@ -319,9 +325,7 @@ class Win32RootWindowModel(RootWindowModel):
         return self.get_root_window_size()
 
     def get_root_window_size(self):
-        w = GetSystemMetrics(win32con.SM_CXVIRTUALSCREEN)
-        h = GetSystemMetrics(win32con.SM_CYVIRTUALSCREEN)
-        return w, h
+        return get_root_window_size()
 
 
 class ShadowServer(GTKShadowServerBase):
@@ -393,7 +397,8 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def makeRootWindowModels(self):
-        self.capture = init_capture(self.pixel_depth)
+        w, h = get_root_window_size()
+        self.capture = init_capture(w, h, self.pixel_depth)
         return (Win32RootWindowModel(self.root, self.capture),)
 
 

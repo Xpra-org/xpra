@@ -572,6 +572,9 @@ cdef class NvFBC_SysCapture:
         self.pixel_format = pixel_format
         self.framebuffer = NULL
         info = create_context(-1, -1, NVFBC_TO_SYS)
+        maxw = info["max-display-width"]
+        maxh = info["max-display-height"]
+        assert width<=maxw and height<=maxh, "display dimension %ix%i is too large, the maximum supported by this card and driver is %ix%i" % (width, height, maxw, maxh)
         self.context = <NvFBCToSys*> (<uintptr_t> info["context"])
         assert self.context!=NULL
         cdef NVFBC_TOSYS_SETUP_PARAMS params
@@ -601,6 +604,7 @@ cdef class NvFBC_SysCapture:
         self.clean()
 
     def refresh(self):
+        assert self.context
         cdef double start = monotonic_time()
         memset(&self.grab_info, 0, sizeof(NvFBCFrameGrabInfo))
         memset(&self.grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
@@ -626,6 +630,7 @@ cdef class NvFBC_SysCapture:
         return True
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+        assert self.context
         log("get_image%s", (x, y, width, height))
         assert x==0 and y==0 and width>0 and height>0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
@@ -704,6 +709,9 @@ cdef class NvFBC_CUDACapture:
         self.cuda_context.push()
         #NvFBC init:
         info = create_context(-1, -1, NVFBC_SHARED_CUDA)
+        maxw = info["max-display-width"]
+        maxh = info["max-display-height"]
+        assert width<=maxw and height<=maxh, "display dimension %ix%i is too large, maximum supported by this card and driver is %ix%i" % (width, height, maxw, maxh)
         self.context = <NvFBCCuda*> (<uintptr_t> info["context"])
         assert self.context!=NULL
         self.context.NvFBCCudaGetMaxBufferSize(&self.max_buffer_size)
@@ -739,6 +747,7 @@ cdef class NvFBC_CUDACapture:
         return True
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+        assert self.context
         log("get_image%s", (x, y, width, height))
         cdef double start = monotonic_time()
         #allocate CUDA device memory:
