@@ -11,8 +11,7 @@ log = Logger("encoder", "util")
 from xpra.util import pver, print_nested_dict, engs, envbool, csv
 from xpra.os_util import bytestostr, strtobytes
 
-
-MAX_TESTED = 396
+MIN_VERSION = 375
 
 nvml_init_warned = False
 def wrap_nvml_init(nvmlInit):
@@ -187,7 +186,7 @@ def get_cards(probe=True):
 def is_blacklisted():
     v = get_nvidia_module_version(True)
     try:
-        if v[0]<=MAX_TESTED:
+        if v[0]>MIN_VERSION:
             return False
     except Exception as e:
         log.warn("Warning: error checking driver version:")
@@ -215,7 +214,7 @@ def validate_driver_yuv444lossless():
             _version_warning = True
         if v:
             l("Warning: NVidia driver version %s is untested with NVENC", pver(v))
-            l(" (this encoder has been tested with versions up to %s.x only)", MAX_TESTED)
+            l(" (this encoder has been tested with versions %s.x and later only)", MIN_VERSION)
         if not envbool("XPRA_NVENC_YUV444P", False):
             l(" disabling YUV444P and lossless mode")
             l(" use XPRA_NVENC_YUV444P=1 to force enable")

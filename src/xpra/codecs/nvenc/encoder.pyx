@@ -2898,7 +2898,7 @@ def selftest(full=False):
         NVENC_UNSUPPORTED_DRIVER_VERSION = envbool("XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION", False)
         #SDK 7.0 requires version 367 or later
         #SDK 7.1 requires version 375 or later
-        if v<[367, 0] or (NVENCAPI_MINOR_VERSION>0 and v<[375, 0]):
+        if v<[375, 0]:
             if not NVENC_UNSUPPORTED_DRIVER_VERSION:
                 raise ImportError("unsupported NVidia driver version %s\nuse XPRA_NVENC_UNSUPPORTED_DRIVER_VERSION=1 to force enable it" % pver(v))
     #this is expensive, so don't run it unless "full" is set:
