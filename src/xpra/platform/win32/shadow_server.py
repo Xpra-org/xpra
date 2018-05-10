@@ -456,8 +456,13 @@ class ShadowServer(GTKShadowServerBase):
                 if keystate[i]:
                     pressed.append(vknames.get(i, i))
             keylog("keys still pressed: %s", csv(pressed))
-            #clear all: (this does not affect lock modifiers: caps , num, scroll)
-            keystate = (BYTE*256)()
+            for x in (
+                win32con.VK_LSHIFT,     win32con.VK_RSHIFT,     win32con.VK_SHIFT,
+                win32con.VK_LCONTROL,   win32con.VK_RCONTROL,   win32con.VK_CONTROL,
+                win32con.VK_LMENU,      win32con.VK_RMENU,      win32con.VK_MENU,
+                win32con.VK_LWIN,       win32con.VK_RWIN,
+                ):
+                keystate[x] = 0
             SetKeyboardState(keystate)
 
     def get_keyboard_config(self, props):
