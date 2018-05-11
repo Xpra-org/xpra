@@ -56,9 +56,9 @@
 	</autotools>
 
 	<autotools id="libvorbis" autogenargs="" autogen-sh="configure">
-		<branch module="/releases/vorbis/libvorbis-1.3.5.tar.xz"
-			version="1.3.5"
-			hash="md5:28cb28097c07a735d6af56e598e1c90f"
+		<branch module="/releases/vorbis/libvorbis-1.3.6.tar.xz"
+			version="1.3.6"
+			hash="sha256:af00bb5a784e7c9e69f56823de4637c350643deedaf333d0fa86ecdba6fcb415"
 			repo="downloads.xiph.org"/>
 	</autotools>
 
@@ -81,9 +81,9 @@
 	</autotools>
 
 	<autotools id="lame" autogenargs="" autogen-sh="configure">
-		<branch module="/src/lame-3.99.5.tar.gz"
-			version="3.99.5"
-			hash="md5:84835b313d4a8b68f5349816d33e07ce"
+		<branch module="/src/lame-3.100.tar.gz"
+			version="3.100"
+			hash="sha256:ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
 			repo="winswitch.org">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/lame-channels.patch" strip="1" />
 		</branch>
