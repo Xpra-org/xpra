@@ -17,19 +17,18 @@
 
 
 Name:           python2-lz4
-Version:        1.0.0
-Release:        2.xpra1%{?dist}
+Version:        1.1.0
+Release:        1.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://pypi.python.org/packages/f8/57/db2e6cce835279d574a9f28b0235c0040515dc4b737db8cea18910186676/lz4-%{version}.tar.gz
+Source:         https://files.pythonhosted.org/packages/e7/b9/12bd58967c5df38e22e9db0c17d732fc456fd09d4b89b147ff1c73e59c5b/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 BuildRequires:  python2-pkgconfig
 Requires: 		lz4
-Requires: 		python2-deprecation
 Provides:		python-lz4
 Obsoletes:      python-lz4 < 0.8.2-3
 Conflicts:		python-lz4 < 0.8.2-3
@@ -91,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri May 11 2018 Antoine Martin <antoine@nagafix.co.uk> - 1.10-1
+- New upstream release
+
 * Tue Apr 03 2018 Antoine Martin <antoine@nagafix.co.uk> - 0.21.6-2.xpra1
 - Force upgrade of broken Fedora 28 package, which is missing the new python "deprecation" dependency
 
