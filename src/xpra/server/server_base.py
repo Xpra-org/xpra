@@ -33,7 +33,7 @@ from xpra.server.mixins.display_manager import DisplayManager
 from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
-from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, envint, \
+from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.platform.paths import get_icon_filename
@@ -42,11 +42,7 @@ from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
 
 
-DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
-DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
-MAX_CONCURRENT_CONNECTIONS = 20
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
-TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 
 
 """
