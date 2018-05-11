@@ -1,3 +1,8 @@
+xpra (2.4-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 09 May 2018 00:55:32 +0700
+
 xpra (2.3-1) UNRELEASED; urgency=low
   * stackable authentication modules
   * tcp wrappers authentication module
