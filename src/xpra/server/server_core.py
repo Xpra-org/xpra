@@ -499,81 +499,23 @@ class ServerCore(object):
         if len(parts)>1:
             auth_options = parse_simple_dict(parts[1])
         auth_options["exec_cwd"] = self.exec_cwd
-        from xpra.server.auth import fail_auth, reject_auth, allow_auth, none_auth, file_auth, multifile_auth, password_auth, env_auth, exec_auth
-        AUTH_MODULES = {
-                        "fail"      : fail_auth,
-                        "reject"    : reject_auth,
-                        "allow"     : allow_auth,
-                        "none"      : none_auth,
-                        "env"       : env_auth,
-                        "password"  : password_auth,
-                        "multifile" : multifile_auth,
-                        "file"      : file_auth,
-                        "exec"      : exec_auth,
-                        }
         try:
-            from xpra.server.auth import ldap_auth
-            AUTH_MODULES["ldap"] = ldap_auth
-        except ImportError:
-            authlog("cannot load ldap auth: %s", exc_info=True)
-        try:
-            from xpra.server.auth import ldap3_auth
-            AUTH_MODULES["ldap3"] = ldap3_auth
-        except ImportError:
-            authlog("cannot load ldap3 auth: %s", exc_info=True)
-        try:
-            from xpra.server.auth import u2f_auth
-            AUTH_MODULES["u2f"] = u2f_auth
-        except ImportError:
-            authlog("cannot load u2f auth: %s", exc_info=True)
-        if POSIX and not OSX:
-            from xpra.server.auth import peercred_auth, hosts_auth
-            AUTH_MODULES["peercred"] = peercred_auth
-            AUTH_MODULES["hosts"] = hosts_auth
-        try:
-            from xpra.server.auth import sqlite_auth
-            AUTH_MODULES["sqlite"] = sqlite_auth
-        except Exception:
-            authlog("cannot load sql auth: %s", exc_info=True)
-        try:
-            from xpra.server.auth import kerberos_password_auth
-            AUTH_MODULES["kerberos-password"] = kerberos_password_auth
-        except Exception as e:
-            authlog("cannot load kerberos-password auth", exc_info=True)
-        try:
-            from xpra.server.auth import kerberos_token_auth
-            AUTH_MODULES["kerberos-token"] = kerberos_token_auth
-        except Exception:
-            authlog("cannot load kerberos-token auth", exc_info=True)
-        try:
-            from xpra.server.auth import gss_auth
-            AUTH_MODULES["gss"] = gss_auth
-        except Exception as e:
-            authlog("cannot load kerberos-token auth", exc_info=True)
-        if WIN32:
-            try:
-                from xpra.server.auth import win32_auth
-                AUTH_MODULES["win32"] = win32_auth
-            except Exception as e:
-                authlog("cannot load win32 auth", exc_info=True)
-                authlog.error("Error: cannot load the MS Windows authentication module:")
-                authlog.error(" %s", e)
-        else:
-            try:
-                from xpra.server.auth import pam_auth
-                AUTH_MODULES["pam"] = pam_auth
-            except Exception:
-                authlog("cannot load pam auth", exc_info=True)
-        if auth=="sys":
-            #resolve virtual "sys" auth:
-            if WIN32:
-                auth = "win32"
+            if auth=="sys":
+                #resolve virtual "sys" auth:
+                if WIN32:
+                    auth_modname = "win32_auth"
+                else:
+                    auth_modname = "pam_auth"
+                authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
             else:
-                auth = "pam"
-            authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
-        auth_module = AUTH_MODULES.get(auth)
-        if not auth_module:
-            raise InitException("cannot find authentication module '%s' (supported: %s)" % (auth, csv(AUTH_MODULES.keys())))
+                auth_modname = auth.replace("-", "_")+"_auth"
+            auth_mod_name = "xpra.server.auth."+auth_modname
+            authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
+            auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
+        except ImportError as e:
+            authlog("cannot load %s auth: %s", auth, exc_info=True)
+            raise InitException("cannot load authentication module '%s': %s" % (auth, e))
+        authlog("auth module for '%s': %s", auth, auth_module)
         try:
             auth_module.init(opts)
             auth_class = getattr(auth_module, "Authenticator")
