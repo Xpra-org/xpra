@@ -15,7 +15,7 @@ from hashlib import sha256
 
 from xpra.util import csv, engs
 from xpra.os_util import hexstr, osexpand, load_binary_file, getuid, strtobytes, POSIX
-from xpra.net.crypto import get_salt
+from xpra.net.digest import get_salt
 from xpra.server.auth.sys_auth_base import SysAuthenticator, init, log
 from xpra.platform.paths import get_user_conf_dirs
 assert init and log #tests will disable logging from here
