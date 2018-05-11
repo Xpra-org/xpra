@@ -513,16 +513,17 @@ class ServerCore(object):
             authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
             auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
         except ImportError as e:
-            authlog("cannot load %s auth: %s", auth, exc_info=True)
+            authlog("cannot load %s auth", auth, exc_info=True)
             raise InitException("cannot load authentication module '%s': %s" % (auth, e))
         authlog("auth module for '%s': %s", auth, auth_module)
         try:
             auth_module.init(opts)
-            auth_class = getattr(auth_module, "Authenticator")
+            auth_class = auth_module.Authenticator
             auth_class.auth_name = auth.lower()
             return auth, auth_class, auth_options
         except Exception as e:
-            raise InitException("Authenticator class not found in %s" % auth_module)
+            authlog("cannot access authenticator class", exc_info=True)
+            raise InitException("authentication setup error in %s: %s" % (auth_module, e))
 
 
     ######################################################################
