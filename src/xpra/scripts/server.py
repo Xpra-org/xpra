@@ -907,26 +907,25 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             if ssh_port:
                 add_mdns("ssh", "", ssh_port)
 
-    if False:
-        def b(v):
-            return v.lower() not in FALSE_OPTIONS
-        #turn off some server mixins:
-        from xpra.server import server_features
-        server_features.notifications   = opts.notifications
-        server_features.webcam          = b(opts.webcam)
-        server_features.clipboard       = b(opts.clipboard)
-        server_features.audio           = b(opts.speaker) or b(opts.microphone)
-        server_features.av_sync         = server_features.audio and b(opts.av_sync)
-        server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
-        server_features.mmap            = b(opts.mmap)
-        server_features.input_devices   = not opts.readonly
-        #server_features.commands        = ??
-        server_features.dbus            = opts.dbus_proxy
-        #server_features.encoding        = ??
-        server_features.logging         = b(opts.remote_logging)
-        #server_features.network_state   = ??
-        server_features.display         = opts.windows
-        server_features.windows         = opts.windows
+    def b(v):
+        return v.lower() not in FALSE_OPTIONS
+    #turn off some server mixins:
+    from xpra.server import server_features
+    server_features.notifications   = opts.notifications
+    server_features.webcam          = b(opts.webcam)
+    server_features.clipboard       = b(opts.clipboard)
+    server_features.audio           = b(opts.speaker) or b(opts.microphone)
+    server_features.av_sync         = server_features.audio and b(opts.av_sync)
+    server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
+    server_features.mmap            = b(opts.mmap)
+    server_features.input_devices   = not opts.readonly
+    #server_features.commands        = ??
+    server_features.dbus            = opts.dbus_proxy
+    #server_features.encoding        = ??
+    server_features.logging         = b(opts.remote_logging)
+    #server_features.network_state   = ??
+    server_features.display         = opts.windows
+    server_features.windows         = opts.windows
 
     kill_dbus = None
     if shadowing:

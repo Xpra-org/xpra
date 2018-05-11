@@ -180,7 +180,8 @@ class ClientConnection(ClientConnectionClass):
 
 
     def update_bandwidth_limits(self):
-        if self.mmap_size>0:
+        mmap_size = getattr(self, "mmap_size", 0)
+        if mmap_size>0:
             return
         #calculate soft bandwidth limit based on send congestion data:
         bandwidth_limit = 0

@@ -499,7 +499,11 @@ class WindowsMixin(StubSourceMixin):
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
             bandwidth_limit = self.bandwidth_limit
-            if getattr(self, "mmap_size", 0)>0:
+            mmap = getattr(self, "mmap", None)
+            mmap_size = getattr(self, "mmap_size", 0)
+            av_sync = getattr(self, "av_sync", False)
+            av_sync_delay = getattr(self, "av_sync_delay", 0)
+            if mmap_size>0:
                 bandwidth_limit = 0
             from xpra.server.window.window_video_source import WindowVideoSource
             ws = WindowVideoSource(
@@ -508,13 +512,13 @@ class WindowsMixin(StubSourceMixin):
                               self.record_congestion_event, self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
-                              self.av_sync, self.av_sync_delay,
+                              av_sync, av_sync_delay,
                               self.video_helper,
                               self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
-                              self.mmap, self.mmap_size, bandwidth_limit)
+                              mmap, mmap_size, bandwidth_limit)
             self.window_sources[wid] = ws
             if len(self.window_sources)>1:
                 #re-distribute bandwidth:
