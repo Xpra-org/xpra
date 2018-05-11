@@ -17,20 +17,6 @@ timeoutlog = Logger("timeout")
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
-from xpra.server.mixins.notification_forwarder import NotificationForwarder
-from xpra.server.mixins.webcam_server import WebcamServer
-from xpra.server.mixins.clipboard_server import ClipboardServer
-from xpra.server.mixins.audio_server import AudioServer
-from xpra.server.mixins.fileprint_server import FilePrintServer
-from xpra.server.mixins.mmap_server import MMAP_Server
-from xpra.server.mixins.input_server import InputServer
-from xpra.server.mixins.child_command_server import ChildCommandServer
-from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
-from xpra.server.mixins.encoding_server import EncodingServer
-from xpra.server.mixins.logging_server import LoggingServer
-from xpra.server.mixins.networkstate_server import NetworkStateServer
-from xpra.server.mixins.display_manager import DisplayManager
-from xpra.server.mixins.window_server import WindowServer
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
@@ -45,16 +31,65 @@ from xpra.codecs.loader import codec_versions
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 
 
+SERVER_BASES = [ServerCore, ServerBaseControlCommands]
+from xpra.server import server_features
+if server_features.notifications:
+    from xpra.server.mixins.notification_forwarder import NotificationForwarder
+    SERVER_BASES.append(NotificationForwarder)
+if server_features.webcam:
+    from xpra.server.mixins.webcam_server import WebcamServer
+    SERVER_BASES.append(WebcamServer)
+if server_features.clipboard:
+    from xpra.server.mixins.clipboard_server import ClipboardServer
+    SERVER_BASES.append(ClipboardServer)
+if server_features.audio:
+    from xpra.server.mixins.audio_server import AudioServer
+    SERVER_BASES.append(AudioServer)
+if server_features.fileprint:
+    from xpra.server.mixins.fileprint_server import FilePrintServer
+    SERVER_BASES.append(FilePrintServer)
+if server_features.fileprint:
+    from xpra.server.mixins.mmap_server import MMAP_Server
+    SERVER_BASES.append(MMAP_Server)
+if server_features.input_devices:
+    from xpra.server.mixins.input_server import InputServer
+    SERVER_BASES.append(InputServer)
+if server_features.commands:
+    from xpra.server.mixins.child_command_server import ChildCommandServer
+    SERVER_BASES.append(ChildCommandServer)
+if server_features.dbus:
+    from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
+    SERVER_BASES.append(DBUS_RPC_Server)
+if server_features.fileprint:
+    from xpra.server.mixins.encoding_server import EncodingServer
+    SERVER_BASES.append(EncodingServer)
+if server_features.logging:
+    from xpra.server.mixins.logging_server import LoggingServer
+    SERVER_BASES.append(LoggingServer)
+if server_features.network_state:
+    from xpra.server.mixins.networkstate_server import NetworkStateServer
+    SERVER_BASES.append(NetworkStateServer)
+if server_features.display:
+    from xpra.server.mixins.display_manager import DisplayManager
+    SERVER_BASES.append(DisplayManager)
+if server_features.windows:
+    from xpra.server.mixins.window_server import WindowServer
+    SERVER_BASES.append(WindowServer)
+SERVER_BASES = tuple(SERVER_BASES)
+ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
+log.error("ServerBaseClass(%s)", SERVER_BASES)
+
+
 """
 This is the base class for seamless and desktop servers. (not proxy servers)
 It provides all the generic functions but is not tied
 to a specific backend (X11 or otherwise).
 See GTKServerBase/X11ServerBase and other platform specific subclasses.
 """
-class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, WebcamServer, ClipboardServer, AudioServer, FilePrintServer, MMAP_Server, InputServer, ChildCommandServer, DBUS_RPC_Server, EncodingServer, LoggingServer, NetworkStateServer, DisplayManager, WindowServer):
+class ServerBase(ServerBaseClass):
 
     def __init__(self):
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.__init__(self)
         log("ServerBase.__init__()")
         self.init_uuid()
@@ -99,7 +134,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         #from now on, use the logger for parsing errors:
         from xpra.scripts import config
         config.warn = log.warn
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.init(self, opts)
         log("ServerBase.init(%s)", opts)
 
@@ -111,14 +146,14 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
 
     def setup(self):
         log("starting component init")
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.setup(self)
         thread.start_new_thread(self.threaded_init, ())
 
     def threaded_init(self):
         log("threaded_init() start")
         sleep(0.1)
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             if c!=ServerCore:
                 c.threaded_setup(self)
         log("threaded_init() end")
@@ -132,7 +167,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
     def do_cleanup(self):
         self.server_event("exit")
         self.cancel_mp3_stream_check_timer()
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             if c!=ServerCore:
                 c.cleanup(self)
 
@@ -421,14 +456,14 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 #newer flags:
                 "av-sync",
                 ))
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             if c!=ServerCore:
                 merge_dicts(f, c.get_server_features(self, server_source))
         return f
 
     def make_hello(self, source):
         capabilities = ServerCore.make_hello(self, source)
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             if c!=ServerCore:
                 merge_dicts(capabilities, c.get_caps(self))
         capabilities["server_type"] = "base"
@@ -579,7 +614,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
         def up(prefix, d):
             merge_dicts(info, {prefix : d})
 
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             try:
                 merge_dicts(info, c.get_info(self, proto))
             except Exception as e:
@@ -784,7 +819,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
     ######################################################################
     # client connections:
     def init_sockets(self, sockets):
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.init_sockets(self, sockets)
 
     def cleanup_protocol(self, protocol):
@@ -802,7 +837,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
                 del self._server_sources[protocol]
             except:
                 pass
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source
 
@@ -865,7 +900,7 @@ class ServerBase(ServerCore, ServerBaseControlCommands, NotificationForwarder, W
     ######################################################################
     # packets:
     def init_packet_handlers(self):
-        for c in ServerBase.__bases__:
+        for c in SERVER_BASES:
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
             "set-cursors":                          self._process_set_cursors,
