@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #authentication from a file containing just the password
 
-from xpra.net.crypto import verify_digest
+from xpra.net.digest import verify_digest
 from xpra.server.auth.file_auth_base import FileAuthenticatorBase, init, log
 from xpra.util import obsc
 

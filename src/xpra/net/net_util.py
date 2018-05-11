@@ -357,7 +357,8 @@ def get_network_caps():
         from xpra.platform.features import MMAP_SUPPORTED
     except:
         MMAP_SUPPORTED = False
-    from xpra.net.crypto import get_digests, get_crypto_caps
+    from xpra.net.digest import get_digests
+    from xpra.net.crypto import get_crypto_caps
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
     from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
     digests = get_digests()

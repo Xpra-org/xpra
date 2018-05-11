@@ -11,7 +11,7 @@ import tempfile
 import uuid
 import hmac
 from xpra.os_util import strtobytes, bytestostr, monotonic_time, WIN32, OSX, POSIX
-from xpra.net.crypto import get_digests, get_digest_module, gendigest
+from xpra.net.digest import get_digests, get_digest_module, gendigest
 
 
 def temp_filename(prefix=""):

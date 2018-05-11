@@ -40,7 +40,7 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
         if WIN32:
             validate_size(mmap_size)
             if not filename:
-                from xpra.net.crypto import get_hex_uuid
+                from xpra.os_util import get_hex_uuid
                 filename = "xpra-%s" % get_hex_uuid()
             mmap_filename = filename
             mmap_area = mmap.mmap(0, mmap_size, filename)

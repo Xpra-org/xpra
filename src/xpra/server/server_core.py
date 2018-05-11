@@ -37,7 +37,8 @@ from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, POSIX, PYTHON3, BITS
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
-from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choose_digest, \
+from xpra.net.digest import get_salt, choose_digest
+from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread

@@ -10,7 +10,7 @@ from xpra.server.auth.sys_auth_base import parse_uid, parse_gid
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase, init as file_init
 from xpra.os_util import strtobytes, hexstr
 from xpra.util import parse_simple_dict
-from xpra.net.crypto import verify_digest
+from xpra.net.digest import verify_digest
 
 
 def init(opts):

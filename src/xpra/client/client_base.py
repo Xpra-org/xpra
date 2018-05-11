@@ -24,7 +24,8 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.net_util import get_network_caps
-from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, get_salt, choose_padding, gendigest, \
+from xpra.net.digest import get_salt, gendigest
+from xpra.net.crypto import crypto_backend_init, get_iterations, get_iv, choose_padding, \
     ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name

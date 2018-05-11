@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2014-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
-from xpra.net.crypto import get_salt, choose_digest
+from xpra.net.digest import get_salt, choose_digest
 
 def init(opts):
     pass

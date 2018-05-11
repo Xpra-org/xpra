@@ -704,7 +704,7 @@ class ProxyInstanceProcess(Process):
             if not password:
                 self.stop("authentication requested by the server, but no password available for this session")
                 return
-            from xpra.net.crypto import get_salt, gendigest
+            from xpra.net.digest import get_salt, gendigest
             #client may have already responded to the challenge,
             #so we have to handle authentication from this end
             server_salt = bytestostr(packet[1])

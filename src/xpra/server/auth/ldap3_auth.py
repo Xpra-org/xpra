@@ -106,7 +106,7 @@ class Authenticator(SysAuthenticatorBase):
 
 def main(argv):
     from xpra.util import xor
-    from xpra.net.crypto import get_salt, get_digests, gendigest
+    from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP3-Password-Auth", "LDAP3-Password-Authentication"):
         for x in list(argv):
