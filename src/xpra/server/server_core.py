@@ -41,8 +41,6 @@ from xpra.net.crypto import crypto_backend_init, new_cipher_caps, get_salt, choo
         ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
-from xpra.scripts.fdproxy import XpraProxy
-from xpra.server.control_command import ControlError, HelloCommand, HelpCommand, DebugControl
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat, \
         SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR, SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT
 
@@ -529,6 +527,7 @@ class ServerCore(object):
     ######################################################################
     # control commands:
     def init_control_commands(self):
+        from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl
         self.control_commands = {"hello"    : HelloCommand(),
                                  "debug"    : DebugControl()}
         help_command = HelpCommand(self.control_commands)
@@ -542,6 +541,7 @@ class ServerCore(object):
         proto.send_now(("hello", hello))
 
     def process_control_command(self, *args):
+        from xpra.server.control_command import ControlError
         assert len(args)>0
         name = args[0]
         try:
@@ -1142,6 +1142,7 @@ class ServerCore(object):
         sock.settimeout(1)
 
         #now start forwarding:
+        from xpra.scripts.fdproxy import XpraProxy
         p = XpraProxy(frominfo, conn, tcp_server_connection, self.tcp_proxy_quit)
         self._tcp_proxy_clients.append(p)
         proxylog.info("client connection from %s forwarded to proxy server on %s:%s", frominfo, host, port)
