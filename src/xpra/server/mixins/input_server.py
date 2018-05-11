@@ -66,6 +66,9 @@ class InputServer(StubServerMixin):
             "key_repeat_modifiers" : True,
             }
 
+    def parse_hello(self, ss, caps, send_ui):
+        if send_ui:
+            self.parse_hello_ui_keyboard(ss, caps)
 
     def watch_keymap_changes(self):
         pass

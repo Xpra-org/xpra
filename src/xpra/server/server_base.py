@@ -48,7 +48,7 @@ if server_features.audio:
 if server_features.fileprint:
     from xpra.server.mixins.fileprint_server import FilePrintServer
     SERVER_BASES.append(FilePrintServer)
-if server_features.fileprint:
+if server_features.mmap:
     from xpra.server.mixins.mmap_server import MMAP_Server
     SERVER_BASES.append(MMAP_Server)
 if server_features.input_devices:
@@ -60,7 +60,7 @@ if server_features.commands:
 if server_features.dbus:
     from xpra.server.mixins.dbusrpc_server import DBUS_RPC_Server
     SERVER_BASES.append(DBUS_RPC_Server)
-if server_features.fileprint:
+if server_features.encoding:
     from xpra.server.mixins.encoding_server import EncodingServer
     SERVER_BASES.append(EncodingServer)
 if server_features.logging:
@@ -77,7 +77,7 @@ if server_features.windows:
     SERVER_BASES.append(WindowServer)
 SERVER_BASES = tuple(SERVER_BASES)
 ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
-log.error("ServerBaseClass(%s)", SERVER_BASES)
+log("ServerBaseClass%s", SERVER_BASES)
 
 
 """
@@ -317,29 +317,14 @@ class ServerBase(ServerBaseClass):
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        get_window_id = self._window_to_id.get
         bandwidth_limit = self.get_client_bandwidth_limit(proto)
         ClientConnectionClass = self.get_server_source_class()
         ss = ClientConnectionClass(proto, drop_client,
-                          self.session_name,
-                          self.idle_add, self.timeout_add, self.source_remove, self.setting_changed,
-                          self.idle_timeout,
-                          self._socket_dir, self.unix_socket_paths, not is_request, self.dbus_control,
-                          self.get_transient_for, self.get_focus, self.get_cursor_data,
-                          get_window_id,
-                          self.window_filters,
-                          self.file_transfer,
-                          self.supports_mmap, self.mmap_filename, self.min_mmap_size,
-                          bandwidth_limit,
-                          self.av_sync,
-                          self.core_encodings, self.encodings, self.default_encoding, self.scaling_control,
-                          self.webcam_enabled, self.webcam_device, self.webcam_encodings,
-                          self.sound_properties,
-                          self.sound_source_plugin,
-                          self.supports_speaker, self.supports_microphone,
-                          self.speaker_codecs, self.microphone_codecs,
-                          self.default_quality, self.default_min_quality,
-                          self.default_speed, self.default_min_speed)
+                          self.session_name, self,
+                          self.idle_add, self.timeout_add, self.source_remove,
+                          self.setting_changed,
+                          self._socket_dir, self.unix_socket_paths, not is_request, bandwidth_limit,
+                          )
         log("process_hello clientconnection=%s", ss)
         try:
             ss.parse_hello(c)
@@ -398,25 +383,22 @@ class ServerBase(ServerBaseClass):
     def do_parse_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
         #process screen size (if needed)
         if send_ui:
-            root_w, root_h = self.parse_screen_info(ss)
-            self.parse_hello_ui_clipboard(ss, c)
-            key_repeat = self.parse_hello_ui_keyboard(ss, c)
-            self.parse_hello_ui_window_settings(ss, c)
-            if self.notifications_forwarder:
-                client_notification_actions = dict((s.uuid,s.send_notifications_actions) for s in self._server_sources.values())
-                notifylog("client_notification_actions=%s", client_notification_actions)
-                self.notifications_forwarder.support_actions = any(v for v in client_notification_actions.values())
-        else:
-            root_w, root_h = self.get_root_window_size()
-            key_repeat = (0, 0)
+            for bc in SERVER_BASES:
+                if bc!=ServerCore:
+                    bc.parse_hello(self, ss, c, send_ui)
+        root_w, root_h = self.get_root_window_size()
 
         #send_hello will take care of sending the current and max screen resolutions
-        self.send_hello(ss, root_w, root_h, key_repeat, auth_caps)
+        self.send_hello(ss, root_w, root_h, auth_caps)
 
         if send_ui:
             self.send_initial_windows(ss, share_count>0)
             self.send_initial_cursors(ss, share_count>0)
         self.client_startup_complete(ss)
+
+    def parse_screen_info(self, ss):
+        pass
+
 
     def client_startup_complete(self, ss):
         ss.startup_complete()
@@ -488,7 +470,7 @@ class ServerBase(ServerBaseClass):
         capabilities["exit_server"] = True
         return capabilities
 
-    def send_hello(self, server_source, root_w, root_h, key_repeat, server_cipher):
+    def send_hello(self, server_source, root_w, root_h, server_cipher):
         capabilities = self.make_hello(server_source)
         if server_source.wants_encodings:
             updict(capabilities, "encoding", codec_versions, "version")
@@ -504,10 +486,6 @@ class ServerBase(ServerBaseClass):
                          "root_window_size"     : (root_w, root_h),
                          "desktop_size"         : self._get_desktop_size_capability(server_source, root_w, root_h),
                          })
-        if key_repeat:
-            capabilities.update({
-                     "key_repeat"           : key_repeat,
-                     "key_repeat_modifiers" : True})
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
         if server_cipher:

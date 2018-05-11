@@ -15,8 +15,11 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 
 class AVSyncMixin(StubSourceMixin):
 
-    def __init__(self, av_sync):
-        self.av_sync = av_sync
+    def __init__(self):
+        self.av_sync = False
+
+    def init_from(self, _protocol, server):
+        self.av_sync = server.av_sync
 
     def cleanup(self):
         self.init_state()

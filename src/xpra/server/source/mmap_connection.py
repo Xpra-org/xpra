@@ -16,10 +16,15 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 
 class MMAP_Connection(StubSourceMixin):
 
-    def __init__(self, supports_mmap, mmap_filename, min_mmap_size):
-        self.supports_mmap = supports_mmap
-        self.mmap_filename = mmap_filename
-        self.min_mmap_size = min_mmap_size
+    def __init__(self):
+        self.supports_mmap = False
+        self.mmap_filename = None
+        self.min_mmap_size = 0
+
+    def init_from(self, _protocol, server):
+        self.supports_mmap = server.supports_mmap
+        self.mmap_filename = server.mmap_filename
+        self.min_mmap_size = server.min_mmap_size
 
     def init_state(self):
         self.mmap = None

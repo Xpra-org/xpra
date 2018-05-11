@@ -21,10 +21,15 @@ Handle webcam forwarding.
 """
 class WebcamMixin(StubSourceMixin):
 
-    def __init__(self, webcam_enabled, webcam_device, webcam_encodings):
-        self.webcam_enabled = webcam_enabled
-        self.webcam_device = webcam_device
-        self.webcam_encodings = webcam_encodings
+    def __init__(self):
+        self.webcam_enabled = False
+        self.webcam_device = None
+        self.webcam_encodings = []
+
+    def init_from(self, _protocol, server):
+        self.webcam_enabled     = server.webcam_enabled
+        self.webcam_device      = server.webcam_device
+        self.webcam_encodings   = server.webcam_encodings
 
     def init_state(self):
         #for each webcam device_id, the actual device used

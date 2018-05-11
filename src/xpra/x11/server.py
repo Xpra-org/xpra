@@ -190,6 +190,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.configure_damage_timers = {}
         self._tray = None
         self.system_tray = False
+        self.global_menus = False
         gobject.GObject.__init__(self)
         X11ServerBase.__init__(self)
         self.session_type = "seamless"
@@ -197,11 +198,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
     def init(self, opts):
         self.wm_name = opts.wm_name
         self.sync_xvfb = int(opts.sync_xvfb)
-        self.global_menus = int(opts.global_menus)
         self.system_tray = opts.system_tray
         X11ServerBase.init(self, opts)
-        if self.global_menus:
-            self.rpc_handlers["menu"] = self._handle_menu_rpc
+        #rpc_handlers are part of DBUS_RPC_Server, which is optional
+        rpc_handlers = getattr(self, "rpc_handlers", None)
+        if rpc_handlers:
+            self.global_menus = int(opts.global_menus)
+            if self.global_menus:
+                self.rpc_handlers["menu"] = self._handle_menu_rpc
         def log_server_event(_, event):
             eventlog("server-event: %s", event)
         self.connect("server-event", log_server_event)

@@ -76,6 +76,12 @@ class StubServerMixin(object):
         pass
 
     """
+    Parse capabilities from a new connection.
+    """
+    def parse_hello(self, ss, caps, send_ui):
+        pass
+
+    """
     Cleanup method for a specific connection.
     (to cleanup / free up resources associated with a specific client or connection)
     """

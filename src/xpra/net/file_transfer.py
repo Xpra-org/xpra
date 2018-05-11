@@ -69,15 +69,9 @@ def safe_open_download_file(basefilename, mimetype):
 
 
 class FileTransferAttributes(object):
-    def __init__(self, attrs=None):
+
+    def __init__(self):
         self.init_attributes()
-        if attrs:
-            #copy attributes
-            for x in ("file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
-                      "printing", "printing_ask", "open_files", "open_files_ask",
-                      "open_url", "open_url_ask",
-                      "file_ask_timeout", "open_command"):
-                setattr(self, x, getattr(attrs, x))
 
     def init_opts(self, opts, can_ask=True):
         #get the settings from a config object

@@ -36,21 +36,16 @@ Runs the encode thread.
 """
 class EncodingsMixin(StubSourceMixin):
 
-    def __init__(self, core_encodings, encodings, default_encoding, scaling_control,
-                 default_quality, default_min_quality,
-                 default_speed, default_min_speed):
-        log("ServerSource%s", (core_encodings, encodings, default_encoding, scaling_control,
-                 default_quality, default_min_quality,
-                 default_speed, default_min_speed))
-        self.server_core_encodings = core_encodings
-        self.server_encodings = encodings
-        self.default_encoding = default_encoding
-        self.scaling_control = scaling_control
+    def __init__(self):
+        self.server_core_encodings = []
+        self.server_encodings = []
+        self.default_encoding = None
+        self.scaling_control = None
 
-        self.default_quality = default_quality      #default encoding quality for lossy encodings
-        self.default_min_quality = default_min_quality #default minimum encoding quality
-        self.default_speed = default_speed          #encoding speed (only used by x264)
-        self.default_min_speed = default_min_speed  #default minimum encoding speed
+        self.default_quality = 40       #default encoding quality for lossy encodings
+        self.default_min_quality = 10   #default minimum encoding quality
+        self.default_speed = 40         #encoding speed (only used by x264)
+        self.default_min_speed = 10     #default minimum encoding speed
 
         self.default_batch_config = DamageBatchConfig()     #contains default values, some of which may be supplied by the client
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
@@ -92,6 +87,15 @@ class EncodingsMixin(StubSourceMixin):
                                                     #(only packet is required - the rest can be 0/None for clipboard packets)
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
+    def init_from(self, _protocol, server):
+        self.server_core_encodings  = server.core_encodings
+        self.server_encodings       = server.encodings
+        self.default_encoding       = server.default_encoding
+        self.scaling_control        = server.scaling_control
+        self.default_quality        = server.default_quality
+        self.default_min_quality    = server.default_min_quality
+        self.default_speed          = server.default_speed
+        self.default_min_speed      = server.default_min_speed
 
     def cleanup(self):
         self.cancel_recalculate_timer()
@@ -342,7 +346,8 @@ class EncodingsMixin(StubSourceMixin):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
-        if self.mmap_size==0:
+        #check for mmap:
+        if getattr(self, "mmap_size", 0)==0:
             others = [x for x in self.core_encodings if x in self.server_core_encodings and x!=self.encoding]
             if self.encoding=="auto":
                 s = "automatic picture encoding enabled"

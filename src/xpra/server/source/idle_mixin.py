@@ -16,8 +16,11 @@ GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 
 class IdleMixin(StubSourceMixin):
 
-    def __init__(self, idle_timeout):
-        self.idle_timeout = idle_timeout
+    def __init__(self):
+        self.idle_timeout = 0
+
+    def init_from(self, _protocol, server):
+        self.idle_timeout = server.idle_timeout
 
     def init_state(self):
         self.last_user_event = monotonic_time()

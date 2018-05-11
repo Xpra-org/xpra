@@ -55,6 +55,10 @@ class WindowServer(StubServerMixin):
                 }
             }
 
+    def parse_hello(self, ss, caps, send_ui):
+        if send_ui:
+            self.parse_hello_ui_window_settings(ss, caps)
+    
     def parse_hello_ui_window_settings(self, ss, c):
         pass
 
@@ -62,6 +66,9 @@ class WindowServer(StubServerMixin):
     def is_shown(self, _window):
         return True
 
+
+    def get_window_id(self, window):
+        return self._window_to_id.get(window)
 
     def add_windows_info(self, info, window_ids):
         winfo = info.setdefault("window", {})

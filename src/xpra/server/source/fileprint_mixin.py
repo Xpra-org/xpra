@@ -36,6 +36,15 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             "file-transfers"    : FileTransferHandler.get_info(self),
             }
 
+    def init_from(self, _protocol, server):
+        self.init_attributes()
+        #copy attributes
+        for x in ("file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
+                  "printing", "printing_ask", "open_files", "open_files_ask",
+                  "open_url", "open_url_ask",
+                  "file_ask_timeout", "open_command"):
+            setattr(self, x, getattr(server.file_transfer, x))
+
     ######################################################################
     # printing:
     def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile):

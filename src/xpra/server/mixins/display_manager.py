@@ -35,6 +35,11 @@ class DisplayManager(StubServerMixin):
         self.default_dpi = int(opts.dpi)
 
 
+    def parse_hello(self, ss, caps, send_ui):
+        if send_ui:
+            self.parse_screen_info(ss)
+
+
     def get_info(self, _proto):
         return {
             "display": {

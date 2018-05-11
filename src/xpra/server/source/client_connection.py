@@ -21,23 +21,56 @@ netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
 
-from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.server.source.audio_mixin import AudioMixin
-from xpra.server.source.mmap_connection import MMAP_Connection
-from xpra.server.source.fileprint_mixin import FilePrintMixin
-from xpra.server.source.clipboard_connection import ClipboardConnection
-from xpra.server.source.networkstate_mixin import NetworkStateMixin
-from xpra.server.source.clientinfo_mixin import ClientInfoMixin
-from xpra.server.source.dbus_mixin import DBUS_Mixin
-from xpra.server.source.windows_mixin import WindowsMixin
-from xpra.server.source.encodings_mixin import EncodingsMixin
-from xpra.server.source.idle_mixin import IdleMixin
-from xpra.server.source.input_mixin import InputMixin
-from xpra.server.source.avsync_mixin import AVSyncMixin
-from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
-from xpra.server.source.webcam_mixin import WebcamMixin
 from xpra.os_util import monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, AtomicInteger
+from xpra.server.source.source_stats import GlobalPerformanceStatistics
+
+from xpra.server.source.clientinfo_mixin import ClientInfoMixin
+CC_BASES = [ClientInfoMixin]
+from xpra.server import server_features
+#TODO: notifications mixin
+if server_features.clipboard:
+    from xpra.server.source.clipboard_connection import ClipboardConnection
+    CC_BASES.append(ClipboardConnection)
+if server_features.audio:
+    from xpra.server.source.audio_mixin import AudioMixin
+    CC_BASES.append(AudioMixin)
+if server_features.webcam:
+    from xpra.server.source.webcam_mixin import WebcamMixin
+    CC_BASES.append(WebcamMixin)
+if server_features.fileprint:
+    from xpra.server.source.fileprint_mixin import FilePrintMixin
+    CC_BASES.append(FilePrintMixin)
+if server_features.mmap:
+    from xpra.server.source.mmap_connection import MMAP_Connection
+    CC_BASES.append(MMAP_Connection)
+if server_features.input_devices:
+    from xpra.server.source.input_mixin import InputMixin
+    CC_BASES.append(InputMixin)
+if server_features.dbus:
+    from xpra.server.source.dbus_mixin import DBUS_Mixin
+    CC_BASES.append(DBUS_Mixin)
+if server_features.encoding:
+    from xpra.server.source.encodings_mixin import EncodingsMixin
+    CC_BASES.append(EncodingsMixin)
+if server_features.network_state:
+    from xpra.server.source.networkstate_mixin import NetworkStateMixin
+    CC_BASES.append(NetworkStateMixin)
+if server_features.av_sync:
+    from xpra.server.source.avsync_mixin import AVSyncMixin
+    CC_BASES.append(AVSyncMixin)
+if server_features.display:
+    from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
+    CC_BASES.append(ClientDisplayMixin)
+if server_features.windows:
+    from xpra.server.source.windows_mixin import WindowsMixin
+    CC_BASES.append(WindowsMixin)
+from xpra.server.source.idle_mixin import IdleMixin
+CC_BASES.append(IdleMixin)
+CC_BASES = tuple(CC_BASES)
+ClientConnectionClass = type('ClientConnectionClass', CC_BASES, {})
+log("ClientConnectionClass%s", CC_BASES)
+
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
@@ -62,72 +95,30 @@ adds the damage pixels ready for processing to the encode_work_queue,
 items are picked off by the separate 'encode' thread (see 'encode_loop')
 and added to the damage_packet_queue.
 """
-class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkStateMixin, ClientInfoMixin, DBUS_Mixin, WindowsMixin, EncodingsMixin, MMAP_Connection, IdleMixin, InputMixin, AVSyncMixin, ClientDisplayMixin, WebcamMixin):
 
-    def __init__(self, protocol, disconnect_cb, session_name,
-                 idle_add, timeout_add, source_remove, setting_changed,
-                 idle_timeout,
-                 socket_dir, unix_socket_paths, log_disconnect, dbus_control,
-                 get_transient_for, get_focus, get_cursor_data_cb,
-                 get_window_id,
-                 window_filters,
-                 file_transfer,
-                 supports_mmap, mmap_filename, min_mmap_size,
-                 bandwidth_limit,
-                 av_sync,
-                 core_encodings, encodings, default_encoding, scaling_control,
-                 webcam_enabled, webcam_device, webcam_encodings,
-                 sound_properties,
-                 sound_source_plugin,
-                 supports_speaker, supports_microphone,
-                 speaker_codecs, microphone_codecs,
-                 default_quality, default_min_quality,
-                 default_speed, default_min_speed):
-        log("ServerSource%s", (protocol, disconnect_cb, session_name,
-                 idle_add, timeout_add, source_remove, setting_changed,
-                 idle_timeout,
-                 socket_dir, unix_socket_paths, log_disconnect, dbus_control,
-                 get_transient_for, get_focus,
-                 get_window_id,
-                 window_filters,
-                 file_transfer,
-                 supports_mmap, mmap_filename, min_mmap_size,
-                 bandwidth_limit,
-                 av_sync,
-                 core_encodings, encodings, default_encoding, scaling_control,
-                 webcam_enabled, webcam_device, webcam_encodings,
-                 sound_properties,
-                 sound_source_plugin,
-                 supports_speaker, supports_microphone,
-                 speaker_codecs, microphone_codecs,
-                 default_quality, default_min_quality,
-                 default_speed, default_min_speed))
+class ClientConnection(ClientConnectionClass):
 
+    def __init__(self, protocol, disconnect_cb, session_name, server,
+                 idle_add, timeout_add, source_remove,
+                 setting_changed,
+                 socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit,
+                 ):
         global counter
         self.counter = counter.increase()
         self.protocol = protocol
         self.connection_time = monotonic_time()
         self.close_event = Event()
+        self.disconnect = disconnect_cb
         self.session_name = session_name
 
-        AudioMixin.__init__(self, sound_properties, sound_source_plugin,
-                 supports_speaker, supports_microphone, speaker_codecs, microphone_codecs)
-        MMAP_Connection.__init__(self, supports_mmap, mmap_filename, min_mmap_size)
-        ClipboardConnection.__init__(self)
-        FilePrintMixin.__init__(self, file_transfer)
-        NetworkStateMixin.__init__(self)
-        ClientInfoMixin.__init__(self)
-        DBUS_Mixin.__init__(self, dbus_control)
-        WindowsMixin.__init__(self, get_transient_for, get_focus, get_cursor_data_cb, get_window_id, window_filters)
-        EncodingsMixin.__init__(self, core_encodings, encodings, default_encoding, scaling_control, default_quality, default_min_quality, default_speed, default_min_speed)
-        IdleMixin.__init__(self, idle_timeout)
-        InputMixin.__init__(self)
-        AVSyncMixin.__init__(self, av_sync)
-        ClientDisplayMixin.__init__(self)
-        WebcamMixin.__init__(self, webcam_enabled, webcam_device, webcam_encodings)
+        for bc in CC_BASES:
+            try:
+                bc.__init__(self)
+                bc.init_from(self, protocol, server)
+            except Exception as e:
+                raise Exception("failed to initialize %s: %s" % (bc, e))
 
         self.ordinary_packets = []
-        self.disconnect = disconnect_cb
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -173,7 +164,7 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         self.wants_display = True
         self.wants_events = False
         self.wants_default_cursor = False
-        for c in ClientConnection.__bases__:
+        for c in CC_BASES:
             c.init_state(self)
 
 
@@ -182,7 +173,7 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
 
     def close(self):
         log("%s.close()", self)
-        for c in ClientConnection.__bases__:
+        for c in CC_BASES:
             c.cleanup(self)
         self.close_event.set()
         self.protocol = None
@@ -238,7 +229,7 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
         self.wants_features = c.boolget("wants_features", True)
         self.wants_default_cursor = c.boolget("wants_default_cursor", False)
 
-        for mixin in ClientConnection.__bases__:
+        for mixin in CC_BASES:
             mixin.parse_client_caps(self, c)
 
         #general features:
@@ -265,11 +256,13 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
             if msg:
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
         self.update_connection_data(c.dictget("connection-data"))
-        if self.mmap_size>0:
+        if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
         #adjust max packet size if file transfers are enabled:
-        if self.file_transfer:
+        #TODO: belongs in mixin:
+        file_transfer = getattr(self, "file_transfer", None)
+        if file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
 
 
@@ -318,13 +311,8 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
 
     def send_hello(self, server_capabilities):
         capabilities = server_capabilities.copy()
-        merge_dicts(capabilities, AudioMixin.get_caps(self))
-        merge_dicts(capabilities, MMAP_Connection.get_caps(self))
-        merge_dicts(capabilities, WindowsMixin.get_caps(self))
-        merge_dicts(capabilities, EncodingsMixin.get_caps(self))
-        merge_dicts(capabilities, InputMixin.get_caps(self))
-        merge_dicts(capabilities, AVSyncMixin.get_caps(self))
-        merge_dicts(capabilities, ClientDisplayMixin.get_caps(self))
+        for bc in CC_BASES:
+            merge_dicts(capabilities, bc.get_caps(self))
         self.send("hello", capabilities)
         self.hello_sent = True
 
@@ -347,15 +335,8 @@ class ClientConnection(AudioMixin, ClipboardConnection, FilePrintMixin, NetworkS
                      "connection"       : self.protocol.get_info(),
                      })
         info.update(self.get_features_info())
-        merge_dicts(info, FilePrintMixin.get_info(self))
-        merge_dicts(info, AudioMixin.get_info(self))
-        merge_dicts(info, MMAP_Connection.get_info(self))
-        merge_dicts(info, NetworkStateMixin.get_info(self))
-        merge_dicts(info, ClientInfoMixin.get_info(self))
-        merge_dicts(info, WindowsMixin.get_info(self))
-        merge_dicts(info, EncodingsMixin.get_info(self))
-        merge_dicts(info, AVSyncMixin.get_info(self))
-        merge_dicts(info, ClientDisplayMixin.get_info(self))
+        for bc in CC_BASES:
+            merge_dicts(info, bc.get_info(self))
         return info
 
     def get_features_info(self):

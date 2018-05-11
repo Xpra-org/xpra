@@ -17,6 +17,12 @@ class StubSourceMixin(object):
         pass
 
     """
+    Initialize setting inherited from the server or connection.
+    """
+    def init_from(self, _protocol, _server):
+        pass
+
+    """
     Free up any resources.
     """
     def cleanup(self):

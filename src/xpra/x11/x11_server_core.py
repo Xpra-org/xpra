@@ -234,7 +234,9 @@ class X11ServerCore(GTKServerBase):
 
 
     def set_keyboard_layout_group(self, grp):
-        keylog("set_keyboard_layout_group(%i) current keyboard group=%s", grp, self.current_keyboard_group)
+        keylog("set_keyboard_layout_group(%i) config=%s, current keyboard group=%s", grp, self.keyboard_config, self.current_keyboard_group)
+        if not self.keyboard_config:
+            return
         if not self.keyboard_config.xkbmap_layout_groups:
             #not supported by the client that owns the current keyboard config,
             #so make sure we stick to the default group:

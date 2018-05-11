@@ -17,10 +17,14 @@ Expose the ClientConnection using a dbus service
 """
 class DBUS_Mixin(StubSourceMixin):
 
-    def __init__(self, dbus_control=False):
-        self.dbus_control = dbus_control
+    def __init__(self):
+        self.init_state()
+
+    def init_from(self, _protocol, server):
+        self.dbus_control = server.dbus_control
 
     def init_state(self):
+        self.dbus_control = False
         self.dbus_server = None
 
     def cleanup(self):

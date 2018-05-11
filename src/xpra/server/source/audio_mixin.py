@@ -19,17 +19,21 @@ NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
 
 class AudioMixin(StubSourceMixin):
 
-    def __init__(self, sound_properties,
-                 sound_source_plugin,
-                 supports_speaker, supports_microphone,
-                 speaker_codecs, microphone_codecs):
-        #settings:
-        self.sound_properties = sound_properties
-        self.sound_source_plugin = sound_source_plugin
-        self.supports_speaker = supports_speaker
-        self.speaker_codecs = speaker_codecs
-        self.supports_microphone = supports_microphone
-        self.microphone_codecs = microphone_codecs
+    def __init__(self):
+        self.sound_properties = {}
+        self.sound_source_plugin = ""
+        self.supports_speaker = False
+        self.speaker_codecs = []
+        self.supports_microphone = False
+        self.microphone_codecs = []
+
+    def init_from(self, _protocol, server):
+        self.sound_properties       = server.sound_properties
+        self.sound_source_plugin    = server.sound_properties
+        self.supports_speaker       = server.supports_speaker
+        self.supports_microphone    = server.supports_microphone
+        self.speaker_codecs         = server.speaker_codecs
+        self.microphone_codecs      = server.microphone_codecs
 
     def init_state(self):
         self.wants_sound = True

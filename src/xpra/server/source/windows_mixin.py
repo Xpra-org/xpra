@@ -35,17 +35,19 @@ etc
 """
 class WindowsMixin(StubSourceMixin):
 
-    def __init__(self, get_transient_for, get_focus, get_cursor_data_cb,
-                 get_window_id,
-                 window_filters):
-        log("ServerSource%s", (get_transient_for, get_focus,
-                 get_window_id,
-                 window_filters))
-        self.get_transient_for = get_transient_for
-        self.get_focus = get_focus
-        self.get_cursor_data_cb = get_cursor_data_cb
-        self.get_window_id = get_window_id
-        self.window_filters = window_filters
+    def __init__(self):
+        self.get_transient_for = None
+        self.get_focus = None
+        self.get_cursor_data_cb = None
+        self.get_window_id = None
+        self.window_filters = []
+
+    def init_from(self, _protocol, server):
+        self.get_transient_for  = server.get_transient_for
+        self.get_focus          = server.get_focus
+        self.get_cursor_data_cb = server.get_cursor_data
+        self.get_window_id      = server.get_window_id
+        self.window_filters     = server.window_filters
 
     def init_state(self):
         #WindowSource for each Window ID
@@ -497,7 +499,7 @@ class WindowsMixin(StubSourceMixin):
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
             bandwidth_limit = self.bandwidth_limit
-            if self.mmap_size>0:
+            if getattr(self, "mmap_size", 0)>0:
                 bandwidth_limit = 0
             from xpra.server.window.window_video_source import WindowVideoSource
             ws = WindowVideoSource(

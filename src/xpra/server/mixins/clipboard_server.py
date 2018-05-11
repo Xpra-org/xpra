@@ -47,6 +47,11 @@ class ClipboardServer(StubServerMixin):
             ch.client_reset()
 
 
+    def parse_hello(self, ss, caps, send_ui):
+        if send_ui:
+            self.parse_hello_ui_clipboard(ss, caps)
+
+
     def get_info(self, _proto):
         if self._clipboard_helper is None:
             return {}
