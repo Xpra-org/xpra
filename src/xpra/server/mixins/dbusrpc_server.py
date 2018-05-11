@@ -30,9 +30,6 @@ class DBUS_RPC_Server(StubServerMixin):
     def setup(self):
         self.init_dbus_helper()
 
-    def cleanup(self):
-        self.cleanup_pulseaudio()
-
 
     def get_server_features(self, _source=None):
         return {
