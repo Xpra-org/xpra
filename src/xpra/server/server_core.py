@@ -27,13 +27,11 @@ timeoutlog = Logger("timeout")
 dbuslog = Logger("dbus")
 
 from xpra.version_util import XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full, get_platform_info, get_host_info
-from xpra.scripts.main import _socket_connect
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.config import InitException, parse_bool, python_platform, parse_with_unit, FALSE_OPTIONS
 from xpra.net.bytestreams import SocketConnection, SSLSocketConnection, log_new_connection, pretty_socket, SOCKET_TIMEOUT
 from xpra.net.net_util import get_network_caps, get_info as get_net_info
 from xpra.net.protocol import Protocol, sanity_checks
-from xpra.net.digest import get_salt, choose_digest
 from xpra.platform import set_name
 from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platform_name, strtobytes, bytestostr, get_hex_uuid, monotonic_time, get_peercred, hexstr, SIGNAMES, WIN32, POSIX, PYTHON3, BITS
 from xpra.server.background_worker import stop_worker, get_worker
@@ -1127,6 +1125,7 @@ class ServerCore(object):
         #connect to web server:
         host, port = self._tcp_proxy.split(":", 1)
         try:
+            from xpra.scripts.main import _socket_connect
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(10)
             host, port = self._tcp_proxy.split(":", 1)
@@ -1385,6 +1384,7 @@ class ServerCore(object):
 
         def send_fake_challenge():
             #fake challenge so the client will send the real hello:
+            from xpra.net.digest import get_salt, choose_digest
             salt = get_salt()
             digest = choose_digest(digest_modes)
             salt_digest = choose_digest(salt_digest_modes)
