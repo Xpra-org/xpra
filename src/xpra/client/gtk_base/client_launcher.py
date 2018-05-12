@@ -40,7 +40,6 @@ from xpra.os_util import thread, WIN32, OSX, PYTHON3
 from xpra.client.gtk_base.gtk_tray_menu_base import make_min_auto_menu, make_encodingsmenu, \
                                     MIN_QUALITY_OPTIONS, QUALITY_OPTIONS, MIN_SPEED_OPTIONS, SPEED_OPTIONS
 from xpra.gtk_common.about import about
-from xpra.net.crypto import ENCRYPTION_CIPHERS, crypto_backend_init
 from xpra.scripts.main import connect_to, make_client, configure_network, is_local
 from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
@@ -130,13 +129,12 @@ class ApplicationWindow:
             modes.append("ssl")
         except:
             pass
-        if "AES" in ENCRYPTION_CIPHERS:
-            modes.append("tcp + aes")
+        #assume crypto is available
+        modes.append("tcp + aes")
         modes.append("tcp")
         return modes
 
     def get_launcher_validation(self):
-        crypto_backend_init()
         #TODO: since "mode" is not part of global options
         #this validation should be injected from the launcher instead
         def validate_in_list(x, options):
@@ -766,7 +764,7 @@ class ApplicationWindow:
         mode_enc = self.mode_combo.get_active_text().upper()
         if mode_enc.startswith("TCP"):
             self.config.mode = "tcp"
-            if mode_enc.find("AES")>0 and "AES" in ENCRYPTION_CIPHERS:
+            if mode_enc.find("AES")>0:
                 self.config.encryption = "AES"
         elif mode_enc=="SSL":
             self.config.mode = "ssl"
