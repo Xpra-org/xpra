@@ -19,7 +19,7 @@ from xpra.server.mixins.server_base_controlcommands import ServerBaseControlComm
 
 from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
-    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY, XPRA_NEW_USER_NOTIFICATION_ID
+    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
