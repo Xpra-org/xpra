@@ -584,6 +584,9 @@ class ServerCore(object):
                 log.info(" uid=%i, gid=%i", uid, gid)
         log.info(" running with pid %s%s", os.getpid(), osinfo)
 
+    def notify_new_user(self, ss):
+        pass
+
 
     ######################################################################
     # screen / display:

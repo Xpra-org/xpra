@@ -11,7 +11,6 @@ from time import sleep
 from xpra.log import Logger
 log = Logger("server")
 netlog = Logger("network")
-notifylog = Logger("notify")
 httplog = Logger("http")
 timeoutlog = Logger("timeout")
 
@@ -22,8 +21,6 @@ from xpra.os_util import thread, monotonic_time, bytestostr, WIN32, PYTHON3
 from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY, XPRA_NEW_USER_NOTIFICATION_ID
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.platform.paths import get_icon_filename
-from xpra.notifications.common import parse_image_path
 from xpra.server import EXITING_CODE
 from xpra.codecs.loader import codec_versions
 
@@ -332,30 +329,12 @@ class ServerBase(ServerBaseClass):
             #close it already
             ss.close()
             raise
-        try:
-            self.notify_new_user(ss)
-        except Exception as e:
-            notifylog("%s(%s)", self.notify_new_user, ss, exc_info=True)
-            notifylog.error("Error: failed to show notification of user login:")
-            notifylog.error(" %s", e)
+        self.notify_new_user(ss)
         self._server_sources[proto] = ss
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self.parse_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
-    def notify_new_user(self, ss):
-        #tell other users:
-        notifylog("notify_new_user(%s) sources=%s", ss, self._server_sources)
-        if not self._server_sources:
-            return
-        nid = XPRA_NEW_USER_NOTIFICATION_ID
-        icon = parse_image_path(get_icon_filename("user"))
-        title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
-        body = "\n".join(ss.get_connect_info())
-        for s in self._server_sources.values():
-            if s!=ss:
-                s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
-        
 
     def get_server_source_class(self):
         from xpra.server.source.client_connection import ClientConnection
