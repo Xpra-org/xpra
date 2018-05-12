@@ -38,8 +38,6 @@ from xpra.os_util import load_binary_file, get_machine_id, get_user_uuid, platfo
 from xpra.version_util import version_compat_check, get_version_info_full, get_platform_info, get_host_info
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, choose_digest
-from xpra.net.crypto import crypto_backend_init, new_cipher_caps, \
-        ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS
 from xpra.server.background_worker import stop_worker, get_worker
 from xpra.make_thread import start_thread
 from xpra.util import csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat, \
@@ -254,6 +252,7 @@ class ServerCore(object):
         self.tcp_encryption = opts.tcp_encryption
         self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
         if self.encryption or self.tcp_encryption:
+            from xpra.net.crypto import crypto_backend_init
             crypto_backend_init()
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
@@ -937,10 +936,12 @@ class ServerCore(object):
             #special case for legacy encryption code:
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
-            if protocol.encryption and ENCRYPT_FIRST_PACKET:
-                authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
-                password = self.get_encryption_key(None, protocol.keyfile)
-                protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+            if protocol.encryption:
+                from xpra.net.crypto import ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING
+                if ENCRYPT_FIRST_PACKET:
+                    authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
+                    password = self.get_encryption_key(None, protocol.keyfile)
+                    protocol.set_cipher_in(protocol.encryption, DEFAULT_IV, password, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.invalid_header = self.invalid_header
         authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
@@ -1352,11 +1353,12 @@ class ServerCore(object):
         cipher = c.strget("cipher")
         cipher_iv = c.strget("cipher.iv")
         key_salt = c.strget("cipher.key_salt")
-        iterations = c.intget("cipher.key_stretch_iterations")
-        padding = c.strget("cipher.padding", DEFAULT_PADDING)
-        padding_options = c.strlistget("cipher.padding.options", [DEFAULT_PADDING])
         auth_caps = {}
         if cipher and cipher_iv:
+            from xpra.net.crypto import DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, new_cipher_caps
+            iterations = c.intget("cipher.key_stretch_iterations")
+            padding = c.strget("cipher.padding", DEFAULT_PADDING)
+            padding_options = c.strlistget("cipher.padding.options", [DEFAULT_PADDING])
             if cipher not in ENCRYPTION_CIPHERS:
                 authlog.warn("unsupported cipher: %s", cipher)
                 auth_failed("unsupported cipher")
