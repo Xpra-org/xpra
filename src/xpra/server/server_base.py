@@ -353,7 +353,8 @@ class ServerBase(ServerBaseClass):
         title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
         body = "\n".join(ss.get_connect_info())
         for s in self._server_sources.values():
-            s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
+            if s!=ss:
+                s.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
         
 
     def get_server_source_class(self):
