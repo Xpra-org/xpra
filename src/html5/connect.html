@@ -241,7 +241,7 @@
 				  	<input type="checkbox" id="top_bar"> <span>Show top bar</span>, <input type="checkbox" id="clock"> <span>show server clock</span>
 				  </li>
 				  <li class="list-group-item">
-				  	<input type="checkbox" id="video"> <span>Video (experimental) <input type="checkbox" id="mediasource_video"> Native decoding</span>
+				  	<input type="checkbox" id="video"> <span>Video <input type="checkbox" id="mediasource_video"> Native decoding</span>
 				  </li>
 				  <li class="list-group-item">
 				  	<span>Server Path:</span>
@@ -535,6 +535,7 @@ $(document).ready(function() {
 	$('input#sound').prop("checked", sound && Object.keys(codecs_supported).length>0);
 
 	var video = document.getElementById("video");
+	$('input#video').prop("checked", getboolparam("video", true));
 	function toggle_mediasource_video() {
 		$('#mediasource_video').prop("disabled", !video.checked);
 	}
