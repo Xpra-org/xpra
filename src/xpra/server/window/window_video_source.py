@@ -1834,8 +1834,8 @@ class WindowVideoSource(WindowSource):
         self.cancel_video_encoder_flush()
         if delayed>0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
-            if not data and self.non_video_encodings:
-                if frame==0:
+            if not data:
+                if self.non_video_encodings and frame==0:
                     #first frame has not been sent yet,
                     #so send something as non-video
                     #and skip painting this video frame when it does come out:
