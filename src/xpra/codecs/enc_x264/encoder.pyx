@@ -23,6 +23,7 @@ from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 THREADS = envint("XPRA_X264_THREADS")
 SLICED_THREADS = envint("XPRA_X264_SLICED_THREADS", 1)
+MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
 SUPPORT_24BPP = envbool("XPRA_X264_SUPPORT_24BPP")
@@ -559,7 +560,8 @@ cdef class Encoder:
 
     cdef tune_param(self, x264_param_t *param):
         param.i_threads = THREADS
-        param.b_sliced_threads = SLICED_THREADS
+        if self.speed>=MIN_SLICED_THREADS_SPEED:
+            param.b_sliced_threads = SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = X264_KEYINT_MAX_INFINITE
         #we don't want IDR frames either:
