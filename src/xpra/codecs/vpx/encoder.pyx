@@ -213,7 +213,6 @@ COLORSPACES = {}
 
 CODECS = ["vp8", "vp9"]
 COLORSPACES["vp8"] = ["YUV420P"]
-CODECS.append("vp9")
 vp9_cs = ["YUV420P"]
 #this is the ABI version with libvpx 1.4.0:
 if ENABLE_VP9_YUV444:
