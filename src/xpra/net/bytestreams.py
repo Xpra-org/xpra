@@ -350,11 +350,10 @@ class SocketConnection(Connection):
         s = self._socket
         if not s:
             return None
-        info = {
-                "proto"         : s.proto,
-                }
+        info = {}
         try:
             info.update({
+                "proto"         : s.proto,
                 "family"        : FAMILY_STR.get(s.family, int(s.family)),
                 "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
                 })
