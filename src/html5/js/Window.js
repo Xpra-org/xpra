@@ -884,7 +884,7 @@ XpraWindow.prototype._init_broadway = function(enc_width, enc_height, width, hei
 	this.log("broadway decoder initialized");
 	this.broadway_paint_location = [0, 0];
 	this.broadway_decoder.onPictureDecoded = function(buffer, p_width, p_height, infos) {
-		this.debug("draw", "broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
+		me.debug("draw", "broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
 		if(!me.broadway_decoder) {
 			return;
 		}
@@ -1161,7 +1161,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			j.src = "data:image/"+coding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 		}
 		else if (coding=="h264") {
-			var frame = options["frame"] || -1;
+			var frame = options["frame"] || 0;
 			if(frame==0) {
 				this._close_broadway();
 			}
