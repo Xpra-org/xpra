@@ -346,6 +346,8 @@ cdef class Decoder:
             CodecID = AV_CODEC_ID_MPEG4
         elif self.encoding=="mpeg1":
             CodecID = AV_CODEC_ID_MPEG1VIDEO
+        elif self.encoding=="mpeg2":
+            CodecID = AV_CODEC_ID_MPEG2VIDEO
         else:
             raise Exception("invalid codec; %s" % self.encoding)
         self.codec = avcodec_find_decoder(CodecID)

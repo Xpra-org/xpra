@@ -282,6 +282,8 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_VP8
     AVCodecID AV_CODEC_ID_VP9
     AVCodecID AV_CODEC_ID_MPEG4
+    AVCodecID AV_CODEC_ID_MPEG1VIDEO
+    AVCodecID AV_CODEC_ID_MPEG2VIDEO
 
     AVCodecID AV_CODEC_ID_AAC
 
@@ -423,6 +425,7 @@ cdef extern from "libavformat/avformat.h":
     int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     int av_write_trailer(AVFormatContext *s)
     int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+    int av_frame_make_writable(AVFrame *frame)
 
 
 H264_PROFILE_NAMES = {
@@ -581,6 +584,16 @@ FORMAT_TO_ENUM = {
             "GBRP"      : AV_PIX_FMT_GBRP,
             }
 
+CODEC_ID = {
+    "h264"      : AV_CODEC_ID_H264,
+    "h265"      : AV_CODEC_ID_H265,
+    "vp8"       : AV_CODEC_ID_VP8,
+    "vp9"       : AV_CODEC_ID_VP9,
+    "mpeg4"     : AV_CODEC_ID_MPEG4,
+    "mpeg1"     : AV_CODEC_ID_MPEG1VIDEO,
+    "mpeg2"     : AV_CODEC_ID_MPEG2VIDEO,
+    }
+
 COLORSPACES = FORMAT_TO_ENUM.keys()
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
@@ -633,6 +646,10 @@ if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
 #    CODECS.append("h265")
 if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
     CODECS.append("mpeg4+mp4")
+if avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
+    CODECS.append("mpeg1")
+if avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
+    CODECS.append("mpeg2")
 log("enc_ffmpeg CODECS=%s", csv(CODECS))
 
 DEF DEFAULT_BUF_LEN = 64*1024
@@ -770,18 +787,8 @@ cdef class Encoder(object):
         codec = self.encoding.split("+")[0]
         log("init_context codec(%s)=%s", encoding, codec)
         cdef AVCodecID video_codec_id
-        if codec=="h264":
-            video_codec_id = AV_CODEC_ID_H264
-        elif codec=="h265":
-            video_codec_id = AV_CODEC_ID_H265
-        elif codec=="vp8":
-            video_codec_id = AV_CODEC_ID_VP8
-        elif codec=="vp9":
-            video_codec_id = AV_CODEC_ID_VP9
-        elif codec=="mpeg4":
-            video_codec_id = AV_CODEC_ID_MPEG4
-        else:
-            raise Exception("invalid codec; %s" % self.encoding)
+        video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
+        assert video_codec_id!=0, "invalid codec; %s" % self.encoding
         self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
             raise Exception("codec %s not found!" % self.encoding)
@@ -886,17 +893,18 @@ cdef class Encoder(object):
         self.video_ctx.max_b_frames = b_frames*1
         self.video_ctx.has_b_frames = b_frames
         self.video_ctx.delay = 0
-        self.video_ctx.gop_size = 1
+        self.video_ctx.gop_size = 10
         self.video_ctx.width = self.width
         self.video_ctx.height = self.height
-        self.video_ctx.bit_rate = 2500000
+        self.video_ctx.bit_rate = max(200000, self.width*self.height*4) #4 bits per pixel
         self.video_ctx.pix_fmt = self.pix_fmt
         self.video_ctx.thread_safe_callbacks = 1
-        self.video_ctx.thread_type = THREAD_TYPE
-        self.video_ctx.thread_count = THREAD_COUNT     #0=auto
         #if oformat.flags & AVFMT_GLOBALHEADER:
-        self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
-        self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+        if self.encoding not in ("mpeg1", "mpeg2"):
+            self.video_ctx.thread_type = THREAD_TYPE
+            self.video_ctx.thread_count = THREAD_COUNT     #0=auto
+            self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
+            self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         cdef AVDictionary *opts = NULL
         if self.encoding.startswith("h264") and profile:
             r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
@@ -1118,6 +1126,9 @@ cdef class Encoder(object):
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
             #populate the avframe:
+            ret = av_frame_make_writable(self.av_frame)
+            if not ret!=0:
+                raise Exception(av_error_str(ret))
             for i in range(4):
                 if i<3:
                     assert object_as_buffer(pixels[i], <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
@@ -1129,11 +1140,12 @@ cdef class Encoder(object):
             self.av_frame.width = self.width
             self.av_frame.height = self.height
             self.av_frame.format = self.pix_fmt
-            self.av_frame.pts = self.frames+1
-            self.av_frame.coded_picture_number = self.frames+1
-            self.av_frame.display_picture_number = self.frames+1
-            #if self.frames==0:
-            self.av_frame.pict_type = AV_PICTURE_TYPE_I
+            if self.encoding not in ("mpeg1", "mpeg2"):
+                self.av_frame.pts = self.frames+1
+                self.av_frame.coded_picture_number = self.frames+1
+                self.av_frame.display_picture_number = self.frames+1
+                #if self.frames==0:
+                self.av_frame.pict_type = AV_PICTURE_TYPE_I
             #self.av_frame.key_frame = 1
             #else:
             #    self.av_frame.pict_type = AV_PICTURE_TYPE_P
@@ -1218,6 +1230,9 @@ cdef class Encoder(object):
             for x in self.buffers:
                 self.file.write(x)
             self.file.flush()
+        if self.encoding in ("mpeg1", "mpeg2"):
+            #always one frame buffered
+            client_options["delayed"] = 1
         if data:
             client_options["frame"] = int(self.frames)
             if self.frames==0:
