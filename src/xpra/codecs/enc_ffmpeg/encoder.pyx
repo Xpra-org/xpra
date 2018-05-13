@@ -724,6 +724,7 @@ cdef class Encoder(object):
     """
     #muxer:
     cdef AVFormatContext *muxer_ctx
+    cdef AVDictionary *muxer_opts
     cdef unsigned char *buffer
     cdef object buffers
     cdef int64_t offset
@@ -754,8 +755,10 @@ cdef class Encoder(object):
         assert encoding in CODECS
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
         self.encoding = encoding
-        self.muxer_format = encoding.split("+")[1]  #ie: "mp4"   #"mov", "f4v"
-        assert self.muxer_format in ("mp4", "webm")
+        self.muxer_format = None
+        if encoding.find("+")>0:
+            self.muxer_format = encoding.split("+")[1]  #ie: "mpeg4+mp4" -> "mp4"   #"mov", "f4v"
+            assert self.muxer_format in ("mp4", "webm")
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -765,6 +768,7 @@ cdef class Encoder(object):
         self.buffers = []
 
         codec = self.encoding.split("+")[0]
+        log("init_context codec(%s)=%s", encoding, codec)
         cdef AVCodecID video_codec_id
         if codec=="h264":
             video_codec_id = AV_CODEC_ID_H264
@@ -785,20 +789,34 @@ cdef class Encoder(object):
 
         #ie: client side as: "encoding.h264+mpeg4.YUV420P.profile" : "main"
         profile = options.get("%s.%s.profile" % (self.encoding, src_format), "main")
+        cdef uintptr_t gen = generation.increase()
+        GEN_TO_ENCODER[gen] = self
         try:
+            if self.muxer_format:
+                self.init_muxer(gen)
             self.init_encoder(profile)
+            if self.muxer_format:
+                self.write_muxer_header()
+            if SAVE_TO_FILE is not None:
+                if self.muxer_format:
+                    filename = SAVE_TO_FILE+"-"+self.encoding+"-"+str(gen)+".%s" % self.muxer_format
+                else:
+                    filename = SAVE_TO_FILE+"-"+str(gen)+"."+self.encoding
+                self.file = open(filename, 'wb')
+                log.info("saving %s stream to %s", self.encoding, filename)
         except Exception as e:
             log("init_encoder(%s) failed", profile, exc_info=True)
             self.clean()
+            del GEN_TO_ENCODER[gen]
             raise
         else:
             log("enc_ffmpeg.Encoder.init_context(%s, %s, %s) self=%s", self.width, self.height, self.src_format, self.get_info())
 
-    def init_encoder(self, profile):
-        cdef AVDictionary *opts = NULL
-        cdef AVDictionary *muxer_opts = NULL
+
+    def init_muxer(self, uintptr_t gen):
         global GEN_TO_ENCODER
-        cdef AVOutputFormat *oformat = get_av_output_format(strtobytes(self.muxer_format))
+        cdef AVOutputFormat *oformat = NULL
+        oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
             raise Exception("libavformat does not support %s" % self.muxer_format)
         log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <uintptr_t> oformat, flagscsv(AVFMT, oformat.flags))
@@ -820,13 +838,11 @@ cdef class Encoder(object):
         elif self.muxer_format=="webm":
             movflags = b"dash+live"
         if movflags:
-            r = av_dict_set(&muxer_opts, b"movflags", movflags, 0)
+            r = av_dict_set(&self.muxer_opts, b"movflags", movflags, 0)
             if r!=0:
                 msg = av_error_str(r)
                 raise Exception("failed to set %s muxer 'movflags' options '%s': %s" % (self.muxer_format, movflags, msg))
 
-        cdef uintptr_t gen = generation.increase()
-        GEN_TO_ENCODER[gen] = self
         self.buffer = <unsigned char*> av_malloc(DEFAULT_BUF_LEN)
         if self.buffer==NULL:
             raise Exception("failed to allocate %iKB of memory" % (DEFAULT_BUF_LEN//1024))
@@ -845,6 +861,16 @@ cdef class Encoder(object):
         self.video_stream.id = 0
         log("init_encoder() video: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.video_stream, self.muxer_ctx.nb_streams)
 
+    def write_muxer_header(self):
+        log("write_muxer_header() %s header", self.muxer_format)
+        assert self.muxer_opts!=NULL
+        r = avformat_write_header(self.muxer_ctx, &self.muxer_opts)
+        av_dict_free(&self.muxer_opts)
+        if r!=0:
+            msg = av_error_str(r)
+            raise Exception("libavformat failed to write header: %s" % msg)
+
+    def init_encoder(self, profile):
         self.video_ctx = avcodec_alloc_context3(self.video_codec)
         if self.video_ctx==NULL:
             raise Exception("failed to allocate video codec context!")
@@ -871,6 +897,7 @@ cdef class Encoder(object):
         #if oformat.flags & AVFMT_GLOBALHEADER:
         self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
         self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+        cdef AVDictionary *opts = NULL
         if self.encoding.startswith("h264") and profile:
             r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
             log("av_dict_set vprofile=%s returned %i", profile, r)
@@ -899,10 +926,12 @@ cdef class Encoder(object):
         av_dict_free(&opts)
         if r!=0:
             raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+        log("avcodec_open2 success")
 
-        r = avcodec_parameters_from_context(self.video_stream.codecpar, self.video_ctx)
-        if r<0:
-            raise Exception("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
+        if self.video_stream:
+            r = avcodec_parameters_from_context(self.video_stream.codecpar, self.video_ctx)
+            if r<0:
+                raise Exception("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
 
         if AUDIO:
             self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
@@ -935,22 +964,10 @@ cdef class Encoder(object):
             if r<0:
                 raise Exception("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
 
-        log("init_encoder() writing %s header", self.muxer_format)
-        r = avformat_write_header(self.muxer_ctx, &muxer_opts)
-        av_dict_free(&muxer_opts)
-        if r!=0:
-            msg = av_error_str(r)
-            raise Exception("libavformat failed to write header: %s" % msg)
-
         self.av_frame = av_frame_alloc()
         if self.av_frame==NULL:
             raise Exception("could not allocate an AVFrame for encoding")
         self.frames = 0
-
-        if SAVE_TO_FILE is not None:
-            filename = SAVE_TO_FILE+"-"+self.encoding+"-"+str(gen)+".%s" % self.muxer_format
-            self.file = open(filename, 'wb')
-            log.info("saving %s stream to %s", self.encoding, filename)
 
 
     def clean(self):
@@ -1020,13 +1037,14 @@ cdef class Encoder(object):
         info = {
                 "version"   : get_version(),
                 "encoding"  : self.encoding,
-                "muxer"     : self.muxer_format,
                 "formats"   : get_input_colorspaces(self.encoding),
                 "type"      : self.get_type(),
                 "frames"    : int(self.frames),
                 "width"     : self.width,
                 "height"    : self.height,
                 }
+        if self.muxer_format:
+            info["muxer"] = self.muxer_format
         if self.video_codec:
             info["video-codec"] = self.video_codec.name[:]
             info["video-description"] = self.video_codec.long_name[:]
@@ -1125,21 +1143,23 @@ cdef class Encoder(object):
             assert options.get("flush")
             frame = NULL
 
+        log("compress_image%s avcodec_send_frame frame=%#x", (image, quality, speed, options), <uintptr_t> frame)
         with nogil:
             ret = avcodec_send_frame(self.video_ctx, frame)
         if ret!=0:
             self.log_av_error(image, ret, options)
-            raise Exception(av_error_str(ret))
+            raise Exception("%i: %s" % (ret, av_error_str(ret)))
 
         buf_len = 1024+self.width*self.height
         av_init_packet(&avpkt)
         avpkt.data = <uint8_t *> memalign(buf_len)
         avpkt.size = buf_len
         assert ret==0
-        client_options = {}
         while ret==0:
+            log("compress_image%s avcodec_receive_packet avpacket=%#x", (image, quality, speed, options), <uintptr_t> &avpkt)
             with nogil:
                 ret = avcodec_receive_packet(self.video_ctx, &avpkt)
+            log("avcodec_receive_packet(..)=%i", ret)
             if ret==-errno.EAGAIN:
                 log("ffmpeg avcodec_receive_packet EAGAIN")
                 break
@@ -1163,37 +1183,47 @@ cdef class Encoder(object):
                 self.log_error(image, "packet", options, "av packet is corrupt")
                 raise Exception("av packet is corrupt")
 
-            avpkt.stream_index = self.video_stream.index
-            r = av_write_frame(self.muxer_ctx, &avpkt)
-            log("av_write_frame packet returned %i", r)
-            if ret<0:
-                free(avpkt.data)
-                self.log_av_error(image, ret, options)
-                raise Exception(av_error_str(ret))
-            while True:
-                r = av_write_frame(self.muxer_ctx, NULL)
-                log("av_write_frame flush returned %i", r)
-                if r==1:
-                    break
+            if self.muxer_format:
+                #give the frame to the muxer:
+                #(the muxer will append to self.buffers)
+                avpkt.stream_index = self.video_stream.index
+                r = av_write_frame(self.muxer_ctx, &avpkt)
+                log("av_write_frame packet returned %i", r)
                 if ret<0:
                     free(avpkt.data)
                     self.log_av_error(image, ret, options)
                     raise Exception(av_error_str(ret))
+                #flush muxer:
+                while True:
+                    r = av_write_frame(self.muxer_ctx, NULL)
+                    log("av_write_frame flush returned %i", r)
+                    if r==1:
+                        break
+                    if ret<0:
+                        free(avpkt.data)
+                        self.log_av_error(image, ret, options)
+                        raise Exception(av_error_str(ret))
+            else:
+                #process frame data without a muxer:
+                self.buffers.append(avpkt.data[:avpkt.size])
         av_packet_unref(&avpkt)
         free(avpkt.data)
+
+        client_options = {}
         if self.frames==0 and self.profile:
             client_options["profile"] = self.profile
             client_options["level"] = "3.0"
-        client_options["frame"] = int(self.frames)
-        if self.frames==0:
-            log("%s client options for first frame: %s", self.encoding, client_options)
-        self.frames += 1
         data = b"".join(self.buffers)
-        log("compress_image(%s) %5i bytes (%i buffers) for %4s frame %-3i, client options: %s", image, len(data), len(self.buffers), self.encoding, self.frames, client_options)
         if self.buffers and self.file:
             for x in self.buffers:
                 self.file.write(x)
             self.file.flush()
+        if data:
+            client_options["frame"] = int(self.frames)
+            if self.frames==0:
+                log("%s client options for first frame: %s", self.encoding, client_options)
+            self.frames += 1
+        log("compress_image(%s) %5i bytes (%i buffers) for %4s with client options: %s", image, len(data), len(self.buffers), self.encoding, client_options)
         self.buffers = []
         return data, client_options
 
