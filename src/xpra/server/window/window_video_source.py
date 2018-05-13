@@ -95,7 +95,6 @@ class WindowVideoSource(WindowSource):
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
         nse = self.encoding_options.strlistget("non-scroll", self.non_video_encodings)
-        self.non_scroll_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nse]
         self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
 
         #those two instances should only ever be modified or accessed from the encode thread:
@@ -127,7 +126,6 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = ()
         self.common_video_encodings = ()
         self.non_video_encodings = ()
-        self.non_scroll_encodings = ()
         self.edge_encoding = None
         self.start_video_frame = 0
         self.b_frame_flush_timer = None
@@ -187,7 +185,6 @@ class WindowVideoSource(WindowSource):
         addcinfo("encoder", self._video_encoder)
         info.setdefault("encodings", {}).update({
                                                  "non-video"    : self.non_video_encodings,
-                                                 "non-scroll"   : self.non_scroll_encodings,
                                                  "video"        : self.common_video_encodings,
                                                  "edge"         : self.edge_encoding or "",
                                                  })
@@ -320,12 +317,8 @@ class WindowVideoSource(WindowSource):
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except:
             self.edge_encoding = None
-        #non-scroll encodings default to the same list as non-video,
-        #but some clients may wish to use different settings:
-        nse = properties.strlistget("non-scroll", self.non_scroll_encodings)
-        self.non_scroll_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nse]
-        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, non_scroll_encodings=%s, edge_encoding=%s, scaling_control=%s",
-            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.non_scroll_encodings, self.edge_encoding, self.scaling_control)
+        log("do_set_client_properties(%s) full_csc_modes=%s, video_scaling=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
+            properties, self.full_csc_modes, self.supports_video_scaling, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
         if self.common_video_encodings or self.supports_scrolling:
@@ -1692,7 +1685,7 @@ class WindowVideoSource(WindowSource):
 
         #don't download the pixels if we have a GPU buffer,
         #since that means we're likely to be able to compress on the GPU too with NVENC:
-        if self.supports_scrolling and image.has_pixels() and self.content_type!="video":
+        if self.supports_scrolling and image.has_pixels() and self.content_type!="video" and self.non_video_encodings:
             scroll_data = self.scroll_data
             if self.b_frame_flush_timer and scroll_data:
                 scrolllog("not testing scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
