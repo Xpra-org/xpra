@@ -454,8 +454,8 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
 cdef class Encoder:
     cdef unsigned long frames
     cdef x264_t *context
-    cdef int width
-    cdef int height
+    cdef unsigned int width
+    cdef unsigned int height
     #cdef int opencl
     cdef object src_format
     cdef object source
@@ -478,7 +478,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
+    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -636,8 +636,8 @@ cdef class Encoder:
             })
         if self.bytes_in>0 and self.bytes_out>0:
             info.update({
-                "bytes_in"  : self.bytes_in,
-                "bytes_out" : self.bytes_out,
+                "bytes_in"  : int(self.bytes_in),
+                "bytes_out" : int(self.bytes_out),
                 "ratio_pct" : int(100.0 * self.bytes_out / self.bytes_in),
                 })
         if self.frames>0 and self.time>0:
@@ -704,6 +704,10 @@ cdef class Encoder:
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
         cdef int i                        #@DuplicatedSignature
+
+        assert image.get_width()>=self.width
+        assert image.get_height()>=self.height
+        assert image.get_pixel_format()==self.src_format
 
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
