@@ -195,16 +195,18 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
             try:
                 options = {"b-frames" : True}
                 e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1,1), options)
-                image = make_test_image(cs_in, W, H)
-                v = e.compress_image(image, options=options)
-                if v is None:
-                    raise Exception("%s compression failed" % encoding)
-                data, meta = v
-                if not data:
-                    delayed = meta.get("delayed", 0)
-                    assert delayed>0, "data is empty and there are no delayed frames!"
-                    #now we should get one:
-                    data, meta = e.flush(delayed)
+                for i in range(2):
+                    image = make_test_image(cs_in, W, H)
+                    v = e.compress_image(image, options=options)
+                    if v is None:
+                        raise Exception("%s compression failed" % encoding)
+                    data, meta = v
+                    if not data:
+                        delayed = meta.get("delayed", 0)
+                        assert delayed>0, "data is empty and there are no delayed frames!"
+                        if i>0:
+                            #now we should get one:
+                            data, meta = e.flush(delayed)
                 del image
                 assert data is not None, "None data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
                 assert len(data)>0, "no compressed data for %s using %s encoding with %s / %s" % (encoder_module.get_type(), encoding, cs_in, cs_out)
