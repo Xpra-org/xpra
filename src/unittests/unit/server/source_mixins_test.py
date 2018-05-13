@@ -47,7 +47,10 @@ class SourceMixinsTest(unittest.TestCase):
 		if not devices:
 			return
 		from xpra.server.source.webcam_mixin import WebcamMixin
-		wm = WebcamMixin(True, None, ["png", "jpeg"])
+		wm = WebcamMixin()
+		self.webcam_enabled	 = True
+		self.webcam_device	  = None
+		self.webcam_encodings   = ["png", "jpeg"]
 		wm.init_state()
 		wm.hello_sent = True
 		packets = []
@@ -81,7 +84,8 @@ class SourceMixinsTest(unittest.TestCase):
 		#test disabled:
 		#what the client sets doesn't matter:
 		for e in (True, False):
-			av = AVSyncMixin(False)
+			av = AVSyncMixin()
+			av.av_sync = False
 			av.window_sources = {}
 			av.init_state()
 			caps = typedict({"av-sync" : e})
@@ -94,7 +98,8 @@ class SourceMixinsTest(unittest.TestCase):
 		def get_sound_source_latency():
 			return 20
 		for e in (True, False):
-			av = AVSyncMixin(True)
+			av = AVSyncMixin()
+			av.av_sync = True
 			av.window_sources = {}
 			av.init_state()
 			av.get_sound_source_latency = get_sound_source_latency
