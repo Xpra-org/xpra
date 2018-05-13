@@ -85,6 +85,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.bottomoffset = parseInt(jQuery(this.div).css('border-bottom-width'), 10);
 
 	// Hook up the events we want to receive:
+	this.set_focus_cb = set_focus_cb || null;
 	this.mouse_move_cb = mouse_move_cb || null;
 	this.mouse_down_cb = mouse_down_cb || null;
 	this.mouse_up_cb = mouse_up_cb || null;
