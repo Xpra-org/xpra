@@ -234,7 +234,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                             out = e.compress_image(image, options=options)
                         except:
                             out = None
-                        assert out is None, "encoder %s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), encoding, w, h, W, H)
+                        assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), e.get_info(), encoding, w, h, W, H)
             finally:
                 e.clean()
 
