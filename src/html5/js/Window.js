@@ -1000,7 +1000,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 		var vsb = me.media_source.addSourceBuffer(codec_string);
 	    vsb.mode = "sequence";
 		me.video_source_buffer = vsb;
-		if (this.debug_categories.includes("draw")) {
+		if (me.debug_categories.includes("draw")) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
 		}
 		vsb.addEventListener('error', function(e) { me.error("video source buffer error"); });
