@@ -1,13 +1,13 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.0
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.ffmpeg.org
-Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.bz2
+Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	x264-xpra-devel
@@ -60,9 +60,13 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-decoder=vp8 \
 	--enable-decoder=vp9 \
 	--enable-decoder=mpeg4 \
+	--enable-decoder=mpeg1video \
+	--enable-decoder=mpeg2video \
 	--enable-encoder=libvpx_vp8 \
 	--enable-encoder=libvpx_vp9 \
 	--enable-encoder=mpeg4 \
+	--enable-encoder=mpeg1video \
+	--enable-encoder=mpeg2video \
 	--enable-encoder=libx264 \
 	--enable-encoder=aac \
 	--enable-muxer=mp4 \
@@ -145,6 +149,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat May 12 2018 Antoine Martin <antoine@devloop.org.uk> 4.0-2
+- enable mpeg1
+
 * Sat Apr 21 2018 Antoine Martin <antoine@devloop.org.uk> 4.0-1
 - new upstream release
 

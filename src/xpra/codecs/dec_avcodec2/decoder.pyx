@@ -86,6 +86,8 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_VP8
     AVCodecID AV_CODEC_ID_VP9
     AVCodecID AV_CODEC_ID_MPEG4
+    AVCodecID AV_CODEC_ID_MPEG1VIDEO
+    AVCodecID AV_CODEC_ID_MPEG2VIDEO
 
     #init and free:
     AVCodec *avcodec_find_decoder(AVCodecID id)
@@ -146,6 +148,10 @@ if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
     CODECS.append("h265")
 if avcodec_find_decoder(AV_CODEC_ID_MPEG4)!=NULL:
     CODECS.append("mpeg4")
+if avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
+    CODECS.append("mpeg1")
+if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
+    CODECS.append("mpeg2")
 #crashes with ffmpeg 3.4.2 on win32, not sure when this started
 if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL and not WIN32:
     VP9_CS = []
@@ -196,7 +202,7 @@ def get_input_colorspaces(encoding):
         return []
     if encoding in ("h264", "h265"):
         return COLORSPACES
-    elif encoding in ("vp8", "mpeg4"):
+    elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return ["YUV420P"]
     assert encoding=="vp9"
     return VP9_CS
@@ -207,7 +213,7 @@ def get_output_colorspace(encoding, csc):
     if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
         #h264 from plain RGB data is returned as "GBRP"!
         return "GBRP"
-    elif encoding in ("vp8", "mpeg4"):
+    elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return "YUV420P"
     #everything else as normal:
     return csc
@@ -338,6 +344,8 @@ cdef class Decoder:
             CodecID = AV_CODEC_ID_VP9
         elif self.encoding=="mpeg4":
             CodecID = AV_CODEC_ID_MPEG4
+        elif self.encoding=="mpeg1":
+            CodecID = AV_CODEC_ID_MPEG1VIDEO
         else:
             raise Exception("invalid codec; %s" % self.encoding)
         self.codec = avcodec_find_decoder(CodecID)
