@@ -25,6 +25,7 @@
 		<script type="text/javascript" src="js/lib/lz4.js"></script>
 		<script type="text/javascript" src="js/lib/forge.js"></script>
 
+		<script type="text/javascript" src="js/lib/jsmpeg.js"></script>
 		<script type="text/javascript" src="js/lib/broadway/Decoder.js"></script>
 		<script type="text/javascript" src="js/lib/aurora/aurora.js"></script>
 		<!--
@@ -286,10 +287,13 @@
 
 			    // mediasource video
 			    if(video) {
-			    	client.supported_encodings.push("h264");
-				    if(mediasource_video) {
-				    	client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
-				    }
+					client.supported_encodings.push("h264");
+					if (JSMpeg && JSMpeg.Renderer && JSMpeg.Decoder) {
+						client.supported_encodings.push("mpeg1");
+					}
+					if(mediasource_video) {
+						client.supported_encodings.push("vp8+webm", "h264+mp4", "mpeg4+mp4");
+					}
 			    }
 			    else if(encoding && (encoding !== "auto")) {
 					// the primary encoding can be set

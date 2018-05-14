@@ -1068,7 +1068,29 @@ var DEFAULT_BOX_COLORS = {
         "vp9"     : "lavender",
         "mpeg4"   : "black",
         "scroll"  : "brown",
+        "mpeg1"   : "olive",
         }
+
+XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
+	if (this.jsmpeg_renderer==null) {
+		var options = new Object();
+		if (JSMpeg.Renderer.WebGL.IsSupported()) {
+			this.jsmpeg_renderer = new JSMpeg.Renderer.WebGL(options);
+		}
+		else {
+			this.jsmpeg_renderer = new JSMpeg.Renderer.Canvas2D(options);
+		}
+	}
+	return this.jsmpeg_renderer;
+}
+
+XpraWindow.prototype._close_jsmpeg = function _close_jsmpeg() {
+	if (this.jsmpeg_renderer!=null) {
+		this.jsmpeg_renderer.destroy();
+	}
+	//decoder doesn't need cleanup?
+	this.jsmpeg_decoder = null;
+}
 
 XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
 	this.debug("draw", "do_paint(", img_data.length, " bytes of ", ("zlib" in options?"zlib ":""), coding, " data ", width, "x", height, " at ", x, ",", y, ") focused=", this.focused);
@@ -1161,6 +1183,36 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			}
 			j.src = "data:image/"+coding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 		}
+		else if (coding=="mpeg1") {
+			var frame = options["frame"] || 0;
+			if (frame==0 || this.jsmpeg_decoder==null) {
+				var options = new Object();
+				options.streaming = true;
+				options.decodeFirstFrame = false;
+				this.jsmpeg_decoder = new JSMpeg.Decoder.MPEG1Video(options);
+				//TODO: instead of delegating, we should probably subclass the renderer
+				// (but which one! GL or not?):
+				var renderer = new Object();
+				renderer.render = function render(Y, Cr, Cb) {
+					var jsmpeg_renderer = me.get_jsmpeg_renderer();
+					jsmpeg_renderer.render(Y, Cr, Cb);
+					var canvas = jsmpeg_renderer.canvas;
+					me.offscreen_canvas_ctx.drawImage(canvas, x, y, width, height);
+					paint_box("olive", x, y, width, height);
+				}
+				renderer.resize = function resize(newWidth, newHeight) {
+					var jsmpeg_renderer = me.get_jsmpeg_renderer();
+					jsmpeg_renderer.resize(newWidth, newHeight);
+				}
+				this.jsmpeg_decoder.connect(renderer);
+			}
+			var pts = frame;
+			this.jsmpeg_decoder.write(pts, img_data);
+			var decoded = this.jsmpeg_decoder.decode();
+			this.debug("draw", coding, "frame", frame, "data len=", img_data.length, "decoded=", decoded);
+			//TODO: only call painted when we have actually painted the frame?
+			painted();
+		}
 		else if (coding=="h264") {
 			var frame = options["frame"] || 0;
 			if(frame==0) {
@@ -1244,6 +1296,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
  */
 XpraWindow.prototype.destroy = function destroy() {
 	// remove div
+	this._close_jsmpeg();
 	this._close_broadway();
 	this._close_video();
 	this.div.remove();
