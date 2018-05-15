@@ -624,6 +624,14 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     ignored_flags = kw.pop("ignored_flags", [])
     ignored_tokens = kw.pop("ignored_tokens", [])
 
+    #for distros that don't patch distutils,
+    #we have to add the python cflags:
+    if not (is_Fedora() or is_Debian() or is_CentOS()):
+        import shlex
+        import sysconfig
+        for x in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
+            add_to_keywords(kw, 'extra_compile_args', x)
+
     if len(pkgs_options)>0:
         package_names = []
         #find out which package name to use from potentially many options
