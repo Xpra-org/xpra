@@ -800,6 +800,11 @@ cdef class Encoder:
             log.warn("Warning: h264 nals do not match frame size")
             log.warn(" expected %i bytes, but got %i nals and %i bytes", frame_size, len(bnals), len(cdata))
         self.bytes_out += frame_size
+        #restore speed and quality if we temporarily modified them:
+        if speed>=0:
+            self.set_encoding_speed(self.speed)
+        if quality>=0:
+            self.set_encoding_quality(self.quality)
         #info for client:
         client_options = {
                 "frame"     : int(self.frames),
