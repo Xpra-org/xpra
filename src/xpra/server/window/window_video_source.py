@@ -94,7 +94,6 @@ class WindowVideoSource(WindowSource):
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
-        nse = self.encoding_options.strlistget("non-scroll", self.non_video_encodings)
         self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
 
         #those two instances should only ever be modified or accessed from the encode thread:
