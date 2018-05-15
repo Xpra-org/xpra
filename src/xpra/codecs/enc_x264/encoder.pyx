@@ -106,6 +106,8 @@ cdef extern from "x264.h":
     int X264_TYPE_BREF
     int X264_TYPE_B
 
+    int X264_WEIGHTP_NONE
+
     const char * const *x264_preset_names
 
     ctypedef struct rc:
@@ -151,6 +153,7 @@ cdef extern from "x264.h":
         int         i_mv_range_thread   # minimum space between threads. -1 = auto, based on number of threads. */
         int         i_subpel_refine     # subpixel motion estimation quality */
         int         i_weighted_pred     # weighting for P-frames
+        int         b_weighted_bipred   # implicit weighting for B-frames
 
     ctypedef struct x264_param_t:
         unsigned int cpu
@@ -520,35 +523,22 @@ cdef class Encoder:
             log.info("saving %s stream to %s", encoding, filename)
 
     def get_tune(self):
+        log("x264: get_tune() TUNE=%s, fast_decode=%s, source=%s", TUNE, self.fast_decode, self.source)
         if TUNE:
             return TUNE
-        if self.fast_decode:
-            return b"fastdecode"
         if self.source=="video":
             return b"film"
         #return "animation"
         return b"zerolatency"
 
-    cdef init_encoder(self, options_dict={}):
+    cdef init_encoder(self, options):
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
         x264_param_default_preset(&param, strtobytes(preset), strtobytes(self.tune))
-        param.i_width = self.width
-        param.i_height = self.height
-        param.i_csp = self.colorspace
-        set_f_rf(&param, get_x264_quality(self.quality, self.profile))
-        self.tune_param(&param)
         x264_param_apply_profile(&param, self.profile)
-        param.pf_log = <void *> X264_log
-        param.i_log_level = LOG_LEVEL
-        #client can tune these options:
-        options = typedict(options_dict)
-        param.b_open_gop =options.boolget("h264.open-gop", param.b_open_gop)
-        param.b_deblocking_filter = options.boolget("h264.deblocking-filter", param.b_deblocking_filter)
-        param.b_bluray_compat = options.boolget("h264.bluray-compat", param.b_bluray_compat)
-        param.b_cabac = options.boolget("h264.cabac", param.b_cabac)
+        self.tune_param(&param, options)
 
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
@@ -565,8 +555,9 @@ cdef class Encoder:
                     {0 : "auto"}.get(param.i_threads, param.i_threads), bool(param.b_sliced_threads))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    cdef tune_param(self, x264_param_t *param):
+    cdef tune_param(self, x264_param_t *param, options):
         param.i_threads = THREADS
+        param.i_lookahead_threads = 0
         if self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
@@ -589,6 +580,22 @@ cdef class Encoder:
             #specifically told this is not video,
             #so use a simple motion search:
             param.analyse.i_me_method = X264_ME_DIA
+        set_f_rf(param, get_x264_quality(self.quality, self.profile))
+        #client can tune these options:
+        param.b_open_gop = options.boolget("h264.open-gop", param.b_open_gop)
+        param.b_deblocking_filter = not self.fast_decode and options.boolget("h264.deblocking-filter", param.b_deblocking_filter)
+        param.b_cabac = not self.fast_decode and options.boolget("h264.cabac", param.b_cabac)
+        param.b_bluray_compat = options.boolget("h264.bluray-compat", param.b_bluray_compat)
+        if self.fast_decode:
+            param.analyse.b_weighted_bipred = 0
+            param.analyse.i_weighted_pred = X264_WEIGHTP_NONE
+        #input format:
+        param.i_width = self.width
+        param.i_height = self.height
+        param.i_csp = self.colorspace
+        #logging hook:
+        param.pf_log = <void *> X264_log
+        param.i_log_level = LOG_LEVEL
 
 
     def clean(self):                        #@DuplicatedSignature
@@ -889,7 +896,7 @@ cdef class Encoder:
         assert self.context!=NULL, "context is closed!"
         #adjust quality:
         set_f_rf(param, get_x264_quality(self.quality, self.profile))
-        self.tune_param(param)
+        self.tune_param(param, typedict())
         #apply it:
         if x264_encoder_reconfig(self.context, param)!=0:
             raise Exception("x264_encoder_reconfig failed")
