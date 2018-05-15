@@ -543,16 +543,7 @@ cdef class Encoder:
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
         log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, source=%s", <uintptr_t> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.source)
-        log(" preset=%s, profile=%s, tune=%s", preset, self.profile, self.tune)
-        log(" me=%s, me_range=%s, mv_range=%s, weighted-pred=%i",
-                    ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method), param.analyse.i_me_range, param.analyse.i_mv_range, param.analyse.i_weighted_pred)
-        log(" b-frames=%i, max delayed frames=%i", self.b_frames, maxd)
-        log(" vfr-input=%s, lookahead=%i, sync-lookahead=%i, mb-tree=%s, bframe-adaptive=%s",
-                    bool(param.b_vfr_input), param.rc.i_lookahead, param.i_sync_lookahead, bool(param.rc.b_mb_tree), ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive))
-        log(" open-gop=%s, bluray-compat=%s, cabac=%s, deblocking-filter=%s", bool(param.b_open_gop), bool(param.b_bluray_compat), bool(param.b_cabac), bool(param.b_deblocking_filter))
-        log(" intra-refresh=%s, interlaced=%s, constrained_intra=%s", bool(param.b_intra_refresh), bool(param.b_interlaced), bool(param.b_constrained_intra))
-        log(" threads=%s, sliced-threads=%s",
-                    {0 : "auto"}.get(param.i_threads, param.i_threads), bool(param.b_sliced_threads))
+        log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
     cdef tune_param(self, x264_param_t *param, options):
@@ -650,6 +641,9 @@ cdef class Encoder:
             "frame-types"   : self.frame_types,
             "delayed"       : self.delayed_frames,
             })
+        cdef x264_param_t param
+        x264_encoder_parameters(self.context, &param)
+        info["params"] = self.get_param_info(&param)
         if self.bytes_in>0 and self.bytes_out>0:
             info.update({
                 "bytes_in"  : int(self.bytes_in),
@@ -679,6 +673,29 @@ cdef class Encoder:
                 "ms_per_frame"  : int(1000.0*ms_per_frame/f),
                 })
         return info
+
+    cdef get_param_info(self, x264_param_t *param):
+        return {
+            "me"                :   {
+                "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
+                "me-range"          : param.analyse.i_me_range,
+                "mv-range"          : param.analyse.i_mv_range,
+                "weighted-pred"     : param.analyse.i_weighted_pred,
+                },
+            "vfr-input"         : bool(param.b_vfr_input),
+            "lookahead"         : param.rc.i_lookahead,
+            "mb-tree"           : bool(param.rc.b_mb_tree),
+            "bframe-adaptive"   :  ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive),
+            "open-gop"          : bool(param.b_open_gop),
+            "bluray-compat"     : bool(param.b_bluray_compat),
+            "cabac"             : bool(param.b_cabac),
+            "deblocking-filter" : bool(param.b_deblocking_filter),
+            "intra-refresh"     : bool(param.b_intra_refresh),
+            "interlaced"        : bool(param.b_interlaced),
+            "constrained_intra" : bool(param.b_constrained_intra),
+            "threads"           : {0 : "auto"}.get(param.i_threads, param.i_threads),
+            "sliced-threads"    : bool(param.b_sliced_threads),
+            }
 
     def __repr__(self):
         if self.src_format is None:
