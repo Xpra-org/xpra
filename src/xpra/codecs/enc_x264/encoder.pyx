@@ -782,7 +782,7 @@ cdef class Encoder:
             return None
         self.delayed_frames = x264_encoder_delayed_frames(self.context)
         if i_nals==0:
-            if self.b_frames and self.delayed_frames>0:
+            if self.delayed_frames>0:
                 log("x264 encode %i delayed frames after %i", self.delayed_frames, self.frames)
                 return None, {
                     "delayed" : self.delayed_frames,
