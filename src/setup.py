@@ -632,6 +632,27 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for x in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', x)
 
+    def add_tokens(s):
+        if not s:
+            return
+        flag_map = {'-I': 'include_dirs',
+                    '-L': 'library_dirs',
+                    '-l': 'libraries'}
+        for token in s.split():
+            if token in ignored_tokens:
+                pass
+            elif token[:2] in ignored_flags:
+                pass
+            elif token[:2] in flag_map:
+                if len(token)>2:
+                    add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
+                else:
+                    print("Warning: invalid token '%s'" % token)
+            elif token.startswith("-W"):
+                add_to_keywords(kw, 'extra_compile_args', token)
+            else:# throw others to extra_link_args
+                add_to_keywords(kw, 'extra_link_args', token)
+
     if len(pkgs_options)>0:
         package_names = []
         #find out which package name to use from potentially many options
@@ -657,32 +678,11 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             package_names.append(valid_option)
         if verbose_ENABLED and list(pkgs_options)!=list(package_names):
             print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
-        flag_map = {'-I': 'include_dirs',
-                    '-L': 'library_dirs',
-                    '-l': 'libraries'}
         pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
         r, pkg_config_out, err = get_status_output(pkg_config_cmd)
         if r!=0:
             sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(cmd), err))
-        env_cflags = os.environ.get("CFLAGS")       #["dpkg-buildflags", "--get", "CFLAGS"]
-        env_ldflags = os.environ.get("LDFLAGS")     #["dpkg-buildflags", "--get", "LDFLAGS"]
-        for s in (pkg_config_out, env_cflags, env_ldflags):
-            if not s:
-                continue
-            for token in s.split():
-                if token in ignored_tokens:
-                    pass
-                elif token[:2] in ignored_flags:
-                    pass
-                elif token[:2] in flag_map:
-                    if len(token)>2:
-                        add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
-                    else:
-                        print("Warning: invalid token '%s'" % token)
-                elif token.startswith("-W"):
-                    add_to_keywords(kw, 'extra_compile_args', token)
-                else:# throw others to extra_link_args
-                    add_to_keywords(kw, 'extra_link_args', token)
+        add_tokens(pkg_config_out)
     if warn_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
         add_to_keywords(kw, 'extra_link_args', "-Wall")
@@ -732,6 +732,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if rpath and kw.get("libraries"):
         insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
+    add_tokens(os.environ.get("CFLAGS"))       #["dpkg-buildflags", "--get", "CFLAGS"]
+    add_tokens(os.environ.get("LDFLAGS"))      #["dpkg-buildflags", "--get", "LDFLAGS"]
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
