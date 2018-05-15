@@ -19,6 +19,8 @@ from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.os_util import Queue
 
+TEST_TIMEOUT = 1000
+
 
 class fake_subprocess():
     """ defined just so the protocol layer can call terminate() on it """
@@ -103,7 +105,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         def timeout_error():
             self.timeout = True
             stop()
-        glib.timeout_add(500, timeout_error)
+        glib.timeout_add(TEST_TIMEOUT, timeout_error)
         sent_str = b"hello foo"
         glib.idle_add(lp.send, "foo", sent_str)
         glib.idle_add(lp.send, "bar", b"hello bar")
@@ -137,7 +139,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         def timeout_error():
             self.timeout = True
             loop_stop()
-        glib.timeout_add(500, timeout_error)
+        glib.timeout_add(TEST_TIMEOUT, timeout_error)
         signal_string = b"hello foo"
         glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
