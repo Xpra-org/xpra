@@ -1042,6 +1042,8 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.csc_atoms"		: true,
 		"encoding.scrolling"		: true,
 		//"encoding.scrolling.min-percent" : 30,
+		//"encoding.min-speed"		: 80,
+		//"encoding.min-quality"	: 50,
 		"encoding.color-gamut"		: Utilities.getColorGamut(),
 		//"encoding.non-scroll"		: ["rgb32", "png", "jpeg"],
 		//video stuff:
@@ -1058,6 +1060,7 @@ XpraClient.prototype._make_hello = function() {
 		"encoding.h264.YUV420P.level"		: "2.1",
 		"encoding.h264.cabac"				: false,
 		"encoding.h264.deblocking-filter"	: false,
+		"encoding.h264.fast-decode"			: true,
 		"encoding.h264+mp4.YUV420P.profile"	: "main",
 		"encoding.h264+mp4.YUV420P.level"	: "3.0",
 		//prefer native video in mp4/webm container to broadway plain h264:

@@ -456,6 +456,7 @@ cdef class Encoder:
     cdef x264_t *context
     cdef unsigned int width
     cdef unsigned int height
+    cdef unsigned int fast_decode
     #cdef int opencl
     cdef object src_format
     cdef object source
@@ -479,6 +480,7 @@ cdef class Encoder:
     cdef object __weakref__
 
     def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
+        options = typedict(options)
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -489,18 +491,21 @@ cdef class Encoder:
         self.quality = quality
         self.speed = speed
         #self.opencl = USE_OPENCL and width>=32 and height>=32
+        self.source = options.strget("source", "unknown")      #ie: "video"
+        self.b_frames = options.intget("b-frames", 0)
+        self.fast_decode = options.boolget("h264.fast-decode", False)
+        if self.fast_decode:
+            speed = max(70, speed)
         self.preset = get_preset_for_speed(speed)
         self.src_format = src_format
         self.colorspace = cs_info[0]
-        self.source = options.get("source", "unknown")      #ie: "video"
-        self.b_frames = options.get("b-frames", 0)
         self.frames = 0
         self.frame_types = {}
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
         self.first_frame_timestamp = 0
         self.profile = self._get_profile(options, self.src_format)
-        self.export_nals = typedict(options).intget("h264.export-nals", 0)
+        self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("invalid profile specified for %s: %s (must be one of: %s)" % (src_format, self.profile, cs_info[2]))
             self.profile = None
@@ -517,6 +522,8 @@ cdef class Encoder:
     def get_tune(self):
         if TUNE:
             return TUNE
+        if self.fast_decode:
+            return b"fastdecode"
         if self.source=="video":
             return b"film"
         #return "animation"
@@ -560,7 +567,7 @@ cdef class Encoder:
 
     cdef tune_param(self, x264_param_t *param):
         param.i_threads = THREADS
-        if self.speed>=MIN_SLICED_THREADS_SPEED:
+        if self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = SLICED_THREADS
         #we never lose frames or use seeking, so no need for regular I-frames:
         param.i_keyint_max = X264_KEYINT_MAX_INFINITE
@@ -593,6 +600,7 @@ cdef class Encoder:
         self.frames = 0
         self.width = 0
         self.height = 0
+        self.fast_decode = 0
         self.src_format = ""
         self.source = None
         self.profile = None
@@ -619,6 +627,7 @@ cdef class Encoder:
         info.update({
             "profile"       : self.profile,
             "preset"        : get_preset_names()[self.preset],
+            "fast-decode"   : bool(self.fast_decode),
             "b-frames"      : self.b_frames,
             "tune"          : self.tune or "",
             "frames"        : int(self.frames),
