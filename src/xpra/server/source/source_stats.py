@@ -91,20 +91,23 @@ class GlobalPerformanceStatistics(object):
         return [(event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid==wid]
 
     def update_averages(self):
+        def latency_averages(values):
+            avg, recent = calculate_time_weighted_average(values)
+            return max(1, avg), max(1, recent)
         if len(self.client_latency)>0:
             data = [(when, latency) for _, when, _, latency in tuple(self.client_latency)]
             self.min_client_latency = min([x for _,x in data])
-            self.avg_client_latency, self.recent_client_latency = calculate_time_weighted_average(data)
+            self.avg_client_latency, self.recent_client_latency = latency_averages(data)
         #client ping latency: from ping packets
         if len(self.client_ping_latency)>0:
             data = tuple(self.client_ping_latency)
             self.min_client_ping_latency = min([x for _,x in data])
-            self.avg_client_ping_latency, self.recent_client_ping_latency = calculate_time_weighted_average(data)
+            self.avg_client_ping_latency, self.recent_client_ping_latency = latency_averages(data)
         #server ping latency: from ping packets
         if len(self.server_ping_latency)>0:
             data = tuple(self.server_ping_latency)
             self.min_server_ping_latency = min([x for _,x in data])
-            self.avg_server_ping_latency, self.recent_server_ping_latency = calculate_time_weighted_average(data)
+            self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(data)
         #set to 0 if we have less than 2 events in the last 60 seconds:
         now = monotonic_time()
         min_time = now-60
