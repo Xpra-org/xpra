@@ -632,7 +632,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for x in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', x)
 
-    def add_tokens(s):
+    def add_tokens(s, extra="extra_link_args", extra_map={"-W" : "extra_compile_args"}):
         if not s:
             return
         flag_map = {'-I': 'include_dirs',
@@ -648,10 +648,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     add_to_keywords(kw, flag_map.get(token[:2]), token[2:])
                 else:
                     print("Warning: invalid token '%s'" % token)
-            elif token.startswith("-W"):
-                add_to_keywords(kw, 'extra_compile_args', token)
-            else:# throw others to extra_link_args
-                add_to_keywords(kw, 'extra_link_args', token)
+            else:
+                extra_name = extra_map.get(token, extra)
+                add_to_keywords(kw, extra_name, token)
 
     if len(pkgs_options)>0:
         package_names = []
@@ -732,8 +731,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if rpath and kw.get("libraries"):
         insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", "-Wl,-rpath=%s" % rpath)
-    add_tokens(os.environ.get("CFLAGS"))       #["dpkg-buildflags", "--get", "CFLAGS"]
-    add_tokens(os.environ.get("LDFLAGS"))      #["dpkg-buildflags", "--get", "LDFLAGS"]
+    add_tokens(os.environ.get("CFLAGS"), "extra_compile_args", {})
+    add_tokens(os.environ.get("LDFLAGS"), "extra_link_args", {})
     #add_to_keywords(kw, 'include_dirs', '.')
     if verbose_ENABLED:
         print("exec_pkgconfig(%s,%s)=%s" % (pkgs_options, ekw, kw))
