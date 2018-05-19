@@ -134,7 +134,7 @@ cdef class ScrollData:
         cdef Py_ssize_t buf_len = 0
         cdef Py_ssize_t min_buf_len = rowstride*height
         assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        assert buf_len>=0 and buf_len>=min_buf_len, "buffer length=%i is too small for %ix%i" % (buf_len, rowstride, height)
+        assert buf_len>=0 and buf_len>=min_buf_len, "buffer length=%i is too small for %ix%i with rowstride %i, should be %i" % (buf_len, width, height, rowstride, min_buf_len)
         cdef size_t row_len = width*bpp
         assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
         cdef uint64_t *a2 = self.a2
