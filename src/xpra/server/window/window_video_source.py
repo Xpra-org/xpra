@@ -1707,6 +1707,7 @@ class WindowVideoSource(WindowSource):
                         # to call image.free from another thread - which is theoretically more restrictive)
                         newstride = roundup(image.get_width()*image.get_bytesperpixel(), 4)
                         image.restride(newstride)
+                        stride = image.get_rowstride()
                     bpp = image.get_bytesperpixel()
                     pixels = image.get_pixels()
                     if not pixels:
