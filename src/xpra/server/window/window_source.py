@@ -1720,7 +1720,7 @@ class WindowSource(WindowIconSource):
     def get_refresh_encoding(self, w, h, speed, quality, coding):
         refresh_encodings = self.auto_refresh_encodings
         encoding = refresh_encodings[0]
-        if self.refresh_quality<100:
+        if self.refresh_quality<100 and self.image_depth in (24, 32):
             for x in ("jpeg", "webp"):
                 if x in self.auto_refresh_encodings:
                     return x
