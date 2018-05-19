@@ -908,7 +908,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 add_mdns("ssh", "", ssh_port)
 
     def b(v):
-        return v.lower() not in FALSE_OPTIONS
+        return str(v).lower() not in FALSE_OPTIONS
     #turn off some server mixins:
     from xpra.server import server_features
     server_features.notifications   = opts.notifications
