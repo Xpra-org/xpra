@@ -200,6 +200,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.sync_xvfb = int(opts.sync_xvfb)
         self.system_tray = opts.system_tray
         X11ServerBase.init(self, opts)
+        self.fake_xinerama = opts.fake_xinerama
         #rpc_handlers are part of DBUS_RPC_Server, which is optional
         rpc_handlers = getattr(self, "rpc_handlers", None)
         if rpc_handlers:
