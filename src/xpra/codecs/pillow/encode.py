@@ -97,13 +97,14 @@ def encode(coding, image, quality, speed, supports_transparency):
                 bpp = 24
         elif pixel_format=="RLE8":
             pixel_format = "P"
-            palette = image.get_palette()
-            rp, gp, bp = [], [], []
-            for r, g, b in palette:
-                rp.append((r>>8) & 0xFF)
-                gp.append((g>>8) & 0xFF)
-                bp.append((b>>8) & 0xFF)
-            palette = rp+gp+bp
+            palette = []
+            #pillow requires 8 bit palette values,
+            #but we get 16-bit values from the image wrapper (X11 palettes are 16-bit):
+            for r, g, b in image.get_palette():
+                palette.append((r>>8) & 0xFF)
+                palette.append((g>>8) & 0xFF)
+                palette.append((b>>8) & 0xFF)
+            bpp = 8
         #PIL cannot use the memoryview directly:
         if type(pixels)!=_buffer:
             pixels = memoryview_to_bytes(pixels)
