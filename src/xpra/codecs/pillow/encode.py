@@ -162,16 +162,19 @@ def encode(coding, image, quality, speed, supports_transparency):
             im = im.convert("L", palette=Image.ADAPTIVE, colors=255)
             bpp = 8
         elif coding=="png/P":
-            #I wanted to use the "better" adaptive method,
-            #but this does NOT work (produces a black image instead):
-            #im.convert("P", palette=Image.ADAPTIVE)
-            im = im.convert("P", palette=Image.WEB, colors=255)
+            #convert to 255 indexed colour if:
+            # * we're not in palette mode yet (source is >8bpp)
+            # * we need space for the mask (256 -> 255)
+            if palette is None or mask:
+                #I wanted to use the "better" adaptive method,
+                #but this does NOT work (produces a black image instead):
+                #im.convert("P", palette=Image.ADAPTIVE)
+                im = im.convert("P", palette=Image.WEB, colors=255)
             bpp = 8
+        kwargs = im.info
         if mask:
             # paste the alpha mask to the color of index 255
             im.paste(255, mask)
-        kwargs = im.info
-        if mask is not None:
             client_options["transparency"] = 255
             kwargs["transparency"] = 255
         if speed==0:
