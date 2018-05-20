@@ -93,8 +93,8 @@ print("Xpra version %s" % XPRA_VERSION)
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-from xpra.os_util import get_status_output, is_Ubuntu, is_Debian, is_Raspbian, getUbuntuVersion,\
-    PYTHON3, BITS
+from xpra.os_util import get_status_output, getUbuntuVersion, PYTHON3, BITS, \
+    is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
@@ -1484,7 +1484,6 @@ else:
     scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
     if POSIX and not OSX:
         libexec_scripts = []
-        from xpra.os_util import is_Fedora, is_CentOS
         if is_Fedora() or is_CentOS():
             libexec = "libexec"
         else:
