@@ -742,7 +742,7 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
     uinput_uuid = None
     if start_vfb:
         assert not proxying and xauth_data
-        pixel_depth = validate_pixel_depth(opts.pixel_depth)
+        pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
         from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process
         from xpra.server.server_util import has_uinput
         uinput_uuid = None
