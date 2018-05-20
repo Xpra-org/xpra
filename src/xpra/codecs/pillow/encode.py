@@ -10,7 +10,7 @@ from xpra.log import Logger
 log = Logger("encoder", "pillow")
 
 from xpra.util import envbool
-from xpra.os_util import BytesIOClass, memoryview_to_bytes, bytestostr, _buffer
+from xpra.os_util import BytesIOClass, bytestostr
 from xpra.net.compression import Compressed
 
 from PIL import Image, ImagePalette     #@UnresolvedImport
@@ -106,8 +106,8 @@ def encode(coding, image, quality, speed, supports_transparency):
                 palette.append((b>>8) & 0xFF)
             bpp = 8
         #PIL cannot use the memoryview directly:
-        if type(pixels)!=_buffer:
-            pixels = memoryview_to_bytes(pixels)
+        if isinstance(pixels, memoryview):
+            pixels = pixels.tobytes()
         #it is safe to use frombuffer() here since the convert()
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
