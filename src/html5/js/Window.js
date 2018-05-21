@@ -857,6 +857,12 @@ XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data)
 };
 
 
+XpraWindow.prototype.eos = function() {
+	this._close_jsmpeg();
+	this._close_broadway();
+	this._close_video();
+}
+
 
 /**
  * This function draws the contents of the off-screen canvas to the visible

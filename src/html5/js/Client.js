@@ -260,6 +260,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'initiate-moveresize': this._process_initiate_moveresize,
 		'configure-override-redirect': this._process_configure_override_redirect,
 		'desktop_size': this._process_desktop_size,
+		'eos': this._process_eos,
 		'draw': this._process_draw,
 		'cursor': this._process_cursor,
 		'bell': this._process_bell,
@@ -1048,6 +1049,7 @@ XpraClient.prototype._make_hello = function() {
 		//"encoding.non-scroll"		: ["rgb32", "png", "jpeg"],
 		//video stuff:
 		"encoding.video_scaling"	: true,
+		"encoding.eos"				: true,
 		"encoding.full_csc_modes"	: {
 			"mpeg1"		: ["YUV420P"],
 			"h264" 		: ["YUV420P"],
@@ -2107,6 +2109,11 @@ XpraClient.prototype._process_draw = function(packet, ctx) {
     }
 }
 
+XpraClient.prototype._process_eos = function(packet, ctx) {
+	ctx._process_draw(packet, ctx);
+}
+
+
 XpraClient.prototype.request_redraw = function(win) {
 	// request that drawing to screen takes place at next available opportunity if possible
 	this.debug("draw", "request_redraw for", win);
@@ -2144,9 +2151,18 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
         //no valid draw packet, likely handle errors for that here
         return;
     }
+    var ptype = packet[0],
+    	wid = packet[1];
+	var win = ctx.id_to_window[wid];
+    if (ptype=="eos") {
+		ctx.debug("draw", "eos for window", wid);
+    	if (win) {
+    		win.eos();
+    	}
+    	return;
+    }
 
     var start = Utilities.monotonicTime(),
-		wid = packet[1],
 		x = packet[2],
 		y = packet[3],
 		width = packet[4],
@@ -2158,7 +2174,6 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		options = {};
 	if (packet.length>10)
 		options = packet[10];
-	var win = ctx.id_to_window[wid];
 	var protocol = ctx.protocol;
 	if (!protocol) {
 		return;

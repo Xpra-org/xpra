@@ -1208,6 +1208,11 @@ class WindowClient(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
+        if packet[0]=="eos":
+            if window:
+                window.eos()
+            return
+        x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
         if not window:
             #window is gone
             def draw_cleanup():
@@ -1224,10 +1229,6 @@ class WindowClient(StubClientMixin):
                 self.send_damage_sequence(wid, packet_sequence, width, height, -1)
             self.idle_add(draw_cleanup)
             return
-        if packet[0]=="eos":
-            window.eos()
-            return
-        x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
         #rename old encoding aliases early:
         options = {}
         if len(packet)>10:
