@@ -702,6 +702,7 @@
 		  <dep package="python-zeroconf"/>
 		  <dep package="python-netifaces"/>
 		  <dep package="python-pyasn1"/>
+		  <dep package="python-pyasn1-modules"/>
 		  <dep package="python-pillow"/>
 		  <dep package="python-py2app"/>
 		  <dep package="python-cython"/>
@@ -717,8 +718,6 @@
 		  <dep package="python-deprecation"/>
 		  <dep package="python-lz4"/>
 		  <dep package="python-lzo"/>
-		  <dep package="python-pyasn1"/>
-		  <dep package="python-pyasn1-modules"/>
 		  <dep package="python-ldap3"/>
 		  <dep package="python-ldap"/>
 		  <dep package="python-future"/>

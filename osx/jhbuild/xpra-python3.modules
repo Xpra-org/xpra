@@ -179,7 +179,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python-pyasn1" python3="1">
+	<distutils id="python3-pyasn1" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/eb/3d/b7d0fdf4a882e26674c68c20f40682491377c4db1439870f5b6f862f76ed/pyasn1-0.4.2.tar.gz"
 			hash="sha256:d258b0a71994f7770599835249cece1caef3c70def868c4915e6e5ca49b67d15"
@@ -420,10 +420,10 @@
 			version="2.4.1">
 		</branch>
 		<dependencies>
-			<dep package="python-pyasn1"/>
+			<dep package="python3-pyasn1"/>
 		</dependencies>
 		<after>
-			<dep package="python-pyasn1"/>
+			<dep package="python3-pyasn1"/>
 		</after>
 	</distutils>
 
@@ -704,6 +704,7 @@
 		  <dep package="python3-zeroconf"/>
 		  <dep package="python3-netifaces"/>
 		  <dep package="python3-pyasn1"/>
+		  <dep package="python3-pyasn1-modules"/>
 		  <dep package="python3-pillow"/>
 		  <dep package="python3-py2app"/>
 		  <dep package="python3-cython"/>
@@ -719,8 +720,6 @@
 		  <dep package="python3-deprecation"/>
 		  <dep package="python3-lz4"/>
 		  <dep package="python3-lzo"/>
-		  <dep package="python3-pyasn1"/>
-		  <dep package="python3-pyasn1-modules"/>
 		  <dep package="python3-ldap3"/>
 		  <dep package="python3-ldap"/>
 		  <dep package="python3-future"/>
