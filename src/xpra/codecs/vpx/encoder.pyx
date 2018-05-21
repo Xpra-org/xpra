@@ -566,7 +566,7 @@ cdef class Encoder:
         if quality>=0:
             self.set_encoding_quality(quality)
         return self.do_compress_image(pic_in, strides), {
-            "frame"    : self.frames,
+            "frame"    : int(self.frames),
             #"quality"  : min(99+self.lossless, self.quality),
             #"speed"    : self.speed,
             }
