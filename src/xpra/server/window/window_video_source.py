@@ -74,6 +74,7 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling = False
         self.video_subregion = None
         WindowSource.__init__(self, *args)
+        self.supports_eos = self.encoding_options.boolget("eos")
         self.scroll_encoding = SCROLL_ENCODING
         self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
@@ -186,6 +187,7 @@ class WindowVideoSource(WindowSource):
                                                  "non-video"    : self.non_video_encodings,
                                                  "video"        : self.common_video_encodings,
                                                  "edge"         : self.edge_encoding or "",
+                                                 "eos"          : self.supports_eos,
                                                  })
         einfo = {
                  "pipeline_param" : self.get_pipeline_info(),
@@ -265,11 +267,20 @@ class WindowVideoSource(WindowSource):
             self._csc_encoder = None
             self._video_encoder = None
             def clean():
-                if csce:
-                    csce.clean()
-                if ve:
-                    ve.clean()
+                self.csc_clean(csce)
+                self.ve_clean(ve)
             self.call_in_encode_thread(False, clean)
+
+    def csc_clean(self, csce):
+        if csce:
+            csce.clean()
+
+    def ve_clean(self, ve):
+        if ve:
+            ve.clean()
+            if self.supports_eos:
+                log("sending eos for wid %i", self.wid)
+                self.queue_packet(("eos", self.wid))
 
     def ui_cleanup(self):
         WindowSource.ui_cleanup(self)
@@ -944,6 +955,8 @@ class WindowVideoSource(WindowSource):
                 ww, wh = self.window_dimensions
                 vs.identify_video_subregion(ww, wh, self.statistics.damage_events_count, self.statistics.last_damage_events, self.statistics.last_resized)
                 newrect = vs.rectangle
+                if newrect is None or old is None or newrect!=old:
+                    self.cleanup_codecs()
                 if newrect:
                     #when we have a video region, lower the lossless threshold
                     #especially for small regions
@@ -1285,14 +1298,8 @@ class WindowVideoSource(WindowSource):
 
         videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s", (encoding, width, height, src_format), encodings)
         #cleanup existing one if needed:
-        csce = self._csc_encoder
-        if csce:
-            self._csc_encoder = None
-            csce.clean()
-        ve = self._video_encoder
-        if ve:
-            self._video_encoder = None
-            ve.clean()
+        self.csc_clean(self._csc_encoder)
+        self.ve_clean(self._video_encoder)
         #and make a new one:
         w = width & self.width_mask
         h = height & self.height_mask
@@ -1389,14 +1396,8 @@ class WindowVideoSource(WindowSource):
                     return False
                 videolog.warn("Warning: failed to setup video pipeline %s", option, exc_info=True)
             #we're here because an exception occurred, cleanup before trying again:
-            csce = self._csc_encoder
-            if csce:
-                self._csc_encoder = None
-                csce.clean()
-            ve = self._video_encoder
-            if ve:
-                self._video_encoder = None
-                ve.clean()
+            self.csc_clean(self._csc_encoder)
+            self.ve_clean(self._video_encoder)
         end = monotonic_time()
         if not self.is_cancelled():
             videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
@@ -1879,8 +1880,7 @@ class WindowVideoSource(WindowSource):
             return
         if frame==0 and ve.get_type()=="x264":
             #x264 has problems if we try to re-use a context after flushing the first IDR frame
-            self._video_encoder = None
-            ve.clean()
+            self.ve_clean(self._video_encoder)
             if self.non_video_encodings:
                 log("do_flush_video_encoder() scheduling novideo refresh")
                 self.idle_add(self.refresh, {"novideo" : True})

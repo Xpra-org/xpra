@@ -256,6 +256,9 @@ class WindowClient(StubClientMixin):
             ):
             caps[x] = True
         updict(caps, "window", self.get_window_caps())
+        updict(caps, "encoding", {
+            "eos"                       : True,
+            })
         return caps
 
     def get_window_caps(self):
@@ -1179,6 +1182,9 @@ class WindowClient(StubClientMixin):
     def _process_draw(self, packet):
         self._draw_queue.put(packet)
 
+    def _process_eos(self, packet):
+        self._draw_queue.put(packet)
+
     def send_damage_sequence(self, wid, packet_sequence, width, height, decode_time, message=""):
         packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
@@ -1200,8 +1206,7 @@ class WindowClient(StubClientMixin):
 
     def _do_draw(self, packet):
         """ this runs from the draw thread above """
-        wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
-        #rename old encoding aliases early:
+        wid = packet[1]
         window = self._id_to_window.get(wid)
         if not window:
             #window is gone
@@ -1219,6 +1224,11 @@ class WindowClient(StubClientMixin):
                 self.send_damage_sequence(wid, packet_sequence, width, height, -1)
             self.idle_add(draw_cleanup)
             return
+        if packet[0]=="eos":
+            window.eos()
+            return
+        x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
+        #rename old encoding aliases early:
         options = {}
         if len(packet)>10:
             options = packet[10]
@@ -1314,6 +1324,7 @@ class WindowClient(StubClientMixin):
             "lost-window":          self._process_lost_window,
             "window-icon":          self._process_window_icon,
             "draw":                 self._process_draw,
+            "eos":                  self._process_eos,
             "cursor":               self._process_cursor,
             "bell":                 self._process_bell,
             "pointer-position":     self._process_pointer_position,

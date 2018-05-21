@@ -359,6 +359,13 @@ class WindowBackingBase(object):
         raise Exception("override me!")
 
 
+    def eos(self):
+        dl = self._decoder_lock
+        with dl:
+            self.do_clean_csc_decoder()
+            self.do_clean_video_decoder()
+
+
     def make_csc(self, src_width, src_height, src_format,
                        dst_width, dst_height, dst_format_options, speed):
         global CSC_OPTIONS

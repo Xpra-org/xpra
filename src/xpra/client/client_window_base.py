@@ -603,6 +603,12 @@ class ClientWindowBase(ClientWidgetBase):
             callbacks.append(after_draw_refresh)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
+    def eos(self):
+        """ Note: this runs from the draw thread (not UI thread) """
+        backing = self._backing
+        if backing:
+            backing.eos()
+
     def spinner(self, ok):
         if not self.can_have_spinner():
             return
