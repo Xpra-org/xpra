@@ -2000,7 +2000,8 @@ toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvfbc")
 if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
-    #add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
+    if WIN32:
+        add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
     platform = sys.platform.rstrip("0123456789")
     cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
                          ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % platform],
@@ -2017,7 +2018,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     if WIN32:
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options = [os.path.join(CUDA_DIR, x) for x in ("v7.5", "v8.0", "v9.0", "v9.1", "v9.2")] + path_options
+        path_options = [os.path.join(CUDA_DIR, x, "bin") for x in ("v7.5", "v8.0", "v9.0", "v9.1", "v9.2")] + path_options
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
