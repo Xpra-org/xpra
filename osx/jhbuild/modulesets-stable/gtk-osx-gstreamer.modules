@@ -22,8 +22,8 @@
 
   <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gstreamer/gstreamer-1.14.0.tar.xz" version="1.14.0"
-            hash="sha256:fc361367f0d4b780a868a8833f9f30b9c9f4ac9faea4e6b251db8b4b0398466e">
+    <branch module="gstreamer/gstreamer-1.14.1.tar.xz" version="1.14.1"
+            hash="sha256:28d82b0d261544a9bf85b429399929e4986eb00efcf1ce16cc71d269a4c3186c">
     </branch>
     <after>
       <dep package="glib"/>
@@ -32,9 +32,9 @@
 
   <autotools id="gst-plugins-base" autogenargs="--disable-tests --disable-x --disable-xvideo" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-base/gst-plugins-base-1.14.0.tar.xz"
-            version="1.14.0"
-            hash="sha256:7e904660ff56e02b036cf7fdfb77a50a540828ca9d2614d69ba931772e5b6940"/>
+    <branch module="gst-plugins-base/gst-plugins-base-1.14.1.tar.xz"
+            version="1.14.1"
+            hash="sha256:1026c7c3082d825d9b5d034c1a6dd8a4ebab60eb3738b0a0afde4ad2dc0b0db5"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liborc"/>
@@ -45,9 +45,9 @@
 
   <autotools id="gst-plugins-good" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video" supports-non-srcdir-builds="no"
     makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-good/gst-plugins-good-1.14.0.tar.xz"
-            version="1.14.0"
-            hash="sha256:6afa35747d528d3ab4ed8f5eac13f7235d7d28100d6a24dd78f81ec7c0d04688">
+    <branch module="gst-plugins-good/gst-plugins-good-1.14.1.tar.xz"
+            version="1.14.1"
+            hash="sha256:34ec062ddb766a32377532e039781f4a16fbc3e8b449e642605bacab26a99172">
     </branch>
     <dependencies>
       <dep package="gstreamer"/>
@@ -58,9 +58,9 @@
   <autotools id="gst-plugins-ugly" autogenargs="--disable-tests"
              supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
              autogen-sh="configure">
-    <branch version="1.14.0"
-            module="gst-plugins-ugly/gst-plugins-ugly-1.14.0.tar.xz"
-            hash="sha256:3fb9ea5fc8a2de4b3eaec4128d71c6a2d81dd19befe1cd87cb833b98bcb542d1"/>
+    <branch version="1.14.1"
+            module="gst-plugins-ugly/gst-plugins-ugly-1.14.1.tar.xz"
+            hash="sha256:cff2430bb13f54ef81409a0b3d65ce409a376d4a7bab57a14a97d602539fe1d3"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
@@ -70,9 +70,9 @@
   <autotools id="gst-plugins-bad" supports-non-srcdir-builds="no"
              autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc --disable-gtk3 --disable-smoothstreaming --disable-hls --disable-dtls --disable-apple_media"
              makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch version="1.14.0"
-            module="gst-plugins-bad/gst-plugins-bad-1.14.0.tar.xz"
-            hash="sha256:ed5e2badb6f2858f60017b93334d91fe58a0e3f85ed2f37f2e931416fafb4f9f"/>
+    <branch version="1.14.1"
+            module="gst-plugins-bad/gst-plugins-bad-1.14.1.tar.xz"
+            hash="sha256:2a77c6908032aafdf2cd2e5823fec948f16a25c2d1497a953828d762dc20d61a"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
@@ -84,9 +84,9 @@
   <autotools id="gst-libav" supports-non-srcdir-builds="no"
              autogen-sh="configure"
              autogenargs="--disable-tests">
-     <branch version="1.14.0"
-            module="gst-libav/gst-libav-1.14.0.tar.xz"
-            hash="sha256:fb134b4d3e054746ef8b922ff157b0c7903d1fdd910708a45add66954da7ef89"/>
+     <branch version="1.14.1"
+            module="gst-libav/gst-libav-1.14.1.tar.xz"
+            hash="sha256:eff80a02d2f2fb9f34b67e9a26e9954d3218c7aa18e863f2a47805fa7066029d"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
