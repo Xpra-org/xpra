@@ -1924,6 +1924,8 @@ class WindowVideoSource(WindowSource):
         #check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0)>0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
+        else:
+            self.schedule_video_encoder_timer()
 
 
     def cancel_video_encoder_timer(self):
