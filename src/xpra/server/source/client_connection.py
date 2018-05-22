@@ -50,9 +50,6 @@ if server_features.input_devices:
 if server_features.dbus:
     from xpra.server.source.dbus_mixin import DBUS_Mixin
     CC_BASES.append(DBUS_Mixin)
-if server_features.encoding:
-    from xpra.server.source.encodings_mixin import EncodingsMixin
-    CC_BASES.append(EncodingsMixin)
 if server_features.network_state:
     from xpra.server.source.networkstate_mixin import NetworkStateMixin
     CC_BASES.append(NetworkStateMixin)
@@ -65,6 +62,10 @@ if server_features.display:
 if server_features.windows:
     from xpra.server.source.windows_mixin import WindowsMixin
     CC_BASES.append(WindowsMixin)
+    #must be after windows mixin so it can assume "self.send_windows" is set
+    if server_features.encoding:
+        from xpra.server.source.encodings_mixin import EncodingsMixin
+        CC_BASES.append(EncodingsMixin)
 from xpra.server.source.idle_mixin import IdleMixin
 CC_BASES.append(IdleMixin)
 CC_BASES = tuple(CC_BASES)
