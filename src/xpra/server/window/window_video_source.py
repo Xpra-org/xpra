@@ -41,6 +41,8 @@ MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
 MIN_VIDEO_FPS = envint("XPRA_MIN_VIDEO_FPS", 10)
 MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
 
+VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
+
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   #ie: "YUV444P"
 if FORCE_CSC_MODE and FORCE_CSC_MODE not in RGB_FORMATS and FORCE_CSC_MODE not in PIXEL_SUBSAMPLING:
     log.warn("ignoring invalid CSC mode specified: %s", FORCE_CSC_MODE)
@@ -128,6 +130,7 @@ class WindowVideoSource(WindowSource):
         self.non_video_encodings = ()
         self.edge_encoding = None
         self.start_video_frame = 0
+        self.video_encoder_timer = None
         self.b_frame_flush_timer = None
         self.b_frame_flush_data = None
         self.encode_from_queue_timer = None
@@ -276,6 +279,7 @@ class WindowVideoSource(WindowSource):
             csce.clean()
 
     def ve_clean(self, ve):
+        self.cancel_video_encoder_timer()
         if ve:
             ve.clean()
             if self.supports_eos:
@@ -1769,6 +1773,10 @@ class WindowVideoSource(WindowSource):
         if not ve:
             return self.video_fallback(image, options, warn=True)
 
+        #we're going to use the video encoder,
+        #so make sure we don't time it out:
+        self.cancel_video_encoder_timer()
+
         #dw and dh are the edges we don't handle here
         width = w & self.width_mask
         height = h & self.height_mask
@@ -1838,6 +1846,10 @@ class WindowVideoSource(WindowSource):
                     self.start_video_frame = delayed
                     return self.video_fallback(image, options, order=FAST_ORDER)
                 return None
+        else:
+            #there are no delayed frames,
+            #make sure we timeout the encoder if no new frames come through:
+            self.schedule_video_encoder_timer()
         actual_encoding = ve.get_encoding()
         videolog("video_encode %s encoder: %s %sx%s result is %s bytes (%.1f MPixels/s), client options=%s",
                             ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""), (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
@@ -1912,6 +1924,22 @@ class WindowVideoSource(WindowSource):
         #check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0)>0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
+
+
+    def cancel_video_encoder_timer(self):
+        vet = self.video_encoder_timer
+        if vet:
+            self.video_encoder_timer = None
+            self.source_remove(vet)
+
+    def schedule_video_encoder_timer(self):
+        if not self.video_encoder_timer:
+            self.video_encoder_timer = self.timeout_add(VIDEO_TIMEOUT*1000, self.video_encoder_timeout)
+
+    def video_encoder_timeout(self):
+        videolog("video_encoder_timeout() will close video encoder=%s", self._video_encoder)
+        self.video_encoder_timer = None
+        self.video_context_clean()
 
 
     def csc_image(self, image, width, height):
