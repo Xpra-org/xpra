@@ -51,6 +51,15 @@ class InputServer(StubServerMixin):
     def get_info(self, _proto):
         return {"keyboard" : self.get_keyboard_info()}
 
+    def get_ui_info(self, proto, client_uuids=None, *args):
+        info = {}
+        if self.keyboard_config:
+            info["keyboard"] = {
+				"state" : {
+					"modifiers"		  : self.keyboard_config.get_current_mask(),
+					},
+				}
+        return info
 
     def get_server_features(self, source=None):
         return {

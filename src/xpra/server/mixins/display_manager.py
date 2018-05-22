@@ -40,6 +40,12 @@ class DisplayManager(StubServerMixin):
             self.parse_screen_info(ss)
 
 
+    def get_caps(self):
+        return {
+            "bell"          : self.bell,
+            "cursors"       : self.cursors,
+            }
+
     def get_info(self, _proto):
         return {
             "display": {
@@ -61,6 +67,19 @@ class DisplayManager(StubServerMixin):
                 "antialias" : self.antialias,
                 },
             }
+
+
+    def _process_set_cursors(self, proto, packet):
+        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_cursors = bool(packet[1])
+
+    def _process_set_bell(self, proto, packet):
+        assert self.bell, "cannot toggle send_bell: the feature is disabled"
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_bell = bool(packet[1])
 
 
     ######################################################################
@@ -254,6 +273,8 @@ class DisplayManager(StubServerMixin):
 
     def init_packet_handlers(self):
         self._authenticated_ui_packet_handlers.update({
+            "set-cursors":                          self._process_set_cursors,
+            "set-bell":                             self._process_set_bell,
             "desktop_size":                         self._process_desktop_size,
             "screenshot":                           self._process_screenshot,
             })

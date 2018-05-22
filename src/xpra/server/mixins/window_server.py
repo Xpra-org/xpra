@@ -55,6 +55,16 @@ class WindowServer(StubServerMixin):
                 }
             }
 
+    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args):
+        """ info that must be collected from the UI thread
+            (ie: things that query the display)
+        """
+        return {"windows" : self.get_windows_info(wids)}
+
+
+    def get_hello_info_args(self):
+        return (tuple(self._id_to_window.keys()), )
+
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:
             self.parse_hello_ui_window_settings(ss, caps)
@@ -70,12 +80,14 @@ class WindowServer(StubServerMixin):
     def get_window_id(self, window):
         return self._window_to_id.get(window)
 
-    def add_windows_info(self, info, window_ids):
-        winfo = info.setdefault("window", {})
+
+    def get_windows_info(self, window_ids):
+        info = {}
         for wid, window in self._id_to_window.items():
             if window_ids is not None and wid not in window_ids:
                 continue
-            winfo.setdefault(wid, {}).update(self.get_window_info(window))
+            info[wid] = self.get_window_info(window)
+        return info
 
     def get_window_info(self, window):
         from xpra.server.window.metadata import make_window_metadata

@@ -153,6 +153,10 @@ class X11ServerCore(GTKServerBase):
         if not self.randr:
             screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
 
+    def _screen_size_changed(self, screen):
+        pass
+
+
     def init_cursor(self):
         #cursor:
         self.default_cursor_image = None

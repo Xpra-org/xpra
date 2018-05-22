@@ -435,8 +435,6 @@ class ServerBase(ServerBaseClass):
                  })
         if source.wants_features:
             capabilities.update({
-                 "bell"                         : self.bell,
-                 "cursors"                      : self.cursors,
                  "av-sync.enabled"              : self.av_sync,
                  "client-shutdown"              : self.client_shutdown,
                  "sharing"                      : self.sharing is not False,
@@ -501,25 +499,29 @@ class ServerBase(ServerBaseClass):
             self.do_send_info(proto, info, flatten)
             end = monotonic_time()
             log.info("processed %s info request from %s in %ims", ["structured", "flat"][flatten], proto._conn, (end-start)*1000)
-        self.get_all_info(cb, proto, None, self._id_to_window.keys())
+        self.get_all_info(cb, proto, None, *self.get_hello_info_args())
 
-    def get_ui_info(self, _proto, _client_uuids=None, wids=None, *_args):
+    def get_hello_info_args(self):
+        return ()
+
+    def get_ui_info(self, proto, client_uuids=None, *args):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
         info = {"server"    : {"max_desktop_size"   : self.get_max_screen_size()}}
-        if self.keyboard_config:
-            info["keyboard"] = {"state" : {"modifiers"          : self.keyboard_config.get_current_mask()}}
-        #window info:
-        self.add_windows_info(info, wids)
+        for c in SERVER_BASES:
+            try:
+                merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))
+            except Exception:
+                log.error("Error gathering UI info", exc_info=True)
         return info
 
     def get_thread_info(self, proto):
         return get_thread_info(proto, tuple(self._server_sources.keys()))
 
 
-    def get_info(self, proto=None, client_uuids=None, wids=None, *args):
-        log("ServerBase.get_info%s", (proto, client_uuids, wids, args))
+    def get_info(self, proto=None, client_uuids=None, *args):
+        log("ServerBase.get_info%s", (proto, client_uuids, args))
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
@@ -529,10 +531,8 @@ class ServerBase(ServerBaseClass):
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
             sources = tuple(self._server_sources.values())
-        if not wids:
-            wids = self._id_to_window.keys()
-        log("info-request: sources=%s, wids=%s", sources, wids)
-        dgi = self.do_get_info(proto, sources, wids)
+        log("info-request: sources=%s, args=%s", sources, args)
+        dgi = self.do_get_info(proto, sources, args)
         #ugly alert: merge nested dictionaries,
         #ie: do_get_info may return a dictionary for "server" and we already have one,
         # so we update it with the new values
@@ -542,7 +542,6 @@ class ServerBase(ServerBaseClass):
                 info[k] = v
                 continue
             cval.update(v)
-        info.setdefault("cursor", {}).update({"size" : self.cursor_size})
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
@@ -558,8 +557,6 @@ class ServerBase(ServerBaseClass):
     def get_features_info(self):
         i = {
              "randr"            : self.randr,
-             "cursors"          : self.cursors,
-             "bell"             : self.bell,
              "sharing"          : self.sharing is not False,
              "idle_timeout"     : self.idle_timeout,
              }
@@ -641,18 +638,6 @@ class ServerBase(ServerBaseClass):
         #tell all the clients (that can) about the new value for this setting
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
-
-    def _process_set_cursors(self, proto, packet):
-        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_cursors = bool(packet[1])
-
-    def _process_set_bell(self, proto, packet):
-        assert self.bell, "cannot toggle send_bell: the feature is disabled"
-        ss = self._server_sources.get(proto)
-        if ss:
-            ss.send_bell = bool(packet[1])
 
     def _process_set_deflate(self, proto, packet):
         level = packet[1]
@@ -861,8 +846,6 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
         self._authenticated_packet_handlers.update({
-            "set-cursors":                          self._process_set_cursors,
-            "set-bell":                             self._process_set_bell,
             "sharing-toggle":                       self._process_sharing_toggle,
             "lock-toggle":                          self._process_lock_toggle,
           })

@@ -186,6 +186,10 @@ class X11ServerBase(X11ServerCore):
         X11ServerCore.__init__(self)
         self._default_xsettings = {}
         self._settings = {}
+        self.double_click_time = 0
+        self.double_click_distance = 0
+        self.dpi = 0
+        self.default_dpi = 0
         self._xsettings_manager = None
         self._xsettings_enabled = False
 

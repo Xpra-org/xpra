@@ -70,6 +70,14 @@ class StubServerMixin(object):
         return {}
 
     """
+    Runtime information on this mixin,
+    unlike get_info() this method will be called
+    from the UI thread.
+    """
+    def get_ui_info(self, proto, client_uuids=None, *args):
+        return {}
+
+    """
     Register the packet types that this mixin can handle.
     """
     def init_packet_handlers(self):
