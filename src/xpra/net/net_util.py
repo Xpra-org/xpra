@@ -13,15 +13,21 @@ from xpra.log import Logger
 log = Logger("network", "util")
 
 
-has_netifaces = True
-netifaces_version = None
-try:
-    import netifaces                #@UnresolvedImport
-    log("netifaces loaded sucessfully")
-    netifaces_version = netifaces.version        #@UndefinedVariable
-except:
-    has_netifaces = False
-    log.warn("Warning: the python netifaces package is missing")
+netifaces_version = 0
+_netifaces = None
+def import_netifaces():
+    global _netifaces, netifaces_version
+    if _netifaces is None:
+        try:
+            import netifaces                #@UnresolvedImport
+            log("netifaces loaded sucessfully")
+            _netifaces = netifaces
+            netifaces_version = netifaces.version        #@UndefinedVariable
+        except:
+            _netifaces = False
+            log.warn("Warning: the python netifaces package is missing")
+    return _netifaces
+
 iface_ipmasks = {}
 bind_IPs = None
 
@@ -35,14 +41,17 @@ def get_free_tcp_port():
 
 
 def get_interfaces():
-    if not has_netifaces:
+    netifaces = import_netifaces()
+    if not netifaces:
         return []
     return netifaces.interfaces()           #@UndefinedVariable
 
 def get_interfaces_addresses():
     d = {}
-    for iface in get_interfaces():
-        d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable
+    netifaces = import_netifaces()
+    if netifaces:
+        for iface in get_interfaces():
+            d[iface] = netifaces.ifaddresses(iface)     #@UndefinedVariable
     return d
 
 def get_interface(address):
@@ -60,8 +69,9 @@ def get_interface(address):
     return None
 
 def get_gateways():
-    if not has_netifaces:
-        return    {}
+    netifaces = import_netifaces()
+    if not netifaces:
+        return {}
     #versions older than 0.10.5 can crash when calling gateways()
     #https://bitbucket.org/al45tair/netifaces/issues/15/gateways-function-crash-segmentation-fault
     if netifaces.version<'0.10.5':            #@UndefinedVariable
@@ -86,7 +96,8 @@ def get_gateways():
 def get_bind_IPs():
     global bind_IPs
     if not bind_IPs:
-        if has_netifaces:
+        netifaces = import_netifaces()
+        if netifaces:
             bind_IPs = do_get_bind_IPs()
         else:
             bind_IPs = ["127.0.0.1"]
@@ -95,6 +106,8 @@ def get_bind_IPs():
 def do_get_bind_IPs():
     global iface_ipmasks
     ips = []
+    netifaces = import_netifaces()
+    assert netifaces
     ifaces = netifaces.interfaces()            #@UndefinedVariable
     log("ifaces=%s", ifaces)
     for iface in ifaces:
@@ -118,6 +131,8 @@ def do_get_bind_IPs():
 
 def do_get_bind_ifacemask(iface):
     ipmasks = []
+    netifaces = import_netifaces()
+    assert netifaces
     address_types = netifaces.ifaddresses(iface)    #@UndefinedVariable
     for addresses in address_types.values():
         for address in addresses:
@@ -379,7 +394,8 @@ def get_network_caps():
 
 def get_info():
     i = get_network_caps()
-    if has_netifaces:
+    netifaces = import_netifaces()
+    if netifaces:
         i["interfaces"] = get_interfaces()
         i["gateways"] = get_gateways()
     if "ssl" in sys.modules:
@@ -407,6 +423,7 @@ def main():
             log.enable_debug()
 
         print("Network interfaces found:")
+        netifaces = import_netifaces()
         for iface in get_interfaces():
             if if_nametoindex:
                 s = "* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface))
@@ -462,7 +479,7 @@ def main():
         print("")
         print("Protocol Capabilities:")
         netcaps = get_network_caps()
-        netif = {""    : has_netifaces}
+        netif = {""    : bool(netifaces)}
         if netifaces_version:
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif
