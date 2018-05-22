@@ -373,7 +373,7 @@ cdef class Encoder:
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
             #no point having too many threads if the height is small, also avoids a warning:
-            self.max_threads = max(0, min(int(options.get("threads", VPX_THREADS)), roundup(height, 32)//32*2, 32))
+            self.max_threads = max(0, min(int(options.get("threads", VPX_THREADS)), roundup(height, 64)//64, 32))
         except Exception as e:
             log.error("Error parsing number of threads: %s", e)
             self.max_threads = 2
