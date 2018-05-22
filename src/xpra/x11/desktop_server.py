@@ -546,7 +546,8 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             else:
                 #TODO: just like shadow server, adjust for window position
                 pass
-        X11ServerBase._move_pointer(self, wid, pos, -1, *args)
+        with xsync:
+            X11ServerBase._move_pointer(self, wid, pos, -1, *args)
 
 
     def _process_close_window(self, proto, packet):
