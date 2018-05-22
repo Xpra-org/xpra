@@ -49,7 +49,11 @@ class RFBServer(object):
             conn.close()
             return
         def rfb_protocol_class(conn):
-            auth = self.make_authenticator("rfb", "rfb", conn)
+            auths = self.make_authenticators("rfb", "rfb", conn)
+            assert len(auths)<=1, "rfb does not support multiple authentication modules"
+            auth = None
+            if len(auths)==1:
+                auth = auths[0]
             return RFBProtocol(self, conn, auth, self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
         p = self.do_make_protocol("rfb", conn, rfb_protocol_class)
         p.send_protocol_handshake()
