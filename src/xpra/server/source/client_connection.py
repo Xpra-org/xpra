@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 from threading import Event
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("server")
@@ -119,6 +120,10 @@ class ClientConnection(ClientConnectionClass):
             except Exception as e:
                 raise Exception("failed to initialize %s: %s" % (bc, e))
 
+        self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
+                                                    #these packets are picked off by the "protocol" via 'next_packet()'
+                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
+                                                    #(only packet is required - the rest can be 0/None for clipboard packets)
         self.ordinary_packets = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
@@ -238,6 +243,7 @@ class ClientConnection(ClientConnectionClass):
         self.info_namespace = c.boolget("info-namespace")
         self.send_notifications = c.boolget("notifications")
         self.send_notifications_actions = c.boolget("notifications.actions")
+        log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
@@ -247,7 +253,6 @@ class ClientConnection(ClientConnectionClass):
         else:
             self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
-        log("cursors=%s (encodings=%s), bell=%s, notifications=%s", self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
 
         cinfo = self.get_connect_info()
         for i,ci in enumerate(cinfo):

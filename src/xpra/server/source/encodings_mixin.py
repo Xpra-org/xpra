@@ -81,10 +81,6 @@ class EncodingsMixin(StubSourceMixin):
         self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
                                                     #items placed in this queue are picked off by the "encode" thread,
                                                     #the functions should add the packets they generate to the 'packet_queue'
-        self.packet_queue = deque()                 #holds actual packets ready for sending (already encoded)
-                                                    #these packets are picked off by the "protocol" via 'next_packet()'
-                                                    #format: packet, wid, pixels, start_send_cb, end_send_cb
-                                                    #(only packet is required - the rest can be 0/None for clipboard packets)
         self.encode_thread = start_thread(self.encode_loop, "encode")
 
     def init_from(self, _protocol, server):
