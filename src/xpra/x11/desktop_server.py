@@ -507,7 +507,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        if len(packet)>=13:
+        if len(packet)>=13 and not self.readonly:
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
