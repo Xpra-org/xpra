@@ -345,14 +345,15 @@ class X11ServerCore(GTKServerBase):
         log("do_get_info thread=%s", threading.current_thread())
         info = GTKServerBase.get_ui_info(self, proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
-        with xsync:
-            info.setdefault("keyboard", {}).update({
-                                                    "state"             : {
-                                                                           "keys_pressed"   : tuple(self.keys_pressed.keys())
-                                                                           },
-                                                    "fast-switching"    : True,
-                                                    "layout-group"      : X11Keyboard.get_layout_group(),
-                                                    })
+        if not self.readonly:
+            with xsync:
+                info.setdefault("keyboard", {}).update({
+                                                        "state"             : {
+                                                                               "keys_pressed"   : tuple(self.keys_pressed.keys())
+                                                                               },
+                                                        "fast-switching"    : True,
+                                                        "layout-group"      : X11Keyboard.get_layout_group(),
+                                                        })
         sinfo = info.setdefault("server", {})
         try:
             from xpra.x11.gtk2.composite import CompositeHelper
@@ -437,6 +438,8 @@ class X11ServerCore(GTKServerBase):
 
 
     def clear_keys_pressed(self):
+        if self.readonly:
+            return
         keylog("clear_keys_pressed()")
         #make sure the timer doesn't fire and interfere:
         self.cancel_key_repeat_timer()

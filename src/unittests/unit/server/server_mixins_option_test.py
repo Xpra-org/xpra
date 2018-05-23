@@ -68,7 +68,7 @@ class ServerAuthTest(ServerTestUtil):
             "printing",
             "file-transfer",
             "mmap",
-            #"readonly",
+            "readonly",
             "dbus-proxy",
             "remote-logging",
             "windows",
