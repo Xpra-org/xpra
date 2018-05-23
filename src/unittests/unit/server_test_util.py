@@ -80,11 +80,11 @@ class ServerTestUtil(unittest.TestCase):
 		return cmd
 
 	@classmethod
-	def run_xpra(cls, command, env=None):
+	def run_xpra(cls, xpra_args, env=None):
 		xpra_cmd = get_xpra_command()
 		if xpra_cmd==["xpra"]:
 			xpra_cmd = [cls.which("xpra")]
-		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + command + cls.default_xpra_args
+		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + cls.default_xpra_args + xpra_args
 		return cls.run_command(cmd, env)
 
 	@classmethod
