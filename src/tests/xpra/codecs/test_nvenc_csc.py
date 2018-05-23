@@ -13,8 +13,7 @@ log = Logger()
 
 from xpra.util import roundup
 print("loading encoder class")
-from xpra.codecs.nvenc.encoder import get_BGRA2NV12
-from xpra.codecs.cuda_common.cuda_context import check_devices
+from xpra.codecs.cuda_common.cuda_context import check_devices, get_CUDA_function
 
 print("cuda check")
 check_devices()
@@ -28,7 +27,7 @@ cuda_context = cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driv
 try:
     print("cuda_context=%s" % cuda_context)
 
-    BGRA2NV12 = get_BGRA2NV12()
+    BGRA2NV12 = get_CUDA_function(0, "BGRA_to_NV12")
     print("BGRA2NV12=%s" % BGRA2NV12)
 
     w = roundup(512, 32)

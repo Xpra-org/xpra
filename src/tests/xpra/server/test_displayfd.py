@@ -10,7 +10,7 @@ import sys
 def main():
     from xpra.util import nonl
     from xpra.os_util import close_fds
-    from xpra.server.server_util import read_displayfd, parse_displayfd
+    from xpra.platform.displayfd import read_displayfd, parse_displayfd
     import subprocess
     r_pipe, w_pipe = os.pipe()
     cmd = [

@@ -27,7 +27,7 @@ class StatusIcon:
             if envbool("XPRA_NATIVE_NOTIFIER", True):
                 from xpra.platform.gui import get_native_notifier_classes
                 nc += get_native_notifier_classes()
-            from xpra.client.gtk_base.gtk_notifier import GTK_Notifier
+            from xpra.gtk_common.gtk_notifier import GTK_Notifier
             nc.append(GTK_Notifier)
             self.notifier = nc[0](self.notification_closed, self.notification_action)
             self.notifier.app_name_format = "%s"

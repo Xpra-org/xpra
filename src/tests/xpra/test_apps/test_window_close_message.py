@@ -19,7 +19,7 @@ def main():
 		X11Window = X11WindowBindings()
 		root = window.get_window().get_screen().get_root_window()
 		root_xid = get_xwindow(root)
-		xwin = get_xid(window.get_window())
+		xwin = get_xwindow(window.get_window())
 		SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask

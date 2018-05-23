@@ -10,6 +10,7 @@ import gtk
 from tests.xpra.session.test import TestWithSession, MockEventReceiver, assert_raises
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+from xpra.x11.gtk_x11 import send_wm
 X11Window = X11WindowBindings()
 l = X11Window
 

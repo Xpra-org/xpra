@@ -60,8 +60,10 @@ def main():
     print("main()")
     import gtk
     import signal
-    from xpra.scripts.server import create_unix_domain_socket, start_Xvfb, check_xvfb_process
-    from xpra.scripts.main import parse_cmdline, configure_logging
+    from xpra.server.socket_util import create_unix_domain_socket
+    from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process
+    from xpra.scripts.parsing import parse_cmdline
+    from xpra.scripts.main import configure_logging
     from xpra.platform.dotxpra import DotXpra
     script_file = sys.argv[0]
     print("main() script_file=%s" % script_file)

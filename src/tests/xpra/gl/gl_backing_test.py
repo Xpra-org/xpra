@@ -40,7 +40,7 @@ def gl_backing_test(gl_client_window_class=None, w=200, h=100):
 
 
 def main():
-    from xpra.client.gl.gtk2.gl_client_window import GLClientWindow
+    from xpra.client.gl.gtk2.nativegl_client_window import GLClientWindow
     gl_backing_test(gl_client_window_class=GLClientWindow)
     gtk.main()
 
