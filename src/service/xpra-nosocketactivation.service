@@ -17,10 +17,7 @@ SuccessExitStatus=0 143
 Restart=on-abnormal
 PIDFile=/run/xpra.pid
 ProtectSystem=strict
-ReadWritePaths=/run /tmp
 #PrivateDevices=true
-ProtectKernelTunables=true
-ProtectControlGroups=true
 
 [Install]
 WantedBy=multi-user.target
