@@ -14,7 +14,7 @@ log = Logger("paint")
 
 from xpra.client.gtk2.window_backing import GTK2WindowBacking
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.os_util import memoryview_to_bytes, _buffer
+from xpra.os_util import memoryview_to_bytes, _buffer, _memoryview
 from xpra.util import csv, envbool
 
 
@@ -127,7 +127,7 @@ class PixmapBacking(GTK2WindowBacking):
         return img_data, width*len(target_format)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        if isinstance(img_data, (memoryview, _buffer, bytearray)):
+        if isinstance(img_data, (_memoryview, _buffer, bytearray)):
             img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
             img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
@@ -139,7 +139,7 @@ class PixmapBacking(GTK2WindowBacking):
         has_alpha = options.boolget("has_alpha", False) or options.get("rgb_format", "").find("A")>=0
         if has_alpha:
             img_data = self.unpremultiply(img_data)
-        if isinstance(img_data, (memoryview, _buffer, bytearray)):
+        if isinstance(img_data, (_memoryview, _buffer, bytearray)):
             img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
             img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGBA")
