@@ -280,10 +280,13 @@ class WindowClient(StubClientMixin):
         self.default_cursor_data = c.listget("cursor.default", None)
         self.server_bell = c.boolget("bell")          #added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
-        if self.windows_enabled:
-            server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
-            if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
-                log.warn("Warning: server does not support auto-refresh!")
+        if c.boolget("windows", True):
+            if self.windows_enabled:
+                server_auto_refresh_delay = c.intget("auto_refresh_delay", 0)/1000.0
+                if server_auto_refresh_delay==0 and self.auto_refresh_delay>0:
+                    log.warn("Warning: server does not support auto-refresh!")
+        else:
+            log.warn("Warning: window forwarding is not enabled on this server")
         self.server_window_signals = c.strlistget("window.signals")
         self.server_window_states = c.strlistget("window.states", ["iconified", "fullscreen", "above", "below", "sticky", "iconified", "maximized"])
         self.server_window_filters = c.boolget("window-filters")
