@@ -62,9 +62,6 @@ class WindowServer(StubServerMixin):
         return {"windows" : self.get_windows_info(wids)}
 
 
-    def get_hello_info_args(self):
-        return (tuple(self._id_to_window.keys()), )
-
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:
             self.parse_hello_ui_window_settings(ss, caps)

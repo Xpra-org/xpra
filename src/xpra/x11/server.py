@@ -249,7 +249,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         ### Create the WM object
         self._wm = Wm(self.clobber, self.wm_name)
-        self._wm.connect("new-window", self._new_window_signaled)
+        from xpra.server import server_features
+        if server_features.windows:
+            self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
 
@@ -325,8 +327,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
     ##########################################################################
     # info:
     #
-    def do_get_info(self, proto, server_sources, window_ids):
-        info = X11ServerBase.do_get_info(self, proto, server_sources, window_ids)
+    def do_get_info(self, proto, server_sources):
+        info = X11ServerBase.do_get_info(self, proto, server_sources)
         info.setdefault("state", {}).update({
                                              "focused"  : self._has_focus,
                                              "grabbed"  : self._has_grab,
@@ -364,7 +366,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         #when we have clients, this should have been done already
         #in the code that synchonizes the screen resolution
         if len(self._server_sources)==0:
-            X11ServerBase.set_screen_geometry_attributes(self, w, h)
+            super(XpraServer, self).set_screen_geometry_attributes(w, h)
 
     def set_desktops(self, names):
         wm = self._wm
@@ -501,7 +503,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
     def _add_new_window_common(self, window):
         windowlog("adding window %s", window)
-        wid = X11ServerBase._add_new_window_common(self, window)
+        wid = super(XpraServer, self)._add_new_window_common(window)
         window.managed_connect("client-contents-changed", self._contents_changed)
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("grab", self._window_grab)
@@ -1039,7 +1041,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
 
     def _damage(self, window, x, y, width, height, options=None):
-        X11ServerBase._damage(self, window, x, y, width, height, options)
+        super(XpraServer, self)._damage(window, x, y, width, height, options)
         if self.root_overlay:
             image = window.get_image(x, y, width, height)
             if image:

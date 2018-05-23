@@ -326,9 +326,9 @@ class X11ServerCore(GTKServerBase):
                 capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
-    def do_get_info(self, proto, server_sources, window_ids):
+    def do_get_info(self, proto, server_sources):
         start = monotonic_time()
-        info = GTKServerBase.do_get_info(self, proto, server_sources, window_ids)
+        info = GTKServerBase.do_get_info(self, proto, server_sources)
         if self.opengl_props:
             info["opengl"] = self.opengl_props
         sinfo = info.setdefault("server", {})

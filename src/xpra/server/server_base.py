@@ -371,7 +371,7 @@ class ServerBase(ServerBaseClass):
         #send_hello will take care of sending the current and max screen resolutions
         self.send_hello(ss, root_w, root_h, auth_caps)
 
-        if send_ui:
+        if send_ui and server_features.windows:
             self.send_initial_windows(ss, share_count>0)
             self.send_initial_cursors(ss, share_count>0)
         self.client_startup_complete(ss)
@@ -427,7 +427,7 @@ class ServerBase(ServerBaseClass):
         capabilities = ServerCore.make_hello(self, source)
         for c in SERVER_BASES:
             if c!=ServerCore:
-                merge_dicts(capabilities, c.get_caps(self))
+                merge_dicts(capabilities, c.get_caps(self, source))
         capabilities["server_type"] = "base"
         if source.wants_display:
             capabilities.update({
@@ -441,6 +441,7 @@ class ServerBase(ServerBaseClass):
                  "sharing-toggle"               : self.sharing is None,
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
+                 "windows"                      : server_features.windows,
                  })
             capabilities.update(flatten_dict(self.get_server_features(source)))
         #this is a feature, but we would need the hello request
@@ -462,7 +463,6 @@ class ServerBase(ServerBaseClass):
             capabilities.update({
                          "actual_desktop_size"  : (root_w, root_h),
                          "root_window_size"     : (root_w, root_h),
-                         "desktop_size"         : self._get_desktop_size_capability(server_source, root_w, root_h),
                          })
         if self._reverse_aliases and server_source.wants_aliases:
             capabilities["aliases"] = self._reverse_aliases
@@ -479,11 +479,9 @@ class ServerBase(ServerBaseClass):
         ss = self._server_sources.get(proto)
         if not ss:
             return
-        window_ids, categories = [], None
+        categories = None
         #if len(packet>=2):
         #    uuid = packet[1]
-        if len(packet)>=3:
-            window_ids = packet[2]
         if len(packet)>=4:
             categories = packet[3]
         def info_callback(_proto, info):
@@ -491,7 +489,7 @@ class ServerBase(ServerBaseClass):
             if categories:
                 info = dict((k,v) for k,v in info.items() if k in categories)
             ss.send_info_response(info)
-        self.get_all_info(info_callback, proto, None, window_ids)
+        self.get_all_info(info_callback, proto, None)
 
     def send_hello_info(self, proto, flatten=True):
         start = monotonic_time()
@@ -499,10 +497,7 @@ class ServerBase(ServerBaseClass):
             self.do_send_info(proto, info, flatten)
             end = monotonic_time()
             log.info("processed %s info request from %s in %ims", ["structured", "flat"][flatten], proto._conn, (end-start)*1000)
-        self.get_all_info(cb, proto, None, *self.get_hello_info_args())
-
-    def get_hello_info_args(self):
-        return ()
+        self.get_all_info(cb, proto, None)
 
     def get_ui_info(self, proto, client_uuids=None, *args):
         """ info that must be collected from the UI thread
@@ -520,8 +515,8 @@ class ServerBase(ServerBaseClass):
         return get_thread_info(proto, tuple(self._server_sources.keys()))
 
 
-    def get_info(self, proto=None, client_uuids=None, *args):
-        log("ServerBase.get_info%s", (proto, client_uuids, args))
+    def get_info(self, proto=None, client_uuids=None):
+        log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
         server_info = info.setdefault("server", {})
@@ -531,8 +526,8 @@ class ServerBase(ServerBaseClass):
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
             sources = tuple(self._server_sources.values())
-        log("info-request: sources=%s, args=%s", sources, args)
-        dgi = self.do_get_info(proto, sources, args)
+        log("info-request: sources=%s", sources)
+        dgi = self.do_get_info(proto, sources)
         #ugly alert: merge nested dictionaries,
         #ie: do_get_info may return a dictionary for "server" and we already have one,
         # so we update it with the new values
@@ -563,7 +558,7 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
-    def do_get_info(self, proto, server_sources=None, window_ids=None):
+    def do_get_info(self, proto, server_sources=None):
         start = monotonic_time()
         info = {}
         def up(prefix, d):
@@ -573,7 +568,7 @@ class ServerBase(ServerBaseClass):
             try:
                 merge_dicts(info, c.get_info(self, proto))
             except Exception as e:
-                log("do_get_info%s", (proto, server_sources, window_ids), exc_info=True)
+                log("do_get_info%s", (proto, server_sources), exc_info=True)
                 log.error("Error collecting information from %s: %s", c, e)
 
         up("features",  self.get_features_info())
@@ -592,13 +587,11 @@ class ServerBase(ServerBaseClass):
         if n==1:
             ss = server_sources[0]
             up("client", ss.get_info())
-            info.update(ss.get_window_info(window_ids))
         elif n>1:
             cinfo = {}
             for i, ss in enumerate(server_sources):
                 sinfo = ss.get_info()
                 sinfo["ui-driver"] = self.ui_driver==ss.uuid
-                sinfo.update(ss.get_window_info(window_ids))
                 cinfo[i] = sinfo
             up("client", cinfo)
         log("ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)

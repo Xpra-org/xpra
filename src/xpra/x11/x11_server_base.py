@@ -380,7 +380,9 @@ class X11ServerBase(X11ServerCore):
                         #only honour sub-pixel hinting if a single client is connected
                         #and only when it is not using any scaling (or overriden with SCALED_FONT_ANTIALIAS):
                         ss = sss[0]
-                        if SCALED_FONT_ANTIALIAS or (not ss.desktop_size_unscaled or ss.desktop_size_unscaled==ss.desktop_size):
+                        ds_unscaled = getattr(ss, "desktop_size_unscaled", None)
+                        ds_scaled = getattr(ss, "desktop_size", None)
+                        if SCALED_FONT_ANTIALIAS or (not ds_unscaled or ds_unscaled==ds_scaled):
                             subpixel_order = ad.strget("orientation", "none").lower()
                     values.update({
                                    "Xft.antialias"  : ad.intget("enabled", -1),

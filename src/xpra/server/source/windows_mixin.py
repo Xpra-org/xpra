@@ -149,8 +149,8 @@ class WindowsMixin(StubSourceMixin):
             "windows"       : self.send_windows,
             "cursors"       : self.send_cursors,
             "bell"          : self.send_bell,
+            "system-tray"   : self.system_tray,
             "suspended"     : self.suspended,
-            "system-tray"   : self.system_tray
             }
         if self.window_frame_sizes:
             info.setdefault("window", {}).update({"frame-sizes" : self.window_frame_sizes})
@@ -162,9 +162,10 @@ class WindowsMixin(StubSourceMixin):
                     finfo[i] = str(f)
                     i += 1
             info["window-filter"] = finfo
+        info.update(self.get_window_info())
         return info
 
-    def get_window_info(self, window_ids=[]):
+    def get_window_info(self):
         """
             Adds encoding and window specific information
         """
@@ -182,15 +183,12 @@ class WindowsMixin(StubSourceMixin):
                 }
         info.update(self.statistics.get_info())
 
-        if len(window_ids)>0:
+        if len(self.window_sources)>0:
             total_pixels = 0
             total_time = 0.0
             in_latencies, out_latencies = [], []
             winfo = {}
-            for wid in window_ids:
-                ws = self.window_sources.get(wid)
-                if ws is None:
-                    continue
+            for wid, ws in list(self.window_sources.items()):
                 #per-window source stats:
                 winfo[wid] = ws.get_info()
                 #collect stats for global averages:

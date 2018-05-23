@@ -40,10 +40,12 @@ class DisplayManager(StubServerMixin):
             self.parse_screen_info(ss)
 
 
-    def get_caps(self):
+    def get_caps(self, source):
+        root_w, root_h = self.get_root_window_size()
         return {
             "bell"          : self.bell,
             "cursors"       : self.cursors,
+            "desktop_size"  : self._get_desktop_size_capability(source, root_w, root_h),
             }
 
     def get_info(self, _proto):

@@ -50,7 +50,7 @@ class StubServerMixin(object):
     """
     Capabilities provided by this mixin.
     """
-    def get_caps(self):
+    def get_caps(self, _source):
         return {}
 
     """

@@ -67,7 +67,7 @@ class InputServer(StubServerMixin):
             "input-devices"         : self.input_devices,
             }
 
-    def get_caps(self):
+    def get_caps(self, _source):
         if not self.key_repeat:
             return {}
         return {

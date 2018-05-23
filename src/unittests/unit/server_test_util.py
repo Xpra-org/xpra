@@ -92,19 +92,23 @@ class ServerTestUtil(unittest.TestCase):
 		if env is None:
 			env = cls.get_run_env()
 			env["XPRA_FLATTEN_INFO"] = "0"
+		stdout_file = stderr_file = None
+		strcommand = " ".join("'%s'" % x for x in command)
 		if XPRA_TEST_DEBUG:
 			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
 		else:
 			if "stdout" not in kwargs:
-				stdout = cls._temp_file()
-				kwargs["stdout"] = stdout
-				log("stdout of %s sent to %s", command, stdout.name)
+				stdout_file = cls._temp_file()
+				kwargs["stdout"] = stdout_file
+				log("stdout=%s for %s", stdout_file.name, strcommand)
 			if "stderr" not in kwargs:
-				stderr = cls._temp_file()
-				kwargs["stderr"] = stderr
-				log("stderr of %s sent to %s", command, stderr.name)
+				stderr_file = cls._temp_file()
+				kwargs["stderr"] = stderr_file
+				log("stderr=%s for %s", stderr_file.name, strcommand)
 		try:
 			proc = subprocess.Popen(args=command, env=env, **kwargs)
+			proc.stdout_file = stdout_file
+			proc.stderr_file = stderr_file
 		except OSError as e:
 			log.warn("run_command(%s, %s, %s) %s", command, env, kwargs, e)
 			raise
@@ -121,7 +125,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def _temp_file(self, data=None):
-		f = tempfile.NamedTemporaryFile(prefix='xpraserverpassword', delete=DELETE_TEMP_FILES)
+		f = tempfile.NamedTemporaryFile(prefix='xpra-', delete=DELETE_TEMP_FILES)
 		if data:
 			f.file.write(data)
 		f.file.flush()

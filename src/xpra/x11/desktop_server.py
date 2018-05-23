@@ -301,7 +301,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
 
 
     def print_screen_info(self):
-        X11ServerBase.print_screen_info(self)
+        super(XpraDesktopServer, self).print_screen_info()
         root_w, root_h = get_root_size()
         sss = get_screen_sizes()
         log_screen_sizes(root_w, root_h, sss)
@@ -411,7 +411,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
                 model = DesktopModel(root, self.randr_exact_size)
                 model.setup()
                 windowlog("adding root window model %s", model)
-                X11ServerBase._add_new_window_common(self, model)
+                super(XpraDesktopServer, self)._add_new_window_common(model)
                 model.managed_connect("client-contents-changed", self._contents_changed)
                 model.managed_connect("resized", self._window_resized_signaled)
 

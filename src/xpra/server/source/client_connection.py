@@ -54,9 +54,6 @@ if server_features.dbus:
 if server_features.network_state:
     from xpra.server.source.networkstate_mixin import NetworkStateMixin
     CC_BASES.append(NetworkStateMixin)
-if server_features.av_sync:
-    from xpra.server.source.avsync_mixin import AVSyncMixin
-    CC_BASES.append(AVSyncMixin)
 if server_features.display:
     from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
     CC_BASES.append(ClientDisplayMixin)
@@ -67,6 +64,9 @@ if server_features.windows:
     if server_features.encoding:
         from xpra.server.source.encodings_mixin import EncodingsMixin
         CC_BASES.append(EncodingsMixin)
+    if server_features.av_sync:
+        from xpra.server.source.avsync_mixin import AVSyncMixin
+        CC_BASES.append(AVSyncMixin)
 from xpra.server.source.idle_mixin import IdleMixin
 CC_BASES.append(IdleMixin)
 CC_BASES = tuple(CC_BASES)
