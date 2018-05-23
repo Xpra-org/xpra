@@ -507,8 +507,8 @@ class ServerCore(object):
             authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
             auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
         except ImportError as e:
-            authlog("cannot load %s auth", auth, exc_info=True)
-            raise InitException("cannot load authentication module '%s': %s" % (auth, e))
+            authlog("cannot load %s auth for socket %s", auth, socket_type, exc_info=True)
+            raise InitException("cannot load authentication module '%s' for %s socket: %s" % (auth, socket_type, e))
         authlog("auth module for '%s': %s", auth, auth_module)
         try:
             auth_module.init(opts)
