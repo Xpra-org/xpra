@@ -232,7 +232,7 @@ class DisplayClient(StubClientMixin):
                     self.can_scale = False
         if self.can_scale:
             self.may_adjust_scaling()
-        if not self.server_is_desktop and not skip_vfb_size_check:
+        if not self.server_is_desktop and not skip_vfb_size_check and server_desktop_size:
             avail_w, avail_h = server_desktop_size
             root_w, root_h = self.get_root_size()
             if self.cx(root_w)>(avail_w+1) or self.cy(root_h)>(avail_h+1):
