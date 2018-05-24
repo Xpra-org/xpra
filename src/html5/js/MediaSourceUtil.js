@@ -248,7 +248,7 @@ var MediaSourceUtil = {
 			media_element.addEventListener('play', 			function() { debug_me_event("play"); });
 		},
 
-		addSourceBufferEventDebugListeners : function(source_buffer, element_type) {
+		addSourceBufferEventDebugListeners : function(asb, element_type) {
 			function debug_buffer_event(event) {
 				var msg = ""+element_type+" buffer "+event;
 				console.debug(msg);
