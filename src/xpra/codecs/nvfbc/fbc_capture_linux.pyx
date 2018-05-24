@@ -608,6 +608,11 @@ cdef class NvFBC_CUDACapture:
 
     def init_context(self, int width=-1, int height=-1, pixel_format=CUDA_PIXEL_FORMAT):
         log("init_context(%i, %i, %s)", width, height, pixel_format)
+        self.images = WeakSet()
+        self.frames = 0
+        self.cuDevicePtr = 0
+        self.cuda_context = None
+        self.setup = False
         assert select_device, "CUDA is missing"
         if pixel_format not in PIXEL_FORMAT_CONST:
             raise Exception("unsupported pixel format '%s'" % pixel_format)
@@ -619,9 +624,6 @@ cdef class NvFBC_CUDACapture:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
         cf = driver.ctx_flags
-        self.images = WeakSet()
-        self.frames = 0
-        self.cuDevicePtr = 0
         self.cuda_context = d.make_context(flags=cf.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
         self.context = create_context()
