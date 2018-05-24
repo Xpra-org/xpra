@@ -627,7 +627,11 @@ def pollwait(process, timeout=5):
 
 def which(command):
     from distutils.spawn import find_executable
-    return find_executable(command)
+    try:
+        return find_executable(command)
+    except Exception:
+        get_util_logger().debug("find_executable(%s)", command, exc_info=True)
+        return None
 
 def get_status_output(*args, **kwargs):
     import subprocess
