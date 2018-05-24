@@ -23,6 +23,7 @@ XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 8)
 DELETE_TEMP_FILES = envbool("XPRA_DELETE_TEMP_FILES", True)
+SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
 
 
 class ServerTestUtil(unittest.TestCase):
@@ -35,6 +36,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
+		cls.temp_files = []
 		from xpra.server.server_util import find_log_dir
 		os.environ["XPRA_LOG_DIR"] = find_log_dir()
 		cls.default_config = get_defaults()
@@ -61,6 +63,12 @@ class ServerTestUtil(unittest.TestCase):
 				log("stopping display %s" % x)
 				proc = cls.run_xpra(["stop", x])
 				proc.communicate(None)
+		if DELETE_TEMP_FILES:
+			for x in cls.temp_files:
+				try:
+					os.unlink(x)
+				except:
+					pass
 
 
 	@classmethod
@@ -98,11 +106,11 @@ class ServerTestUtil(unittest.TestCase):
 			log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
 		else:
 			if "stdout" not in kwargs:
-				stdout_file = cls._temp_file()
+				stdout_file = cls._temp_file(prefix="xpra-stdout-")
 				kwargs["stdout"] = stdout_file
 				log("stdout=%s for %s", stdout_file.name, strcommand)
 			if "stderr" not in kwargs:
-				stderr_file = cls._temp_file()
+				stderr_file = cls._temp_file(prefix="xpra-stderr-")
 				kwargs["stderr"] = stderr_file
 				log("stderr=%s for %s", stderr_file.name, strcommand)
 		try:
@@ -124,11 +132,12 @@ class ServerTestUtil(unittest.TestCase):
 
 
 	@classmethod
-	def _temp_file(self, data=None):
-		f = tempfile.NamedTemporaryFile(prefix='xpra-', delete=DELETE_TEMP_FILES)
+	def _temp_file(self, data=None, prefix="xpra-"):
+		f = tempfile.NamedTemporaryFile(prefix=prefix, delete=DELETE_TEMP_FILES)
 		if data:
 			f.file.write(data)
 		f.file.flush()
+		self.temp_files.append(f.name)
 		return f
 
 
@@ -207,7 +216,15 @@ class ServerTestUtil(unittest.TestCase):
 			os.environ["XPRA_LOG_DIR"] = "/tmp"
 			cmd_expanded = [osexpand(v) for v in cmd]
 			cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
-			xvfb = cls.run_command(cmd_expanded, stdout=sys.stdout, stderr=sys.stderr)
+			if SHOW_XORG_OUTPUT:
+				stdout = sys.stdout
+				stderr = sys.stderr
+			else:
+				stdout = cls._temp_file(prefix="Xorg-stdout-")
+				log("stdout=%s for %s", stdout.name, cmd)
+				stderr = cls._temp_file(prefix="Xorg-stderr-")
+				log("stderr=%s for %s", stderr.name, cmd)
+			xvfb = cls.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
 			time.sleep(1)
 			print("xvfb(%s)=%s" % (cmdstr, xvfb))
 			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
@@ -234,13 +251,15 @@ class ServerTestUtil(unittest.TestCase):
 		assert display in live, "server display '%s' not found in live displays %s" % (display, live)
 		#query it:
 		info = cls.run_xpra(["version", display])
-		for _ in range(5):
+		for _ in range(20):
 			r = pollwait(info)
 			log("version for %s returned %s", display, r)
 			if r is not None:
-				assert r==0, "version failed for %s, returned %s" % (display, info.poll())
+				if r==1:
+					continue
 				break
 			time.sleep(1)
+		assert r==0, "version failed for %s, returned %s" % (display, info.poll())
 		return server_proc
 
 	@classmethod
