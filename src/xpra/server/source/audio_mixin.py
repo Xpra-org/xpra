@@ -130,7 +130,7 @@ class AudioMixin(StubSourceMixin):
         log("start_sending_sound(%s)", codec)
         ss = None
         try:
-            if self.suspended:
+            if getattr(self, "suspended", False):
                 log.warn("Warning: not starting sound whilst in suspended state")
                 return None
             if not self.supports_speaker:

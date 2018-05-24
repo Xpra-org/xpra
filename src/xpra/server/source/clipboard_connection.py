@@ -76,7 +76,9 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_progress_timer = self.timeout_add(delay, may_send_progress_update)
 
     def send_clipboard(self, packet):
-        if not self.clipboard_enabled or self.suspended or not self.hello_sent:
+        if not self.clipboard_enabled or not self.hello_sent:
+            return
+        if getattr(self, "suspended", False):
             return
         now = monotonic_time()
         self.clipboard_stats.append(now)
