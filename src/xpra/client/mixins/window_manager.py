@@ -1022,7 +1022,7 @@ class WindowClient(StubClientMixin):
                         if signalwatcher.poll() is None:
                             os.kill(signalwatcher.pid, signal.SIGKILL)
                     except:
-                        log("destroy_window(%i, %s) error getting rid of signal watcher %s", wid, window, signalwatcher, exc_info=True)
+                        log("destroy_window(%i, %s) error killing signal watcher %s", wid, window, signalwatcher, exc_info=True)
                     #now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:
@@ -1037,6 +1037,14 @@ class WindowClient(StubClientMixin):
                 pass
         self._id_to_window = {}
         self._window_to_id = {}
+        #signal watchers should have been killed in destroy_window(),
+        #make sure we don't leave any behind:
+        for signalwatcher in tuple(self._signalwatcher_to_wids.keys()):
+            try:
+                if signalwatcher.poll() is None:
+                    os.kill(signalwatcher.pid, signal.SIGKILL)
+            except:
+                log("destroy_all_windows() error killing signal watcher %s", signalwatcher, exc_info=True)
 
 
     ######################################################################
