@@ -578,6 +578,9 @@ class ApplicationWindow:
                 params["display"] = "auto"
                 params["display_as_args"] = []
             full_ssh = shlex.split(self.config.ssh)
+            ssh_cmd = full_ssh[0].lower()
+            is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+            params["is_putty"] = is_putty
             password = self.config.password
             host = self.config.host
             upos = host.find("@")
@@ -590,6 +593,8 @@ class ApplicationWindow:
                     #found separator: username:password@host
                     password = username[ppos+1:]
                     username = username[:ppos]
+            if password and is_putty:
+                full_ssh += ["-pw", password]
             if username:
                 params["username"] = username
                 full_ssh += ["-l", username]
@@ -597,7 +602,7 @@ class ApplicationWindow:
             if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
             if str(self.config.ssh_port)!="22":
-                if WIN32:
+                if is_putty:
                     full_ssh += ["-P", str(self.config.ssh_port)]
                 else:
                     full_ssh += ["-p", str(self.config.ssh_port)]
