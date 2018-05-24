@@ -46,7 +46,7 @@ class RootWindowModel(object):
             image.set_target_y(y)
         return image
 
-    def cleanup(self):
+    def unmanage(self, exiting=False):
         pass
 
     def suspend(self):

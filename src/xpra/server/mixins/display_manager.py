@@ -40,6 +40,10 @@ class DisplayManager(StubServerMixin):
             self.parse_screen_info(ss)
 
 
+    def reset_state(self):
+        self.reset_icc_profile()
+
+
     def get_caps(self, source):
         root_w, root_h = self.get_root_window_size()
         return {

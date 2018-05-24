@@ -797,14 +797,12 @@ class ServerBase(ServerBaseClass):
             self.clean_quit(False)
         else:
             self.reset_server_timeout(True)
-            #so it is now safe to clear them:
-            #(this may fail during shutdown - which is ok)
-            try:
-                self.clear_keys_pressed()
-            except:
-                log("last_client_exited", exc_info=True)
-            self._focus(None, 0, [])
-            self.reset_icc_profile()
+            for c in SERVER_BASES:
+                if c!=ServerCore:
+                    try:
+                        c.reset_state(self)
+                    except:
+                        log("last_client_exited calling %s", c.reset_state, exc_info=True)
 
 
     def get_all_protocols(self):

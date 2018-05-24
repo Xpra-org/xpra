@@ -46,7 +46,10 @@ class InputServer(StubServerMixin):
 
     def cleanup(self):
         self.keyboard_config = None
+        self.clear_keys_pressed()
 
+    def reset_state(self):
+        self.clear_keys_pressed()
 
     def get_info(self, _proto):
         return {"keyboard" : self.get_keyboard_info()}

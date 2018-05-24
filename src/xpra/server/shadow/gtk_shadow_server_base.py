@@ -49,13 +49,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def cleanup(self):
         self.cleanup_tray()
-        #root window models aren't like regular window models
-        #(which get cleaned up using the unmanage signal)
-        for model in self._id_to_window.values():
-            model.cleanup()
         ShadowServerBase.cleanup(self)
         GTKServerBase.cleanup(self)
-        self.clear_keys_pressed()
 
 
     def client_startup_complete(self, ss):

@@ -31,11 +31,16 @@ class WindowServer(StubServerMixin):
         self.load_existing_windows()
 
     def cleanup(self):
-        pass
+        for window in tuple(self._window_to_id.keys()):
+            window.unmanage()
         #this can cause errors if we receive packets during shutdown:
         #self._window_to_id = {}
         #self._id_to_window = {}
 
+
+    def reset_state(self):
+        self._focus(None, 0, [])
+        
 
     def get_server_features(self, _source):
         return {
