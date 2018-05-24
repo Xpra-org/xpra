@@ -45,8 +45,8 @@ class InputServer(StubServerMixin):
         self.watch_keymap_changes()
 
     def cleanup(self):
-        self.keyboard_config = None
         self.clear_keys_pressed()
+        self.keyboard_config = None
 
     def reset_state(self):
         self.clear_keys_pressed()
