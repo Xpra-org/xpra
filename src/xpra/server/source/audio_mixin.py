@@ -29,7 +29,7 @@ class AudioMixin(StubSourceMixin):
 
     def init_from(self, _protocol, server):
         self.sound_properties       = server.sound_properties
-        self.sound_source_plugin    = server.sound_properties
+        self.sound_source_plugin    = server.sound_source_plugin
         self.supports_speaker       = server.supports_speaker
         self.supports_microphone    = server.supports_microphone
         self.speaker_codecs         = server.speaker_codecs
