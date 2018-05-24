@@ -217,7 +217,7 @@ class VideoSubregion(object):
 
     def cancel_nonvideo_refresh_timer(self):
         nvrt = self.nonvideo_refresh_timer
-        refreshlog("cancel_nonvideo_refresh_timer() timer=%s", self, nvrt)
+        refreshlog("cancel_nonvideo_refresh_timer() timer=%s", nvrt)
         if nvrt:
             self.nonvideo_refresh_timer = 0
             self.source_remove(nvrt)
