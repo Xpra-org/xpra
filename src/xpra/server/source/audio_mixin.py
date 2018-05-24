@@ -244,11 +244,11 @@ class AudioMixin(StubSourceMixin):
                    "codec"              : codec,
                    "sequence"           : sound_source.sequence,
                    })
-        self.update_av_sync_delay_total()
+        #self.update_av_sync_delay_total()
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=[]):
-        log("new_sound_buffer(%s, %s, %s, %s) info=%s, suspended=%s",
-                 sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], sound_source.info, self.suspended)
+        log("new_sound_buffer(%s, %s, %s, %s) info=%s",
+                 sound_source, len(data or []), metadata, [len(x) for x in packet_metadata], sound_source.info)
         if self.sound_source!=sound_source or self.is_closed():
             log("sound buffer dropped: from old source or closed")
             return
@@ -292,96 +292,92 @@ class AudioMixin(StubSourceMixin):
             self.sound_sink = None
             ss.cleanup()
 
+
+    ##########################################################################
+    # sound control commands:
     def sound_control(self, action, *args):
         assert self.hello_sent
         action = bytestostr(action)
         log("sound_control(%s, %s)", action, args)
-        if action=="stop":
-            if len(args)>0:
-                try:
-                    sequence = int(args[0])
-                except ValueError:
-                    msg = "sound sequence number '%s' is invalid" % args[0]
-                    log.warn(msg)
-                    return msg
-                if sequence!=self.sound_source_sequence:
-                    log.warn("sound sequence mismatch: %i vs %i", sequence, self.sound_source_sequence)
-                    return "not stopped"
-                log("stop: sequence number matches")
-            self.stop_sending_sound()
-            return "stopped"
-        elif action in ("start", "fadein"):
-            codec = None
-            if len(args)>0:
-                codec = bytestostr(args[0])
-            if action=="start":
-                volume = 1.0
-            else:
-                volume = 0.0
-            if not self.start_sending_sound(codec, volume):
-                return "failed to start sound"
-            if action=="fadein":
-                delay = 1000
-                if len(args)>1:
-                    delay = max(1, min(10*1000, int(args[1])))
-                step = 1.0/(delay/100.0)
-                log("sound_control fadein delay=%s, step=%1.f", delay, step)
-                def fadein():
-                    ss = self.sound_source
-                    if not ss:
-                        return False
-                    volume = ss.get_volume()
-                    log("fadein() volume=%.1f", volume)
-                    if volume<1.0:
-                        volume = min(1.0, volume+step)
-                        ss.set_volume(volume)
-                    return volume<1.0
-                self.cancel_sound_fade_timer()
-                self.sound_fade_timer = self.timeout_add(100, fadein)
-            msg = "sound started"
-            if codec:
-                msg += " using codec %s" % codec
-            return msg
-        elif action=="fadeout":
-            assert self.sound_source, "no active sound source"
-            delay = 1000
-            if len(args)>0:
-                delay = max(1, min(10*1000, int(args[0])))
-            step = 1.0/(delay/100.0)
-            log("sound_control fadeout delay=%s, step=%1.f", delay, step)
-            def fadeout():
-                ss = self.sound_source
-                if not ss:
-                    return False
-                volume = ss.get_volume()
-                log("fadeout() volume=%.1f", volume)
-                if volume>0:
-                    ss.set_volume(max(0, volume-step))
-                    return True
-                self.stop_sending_sound()
-                return False
-            self.cancel_sound_fade_timer()
-            self.sound_fade_timer = self.timeout_add(100, fadeout)
-        elif action=="new-sequence":
-            self.sound_source_sequence = int(args[0])
-            return "new sequence is %s" % self.sound_source_sequence
-        elif action=="sync":
-            assert self.av_sync, "av-sync is not enabled"
-            self.set_av_sync_delay(int(args[0]))
-            return "av-sync delay set to %ims" % self.av_sync_delay
-        elif action=="av-sync-delta":
-            assert self.av_sync, "av-sync is not enabled"
-            self.set_av_sync_delta(int(args[0]))
-            return "av-sync delta set to %ims" % self.av_sync_delta
-        #elif action=="quality":
-        #    assert self.sound_source
-        #    quality = args[0]
-        #    self.sound_source.set_quality(quality)
-        #    self.start_sending_sound()
-        else:
+        method = getattr(self, "sound_control_%s" % (action.replace("-", "_")), None)
+        if method is None:
             msg = "unknown sound action: %s" % action
             log.error(msg)
             return msg
+        return method(*args)
+
+    def sound_control_stop(self, sequence_str=""):
+        if sequence_str:
+            try:
+                sequence = int(sequence_str)
+            except ValueError:
+                msg = "sound sequence number '%s' is invalid" % sequence_str
+                log.warn(msg)
+                return msg
+            if sequence!=self.sound_source_sequence:
+                log.warn("sound sequence mismatch: %i vs %i", sequence, self.sound_source_sequence)
+                return "not stopped"
+            log("stop: sequence number matches")
+        self.stop_sending_sound()
+        return "stopped"
+
+    def sound_control_fadein(self, codec="", delay_str=""):
+        self.do_sound_control_start(0.0, codec)
+        delay = 1000
+        if delay_str:
+            delay = max(1, min(10*1000, int(delay_str)))
+        step = 1.0/(delay/100.0)
+        log("sound_control fadein delay=%s, step=%1.f", delay, step)
+        def fadein():
+            ss = self.sound_source
+            if not ss:
+                return False
+            volume = ss.get_volume()
+            log("fadein() volume=%.1f", volume)
+            if volume<1.0:
+                volume = min(1.0, volume+step)
+                ss.set_volume(volume)
+            return volume<1.0
+        self.cancel_sound_fade_timer()
+        self.sound_fade_timer = self.timeout_add(100, fadein)
+
+    def sound_control_start(self, codec=""):
+        self.do_sound_control_start(1.0, codec)
+
+    def do_sound_control_start(self, volume, codec):
+        codec = bytestostr(codec)
+        if not self.start_sending_sound(codec, volume):
+            return "failed to start sound"
+        msg = "sound started"
+        if codec:
+            msg += " using codec %s" % codec
+        return msg
+
+    def sound_control_fadeout(self, delay_str=""):
+        assert self.sound_source, "no active sound source"
+        delay = 1000
+        if delay_str:
+            delay = max(1, min(10*1000, int(delay_str)))
+        step = 1.0/(delay/100.0)
+        log("sound_control fadeout delay=%s, step=%1.f", delay, step)
+        def fadeout():
+            ss = self.sound_source
+            if not ss:
+                return False
+            volume = ss.get_volume()
+            log("fadeout() volume=%.1f", volume)
+            if volume>0:
+                ss.set_volume(max(0, volume-step))
+                return True
+            self.stop_sending_sound()
+            return False
+        self.cancel_sound_fade_timer()
+        self.sound_fade_timer = self.timeout_add(100, fadeout)
+
+    def sound_control_new_sequence(self, seq_str):
+        self.sound_source_sequence = int(seq_str)
+        return "new sequence is %s" % self.sound_source_sequence
+
 
     def cancel_sound_fade_timer(self):
         sft = self.sound_fade_timer

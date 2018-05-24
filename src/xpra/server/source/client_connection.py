@@ -64,7 +64,7 @@ if server_features.windows:
     if server_features.encoding:
         from xpra.server.source.encodings_mixin import EncodingsMixin
         CC_BASES.append(EncodingsMixin)
-    if server_features.av_sync:
+    if server_features.audio and server_features.av_sync:
         from xpra.server.source.avsync_mixin import AVSyncMixin
         CC_BASES.append(AVSyncMixin)
 from xpra.server.source.idle_mixin import IdleMixin

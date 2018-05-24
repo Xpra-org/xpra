@@ -69,3 +69,16 @@ class AVSyncMixin(StubSourceMixin):
             self.av_sync_delay_total = 0
         for ws in self.window_sources.values():
             ws.set_av_sync_delay(self.av_sync_delay_total)
+
+
+    ##########################################################################
+    # sound control commands:
+    def sound_control_sync(self, delay_str):
+        assert self.av_sync, "av-sync is not enabled"
+        self.set_av_sync_delay(int(delay_str))
+        return "av-sync delay set to %ims" % self.av_sync_delay
+
+    def sound_control_av_sync_delta(self, delta_str):
+        assert self.av_sync, "av-sync is not enabled"
+        self.set_av_sync_delta(int(delta_str))
+        return "av-sync delta set to %ims" % self.av_sync_delta
