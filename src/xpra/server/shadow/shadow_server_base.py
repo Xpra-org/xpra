@@ -202,8 +202,8 @@ class ShadowServerBase(RFBServer):
         raise NotImplementedError()
 
     def start_poll_pointer(self):
-        #the pointer position timer:
-        if POLL_POINTER>0:
+        from xpra.server import server_features
+        if server_features.input_devices and POLL_POINTER>0:
             self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self):
