@@ -246,6 +246,10 @@ class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
 _wait_for_input = False
 def set_wait_for_input():
     global _wait_for_input
+    wfi = os.environ.get("XPRA_WAIT_FOR_INPUT")
+    if wfi is not None:
+        _wait_for_input = wfi!="0"
+        return
     if is_wine():
         #don't wait for input when running under wine
         #(which usually does not popup a new shell window)
