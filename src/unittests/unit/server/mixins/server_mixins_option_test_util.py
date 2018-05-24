@@ -71,7 +71,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         log("starting test server with options=%s", options)
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
         xvfb = None
-        if WIN32:
+        if WIN32 or OSX:
             display = ":0"
         elif self.display:
             display = self.display
