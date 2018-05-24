@@ -7,7 +7,7 @@
 import time
 from collections import OrderedDict
 
-from xpra.os_util import pollwait, WIN32
+from xpra.os_util import pollwait, WIN32, OSX
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -44,7 +44,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         cls.xvfb = None
         cls.client_display = None
         cls.client_xvfb = None
-        if not WIN32:
+        if not WIN32 and not OSX:
             if False:
                 #use a single display for the server that we recycle:
                 cls.display = cls.find_free_display()
@@ -95,9 +95,12 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             r = pollwait(client, 5)
             assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
             #connect a gui client:
-            if WIN32 or (self.client_display and self.client_xvfb):
+            if WIN32 or OSX or (self.client_display and self.client_xvfb):
                 xpra_args = ["attach", display]
-                gui_client = self.run_xpra(xpra_args, {"DISPLAY" : self.client_display})
+                env = {}
+                if not (WIN32 or OSX):
+                    env["DISPLAY"] = self.client_display
+                gui_client = self.run_xpra(xpra_args, env)
                 r = pollwait(gui_client, 5)
                 if r is not None:
                     log.warn("gui client stdout=%s", gui_client.stdout_file)
