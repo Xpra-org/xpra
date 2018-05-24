@@ -7,7 +7,7 @@
 import time
 from collections import OrderedDict
 
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, WIN32
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -32,28 +32,31 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
     @classmethod
     def setUpClass(cls):
         ServerTestUtil.setUpClass()
-        cls.default_xpra_args = [
-            "--systemd-run=no",
-            "--pulseaudio=no",
-            "--socket-dirs=/tmp",
-            "--start=xterm",
-            ]
+        cls.default_xpra_args = []
+        if not WIN32:
+            cls.default_xpra_args = [
+                "--systemd-run=no",
+                "--pulseaudio=no",
+                "--socket-dirs=/tmp",
+                "--start=xterm",
+                ]
         cls.display = None
         cls.xvfb = None
         cls.client_display = None
         cls.client_xvfb = None
-        if False:
-            #use a single display for the server that we recycle:
-            cls.display = cls.find_free_display()
-            cls.xvfb = cls.start_Xvfb(cls.display)
-            time.sleep(1)
-            assert cls.display in cls.find_X11_displays()
-            log("ServerMixinsOptionTest.setUpClass() server display=%s, xvfb=%s", cls.display, cls.xvfb)
-        if True:
-            #display used by the client:
-            cls.client_display = cls.find_free_display()
-            cls.client_xvfb = cls.start_Xvfb(cls.client_display)
-            log("ServerMixinsOptionTest.setUpClass() client display=%s, xvfb=%s", cls.client_display, cls.client_xvfb)
+        if not WIN32:
+            if False:
+                #use a single display for the server that we recycle:
+                cls.display = cls.find_free_display()
+                cls.xvfb = cls.start_Xvfb(cls.display)
+                time.sleep(1)
+                assert cls.display in cls.find_X11_displays()
+                log("ServerMixinsOptionTest.setUpClass() server display=%s, xvfb=%s", cls.display, cls.xvfb)
+            if True:
+                #display used by the client:
+                cls.client_display = cls.find_free_display()
+                cls.client_xvfb = cls.start_Xvfb(cls.client_display)
+                log("ServerMixinsOptionTest.setUpClass() client display=%s, xvfb=%s", cls.client_display, cls.client_xvfb)
 
 
     @classmethod
@@ -68,7 +71,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         log("starting test server with options=%s", options)
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
         xvfb = None
-        if self.display:
+        if WIN32:
+            display = ":0"
+        elif self.display:
             display = self.display
             args.append("--use-display")
         else:
@@ -90,7 +95,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             r = pollwait(client, 5)
             assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
             #connect a gui client:
-            if self.client_display and self.client_xvfb:
+            if WIN32 or (self.client_display and self.client_xvfb):
                 xpra_args = ["attach", display]
                 gui_client = self.run_xpra(xpra_args, {"DISPLAY" : self.client_display})
                 r = pollwait(gui_client, 5)

@@ -11,7 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
-from xpra.os_util import OSEnvContext, pollwait, osexpand, POSIX
+from xpra.os_util import OSEnvContext, pollwait, osexpand, POSIX, WIN32
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
@@ -42,7 +42,9 @@ class ServerTestUtil(unittest.TestCase):
 		cls.default_config = get_defaults()
 		cls.display_start = 100
 		cls.dotxpra = DotXpra("/tmp", ["/tmp"])
-		cls.default_xpra_args = ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp", "--speaker=no", "--microphone=no"]
+		cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
+		if not WIN32:
+			cls.default_xpra_args += ["--systemd-run=no", "--pulseaudio=no", "--socket-dirs=/tmp"]
 		ServerTestUtil.existing_displays = cls.displays()
 		ServerTestUtil.processes = []
 		xpra_list = cls.run_xpra(["list"])

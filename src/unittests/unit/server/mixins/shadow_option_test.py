@@ -16,7 +16,13 @@ class StartDesktopOptionTest(ServerMixinsOptionTestUtil):
 
 
 def main():
-    unittest.main()
+    from xpra.os_util import WIN32
+    if not WIN32:
+        unittest.main()
+    #for running on win32:
+    #XPRA_WAIT_FOR_INPUT=0 XPRA_COMMAND=../scripts/xpra \
+    #    PYTHONPATH=".;.." XPRA_TEST_DEBUG=1 XPRA_ALL_DEBUG=1 \
+    #    ./unit/server/mixins/shadow_option_test.py        
 
 
 if __name__ == '__main__':
