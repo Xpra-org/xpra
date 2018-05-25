@@ -8,7 +8,7 @@ import os
 import time
 from collections import OrderedDict
 
-from xpra.os_util import pollwait, WIN32, OSX
+from xpra.os_util import pollwait, WIN32, OSX, POSIX
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -34,7 +34,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
     def setUpClass(cls):
         ServerTestUtil.setUpClass()
         cls.default_xpra_args = []
-        if not WIN32:
+        if POSIX and not OSX:
             cls.default_xpra_args = [
                 "--systemd-run=no",
                 "--pulseaudio=no",
@@ -45,7 +45,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         cls.xvfb = None
         cls.client_display = None
         cls.client_xvfb = None
-        if not WIN32 and not OSX:
+        if POSIX and not OSX:
             if False:
                 #use a single display for the server that we recycle:
                 cls.display = cls.find_free_display()
