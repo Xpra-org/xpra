@@ -88,7 +88,7 @@ class X11ServerBase(GTKServerBase):
 
     def init(self, opts):
         self.randr = opts.resize_display
-        self.fake_xinerama = opts.fake_xinerama
+        self.fake_xinerama = False      #only enabled in seamless server
         self.current_xinerama_config = None
         with xsync:
             self.x11_init()

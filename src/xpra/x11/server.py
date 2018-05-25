@@ -193,6 +193,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self.sync_xvfb = int(opts.sync_xvfb)
         self.global_menus = int(opts.global_menus)
         X11ServerBase.init(self, opts)
+        self.fake_xinerama = opts.fake_xinerama
         self.init_all_server_settings()
         if self.global_menus:
             self.rpc_handlers["menu"] = self._handle_menu_rpc
