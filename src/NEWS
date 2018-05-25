@@ -1,3 +1,21 @@
+v1.0.12 (2018-05-25)
+======================
+	-- fix memoryview paint error with non-opengl Python 2.6 clients
+	-- fix spurious errors and warnings during window cleanup
+	-- fix macos keyboard initialization
+	-- fix key shortcut command line handling
+	-- fix potential X11 related crashes due to missing synchronization
+	-- fix read-only mode pointer move bypass
+	-- fix shadow servers xinerama corruption for child commands
+	-- fix client failure connecting to servers without a valid desktop size
+	-- fix client launcher not exiting on close
+	-- fix parsing of display strings in connection URLs
+	-- don't prompt for the ssh password if we already have it
+	-- support newer nvidia driver versions with nvenc
+	-- remove duplicated encoding
+	-- increase test timeout
+
+
 v1.0.11 (2018-04-02)
 ======================
 	-- fix refresh loop with video region

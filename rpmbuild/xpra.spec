@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 1.0.11
+%define version 1.0.12
 %if ! %{defined build_no}
 %define build_no 0
 %endif
@@ -612,6 +612,22 @@ fi
 
 
 %changelog
+* Fri May 25 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-2
+- fix memoryview paint error with non-opengl Python 2.6 clients
+- fix spurious errors and warnings during window cleanup
+- fix macos keyboard initialization
+- fix key shortcut command line handling
+- fix potential X11 related crashes due to missing synchronization
+- fix read-only mode pointer move bypass
+- fix shadow servers xinerama corruption for child commands
+- fix client failure connecting to servers without a valid desktop size
+- fix client launcher not exiting on close
+- fix parsing of display strings in connection URLs
+- don't prompt for the ssh password if we already have it
+- support newer nvidia driver versions with nvenc
+- remove duplicated encoding
+- increase test timeout
+
 * Fri Apr 13 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-2
 - rebuild with logging backport fix
 
@@ -627,7 +643,7 @@ fi
 - remove outdated option from the man page, fix missing paragraphs
 - disable VP9 decoding via ffmpeg on MS Windows (crashes with latest libraries)
 
-* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-1
+* Mon Feb 12 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-1
 - fix crash with invalid tray docking requests
 - fix client authentication failures with multiple challenges
 - fix errors with some unauthenticated connections
