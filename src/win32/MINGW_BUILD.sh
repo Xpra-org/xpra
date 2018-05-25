@@ -200,7 +200,7 @@ fi
 if [ "${DO_TESTS}" == "1" ]; then
 	echo "* Running unit tests"
 	UNITTEST_LOG="win32/unittest.log"
-	PYTHONPATH=.:./unittests ${PYTHON} ./unittests/unit/run.py >& ${UNITTEST_LOG}
+	PYTHONPATH=.:./unittests XPRA_COMMAND="./scripts/xpra" ${PYTHON} ./unittests/unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
 		echo "ERROR: unittests have failed, see ${UNITTEST_LOG}:"
 		tail -n 20 "${UNITTEST_LOG}"

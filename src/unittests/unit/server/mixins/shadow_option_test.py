@@ -9,7 +9,7 @@ import unittest
 from unit.server.mixins.server_mixins_option_test_util import ServerMixinsOptionTestUtil
 
 
-class StartDesktopOptionTest(ServerMixinsOptionTestUtil):
+class ShadowOptionTest(ServerMixinsOptionTestUtil):
 
     def test_start_all(self):
         self._test_all("shadow")
