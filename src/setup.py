@@ -1315,7 +1315,7 @@ if WIN32:
                         script                  = script,
                         initScript              = None,
                         #targetDir               = "dist",
-                        icon                    = "win32/%s" % icon,
+                        icon                    = "icons/%s" % icon,
                         targetName              = "%s.exe" % base_name,
                         base                    = base,
                         **kwargs))
