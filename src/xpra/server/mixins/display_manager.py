@@ -55,6 +55,7 @@ class DisplayManager(StubServerMixin):
     def get_info(self, _proto):
         return {
             "display": {
+                "randr" : self.randr,
                 "bell"  : self.bell,
                 "cursors" : {
                     ""      : self.cursors,

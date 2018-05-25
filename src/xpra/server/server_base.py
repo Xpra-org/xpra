@@ -551,7 +551,6 @@ class ServerBase(ServerBaseClass):
 
     def get_features_info(self):
         i = {
-             "randr"            : self.randr,
              "sharing"          : self.sharing is not False,
              "idle_timeout"     : self.idle_timeout,
              }
