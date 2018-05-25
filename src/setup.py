@@ -98,12 +98,13 @@ from xpra.os_util import get_status_output, getUbuntuVersion, PYTHON3, BITS, \
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 has_pkg_config = False
-#we don't support building with "pkg-config" on win32 with python2:
 if PKG_CONFIG:
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0]==0 and v[1]
     if has_pkg_config:
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
+    else:
+        print("WARNING: pkg-config not found!")
 
 from Cython.Compiler.Version import version as cython_version
 
