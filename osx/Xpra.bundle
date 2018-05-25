@@ -67,6 +67,9 @@
 		${prefix}/lib/libavcodec.*.dylib
 	</binary>
 	<binary>
+		${prefix}/lib/libavformat.*.dylib
+	</binary>
+	<binary>
 		${prefix}/lib/libswscale.*.dylib
 	</binary>
 	<binary>
