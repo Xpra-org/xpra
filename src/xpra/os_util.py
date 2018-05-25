@@ -167,13 +167,19 @@ def get_group_id(group):
 
 def platform_release(release):
     if OSX:
+        SYSTEMVERSION_PLIST = "/System/Library/CoreServices/SystemVersion.plist"
         try:
             import plistlib
-            pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
+            with open(SYSTEMVERSION_PLIST, "rb") as f:
+                pl = plistlib.load(f)           #@UndefinedVariable
             return pl['ProductUserVisibleVersion']
-        except:
-            pass
+        except Exception as e:
+            get_util_logger().debug("platform_release(%s)", release, exc_info=True)
+            get_util_logger().warn("Warning: failed to get release information")
+            get_util_logger().warn(" from '%s':", SYSTEMVERSION_PLIST)
+            get_util_logger().warn(" %s", e)
     return release
+
 
 def platform_name(sys_platform, release):
     if not sys_platform:
