@@ -1421,7 +1421,7 @@ if WIN32:
 
     if client_ENABLED or server_ENABLED:
         add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
-        add_data_files('icons', glob.glob('win32\\*.ico') + glob.glob('icons\\*.*'))
+        add_data_files('icons', glob.glob('icons\\*.ico') + glob.glob('icons\\*.png'))
 
     if webcam_ENABLED:
         add_data_files('',      ['win32\\DirectShow.tlb'])
@@ -1499,7 +1499,7 @@ else:
         man_path = "man"
     add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
     add_data_files("share/xpra",          ["README", "COPYING"])
-    add_data_files("share/xpra/icons",    glob.glob("icons/*"))
+    add_data_files("share/xpra/icons",    glob.glob("icons/*png"))
     add_data_files("share/applications",  ["xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
     add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png"])
