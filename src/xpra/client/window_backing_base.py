@@ -16,8 +16,10 @@ from xpra.util import typedict, csv, envint, envbool, repr_ellipsized
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import BytesIOClass, bytestostr, _buffer
-from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
-from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
+try:
+    from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
+except ImportError:
+    from xpra.util import xor as xor_str
 
 DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
@@ -159,6 +161,7 @@ class WindowBackingBase(object):
 
 
     def unpremultiply(self, img_data):
+        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
         if type(img_data) not in (str, _buffer):
             try:
                 unpremultiply_argb_in_place(img_data)
