@@ -1614,7 +1614,6 @@ class WindowVideoSource(WindowSource):
             from PIL import Image
             img_data = image.get_pixels()
             rgb_format = image.get_pixel_format() #ie: BGRA
-            stride = image.get_rowstride()
             img = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(img_data), "raw", rgb_format.replace("BGRX", "BGRA"), stride)
             kwargs = {}
             if SAVE_VIDEO_FRAMES=="jpeg":
@@ -1641,6 +1640,8 @@ class WindowVideoSource(WindowSource):
                     stride = image.get_width()*4
                     image.restride(stride)
                 img_data = img_data or image.get_pixels()
+                if not img_data:
+                    return None
                 csums = CRC_Image(img_data, w, h, stride)
                 if csums:
                     self.scroll_data = rectangle(x, y, w, h), csums
