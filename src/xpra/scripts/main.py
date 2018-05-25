@@ -728,7 +728,7 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="tray_icon", default=defaults.tray_icon,
                           help="Path to the image which will be used as icon for the system-tray or dock")
     group.add_option("--key-shortcut", action="append",
-                      dest="key_shortcut", type="str", default=list(defaults.key_shortcut or []),
+                      dest="key_shortcut", default=[],
                       help="Define key shortcuts that will trigger specific actions."
                       + "If no shortcuts are defined, it defaults to: \n%s" % ("\n ".join(defaults.key_shortcut or [])))
     legacy_bool_parse("keyboard-sync")
@@ -904,6 +904,10 @@ def do_parse_cmdline(cmdline, defaults):
     if not options.bind:
         #use the default:
         options.bind = defaults_bind
+
+    #only use the default key-shortcut list if the user hasn't specified one:
+    if not options.key_shortcut:
+        options.key_shortcut = defaults.key_shortcut    
 
     #ensure all the option fields are set even though
     #some options are not shown to the user:
