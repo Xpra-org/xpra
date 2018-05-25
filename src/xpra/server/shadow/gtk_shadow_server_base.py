@@ -199,10 +199,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.tray_widget:
             return
         try:
-            from xpra.platform.paths import get_icon_dir
-            if not os.path.isabs(filename):
-                icon_filename = os.path.join(get_icon_dir(), filename)
-            self.tray_widget.set_icon(icon_filename)
+            self.tray_widget.set_icon(filename)
         except Exception as e:
             traylog.warn("Warning: failed to set tray icon to %s", filename)
             traylog.warn(" %s", e)
