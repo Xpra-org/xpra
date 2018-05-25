@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 from collections import OrderedDict
 
@@ -72,12 +73,15 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
         xvfb = None
         if WIN32 or OSX:
-            display = ":0"
+            display = ""
+            display_arg = []
         elif self.display:
             display = self.display
+            display_arg = [display]
             args.append("--use-display")
         else:
             display = self.find_free_display()
+            display_arg = [display]
             if subcommand=="shadow":
                 xvfb = self.start_Xvfb(display)
         server = None
@@ -87,20 +91,22 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             log("args=%s", " ".join("'%s'" % x for x in args))
             server = self.check_server(subcommand, display, *args)
             #we should always be able to get the version:
-            client = self.run_xpra(["version", display])
+            client = self.run_xpra(["version"]+display_arg)
             assert pollwait(client, 5)==0, "version client failed to connect to server with args=%s" % args
             #run info query:
-            cmd = ["info", display]
+            cmd = ["info"]+display_arg
             client = self.run_xpra(cmd)
             r = pollwait(client, 5)
             assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
             #connect a gui client:
             if WIN32 or OSX or (self.client_display and self.client_xvfb):
-                xpra_args = ["attach", display]
-                env = {}
+                xpra_args = ["attach", "--clipboard=no"]+display_arg
+                kwargs = {}
                 if not (WIN32 or OSX):
+                    env = os.environ.copy()
                     env["DISPLAY"] = self.client_display
-                gui_client = self.run_xpra(xpra_args, env)
+                    kwargs = {"env" : env}
+                gui_client = self.run_xpra(xpra_args, **kwargs)
                 r = pollwait(gui_client, 5)
                 if r is not None:
                     log.warn("gui client stdout=%s", gui_client.stdout_file)

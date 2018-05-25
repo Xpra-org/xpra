@@ -90,18 +90,20 @@ class ServerTestUtil(unittest.TestCase):
 		return cmd
 
 	@classmethod
-	def run_xpra(cls, xpra_args, env=None):
+	def run_xpra(cls, xpra_args, env=None, **kwargs):
 		xpra_cmd = get_xpra_command()
 		if xpra_cmd==["xpra"]:
 			xpra_cmd = [cls.which("xpra")]
 		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + cls.default_xpra_args + xpra_args
-		return cls.run_command(cmd, env)
+		return cls.run_command(cmd, env, **kwargs)
 
 	@classmethod
 	def run_command(cls, command, env=None, **kwargs):
 		if env is None:
 			env = cls.get_run_env()
 			env["XPRA_FLATTEN_INFO"] = "0"
+		if env is not None and not WIN32:
+			kwargs["env"] = env
 		stdout_file = stderr_file = None
 		strcommand = " ".join("'%s'" % x for x in command)
 		if XPRA_TEST_DEBUG:
@@ -116,7 +118,7 @@ class ServerTestUtil(unittest.TestCase):
 				kwargs["stderr"] = stderr_file
 				log("stderr=%s for %s", stderr_file.name, strcommand)
 		try:
-			proc = subprocess.Popen(args=command, env=env, **kwargs)
+			proc = subprocess.Popen(args=command, **kwargs)
 			proc.stdout_file = stdout_file
 			proc.stderr_file = stderr_file
 		except OSError as e:
@@ -246,29 +248,40 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def check_server(cls, subcommand, display, *args):
-		cmd = [subcommand, display, "--no-daemon"]+list(args)
+		cmd = [subcommand]
+		if display:
+			cmd.append(display)
+		cmd += ["--no-daemon"]+list(args)
 		server_proc = cls.run_xpra(cmd)
 		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
-		live = cls.dotxpra.displays()
-		assert display in live, "server display '%s' not found in live displays %s" % (display, live)
+		if display:
+			live = cls.dotxpra.displays()
+			assert display in live, "server display '%s' not found in live displays %s" % (display, live)
 		#query it:
-		info = cls.run_xpra(["version", display])
+		if display:
+			version = cls.run_xpra(["version", display])
+		else:
+			version = cls.run_xpra(["version"])
 		for _ in range(20):
-			r = pollwait(info)
+			r = pollwait(version)
 			log("version for %s returned %s", display, r)
 			if r is not None:
 				if r==1:
 					continue
 				break
 			time.sleep(1)
-		assert r==0, "version failed for %s, returned %s" % (display, info.poll())
+		assert r==0, "version failed for %s, returned %s" % (display, version.poll())
 		return server_proc
 
 	@classmethod
 	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
 		if server_proc.poll():
 			return
-		stopit = cls.run_xpra([subcommand, display])
+		cmd = [subcommand]
+		if display:
+			cmd.append(display)
+		stopit = cls.run_xpra(cmd)
 		assert pollwait(stopit) is not None, "%s command failed to exit" % subcommand
 		assert pollwait(server_proc) is not None, "server process %s failed to exit" % server_proc
-		assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display
+		if display:
+			assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display
