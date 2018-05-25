@@ -175,7 +175,7 @@ class WindowsMixin(StubSourceMixin):
         if len(pqpixels)>0:
             pqpi["current"] = pqpixels[-1]
         info = {"damage"    : {
-                               "compression_queue"      : {"size" : {"current" : self.encode_work_queue.qsize()}},
+                               "compression_queue"      : {"size" : {"current" : self.encode_queue_size()}},
                                "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
                                "packet_queue_pixels"    : pqpi,
                                },
@@ -507,7 +507,7 @@ class WindowsMixin(StubSourceMixin):
             ws = WindowVideoSource(
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
-                              self.record_congestion_event, self.queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
+                              self.record_congestion_event, self.encode_queue_size, self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               av_sync, av_sync_delay,

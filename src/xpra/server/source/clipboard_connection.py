@@ -98,8 +98,8 @@ class ClipboardConnection(StubSourceMixin):
                     self.clipboard_enabled = False
                     self.send_clipboard_enabled(msg)
                 return
-        #call compress_clibboard via the work queue:
-        self.encode_work_queue.put((True, self.compress_clipboard, packet))
+        #call compress_clibboard via the encode work queue:
+        self.queue_encode((True, self.compress_clipboard, packet))
 
     def compress_clipboard(self, packet):
         #Note: this runs in the 'encode' thread!

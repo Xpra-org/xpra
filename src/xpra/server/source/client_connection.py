@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import sleep
 from threading import Event
 from collections import deque
 
@@ -22,7 +23,8 @@ netlog = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
 
-from xpra.os_util import monotonic_time
+from xpra.make_thread import start_thread
+from xpra.os_util import Queue, monotonic_time
 from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, AtomicInteger
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 
@@ -76,6 +78,7 @@ log("ClientConnectionClass%s", CC_BASES)
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
+NOYIELD = not envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
@@ -124,6 +127,12 @@ class ClientConnection(ClientConnectionClass):
                                                     #these packets are picked off by the "protocol" via 'next_packet()'
                                                     #format: packet, wid, pixels, start_send_cb, end_send_cb
                                                     #(only packet is required - the rest can be 0/None for clipboard packets)
+        # the encode work queue is used by mixins that need to encode data before sending it,
+        # ie: encodings and clipboard
+        self.encode_work_queue = None               #this queue will hold functions to call to compress data (pixels, clipboard)
+                                                    #items placed in this queue are picked off by the "encode" thread,
+                                                    #the functions should add the packets they generate to the 'packet_queue'
+        self.encode_thread = None
         self.ordinary_packets = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
@@ -277,6 +286,74 @@ class ClientConnection(ClientConnectionClass):
         log("startup_complete()")
         self.send("startup-complete")
 
+
+    #
+    # The encode thread loop management:
+    #
+    def queue_encode(self, item):
+        #start the encode work queue:
+        self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
+                                                    #items placed in this queue are picked off by the "encode" thread,
+                                                    #the functions should add the packets they generate to the 'packet_queue'
+        self.queue_encode = self.encode_work_queue.put
+        self.encode_work_queue.put(item)
+        self.encode_thread = start_thread(self.encode_loop, "encode")
+
+    def encode_queue_size(self):
+        ewq = self.encode_work_queue
+        if ewq is None:
+            return 0
+        return ewq.qsize()
+
+    def call_in_encode_thread(self, *fn_and_args):
+        """
+            This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
+            The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
+        """
+        self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_queue_size()))
+        self.queue_encode(fn_and_args)
+
+    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
+        """
+            Add a new 'draw' packet to the 'packet_queue'.
+            Note: this code runs in the non-ui thread
+        """
+        now = monotonic_time()
+        self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
+        if wid>0:
+            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
+        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
+        p = self.protocol
+        if p:
+            p.source_has_more()
+
+    def encode_loop(self):
+        """
+            This runs in a separate thread and calls all the function callbacks
+            which are added to the 'encode_work_queue'.
+            Must run until we hit the end of queue marker,
+            to ensure all the queued items get called,
+            those that are marked as optional will be skipped when is_closed()
+        """
+        while True:
+            fn_and_args = self.encode_work_queue.get(True)
+            if fn_and_args is None:
+                return              #empty marker
+            #some function calls are optional and can be skipped when closing:
+            #(but some are not, like encoder clean functions)
+            optional_when_closing = fn_and_args[0]
+            if optional_when_closing and self.is_closed():
+                continue
+            try:
+                fn_and_args[1](*fn_and_args[2:])
+            except Exception as e:
+                if self.is_closed():
+                    log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
+                    log(" %s", e)
+                else:
+                    log.error("Error during encoding:", exc_info=True)
+                del e
+            NOYIELD or sleep(0)
 
     ######################################################################
     # network:

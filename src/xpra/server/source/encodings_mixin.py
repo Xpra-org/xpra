@@ -26,7 +26,6 @@ from xpra.os_util import Queue, monotonic_time
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint, envbool
 
-NOYIELD = not envbool("XPRA_YIELD", False)
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
 
@@ -77,11 +76,6 @@ class EncodingsMixin(StubSourceMixin):
         #which may be used by other clients (other ServerSource instances)
         self.video_helper = getVideoHelper().clone()
 
-        # the queues of damage requests we work through:
-        self.encode_work_queue = Queue()            #holds functions to call to compress data (pixels, clipboard)
-                                                    #items placed in this queue are picked off by the "encode" thread,
-                                                    #the functions should add the packets they generate to the 'packet_queue'
-        self.encode_thread = start_thread(self.encode_loop, "encode")
 
     def init_from(self, _protocol, server):
         self.server_core_encodings  = server.core_encodings
@@ -98,7 +92,7 @@ class EncodingsMixin(StubSourceMixin):
         #Warning: this mixin must come AFTER the window mixin!
         #to make sure that it is safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
-        self.encode_work_queue.put(None)
+        self.queue_encode(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
 
@@ -489,59 +483,3 @@ class EncodingsMixin(StubSourceMixin):
         ratio = float(w*h) / 1000000
         batch_config.delay = self.global_batch_config.delay * sqrt(ratio)
         return batch_config
-
-
-    def queue_size(self):
-        return self.encode_work_queue.qsize()
-
-    def call_in_encode_thread(self, *fn_and_args):
-        """
-            This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
-            The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
-        """
-        self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_work_queue.qsize()))
-        self.encode_work_queue.put(fn_and_args)
-
-    def queue_packet(self, packet, wid=0, pixels=0, start_send_cb=None, end_send_cb=None, fail_cb=None, wait_for_more=False):
-        """
-            Add a new 'draw' packet to the 'packet_queue'.
-            Note: this code runs in the non-ui thread
-        """
-        now = monotonic_time()
-        self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
-        if wid>0:
-            self.statistics.damage_packet_qpixels.append((now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1]==wid)))
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
-        p = self.protocol
-        if p:
-            p.source_has_more()
-
-#
-# The damage packet thread loop:
-#
-    def encode_loop(self):
-        """
-            This runs in a separate thread and calls all the function callbacks
-            which are added to the 'encode_work_queue'.
-            Must run until we hit the end of queue marker,
-            to ensure all the queued items get called.
-        """
-        while True:
-            fn_and_args = self.encode_work_queue.get(True)
-            if fn_and_args is None:
-                return              #empty marker
-            #some function calls are optional and can be skipped when closing:
-            #(but some are not, like encoder clean functions)
-            optional_when_closing = fn_and_args[0]
-            if optional_when_closing and self.is_closed():
-                continue
-            try:
-                fn_and_args[1](*fn_and_args[2:])
-            except Exception as e:
-                if self.is_closed():
-                    log("ignoring encoding error in %s as source is already closed:", fn_and_args[0])
-                    log(" %s", e)
-                else:
-                    log.error("Error during encoding:", exc_info=True)
-                del e
-            NOYIELD or sleep(0)
