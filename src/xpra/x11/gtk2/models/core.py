@@ -299,7 +299,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def uses_XShm(self):
         c = self._composite
-        return c and c.get_xshm_handle() is not None
+        return c and c.has_xshm()
 
     def get_image(self, x, y, width, height, logger=log.debug):
         return self._composite.get_image(x, y, width, height, logger)
