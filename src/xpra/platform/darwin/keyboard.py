@@ -26,6 +26,7 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
+        KeyboardBase.__init__(self)
         self.swap_keys = True
         self.meta_modifier = None
         self.control_modifier = None
