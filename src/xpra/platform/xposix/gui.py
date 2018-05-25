@@ -205,14 +205,16 @@ def _get_xsettings_dpi():
 
 def _get_randr_dpi():
     try:
+        from xpra.gtk_common.error import xsync
         from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-        randr_bindings = RandRBindings()
-        wmm, hmm = randr_bindings.get_screen_size_mm()
-        w, h =  randr_bindings.get_screen_size()
-        dpix = iround(w * 25.4 / wmm)
-        dpiy = iround(h * 25.4 / hmm)
-        screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-        return dpix, dpiy
+        with xsync:
+            randr_bindings = RandRBindings()
+            wmm, hmm = randr_bindings.get_screen_size_mm()
+            w, h =  randr_bindings.get_screen_size()
+            dpix = iround(w * 25.4 / wmm)
+            dpiy = iround(h * 25.4 / hmm)
+            screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
+            return dpix, dpiy
     except Exception as e:
         screenlog.warn("failed to get dpi: %s", e)
     return -1, -1
