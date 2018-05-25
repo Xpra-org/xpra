@@ -100,7 +100,7 @@ def set_history_from_active(optionmenu):
 
 class ApplicationWindow:
 
-    def    __init__(self):
+    def __init__(self):
         # Default connection options
         self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
         #TODO: the fixup does not belong here?
@@ -112,6 +112,7 @@ class ApplicationWindow:
             raise Exception(*args)
         self.client = make_client(raise_exception, self.config)
         self.client.init(self.config)
+        self.exit_launcher = False
         self.exit_code = None
         self.current_error = None
 
@@ -711,6 +712,11 @@ class ApplicationWindow:
         except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
+        #if we're using "autoconnect",
+        #the main loop was running from here,
+        #so we have to force exit if the launcher window had been closed:
+        if self.exit_launcher:
+            sys.exit(0)
 
 
     def password_ok(self, *args):
@@ -801,6 +807,7 @@ class ApplicationWindow:
             props["host"] = host
             if len(pa)>=3:
                 props["port"] = pa[2]
+        self.exit_launcher = True
         self._apply_props(props)
 
     def update_options_from_file(self, filename):
