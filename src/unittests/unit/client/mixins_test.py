@@ -48,6 +48,12 @@ class MixinsTest(unittest.TestCase):
 		x.parse_server_capabilities()
 
 	def test_remotelogging(self):
+		from xpra.log import is_debug_enabled
+		for x in ("network", "crypto", "udp"):
+			if is_debug_enabled(x):
+				#remote logging will be disabled,
+				#so we have to skip this test
+				return
 		x = RemoteLogging()
 		opts = AdHocStruct()
 		opts.remote_logging = "yes"
