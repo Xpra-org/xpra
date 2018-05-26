@@ -18,6 +18,7 @@ from collections import deque, namedtuple
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint
 from xpra.os_util import memoryview_to_bytes, monotonic_time
+from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_xwindow
 from xpra.x11.common import Unmanageable
@@ -249,7 +250,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         ### Create the WM object
         self._wm = Wm(self.clobber, self.wm_name)
-        from xpra.server import server_features
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
@@ -897,7 +897,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             size_changed = oww!=w or owh!=h
         if is_ui_driver or size_changed or not shown:
             damage = False
-            if is_ui_driver and len(packet)>=13 and not self.readonly:
+            if is_ui_driver and len(packet)>=13 and server_features.input_devices and not self.readonly:
                 pwid = packet[10]
                 pointer = packet[11]
                 modifiers = packet[12]

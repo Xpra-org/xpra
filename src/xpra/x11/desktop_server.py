@@ -16,6 +16,7 @@ from xpra.util import updict, log_screen_sizes
 from xpra.scripts.config import parse_bool, parse_number
 from xpra.platform.paths import get_icon
 from xpra.platform.gui import get_wm_name
+from xpra.server import server_features
 from xpra.server.rfb.rfb_server import RFBServer
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
@@ -507,7 +508,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]
-        if len(packet)>=13 and not self.readonly:
+        if len(packet)>=13 and server_features.input_devices and not self.readonly:
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
