@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections import deque
 from math import sqrt
 from time import sleep
 
@@ -21,10 +20,9 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net.compression import compressed_wrapper, Compressed, use_lz4, use_lzo
-from xpra.make_thread import start_thread
-from xpra.os_util import Queue, monotonic_time
+from xpra.os_util import monotonic_time
 from xpra.server.background_worker import add_work_item
-from xpra.util import csv, typedict, envint, envbool
+from xpra.util import csv, typedict, envint
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
