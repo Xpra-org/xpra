@@ -125,7 +125,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
                 
             #connect a gui client:
-            if WIN32 or OSX or (self.client_display and self.client_xvfb):
+            if WIN32 or (self.client_display and self.client_xvfb):
                 xpra_args = [
                     "attach",
                     "--clipboard=no",       #could create loops
