@@ -807,6 +807,10 @@ class X11ServerCore(GTKServerBase):
 
 
     def setup_input_devices(self):
+        from xpra.server import server_features
+        xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
+        if not server_features.input_devices:
+            return
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
         xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
         #xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)
