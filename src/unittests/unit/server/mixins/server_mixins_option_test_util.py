@@ -39,13 +39,16 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
     def setUpClass(cls):
         ServerTestUtil.setUpClass()
         cls.default_xpra_args = []
-        if POSIX and not OSX:
-            cls.default_xpra_args = [
-                "--systemd-run=no",
-                "--pulseaudio=no",
+        if POSIX:
+            cls.default_xpra_args += [
                 "--socket-dirs=/tmp",
-                "--start=xterm",
                 ]
+            if not OSX:
+                cls.default_xpra_args += [
+                    "--systemd-run=no",
+                    "--pulseaudio=no",
+                    "--start=xterm",
+                    ]
         cls.display = None
         cls.xvfb = None
         cls.client_display = None
