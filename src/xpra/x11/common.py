@@ -12,6 +12,9 @@ class Unmanageable(Exception):
     pass
 
 
+REPR_FUNCTIONS = {}
+
+
 # Just to make it easier to pass around and have a helpful debug logging.
 # Really, just a python objects where we can stick random bags of attributes.
 class X11Event(object):
@@ -19,18 +22,13 @@ class X11Event(object):
         self.name = name
 
     def __repr__(self):
-        from xpra.gtk_common.gobject_compat import import_gdk
-        gdk = import_gdk()
         d = {}
         for k,v in self.__dict__.items():
             if k=="name":
                 continue
             elif k=="serial":
                 d[k] = "%#x" % v
-            elif v and type(v)==gdk.Window:
-                d[k] = "%#x" % v.xid
-            elif v and type(v)==gdk.Display:
-                d[k] = "%s" % v.get_name()
             else:
-                d[k] = v
+                fn = REPR_FUNCTIONS.get(type(v), str)
+                d[k] = fn(v)
         return "<X11:%s %r>" % (self.name, d)
