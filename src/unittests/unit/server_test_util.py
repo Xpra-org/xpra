@@ -112,11 +112,11 @@ class ServerTestUtil(unittest.TestCase):
 			if "stdout" not in kwargs:
 				stdout_file = cls._temp_file(prefix="xpra-stdout-")
 				kwargs["stdout"] = stdout_file
-				log("stdout=%s for %s", stdout_file.name, strcommand)
+				log("stdout: %s for %s", stdout_file.name, strcommand)
 			if "stderr" not in kwargs:
 				stderr_file = cls._temp_file(prefix="xpra-stderr-")
 				kwargs["stderr"] = stderr_file
-				log("stderr=%s for %s", stderr_file.name, strcommand)
+				log("stderr: %s for %s", stderr_file.name, strcommand)
 		try:
 			proc = subprocess.Popen(args=command, **kwargs)
 			proc.stdout_file = stdout_file

@@ -131,7 +131,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 gui_client = self.run_xpra(xpra_args, **client_kwargs)
                 r = pollwait(gui_client, 5)
                 if r is not None:
-                    log.warn("gui client stdout=%s", gui_client.stdout_file)
+                    log.warn("gui client stdout: %s", gui_client.stdout_file)
                 assert r is None, "gui client terminated early and returned %i for server with args=%s" % (r, args)
 
             if self.display:
