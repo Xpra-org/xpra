@@ -31,6 +31,14 @@ class AVSyncMixin(StubSourceMixin):
         self.av_sync_delta = AV_SYNC_DELTA
 
 
+    def get_server_features(self, _source):
+        return {
+            "av-sync" : {
+                ""          : self.av_sync,
+                "enabled"   : self.av_sync_enabled,
+                }
+            }
+
     def get_info(self):
         return {
             "av-sync" : {

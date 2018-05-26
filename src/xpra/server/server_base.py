@@ -415,8 +415,6 @@ class ServerBase(ServerBaseClass):
                 "event_request",
                 "notify-startup-complete",
                 "server-events",
-                #newer flags:
-                "av-sync",
                 ))
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -435,7 +433,6 @@ class ServerBase(ServerBaseClass):
                  })
         if source.wants_features:
             capabilities.update({
-                 "av-sync.enabled"              : self.av_sync,
                  "client-shutdown"              : self.client_shutdown,
                  "sharing"                      : self.sharing is not False,
                  "sharing-toggle"               : self.sharing is None,
