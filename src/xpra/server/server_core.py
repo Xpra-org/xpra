@@ -449,7 +449,13 @@ class ServerCore(object):
                 self._html = False
         #make sure we have the web root:
         from xpra.platform.paths import get_resources_dir
-        self._www_dir = www_dir or os.path.abspath(os.path.join(get_resources_dir(), "www"))
+        if www_dir:
+            self._www_dir = www_dir
+        else:
+            for d in ("www", "html5"):
+                self._www_dir = os.path.abspath(os.path.join(get_resources_dir(), d))
+                if os.path.exists(self._www_dir):
+                    break
         self._http_headers_dir = os.path.abspath(os.path.join(self._www_dir, "../http-headers"))
         if not os.path.exists(self._www_dir) and self._html:
             httplog.error("Error: cannot find the html web root")
