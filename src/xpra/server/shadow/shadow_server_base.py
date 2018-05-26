@@ -31,6 +31,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 class ShadowServerBase(RFBServer):
 
     def __init__(self, root_window, capture=None):
+        RFBServer.__init__(self)
         self.capture = capture
         self.root = root_window
         self.mapped = False
@@ -45,7 +46,6 @@ class ShadowServerBase(RFBServer):
         self.last_cursor_data = None
         DamageBatchConfig.ALWAYS = True             #always batch
         DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
-        RFBServer.init(self)
 
     def init(self, opts):
         self._rfb_upgrade = int(opts.rfb_upgrade)
