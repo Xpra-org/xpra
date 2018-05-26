@@ -8,8 +8,13 @@ import os
 import time
 from collections import OrderedDict
 
+from xpra.util import envbool
 from xpra.os_util import pollwait, WIN32, OSX, POSIX
 from unit.server_test_util import ServerTestUtil, log
+from xpra.net.net_util import get_free_tcp_port
+
+
+TEST_RFB = envbool("XPRA_TEST_RFB", not WIN32 and not OSX)
 
 
 OPTIONS = (
@@ -71,6 +76,10 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
     def _test(self, subcommand="start", options={}):
         log("starting test server with options=%s", options)
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
+        tcp_port = None
+        if TEST_RFB:
+            tcp_port = get_free_tcp_port()
+            args += ["--bind-tcp=0.0.0.0:%i" % tcp_port]
         xvfb = None
         if WIN32 or OSX:
             display = ""
@@ -86,6 +95,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 xvfb = self.start_Xvfb(display)
         server = None
         client = None
+        rfb_client = None
         gui_client = None
         try:
             log("args=%s", " ".join("'%s'" % x for x in args))
@@ -98,28 +108,42 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             client = self.run_xpra(cmd)
             r = pollwait(client, 5)
             assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
+
+            client_kwargs = {}
+            if not (WIN32 or OSX):
+                env = os.environ.copy()
+                env["DISPLAY"] = self.client_display
+                client_kwargs = {"env" : env}
+
+            if subcommand in ("shadow", "start-desktop") and TEST_RFB:
+                rfb_cmd = ["vncviewer", "localhost::%i" % tcp_port]
+                rfb_client = self.run_command(rfb_cmd, **client_kwargs)
+                r = pollwait(rfb_client, 5)
+                assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
+                
             #connect a gui client:
             if WIN32 or OSX or (self.client_display and self.client_xvfb):
-                xpra_args = ["attach", "--clipboard=no"]+display_arg
-                kwargs = {}
-                if not (WIN32 or OSX):
-                    env = os.environ.copy()
-                    env["DISPLAY"] = self.client_display
-                    kwargs = {"env" : env}
-                gui_client = self.run_xpra(xpra_args, **kwargs)
+                xpra_args = [
+                    "attach",
+                    "--clipboard=no",       #could create loops
+                    "--notifications=no",   #may get sent to the desktop session running the tests!
+                    ]+display_arg
+                gui_client = self.run_xpra(xpra_args, **client_kwargs)
                 r = pollwait(gui_client, 5)
                 if r is not None:
                     log.warn("gui client stdout=%s", gui_client.stdout_file)
                 assert r is None, "gui client terminated early and returned %i for server with args=%s" % (r, args)
+
             if self.display:
                 self.check_stop_server(server, subcommand="exit", display=display)
             else:
                 self.check_stop_server(server, subcommand="stop", display=display)
+
             if gui_client:
                 r = pollwait(gui_client, 1)
                 assert r is not None, "gui client should have been disconnected"
         finally:
-            for x in (xvfb, gui_client, server, client):
+            for x in (xvfb, rfb_client, gui_client, server, client):
                 try:
                     if x and x.poll() is None:
                         x.terminate()
