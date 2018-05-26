@@ -193,8 +193,8 @@ class X11ServerCore(GTKServerBase):
                 env = self.get_child_env()
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, shell=False, close_fds=True)
                 out,err = proc.communicate()
-                gllog("out(xpra opengl)=%s", out)
-                gllog("err(xpra opengl)=%s", err)
+                gllog("out(%s)=%s", cmd, out)
+                gllog("err(%s)=%s", cmd, err)
                 if proc.returncode==0:
                     #parse output:
                     for line in out.splitlines():
@@ -204,12 +204,21 @@ class X11ServerCore(GTKServerBase):
                         k = bytestostr(parts[0].strip())
                         v = bytestostr(parts[1].strip())
                         self.opengl_props[k] = v
+                    log.info(" OpenGL is supported on this display")
                 else:
-                    self.opengl_props["error"] = str(err).strip("\n\r")
+                    self.opengl_props["error-details"] = str(err).strip("\n\r")
+                    error = "unknown error"
+                    for x in str(err).splitlines():
+                        if x.startswith("RuntimeError: "):
+                            error = x[len("RuntimeError: "):]
+                            break
+                    self.opengl_props["error"] = error
+                    log.warn("OpenGL query failed:")
+                    log.warn(" %s", error)
             except Exception as e:
                 gllog("query_opengl()", exc_info=True)
-                gllog.warn("Warning: failed to query OpenGL properties")
-                gllog.warn(" %s", e)
+                gllog.error("Warning: OpenGL query failed")
+                gllog.error(" '%s'", e)
                 self.opengl_props["error"] = str(e)
         gllog("OpenGL: %s", self.opengl_props)
 
