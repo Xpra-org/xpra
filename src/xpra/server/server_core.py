@@ -1594,10 +1594,11 @@ class ServerCore(object):
                         "server.mode"           : self.get_server_mode(),
                         })
         if source is None or source.wants_features:
-            capabilities["info-request"] = True
-            capabilities["readonly-server"] = True
-            if self.readonly:
-                capabilities["readonly"] = True
+            capabilities.update({
+                "info-request"      : True,
+                "readonly-server"   : True,
+                "readonly"          : self.readonly,
+                })
         if source is None or source.wants_versions:
             capabilities["uuid"] = get_user_uuid()
             mid = get_machine_id()
