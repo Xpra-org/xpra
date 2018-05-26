@@ -10,6 +10,7 @@ from xpra.os_util import POSIX, OSX
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
+from xpra.server import server_features
 
 from xpra.log import Logger
 log = Logger("rfb")
@@ -102,6 +103,8 @@ class RFBServer(object):
             start_refresh()
 
     def _process_rfb_PointerEvent(self, _proto, packet):
+        if not server_features.input_devices:
+            return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
         self._move_pointer(wid, (x, y))
@@ -115,6 +118,8 @@ class RFBServer(object):
             self.rfb_buttons = buttons
 
     def _process_rfb_KeyEvent(self, proto, packet):
+        if not server_features.input_devices:
+            return
         source = self._server_sources.get(proto)
         if not source:
             return
