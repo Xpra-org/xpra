@@ -81,7 +81,7 @@ class TrayBase(object):
     def set_icon(self, basename=None):
         filename = self.get_icon_filename(basename)
         if not filename:
-            log.error("Error: cannot find icon '%s' for name '%s'", filename, basename)
+            log.error("Error: cannot find icon '%s'", basename)
             return
         log("set_icon(%s) using filename=%s", basename, filename)
         self.set_icon_from_file(filename)
