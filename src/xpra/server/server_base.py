@@ -376,9 +376,6 @@ class ServerBase(ServerBaseClass):
             self.send_initial_cursors(ss, share_count>0)
         self.client_startup_complete(ss)
 
-    def parse_screen_info(self, ss):
-        pass
-
 
     def client_startup_complete(self, ss):
         ss.startup_complete()
