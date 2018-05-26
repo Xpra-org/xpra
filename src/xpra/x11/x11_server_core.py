@@ -87,6 +87,7 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map = {}
+        self.keys_pressed = {}
         self.last_mouse_user = None
         GTKServerBase.__init__(self)
 
