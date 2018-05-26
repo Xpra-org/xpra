@@ -266,6 +266,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
 
     def __init__(self):
         gobject.GObject.__init__(self)
+        RFBServer.__init__(self)
         X11ServerBase.__init__(self)
         self.session_type = "desktop"
         self.resize_timer = None
@@ -273,7 +274,6 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
 
     def init(self, opts):
         X11ServerBase.init(self, opts)
-        RFBServer.init(self)
         if not parse_bool("rfb-upgrade", opts.rfb_upgrade):
             self._rfb_upgrade = 0
         else:

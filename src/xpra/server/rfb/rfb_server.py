@@ -21,7 +21,7 @@ log = Logger("rfb")
 """
 class RFBServer(object):
 
-    def init(self):
+    def __init__(self):
         self.readonly = False
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
