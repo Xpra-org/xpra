@@ -23,6 +23,7 @@ class RFBSource(object):
         self.counter = 0
         self.share = share
         self.uuid = "todo: use protocol?"
+        self.lock = False
 
     def get_info(self):
         return {
