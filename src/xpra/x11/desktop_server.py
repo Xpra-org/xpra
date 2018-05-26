@@ -332,7 +332,7 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             return root_w, root_h
         w, h = requested_size
         screenlog("client requested desktop mode resolution is %sx%s (current server resolution is %sx%s)", w, h, root_w, root_h)
-        if w<=0 or h<=0:
+        if w<=0 or h<=0 or w>=32768 or h>=32768:
             screenlog("configure_best_screen_size() client requested an invalid desktop mode size: %s", requested_size)
             return root_w, root_h
         return self.set_screen_size(w, h)
