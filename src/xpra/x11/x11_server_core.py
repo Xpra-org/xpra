@@ -213,11 +213,11 @@ class X11ServerCore(GTKServerBase):
                             error = x[len("RuntimeError: "):]
                             break
                     self.opengl_props["error"] = error
-                    log.warn("OpenGL query failed:")
+                    log.warn("Warning: OpenGL support check failed:")
                     log.warn(" %s", error)
             except Exception as e:
                 gllog("query_opengl()", exc_info=True)
-                gllog.error("Warning: OpenGL query failed")
+                gllog.error("Error: OpenGL support check failed")
                 gllog.error(" '%s'", e)
                 self.opengl_props["error"] = str(e)
         gllog("OpenGL: %s", self.opengl_props)
