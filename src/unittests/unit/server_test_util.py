@@ -230,7 +230,7 @@ class ServerTestUtil(unittest.TestCase):
 				log("stderr=%s for %s", stderr.name, cmd)
 			xvfb = cls.run_command(cmd_expanded, stdout=stdout, stderr=stderr)
 			time.sleep(1)
-			print("xvfb(%s)=%s" % (cmdstr, xvfb))
+			log("xvfb(%s)=%s" % (cmdstr, xvfb))
 			assert pollwait(xvfb, XVFB_TIMEOUT) is None, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll())
 			return xvfb
 
