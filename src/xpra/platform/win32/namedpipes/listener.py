@@ -64,7 +64,7 @@ class NamedPipeListener(Thread):
                 log.error(" at path '%s'", self.pipe_name)
                 log.error(" %s", e)
                 return
-            log("CreatePipeHandle()=%s", pipe_handle)
+            log("CreatePipeHandle()=%#x", pipe_handle)
             if pipe_handle==INVALID_HANDLE_VALUE:
                 log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                 return
@@ -128,7 +128,7 @@ class NamedPipeListener(Thread):
         log("CreatePipeSecurityObject() process=%s", process.value)
         data_size = DWORD()
         GetTokenInformation(process, TOKEN_QUERY, 0, 0, ctypes.byref(data_size))
-        log("CreatePipeSecurityObject() GetTokenInformation data size%s", data_size.value)
+        log("CreatePipeSecurityObject() GetTokenInformation data size %#x", data_size.value)
         data = ctypes.create_string_buffer(data_size.value)
         if GetTokenInformation(process, TOKEN_QUERY, ctypes.byref(data), ctypes.sizeof(data), ctypes.byref(data_size))==0:
             raise WindowsError()
