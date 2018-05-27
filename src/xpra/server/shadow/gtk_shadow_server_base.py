@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
 from xpra.log import Logger
 traylog = Logger("tray")
 mouselog = Logger("mouse")
@@ -101,7 +99,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
         GTKServerBase.send_updated_screen_size(self)
-        self.recreate_window_models()
+        from xpra.server import server_features
+        if server_features.windows:
+            self.recreate_window_models()
 
     def recreate_window_models(self):
         #remove all existing models and re-create them:
