@@ -274,14 +274,16 @@ class ServerTestUtil(unittest.TestCase):
 		return server_proc
 
 	@classmethod
-	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
+	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
 		if server_proc.poll():
 			return
-		cmd = [subcommand]
-		if display:
-			cmd.append(display)
+		cmd = [subcommand]+list(connect_args)
 		stopit = cls.run_xpra(cmd)
 		assert pollwait(stopit) is not None, "%s command failed to exit" % subcommand
 		assert pollwait(server_proc) is not None, "server process %s failed to exit" % server_proc
+
+	@classmethod
+	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
+		cls.stop_server(server_proc, subcommand, display)
 		if display:
 			assert display not in cls.dotxpra.displays(), "server socket for display %s should have been removed" % display

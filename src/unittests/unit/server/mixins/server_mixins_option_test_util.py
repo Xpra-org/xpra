@@ -80,22 +80,24 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         log("starting test server with options=%s", options)
         args = ["--%s=%s" % (k,v) for k,v in options.items()]
         tcp_port = None
-        if TEST_RFB:
-            tcp_port = get_free_tcp_port()
-            args += ["--bind-tcp=0.0.0.0:%i" % tcp_port]
         xvfb = None
         if WIN32 or OSX:
             display = ""
-            display_arg = []
+            connect_args = []
         elif self.display:
             display = self.display
-            display_arg = [display]
+            connect_args = [display]
             args.append("--use-display")
         else:
             display = self.find_free_display()
-            display_arg = [display]
+            connect_args = [display]
             if subcommand=="shadow":
                 xvfb = self.start_Xvfb(display)
+        if TEST_RFB or WIN32:
+            tcp_port = get_free_tcp_port()
+            args += ["--bind-tcp=0.0.0.0:%i" % tcp_port]
+            if WIN32:
+                connect_args = ["tcp://127.0.0.1:%i" % tcp_port]
         server = None
         client = None
         rfb_client = None
@@ -104,10 +106,10 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
             log("args=%s", " ".join("'%s'" % x for x in args))
             server = self.check_server(subcommand, display, *args)
             #we should always be able to get the version:
-            client = self.run_xpra(["version"]+display_arg)
+            client = self.run_xpra(["version"]+connect_args)
             assert pollwait(client, 5)==0, "version client failed to connect to server with args=%s" % args
             #run info query:
-            cmd = ["info"]+display_arg
+            cmd = ["info"]+connect_args
             client = self.run_xpra(cmd)
             r = pollwait(client, 5)
             assert r==0, "info client failed and returned %s for server with args=%s" % (r, args)
@@ -130,7 +132,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                     "attach",
                     "--clipboard=no",       #could create loops
                     "--notifications=no",   #may get sent to the desktop session running the tests!
-                    ]+display_arg
+                    ]+connect_args
                 gui_client = self.run_xpra(xpra_args, **client_kwargs)
                 r = pollwait(gui_client, 5)
                 if r is not None:
@@ -138,9 +140,11 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 assert r is None, "gui client terminated early and returned %i for server with args=%s" % (r, args)
 
             if self.display:
-                self.check_stop_server(server, subcommand="exit", display=display)
+                self.stop_server(server, "exit", *connect_args)
             else:
-                self.check_stop_server(server, subcommand="stop", display=display)
+                self.stop_server(server, "stop", *connect_args)
+            if display:
+                assert display not in self.dotxpra.displays(), "server socket for display %s should have been removed" % display
 
             if gui_client:
                 r = pollwait(gui_client, 1)
