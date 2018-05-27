@@ -159,9 +159,9 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
 
     def _test_all(self, subcommand="start"):
         #to test all:
-        TEST_VALUES = range(0, 2**len(OPTIONS)-1)
+        #TEST_VALUES = range(0, 2**len(OPTIONS)-1)
         #to test nothing disabled and everything disabled only:
-        #TEST_VALUES = (0, 2**len(OPTIONS)-1)
+        TEST_VALUES = (0, 2**len(OPTIONS)-1)
         #test every option disabled individually:
         #TEST_VALUES = tuple(2**i for i in range(len(OPTIONS)))
         for i in TEST_VALUES:
