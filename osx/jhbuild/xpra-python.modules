@@ -384,10 +384,11 @@
 	</distutils>
 
 	<distutils id="python-lzo">
-		<branch repo="pypi.python.org"
-			module="/packages/source/p/python-lzo/python-lzo-1.11.tar.gz"
-			hash="sha256:38a0ea4ceb27cdd8e3526509fe1b7a936e5dfa57c64608fd32085c129e8be386"
-			version="1.11">
+		<branch repo="github.com"
+			module="/jd-boyd/python-lzo/archive/v1.12.tar.gz"
+			hash="sha256:acf89230da470c65106984b0bf47b92b65a70a698959d7bd7b708b32f2afae02"
+			checkoutdir="python-lzo-1.12"
+			version="1.12">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 		</branch>
 		<dependencies>
