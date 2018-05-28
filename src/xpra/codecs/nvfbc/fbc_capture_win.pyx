@@ -631,7 +631,11 @@ cdef class NvFBC_SysCapture:
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         assert self.context
-        log("get_image%s", (x, y, width, height))
+        log("nvfbc sys get_image%s", (x, y, width, height))
+        if width==0:
+            width = self.grab_info.dwWidth
+        if height==0:
+            height = self.grab_info.dwHeight
         assert x==0 and y==0 and width>0 and height>0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
@@ -748,7 +752,14 @@ cdef class NvFBC_CUDACapture:
 
     def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
         assert self.context
-        log("get_image%s", (x, y, width, height))
+        log("nvfbc cuda get_image%s", (x, y, width, height))
+        if width==0:
+            width = self.grab_info.dwWidth
+        if height==0:
+            height = self.grab_info.dwHeight
+        assert x==0 and y==0 and width>0 and height>0
+        assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
+        assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         cdef double start = monotonic_time()
         #allocate CUDA device memory:
         if not self.cuda_device_buffer:
