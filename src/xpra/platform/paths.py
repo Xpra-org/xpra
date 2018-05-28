@@ -142,9 +142,10 @@ def default_get_app_dir():
                 return adir
     adir = os.path.dirname(inspect.getfile(sys._getframe(1)))
     def root_module(d):
-        pos = d.find("xpra%splatform" % os.path.sep)
-        if pos>=0:
-            return d[:pos]
+        for psep in (os.path.sep, "/", "\\"):
+            pos = d.find("xpra%splatform" % psep)
+            if pos>=0:
+                return d[:pos]
         return d
     if valid_dir(adir):
         return root_module(adir)
@@ -187,7 +188,7 @@ def get_icon_filename(basename=None, ext="png"):
     filename = basename
     fext = os.path.splitext(filename)[1]
     if not fext:
-        filename = "%s.%s" % (filename, ext)
+        filename = "%s.%s" % (basename, ext)
     if not os.path.isabs(filename):
         icon_dir = get_icon_dir()
         filename = os.path.join(icon_dir, filename)
