@@ -2019,11 +2019,12 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     if WIN32:
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options = [os.path.join(CUDA_DIR, x, "bin") for x in ("v7.5", "v8.0", "v9.0", "v9.1", "v9.2")] + path_options
+        path_options = [os.path.join(CUDA_DIR, x, "bin") for x in ("v9.2", "v9.1", "v9.0", "v8.0", "v7.5")] + path_options
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
-                add_data_files("", glob.glob("%s\\bin\\curand64*.dll" % p))
+                add_data_files("", glob.glob("%s\\curand64*.dll" % p))
+                add_data_files("", glob.glob("%s\\cudart64*.dll" % p))
                 break
     else:
         nvcc_exe = "nvcc"
