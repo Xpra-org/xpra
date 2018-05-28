@@ -602,7 +602,7 @@ log("AV_PIX_FMT:")
 print_nested_dict(ENUM_TO_FORMAT, print_fn=log.debug)
 
 def flagscsv(flag_dict, value=0):
-    return csv([v for k,v in flag_dict.items() if k&value])
+    return csv([bytestostr(v) for k,v in flag_dict.items() if k&value])
 
 
 def get_muxer_formats():
@@ -613,9 +613,9 @@ def get_muxer_formats():
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
             break
-        name = fmt.name
-        long_name = fmt.long_name
-        formats[name] = long_name
+        name = bytestostr(fmt.name)
+        long_name = bytestostr(fmt.long_name)
+        formats[name] = bytestostr(long_name)
     return formats
 log("AV Output Formats:")
 print_nested_dict(get_muxer_formats(), print_fn=log.debug)
@@ -627,7 +627,7 @@ cdef AVOutputFormat* get_av_output_format(name):
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
             break
-        if name==fmt.name:
+        if bytestostr(name)==bytestostr(fmt.name):
             return fmt
     return NULL
 
@@ -702,10 +702,10 @@ cdef list_options(void *obj, const AVClass *av_class):
     cdef const AVOption *option = <const AVOption*> av_class.option
     options = []
     while option!=NULL:
-        oname = option.name
+        oname = bytestostr(option.name)
         options.append(oname)
         option = av_opt_next(obj, option)
-    log("%s options: %s", av_class.class_name, csv(options))
+    log("%s options: %s", bytestostr(av_class.class_name), csv(options))
     cdef void *child = NULL
     cdef const AVClass *child_class = NULL
     while True:
@@ -792,7 +792,7 @@ cdef class Encoder(object):
         self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
             raise Exception("codec %s not found!" % self.encoding)
-        log("%s: \"%s\", codec flags: %s", self.video_codec.name, self.video_codec.long_name, flagscsv(CAPS, self.video_codec.capabilities))
+        log("%s: \"%s\", codec flags: %s", bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name), flagscsv(CAPS, self.video_codec.capabilities))
 
         #ie: client side as: "encoding.h264+mpeg4.YUV420P.profile" : "main"
         profile = options.get("%s.%s.profile" % (self.encoding, src_format), "main")

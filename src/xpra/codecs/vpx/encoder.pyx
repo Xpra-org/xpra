@@ -267,7 +267,7 @@ def get_info():
         "encodings"     : CODECS,
         "abi_version"   : get_abi_version(),
         "generation"    : generation.get(),
-        "build_config"  : vpx_codec_build_config(),
+        "build_config"  : bytestostr(vpx_codec_build_config()),
         }
     for e, maxsize in MAX_SIZE.items():
         info["%s.max-size" % e] = maxsize

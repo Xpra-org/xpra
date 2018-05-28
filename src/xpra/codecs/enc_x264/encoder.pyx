@@ -514,7 +514,7 @@ cdef class Encoder:
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]
-            log("using default profile=%s", self.profile)
+            log("using default profile=%s", bytestostr(self.profile))
         self.init_encoder(options)
         gen = generation.increase()
         if SAVE_TO_FILE is not None:
