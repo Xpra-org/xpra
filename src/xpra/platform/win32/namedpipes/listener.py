@@ -7,11 +7,12 @@
 #@PydevCodeAnalysisIgnore
 
 import ctypes
-from ctypes.wintypes import HANDLE, DWORD
+from ctypes.wintypes import HANDLE, DWORD, LPCSTR
 from threading import Thread
 
 from xpra.log import Logger
 from xpra.util import envbool
+from xpra.os_util import strtobytes
 from xpra.platform.win32.common import CloseHandle
 from xpra.platform.win32.namedpipes.common import OVERLAPPED, INFINITE, WAIT_STR, SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, TOKEN_USER
 from xpra.platform.win32.namedpipes.common import CreateEventA, CreateNamedPipeA, ConnectNamedPipe, WaitForSingleObject, GetLastError
@@ -104,9 +105,9 @@ class NamedPipeListener(Thread):
             sa = self.CreateUnrestrictedPipeSecurityObject()
         else:
             sa = self.CreatePipeSecurityObject()
-        return CreateNamedPipeA(self.pipe_name, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+        return CreateNamedPipeA(strtobytes(self.pipe_name), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_ACCEPT_REMOTE_CLIENTS,
-                                PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT, sa)
+                                PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, NMPWAIT_USE_DEFAULT_WAIT, ctypes.byref(sa))
 
     def CreateUnrestrictedPipeSecurityObject(self):
         SD = SECURITY_DESCRIPTOR()

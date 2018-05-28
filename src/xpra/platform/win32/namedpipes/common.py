@@ -9,6 +9,7 @@
 from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_int, c_ubyte
 from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT, BOOL
 
+from ctypes.wintypes import LPCSTR
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
 
 WAIT_STR = {
@@ -83,6 +84,7 @@ class SECURITY_ATTRIBUTES(Structure):
         ("lpSecurityDescriptor",    c_void_p),
         ("bInheritHandle",          c_int),
         ]
+LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
 class SECURITY_DESCRIPTOR(Structure):
     SECURITY_DESCRIPTOR_CONTROL = USHORT
     REVISION = 1
@@ -114,6 +116,7 @@ WaitNamedPipeA = kernel32.WaitNamedPipeA
 SetNamedPipeHandleState = kernel32.SetNamedPipeHandleState
 GetOverlappedResult = kernel32.GetOverlappedResult
 CreateNamedPipeA = kernel32.CreateNamedPipeA
+CreateNamedPipeA.argtypes = [LPCSTR, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPSECURITY_ATTRIBUTES]
 CreateNamedPipeA.restype = HANDLE
 ConnectNamedPipe = kernel32.ConnectNamedPipe
 ConnectNamedPipe.argtypes = [HANDLE, OVERLAPPED]
