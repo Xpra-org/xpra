@@ -35,7 +35,7 @@ for x in ("WSAENETDOWN", "WSAENETUNREACH", "WSAECONNABORTED", "WSAECONNRESET",
 
 class NamedPipeConnection(Connection):
     def __init__(self, name, pipe_handle):
-        log("NamedPipeConnection(%s, %i)", name, pipe_handle)
+        log("NamedPipeConnection(%s, %#x)", name, pipe_handle)
         Connection.__init__(self, name, "named-pipe")
         self.pipe_handle = pipe_handle
         self.read_buffer = (c_char*BUFSIZE)()
