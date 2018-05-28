@@ -316,7 +316,7 @@ for category, d in STRUCT_KNOWN_FILTERS.items():
 
 
 def isenvdebug(category):
-    return os.environ.get("XPRA_%s_DEBUG" % category.upper(), "0")=="1"
+    return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_"), "0")=="1"
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:
 #    -- You initialize it with a list of categories
