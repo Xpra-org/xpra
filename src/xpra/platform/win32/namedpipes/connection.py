@@ -139,7 +139,11 @@ class NamedPipeConnection(Connection):
         self.pipe_handle = None
         def _close_err(fn, e):
             l = log.error
-            code = e[0]
+            try:
+                code = e[0]
+            except:
+                #python3?
+                code = 0
             if code==ERROR_PIPE_NOT_CONNECTED:
                 l = log.debug
             l("Error: %s(%s) %i: %s", fn, ph, code, e)
@@ -174,7 +178,7 @@ def connect_to_namedpipe(pipe_name, timeout=10):
         if time.time()-start>=timeout:
             raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
         pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
-        log("CreateFileA(%s)=%s", pipe_name, pipe_handle)
+        log("CreateFileA(%s)=%#x", pipe_name, pipe_handle)
         if pipe_handle!=INVALID_HANDLE_VALUE:
             break
         if GetLastError()!=ERROR_PIPE_BUSY:
@@ -183,7 +187,7 @@ def connect_to_namedpipe(pipe_name, timeout=10):
             raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
     #we have a valid handle!
     dwMode = c_ulong(PIPE_READMODE_BYTE)
-    r = SetNamedPipeHandleState(pipe_handle, byref(dwMode), None, None);
+    r = SetNamedPipeHandleState(pipe_handle, byref(dwMode), None, None)
     log("SetNamedPipeHandleState(..)=%i", r)
     if not r:
         log.warn("Warning: SetNamedPipeHandleState failed")

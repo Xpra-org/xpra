@@ -7,10 +7,14 @@
 #@PydevCodeAnalysisIgnore
 
 from ctypes import POINTER, WinDLL, Structure, Union, c_void_p, c_int, c_ubyte
-from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT, BOOL
+from ctypes.wintypes import DWORD, ULONG, HANDLE, USHORT, BOOL, INT
 
 from ctypes.wintypes import LPCSTR
 from xpra.platform.win32.constants import WAIT_ABANDONED, WAIT_OBJECT_0, WAIT_TIMEOUT, WAIT_FAILED
+
+LPDWORD = POINTER(DWORD)
+LPCVOID = c_void_p
+LPVOID = c_void_p
 
 WAIT_STR = {
     WAIT_ABANDONED  : "ABANDONED",
@@ -77,6 +81,7 @@ class OVERLAPPED(Structure):
         ('union',           _inner_union),
         ('hEvent',          HANDLE),
         ]
+LPOVERLAPPED = POINTER(OVERLAPPED)
 
 class SECURITY_ATTRIBUTES(Structure):
     _fields_ = [
@@ -107,16 +112,26 @@ class TOKEN_USER(Structure):
 
 kernel32 = WinDLL("kernel32", use_last_error=True)
 WaitForSingleObject = kernel32.WaitForSingleObject
+WaitForSingleObject.argtypes = [HANDLE, DWORD]
+WaitForSingleObject.restype = DWORD
 CreateEventA = kernel32.CreateEventA
 CreateEventA.restype = HANDLE
 ReadFile = kernel32.ReadFile
+ReadFile.argtypes = [HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED]
+ReadFile.restype = BOOL
 WriteFile = kernel32.WriteFile
+WriteFile.argtypes = [HANDLE, LPCVOID, DWORD, LPDWORD, LPOVERLAPPED]
+WriteFile.restype = BOOL
 CreateFileA = kernel32.CreateFileA
 CreateFileA.argtypes = [LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE]
 CreateFileA.restype = HANDLE
 WaitNamedPipeA = kernel32.WaitNamedPipeA
 SetNamedPipeHandleState = kernel32.SetNamedPipeHandleState
+SetNamedPipeHandleState.argtypes = [HANDLE, LPDWORD, LPDWORD, LPDWORD]
+SetNamedPipeHandleState.restype = INT
 GetOverlappedResult = kernel32.GetOverlappedResult
+GetOverlappedResult.argtypes = [HANDLE, LPOVERLAPPED, LPDWORD, BOOL]
+GetOverlappedResult.restype = BOOL
 CreateNamedPipeA = kernel32.CreateNamedPipeA
 CreateNamedPipeA.argtypes = [LPCSTR, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, LPSECURITY_ATTRIBUTES]
 CreateNamedPipeA.restype = HANDLE
@@ -127,6 +142,8 @@ DisconnectNamedPipe = kernel32.DisconnectNamedPipe
 DisconnectNamedPipe.argtypes = [HANDLE]
 DisconnectNamedPipe.restype = BOOL
 FlushFileBuffers = kernel32.FlushFileBuffers
+FlushFileBuffers.argtypes = [HANDLE]
+FlushFileBuffers.restype = BOOL
 GetLastError = kernel32.GetLastError
 GetCurrentProcess = kernel32.GetCurrentProcess
 GetCurrentProcess.restype = HANDLE
