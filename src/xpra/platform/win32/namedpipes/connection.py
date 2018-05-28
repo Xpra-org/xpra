@@ -9,6 +9,7 @@
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 
+from xpra.os_util import strtobytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import CloseHandle
@@ -172,7 +173,7 @@ def connect_to_namedpipe(pipe_name, timeout=10):
     while True:
         if time.time()-start>=timeout:
             raise Exception("timeout waiting for named pipe '%s'" % pipe_name)
-        pipe_handle = CreateFileA(pipe_name, GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, None)
+        pipe_handle = CreateFileA(strtobytes(pipe_name), GENERIC_READ | GENERIC_WRITE, 0, None, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, 0)
         log("CreateFileA(%s)=%s", pipe_name, pipe_handle)
         if pipe_handle!=INVALID_HANDLE_VALUE:
             break
