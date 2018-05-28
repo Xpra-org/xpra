@@ -55,7 +55,7 @@
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x">
     <branch version="4.0.8" module="libtiff/tiff-4.0.8.tar.gz"
 	    repo="libtiff">
-		<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/tiff-nohtml.patch" strip="1" />
+	<patch file="https://raw.githubusercontent.com/totaam/gtk-osx-build/master/patches/tiff-nohtml.patch" strip="1" />
     </branch>
     <dependencies>
       <dep package="libjpeg"/>
@@ -70,7 +70,7 @@
 
   <autotools id="libxml2" autogen-sh="configure"
              autogenargs='--libdir="$JHBUILD_LIBDIR" --with-python'>
-    <branch version="2.9.4" module="libxml2-2.9.4.tar.gz"
+    <branch version="2.9.8" module="libxml2-2.9.8.tar.gz"
 	    repo="xmlsoft.org"/>
     <after>
       <dep package="python"/>
@@ -87,8 +87,11 @@
   </autotools>
 
   <autotools id="itstool" autogen-sh="configure">
-    <branch module="itstool/itstool-2.0.2.tar.bz2" version="2.0.2"
-            repo="itstool"/>
+    <branch module="itstool/itstool-2.0.4.tar.bz2" version="2.0.4"
+            repo="itstool">
+<!-- This patch can come out when itstool releases 2.0.5. -->
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/itstool-memory-management.patch" strip="1"/>
+    </branch>
     <dependencies>
       <dep package="libxml2"/>
     </dependencies>
@@ -117,8 +120,8 @@
 
   <autotools id="gtk-doc" autogen-sh="configure"
              autogenargs="--with-xml-catalog=$JHBUILD_PREFIX/share/xml/catalog">
-    <branch version="1.25" module="gtk-doc/1.25/gtk-doc-1.25.tar.xz"
-            hash="sha256:1ea46ed400e6501f975acaafea31479cea8f32f911dca4dff036f59e6464fd42"/>
+    <branch version="1.27" module="gtk-doc/1.27/gtk-doc-1.27.tar.xz"
+            hash="sha256:e26bd3f7080c749b1cb66c46c6bf8239e2f320a949964fb9c6d56e1b0c6d9a6f"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="itstool"/>
@@ -135,14 +138,14 @@
 
   <autotools id="ragel" autogen-sh='autoreconf'>
     <branch repo="ragel" module="ragel-6.10.tar.gz" version="6.10">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/ragel-6.9-setiosflags.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/ragel-6.9-setiosflags.patch" strip="1"/>
     </branch>
   </autotools>
 
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-freetype --with-icu">
     <branch repo="harfbuzz" module="harfbuzz-1.4.5.tar.bz2" version="1..45">
-       <!--patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/-->
+       <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/harfbuzz-kCTTypesetterOptionForcedEmbeddingLevel-Leopard.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="freetype-no-harfbuzz"/>
@@ -160,7 +163,7 @@
              autogenargs="--without-bzip2 --without-harfbuzz">
     <branch module="freetype/freetype-2.7.1.tar.gz" version="2.7.1"
             repo="sourceforge">
-      <!--patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/-->
+      <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/freetype-2.5.3-ccexe_cflags.patch" strip="1"/-->
     </branch>
     <dependencies>
       <dep package="zlib"/>

@@ -48,7 +48,7 @@
              autogenargs="--disable-documentation --disable-assembler">
     <branch repo="ftp.gnu.org" version="3.3"
             module="nettle/nettle-3.3.tar.gz">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/libnettle-cc-for-build-needs-cflags.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gmp"/>
@@ -139,11 +139,11 @@
              makeargs="-j1">
 
     <branch repo="webkit.org" module="webkitgtk-2.4.11.tar.xz" version="2.4.11">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-140167-disable-netscape-api.patch" strip="1"/>
       <!-- This patch can be commented out for XCode >= 6.3, but does no harm if
       it's left in -->
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/WebKit-2.4.11-fixups.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-133293-cfi-clang-failure.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/WebKit-2.4.11-fixups.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="libwebp"/>
@@ -163,11 +163,11 @@
              autogenargs="--enable-quartz-target --with-gtk=3.0 --disable-webkit2 --disable-credential-storage --disable-geolocation --disable-video --disable-web-audio CXXFLAGS='-stdlib=libc++'"
              makeargs="-j1" >
     <branch repo="webkit.org" module="webkitgtk-2.4.11.tar.xz" version="2.4.11">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-140167-disable-netscape-api.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-140167-disable-netscape-api.patch" strip="1"/>
       <!-- This patch can be commented out for XCode >= 6.3, but does no harm if
       it's left in -->
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-133293-cfi-clang-failure.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/WebKit-2.4.11-fixups.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-133293-cfi-clang-failure.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/WebKit-2.4.11-fixups.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="libwebp"/>
@@ -201,10 +201,10 @@
   <cmake id="webkit2gtk3"
          cmakeargs='-DPORT=GTK -DENABLE_X11_TARGET=OFF -DENABLE_QUARTZ_TARGET=ON -DENABLE_INTROSPECTION=OFF  -DENABLE_OPENGL=OFF -DENABLE_PLUGIN_PROCESS_GTK2=OFF -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_GEOLOCATION=OFF -DUSE_LIBNOTIFY=OFF -DUSE_LIBHYPHEN=OFF -DUSE_LIBSECRET=OFF -DENABLE_TOUCH_EVENTS=OFF -DCMAKE_CXX_FLAGS="-stdlib=libc++"'>
     <branch repo="webkit.org" module="webkitgtk-2.16.6.tar.xz" version="2.16.6">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/Webkit-2.16-build-without-OpenGL.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/Webkit-2.16-Fix-some-includes.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-2.16-No-stringview-lifetime.patch" strip="1"/>
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/webkit-2.16-main-thread.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/Webkit-2.16-build-without-OpenGL.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/Webkit-2.16-Fix-some-includes.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-2.16-No-stringview-lifetime.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/webkit-2.16-main-thread.patch" strip="1"/>
 
     </branch>
     <dependencies>

@@ -39,7 +39,7 @@
              autogenargs="--without-trust-paths">
     <branch repo="p11-glue" version="0.23.2"
 	    module="p11-kit-0.23.2.tar.gz">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/p11-kit-dirfd.patch"
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/p11-kit-dirfd.patch"
        strip="1"/>
     </branch>
     <dependencies>
@@ -73,7 +73,7 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
     <branch repo="gnupg.org" version="1.27"
             module="gcrypt/libgpg-error/libgpg-error-1.27.tar.bz2">
-            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgpg-error-cflags-for-cc-for-build.patch"
+            <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/libgpg-error-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
   </autotools>
@@ -83,7 +83,7 @@
              autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
     <branch repo="gnupg.org" version="1.7.6"
             module="gcrypt/libgcrypt/libgcrypt-1.7.6.tar.bz2">
-            <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/libgcrypt-cflags-for-cc-for-build.patch"
+            <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/libgcrypt-cflags-for-cc-for-build.patch"
        strip="1"/>
     </branch>
     <dependencies>

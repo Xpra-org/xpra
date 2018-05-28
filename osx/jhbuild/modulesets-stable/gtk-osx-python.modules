@@ -57,7 +57,7 @@
 
     <branch module="berkeley-db/db-4.8.30.NC.tar.gz" version="4.8.30"
         repo="oracle" >
-      <patch file="https://github.com/narkoleptik/os-x-berkeleydb-patch/raw/master/atomic.patch" strip='1'/>
+      <patch file="https://raw.githubusercontent.com/narkoleptik/os-x-berkeleydb-patch/master/atomic.patch" strip='1'/>
     </branch>
   </autotools>
 
@@ -96,7 +96,7 @@
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
     <branch repo="python" module="3.6.4/Python-3.6.4.tar.xz" version="3.6.4">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/Python3.4-stack_size-flag.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/Python3.4-stack_size-flag.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="gettext-runtime"/>
@@ -168,7 +168,7 @@
 	     autogenargs="CFLAGS=&quot;$CFLAGS -xobjective-c&quot; lt_cv_sys_global_symbol_pipe=&quot;'sed -n -e '\''s/^.*[ ]\([BCDEGRST][BCDEGRST]*\)[ ][ ]*_\([_A-Za-z][_A-Za-z0-9]*\)$/\1 _\2 \2/p'\'' | sed '\''/ __gnu_lto/d'\'''&quot;">
     <branch version="2.24.0" module="pygtk/2.24/pygtk-2.24.0.tar.bz2"
             hash="sha256:cd1c1ea265bd63ff669e92a2d3c2a88eb26bcd9e5363e0f82c896e649f206912">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/pygtk-libtool.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/pygtk-libtool.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="pygobject"/>

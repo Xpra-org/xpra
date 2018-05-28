@@ -143,7 +143,7 @@
   <autotools id="bison" autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="bison/bison-3.0.4.tar.xz"
             version="3.0.4">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/bison-3.0.4-vasnprintf.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/bison-3.0.4-vasnprintf.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package='flex'/>

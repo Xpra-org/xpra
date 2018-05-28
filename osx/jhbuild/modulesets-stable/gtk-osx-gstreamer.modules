@@ -16,7 +16,7 @@
              autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
     <branch repo="sourceforge" version="2.7"
             module="faac/faad2-src/faad2-2.7/faad2-2.7.tar.bz2">
-      <patch file="https://git.gnome.org/browse/gtk-osx/plain/patches/faad2-2.7-ac-config-headers.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/faad2-2.7-ac-config-headers.patch" strip="1"/>
     </branch>
   </autotools>
 
