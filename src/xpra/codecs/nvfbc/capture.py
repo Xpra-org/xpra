@@ -9,6 +9,7 @@ import time
 import os.path
 
 from xpra.util import envbool
+from xpra.os_util import memoryview_to_bytes
 from xpra.log import Logger, add_debug_category
 log = Logger("encoder", "nvfbc")
 
@@ -44,6 +45,7 @@ def main():
                 c = fbc_capture.NvFBC_SysCapture()      #@UndefinedVariable
             log("Capture=%s", c)
             c.init_context()
+            assert c.refresh()
         except Exception as e:
             log("Capture()", exc_info=True)
             log.error("Error: failed to create test capture instance:")
@@ -54,7 +56,7 @@ def main():
         from PIL import Image
         w = image.get_width()
         h = image.get_height()
-        pixels = image.get_pixels()
+        pixels = memoryview_to_bytes(image.get_pixels())
         stride = image.get_rowstride()
         rgb_format = image.get_pixel_format()
         try:
@@ -64,7 +66,7 @@ def main():
             log.info("screenshot saved to %s", filename)
             return 0
         except Exception as e:
-            log.warn("Error: not saved %s:", rgb_format)
+            log.warn("Error: failed to save %s:", rgb_format)
             log.warn(" %s", e)
             return 1
 
