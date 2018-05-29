@@ -27,7 +27,7 @@ def get_interface_info(_fd, iface):
                         ("AdapterType", "adapter-type", str),
                         ("Caption",     "caption",      str),
                         ("Description", "description",  str),
-                        ("DeviceID",    "id",           str),
+                        ("DeviceID",    "id",           int),
                         ("GUID",        "GUID",         str),
                         ("Index",       "index",        int),
                         ("Name",        "name",         str),

@@ -399,10 +399,24 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             capabilities["machine_id"] = mid
         #get socket speed if we have it:
         pinfo = self._protocol.get_info()
-        netlog("protocol info=%s", pinfo)
-        socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
+        netlog.warn("protocol info=%s", pinfo)
+        device_info = pinfo.get("socket", {}).get("device", {})
+        connection_data = {}
+        socket_speed = device_info.get("speed")
         if socket_speed:
-            capabilities["connection-data"] = {"speed" : socket_speed}
+            connection_data["speed"] = socket_speed
+        adapter_type = device_info.get("adapter-type")
+        if adapter_type:
+            at = adapter_type.lower()
+            if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
+                jitter = 0
+            elif at.find("wan")>=0:
+                jitter = 20
+            elif at.find("wireless")>=0 or at.find("wifi")>=0:
+                jitter = 1000
+            if jitter is not None:
+                connection_data["jitter"] = jitter
+        capabilities["connection-data"] = connection_data
         bandwidth_limit = self.bandwidth_limit
         bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
         if bandwidth_limit is None:

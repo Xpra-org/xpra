@@ -109,7 +109,7 @@ class WindowSource(WindowIconSource):
                     encoding, encodings, core_encodings, window_icon_encodings, encoding_options, icons_encoding_options,
                     rgb_formats,
                     default_encoding_options,
-                    mmap, mmap_size, bandwidth_limit):
+                    mmap, mmap_size, bandwidth_limit, jitter):
         WindowIconSource.__init__(self, window_icon_encodings, icons_encoding_options)
         self.idle_add = idle_add
         self.timeout_add = timeout_add
@@ -209,6 +209,7 @@ class WindowSource(WindowIconSource):
             self.max_bytes_percent = 25
             self.small_packet_cost = 4096
         self.bandwidth_limit = bandwidth_limit
+        self.jitter = jitter
 
         self.pixel_format = None                            #ie: BGRX
         try:
@@ -1911,7 +1912,7 @@ class WindowSource(WindowIconSource):
                 decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
                 now = monotonic_time()
                 live_time = int(1000*(now-self.statistics.init_time))
-                ack_tolerance = ACK_TOLERANCE + max(0, 200-live_time//10)
+                ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
                 latency = netlatency + sendlatency + decode + ack_tolerance
                 eta = end_send_at + latency/1000.0
                 if now>eta and (live_time>=1000 or pixels>=4096):

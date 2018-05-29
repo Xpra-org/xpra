@@ -516,7 +516,7 @@ class WindowsMixin(StubSourceMixin):
                               self.encoding, self.encodings, self.core_encodings, self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                               self.rgb_formats,
                               self.default_encoding_options,
-                              mmap, mmap_size, bandwidth_limit)
+                              mmap, mmap_size, bandwidth_limit, self.jitter)
             self.window_sources[wid] = ws
             if len(self.window_sources)>1:
                 #re-distribute bandwidth:

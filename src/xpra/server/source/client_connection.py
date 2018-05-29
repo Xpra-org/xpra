@@ -25,7 +25,7 @@ bandwidthlog = Logger("bandwidth")
 
 from xpra.make_thread import start_thread
 from xpra.os_util import Queue, monotonic_time
-from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, AtomicInteger
+from xpra.util import merge_dicts, flatten_dict, notypedict, envbool, envint, typedict, AtomicInteger
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 
 from xpra.server.source.clientinfo_mixin import ClientInfoMixin
@@ -263,6 +263,8 @@ class ClientConnection(ClientConnectionClass):
         if self.server_bandwidth_limit is None:
             server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
         self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
+        cd = typedict(c.dictget("connection-data"))
+        self.jitter = cd.intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
 
         cinfo = self.get_connect_info()
@@ -425,6 +427,7 @@ class ClientConnection(ClientConnectionClass):
                 "elapsed_time"      : int(monotonic_time()-self.connection_time),
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
+                "jitter"            : self.jitter,
                 "bandwidth-limit"   : {
                     "setting"       : self.bandwidth_limit,
                     "actual"        : self.soft_bandwidth_limit,
