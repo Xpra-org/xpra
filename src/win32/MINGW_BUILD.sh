@@ -226,6 +226,37 @@ if [ -e "${DIST}/lib/cx_Logging.pyd" ]; then
 fi
 #fixup cx freeze wrongly including an empty dir:
 rm -fr "${DIST}/lib/comtypes/gen"
+#fixup tons of duplicated DLLs, thanks cx_Freeze!
+if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
+	pushd ${DIST}
+	#why is it shipping those files??
+	find lib/ -name "*dll.a" -exec rm {} \;
+	#only keep the actual loaders, not all the other crap cx_Freeze put there:
+	mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
+	mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
+	rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
+	mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
+	#move libs that are likely to be common to the lib dir:
+	for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
+		find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
+	done
+	find lib/numpy/ -name "lib*.dll" -exec mv {} ./lib/ \;
+	#gstreamer uses its own lib dir, so this does not belong in the root:
+	mv ./libgst*.dll ./lib/gstreamer-1.0/
+	#remove all the pointless duplication:
+	mv *dll lib/
+	rm *py
+	pushd lib
+	for x in `ls *dll`; do
+		echo "* removing duplicated ${x}"
+		ls -la ${x}
+		find ./ -mindepth 2 -name "${x}" -exec ls -la {} \;
+		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
+	done
+	popd
+	popd
+fi
+
 
 if [ "${BUNDLE_OPENGL}" == "1" ]; then
 	if [ -e "${DIST}/OpenGL" ]; then
@@ -286,7 +317,7 @@ if [ "${DO_ZIP}" == "1" ]; then
 	rm -fr "${ZIP_DIR}" "${ZIP_FILENAME}"
 	mkdir "${ZIP_DIR}"
 	rsync -rplogt "${DIST}"/* "${ZIP_DIR}"
-	zip -qmr "${ZIP_FILENAME}" "${ZIP_DIR}"
+	zip -9qmr "${ZIP_FILENAME}" "${ZIP_DIR}"
 	ls -la "${ZIP_FILENAME}"
 fi
 

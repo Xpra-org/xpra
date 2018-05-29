@@ -1276,7 +1276,7 @@ if WIN32:
             lib_dynload_dir = os.path.join(lib_python, "lib-dynload")
             add_data_files('', glob.glob("%s/zlib*dll" % lib_dynload_dir))
             for x in ("io", "codecs", "abc", "_weakrefset", "encodings"):
-                add_data_files("", glob.glob("%s/%s*" % (lib_python, x)))
+                add_data_files("lib/", glob.glob("%s/%s*" % (lib_python, x)))
         #ensure that cx_freeze won't automatically grab other versions that may lay on our path:
         os.environ["PATH"] = gnome_include_path+";"+os.environ.get("PATH", "")
         bin_excludes = ["MSVCR90.DLL", "MFC100U.DLL"]
