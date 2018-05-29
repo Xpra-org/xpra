@@ -1219,7 +1219,7 @@ class WindowClient(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        if packet[0]=="eos":
+        if packet[0]==b"eos":
             if window:
                 window.eos()
             return
@@ -1227,7 +1227,7 @@ class WindowClient(StubClientMixin):
         if not window:
             #window is gone
             def draw_cleanup():
-                if coding=="mmap":
+                if coding==b"mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap_pipe import int_from_buffer
                     def free_mmap_area():
