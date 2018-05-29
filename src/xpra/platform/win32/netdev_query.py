@@ -7,7 +7,7 @@ def logger():
     from xpra.log import Logger
     return Logger("network", "util", "win32")
 
-def get_interface_info(iface):
+def get_interface_info(_fd, iface):
     log = logger()
     from xpra.platform.win32.comtypes_util import QuietenLogging
     with QuietenLogging():
@@ -23,14 +23,24 @@ def get_interface_info(iface):
             if res.Count==1:
                 for r in res:
                     props = {}
-                    for k in ("AdapterType", "Caption", "Description", "DeviceID", "GUID", "Index", "Name", "ProductName", "Speed"):
+                    for k,ik in {
+                        "AdapterType"   : "adapter-type",
+                        "Caption"       : "caption",
+                        "Description"   : "description",
+                        "DeviceID"      : "id",
+                        "GUID"          : "GUID",
+                        "Index"         : "index",
+                        "Name"          : "name",
+                        "ProductName"   : "product-name",
+                        "Speed"         : "speed",
+                        }.items():
                         try:
                             v = r.Properties_[k]
                         except Exception as e:
                             log.error("Error retrieving '%s' from network adapter record:", k)
                             log.error(" %s", e)
                         else:
-                            props[k] = v.Value
+                            props[ik] = v.Value
                     log("get_interface_info(%s)=%s" % (iface, props))
                     return props
         except Exception as e:
@@ -42,7 +52,7 @@ def get_interface_info(iface):
         return {}
 
 def get_interface_speed(fd, iface):
-    speed = get_interface_info(iface).get("Speed", 0)
+    speed = get_interface_info(fd, iface).get("speed", 0)
     try:
         return int(speed)
     except ValueError:

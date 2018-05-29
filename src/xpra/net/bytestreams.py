@@ -372,16 +372,16 @@ class SocketConnection(Connection):
                 fd = 0
             if fd:
                 info["fileno"] = fd
-            from xpra.platform.netdev_query import get_interface_speed
+            from xpra.platform.netdev_query import get_interface_info
             #ie: self.local = ("192.168.1.7", "14500")
             if self.local and len(self.local)==2:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
                 #ie: iface = "eth0"
                 if iface and iface!="lo":
-                    s = get_interface_speed(fd, iface)
-                    if s>0:
-                        info["speed"] = s
+                    i = get_interface_info(fd, iface)
+                    if i:
+                        info["device"] = i
         except Exception as e:
             log("do_get_socket_info() error querying socket speed", exc_info=True)
             log.error("Error querying socket speed:")

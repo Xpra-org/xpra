@@ -6,7 +6,15 @@
 def get_interface_speed(*_args):
     return 0
 
+def get_interface_info(*args):
+    s = get_interface_speed(*args)
+    if s==0:
+        return {}
+    return {"speed" : s}
+
+
 from xpra.platform import platform_import
 platform_import(globals(), "netdev_query", False,
+                "get_interface_info",
                 "get_interface_speed",
                 )

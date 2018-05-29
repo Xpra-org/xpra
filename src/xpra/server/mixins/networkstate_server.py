@@ -110,7 +110,7 @@ class NetworkStateServer(StubServerMixin):
         if self.bandwidth_limit is None:
             #auto-detect:
             pinfo = proto.get_info()
-            socket_speed = pinfo.get("socket", {}).get("speed")
+            socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
             if socket_speed:
                 #auto: use 80% of socket speed if we have it:
                 v = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
