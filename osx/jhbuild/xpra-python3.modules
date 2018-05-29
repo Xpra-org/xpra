@@ -384,10 +384,9 @@
 	</distutils>
 
 	<distutils id="python3-lzo" python3="1">
-		<branch repo="github.com"
-			module="/jd-boyd/python-lzo/archive/v1.12.tar.gz"
-			hash="sha256:acf89230da470c65106984b0bf47b92b65a70a698959d7bd7b708b32f2afae02"
-			checkoutdir="python-lzo-1.12"
+		<branch repo="files.pythonhosted.org"
+			module="/packages/af/60/41f17f56c920a956f1d4b9f04f9755c045b2b06b9dd933b33cdd37ab9fd7/python-lzo-1.12.tar.gz"
+			hash="sha256:97a8e46825e8f1abd84c2a3372bc09adae9745a5be5d3af2692cd850dac35345"
 			version="1.12">
 			<patch file="http://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/python-lzo-jhbuild.patch" strip="0" />
 		</branch>
