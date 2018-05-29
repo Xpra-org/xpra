@@ -634,7 +634,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         desc["remote_xpra"] = opts.remote_xpra
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
-        if desc.get("password") is None and opts.password_file:
+        if password is None and opts.password_file:
             for x in opts.password_file:
                 if os.path.exists(x):
                     try:
