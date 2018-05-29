@@ -248,9 +248,6 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	rm *py
 	pushd lib
 	for x in `ls *dll`; do
-		echo "* removing duplicated ${x}"
-		ls -la ${x}
-		find ./ -mindepth 2 -name "${x}" -exec ls -la {} \;
 		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 	done
 	popd
