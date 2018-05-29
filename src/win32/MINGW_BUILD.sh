@@ -245,6 +245,8 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	mv ./libgst*.dll ./lib/gstreamer-1.0/
 	#remove all the pointless duplication:
 	mv *dll lib/
+	#we don't need this one?
+	rm lib/libopenblas*
 	pushd lib > /dev/null
 	for x in `ls *dll`; do
 		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
