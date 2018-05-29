@@ -228,7 +228,7 @@ fi
 rm -fr "${DIST}/lib/comtypes/gen"
 #fixup tons of duplicated DLLs, thanks cx_Freeze!
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
-	pushd ${DIST}
+	pushd ${DIST} > /dev/null
 	#why is it shipping those files??
 	find lib/ -name "*dll.a" -exec rm {} \;
 	#only keep the actual loaders, not all the other crap cx_Freeze put there:
@@ -245,13 +245,12 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	mv ./libgst*.dll ./lib/gstreamer-1.0/
 	#remove all the pointless duplication:
 	mv *dll lib/
-	rm *py
-	pushd lib
+	pushd lib > /dev/null
 	for x in `ls *dll`; do
 		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 	done
-	popd
-	popd
+	popd > /dev/null
+	popd > /dev/null
 fi
 
 
