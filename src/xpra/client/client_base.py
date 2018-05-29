@@ -400,7 +400,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #get socket speed if we have it:
         pinfo = self._protocol.get_info()
         netlog("protocol info=%s", pinfo)
-        socket_speed = pinfo.get("socket", {}).get("speed")
+        socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
         if socket_speed:
             capabilities["connection-data"] = {"speed" : socket_speed}
         bandwidth_limit = self.bandwidth_limit
