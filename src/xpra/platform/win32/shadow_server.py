@@ -415,7 +415,7 @@ class ShadowServer(GTKShadowServerBase):
             x1, y1, x2, y2 = geom
             assert x1<x2 and y1<y2
             model = RootWindowModel(self.root, self.capture)
-            model.title = monitor["Device"]
+            model.title = monitor["Device"].lstrip("\\\\.\\")
             model.geometry = x1, y1, x2-x1, y2-y1
             models.append(model)
             log("makeRootWindowModels: model(%s)=%s", monitor, model)
