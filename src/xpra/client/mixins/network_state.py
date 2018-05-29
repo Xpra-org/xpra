@@ -15,12 +15,15 @@ from xpra.os_util import monotonic_time, get_user_uuid, POSIX
 from xpra.util import envint, csv
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.scripts.config import parse_with_unit
 
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
+AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 """
@@ -40,6 +43,7 @@ class NetworkState(StubClientMixin):
         self.pings = False
 
         #bandwidth
+        self.bandwidth_limit = 0
         self.server_bandwidth_limit_change = False
         self.server_bandwidth_limit = 0
         self.server_session_name = None
@@ -61,6 +65,8 @@ class NetworkState(StubClientMixin):
 
     def init(self, opts):
         self.pings = opts.pings
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
 
 
     def cleanup(self):
@@ -70,7 +76,38 @@ class NetworkState(StubClientMixin):
 
 
     def get_caps(self):
-        return {"info-namespace" : True}
+        caps = {"info-namespace" : True}
+        #get socket speed if we have it:
+        pinfo = self._protocol.get_info()
+        device_info = pinfo.get("socket", {}).get("device", {})
+        connection_data = {}
+        socket_speed = device_info.get("speed")
+        if socket_speed:
+            connection_data["speed"] = socket_speed
+        adapter_type = device_info.get("adapter-type")
+        if adapter_type:
+            at = adapter_type.lower()
+            if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
+                jitter = 0
+            elif at.find("wan")>=0:
+                jitter = 20
+            elif at.find("wireless")>=0 or at.find("wifi")>=0:
+                jitter = 1000
+            if jitter is not None:
+                connection_data["jitter"] = jitter
+        caps["connection-data"] = connection_data
+        bandwidth_limit = self.bandwidth_limit
+        bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
+        if bandwidth_limit is None:
+            if socket_speed:
+                #auto: use 80% of socket speed if we have it:
+                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
+            else:
+                bandwidth_limit = 0
+        bandwidthlog("bandwidth-limit capability=%s", bandwidth_limit)
+        if bandwidth_limit>0:
+            caps["bandwidth-limit"] = bandwidth_limit
+        return caps
 
     def parse_server_capabilities(self):
         c = self.server_capabilities

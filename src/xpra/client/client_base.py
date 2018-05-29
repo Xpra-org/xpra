@@ -19,7 +19,7 @@ mouselog = Logger("mouse")
 cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
-from xpra.scripts.config import InitExit, parse_with_unit
+from xpra.scripts.config import InitExit
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.protocol import Protocol, sanity_checks
@@ -48,8 +48,6 @@ ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 """ Base class for Xpra clients.
@@ -104,7 +102,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.password_file = ()
         self.password_index = 0
         self.password_sent = False
-        self.bandwidth_limit = 0
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
@@ -140,8 +137,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.username = opts.username
         self.password = opts.password
         self.password_file = opts.password_file
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
-        bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
         self.encryption = opts.encryption or opts.tcp_encryption
         if self.encryption:
             crypto_backend_init()
@@ -397,38 +392,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
-        #get socket speed if we have it:
-        pinfo = self._protocol.get_info()
-        netlog.warn("protocol info=%s", pinfo)
-        device_info = pinfo.get("socket", {}).get("device", {})
-        connection_data = {}
-        socket_speed = device_info.get("speed")
-        if socket_speed:
-            connection_data["speed"] = socket_speed
-        adapter_type = device_info.get("adapter-type")
-        if adapter_type:
-            at = adapter_type.lower()
-            if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
-                jitter = 0
-            elif at.find("wan")>=0:
-                jitter = 20
-            elif at.find("wireless")>=0 or at.find("wifi")>=0:
-                jitter = 1000
-            if jitter is not None:
-                connection_data["jitter"] = jitter
-        capabilities["connection-data"] = connection_data
-        bandwidth_limit = self.bandwidth_limit
-        bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
-        if bandwidth_limit is None:
-            if socket_speed:
-                #auto: use 80% of socket speed if we have it:
-                bandwidth_limit = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
-            else:
-                bandwidth_limit = 0
-        bandwidthlog("bandwidth-limit capability=%s", bandwidth_limit)
-        if bandwidth_limit>0:
-            capabilities["bandwidth-limit"] = bandwidth_limit
-
         if self.encryption:
             assert self.encryption in ENCRYPTION_CIPHERS
             iv = get_iv()
