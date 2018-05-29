@@ -314,13 +314,12 @@ class ServerBase(ServerBaseClass):
 
         def drop_client(reason="unknown", *args):
             self.disconnect_client(proto, reason, *args)
-        bandwidth_limit = self.get_client_bandwidth_limit(proto)
         ClientConnectionClass = self.get_server_source_class()
         ss = ClientConnectionClass(proto, drop_client,
                           self.session_name, self,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.setting_changed,
-                          self._socket_dir, self.unix_socket_paths, not is_request, bandwidth_limit,
+                          self._socket_dir, self.unix_socket_paths, not is_request, self.bandwidth_limit,
                           )
         log("process_hello clientconnection=%s", ss)
         try:

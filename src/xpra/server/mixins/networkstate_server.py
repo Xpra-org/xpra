@@ -15,14 +15,11 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 from xpra.simple_stats import std_unit
 from xpra.os_util import livefds, POSIX
-from xpra.util import envbool, envint, detect_leaks
+from xpra.util import envbool, detect_leaks
 
 
 DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
-
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
 """
@@ -104,22 +101,6 @@ class NetworkStateServer(StubServerMixin):
                     log.info("%.1fGB of system memory", self.mem_bytes/(1024.0**3))
             except:
                 pass
-
-
-    def get_client_bandwidth_limit(self, proto):
-        if self.bandwidth_limit is None:
-            #auto-detect:
-            pinfo = proto.get_info()
-            socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
-            if socket_speed:
-                #auto: use 80% of socket speed if we have it:
-                v = socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
-            else:
-                v = 0
-        else:
-            v = self.bandwidth_limit
-        bandwidthlog("get_client_bandwidth_limit(%s)=%s", proto, v)            
-        return v
 
 
     def _process_connection_data(self, proto, packet):

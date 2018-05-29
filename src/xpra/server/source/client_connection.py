@@ -78,6 +78,8 @@ log("ClientConnectionClass%s", CC_BASES)
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
+AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
+assert AUTO_BANDWIDTH_PCT>1 and AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 NOYIELD = not envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
@@ -257,11 +259,11 @@ class ClientConnection(ClientConnectionClass):
         self.lock = c.boolget("lock")
         self.control_commands = c.strlistget("control_commands")
         bandwidth_limit = c.intget("bandwidth-limit", 0)
-        if self.server_bandwidth_limit<=0:
-            self.bandwidth_limit = bandwidth_limit
-        else:
-            self.bandwidth_limit = min(self.server_bandwidth_limit, bandwidth_limit)
-        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", self.server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
+        server_bandwidth_limit = self.server_bandwidth_limit
+        if self.server_bandwidth_limit is None:
+            server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
+        self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
+        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
 
         cinfo = self.get_connect_info()
         for i,ci in enumerate(cinfo):
@@ -280,6 +282,19 @@ class ClientConnection(ClientConnectionClass):
         file_transfer = getattr(self, "file_transfer", None)
         if file_transfer:
             self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
+
+    def get_socket_bandwidth_limit(self):
+        p = self.protocol
+        if not p:
+            return 0
+        #auto-detect:
+        pinfo = p.get_info()
+        socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
+        if not socket_speed:
+            return 0
+        bandwidthlog("get_socket_bandwidth_limit() socket_speed=%s", socket_speed)
+        #auto: use 80% of socket speed if we have it:
+        return socket_speed*AUTO_BANDWIDTH_PCT//100 or 0
 
 
     def startup_complete(self):

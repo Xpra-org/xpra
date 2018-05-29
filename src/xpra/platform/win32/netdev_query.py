@@ -23,24 +23,24 @@ def get_interface_info(_fd, iface):
             if res.Count==1:
                 for r in res:
                     props = {}
-                    for k,ik in {
-                        "AdapterType"   : "adapter-type",
-                        "Caption"       : "caption",
-                        "Description"   : "description",
-                        "DeviceID"      : "id",
-                        "GUID"          : "GUID",
-                        "Index"         : "index",
-                        "Name"          : "name",
-                        "ProductName"   : "product-name",
-                        "Speed"         : "speed",
-                        }.items():
+                    for k,ik,conv in (
+                        ("AdapterType", "adapter-type", str),
+                        ("Caption",     "caption",      str),
+                        ("Description", "description",  str),
+                        ("DeviceID",    "id",           str),
+                        ("GUID",        "GUID",         str),
+                        ("Index",       "index",        int),
+                        ("Name",        "name",         str),
+                        ("ProductName", "product-name", str),
+                        ("Speed",       "speed",        int),
+                        ):
                         try:
-                            v = r.Properties_[k]
+                            v = conv(r.Properties_[k].Value)
                         except Exception as e:
                             log.error("Error retrieving '%s' from network adapter record:", k)
                             log.error(" %s", e)
                         else:
-                            props[ik] = v.Value
+                            props[ik] = v
                     log("get_interface_info(%s)=%s" % (iface, props))
                     return props
         except Exception as e:
