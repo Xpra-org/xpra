@@ -17,6 +17,9 @@ class MixinsTest(unittest.TestCase):
 
 	def test_networkstate(self):
 		x = NetworkState()
+		fake_protocol = AdHocStruct()
+		fake_protocol.get_info = lambda : {}
+		x._protocol = fake_protocol
 		opts = AdHocStruct()
 		opts.pings = True
 		opts.bandwidth_limit = 0
