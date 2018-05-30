@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from threading import RLock
 
 from xpra.log import Logger
@@ -10,7 +11,7 @@ log = Logger("webcam")
 
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
-from xpra.os_util import BytesIOClass, monotonic_time, WIN32, BITS
+from xpra.os_util import BytesIOClass, OSEnvContext, monotonic_time, WIN32, BITS
 from xpra.util import envint, envbool, csv, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
@@ -56,19 +57,21 @@ class WebcamForwarder(StubClientMixin):
         self.server_webcam = False
         self.server_virtual_video_devices = 0
         if self.webcam_forwarding:
-            try:
-                import cv2
-                from PIL import Image
-                assert cv2 and Image
-            except ImportError as e:
-                log("init webcam failure", exc_info=True)
-                if WIN32 and BITS==32:
-                    log.info("32-bit builds do not support webcam forwarding")
-                else:
-                    log.warn("Warning: failed to import opencv:")
-                    log.warn(" %s", e)
-                    log.warn(" webcam forwarding is disabled")
-                self.webcam_forwarding = False
+            with OSEnvContext():
+                os.environ["LANG"] = "C"
+                try:
+                    import cv2
+                    from PIL import Image
+                    assert cv2 and Image
+                except ImportError as e:
+                    log("init webcam failure", exc_info=True)
+                    if WIN32 and BITS==32:
+                        log.info("32-bit builds do not support webcam forwarding")
+                    else:
+                        log.warn("Warning: failed to import opencv:")
+                        log.warn(" %s", e)
+                        log.warn(" webcam forwarding is disabled")
+                    self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
 
