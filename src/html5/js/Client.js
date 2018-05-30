@@ -49,6 +49,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.insecure = false;
 	//connection options:
 	this.sharing = false;
+	this.open_url = true;
 	this.steal = true;
 	this.remote_logging = true;
 	this.enabled_encodings = [];
@@ -271,6 +272,7 @@ XpraClient.prototype.init_packet_handlers = function() {
 		'set-clipboard-enabled': this._process_set_clipboard_enabled,
 		'clipboard-request': this._process_clipboard_request,
 		'send-file': this._process_send_file,
+		'open-url': this._process_open_url,
 	};
 }
 
@@ -972,6 +974,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"rencode" 					: false,
 		"bencode"					: true,
 		"yaml"						: false,
+		"open-url"					: this.open_url,
 	});
 	if (this.bandwidth_limit>0) {
 		this._update_capabilities({
@@ -2723,4 +2726,18 @@ XpraClient.prototype.send_file = function(filename, mimetype, size, buffer) {
 	}
 	var packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
 	this.send(packet);
+}
+
+XpraClient.prototype._process_open_url = function(packet, ctx) {
+    var url = packet[1];
+    //var send_id = packet[2];
+    if (!ctx.open_url) {
+        console.warn("Warning: received a request to open URL '%s'", url);
+        console.warn(" but opening of URLs is disabled");
+        return
+    }
+    $('#action-link').attr("href", url);
+    $('#action-link').text(url);
+    $('#action-link').show();
+    console.log("opening url:", url);
 }

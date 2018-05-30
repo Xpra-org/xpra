@@ -329,6 +329,15 @@ div.windowinfocus {
 	display: none;
 }
 
+.action-events {
+	position: relative;
+	float: left;
+}
+#action-link {
+	display: none;
+	color: #99f;
+}
+
 .clock_block {
 	position: relative;
 	float: left;
