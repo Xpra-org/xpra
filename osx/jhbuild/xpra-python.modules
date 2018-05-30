@@ -227,10 +227,10 @@
 	</distutils>
 
 	<distutils id="python-cython">
-		<branch repo="pypi.python.org"
-			module="/packages/be/08/bb5ffd1c32a951cbc26011ecb8557e59dc7a0a4975f0ad98b2cd7446f7dd/Cython-0.28.1.tar.gz"
-			hash="sha256:152ee5f345012ca3bb7cc71da2d3736ee20f52cd8476e4d49e5e25c5a4102b12"
-			version="0.28.1"/>
+		<branch repo="files.pythonhosted.org"
+			module="packages/b3/ae/971d3b936a7ad10e65cb7672356cff156000c5132cf406cb0f4d7a980fd3/Cython-0.28.3.tar.gz"
+			hash="sha256:1aae6d6e9858888144cea147eb5e677830f45faaff3d305d77378c3cba55f526"
+			version="0.28.3"/>
 		<dependencies>
 			<dep package="python"/>
 		</dependencies>
