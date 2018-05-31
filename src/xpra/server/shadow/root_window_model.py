@@ -39,7 +39,7 @@ class RootWindowModel(object):
     def get_image(self, x, y, width, height):
         ox, oy = self.geometry[:2]
         image = self.capture.get_image(ox+x, oy+y, width, height)
-        if ox>0 or oy>0:
+        if image and ox>0 or oy>0:
             #adjust x and y of where the image is displayed on the client (target_x and target_y)
             #not where the image lives within the current buffer (x and y)
             image.set_target_x(x)
