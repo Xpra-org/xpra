@@ -135,6 +135,7 @@ class NotificationForwarder(StubServerMixin):
         nid, reason, text = packet[1:4]
         ss = self._server_sources.get(proto)
         assert ss
+        log("closing notification %i: %s, %s", nid, reason, text)
         try:
             #remove client callback if we have one:
             ss.notification_callbacks.pop(nid)
@@ -163,6 +164,7 @@ class NotificationForwarder(StubServerMixin):
                 if active:
                     self.notifications_forwarder.ActionInvoked(nid, action_key)
         else:
+            log("notification callback for %s: %s", (nid, action_key), client_callback)
             client_callback(nid, action_key)
 
 
