@@ -21,6 +21,7 @@ from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPR
 
 BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
+CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
@@ -567,14 +568,17 @@ class WindowsMixin(StubSourceMixin):
         if not gs:
             #window cleaned up?
             return
-        bandwidthlog("record_congestion_event(%s, %i, %i)", source, late_pct, send_speed)
         now = monotonic_time()
+        elapsed = now-self.bandwidth_warning_time
+        bandwidthlog("record_congestion_event(%s, %i, %i) bandwidth_warnings=%s, elapsed time=%i", source, late_pct, send_speed, self.bandwidth_warnings, elapsed)
         gs.last_congestion_time = now
         gs.congestion_send_speed.append((now, late_pct, send_speed))
-        if self.bandwidth_warnings and now-self.bandwidth_warning_time>60:
+        if self.bandwidth_warnings and elapsed>CONGESTION_REPEAT_DELAY:
             #enough congestion events?
-            min_time = now-10
+            T = 10
+            min_time = now-T
             count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
+            bandwidthlog("record_congestion_event: %i events in the last %i seconds (warnings after %i)", count, T, CONGESTION_WARNING_EVENT_COUNT)
             if count>CONGESTION_WARNING_EVENT_COUNT:
                 self.bandwidth_warning_time = now
                 nid = XPRA_BANDWIDTH_NOTIFICATION_ID
