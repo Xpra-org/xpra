@@ -27,7 +27,6 @@ class NotificationClient(StubClientMixin):
         self.client_supports_notifications = False
         self.server_notifications = False
         self.server_notifications_close = False
-        self.server_notifications_actions = False
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
@@ -65,7 +64,6 @@ class NotificationClient(StubClientMixin):
         c = self.server_capabilities
         self.server_notifications = c.boolget("notifications")
         self.server_notifications_close = c.boolget("notifications.close")
-        self.server_notifications_actions = c.boolget("notifications.actions")
         self.notifications_enabled = self.client_supports_notifications
         return True
 
@@ -94,9 +92,8 @@ class NotificationClient(StubClientMixin):
             self.send("notification-close", nid, reason, text)
 
     def notification_action(self, nid, action_id):
-        log("notification_action(%i, %s) server notifications.actions=%s", nid, action_id, self.server_notifications_actions)
-        if self.server_notifications_actions:
-            self.send("notification-action", nid, action_id)
+        log("notification_action(%i, %s)", nid, action_id)
+        self.send("notification-action", nid, action_id)
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
