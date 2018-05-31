@@ -66,7 +66,6 @@ class NotificationForwarder(StubServerMixin):
                     log("%s", self.notifications_forwarder)
             except Exception as e:
                 log("init_notification_forwarder()", exc_info=True)
-                self.notifications = False
                 self.notify_setup_error(e)
 
     def notify_setup_error(self, exception):
@@ -119,7 +118,7 @@ class NotificationForwarder(StubServerMixin):
         return []
 
     def notify_close_callback(self, nid):
-        assert self.notifications_forwarder and self.notifications
+        assert self.notifications_forwarder
         log("notify_close_callback(%s)", nid)
         for ss in self._server_sources.values():
             ss.notify_close(int(nid))
