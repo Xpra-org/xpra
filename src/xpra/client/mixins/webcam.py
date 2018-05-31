@@ -59,6 +59,7 @@ class WebcamForwarder(StubClientMixin):
         if self.webcam_forwarding:
             with OSEnvContext():
                 os.environ["LANG"] = "C"
+                os.environ["LC_ALL"] = "C"
                 try:
                     import cv2
                     from PIL import Image
