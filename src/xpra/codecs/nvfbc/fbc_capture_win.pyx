@@ -758,8 +758,6 @@ cdef class NvFBC_CUDACapture:
         if height==0:
             height = self.grab_info.dwHeight
         assert x==0 and y==0 and width>0 and height>0
-        assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
-        assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         cdef double start = monotonic_time()
         #allocate CUDA device memory:
         if not self.cuda_device_buffer:
