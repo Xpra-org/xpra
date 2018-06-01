@@ -76,6 +76,11 @@ class RemoteLogging(StubClientMixin):
             if exc_info:
                 for x in traceback.format_tb(exc_info[2]):
                     self.send("logging", level, enc(x), dtime)
+                try:
+                    etypeinfo = exc_info[0].__name__
+                except:
+                    etypeinfo = str(exc_info[0])
+                self.send("logging", level, enc("%s: %s" % (etypeinfo, exc_info[1])), dtime)
             if self.log_both:
                 self.local_logging(log, level, msg, *args, **kwargs)
         except Exception as e:
