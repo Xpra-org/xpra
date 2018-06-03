@@ -627,6 +627,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/c3/b0/3bea770f91b395f30f99bca8976ccafa42ac5c5b32348dd492ffe9b4d71e/pyobjc-framework-SystemConfiguration-4.2.1.tar.gz"
+			hash="sha256:214c3fb45c3c235f1f58c0fc7e05e73f4bccbc5a48c639cefd02c340e5013c51"
+			version="4.2.1"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 
 	<distutils id="python3-rencode" python3="1">
 		<branch repo="github.com"
