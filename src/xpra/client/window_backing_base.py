@@ -315,6 +315,7 @@ class WindowBackingBase(object):
             rgb_reformat(img, self.RGB_MODES, has_alpha and self._alpha_enabled)
             rgb_format = img.get_pixel_format()
             data = img.get_pixels()
+            stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
         options[b"rgb_format"] = rgb_format
         return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
