@@ -547,8 +547,8 @@ def dump_references(log, instances, exclude=[]):
     gc.collect()
     try:
         log.info("dump references for %i instances:", len(instances))
-        j = 0
-        for instance in instances:
+        for j in range(len(instances)):
+            instance = instances[j]
             referrers = tuple(x for x in gc.get_referrers(instance) if not any(y for y in rexclude if x in y))
             log.info("* %i : %s, type=%s, with %i referers", j, repr_ellipsized(str(instance)), type(instance), len(referrers))
             j += 1
