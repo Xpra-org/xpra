@@ -627,7 +627,7 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-pyobjc-framework-SystemConfiguration">
+	<distutils id="python-pyobjc-framework-SystemConfiguration">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/c3/b0/3bea770f91b395f30f99bca8976ccafa42ac5c5b32348dd492ffe9b4d71e/pyobjc-framework-SystemConfiguration-4.2.1.tar.gz"
 			hash="sha256:214c3fb45c3c235f1f58c0fc7e05e73f4bccbc5a48c639cefd02c340e5013c51"
@@ -751,6 +751,7 @@
 		  <dep package="python-pyobjc-framework-cocoa"/>
 		  <dep package="python-pyobjc-framework-quartz"/>
 		  <dep package="python-pyobjc-framework-avfoundation"/>
+		  <dep package="python-pyobjc-framework-SystemConfiguration"/>
 		</dependencies>
 	</metamodule>
 

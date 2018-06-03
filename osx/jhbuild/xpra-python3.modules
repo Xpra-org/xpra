@@ -751,6 +751,7 @@
 		  <dep package="python3-pyobjc-framework-cocoa"/>
 		  <dep package="python3-pyobjc-framework-quartz"/>
 		  <dep package="python3-pyobjc-framework-avfoundation"/>
+		  <dep package="python3-pyobjc-framework-SystemConfiguration"/>
 		</dependencies>
 	</metamodule>
 
