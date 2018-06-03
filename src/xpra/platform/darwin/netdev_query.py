@@ -15,12 +15,12 @@ from SystemConfiguration import (
 
 def get_interface_info(_fd, iface):
     r = SCNetworkInterfaceCopyAll()
-    if len(r)==1:
-        return do_get_interface_info(r[0])
     if iface:
         for scnetworkinterface in r:
             if str(SCNetworkInterfaceGetBSDName(scnetworkinterface))==iface:
                 return do_get_interface_info(scnetworkinterface)
+    elif len(r)==1:
+        return do_get_interface_info(r[0])
     return {}
 
 def do_get_interface_info(scnetworkinterface):
