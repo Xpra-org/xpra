@@ -403,6 +403,10 @@ class GTKTrayMenuBase(object):
         menu = gtk.Menu()
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
+        features_menu_item.show_all()
+        return features_menu_item
+
+    def append_featuresmenuitems(self, menu):
         menu.append(self.make_sharingmenuitem())
         menu.append(self.make_lockmenuitem())
         menu.append(self.make_readonlymenuitem())
@@ -414,8 +418,6 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_openglmenuitem())
         if self.client.windows_enabled:
             menu.append(self.make_keyboardsyncmenuitem())
-        features_menu_item.show_all()
-        return features_menu_item
 
     def make_sharingmenuitem(self):
         def sharing_toggled(*args):

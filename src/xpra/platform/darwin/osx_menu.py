@@ -188,13 +188,10 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if SHOW_FEATURES_MENU:
             features_menu = self.make_menu()
             menus.append(("Features", features_menu))
-            features_menu.add(self.make_bellmenuitem())
-            features_menu.add(self.make_cursorsmenuitem())
-            features_menu.add(self.make_notificationsmenuitem())
+            self.append_featuresmenuitems(features_menu)
             features_menu.add(self.make_swapkeysmenuitem())
             features_menu.add(self.make_invertmousewheelmenuitem())
             features_menu.add(self.make_numlockmenuitem())
-            features_menu.add(self.make_openglmenuitem())
             features_menu.add(self.make_scalingmenuitem())
         if SHOW_CLIPBOARD_MENU:
             clipboard_menu = self.make_menu()
