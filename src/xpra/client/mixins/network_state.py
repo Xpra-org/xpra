@@ -91,7 +91,7 @@ class NetworkState(StubClientMixin):
                 jitter = 0
             elif at.find("wan")>=0:
                 jitter = 20
-            elif at.find("wireless")>=0 or at.find("wifi")>=0:
+            elif at.find("wireless")>=0 or at.find("wifi")>=0 or at.find("80211")>=0:
                 jitter = 1000
             if jitter is not None:
                 connection_data["jitter"] = jitter
