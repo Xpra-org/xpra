@@ -427,9 +427,9 @@ def main():
         netifaces = import_netifaces()
         for iface in get_interfaces():
             if if_nametoindex:
-                s = "* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface))
+                print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
             else:
-                s = "* %s" % iface
+                print("* %s" % iface)
             addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
@@ -448,14 +448,12 @@ def main():
                                     sockfd = sock.fileno()
                                     info = get_interface_info(sockfd, iface)
                                     if info:
-                                        print(s)
                                         print("  %s" % info)
                                 finally:
                                     sock.close()
             if not POSIX:
                 info = get_interface_info(0, iface)
                 if info:
-                    print(s)
                     print("  %s" % info)
 
         def pver(v):
