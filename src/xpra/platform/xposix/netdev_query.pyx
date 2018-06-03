@@ -9,15 +9,21 @@ import os
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 from xpra.log import Logger
 log = Logger("util", "network")
 
 ctypedef uint32_t __u32
 ctypedef uint16_t __u16
 ctypedef uint8_t __u8
+
+DEF ETHTOOL_GDRVINFO = 0x00000003
+DEF ETHTOOL_BUSINFO_LEN = 32
+
+
 cdef extern from "linux/ethtool.h":
     int ETHTOOL_GSET
+    int ETHTOOL_BUSINFO_LEN
     cdef struct ethtool_cmd:
         __u32   cmd
         __u32   supported
@@ -36,6 +42,20 @@ cdef extern from "linux/ethtool.h":
         __u8    eth_tp_mdix_ctrl
         __u32   lp_advertising
         __u32   reserved[2]
+
+    cdef struct ethtool_drvinfo:
+        uint32_t    cmd
+        char    driver[32]     # driver short name, "tulip", "eepro100"
+        char    version[32]     # driver version string
+        char    fw_version[32]     # firmware version string, if applicable
+        char    bus_info[ETHTOOL_BUSINFO_LEN]     # Bus info for this IF.
+                    # For PCI devices, use pci_dev->slot_name.
+        char    reserved1[32]
+        char    reserved2[16]
+        uint32_t    n_stats     # number of u64's from ETHTOOL_GSTATS
+        uint32_t    testinfo_len
+        uint32_t    eedump_len     # Size of data from ETHTOOL_GEEPROM (bytes)
+        uint32_t    regdump_len     # Size of data from ETHTOOL_GREGS (bytes)
 
 
 cdef extern from "linux/sockios.h":
@@ -58,14 +78,21 @@ cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
 
-def get_interface_speed(int sockfd, ifname):
-    """ returns the ethtool speed in bps, or 0 """
+def get_interface_info(int sockfd, ifname):
     if sockfd==0:
-        return 0
+        return {}
     if len(ifname)>=IFNAMSIZ:
         log.warn("Warning: invalid interface name '%s'", ifname)
         log.warn(" maximum length is %i", IFNAMSIZ)
-        return 0
+        return {}
+    if ifname=="lo":
+        return {}
+    info = {}
+    sysnetfs = "/sys/class/net/%s" % ifname
+    if os.path.exists(sysnetfs):
+        wireless_path = "%s/wireless" % sysnetfs
+        if os.path.exists(sysnetfs):
+            info["adapter-type"] = "wireless"
     cdef ifreq ifr
     cdef ethtool_cmd edata
     bifname = strtobytes(ifname)
@@ -74,8 +101,20 @@ def get_interface_speed(int sockfd, ifname):
     ifr.ifr_ifru.ifru_data = <void*> &edata
     edata.cmd = ETHTOOL_GSET
     cdef int r = ioctl(sockfd, SIOCETHTOOL, &ifr)
-    if r < 0:
+    if r >= 0:
+        info["speed"] = edata.speed*1000*1000
+        #info["duplex"] = duplex: DUPLEX_HALF, DUPLEX_FULL DUPLEX_NONE?
+    else:
         log.info("no ethtool interface speed available for %s", ifname)
-        return 0
-    #log("get_interface_speed(%i, %s)=%i", sockfd, ifname, edata.speed*1000*1000)
-    return edata.speed*1000*1000
+    cdef ethtool_drvinfo drvinfo
+    drvinfo.cmd = ETHTOOL_GDRVINFO
+    ifr.ifr_ifru.ifru_data = <void *> &drvinfo
+    r = ioctl(sockfd, SIOCETHTOOL, &ifr)
+    if r>=0:
+        info["driver"] = bytestostr(drvinfo.driver)
+        info["version"] = bytestostr(drvinfo.version)
+        info["firmware-version"] = bytestostr(drvinfo.fw_version)
+        info["bus-info"] = bytestostr(drvinfo.bus_info)
+    else:
+        log.info("no driver information for %s", ifname)
+    return info

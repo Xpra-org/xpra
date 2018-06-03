@@ -410,9 +410,10 @@ def get_info():
 
 
 def main():
+    from xpra.os_util import POSIX
     from xpra.util import print_nested_dict, csv
     from xpra.platform import program_context
-    from xpra.platform.netdev_query import get_interface_speed, get_interface_info
+    from xpra.platform.netdev_query import get_interface_info
     from xpra.log import enable_color, add_debug_category, enable_debug_for
     with program_context("Network-Info", "Network Info"):
         enable_color()
@@ -429,16 +430,6 @@ def main():
                 s = "* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface))
             else:
                 s = "* %s" % iface
-            info = get_interface_info(0, iface)
-            if info:
-                print(s)
-                print("  %s" % info)
-            else:
-                speed = get_interface_speed(0, iface)
-                if speed>0:
-                    from xpra.simple_stats import std_unit
-                    s += " (speed=%sbps)" % std_unit(speed)
-                print(s)
             addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
@@ -450,6 +441,22 @@ def main():
                                 socket.AF_INET6 : "IPv6",
                                 }[addr]
                             print(" * %s:     %s" % (stype, ip))
+                            if POSIX:
+                                from xpra.server.socket_util import create_tcp_socket
+                                try:
+                                    sock = create_tcp_socket(ip, 0)
+                                    sockfd = sock.fileno()
+                                    info = get_interface_info(sockfd, iface)
+                                    if info:
+                                        print(s)
+                                        print("  %s" % info)
+                                finally:
+                                    sock.close()
+            if not POSIX:
+                info = get_interface_info(0, iface)
+                if info:
+                    print(s)
+                    print("  %s" % info)
 
         def pver(v):
             if type(v) in (tuple, list):

@@ -51,14 +51,6 @@ def get_interface_info(_fd, iface):
                 log.error(" %s", e)
         return {}
 
-def get_interface_speed(fd, iface):
-    speed = get_interface_info(fd, iface).get("speed", 0)
-    try:
-        return int(speed)
-    except ValueError:
-        logger().error("Error: parsing speed value '%s'", speed, exc_info=True)
-        return 0
-
 
 def main():
     from xpra.platform import program_context
@@ -67,10 +59,13 @@ def main():
         from xpra.simple_stats import std_unit
         interfaces = get_interfaces()
         for iface in interfaces:
-            s = get_interface_speed(0, iface)
-            if s:
-                s = "%sbps" % std_unit(s)
-            print("%s : %s" % (iface, s))
+            speed = get_interface_info(0, iface).get("speed", 0)
+            try:
+                v = int(speed)
+                s = "%sbps" % std_unit(v)
+                print("%s : %s" % (iface, s))
+            except ValueError:
+                logger().error("Error: parsing speed value '%s'", speed, exc_info=True)
 
 if __name__ == "__main__":
     main()
