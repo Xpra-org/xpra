@@ -24,7 +24,7 @@ from xpra.net.protocol import Protocol
 from xpra.codecs.loader import load_codecs, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
-from xpra.os_util import Queue, SIGNAMES, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
+from xpra.os_util import Queue, SIGNAMES, POSIX, osexpand, bytestostr, getuid, getgid, monotonic_time, get_username_for_uid, setuidgid
 from xpra.util import flatten_dict, typedict, updict, repr_ellipsized, xor, envint, envbool, csv, first_time, AtomicInteger, \
     LOGIN_TIMEOUT, CONTROL_COMMAND_ERROR, AUTHENTICATION_ERROR, CLIENT_EXIT_TIMEOUT, SERVER_SHUTDOWN
 from xpra.version_util import XPRA_VERSION
@@ -208,7 +208,21 @@ class ProxyInstanceProcess(Process):
     def run(self):
         log("ProxyProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         self.setproctitle("Xpra Proxy Instance for %s" % self.server_conn)
-        setuidgid(self.uid, self.gid)
+        if POSIX and (os.getuid()!=self.uid or os.getgid()!=self.gid):
+            #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
+            username = get_username_for_uid(self.uid)
+            socket_dir = osexpand(self.socket_dir, username, self.uid, self.gid)
+            if not os.path.exists(socket_dir):
+                log("the socket directory '%s' does not exist, checking for $XDG_RUNTIME_DIR path", socket_dir)
+                for prefix in ("/run/user/", "/var/run/user/"):
+                    if socket_dir.startswith(prefix):
+                        from xpra.scripts.server import create_runtime_dir
+                        xrd = os.path.join(prefix, str(self.uid))   #ie: /run/user/99
+                        log("creating XDG_RUNTIME_DIR=%s for uid=%i, gid=%i", xrd, self.uid, self.gid)
+                        create_runtime_dir(xrd, self.uid, self.gid)
+                        break
+            #change uid or gid:
+            setuidgid(self.uid, self.gid)
         if self.env_options:
             #TODO: whitelist env update?
             os.environ.update(self.env_options)
