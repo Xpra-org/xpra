@@ -578,6 +578,11 @@ XpraWindow.prototype.toggle_maximized = function() {
  * Fullscreen / unfullscreen the window.
  */
 XpraWindow.prototype.set_fullscreen = function(fullscreen) {
+	//the browser itself:
+	//we can't bring attention to the fullscreen widget, ie:
+	//$("#fullscreen").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+	//because the window is about to cover the top bar...
+	//so just fullscreen the window:
 	if (this.fullscreen==fullscreen) {
 		return;
 	}

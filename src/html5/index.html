@@ -68,6 +68,9 @@
 						<a href="#" id="upload_link" onclick="upload_file(event); return false">Upload File</a>
 					</div>
 				</div>
+				<div class="action-icons">
+					<img id="fullscreen" src="./icons/fullscreen.png" alt="fullscreen" title="toggle fullscreen" />
+				</div>
 				<div class="action-events">
 					<a href="#" id="action-link" target="_blank"></a>
 				</div>
@@ -643,6 +646,37 @@
 						client.request_refresh(-1);
 					}
 				});
+				$('#fullscreen').on('click', function (e) {
+					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
+					if (!f_el) {
+						var elem = document.getElementById("fullscreen");
+				        var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen;
+						if (req) {
+							req.call(document.getElementById("screen"));
+						}
+						//change icon to unfullscreen:
+						$('#fullscreen').attr('src', './icons/unfullscreen.png');
+					} else {
+						if (document.exitFullscreen) {
+				            document.exitFullscreen();
+				        } else if (document.webkitExitFullscreen) {
+				            document.webkitExitFullscreen();
+				        } else if (document.mozCancelFullScreen) {
+				            document.mozCancelFullScreen();
+				        } else if (document.msExitFullscreen) {
+				            document.msExitFullscreen();
+				        }
+					}
+				});
+				var screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";
+				$(document).on(screen_change_events, function () {
+					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
+					console.log("fullscreenchange:", f_el);
+				    if (f_el == null) {
+				    	//we're not in fullscreen mode now, so show fullscreen icon again:
+						$('#fullscreen').attr('src', './icons/fullscreen.png');
+				    }
+				});				
 			});
 		</script>
 	</body>

@@ -329,6 +329,10 @@ div.windowinfocus {
 	display: none;
 }
 
+.action-icons {
+	position: relative;
+	float: left;
+}
 .action-events {
 	position: relative;
 	float: left;
