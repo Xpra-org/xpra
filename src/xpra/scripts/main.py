@@ -39,6 +39,7 @@ WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 15)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
+LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
 
 def nox():
@@ -2154,7 +2155,7 @@ def run_list(error_cb, opts, extra_args):
     if reprobe:
         sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
         counter = 0
-        while reprobe and counter<5:
+        while reprobe and counter<LIST_REPROBE_TIMEOUT:
             sleep(1)
             counter += 1
             probe_list = list(reprobe)
