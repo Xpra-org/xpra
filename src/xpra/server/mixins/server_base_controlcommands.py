@@ -392,15 +392,15 @@ class ServerBaseControlCommands(StubServerMixin):
         return "refreshed windows %s" % str(wids)
 
     def control_command_scaling_control(self, scaling_control, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
             ws.set_scaling_control(scaling_control)
-            ws.refresh(window)
+            ws.refresh()
         return "scaling-control set to %s on windows %s" % (scaling_control, wids)
 
     def control_command_scaling(self, scaling, *wids):
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
             ws.set_scaling(scaling)
-            ws.refresh(window)
+            ws.refresh()
         return "scaling set to %s on windows %s" % (str(scaling), wids)
 
     def control_command_encoding(self, encoding, *args):
@@ -410,9 +410,9 @@ class ServerBaseControlCommands(StubServerMixin):
             strict = args[0]=="strict"
             args = args[1:]
         wids = args
-        for ws, window in self._control_windowsources_from_args(*wids).items():
+        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
             ws.set_new_encoding(encoding, strict)
-            ws.refresh(window, {})
+            ws.refresh()
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
 
     def control_command_clipboard_direction(self, direction, *_args):
