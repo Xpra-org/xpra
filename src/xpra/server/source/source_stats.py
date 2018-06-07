@@ -93,7 +93,7 @@ class GlobalPerformanceStatistics(object):
     def update_averages(self):
         def latency_averages(values):
             avg, recent = calculate_time_weighted_average(values)
-            return max(1, avg), max(1, recent)
+            return max(0.001, avg), max(0.001, recent)
         if len(self.client_latency)>0:
             data = [(when, latency) for _, when, _, latency in tuple(self.client_latency)]
             self.min_client_latency = min([x for _,x in data])
