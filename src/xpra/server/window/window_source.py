@@ -1624,7 +1624,8 @@ class WindowSource(WindowIconSource):
                 msg = "keeping existing timer (all pixels outside area)"
             else:
                 msg = "added pixels to refresh regions"
-                schedule = True
+                if self.refresh_regions:
+                    schedule = True
         now = monotonic_time()
         if schedule:
             #figure out the proportion of pixels that need refreshing:
