@@ -1085,12 +1085,13 @@ var DEFAULT_BOX_COLORS = {
 XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
 	if (this.jsmpeg_renderer==null) {
 		var options = new Object();
-		if (JSMpeg.Renderer.WebGL.IsSupported()) {
-			this.jsmpeg_renderer = new JSMpeg.Renderer.WebGL(options);
-		}
-		else {
-			this.jsmpeg_renderer = new JSMpeg.Renderer.Canvas2D(options);
-		}
+		//webgl is still buggy
+		//if (JSMpeg.Renderer.WebGL.IsSupported()) {
+		//	this.jsmpeg_renderer = new JSMpeg.Renderer.WebGL(options);
+		//}
+		//else {
+		this.jsmpeg_renderer = new JSMpeg.Renderer.Canvas2D(options);
+		//}
 	}
 	return this.jsmpeg_renderer;
 }
