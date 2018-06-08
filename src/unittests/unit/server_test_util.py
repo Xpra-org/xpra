@@ -266,15 +266,19 @@ class ServerTestUtil(unittest.TestCase):
 			#then wait a little before using it:
 			time.sleep(1)
 		#query it:
-		if display:
-			version = cls.run_xpra(["version", display])
-		else:
-			version = cls.run_xpra(["version"])
+		version = None
 		for _ in range(20):
-			r = pollwait(version)
+			if version is None:
+				if display:
+					version = cls.run_xpra(["version", display])
+				else:
+					version = cls.run_xpra(["version"])
+			r = pollwait(version, 1)
 			log("version for %s returned %s", display, r)
 			if r is not None:
 				if r==1:
+					#re-run it
+					version = None
 					continue
 				break
 			time.sleep(1)
