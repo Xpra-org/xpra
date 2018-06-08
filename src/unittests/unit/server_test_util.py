@@ -255,8 +255,15 @@ class ServerTestUtil(unittest.TestCase):
 		server_proc = cls.run_xpra(cmd)
 		assert pollwait(server_proc, SERVER_TIMEOUT) is None, "server failed to start with '%s', returned %s" % (cmd, server_proc.poll())
 		if display:
-			live = cls.dotxpra.displays()
+			#wait until the socket shows up:
+			for _ in range(20):
+				live = cls.dotxpra.displays()
+				if display in live:
+					break
+				time.sleep(1)
 			assert display in live, "server display '%s' not found in live displays %s" % (display, live)
+			#then wait a little before using it:
+			time.sleep(1)
 		#query it:
 		if display:
 			version = cls.run_xpra(["version", display])
