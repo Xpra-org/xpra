@@ -261,6 +261,7 @@ class ServerTestUtil(unittest.TestCase):
 				if display in live:
 					break
 				time.sleep(1)
+			assert server_proc.poll() is None, "server '%s' terminated and returned %s" % (cmd, server_proc.poll())
 			assert display in live, "server display '%s' not found in live displays %s" % (display, live)
 			#then wait a little before using it:
 			time.sleep(1)
