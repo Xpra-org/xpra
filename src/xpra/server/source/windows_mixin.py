@@ -23,6 +23,7 @@ BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
+MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
@@ -587,7 +588,7 @@ class WindowsMixin(StubSourceMixin):
                         "consider lowering the bandwidth limit,\n" + \
                         "or lowering the picture quality"
                 actions = []
-                if self.bandwidth_limit==0 or self.bandwidth_limit>1*1000*1000:
+                if self.bandwidth_limit==0 or self.bandwidth_limit>MIN_BANDWIDTH:
                     actions += ["lower-bandwidth", "Lower bandwidth limit"]
                 #if self.default_min_quality>10:
                 #    actions += ["lower-quality", "Lower quality"]
@@ -604,8 +605,8 @@ class WindowsMixin(StubSourceMixin):
             css = 50*1024*1024
             if self.statistics.avg_congestion_send_speed>256*1024:
                 #round up:
-                css = int(1+self.statistics.avg_congestion_send_speed//16/1024)*16*1024
-            self.bandwidth_limit = min(bandwidth_limit, css)
+                css = int(self.statistics.avg_congestion_send_speed//16/1024)*16*1024)
+            self.bandwidth_limit = max(MIN_BANDWIDTH, min(bandwidth_limit, css))
             self.setting_changed("bandwidth-limit", self.bandwidth_limit)
         #elif action_id=="lower-quality":
         #    self.default_min_quality = max(1, self.default_min_quality-15)
