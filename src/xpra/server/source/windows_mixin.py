@@ -605,7 +605,7 @@ class WindowsMixin(StubSourceMixin):
             css = 50*1024*1024
             if self.statistics.avg_congestion_send_speed>256*1024:
                 #round up:
-                css = int(self.statistics.avg_congestion_send_speed//16/1024)*16*1024)
+                css = int(self.statistics.avg_congestion_send_speed//16/1024)*16*1024
             self.bandwidth_limit = max(MIN_BANDWIDTH, min(bandwidth_limit, css))
             self.setting_changed("bandwidth-limit", self.bandwidth_limit)
         #elif action_id=="lower-quality":
