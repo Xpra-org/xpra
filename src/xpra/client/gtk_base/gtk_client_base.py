@@ -1049,6 +1049,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
             if self.opengl_enabled:
                 opengllog.info("OpenGL enabled with %s", driver_info)
+                #don't try to handle video dimensions bigger than this:
+                mvs = min(8192, self.gl_texture_size_limit)
+                self.video_max_size = (mvs, mvs)
             elif self.client_supports_opengl:
                 opengllog("OpenGL supported with %s, but not enabled", driver_info)
         except ImportError as e:

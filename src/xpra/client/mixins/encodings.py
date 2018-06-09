@@ -29,6 +29,7 @@ B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
+VIDEO_MAX_SIZE = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
 
 
 """
@@ -45,6 +46,8 @@ class Encodings(StubClientMixin):
         self.min_quality = 0
         self.speed = 0
         self.min_speed = -1
+        self.video_scaling = 0
+        self.video_max_size = VIDEO_MAX_SIZE
 
         self.server_encodings = []
         self.server_core_encodings = []
@@ -143,6 +146,7 @@ class Encodings(StubClientMixin):
             "video_reinit"              : True,
             "video_scaling"             : True,
             "video_b_frames"            : video_b_frames,
+            "video_max_size"            : self.video_max_size,
             "webp_leaks"                : False,
             "transparency"              : self.has_transparency(),
             "rgb24zlib"                 : True,

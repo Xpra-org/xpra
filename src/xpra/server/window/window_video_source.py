@@ -82,6 +82,7 @@ class WindowVideoSource(WindowSource):
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
+        self.video_max_size = self.encoding_options.intlistget("video_max_size", (8192, 8192))
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
 
     def init_encoders(self):
@@ -154,11 +155,6 @@ class WindowVideoSource(WindowSource):
         self.may_update_av_sync_delay()
 
 
-    def get_client_info(self):
-        info = WindowSource.get_client_info(self)
-        info["supports_video_scaling"] = self.supports_video_scaling
-        return info
-
     def get_property_info(self):
         i = WindowSource.get_property_info(self)
         i.update({
@@ -175,6 +171,8 @@ class WindowVideoSource(WindowSource):
             sri["video-mode"] = self.subregion_is_video()
             info["video_subregion"] = sri
         info["scaling"] = self.actual_scaling
+        info["supports_video_scaling"] = self.supports_video_scaling
+        info["video-max-size"] = self.video_max_size
         def addcinfo(prefix, x):
             if not x:
                 return
@@ -1159,7 +1157,10 @@ class WindowVideoSource(WindowSource):
                     if not matches or self.is_cancelled():
                         scorelog("add_scores: no matches for %s (%s and %s)", encoder_spec, encoder_spec.output_colorspaces, supported_csc_modes)
                         continue
-                    scaling = self.calculate_scaling(width, height, encoder_spec.max_w, encoder_spec.max_h)
+                    vmw, vmh = self.video_max_size
+                    max_w = min(encoder_spec.max_w, vmw)
+                    max_h = min(encoder_spec.max_h, vmh)
+                    scaling = self.calculate_scaling(width, height, max_w, max_h)
                     client_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
                     score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
                                                     target_q, min_q, target_s, min_s,
@@ -1218,7 +1219,7 @@ class WindowVideoSource(WindowSource):
             #not supported by client or disabled by env
             #FIXME: what to do if width>max_w or height>max_h?
             actual_scaling = 1, 1
-        elif self.scaling_control==0:
+        elif (self.scaling_control==0 or width>=max_w or height>=max_h):
             #only enable if we have to:
             actual_scaling = get_min_required_scaling()
         elif SCALING_HARDCODED:

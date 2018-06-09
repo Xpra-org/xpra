@@ -362,13 +362,6 @@ class WindowSource(WindowIconSource):
         self.global_statistics = None
 
 
-    def get_client_info(self):
-        info = {}
-        if self.full_csc_modes:
-            for enc, csc_modes in self.full_csc_modes.items():
-                info["csc_modes.%s" % enc] = csc_modes
-        return info
-
     def get_info(self):
         #should get prefixed with "client[M].window[N]." by caller
         """
@@ -396,6 +389,7 @@ class WindowSource(WindowIconSource):
                   ""                : self.encodings,
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
+                  "csc_modes"       : self.full_csc_modes or {},
                   }
         larm = self.last_auto_refresh_message
         if larm:
