@@ -280,7 +280,10 @@ class WindowVideoSource(WindowSource):
         self.cancel_video_encoder_timer()
         if ve:
             ve.clean()
-            if self.supports_eos:
+            #only send eos if this video encoder is still current,
+            #(otherwise, sending the new stream will have taken care of it already,
+            # and sending eos then would close the new stream, not the old one!)
+            if self.supports_eos and self._video_encoder==ve:
                 log("sending eos for wid %i", self.wid)
                 self.queue_packet(("eos", self.wid))
 
