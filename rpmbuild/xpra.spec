@@ -137,6 +137,9 @@ Requires(postun):	systemd-units
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
+%if 0%{?run_tests}
+BuildRequires:		tigervnc
+%endif
 Requires(post):  	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 %description common-server

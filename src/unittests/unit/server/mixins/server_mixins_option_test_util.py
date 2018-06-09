@@ -9,7 +9,7 @@ import time
 from collections import OrderedDict
 
 from xpra.util import envbool
-from xpra.os_util import pollwait, WIN32, OSX, POSIX
+from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
 from unit.server_test_util import ServerTestUtil, log
 from xpra.net.net_util import get_free_tcp_port
 
@@ -121,10 +121,13 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 client_kwargs = {"env" : env}
 
             if subcommand in ("shadow", "start-desktop") and TEST_RFB:
-                rfb_cmd = ["vncviewer", "localhost::%i" % tcp_port]
-                rfb_client = self.run_command(rfb_cmd, **client_kwargs)
-                r = pollwait(rfb_client, 5)
-                assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
+                vncviewer = which("vncviewer")
+                log("testing RFB clients with vncviewer '%s'", vncviewer)
+                if vncviewer:
+                    rfb_cmd = [vncviewer, "localhost::%i" % tcp_port]
+                    rfb_client = self.run_command(rfb_cmd, **client_kwargs)
+                    r = pollwait(rfb_client, 5)
+                    assert r is None, "rfb client terminated early and returned %i for server with args=%s" % (r, args)
                 
             #connect a gui client:
             if WIN32 or (self.client_display and self.client_xvfb):
