@@ -19,7 +19,7 @@ from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.os_util import Queue
 
-TEST_TIMEOUT = 1000
+TEST_TIMEOUT = 5*1000
 
 
 class fake_subprocess():
