@@ -150,7 +150,7 @@ class ClipboardProtocolHelperBase(object):
 
     def get_info(self):
         info = {
-                "type"      : str(self),
+                "type"      : str(self).replace("ClipboardProtocolHelper", ""),
                 "max_size"  : self.max_clipboard_packet_size,
                 "filters"   : [x.pattern for x in self.filter_res],
                 "requests"  : self._clipboard_request_counter,
