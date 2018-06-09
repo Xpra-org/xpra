@@ -303,12 +303,12 @@ def check_PyOpenGL_support(force_enable):
 
         log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s, GL_MAX_TEXTURE_SIZE=%s", rect_texture_size, texture_size)
         texture_size_limit = min(rect_texture_size, texture_size)
-        props["texture-size-limit"] = texture_size_limit
+        props["texture-size-limit"] = int(texture_size_limit)
 
         try:
             from OpenGL.GL import GL_MAX_VIEWPORT_DIMS
             v = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
-            max_viewport_dims = v[0], v[1]
+            max_viewport_dims = int(v[0]), int(v[1])
             assert max_viewport_dims[0]>=texture_size_limit and max_viewport_dims[1]>=texture_size_limit
             log("GL_MAX_VIEWPORT_DIMS=%s", max_viewport_dims)
         except ImportError as e:
