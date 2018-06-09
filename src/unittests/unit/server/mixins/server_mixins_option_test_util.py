@@ -147,7 +147,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 assert display not in self.dotxpra.displays(), "server socket for display %s should have been removed" % display
 
             if gui_client:
-                r = pollwait(gui_client, 1)
+                r = pollwait(gui_client, 5)
                 assert r is not None, "gui client should have been disconnected"
         finally:
             for x in (xvfb, rfb_client, gui_client, server, client):
