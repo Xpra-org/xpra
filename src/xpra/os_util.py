@@ -436,15 +436,11 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs={}):
             #replace "~/" with "~$actual_username/"
             return os.path.expanduser("~%s/%s" % (actual_username, s[2:]))
         return os.path.expanduser(s)
-    if actual_username:
-        HOME = os.path.expanduser("~%s" % actual_username)
-    else:
-        HOME = os.path.expanduser("~")
     from collections import OrderedDict
     d = OrderedDict(subs)
     d.update({
         "PID"   : os.getpid(),
-        "HOME"  : HOME,
+        "HOME"  : expanduser("~/"),
         })
     if os.name=="posix":
         d.update({
