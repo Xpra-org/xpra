@@ -407,9 +407,10 @@ def prettify_plug_name(s, default=""):
     if not s:
         return default
     #prettify strings on win32
-    s = s.lstrip("0\\").lstrip("1\\").lstrip(".\\").replace("0\\", "-")
-    if s=="WinSta-Default":
-        s = "Default"
+    import re
+    s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
+    if s.startswith("WinSta-"):
+        s = s[len("WinSta-"):]
     return s
 
 def do_log_screen_sizes(root_w, root_h, sizes):
