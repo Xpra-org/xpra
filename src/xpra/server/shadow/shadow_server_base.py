@@ -34,7 +34,7 @@ class ShadowServerBase(RFBServer):
         RFBServer.__init__(self)
         self.capture = capture
         self.root = root_window
-        self.mapped = False
+        self.mapped = []
         self.pulseaudio = False
         self.sharing = True
         self.refresh_delay = REFRESH_DELAY
@@ -54,7 +54,8 @@ class ShadowServerBase(RFBServer):
             self.make_notifier()
 
     def cleanup(self):
-        self.stop_refresh()
+        for wid in self.mapped:
+            self.stop_refresh(wid)
         self.cleanup_notifier()
         self.cleanup_capture()
 
@@ -164,8 +165,10 @@ class ShadowServerBase(RFBServer):
     ############################################################################
     # refresh
 
-    def start_refresh(self):
-        self.mapped = True
+    def start_refresh(self, wid):
+        log("start_refresh(%i)", wid)
+        if wid not in self.mapped:
+            self.mapped.append(wid)
         if not self.refresh_timer:
             self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
         self.start_poll_pointer()
@@ -178,11 +181,15 @@ class ShadowServerBase(RFBServer):
             self.start_refresh()
 
 
-    def stop_refresh(self):
-        log("stop_refresh() mapped=%s", self.mapped)
-        self.mapped = False
-        self.cancel_refresh_timer()
-        self.cancel_poll_pointer()
+    def stop_refresh(self, wid):
+        log("stop_refresh(%i) mapped=%s", wid, self.mapped)
+        try:
+            self.mapped.remove(wid)
+        except KeyError:
+            pass
+        if not self.mapped:
+            self.cancel_refresh_timer()
+            self.cancel_poll_pointer()
 
     def cancel_refresh_timer(self):
         t = self.refresh_timer
@@ -363,7 +370,7 @@ class ShadowServerBase(RFBServer):
         self._damage(window, 0, 0, width, height)
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        self.start_refresh()
+        self.start_refresh(wid)
 
     def _process_unmap_window(self, proto, packet):
         wid = packet[1]
@@ -372,7 +379,7 @@ class ShadowServerBase(RFBServer):
         #TODO: deal with more than one window / more than one client
         #and stop refresh if all the windows are unmapped everywhere
         if len(self._server_sources)<=1 and len(self._id_to_window)<=1:
-            self.stop_refresh()
+            self.stop_refresh(wid)
 
     def _process_configure_window(self, proto, packet):
         wid, x, y, w, h = packet[1:6]

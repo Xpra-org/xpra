@@ -24,7 +24,7 @@ class RootWindowModel(object):
         self.internal_property_names = ["content-type"]
 
     def __repr__(self):
-        return "RootWindowModel(%s - %s)" % (self.geometry, self.capture)
+        return "RootWindowModel(%s : %24s)" % (self.capture, self.geometry)
 
     def get_info(self):
         info = {}

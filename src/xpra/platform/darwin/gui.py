@@ -577,7 +577,7 @@ def get_CG_imagewrapper(rect=None):
     image = CG.CGWindowListCreateImage(region,
                 CG.kCGWindowListOptionOnScreenOnly,
                 CG.kCGNullWindowID,
-                CG.kCGWindowImageDefault)
+                CG.kCGWindowImageNominalResolution) #CG.kCGWindowImageDefault)
     width = CG.CGImageGetWidth(image)
     height = CG.CGImageGetHeight(image)
     bpc = CG.CGImageGetBitsPerComponent(image)

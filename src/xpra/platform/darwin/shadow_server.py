@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2013-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,6 @@ log = Logger("shadow", "osx")
 
 from xpra.util import envbool
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
 from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
@@ -45,6 +44,9 @@ def patch_picture_encode():
 
 class OSXRootCapture(object):
 
+    def __repr__(self):
+        return "OSXRootCapture"
+
     def refresh(self):
         return True
 
@@ -57,12 +59,6 @@ class OSXRootCapture(object):
 
     def get_info(self):
         return {}
-
-
-class OSXRootWindowModel(RootWindowModel):
-
-    def __init__(self, root_window):
-        RootWindowModel.__init__(self, root_window, OSXRootCapture())
 
     def take_screenshot(self):
         log("grabbing screenshot")
@@ -100,12 +96,12 @@ class ShadowServer(GTKShadowServerBase):
         from xpra.client.gtk_base.statusicon_tray import GTKStatusIconTray
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server", None, None, self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
 
-    def makeRootWindowModels(self):
-        return (OSXRootWindowModel(self.root),)
 
+    def setup_capture(self):
+        return OSXRootCapture()
 
-    def screen_refresh_callback(self, _count, rects, info):
-        #log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
+    def screen_refresh_callback(self, count, rects, info):
+        log("screen_refresh_callback%s mapped=%s", (count, rects, info), self.mapped)
         self.refresh_count += 1
         rlist = []
         for r in rects:
@@ -113,21 +109,28 @@ class ShadowServer(GTKShadowServerBase):
                 log.error("Error: invalid rectangle in refresh list: %s", r)
                 continue
             self.refresh_rectangle_count += 1
-            rlist.append((r.origin.x, r.origin.y, r.size.width, r.size.height))
+            rlist.append((int(r.origin.x), int(r.origin.y), int(r.size.width), int(r.size.height)))
         #return quickly, and process the list copy via idle add:
         self.idle_add(self.do_screen_refresh, rlist)
 
     def do_screen_refresh(self, rlist):
         #TODO: improve damage method to handle lists directly:
-        assert len(self._id_to_window)==1, "cannot handle more than one root window"
-        rwm = tuple(self._id_to_window.values())[0]
+        from xpra.server.window.region import rectangle     #@UnresolvedImport
+        model_rects = {}
+        for model in self._id_to_window.values():
+            model_rects[model] = rectangle(*model.geometry)
         for x, y, w, h in rlist:
-            self._damage(rwm, int(x), int(y), int(w), int(h))
+            for model, rect in model_rects.items():
+                mrect = rect.intersection(x, y, w, h)
+                #log("screen refresh intersection of %s and %24s: %s", model, (x, y, w, h), mrect)
+                if mrect:
+                    self._damage(model, mrect.x-rect.x, mrect.y-rect.y, mrect.width, mrect.height)
 
-    def start_refresh(self):
+    def start_refresh(self, wid):
         #don't use the timer, get damage notifications:
+        if wid not in self.mapped:
+            self.mapped.append(wid)
         if self.refresh_registered:
-            log.warn("Warning: screen refresh callback already registered!")
             return
         if not USE_TIMER:
             err = CG.CGRegisterScreenRefreshCallback(self.screen_refresh_callback, None)
@@ -138,11 +141,13 @@ class ShadowServer(GTKShadowServerBase):
             else:
                 log.warn("Warning: CGRegisterScreenRefreshCallback failed with error %i", err)
                 log.warn(" using fallback timer method")
-        GTKShadowServerBase.start_refresh(self)
+        GTKShadowServerBase.start_refresh(self, wid)
 
-    def stop_refresh(self):
-        log("stop_refresh() mapped=%s, timer=%s", self.mapped, self.refresh_timer)
-        if self.refresh_registered:
+    def stop_refresh(self, wid):
+        log("stop_refresh(%i) mapped=%s, timer=%s", wid, self.mapped, self.refresh_timer)
+        #may stop the timer fallback:
+        GTKShadowServerBase.stop_refresh(self, wid)
+        if self.refresh_registered and not self.mapped:
             try:
                 err = CG.CGUnregisterScreenRefreshCallback(self.screen_refresh_callback, None)
                 log("CGUnregisterScreenRefreshCallback(%s)=%s", self.screen_refresh_callback, err)
@@ -152,11 +157,18 @@ class ShadowServer(GTKShadowServerBase):
                 log.warn("Error unregistering screen refresh callback:")
                 log.warn(" %s", e)
             self.refresh_registered = False
-        #may stop the timer fallback:
-        GTKShadowServerBase.stop_refresh(self)
 
 
-    def do_process_mouse_common(self, proto, wid, pointer, *_args):
+    def _adjust_pointer(self, proto, wid, pointer):
+        pointer = GTKShadowServerBase._adjust_pointer(self, proto, wid, pointer)
+        window = self._id_to_window.get(wid)
+        if window:
+            ox, oy = window.geometry[:2]
+            x, y = pointer
+            return x+ox, y+oy
+        return pointer
+
+    def do_process_mouse_common(self, proto, wid, pointer, *args):
         assert proto in self._server_sources
         assert wid in self._id_to_window
         CG.CGWarpMouseCursorPosition(pointer)
@@ -217,3 +229,25 @@ class ShadowServer(GTKShadowServerBase):
                                               "rectangles"      : self.refresh_rectangle_count,
                                               })
         return info
+
+
+def main():
+    import sys
+    from xpra.platform import program_context
+    with program_context("MacOS Shadow Capture"):
+        log.enable_debug()
+        c = OSXRootCapture()
+        x, y, w, h = list(int(sys.argv[x]) for x in range(1,5))
+        img = c.get_image(x, y, w, h)
+        from PIL import Image
+        i = Image.frombuffer("RGBA", (w, h), img.get_pixels(), "raw", "BGRA", img.get_rowstride())
+        import time
+        t = time.time()
+        tstr = time.strftime("%H-%M-%S", time.localtime(t))
+        filename = "./Capture-%s-%s.png" % ((x, y, w, h),tstr,)
+        i.save(filename, "png")
+        print("saved to %s" % (filename,))
+        
+
+if __name__ == "__main__":
+    main()

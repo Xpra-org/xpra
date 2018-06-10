@@ -57,7 +57,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             self.set_tray_icon("server-connected")
 
     def last_client_exited(self):
-        self.stop_refresh()
+        log("last_client_exited() mapped=%s", self.mapped)
+        for wid in tuple(self.mapped):
+            self.stop_refresh(wid)
         #revert to default icon:
         if not self.tray_icon:
             self.set_tray_icon("server-notconnected")
@@ -126,6 +128,12 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         for i in range(n):
             geom = screen.get_monitor_geometry(i)
             x, y, width, height = geom.x, geom.y, geom.width, geom.height
+            try:
+                scale_factor = screen.get_monitor_scale_factor(i)
+            except Exception as e:
+                log("no scale factor: %s", e)
+            else:
+                log("scale factor for monitor %i: %i", i, scale_factor)
             model = RootWindowModel(self.root, self.capture)
             if hasattr(screen, "get_monitor_plug_name"):
                 plug_name = screen.get_monitor_plug_name(i)
