@@ -20,6 +20,14 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_I
 FLATTEN_INFO = envint("XPRA_FLATTEN_INFO", 1)
 
 
+def errwrite(msg):
+    try:
+        sys.stderr.write(msg)
+        sys.stderr.flush()
+    except:
+        pass
+
+
 class GObjectXpraClient(XpraClientBase, gobject.GObject):
     """
         Utility superclass for GObject clients
@@ -511,7 +519,13 @@ class RequestStartClient(HelloRequestClient):
     from xpra.scripts.main import WAIT_SERVER_TIMEOUT
     COMMAND_TIMEOUT = EXTRA_TIMEOUT+WAIT_SERVER_TIMEOUT
 
+    def dots(self):
+        errwrite(".")
+        return self.server_capabilities is None
+
     def hello_request(self):
+        errwrite("requesting new session, please wait")
+        self.timeout_add(5*1000, self.dots)
         return {
             "start-new-session" : self.start_new_session,
             #tells proxy servers we don't want to connect to the real / new instance:
@@ -530,8 +544,7 @@ class RequestStartClient(HelloRequestClient):
                     "start-desktop" : "desktop ",
                     "shadow"        : "shadow ",
                     }.get(mode, "")
-                sys.stderr.write("%ssession now available on display %s\n" % (session_type, display))
-                sys.stderr.flush()
+                errwrite("\n%ssession now available on display %s\n" % (session_type, display))
                 if POSIX and not OSX and self.displayfd>0 and display and display.startswith(b":"):
                     from xpra.platform.displayfd import write_displayfd
                     log("writing display %s to displayfd=%s", display, self.displayfd)
