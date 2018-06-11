@@ -283,7 +283,7 @@ class X11ServerCore(GTKServerBase):
 
     def get_child_env(self):
         #adds fakeXinerama:
-        env = GTKServerBase.get_child_env(self)
+        env = super(X11ServerCore, self).get_child_env()
         if self.fake_xinerama and self.libfakeXinerama_so:
             env["LD_PRELOAD"] = self.libfakeXinerama_so
         return env
@@ -408,7 +408,7 @@ class X11ServerCore(GTKServerBase):
         return cinfo
 
     def get_window_info(self, window):
-        info = GTKServerBase.get_window_info(self, window)
+        info = super(X11ServerCore, self).get_window_info(window)
         info["XShm"] = window.uses_XShm()
         info["geometry"] = window.get_geometry()
         return info

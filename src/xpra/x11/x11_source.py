@@ -34,7 +34,9 @@ class X11ServerSource(ClientConnection):
     def get_window_filter(self, object_name, property_name, operator, value):
         if object_name.lower() not in ("x11window", "window"):
             raise ValueError("invalid object name")
-        wf = ClientConnection.get_window_filter(self, "window", property_name, operator, value)
+        from xpra.server.source.windows_mixin import WindowsMixin
+        assert isinstance(self, WindowsMixin)
+        wf = WindowsMixin.get_window_filter(self, "window", property_name, operator, value)
         if object_name.lower()=="x11window":
             #same filter but use X11 properties:
             def get_window_value(window):

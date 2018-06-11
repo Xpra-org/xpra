@@ -100,7 +100,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def send_updated_screen_size(self):
         log("send_updated_screen_size")
-        GTKServerBase.send_updated_screen_size(self)
+        super(GTKShadowServerBase, self).send_updated_screen_size()
         from xpra.server import server_features
         if server_features.windows:
             self.recreate_window_models()
@@ -146,7 +146,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
 
     def _adjust_pointer(self, proto, wid, pointer):
-        pointer = GTKServerBase._adjust_pointer(self, proto, wid, pointer)
+        pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, pointer)
         #the window may be at an offset (multi-window for multi-monitor):
         window = self._id_to_window.get(wid)
         if window:
