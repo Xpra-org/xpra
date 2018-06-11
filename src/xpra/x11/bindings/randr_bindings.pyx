@@ -137,7 +137,7 @@ cdef class _RandRBindings(_X11CoreBindings):
     cdef object _added_modes
 
     def __init__(self):
-        self._has_randr = self.check_randr()
+        self._has_randr = self.check_randr() and self.check_randr_sizes()
         self._added_modes = OrderedDict()
 
     def __repr__(self):
@@ -154,6 +154,21 @@ cdef class _RandRBindings(_X11CoreBindings):
                 if (cmajor==1 and cminor>=2) or cmajor>=2:
                     return True
         return False
+
+    def check_randr_sizes(self):
+        #check for wayland, which has no sizes:
+        #(and we wouldn't be able to set screen resolutions)
+        cdef Window window
+        window = XDefaultRootWindow(self.display)
+        cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
+        config = XRRGetScreenInfo(self.display, window)
+        if config==NULL:
+            log("check_randr_sizes: failed to get randr screen info")
+            return False
+        cdef int num_sizes = 0                          #@DuplicatedSignature
+        xrrs = XRRConfigSizes(config, &num_sizes)
+        log("found %i config sizes", num_sizes)
+        return num_sizes>0
 
     def has_randr(self):
         return bool(self._has_randr)
