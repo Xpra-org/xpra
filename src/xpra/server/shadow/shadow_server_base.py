@@ -234,7 +234,7 @@ class ShadowServerBase(RFBServer):
             rwm = None
             rx, ry = 0, 0
             for wid, window in self._id_to_window.items():
-                wx, wy, ww, wh = window.get_geometry()
+                wx, wy, ww, wh = window.geometry
                 if x>=wx and x<(wx+ww) and y>=wy and y<(wy+wh):
                     rwm = window
                     rx = x-wx
