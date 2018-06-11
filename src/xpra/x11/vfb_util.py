@@ -106,6 +106,9 @@ def get_xauthority_path(display_name, username, uid, gid):
     assert POSIX
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid)
+    filename = os.environ.get("XAUTHORITY")
+    if filename and os.path.exists(filename):
+        return filename
     from xpra.platform.xposix.paths import _get_xpra_runtime_dir
     if PRIVATE_XAUTH:
         d = _get_xpra_runtime_dir()
