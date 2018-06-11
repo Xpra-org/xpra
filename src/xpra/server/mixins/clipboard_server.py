@@ -48,7 +48,7 @@ class ClipboardServer(StubServerMixin):
 
 
     def parse_hello(self, ss, caps, send_ui):
-        if send_ui:
+        if send_ui and self.clipboard:
             self.parse_hello_ui_clipboard(ss, caps)
 
 
@@ -144,6 +144,7 @@ class ClipboardServer(StubServerMixin):
         self._clipboard_helper.enable_selections(client_selections)
 
     def _process_clipboard_packet(self, proto, packet):
+        assert self.clipboard
         if self.readonly:
             return
         ss = self._server_sources.get(proto)
@@ -185,6 +186,7 @@ class ClipboardServer(StubServerMixin):
         return True
 
     def _process_clipboard_enabled_status(self, proto, packet):
+        assert self.clipboard
         if self.readonly:
             return
         clipboard_enabled = packet[1]
@@ -207,12 +209,12 @@ class ClipboardServer(StubServerMixin):
         log("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
 
     def clipboard_progress(self, local_requests, _remote_requests):
-        assert self._clipboard_helper is not None
+        assert self.clipboard
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)
 
     def send_clipboard_packet(self, *parts):
-        assert self._clipboard_helper is not None
+        assert self.clipboard
         if self._clipboard_client:
             self._clipboard_client.send_clipboard(parts)
 
