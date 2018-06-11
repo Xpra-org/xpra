@@ -512,8 +512,8 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
             pwid = packet[10]
             pointer = packet[11]
             modifiers = packet[12]
-            self._update_modifiers(proto, wid, modifiers)
-            self._process_mouse_common(proto, pwid, pointer)
+            if self._process_mouse_common(proto, pwid, pointer):
+                self._update_modifiers(proto, wid, modifiers)
         #some "configure-window" packets are only meant for metadata updates:
         skip_geometry = len(packet)>=10 and packet[9]
         window = self._id_to_window.get(wid)
@@ -538,6 +538,18 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         if damage:
             self._damage(window, 0, 0, w, h)
 
+
+    def _adjust_pointer(self, proto, wid, pointer):
+        window = self._id_to_window.get(wid)
+        if not window:
+            return None
+        pointer = super(XpraDesktopServer, self)._adjust_pointer(proto, wid, pointer)
+        #maybe the pointer is off-screen:
+        ww, wh = window.get_dimensions()
+        x, y = pointer
+        if x<0 or x>=ww or y<0 or y>=wh:
+            return None
+        return pointer
 
     def _move_pointer(self, wid, pos, *args):
         if wid>=0:

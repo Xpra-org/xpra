@@ -853,9 +853,9 @@ class X11ServerCore(GTKServerBase):
         assert self.pointer_device.has_precise_wheel()
         wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
         with xsync:
-            self._update_modifiers(proto, wid, modifiers)
-            self.do_process_mouse_common(proto, wid, pointer)
-            self.pointer_device.wheel_motion(button, distance/1000.0)
+            if self.do_process_mouse_common(proto, wid, pointer):
+                self._update_modifiers(proto, wid, modifiers)
+                self.pointer_device.wheel_motion(button, distance/1000.0)
 
     def get_pointer_device(self, deviceid):
         #mouselog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
@@ -882,7 +882,7 @@ class X11ServerCore(GTKServerBase):
     def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
         log("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
         if self.readonly:
-            return
+            return None
         pos = self.root_window.get_pointer()[-3:-1]
         uuid = None
         if proto:
@@ -893,6 +893,7 @@ class X11ServerCore(GTKServerBase):
             self.last_mouse_user = uuid
             with xswallow:
                 self._move_pointer(wid, pointer, deviceid, *args)
+        return pointer
 
     def _update_modifiers(self, proto, wid, modifiers):
         if self.readonly:
@@ -908,8 +909,8 @@ class X11ServerCore(GTKServerBase):
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, _buttons=[], deviceid=-1, *_args):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
-        self._process_mouse_common(proto, wid, pointer, deviceid)
-        self.button_action(pointer, button, pressed, deviceid)
+        if self._process_mouse_common(proto, wid, pointer, deviceid):
+            self.button_action(pointer, button, pressed, deviceid)
 
     def button_action(self, _pointer, button, pressed, deviceid=-1, *args):
         device = self.get_pointer_device(deviceid)

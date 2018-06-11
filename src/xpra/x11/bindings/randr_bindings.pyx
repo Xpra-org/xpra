@@ -156,6 +156,7 @@ cdef class _RandRBindings(_X11CoreBindings):
         return False
 
     def check_randr_sizes(self):
+        return True
         #check for wayland, which has no sizes:
         #(and we wouldn't be able to set screen resolutions)
         cdef Window window

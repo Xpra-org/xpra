@@ -341,12 +341,15 @@ class InputServer(StubServerMixin):
 
     def _process_mouse_common(self, proto, wid, pointer, *args):
         pointer = self._adjust_pointer(proto, wid, pointer)
+        if not pointer:
+            return None
         #TODO: adjust args too
-        self.do_process_mouse_common(proto, wid, pointer, *args)
-        return pointer
+        if self.do_process_mouse_common(proto, wid, pointer, *args):
+            return pointer
+        return None
 
     def do_process_mouse_common(self, proto, wid, pointer, *args):
-        pass
+        return pointer
 
     def _process_button_action(self, proto, packet):
         mouselog("process_button_action(%s, %s)", proto, packet)
@@ -375,8 +378,8 @@ class InputServer(StubServerMixin):
             ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver!=ss.uuid:
             return
-        self._update_modifiers(proto, wid, modifiers)
-        self._process_mouse_common(proto, wid, pointer, *packet[5:])
+        if self._process_mouse_common(proto, wid, pointer, *packet[5:]):
+            self._update_modifiers(proto, wid, modifiers)
 
 
     ######################################################################

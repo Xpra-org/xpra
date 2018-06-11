@@ -470,6 +470,7 @@ class ShadowServer(GTKShadowServerBase):
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
             log.error(" %s", e)
+        return pointer
 
     def clear_keys_pressed(self):
         keystate = (BYTE*256)()
@@ -500,8 +501,9 @@ class ShadowServer(GTKShadowServerBase):
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
         self._update_modifiers(proto, wid, modifiers)
         pointer = self._process_mouse_common(proto, wid, pointer)
-        self._server_sources.get(proto).user_event()
-        self.button_action(pointer, button, pressed, -1, *args)
+        if pointer:
+            self._server_sources.get(proto).user_event()
+            self.button_action(pointer, button, pressed, -1, *args)
 
     def button_action(self, pointer, button, pressed, deviceid=-1, *args):
         event = BUTTON_EVENTS.get((button, pressed))
