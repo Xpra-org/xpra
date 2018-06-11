@@ -36,6 +36,7 @@ bandwidthlog = Logger("bandwidth", "network")
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
+SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
@@ -273,11 +274,22 @@ class GTKTrayMenuBase(object):
         self.menu_icon_size = get_icon_size()
         menu = gtk.Menu()
         menu.set_title(self.client.session_name or u"Xpra")
+        title_item = None
+        if SHOW_TITLE_ITEM:
+            title_item = gtk.MenuItem(self.client.session_name or u"Xpra")
+            set_sensitive(title_item, False)
+            menu.append(title_item)
         def set_menu_title(*_args):
             #set the real name when available:
+            try:
+                title = self.client.get_tray_title()
+            except:
+                title = self.client.session_name or u"Xpra"
             m = self.menu
             if m:
-                m.set_title(self.client.session_name or u"Xpra")
+                m.set_title(title)
+            if title_item:
+                title_item.set_label(title)
         self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_infomenuitem())
