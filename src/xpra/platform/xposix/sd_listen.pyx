@@ -38,7 +38,8 @@ def get_sd_listen_sockets():
     cdef int fd, n, i
     n = sd_listen_fds(0)
     log("sd_listen_fds(0)=%i", n)
-    log("REMOTE_ADDR=%s, REMOTE_PORT=%s", os.environ.get("REMOTE_ADDR", ""), os.environ.get("REMOTE_PORT", ""))
+    if n:
+        log("REMOTE_ADDR=%s, REMOTE_PORT=%s", os.environ.get("REMOTE_ADDR", ""), os.environ.get("REMOTE_PORT", ""))
     sockets = []
     for i in range(n):
         fd = SD_LISTEN_FDS_START + i
