@@ -167,15 +167,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             traylog.error(" %s: %s", c, e)
         return None
 
-    def _adjust_pointer(self, proto, wid, pointer):
-        pointer = X11ServerCore._adjust_pointer(self, proto, wid, pointer)
-        window = self._id_to_window.get(wid)
-        if window:
-            ox, oy = window.geometry[:2]
-            x, y = pointer
-            return x+ox, y+oy
-        return pointer
-
 
     def last_client_exited(self):
         GTKShadowServerBase.last_client_exited(self)

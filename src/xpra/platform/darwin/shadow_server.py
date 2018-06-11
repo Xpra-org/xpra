@@ -159,15 +159,6 @@ class ShadowServer(GTKShadowServerBase):
             self.refresh_registered = False
 
 
-    def _adjust_pointer(self, proto, wid, pointer):
-        pointer = GTKShadowServerBase._adjust_pointer(self, proto, wid, pointer)
-        window = self._id_to_window.get(wid)
-        if window:
-            ox, oy = window.geometry[:2]
-            x, y = pointer
-            return x+ox, y+oy
-        return pointer
-
     def do_process_mouse_common(self, proto, wid, pointer, *args):
         assert proto in self._server_sources
         assert wid in self._id_to_window
