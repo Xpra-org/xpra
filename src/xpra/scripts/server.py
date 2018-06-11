@@ -829,7 +829,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         #try to find the existing uinput uuid:
         #use a subprocess to avoid polluting our current process
         #with X11 connections before we get a chance to change uid
-        cmd = ["xprop", "-display", display_name, "-root", "_XPRA_UINPUT_ID"]
+        prop = "_XPRA_UINPUT_ID"
+        cmd = ["xprop", "-display", display_name, "-root", prop]
+        log("looking for '%s' on display '%s' with XAUTHORITY='%s'", prop, display_name, os.environ.get("XAUTHORITY"))
         try:
             code, out, err = get_status_output(cmd)
         except Exception as e:
