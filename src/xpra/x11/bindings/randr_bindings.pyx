@@ -200,14 +200,24 @@ cdef class _RandRBindings(_X11CoreBindings):
             if xrrs==NULL:
                 log.error("Error: failed to get randr screen sizes")
                 return False
+            if num_sizes==0:
+                log.warn("Warning: no randr sizes found")
+                log.warn(" cannot set screen size to match %ix%i", width, height)
+                return False
             sizes = []
             sizeID = -1
             for i in range(num_sizes):
                 xrr = xrrs[i]
+                sizes.append((int(xrr.width), int(xrr.height)))
                 if xrr.width==width and xrr.height==height:
                     sizeID = i
             if sizeID<0:
                 log.error("Error: size not found for %ix%i" % (width, height))
+                log.error(" %i sizes are supported", num_sizes)
+                if num_sizes<=16:
+                    log.error(" %s", csv("%ix%i" % (w,h) for w,h in sizes))
+                else:
+                    log("sizes found: %s", sizes)
                 return False
             rates = XRRConfigRates(config, sizeID, &num_rates)
             if rates==NULL:
