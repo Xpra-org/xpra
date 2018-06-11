@@ -60,7 +60,7 @@ def get_sd_listen_socket(int fd):
             sock = socket.fromfd(fd, family, type, proto)
             return socket.socket(_sock=sock)
     else:
-        def fromfd(family, type, proto=0):
+        def fromfd(family, type, proto=0):      #@DuplicatedSignature
             #python3 does not need re-wrapping?
             return socket.socket(family, type, 0, fd)
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:

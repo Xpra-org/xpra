@@ -407,7 +407,6 @@ def prettify_plug_name(s, default=""):
     if not s:
         return default
     #prettify strings on win32
-    import re
     s = re.sub(r"[0-9\.]*\\", "-", s).lstrip("-")
     if s.startswith("WinSta-"):
         s = s[len("WinSta-"):]

@@ -7,7 +7,7 @@
 #@PydevCodeAnalysisIgnore
 
 import ctypes
-from ctypes.wintypes import HANDLE, DWORD, LPCSTR
+from ctypes.wintypes import HANDLE, DWORD
 from threading import Thread
 
 from xpra.log import Logger
