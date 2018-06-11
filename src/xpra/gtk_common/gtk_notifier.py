@@ -262,7 +262,7 @@ class Popup(gtk.Window):
         button.set_relief(RELIEF_NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()
-            log("popup_cb_clicked%s", args)
+            log("popup_cb_clicked%s for action_id=%s, action_text=%s", args, action_id, action_text)
             self.action_cb(self.nid, action_id)
         button.connect("clicked", popup_cb_clicked)
         return button
