@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
-from xpra.util import envint, csv, iround
+from xpra.util import envint, csv, iround, first_time
 
 
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
@@ -201,8 +201,11 @@ cdef class _RandRBindings(_X11CoreBindings):
                 log.error("Error: failed to get randr screen sizes")
                 return False
             if num_sizes==0:
-                log.warn("Warning: no randr sizes found")
-                log.warn(" cannot set screen size to match %ix%i", width, height)
+                if first_time("no-randr-sizes"):
+                    log.warn("Warning: no randr sizes found")
+                    log.warn(" cannot set screen size to match %ix%i", width, height)
+                else:
+                    log("no randr sizes")
                 return False
             sizes = []
             sizeID = -1
