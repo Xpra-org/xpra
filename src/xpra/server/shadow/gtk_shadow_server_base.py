@@ -148,6 +148,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def _adjust_pointer(self, proto, wid, pointer):
         window = self._id_to_window.get(wid)
         if not window:
+            self.suspend_cursor(proto)
             return None
         pointer = super(GTKShadowServerBase, self)._adjust_pointer(proto, wid, pointer)
         #the window may be at an offset (multi-window for multi-monitor):
@@ -157,7 +158,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         ax = x+wx
         ay = y+wy
         if ax<0 or ax>=ww or ay<0 or ay>=wh:
+            self.suspend_cursor(proto)
             return None
+        self.restore_cursor(proto)
         return ax, ay
 
     def get_pointer_position(self):

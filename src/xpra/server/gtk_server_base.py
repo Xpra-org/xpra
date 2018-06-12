@@ -46,6 +46,7 @@ class GTKServerBase(ServerBase):
         self.idle_add = glib.idle_add
         self.timeout_add = glib.timeout_add
         self.source_remove = glib.source_remove
+        self.cursor_suspended = False
         ServerBase.__init__(self)
 
     def watch_keymap_changes(self):
@@ -92,6 +93,30 @@ class GTKServerBase(ServerBase):
                                               })
         info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
+
+
+    def suspend_cursor(self, proto):
+        #this is called by shadow and desktop servers
+        #when we're receiving pointer events but the pointer
+        #is no longer over the active window area,
+        #so we have to tell the client to switch back to the default cursor
+        if self.cursor_suspended:
+            return
+        self.cursor_suspended = True
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.cancel_cursor_timer()
+            ss.send_empty_cursor()
+
+    def restore_cursor(self, proto):
+        #see suspend_cursor
+        if not self.cursor_suspended:
+            return
+        self.cursor_suspended = False
+        ss = self._server_sources.get(proto)
+        if ss:
+            ss.send_cursor()
+
 
     def send_initial_cursors(self, ss, _sharing=False):
         #cursors: get sizes and send:

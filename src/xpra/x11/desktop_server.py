@@ -542,13 +542,16 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
     def _adjust_pointer(self, proto, wid, pointer):
         window = self._id_to_window.get(wid)
         if not window:
+            self.suspend_cursor(proto)
             return None
         pointer = super(XpraDesktopServer, self)._adjust_pointer(proto, wid, pointer)
         #maybe the pointer is off-screen:
         ww, wh = window.get_dimensions()
         x, y = pointer
         if x<0 or x>=ww or y<0 or y>=wh:
+            self.suspend_cursor(proto)
             return None
+        self.restore_cursor(proto)
         return pointer
 
     def _move_pointer(self, wid, pos, *args):

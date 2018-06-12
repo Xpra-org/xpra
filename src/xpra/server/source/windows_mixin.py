@@ -240,49 +240,53 @@ class WindowsMixin(StubSourceMixin):
     def do_send_cursor(self, delay):
         self.cursor_timer = None
         cd = self.get_cursor_data_cb()
-        if cd and cd[0]:
-            cursor_data = list(cd[0])
-            cursor_sizes = cd[1]
-            #skip first two fields (if present) as those are coordinates:
-            if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
-                cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
-                return
-            self.last_cursor_sent = cursor_data[:9]
-            w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
-            #compress pixels if needed:
-            encoding = None
-            if pixels is not None:
-                #convert bytearray to string:
-                cpixels = strtobytes(pixels)
-                if "png" in self.cursor_encodings:
-                    from xpra.codecs.loader import get_codec
-                    PIL = get_codec("PIL")
-                    assert PIL
-                    cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'", len(cpixels), w, h, name)
-                    img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
-                    buf = BytesIOClass()
-                    img.save(buf, "PNG")
-                    pngdata = buf.getvalue()
-                    buf.close()
-                    cpixels = Compressed("png cursor", pngdata, can_inline=True)
-                    encoding = "png"
-                    if SAVE_CURSORS:
-                        with open("raw-cursor-%#x.png" % serial, "wb") as f:
-                            f.write(pngdata)
-                elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
-                    cpixels = self.compressed_wrapper("cursor", pixels)
-                    cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
-                    encoding = "raw"
-                cursor_data[7] = cpixels
-            cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-            args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-            if self.cursor_encodings and encoding:
-                args = [encoding] + args
-        else:
-            cursorlog("do_send_cursor(..) sending empty cursor with delay=%s", delay)
-            args = [""]
-            self.last_cursor_sent = None
+        if not cd or not cd[0]:
+            self.send_empty_cursor()
+            return
+        cursor_data = list(cd[0])
+        cursor_sizes = cd[1]
+        #skip first two fields (if present) as those are coordinates:
+        if self.last_cursor_sent and self.last_cursor_sent[2:9]==cursor_data[2:9]:
+            cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
+            return
+        self.last_cursor_sent = cursor_data[:9]
+        w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
+        #compress pixels if needed:
+        encoding = None
+        if pixels is not None:
+            #convert bytearray to string:
+            cpixels = strtobytes(pixels)
+            if "png" in self.cursor_encodings:
+                from xpra.codecs.loader import get_codec
+                PIL = get_codec("PIL")
+                assert PIL
+                cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'", len(cpixels), w, h, name)
+                img = PIL.Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)
+                buf = BytesIOClass()
+                img.save(buf, "PNG")
+                pngdata = buf.getvalue()
+                buf.close()
+                cpixels = Compressed("png cursor", pngdata, can_inline=True)
+                encoding = "png"
+                if SAVE_CURSORS:
+                    with open("raw-cursor-%#x.png" % serial, "wb") as f:
+                        f.write(pngdata)
+            elif len(cpixels)>=256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
+                cpixels = self.compressed_wrapper("cursor", pixels)
+                cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
+                encoding = "raw"
+            cursor_data[7] = cpixels
+        cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)", w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
+        args = list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
+        if self.cursor_encodings and encoding:
+            args = [encoding] + args
         self.send_more("cursor", *args)
+
+    def send_empty_cursor(self):
+        cursorlog("send_empty_cursor(..)")
+        self.last_cursor_sent = None
+        self.send_more("cursor", "")
+        
 
 
     def bell(self, wid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
