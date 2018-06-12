@@ -20,7 +20,7 @@ log = Logger("proxy")
 authlog = Logger("proxy", "auth")
 
 
-from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, envint, typedict
+from xpra.util import LOGIN_TIMEOUT, AUTHENTICATION_ERROR, SESSION_NOT_FOUND, SERVER_ERROR, repr_ellipsized, print_nested_dict, csv, envfloat, envbool, typedict
 from xpra.os_util import get_username_for_uid, get_groups, get_home_for_uid, bytestostr, getuid, getgid, WIN32, POSIX
 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
 from xpra.server.server_core import ServerCore
@@ -34,7 +34,7 @@ from xpra.make_thread import start_thread
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
 PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", "1.0")
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
-CAN_STOP_PROXY = envint("XPRA_CAN_STOP_PROXY", False)
+CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", False)
 
 
 MAX_CONCURRENT_CONNECTIONS = 200
