@@ -896,21 +896,26 @@ XpraWindow.prototype._init_broadway = function(enc_width, enc_height, width, hei
 	this.log("broadway decoder initialized");
 	this.broadway_paint_location = [0, 0];
 	this.broadway_decoder.onPictureDecoded = function(buffer, p_width, p_height, infos) {
-		me.debug("draw", "broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", me.broadway_paint_location,"with infos=", infos);
-		if(!me.broadway_decoder) {
-			return;
-		}
-		var img = me.offscreen_canvas_ctx.createImageData(p_width, p_height);
-		img.data.set(buffer);
-		var x = me.broadway_paint_location[0];
-		var y = me.broadway_paint_location[1];
-		me.offscreen_canvas_ctx.putImageData(img, x, y);
-		if(enc_width!=width || enc_height!=height) {
-			//scale it:
-			me.offscreen_canvas_ctx.drawImage(me.offscreen_canvas, x, y, p_width, p_height, x, y, width, height);
-		}
+		me._broadway_paint(buffer, enc_width, enc_height, width, height, p_width, p_height, infos);
 	};
 };
+
+XpraWindow.prototype._broadway_paint = function(buffer, enc_width, enc_height, width, height, p_width, p_height, infos) {
+	this.debug("draw", "broadway picture decoded: ", buffer.length, "bytes, size ", p_width, "x", p_height+", paint location: ", this.broadway_paint_location,"with infos=", infos);
+	if(!this.broadway_decoder) {
+		return;
+	}
+	var img = this.offscreen_canvas_ctx.createImageData(p_width, p_height);
+	img.data.set(buffer);
+	var x = this.broadway_paint_location[0];
+	var y = this.broadway_paint_location[1];
+	this.offscreen_canvas_ctx.putImageData(img, x, y);
+	if(enc_width!=width || enc_height!=height) {
+		//scale it:
+		this.offscreen_canvas_ctx.drawImage(this.offscreen_canvas, x, y, p_width, p_height, x, y, width, height);
+	}
+};
+
 
 XpraWindow.prototype._close_broadway = function() {
 	this.broadway_decoder = null;
