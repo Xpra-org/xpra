@@ -186,7 +186,7 @@ class ClientWindowBase(ClientWidgetBase):
         #WARNING: "class-instance" needs to go first because others may realize the window
         #(and GTK doesn't set the "class-instance" once the window is realized)
         if b"class-instance" in metadata:
-            self.set_class_instance(*self._metadata.strlistget("class-instance", ("xpra", "Xpra")))
+            self.set_class_instance(*self._metadata.strlistget("class-instance", ("xpra", "Xpra"), 2, 2))
             self.reset_icon()
 
         if b"title" in metadata:

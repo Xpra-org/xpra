@@ -339,10 +339,10 @@ class typedict(dict):
     def strlistget(self, k, default_value=[]):
         return self.listget(k, default_value, str)
 
-    def intlistget(self, k, default_value=[]):
-        return self.listget(k, default_value, int)
+    def intlistget(self, k, default_value=[], min_items=None, max_items=None):
+        return self.listget(k, default_value, int, min_items, max_items)
 
-    def listget(self, k, default_value=[], item_type=None, max_items=None):
+    def listget(self, k, default_value=[], item_type=None, min_items=None, max_items=None):
         v = self.capsget(k, default_value)
         if v is None:
             return default_value
@@ -364,6 +364,10 @@ class typedict(dict):
                 if type(x)!=item_type:
                     self._warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
                     return default_value
+        if min_items is not None:
+            if len(v)<min_items:
+                self._warn("too few items in %s %s: minimum %s allowed, but got %s", type(v), k, max_items, len(v))
+                return default_value
         if max_items is not None:
             if len(v)>max_items:
                 self._warn("too many items in %s %s: maximum %s allowed, but got %s", type(v), k, max_items, len(v))

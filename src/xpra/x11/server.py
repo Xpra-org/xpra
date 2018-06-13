@@ -450,7 +450,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", ss.window_frame_sizes)
         frame = None
         if ss.window_frame_sizes:
-            frame = ss.window_frame_sizes.intlistget("frame")
+            frame = ss.window_frame_sizes.intlistget("frame", (0, 0, 0, 0), 4, 4)
         self._wm.set_default_frame_extents(frame)
 
 
