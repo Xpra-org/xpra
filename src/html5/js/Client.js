@@ -847,8 +847,9 @@ XpraClient.prototype._check_server_echo = function(ping_sent_time) {
 		} else {
 			console.log("server connection is OK");
 		}
-		for (var win in this.id_to_window) {
-			this.id_to_window[win].set_spinner(this.server_ok);
+		for (var i in ctx.id_to_window) {
+			var iwin = ctx.id_to_window[i];
+			iwin.set_spinner(this.server_ok);
 		}
 	}
 }
