@@ -1052,7 +1052,7 @@ XpraClient.prototype._make_hello = function() {
 		//"encoding.non-scroll"		: ["rgb32", "png", "jpeg"],
 		//video stuff:
 		"encoding.video_scaling"	: true,
-		"encoding.video_max_size"	: (1024, 768),
+		"encoding.video_max_size"	: [1024, 768],
 		"encoding.eos"				: true,
 		"encoding.full_csc_modes"	: {
 			"mpeg1"		: ["YUV420P"],
