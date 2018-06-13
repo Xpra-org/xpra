@@ -247,6 +247,12 @@ class WindowVideoSource(WindowSource):
         return pi
 
 
+    def suspend(self):
+        WindowSource.suspend(self)
+        #we'll create a new video pipeline when resumed:
+        self.cleanup_codecs()
+
+
     def cleanup(self):
         WindowSource.cleanup(self)
         self.cleanup_codecs()
