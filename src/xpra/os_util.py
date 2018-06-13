@@ -116,12 +116,19 @@ def get_group_id(group):
 
 def platform_release(release):
     if sys.platform.startswith("darwin"):
+        SYSTEMVERSION_PLIST = "/System/Library/CoreServices/SystemVersion.plist"
         try:
             import plistlib
-            pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
+            with open(SYSTEMVERSION_PLIST, "rb") as f:
+                pl = plistlib.load(f)           #@UndefinedVariable
             return pl['ProductUserVisibleVersion']
-        except:
-            pass
+        except Exception as e:
+            from xpra.log import Logger
+            log = Logger("util")
+            log.debug("platform_release(%s)", release, exc_info=True)
+            log.warn("Warning: failed to get release information")
+            log.warn(" from '%s':", SYSTEMVERSION_PLIST)
+            log.warn(" %s", e)
     return release
 
 def platform_name(sys_platform, release):
