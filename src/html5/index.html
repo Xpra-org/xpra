@@ -635,7 +635,7 @@
 		    		$("#speaker_icon").attr("title", tooltip);
 		    	};
 				document.addEventListener("visibilitychange", function (e) {
-					window_ids = Object.keys(client.id_to_window);
+					window_ids = Object.keys(client.id_to_window).map(Number);
 					clog("visibilitychange hidden=", document.hidden);
 					if (document.hidden) {
 						client.send(["suspend", true, window_ids]);
