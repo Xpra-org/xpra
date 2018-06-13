@@ -2119,6 +2119,10 @@ XpraClient.prototype._process_eos = function(packet, ctx) {
 
 
 XpraClient.prototype.request_redraw = function(win) {
+	if (document.hidden) {
+		this.debug("draw", "not redrawing, document.hidden=", document.hidden);
+		return;
+	}
 	// request that drawing to screen takes place at next available opportunity if possible
 	this.debug("draw", "request_redraw for", win);
 	win.swap_buffers();
