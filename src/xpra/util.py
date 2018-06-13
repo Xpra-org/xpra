@@ -347,7 +347,7 @@ class typedict(dict):
         if v is None:
             return default_value
         if type(v) not in (list, tuple):
-            self._warn("listget%s", (k, default_value, item_type, max_items), exc_info=True)
+            self._warn("listget%s", (k, default_value, item_type, max_items))
             self._warn("expected a list or tuple value for %s but got %s", k, type(v))
             return default_value
         aslist = list(v)
