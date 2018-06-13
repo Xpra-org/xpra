@@ -12,6 +12,7 @@ log = Logger("server")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
+eventslog = Logger("events")
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
@@ -80,7 +81,7 @@ class WindowsMixin(StubSourceMixin):
 
 
     def suspend(self, ui, wd):
-        log("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
+        eventslog("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = True
         for wid in wd.keys():
@@ -89,7 +90,7 @@ class WindowsMixin(StubSourceMixin):
                 ws.suspend()
 
     def resume(self, ui, wd):
-        log("resume(%s, %s) suspended=%s", ui, wd, self.suspended)
+        eventslog("resume(%s, %s) suspended=%s", ui, wd, self.suspended)
         if ui:
             self.suspended = False
         for wid in wd.keys():

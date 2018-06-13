@@ -10,6 +10,7 @@ log = Logger("window")
 focuslog = Logger("focus")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
+eventslog = Logger("events")
 
 from xpra.util import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -276,16 +277,16 @@ class WindowServer(StubServerMixin):
         return wd
 
     def _process_suspend(self, proto, packet):
-        log("suspend(%s)", packet[1:])
-        ui = packet[1]
+        eventslog("suspend(%s)", packet[1:])
+        ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
         ss = self._server_sources.get(proto)
         if ss:
             ss.suspend(ui, wd)
 
     def _process_resume(self, proto, packet):
-        log("resume(%s)", packet[1:])
-        ui = packet[1]
+        eventslog("resume(%s)", packet[1:])
+        ui = bool(packet[1])
         wd = self._get_window_dict(packet[2])
         ss = self._server_sources.get(proto)
         if ss:
