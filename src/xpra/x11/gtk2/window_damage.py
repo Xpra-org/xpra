@@ -172,9 +172,9 @@ class WindowDamageHandler(object):
                 #logger("get_image(..) XShm handle: %s, handle=%s, pixmap=%s", shm, handle, handle.get_pixmap())
                 if shm is not None:
                     shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
-                #logger("get_image(..) XShm image: %s", shm_image)
-                if shm_image:
-                    return shm_image
+                    #logger("get_image(..) XShm image: %s", shm_image)
+                    if shm_image:
+                        return shm_image
         except Exception as e:
             if type(e)==XError and e.msg=="BadMatch":
                 logger("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
