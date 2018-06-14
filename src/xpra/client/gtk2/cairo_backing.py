@@ -51,7 +51,8 @@ class CairoBacking(CairoBackingBase):
                 #we have to unpremultiply for pixbuf!
                 img_data = self.unpremultiply(img_data)
             #Pixbuf cannot use the memoryview directly:
-            img_data = memoryview_to_bytes(img_data)
+            if isinstance(img_data, (memoryview, buffer)):
+                img_data = memoryview_to_bytes(img_data)
             pixbuf = pixbuf_new_from_data(img_data, COLORSPACE_RGB, has_alpha, 8, width, height, rowstride)
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
