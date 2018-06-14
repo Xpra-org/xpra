@@ -81,10 +81,10 @@ class NetworkState(StubClientMixin):
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
         connection_data = {}
-        socket_speed = device_info.get("speed")
+        socket_speed = envint("XPRA_NETWORK_ADAPTER_SPEED", device_info.get("speed", 0))
         if socket_speed:
             connection_data["speed"] = socket_speed
-        adapter_type = device_info.get("adapter-type")
+        adapter_type = os.environ.get("XPRA_NETWORK_ADAPTER_TYPE", device_info.get("adapter-type"))
         if adapter_type:
             at = adapter_type.lower()
             if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
