@@ -336,8 +336,8 @@ class typedict(dict):
         except:
             return default_value
 
-    def strlistget(self, k, default_value=[]):
-        return self.listget(k, default_value, str)
+    def strlistget(self, k, default_value=[], min_items=None, max_items=None):
+        return self.listget(k, default_value, str, min_items, max_items)
 
     def intlistget(self, k, default_value=[], min_items=None, max_items=None):
         return self.listget(k, default_value, int, min_items, max_items)
