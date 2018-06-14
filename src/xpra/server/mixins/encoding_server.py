@@ -39,10 +39,7 @@ class EncodingServer(StubServerMixin):
         self.default_speed = opts.speed
         self.default_min_speed = opts.min_speed
         self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
-        #video init: default to ALL if not specified
-        video_encoders = opts.video_encoders or ALL_VIDEO_ENCODER_OPTIONS
-        csc_modules = opts.csc_modules or ALL_CSC_MODULE_OPTIONS
-        getVideoHelper().set_modules(video_encoders=video_encoders, csc_modules=csc_modules)
+        getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
 
     def setup(self):
         self.init_encodings()
