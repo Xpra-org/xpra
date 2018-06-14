@@ -104,7 +104,7 @@ allow xpra_t kernel_t:unix_dgram_socket sendto;
 
 #probe Xorg binary suid status (centos only?):
 allow xpra_t xserver_exec_t:file { getattr execute };
-allow xpra_t ldconfig_exec_t:file { execute execute_no_trans getattr open read };
+allow xpra_t ldconfig_exec_t:file { execute execute_no_trans getattr open read map };
 
 #dbus / mdns:
 allow xpra_t avahi_t:dbus send_msg;
