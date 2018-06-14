@@ -108,6 +108,7 @@ if PADDING_COLORS_STR:
     try:
         PADDING_COLORS = tuple(float(x.strip()) for x in PADDING_COLORS_STR.split(","))
         assert len(PADDING_COLORS)==3, "you must specify 3 components"
+        log("PADDING_COLORS=%s", PADDING_COLORS)
     except Exception as e:
         log.warn("Warning: invalid padding colors specified,")
         log.warn(" %s", e)
