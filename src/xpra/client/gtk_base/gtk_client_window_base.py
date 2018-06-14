@@ -1686,12 +1686,14 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if left!=0 or top!=0 or right!=0 or bottom!=0:
             context.save()
             context.set_source_rgb(*PADDING_COLORS)
-            for rx, ry, rw, rh in (
+            coords = (
                 (0, 0, left, h),            #left hand side padding
                 (0, 0, w, top),             #top padding
                 (w-right, 0, right, h),     #RHS
                 (0, h-bottom, w, bottom),   #bottom
-                ):
+                )
+            geomlog("paint_backing_offset_border(%s, %s) offsets=%s, size=%s, coords=%s", backing, context, backing.offsets, (w,h), coords)
+            for rx, ry, rw, rh in coords:
                 if rw>0 and rh>0:
                     context.rectangle(rx, ry, rw, rh)
             context.fill()
@@ -1700,7 +1702,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def clip_to_backing(self, backing, context):
         w,h = self.get_size()
         left, top, right, bottom = backing.offsets
-        context.rectangle(left, top, w-left-right, h-top-bottom)
+        clip_rect = (left, top, w-left-right, h-top-bottom)
+        context.rectangle(*clip_rect)
+        geomlog("clip_to_backing%s rectangle=%s", (backing, context), clip_rect)
         context.clip()
 
     def move_resize(self, x, y, w, h, resize_counter=0):
