@@ -187,7 +187,7 @@ class PixmapBacking(GTK2WindowBacking):
         if ww==0 or w==0 or wh==0 or h==0:
             return
         x, y = self.offsets[:2]
-
+        log("cairo_draw_from_drawable%s render_size=%s, size=%s, offsets=%s, pointer_overlay=%s", (context, drawable), self.render_size, self.size, self.offsets, self.pointer_overlay)
         setup_cairo_context(context, ww, wh, w, h, x, y)
         context.set_source_pixmap(drawable, 0, 0)
         context.paint()
