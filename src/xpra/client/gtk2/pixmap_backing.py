@@ -189,7 +189,7 @@ class PixmapBacking(GTK2WindowBacking):
         x, y = self.offsets[:2]
 
         setup_cairo_context(context, ww, wh, w, h, x, y)
-        context.set_source_pixmap(drawable, x, y)
+        context.set_source_pixmap(drawable, 0, 0)
         context.paint()
         if self.pointer_overlay:
             px, py, size, start_time = self.pointer_overlay[2:]

@@ -58,6 +58,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.max_window_size = max_window_size
         self.button_state = {}
         self.pixel_depth = pixel_depth      #0 for default
+        self.window_offset = None           #actual vs reported coordinates
 
         self.init_window(metadata)
         self.setup_window(bw, bh)
@@ -593,11 +594,14 @@ class ClientWindowBase(ClientWidgetBase):
             backing = self._backing
             if backing and backing.draw_needs_refresh:
                 if REPAINT_ALL=="1" or self._client.xscale!=1 or self._client.yscale!=1:
-                    w, h = self.get_size()
-                    rect = 0, 0, w, h
+                    rw, rh = self.get_size()
+                    rx, ry = 0, 0
                 else:
-                    rect = self._client.srect(x, y, width, height)
-                self.idle_add(self.queue_draw, *rect)
+                    rx, ry, rw, rh = self._client.srect(x, y, width, height)
+                if self.window_offset:
+                    rx += self.window_offset[0]
+                    ry += self.window_offset[1]
+                self.idle_add(self.queue_draw, rx, ry, rw, rh)
         #only register this callback if we actually need it:
         if backing.draw_needs_refresh:
             callbacks.append(after_draw_refresh)
