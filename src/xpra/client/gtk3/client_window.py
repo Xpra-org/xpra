@@ -183,7 +183,7 @@ class ClientWindow(GTKClientWindowBase):
         if self.get_mapped() and backing:
             self.paint_backing_offset_border(backing, context)
             self.clip_to_backing(backing, context)
-            self._backing.cairo_draw(context)
+            backing.cairo_draw(context)
         self.cairo_paint_border(context, None)
 
 
