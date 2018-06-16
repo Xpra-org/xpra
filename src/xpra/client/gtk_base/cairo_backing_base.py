@@ -187,7 +187,7 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def cairo_draw(self, context):
-        log("cairo_draw: size=%s, render-size=%s, offsets=%s", self.size, self.render_size, self.offsets)
+        log("cairo_draw: size=%s, render-size=%s, offsets=%s, pointer_overlay=%s", self.size, self.render_size, self.offsets, self.pointer_overlay)
         if self._backing is None:
             return False
         #try:
@@ -203,8 +203,8 @@ class CairoBackingBase(WindowBackingBase):
         setup_cairo_context(context, ww, wh, w, h, x, y)
         context.set_source_surface(self._backing, 0, 0)
         context.paint()
-        if self.pointer_overlay:
-            px, py, size, start_time = self.pointer_overlay[2:]
+        if self.pointer_overlay and self.cursor_data:
+            px, py, _size, start_time = self.pointer_overlay[2:]
             spx = round(w*px/ww)
             spy = round(h*py/wh)
-            cairo_paint_pointer_overlay(context, spx, spy, size, start_time)
+            cairo_paint_pointer_overlay(context, self.cursor_data, x+spx, y+spy, start_time)

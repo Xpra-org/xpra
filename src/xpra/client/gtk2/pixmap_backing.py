@@ -191,8 +191,8 @@ class PixmapBacking(GTK2WindowBacking):
         setup_cairo_context(context, ww, wh, w, h, x, y)
         context.set_source_pixmap(drawable, 0, 0)
         context.paint()
-        if self.pointer_overlay:
-            px, py, size, start_time = self.pointer_overlay[2:]
+        if self.pointer_overlay and self.cursor_data:
+            px, py, _size, start_time = self.pointer_overlay[2:]
             spx = round(w*px/ww)
             spy = round(h*py/wh)
-            cairo_paint_pointer_overlay(context, spx, spy, size, start_time)
+            cairo_paint_pointer_overlay(context, self.cursor_data, spx, spy, start_time)

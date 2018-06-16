@@ -1297,16 +1297,25 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         b = self._backing
         if not b:
             return
+        cursor_data = b.cursor_data
         def abs_coords(x, y, size):
             if self.window_offset:
                 x += self.window_offset[0]
                 y += self.window_offset[1]
-            return x, y, size
+            w, h = size, size
+            if cursor_data:
+                w = cursor_data[3]
+                h = cursor_data[4]
+                xhot = cursor_data[5]
+                yhot = cursor_data[6]
+                x = x-xhot
+                y = y-yhot
+            return x, y, w, h
         value = b.pointer_overlay
         if value:
             #repaint the scale value (in window coordinates):
-            x, y, size = abs_coords(*value[2:5])
-            self.queue_draw(x-size, y-size, size*2, size*2)
+            x, y, w, h = abs_coords(*value[2:5])
+            self.queue_draw(x, y, w, h)
             #clear it shortly after:
             self.cancel_remove_pointer_overlay_timer()
             def remove_pointer_overlay():
@@ -1314,8 +1323,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.show_pointer_overlay(None)
             self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
-            px, py, psize = abs_coords(*prev[2:5])
-            self.queue_draw(px-psize, py-psize, psize*2, psize*2)
+            x, y, w, h = abs_coords(*prev[2:5])
+            self.queue_draw(x, y, w, h)
 
 
     ######################################################################
