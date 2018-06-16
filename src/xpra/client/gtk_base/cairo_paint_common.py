@@ -7,7 +7,7 @@
 import cairo
 
 from xpra.log import Logger
-log = Logger("paint")
+log = Logger("paint", "mouse")
 
 from xpra.os_util import monotonic_time
 
