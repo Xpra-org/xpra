@@ -1314,7 +1314,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.show_pointer_overlay(None)
             self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
-            px, py, psize = abs_coords(prev[2:5])
+            px, py, psize = abs_coords(*prev[2:5])
             self.queue_draw(px-psize, py-psize, psize*2, psize*2)
 
 
