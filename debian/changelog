@@ -9,12 +9,18 @@ xpra (1.0.12-1) UNRELEASED; urgency=low
   * fix client failure connecting to servers without a valid desktop size
   * fix client launcher not exiting on close
   * fix parsing of display strings in connection URLs
+  * fix pyobjc api deprecation warning
+  * fix debug logging via environment variables
+  * fix errors when XShm is not available
+  * send missing exception details to server with remote-logging
+  * make python 2.6 warning less scary
+  * prevent authenticated users from shutting down proxy servers
   * don't prompt for the ssh password if we already have it
   * support newer nvidia driver versions with nvenc
   * remove duplicated encoding
   * increase test timeout
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 25 May 2018 13:29:16 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 27 Jun 2018 18:59:19 +0700
 
 xpra (1.0.11-2) UNRELEASED; urgency=low
   * rebuild with logging backport fix

@@ -1,4 +1,4 @@
-v1.0.12 (2018-05-25)
+v1.0.12 (2018-06-17)
 ======================
 	-- fix memoryview paint error with non-opengl Python 2.6 clients
 	-- fix spurious errors and warnings during window cleanup
@@ -10,6 +10,12 @@ v1.0.12 (2018-05-25)
 	-- fix client failure connecting to servers without a valid desktop size
 	-- fix client launcher not exiting on close
 	-- fix parsing of display strings in connection URLs
+	-- fix pyobjc api deprecation warning
+	-- fix debug logging via environment variables
+	-- fix errors when XShm is not available
+	-- send missing exception details to server with remote-logging
+	-- make python 2.6 warning less scary
+	-- prevent authenticated users from shutting down proxy servers
 	-- don't prompt for the ssh password if we already have it
 	-- support newer nvidia driver versions with nvenc
 	-- remove duplicated encoding
