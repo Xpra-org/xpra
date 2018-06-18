@@ -124,13 +124,7 @@ class ClipboardServer(StubServerMixin):
             return
         self._clipboard_client = ss
         self._clipboard_helper.init_proxies_uuid()
-        #deal with buggy win32 clipboards:
-        if "clipboard.greedy" not in c:
-            #old clients without the flag: take a guess based on platform:
-            client_platform = c.strget("platform", "")
-            greedy = client_platform.startswith("win") or client_platform.startswith("darwin")
-        else:
-            greedy = c.boolget("clipboard.greedy")
+        greedy = c.boolget("clipboard.greedy")
         self._clipboard_helper.set_greedy_client(greedy)
         want_targets = c.boolget("clipboard.want_targets")
         self._clipboard_helper.set_want_targets_client(want_targets)
