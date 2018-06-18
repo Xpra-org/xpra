@@ -197,6 +197,7 @@ class ClipboardServer(StubServerMixin):
         if cc!=ss or ss is None:
             log.warn("Warning: received a request to change the clipboard status,")
             log.warn(" but it does not come from the clipboard owner! Ignoring it.")
+            return
         cc.clipboard_enabled = clipboard_enabled
         if not clipboard_enabled:
             ch.enable_selections([])
