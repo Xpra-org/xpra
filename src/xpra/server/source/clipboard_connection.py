@@ -12,6 +12,7 @@ log = Logger("clipboard")
 
 from xpra.net.compression import Compressible
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.platform.features import CLIPBOARDS
 from xpra.util import envint
 from xpra.os_util import monotonic_time
 
@@ -32,6 +33,9 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_set_enabled = False
         self.clipboard_progress_timer = None
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
+        self.clipboard_greedy = False
+        self.clipboard_want_targets = False
+        self.clipboard_client_selections = CLIPBOARDS
 
     def cleanup(self):
         self.cancel_clipboard_progress_timer()
@@ -41,6 +45,10 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
+        self.clipboard_greedy = c.boolget("clipboard.greedy")
+        self.clipboard_want_targets = c.boolget("clipboard.want_targets")
+        self.clipboard_client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+        log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s", self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_client_selections)
 
     def get_info(self):
         return {

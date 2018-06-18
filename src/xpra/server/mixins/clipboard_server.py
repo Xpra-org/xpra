@@ -47,9 +47,9 @@ class ClipboardServer(StubServerMixin):
             ch.client_reset()
 
 
-    def parse_hello(self, ss, caps, send_ui):
+    def parse_hello(self, ss, _caps, send_ui):
         if send_ui and self.clipboard:
-            self.parse_hello_ui_clipboard(ss, caps)
+            self.parse_hello_ui_clipboard(ss)
 
 
     def get_info(self, _proto):
@@ -110,7 +110,7 @@ class ClipboardServer(StubServerMixin):
             log.error("Error: failed to setup clipboard helper", exc_info=True)
             self.clipboard = False
 
-    def parse_hello_ui_clipboard(self, ss, c):
+    def parse_hello_ui_clipboard(self, ss):
         #take the clipboard if no-one else has it yet:
         if not ss.clipboard_enabled:
             log("client does not support clipboard")
@@ -122,20 +122,19 @@ class ClipboardServer(StubServerMixin):
         if cc and not cc.is_closed():
             log("another client already owns the clipboard")
             return
+        self.set_clipboard_source(ss)
+
+    def set_clipboard_source(self, ss):
         self._clipboard_client = ss
         self._clipboard_helper.init_proxies_uuid()
-        greedy = c.boolget("clipboard.greedy")
-        self._clipboard_helper.set_greedy_client(greedy)
-        want_targets = c.boolget("clipboard.want_targets")
-        self._clipboard_helper.set_want_targets_client(want_targets)
-        #the selections the client supports (default to all):
-        client_selections = c.strlistget("clipboard.selections", CLIPBOARDS)
+        self._clipboard_helper.set_greedy_client(ss.clipboard_greedy)
+        self._clipboard_helper.set_want_targets_client(ss.clipboard_want_targets)
+        self._clipboard_helper.enable_selections(ss.clipboard_client_selections)
         log("client %s is the clipboard peer", ss)
-        log(" greedy=%s", greedy)
-        log(" want targets=%s", want_targets)
+        log(" greedy=%s", ss.clipboard_greedy)
+        log(" want targets=%s", ss.clipboard_want_targets)
         log(" server has selections: %s", csv(self._clipboards))
-        log(" client initial selections: %s", csv(client_selections))
-        self._clipboard_helper.enable_selections(client_selections)
+        log(" client initial selections: %s", csv(ss.clipboard_client_selections))
 
     def _process_clipboard_packet(self, proto, packet):
         assert self.clipboard
