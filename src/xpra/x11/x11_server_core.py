@@ -436,7 +436,8 @@ class X11ServerCore(GTKServerBase):
             #if sharing, don't set the keymap, translate the existing one:
             other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=server_source and s.ui_client]
             translate_only = len(other_ui_clients)>0
-            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
+            with xsync:
+                self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force, translate_only)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
