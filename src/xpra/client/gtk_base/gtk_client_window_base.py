@@ -1278,14 +1278,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             return
         prev = b.pointer_overlay
         if pos is None:
+            if prev is None:
+                return
             value = None
         else:
+            if prev and prev[:2]==pos[:2]:
+                return
             #store both scaled and unscaled value:
             #(the opengl client uses the raw value)
             value = pos[:2]+self._client.sp(*pos[:2])+pos[2:]
         mouselog("show_pointer_overlay(%s) previous value=%s, new value=%s", pos, prev, value)
-        if prev==value:
-            return
         b.pointer_overlay = value
         if not self.show_pointer_overlay_timer:
             self.show_pointer_overlay_timer = self.timeout_add(10, self.do_show_pointer_overlay, prev)
