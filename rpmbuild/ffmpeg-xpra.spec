@@ -1,7 +1,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.0
-Release:     2%{?dist}
+Version:     4.0.1
+Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -149,6 +149,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Jun 20 2018 Antoine Martin <antoine@devloop.org.uk> 4.0.1-1
+- new upstream release
+
 * Sat May 12 2018 Antoine Martin <antoine@devloop.org.uk> 4.0-2
 - enable mpeg1
 
