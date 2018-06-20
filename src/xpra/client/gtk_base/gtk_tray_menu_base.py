@@ -413,6 +413,7 @@ class GTKTrayMenuBase(object):
     def make_featuresmenuitem(self):
         features_menu_item = self.menuitem("Features", "features.png")
         menu = gtk.Menu()
+        self.append_featuresmenuitems(menu)
         features_menu_item.set_submenu(menu)
         self.popup_menu_workaround(menu)
         features_menu_item.show_all()
