@@ -287,7 +287,7 @@ class ServerTestUtil(unittest.TestCase):
 
 	@classmethod
 	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
-		if server_proc.poll():
+		if server_proc.poll() is not None:
 			return
 		cmd = [subcommand]+list(connect_args)
 		stopit = cls.run_xpra(cmd)

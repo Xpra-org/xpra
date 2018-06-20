@@ -24,7 +24,7 @@ class ProxyServerTest(ServerTestUtil):
 	@classmethod
 	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
 		log("stop_server%s", (server_proc, subcommand, connect_args))
-		if server_proc.poll():
+		if server_proc.poll() is not None:
 			return
 		server_proc.terminate()
 		assert pollwait(server_proc) is not None, "server process %s failed to exit" % server_proc
