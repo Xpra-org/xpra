@@ -21,6 +21,14 @@ class ProxyServerTest(ServerTestUtil):
 		assert display in self.dotxpra.displays(), "proxy display not found"
 		self.check_stop_server(proxy, "stop", display)
 
+	@classmethod
+	def stop_server(cls, server_proc, subcommand="stop", *connect_args):
+		log("stop_server%s", (server_proc, subcommand, connect_args))
+		if server_proc.poll():
+			return
+		server_proc.terminate()
+		assert pollwait(server_proc) is not None, "server process %s failed to exit" % server_proc
+
 
 def main():
 	#TODO: re-instate this test on win32 once named pipes are fixed
