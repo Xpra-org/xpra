@@ -775,6 +775,8 @@ class ClipboardProxy(gtk.Invisible):
         if not self._enabled or not self._can_receive:
             nodata()
             return
+        if not self._have_token:
+            return gtk.Invisible.do_selection_get(self, selection_data, info, time)
         selection = selectiondata_get_selection(selection_data)
         target = selectiondata_get_target(selection_data)
         log("do_selection_get(%s, %s, %s) selection=%s", selection_data, info, time, selection)
@@ -874,14 +876,14 @@ class ClipboardProxy(gtk.Invisible):
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
     def get_contents(self, target, cb):
-        log("get_contents(%s,%s) selection=%s, enabled=%s, can-send=%s", target, cb, self._selection, self._enabled, self._can_send)
+        log("get_contents(%s, %s) selection=%s, enabled=%s, can-send=%s", target, cb, self._selection, self._enabled, self._can_send)
         if not self._enabled or not self._can_send:
             cb(None, None, None)
             return
         self._get_contents_events += 1
         if self._have_token:
-            log.warn("Our peer requested the contents of the clipboard, but "
-                     + "*I* thought *they* had it... weird.")
+            log.warn("Warning: our peer requested the contents of the clipboard,")
+            log.warn(" but *I* thought *they* had it... weird.")
             cb(None, None, None)
             return
         if target=="TARGETS":

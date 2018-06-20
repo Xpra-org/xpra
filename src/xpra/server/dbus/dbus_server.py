@@ -188,6 +188,12 @@ class DBUS_Server(DBUS_Server_Base):
         self.server.control_command_set_sharing(sharing)
 
 
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def SetUIDriver(self, uuid):
+        self.log(".SetUIDriver(%s)", uuid)
+        self.server.control_command_set_ui_driver(uuid)
+
+
     @dbus.service.method(INTERFACE, in_signature='ii')
     def MoveWindowToWorkspace(self, wid, workspace):
         self.log(".MoveWindowToWorkspace(%i, %i)", wid, workspace)

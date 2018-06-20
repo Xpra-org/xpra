@@ -165,7 +165,7 @@ class InputServer(StubServerMixin):
             return
         keyname = bytestostr(keyname)
         modifiers = tuple(bytestostr(x) for x in modifiers)
-        self.ui_driver = ss.uuid
+        self.set_ui_driver(ss)
         self.set_keyboard_layout_group(group)
         keycode = self.get_keycode(ss, client_keycode, keyname, modifiers)
         keylog("process_key_action(%s) server keycode=%s", packet, keycode)
@@ -359,7 +359,7 @@ class InputServer(StubServerMixin):
         if ss is None:
             return
         ss.user_event()
-        self.ui_driver = ss.uuid
+        self.set_ui_driver(ss)
         self.do_process_button_action(proto, *packet[1:])
 
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):

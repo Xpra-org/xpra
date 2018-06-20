@@ -811,8 +811,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet)>=7:
             self._set_client_properties(proto, wid, window, packet[6])
-        if not self.ui_driver:
-            self.ui_driver = ss.uuid
+        #if not self.ui_driver:
+        #    self.set_ui_driver(ss)
         if self.ui_driver==ss.uuid or not self._desktop_manager.is_shown(window):
             if len(packet)>=8:
                 self._set_window_state(proto, wid, window, packet[7])
@@ -833,10 +833,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if ss is None:
             return
         self._window_mapped_at(proto, wid, window, None)
-        if not self.ui_driver:
-            self.ui_driver = ss.uuid
-        elif self.ui_driver!=ss.uuid:
-            return
+        #if self.ui_driver!=ss.uuid:
+        #    return
         if len(packet)>=4:
             #optional window_state added in 0.15 to update flags
             #during iconification events:
@@ -886,8 +884,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
-        if not self.ui_driver:
-            self.ui_driver = ss.uuid
+        #if not self.ui_driver:
+        #    self.set_ui_driver(ss)
         is_ui_driver = self.ui_driver==ss.uuid
         shown = self._desktop_manager.is_shown(window)
         if window.is_OR() or window.is_tray() or skip_geometry:

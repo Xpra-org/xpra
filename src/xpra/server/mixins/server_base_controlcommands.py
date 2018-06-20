@@ -490,6 +490,15 @@ class ServerBaseControlCommands(StubServerMixin):
         self.setting_changed("sharing-toggle", sharing is None)
         return "sharing set to %s" % self.sharing
 
+    def control_command_set_ui_driver(self, uuid):
+        ss = [s for s in self._server_sources.values() if s.uuid==uuid]
+        if not ss:
+            return "source not found for uuid '%s'" % uuid
+        elif len(ss)>1:
+            return "more than one source found for uuid '%s'" % uuid
+        else:
+            self.set_ui_driver(ss)
+            return "ui-driver set to %s" % ss
 
     def control_command_key(self, keycode_str, press = True):
         if self.readonly:

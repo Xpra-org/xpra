@@ -59,7 +59,7 @@ class ClipboardServer(StubServerMixin):
 
 
     def get_server_features(self, server_source=None):
-        clipboard = self._clipboard_helper is not None and self._clipboard_client == server_source
+        clipboard = self._clipboard_helper is not None
         log("clipboard_helper=%s, clipboard_client=%s, source=%s, clipboard=%s", self._clipboard_helper, self._clipboard_client, server_source, clipboard)
         if not clipboard:
             return {}
@@ -104,6 +104,7 @@ class ClipboardServer(StubServerMixin):
                       "can-receive" : self.clipboard_direction in ("to-server", "both"),
                       }
             self._clipboard_helper = GDKClipboardProtocolHelper(self.send_clipboard_packet, self.clipboard_progress, **kwargs)
+            self._clipboard_helper.init_proxies_uuid()
             self._clipboards = CLIPBOARDS
         except Exception:
             #log("gdk clipboard helper failure", exc_info=True)
@@ -125,16 +126,37 @@ class ClipboardServer(StubServerMixin):
         self.set_clipboard_source(ss)
 
     def set_clipboard_source(self, ss):
+        if self._clipboard_client==ss:
+            return
         self._clipboard_client = ss
-        self._clipboard_helper.init_proxies_uuid()
-        self._clipboard_helper.set_greedy_client(ss.clipboard_greedy)
-        self._clipboard_helper.set_want_targets_client(ss.clipboard_want_targets)
-        self._clipboard_helper.enable_selections(ss.clipboard_client_selections)
-        log("client %s is the clipboard peer", ss)
-        log(" greedy=%s", ss.clipboard_greedy)
-        log(" want targets=%s", ss.clipboard_want_targets)
-        log(" server has selections: %s", csv(self._clipboards))
-        log(" client initial selections: %s", csv(ss.clipboard_client_selections))
+        ch = self._clipboard_helper
+        log("client %s is the clipboard peer, helper=%s", ss, ch)
+        if not ch:
+            return
+        if ss:
+            log(" greedy=%s", ss.clipboard_greedy)
+            log(" want targets=%s", ss.clipboard_want_targets)
+            log(" server has selections: %s", csv(self._clipboards))
+            log(" client initial selections: %s", csv(ss.clipboard_client_selections))
+            ch.set_greedy_client(ss.clipboard_greedy)
+            ch.set_want_targets_client(ss.clipboard_want_targets)
+            ch.enable_selections(ss.clipboard_client_selections)
+        else:
+            ch.enable_selections([])
+
+
+    def reset_state(self):
+        ch = self._clipboard_helper
+        if ch:
+            ch.client_reset()
+
+
+    def set_session_driver(self, source):
+        self.set_clipboard_source(source)
+        ch = self._clipboard_helper
+        if source and ch:
+            ch.send_all_tokens()
+
 
     def _process_clipboard_packet(self, proto, packet):
         assert self.clipboard
@@ -144,8 +166,9 @@ class ClipboardServer(StubServerMixin):
         if not ss:
             #protocol has been dropped!
             return
-        assert self._clipboard_client==ss, \
-                "the clipboard packet '%s' does not come from the clipboard owner!" % packet[0]
+        if self._clipboard_client!=ss:
+            log("the clipboard packet '%s' does not come from the clipboard owner!", packet[0])
+            return
         if not ss.clipboard_enabled:
             #this can happen when we disable clipboard in the middle of transfers
             #(especially when there is a clipboard loop)

@@ -772,10 +772,13 @@ class ServerBase(ServerBaseClass):
     def cleanup_source(self, source):
         had_client = len(self._server_sources)>0
         self.server_event("connection-lost", source.uuid)
+        remaining_sources = tuple(x for x in self._server_sources.values() if x!=source)
         if self.ui_driver==source.uuid:
-            self.ui_driver = None
+            if len(remaining_sources)==1:
+                self.set_ui_driver(remaining_sources[0])
+            else:
+                self.set_ui_driver(None)
         source.close()
-        remaining_sources = [x for x in self._server_sources.values() if x!=source]
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("xpra client %i disconnected.", source.counter)
         has_client = len(remaining_sources)>0
@@ -795,6 +798,19 @@ class ServerBase(ServerBaseClass):
                         c.reset_state(self)
                     except:
                         log("last_client_exited calling %s", c.reset_state, exc_info=True)
+
+
+    def set_ui_driver(self, source):
+        if source and self.ui_driver==source.uuid:
+            return
+        log("new ui driver: %s", source)
+        if not source:
+            self.ui_driver = None
+        else:
+            self.ui_driver = source.uuid
+        for c in SERVER_BASES:
+            if c!=ServerCore:
+                c.set_session_driver(self, source)
 
 
     def get_all_protocols(self):

@@ -69,6 +69,13 @@ class StubServerMixin(object):
         return {}
 
     """
+    When the user in control of the session changes,
+    this method will be called.
+    """
+    def set_session_driver(self, _source):
+        pass
+
+    """
     Runtime information on this mixin, includes state and settings.
     Somewhat overlaps with the capabilities and features,
     but the data is returned in a structured format. (ie: nested dictionaries)
