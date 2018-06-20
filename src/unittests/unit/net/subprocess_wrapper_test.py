@@ -10,8 +10,8 @@ from xpra.gtk_common.gobject_compat import import_gobject, import_glib
 gobject = import_gobject()
 glib = import_glib()
 
-from xpra.log import enable_debug_for
-enable_debug_for("all")
+from xpra.log import Logger
+log = Logger("test")
 
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.net.protocol import Protocol
@@ -127,16 +127,18 @@ class SubprocessWrapperTest(unittest.TestCase):
         lc.connect_export("test-signal")
         readback = []
         def test_signal_function(*args):
-            #print("test_signal_function%s" % str(args))
+            log("test_signal_function%s", args)
             readback.append(args)
         #hook up a function which will be called when the wrapper converts the packet into a method call:
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
-        def loop_stop(*_args):
+        def loop_stop(*args):
+            log("loop_stop%s", args)
             lc.stop()
             glib.idle_add(mainloop.quit)
         def timeout_error():
+            log("timeout_error")
             self.timeout = True
             loop_stop()
         glib.timeout_add(TEST_TIMEOUT, timeout_error)
@@ -149,8 +151,10 @@ class SubprocessWrapperTest(unittest.TestCase):
         lc.start()
         mainloop.run()
         lc.stop()
+        log("readback=%s", readback)
         assert len(readback)==1, "expected 1 record in loopback but got %s" % len(readback)
         rss = readback[0][0]
+        log("rss=%s, timeout=%s", rss, self.timeout)
         assert rss== signal_string, "expected signal string '%s' but got '%s'" % (signal_string, rss)
         assert self.timeout is False, "the test did not exit cleanly (not received the 'end' packet?)"
 
