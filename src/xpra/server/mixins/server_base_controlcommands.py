@@ -77,6 +77,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("clipboard-direction",   "restrict clipboard transfers",     min_args=1, max_args=1),
             ArgsControlCommand("set-lock",              "modify the lock attribute",        min_args=1, max_args=1),
             ArgsControlCommand("set-sharing",           "modify the sharing attribute",     min_args=1, max_args=1),
+            ArgsControlCommand("set-ui-driver",         "set the client connection driving the session", min_args=1, max_args=1),
             #session and clients:
             ArgsControlCommand("client",                "forwards a control command to the client(s)", min_args=1),
             ArgsControlCommand("client-property",       "set a client property",            min_args=4, max_args=5, validation=[int]),
