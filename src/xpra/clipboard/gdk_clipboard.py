@@ -6,6 +6,7 @@
 
 import struct
 
+from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import is_gtk3
 from xpra.clipboard.clipboard_base import ClipboardProtocolHelperBase, _filter_targets, log
 
@@ -19,7 +20,8 @@ except ImportError as e:
     log.error(" %s", e)
     del e
     gdk_atoms = None
-if not is_gtk3():
+SANITIZE_GTKSELECTIONDATA = envbool("XPRA_SANITIZE_GTKSELECTIONDATA", True)
+if not is_gtk3() and SANITIZE_GTKSELECTIONDATA:
     try:
         from xpra.gtk_common.gtk2.gdk_bindings import sanitize_gtkselectiondata
         from xpra.clipboard import clipboard_base
