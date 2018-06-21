@@ -23,11 +23,7 @@
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
 %define with_cuda 1
-%if 0%{?fedora}<28
 %define build_args %{DEFAULT_BUILD_ARGS}
-%else
-%define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_rebuild
-%endif
 %else
 %define with_cuda 0
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc 
