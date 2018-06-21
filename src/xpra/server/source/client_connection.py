@@ -208,7 +208,7 @@ class ClientConnection(ClientConnectionClass):
             if bandwidth_limit>20*1024*1024:
                 #ignore congestion speed if greater 20Mbps
                 bandwidth_limit = 0
-        if self.bandwidth_limit>0:
+        if (self.bandwidth_limit or 0)>0:
             #command line options could overrule what we detect?
             bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
         if bandwidth_limit>0:
@@ -429,8 +429,8 @@ class ClientConnection(ClientConnectionClass):
                 "hello-sent"        : self.hello_sent,
                 "jitter"            : self.jitter,
                 "bandwidth-limit"   : {
-                    "setting"       : self.bandwidth_limit,
-                    "actual"        : self.soft_bandwidth_limit,
+                    "setting"       : self.bandwidth_limit or 0,
+                    "actual"        : self.soft_bandwidth_limit or 0,
                     }
                 }
         info.update({
