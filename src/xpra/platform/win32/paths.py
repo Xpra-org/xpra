@@ -40,9 +40,21 @@ def _get_data_dir():
     return data_dir
 
 
-def do_get_icon_dir():
+def do_get_resources_dir():
     from xpra.platform.paths import get_app_dir
-    return os.path.join(get_app_dir(), "icons")
+    app_dir = get_app_dir()
+    prefix = os.environ.get("MINGW_PREFIX")
+    for d in (app_dir, prefix):
+        if not d or not os.path.isdir(d):
+            return
+        share_xpra = os.path.join(d, "share", "xpra")
+        if os.path.exists(share_xpra):
+            return share_xpra
+    return app_dir
+
+def do_get_icon_dir():
+    from xpra.platform.paths import get_resources_dir
+    return os.path.join(get_resources_dir(), "icons")
 
 
 def do_get_system_conf_dirs():
@@ -117,9 +129,6 @@ if getattr(sys, 'frozen', False) in (True, "windows_exe", "console_exe"):    #@U
     else:
         os.environ['PATH'] = APP_DIR.encode('utf8') + os.pathsep + os.environ['PATH']
 
-def do_get_resources_dir():
-    from xpra.platform.paths import get_app_dir
-    return get_app_dir()
 
 def do_get_app_dir():
     global APP_DIR

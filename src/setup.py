@@ -153,6 +153,7 @@ service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not is_Ubuntu() or getUbuntuVersion()>[16, 4])
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
+scripts_ENABLED = not WIN32
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
 xinput_ENABLED = x11_ENABLED
@@ -224,6 +225,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "csc_libyuv",
             "bencode", "cython_bencode", "vsock", "netdev", "mdns",
             "clipboard",
+            "scripts",
             "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
             "gtk_x11", "service",
             "gtk2", "gtk3", "example",
@@ -260,10 +262,14 @@ rpath = None
 ssl_cert = None
 ssl_key = None
 minifier = None
+if WIN32:
+    share_xpra = ""
+else:
+    share_xpra = "share/xpra/"
 filtered_args = []
 for arg in sys.argv:
     matched = False
-    for x in ("rpath", "ssl-cert", "ssl-key", "install"):
+    for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra"):
         varg = "--%s=" % x
         if arg.startswith(varg):
             value = arg[len(varg):]
@@ -1052,8 +1058,8 @@ if WIN32:
     gnome_include_path = os.environ.get("MINGW_PREFIX")
 
     #only add the cx_freeze specific options
-    #if we aren't just building the Cython bits with "build_ext":
-    if "build_ext" not in sys.argv:
+    #only if we are packaging:
+    if "install_exe" in sys.argv:
         #with cx_freeze, we don't use py_modules
         del setup_options["py_modules"]
         import cx_Freeze                            #@UnresolvedImport
@@ -1421,11 +1427,11 @@ if WIN32:
                 add_data_files('www'+k, v)
 
     if client_ENABLED or server_ENABLED:
-        add_data_files('',      ['COPYING', 'README', 'win32/website.url'])
-        add_data_files('icons', glob.glob('icons\\*.ico') + glob.glob('icons\\*.png'))
+        add_data_files(share_xpra,              ["win32/website.url"])
+        add_data_files('%sicons' % share_xpra,  glob.glob('icons\\*.ico'))
 
     if webcam_ENABLED:
-        add_data_files('',      ['win32\\DirectShow.tlb'])
+        add_data_files(share_xpra,              ["win32\\DirectShow.tlb"])
 
     remove_packages(*external_excludes)
     external_includes.append("pyu2f")
@@ -1456,7 +1462,7 @@ if WIN32:
     remove_packages("pygst", "gst", "gst.extend")
 
     #add subset of PyOpenGL modules (only when installing):
-    if opengl_ENABLED and ("install_exe" in sys.argv or "install" in sys.argv):
+    if opengl_ENABLED and "install_exe" in sys.argv:
         #for this hack to work, you must add "." to the sys.path
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
@@ -1474,16 +1480,15 @@ if WIN32:
                 if not isinstance(e, WindowsError) or (not "already exists" in str(e)): #@UndefinedVariable
                     raise
 
-    add_data_files('', glob.glob("win32\\bundle-extra\\*"))
-    add_data_files('', ["bell.wav"])
-    add_data_files('http-headers', glob.glob("http-headers\\*"))
+        add_data_files('', glob.glob("win32\\bundle-extra\\*"))
 
     #END OF win32
 #*******************************************************************************
 else:
     #OSX and *nix:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser", "scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
-    if POSIX and not OSX:
+    if LINUX:
+        if scripts_ENABLED:
+            scripts += ["scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
         libexec_scripts = []
         if is_Fedora() or is_CentOS():
             libexec = "libexec"
@@ -1499,14 +1504,10 @@ else:
     if OPENBSD:
         man_path = "man"
     add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1", "man/xpra_browser.1"])
-    add_data_files("share/xpra",          ["README", "COPYING"])
-    add_data_files("share/xpra/icons",    glob.glob("icons/*png"))
     add_data_files("share/applications",  ["xdg/xpra-launcher.desktop", "xdg/xpra-browser.desktop", "xdg/xpra.desktop"])
     add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
     add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png"])
     add_data_files("share/appdata",       ["xdg/xpra.appdata.xml"])
-    add_data_files('share/xpra/',         ["bell.wav"])
-    add_data_files('share/xpra/http-headers', glob.glob("http-headers/*"))
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
@@ -1527,7 +1528,7 @@ else:
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
             if html5_ENABLED:
-                install_html5(os.path.join(self.install_dir, "share/xpra/www"))
+                install_html5(os.path.join(self.install_dir, "%swww" % share_xpra))
             install_data.run(self)
 
             root_prefix = self.install_dir.rstrip("/")
@@ -1698,6 +1699,15 @@ else:
             return kw
 
         pkgconfig = osx_pkgconfig
+
+
+if scripts_ENABLED:
+    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/xpra_browser"]
+
+add_data_files(share_xpra,                      ["README", "COPYING"])
+add_data_files(share_xpra,                      ["bell.wav"])
+add_data_files("%shttp-headers" % share_xpra,   glob.glob("http-headers/*"))
+add_data_files("%sicons" % share_xpra,          glob.glob("icons/*png"))
 
 
 if html5_ENABLED:
@@ -2130,7 +2140,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             print(stdout or "")
             print(stderr or "")
             sys.exit(1)
-    CUDA_BIN = "share/xpra/cuda"
+    CUDA_BIN = "%scuda" % share_xpra
     if WIN32:
         CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])

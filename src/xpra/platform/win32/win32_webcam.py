@@ -10,10 +10,11 @@ import os.path
 try:
     from xpra.log import Logger
     from xpra.platform.paths import get_app_dir
-    tlb_dir = get_app_dir()
+    app_dir = get_app_dir()
+    assert app_dir
     log = Logger("webcam", "win32")
 except ImportError:
-    tlb_dir = os.getcwd()
+    app_dir = os.getcwd()
     def log(*args):
         print(args[0] % args[1:])
 
@@ -28,15 +29,18 @@ from ctypes import POINTER
 from xpra.platform.win32.comtypes_util import QuietenLogging
 
 
-#load directshow:
-win32_tlb_dir = os.path.join(tlb_dir, "win32")
-if os.path.exists(win32_tlb_dir):
-    tlb_dir = win32_tlb_dir
-directshow_tlb = os.path.join(tlb_dir, "DirectShow.tlb")
-directshow_tlb = os.environ.get("XPRA_DIRECTSHOW_TLB", directshow_tlb)
+#try to load directshow tlb from various directories,
+#depending on how xpra was packaged, or even run from the source directory:
+dirs = [app_dir, os.path.join(app_dir, "win32"), os.path.join(app_dir, "share", "xpra")]
+filenames = [os.environ.get("XPRA_DIRECTSHOW_TLB")] + [os.path.join(d, "DirectShow.tlb") for d in dirs]
+for filename in filenames:
+    if filename and os.path.exists(filename):
+        directshow_tlb = filename
+        break
 log("directshow_tlb=%s", directshow_tlb)
-if not os.path.exists(directshow_tlb):
+if not directshow_tlb:
     raise ImportError("DirectShow.tlb is missing")
+
 with QuietenLogging():
     directshow = client.GetModule(directshow_tlb)
 log("directshow: %s", directshow)

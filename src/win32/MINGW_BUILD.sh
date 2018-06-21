@@ -245,6 +245,8 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	mv ./libgst*.dll ./lib/gstreamer-1.0/
 	#remove all the pointless duplication:
 	mv *dll lib/
+	#but keep python and gcc DLLs in the root:
+	cp lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 	#we don't need this one?
 	rm lib/libopenblas*
 	pushd lib > /dev/null

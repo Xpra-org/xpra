@@ -39,20 +39,21 @@ frozen = getattr(sys, 'frozen', False)
 REDIRECT_OUTPUT = envbool("XPRA_REDIRECT_OUTPUT", frozen is True and GetConsoleCP()==0)
 if frozen:
     #cx_freeze paths:
+    PATH = os.environ.get("PATH", "").split(os.pathsep)
     edir = os.path.dirname(sys.executable)
     def jedir(*paths):
-        return "\\".join([edir]+list(paths))
+        return os.path.join(*([edir]+list(paths)))
     def addsyspath(*paths):
         v = jedir(*paths)
         if os.path.exists(v):
-            sys.path.append(v)
+            if v not in sys.path:
+                sys.path.append(v)
+            if os.path.isdir(v) and v not in PATH:
+                PATH.append(v)
     addsyspath('')
-    addsyspath('bin')
-    addsyspath('bin', 'etc')
-    addsyspath('bin', 'lib')
-    addsyspath('bin', 'share')
-    addsyspath('bin', 'library.zip')
+    addsyspath('lib')
     os.environ['GI_TYPELIB_PATH'] = jedir('lib', 'girepository-1.0')
+    os.environ["PATH"] = os.pathsep.join(PATH)
 
 #don't know why this breaks with Python 3 yet...
 FIX_UNICODE_OUT = envbool("XPRA_FIX_UNICODE_OUT", not REDIRECT_OUTPUT and PYTHON2)

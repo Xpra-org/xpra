@@ -50,11 +50,12 @@ from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
 
 if PYTHON3:
     from ctypes import CDLL, pythonapi, c_void_p, py_object
+    from ctypes.util import find_library
     PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
     PyCapsule_GetPointer.restype = c_void_p
     PyCapsule_GetPointer.argtypes = [py_object]
     log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
-    gdkdll = CDLL("libgdk-3-0.dll")
+    gdkdll = CDLL(find_library("libgdk-3-0.dll"))
     log("gdkdll=%s", gdkdll)
 
 

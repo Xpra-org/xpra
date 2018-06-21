@@ -223,9 +223,10 @@ if not WIN32:
         library = "libc.so"
     try:
         from ctypes import cdll, CDLL, c_char_p, c_uint, create_string_buffer
-        cdll.LoadLibrary(library)
+        #cdll.LoadLibrary(library)
+        from ctypes.util import find_library
         #<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
-        _libc = CDLL(library)
+        _libc = CDLL(find_library(library))
         log("successfully loaded socket C library from %s", library)
     except ImportError as e:
         log.error("library %s not found: %s", library, e)
