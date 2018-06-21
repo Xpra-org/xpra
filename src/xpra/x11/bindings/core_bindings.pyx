@@ -98,7 +98,7 @@ cdef class _X11CoreBindings:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    cdef Atom xatom(self, str_or_int) except -1:
+    cdef Atom xatom(self, str_or_int) except 0:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         self.context_check()
