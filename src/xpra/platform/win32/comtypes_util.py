@@ -22,16 +22,21 @@ class QuietenLogging(object):
             return
         for logger in self.loggers:
             logger.setLevel(logging.WARNING)
+        self.verbose = None
         from comtypes import client                  #@UnresolvedImport
-        self.verbose = getattr(client._generate, "__verbose__", None)
-        if self.verbose is not None:
-            client._generate.__verbose__ = False
+        gen = getattr(client, "_generate", None)
+        if gen:
+            self.verbose = getattr(gen, "__verbose__", None)
+            if self.verbose is not None:
+                gen.__verbose__ = False
 
     def __exit__(self, *_args):
         if not SILENCE_COMTYPES:
             return
         if self.verbose is not None:
             from comtypes import client                  #@UnresolvedImport
-            client._generate.__verbose__ = self.verbose
+            gen = getattr(client, "_generate", None)
+            if gen:
+                gen.__verbose__ = self.verbose
         for i, logger in enumerate(self.loggers):
             logger.setLevel(self.saved_levels[i])
