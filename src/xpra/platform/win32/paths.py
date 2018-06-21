@@ -46,7 +46,7 @@ def do_get_resources_dir():
     prefix = os.environ.get("MINGW_PREFIX")
     for d in (app_dir, prefix):
         if not d or not os.path.isdir(d):
-            return
+            continue
         share_xpra = os.path.join(d, "share", "xpra")
         if os.path.exists(share_xpra):
             return share_xpra
@@ -140,12 +140,22 @@ def do_get_app_dir():
 def do_get_sound_command():
     from xpra.platform.paths import get_app_dir
     app_dir = get_app_dir()
-    #is there a python3 bundled sound subdirectory
-    sound_exe = os.path.join(app_dir, "Audio", "Xpra_Audio.exe")
-    #same directory, but with a nicer name:
-    if not os.path.exists(sound_exe):
-        sound_exe = os.path.join(app_dir, "Xpra_Audio.exe")
-    #fallback for older build method:
-    if not os.path.exists(sound_exe):
-        sound_exe = os.path.join(app_dir, "xpra_cmd.exe")
-    return [sound_exe]
+    for apaths in (
+        ("Audio", "Xpra_Audio.exe"),    #python3 bundled sound subdirectory
+        ("Xpra_Audio.exe",),            #same directory, but with a nicer name:
+        ("xpra_cmd.exe",),              #fallback for older build method
+        ):
+        sound_exe = os.path.join(app_dir, *apaths)
+        if os.path.exists(sound_exe):
+            return [sound_exe]
+    return do_get_xpra_command()
+
+def do_get_xpra_command():
+    mingw = os.environ.get("MINGW_PREFIX")
+    if mingw:
+        xpra_script = os.path.join(mingw, "bin", "xpra")
+        py = os.path.join(mingw, "bin", "python%i.exe" % sys.version_info[0])
+        if os.path.exists(xpra_script) and os.path.exists(py):
+            return [py, xpra_script]
+    from xpra.platform.paths import do_get_xpra_command as default_do_get_xpra_command
+    return default_do_get_xpra_command()
