@@ -180,12 +180,13 @@ class WindowClient(StubClientMixin):
 
         if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
             icon_filename = get_icon_filename("xpra")
-            try:
-                from PIL import Image   #@UnresolvedImport
-                self.overlay_image = Image.open(icon_filename)
-            except Exception as e:
-                log.warn("Warning: failed to load overlay icon '%s':", icon_filename)
-                log.warn(" %s", e)
+            if icon_filename:
+                try:
+                    from PIL import Image   #@UnresolvedImport
+                    self.overlay_image = Image.open(icon_filename)
+                except Exception as e:
+                    log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
+                    log.error(" %s", e)
 
         self._draw_queue = Queue()
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
