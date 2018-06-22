@@ -657,7 +657,7 @@ class GTKTrayMenuBase(object):
                 self.clipboard_menuitem.set_tooltip_text("Server does not support clipboard synchronization")
                 return
             if not c.client_supports_clipboard:
-                self.client_menuitem.set_tooltip_text("Client does not support clipboard synchronization")
+                self.clipboard_menuitem.set_tooltip_text("Client does not support clipboard synchronization")
                 return
             #add a submenu:
             set_sensitive(self.clipboard_menuitem, True)
