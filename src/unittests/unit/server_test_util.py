@@ -282,7 +282,7 @@ class ServerTestUtil(unittest.TestCase):
 					continue
 				break
 			time.sleep(1)
-		assert r==0, "version failed for %s, returned %s" % (display, version.poll())
+		assert r==0, "version failed for %s, returned %s" % (display, r)
 		return server_proc
 
 	@classmethod
