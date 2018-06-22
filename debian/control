@@ -87,6 +87,8 @@ Recommends:
 #artful:        ,libx264-148
 #bionic:        ,libx264-148
 #buster:        ,libx264-148
+# we use dbus for many things - this provides "dbus-launch":
+        ,dbus-x11
 # for notifications forwarding and dbus server / proxying:
         ,python-dbus
 # for the proxy server:
