@@ -60,6 +60,8 @@ class RFBSource(object):
         img = window.get_image(x, y, w, h)
         window.acknowledge_changes()
         log("damage: %s", img)
+        if not img:
+            return
         fbupdate = struct.pack("!BBH", 0, 0, 1)
         encoding = 0    #Raw
         rect = struct.pack("!HHHHi", x, y, w, h, encoding)
