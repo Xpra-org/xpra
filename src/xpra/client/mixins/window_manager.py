@@ -26,7 +26,7 @@ metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 
 
-from xpra.gtk_common.gobject_compat import import_glib
+from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
 from xpra.platform.gui import get_vrefresh, get_double_click_time, get_double_click_distance, get_native_system_tray_classes
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
 from xpra.platform.paths import get_icon_filename
@@ -721,7 +721,10 @@ class WindowClient(StubClientMixin):
                 getChildReaper().add_process(proc, "signal listener for remote process %s" % pid, command="xpra_signal_listener", ignore=True, forget=True, callback=watcher_terminated)
                 log("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
-                proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.IO_IN, self.signal_watcher_event, proc, pid, wid, priority=glib.PRIORITY_DEFAULT)
+                if is_gtk3():
+                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.PRIORITY_DEFAULT, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
+                else:
+                    proc.stdout_io_watch = glib.io_add_watch(proc.stdout, glib.IO_IN, self.signal_watcher_event, proc, pid, wid)
         if proc:
             self._signalwatcher_to_wids.setdefault(proc, []).append(wid)
             return proc.pid

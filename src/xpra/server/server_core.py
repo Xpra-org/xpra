@@ -683,10 +683,13 @@ class ServerCore(object):
                 udpl = UDPListener(sock, self.process_udp_packet)
                 self._udp_listeners.append(udpl)
             else:
-                from xpra.gtk_common.gobject_compat import import_glib
+                from xpra.gtk_common.gobject_compat import import_glib, is_gtk3
                 glib = import_glib()
                 sock.listen(5)
-                glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock, priority=glib.PRIORITY_DEFAULT)
+                if is_gtk3():
+                    glib.io_add_watch(sock, glib.PRIORITY_DEFAULT, glib.IO_IN, self._new_connection, sock)
+                else:
+                    glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock, priority=glib.PRIORITY_DEFAULT)
         except Exception as e:
             netlog("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
             netlog.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
