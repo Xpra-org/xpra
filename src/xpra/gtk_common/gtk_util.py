@@ -364,12 +364,7 @@ if is_gtk3():
 
     gdk_window_process_all_updates = gdk.Window.process_all_updates
     def gtk_main():
-        gdk.threads_init()
-        try:
-            gdk.threads_enter()
-            gtk.main()
-        finally:
-            gdk.threads_leave()
+        gtk.main()
 
     def gio_File(path):
         from gi.repository import Gio   #@UnresolvedImport
@@ -804,7 +799,6 @@ def get_screen_sizes(xscale=1, yscale=1):
                     screenlog(" number of monitors does not match number of workareas!")
                     workareas = []
             while j<screen.get_n_monitors():
-                monitor = display.get_monitor(j)
                 geom = screen.get_monitor_geometry(j)
                 plug_name = ""
                 if hasattr(screen, "get_monitor_plug_name"):
