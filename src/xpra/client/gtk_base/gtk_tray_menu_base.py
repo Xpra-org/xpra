@@ -273,10 +273,10 @@ class GTKTrayMenuBase(object):
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
         menu = gtk.Menu()
-        menu.set_title(self.client.session_name or u"Xpra")
         title_item = None
         if SHOW_TITLE_ITEM:
-            title_item = gtk.MenuItem(self.client.session_name or u"Xpra")
+            title_item = gtk.MenuItem()
+            title_item.set_label(self.client.session_name or u"Xpra")
             set_sensitive(title_item, False)
             menu.append(title_item)
         def set_menu_title(*_args):
