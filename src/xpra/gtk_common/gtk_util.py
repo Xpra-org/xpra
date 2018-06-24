@@ -176,7 +176,6 @@ if is_gtk3():
     def pixbuf_new_from_data(*args):
         args = list(args)+[None, None]
         return GdkPixbuf.Pixbuf.new_from_data(*args)
-    get_default_keymap      = gdk.Keymap.get_default
     display_get_default     = gdk.Display.get_default
     screen_get_default      = gdk.Screen.get_default
     cairo_set_source_pixbuf = gdk.cairo_set_source_pixbuf
@@ -430,7 +429,6 @@ else:
     image_new_from_pixbuf   = gtk.image_new_from_pixbuf
     pixbuf_new_from_file    = gdk.pixbuf_new_from_file
     pixbuf_new_from_data    = gdk.pixbuf_new_from_data
-    get_default_keymap      = gdk.keymap_get_default
     display_get_default     = gdk.display_get_default
     screen_get_default      = gdk.screen_get_default
     window_set_default_icon = gtk.window_set_default_icon

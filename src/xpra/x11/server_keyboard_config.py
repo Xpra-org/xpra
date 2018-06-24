@@ -15,7 +15,7 @@ from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.x11.gtk_x11.keys import grok_modifier_map
-from xpra.gtk_common.gtk_util import get_default_keymap, display_get_default, get_default_root_window
+from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, get_default_root_window
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.xkbhelper import do_set_keymap, set_all_keycodes, set_keycode_translation, \
@@ -173,7 +173,8 @@ class KeyboardConfig(KeyboardConfigBase):
     def compute_modifier_keynames(self):
         self.keycodes_for_modifier_keynames = {}
         self.xkbmap_mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
-        keymap = get_default_keymap()
+        display = display_get_default()
+        keymap = keymap_get_for_display(display)
         gdk = import_gdk()
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():

@@ -20,10 +20,11 @@ def get_gtk_keymap(ignore_keys=[None, "VoidSymbol", "0xffffff"]):
         by adding the keyval_name.
         We can also ignore some keys
     """
-    from xpra.gtk_common.gtk_util import get_default_keymap, import_gdk, is_gtk3
+    from xpra.gtk_common.gtk_util import keymap_get_for_display, display_get_default, import_gdk, is_gtk3
     gdk = import_gdk()
-    keymap = get_default_keymap()
-    log("get_default_keymap()=%s, direction=%s, bidirectional layouts: %s", keymap, keymap.get_direction(), keymap.have_bidi_layouts())
+    display = display_get_default()
+    keymap = keymap_get_for_display(display)
+    log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s", display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes=[]
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)

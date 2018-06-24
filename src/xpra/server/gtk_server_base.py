@@ -23,7 +23,7 @@ from xpra.gtk_common.quit import (gtk_main_quit_really,
                            gtk_main_quit_on_fatal_exceptions_enable,
                            gtk_main_quit_on_fatal_exceptions_disable)
 from xpra.server.server_base import ServerBase
-from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_root_size, get_default_keymap
+from xpra.gtk_common.gtk_util import get_gtk_version_info, gtk_main, display_get_default, get_root_size, keymap_get_for_display
 
 glib = import_glib()
 glib.threads_init()
@@ -51,7 +51,8 @@ class GTKServerBase(ServerBase):
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
-        keymap = get_default_keymap()
+        display = display_get_default()
+        keymap = keymap_get_for_display(display)
         keymap.connect("keys-changed", self._keys_changed)
 
     def signal_quit(self, signum, frame=None):
