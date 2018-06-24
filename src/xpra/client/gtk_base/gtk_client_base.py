@@ -853,11 +853,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         UIXpraClient.process_ui_capabilities(self)
         if self.server_randr:
             display = display_get_default()
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
+            if is_gtk3():
+                #always one screen per display:
+                screen = gdk.Screen.get_default()
                 screen.connect("size-changed", self.screen_size_changed)
-                i += 1
+            else:
+                i=0
+                while i<display.get_n_screens():
+                    screen = display.get_screen(i)
+                    screen.connect("size-changed", self.screen_size_changed)
+                    i += 1
 
 
     def window_grab(self, window):

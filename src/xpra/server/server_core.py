@@ -686,7 +686,7 @@ class ServerCore(object):
                 from xpra.gtk_common.gobject_compat import import_glib
                 glib = import_glib()
                 sock.listen(5)
-                glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock)
+                glib.io_add_watch(sock, glib.IO_IN, self._new_connection, sock, priority=glib.PRIORITY_DEFAULT)
         except Exception as e:
             netlog("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
             netlog.error("Error: failed to listen on %s socket %s:", socktype, info or sock)

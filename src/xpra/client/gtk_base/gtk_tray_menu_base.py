@@ -279,18 +279,14 @@ class GTKTrayMenuBase(object):
             title_item.set_label(self.client.session_name or u"Xpra")
             set_sensitive(title_item, False)
             menu.append(title_item)
-        def set_menu_title(*_args):
-            #set the real name when available:
-            try:
-                title = self.client.get_tray_title()
-            except:
-                title = self.client.session_name or u"Xpra"
-            m = self.menu
-            if m:
-                m.set_title(title)
-            if title_item:
+            def set_menu_title(*_args):
+                #set the real name when available:
+                try:
+                    title = self.client.get_tray_title()
+                except:
+                    title = self.client.session_name or u"Xpra"
                 title_item.set_label(title)
-        self.client.after_handshake(set_menu_title)
+            self.client.after_handshake(set_menu_title)
 
         menu.append(self.make_infomenuitem())
         menu.append(self.make_featuresmenuitem())
