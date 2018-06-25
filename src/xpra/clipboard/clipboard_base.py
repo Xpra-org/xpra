@@ -369,6 +369,9 @@ class ClipboardProtocolHelperBase(object):
             #first get the targets, then get the contents for targets we want to send (if any)
             def got_targets(dtype, dformat, targets):
                 log("got_targets for selection %s: %s, %s, %s", selection, dtype, dformat, targets)
+                if targets is None:
+                    send_token(rsel)
+                    return
                 #if there is a text target, send that too (just the first one that matches for now..)
                 send_now = [x for x in targets if x in TEXT_TARGETS]
                 def send_targets_only():
