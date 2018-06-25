@@ -1,11 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2011-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32 -- the parts that may import gtk.
 
+import os
 import sys
 import types
 import ctypes
@@ -43,6 +44,7 @@ CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
+APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 
 
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
@@ -101,6 +103,8 @@ log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_H
 
 def do_init():
     init_dpi()
+    if APP_ID:
+        init_appid()
 
 def init_dpi():
     #tell win32 we handle dpi
@@ -129,6 +133,15 @@ def init_dpi():
     except Exception as e:
         screenlog("SetProcessDpiAwarenessInternal(%s) failed: %s", DPI_AWARENESS, e)
         screenlog(" (not available on MS Windows before version 8.1)")
+
+def init_appid():
+    from ctypes import HRESULT
+    from ctypes.wintypes import LPCWSTR
+    SetCurrentProcessExplicitAppUserModelID = shell32.SetCurrentProcessExplicitAppUserModelID
+    SetCurrentProcessExplicitAppUserModelID.restype = HRESULT
+    SetCurrentProcessExplicitAppUserModelID.argtypes = [LPCWSTR]
+    if shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID):
+        log.warn("Warning: failed to set process app ID")
 
 
 def get_native_notifier_classes():
