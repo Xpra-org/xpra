@@ -144,7 +144,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
             for y in range(height):
                 src = (<uintptr_t> cbuf) + y*stride
                 dst = (<uintptr_t> data) + y*istride
-                memcpy(<void*> dst, <void*> src, stride)
+                memcpy(<void*> dst, <void*> src, istride)
             cairo_surface_mark_dirty(surface)
             return
         else:
