@@ -39,7 +39,7 @@ cdef extern from "Python.h":
     int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "string.h":
-    void* memcpy(void * destination, void * source, size_t num)
+    void* memcpy(void * destination, void * source, size_t num) nogil
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:
@@ -111,41 +111,45 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     if format==CAIRO_FORMAT_RGB24:
         #cairo's RGB24 format is actually stored as BGR on little endian
         if rgb_format=="BGR":
-            for y in range(height):
-                for x in range(width):
-                    srci = x*3 + y*stride
-                    dsti = x*4 + y*istride
-                    data[dsti + 0] = cbuf[srci + 0]     #B
-                    data[dsti + 1] = cbuf[srci + 1]     #G
-                    data[dsti + 2] = cbuf[srci + 2]     #R
-                    data[dsti + 3] = 255                #X
+            with nogil:
+                for y in range(height):
+                    for x in range(width):
+                        srci = x*3 + y*stride
+                        dsti = x*4 + y*istride
+                        data[dsti + 0] = cbuf[srci + 0]     #B
+                        data[dsti + 1] = cbuf[srci + 1]     #G
+                        data[dsti + 2] = cbuf[srci + 2]     #R
+                        data[dsti + 3] = 255                #X
         elif rgb_format=="RGB":
-            for y in range(height):
-                for x in range(width):
-                    srci = x*3 + y*stride
-                    dsti = x*4 + y*istride
-                    data[dsti + 0] = cbuf[srci + 2]     #B
-                    data[dsti + 1] = cbuf[srci + 1]     #G
-                    data[dsti + 2] = cbuf[srci + 0]     #R
-                    data[dsti + 3] = 255                #X
+            with nogil:
+                for y in range(height):
+                    for x in range(width):
+                        srci = x*3 + y*stride
+                        dsti = x*4 + y*istride
+                        data[dsti + 0] = cbuf[srci + 2]     #B
+                        data[dsti + 1] = cbuf[srci + 1]     #G
+                        data[dsti + 2] = cbuf[srci + 0]     #R
+                        data[dsti + 3] = 255                #X
         else:
             raise ValueError("unhandled RGB format '%s'" % rgb_format)
     elif format==CAIRO_FORMAT_ARGB32:
         if rgb_format in ("RGBA", "RGBX"):
-            for y in range(height):
-                for x in range(width):
-                    data[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
-                    data[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
-                    data[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
-                    data[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
-        elif rgb_format in ("BGRA", "BGRX"):
-            if stride==istride:
-                memcpy(<void*> data, <void*> cbuf, stride*height)
-            else:
+            with nogil:
                 for y in range(height):
-                    src = (<uintptr_t> cbuf) + y*stride
-                    dst = (<uintptr_t> data) + y*istride
-                    memcpy(<void*> dst, <void*> src, istride)
+                    for x in range(width):
+                        data[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
+                        data[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
+                        data[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
+                        data[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
+        elif rgb_format in ("BGRA", "BGRX"):
+            with nogil:
+                if stride==istride:
+                    memcpy(<void*> data, <void*> cbuf, stride*height)
+                else:
+                    for y in range(height):
+                        src = (<uintptr_t> cbuf) + y*stride
+                        dst = (<uintptr_t> data) + y*istride
+                        memcpy(<void*> dst, <void*> src, istride)
         else:
             raise ValueError("unhandled RGB format '%s'" % rgb_format)
     else:
