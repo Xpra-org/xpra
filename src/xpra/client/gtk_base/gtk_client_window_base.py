@@ -1552,11 +1552,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self.cancel_window_state_timer()
         workspace = self.get_window_workspace()
-        screen = self.get_screen().get_number()
-        workspacelog("process_map_event() wid=%i, workspace=%s, screen=%i, been_mapped=%s", self._id, workspace, screen, self._been_mapped)
-        if screen!=self._screen:
-            props["screen"] = screen
-            self._screen = screen
+        if not is_gtk3():
+            screen = self.get_screen().get_number()
+            workspacelog("process_map_event() wid=%i, workspace=%s, screen=%i, been_mapped=%s", self._id, workspace, screen, self._been_mapped)
+            if screen!=self._screen:
+                props["screen"] = screen
+                self._screen = screen
         if self._been_mapped:
             if workspace is None:
                 #not set, so assume it is on the current workspace:
@@ -1639,11 +1640,12 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._window_state = {}
         self.cancel_window_state_timer()
         if self._been_mapped:
+            if not is_gtk3():
+                screen = self.get_screen().get_number()
+                if screen!=self._screen:
+                    props["screen"] = screen
+                    self._screen = screen
             #if the window has been mapped already, the workspace should be set:
-            screen = self.get_screen().get_number()
-            if screen!=self._screen:
-                props["screen"] = screen
-                self._screen = screen
             workspace = self.get_window_workspace()
             if self._window_workspace!=workspace and workspace is not None:
                 workspacelog("configure event: changed workspace from %s to %s", wn(self._window_workspace), wn(workspace))
