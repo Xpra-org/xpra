@@ -45,15 +45,11 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s %s,%s,%s,%s,%s,%s,%s) set_image_surface_data=%s, use pixbuf=%s", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), type(img_data), x, y, width, height, rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
+        log("cairo._do_paint_rgb(%s, %s, %s %s, %s, %s, %s, %s, %s, %s) set_image_surface_data=%s, use pixbuf=%s", FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data), type(img_data), x, y, width, height, rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget(b"rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
-            if cairo_format==cairo.FORMAT_RGB24 and rgb_format in ("RGB", "BGR"):
-                img_surface = cairo.ImageSurface(cairo_format, width, height)
-                set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
-                self.cairo_paint_surface(img_surface, x, y, options)
-                return True
-            if cairo_format==cairo.FORMAT_ARGB32 and rgb_format in ("RGBX", "BGRX"):
+            if (cairo_format==cairo.FORMAT_RGB24 and rgb_format in ("RGB", "BGR")) or \
+                (cairo_format==cairo.FORMAT_ARGB32 and rgb_format in ("RGBX", "BGRX")):
                 img_surface = cairo.ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, options)
@@ -65,5 +61,6 @@ class CairoBacking(CairoBackingBase):
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
 
+        img_data = memoryview(img_data)
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
         return True
