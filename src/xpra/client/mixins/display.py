@@ -223,11 +223,13 @@ class DisplayClient(StubClientMixin):
                 if self.desktop_scaling=="auto":
                     log.info(" not scaling a shadow server")
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
+                    self.scale_change_embargo = 0
                     self.scalingoff()
             elif self.mmap_enabled:
                 if self.desktop_scaling=="auto":
                     log.info(" no need for scaling with mmap")
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
+                    self.scale_change_embargo = 0
                     self.scalingoff()
                     self.can_scale = False
         if self.can_scale:
