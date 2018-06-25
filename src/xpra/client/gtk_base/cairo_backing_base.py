@@ -116,10 +116,10 @@ class CairoBackingBase(WindowBackingBase):
         gc.rectangle(0, 0, w, h)
         set_source_fn(gc, source, 0, 0)
         gc.paint()
-        if self.paint_box_line_width and options:
+        if self.paint_box_line_width:
             gc.restore()
             encoding = options.get("encoding")
-            if encoding:
+            if options and encoding:
                 color = get_paint_box_color(encoding)
                 gc.set_line_width(self.paint_box_line_width)
                 gc.set_source_rgba(*color)
