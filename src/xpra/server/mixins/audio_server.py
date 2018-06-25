@@ -19,7 +19,7 @@ from xpra.scripts.parsing import sound_option
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
-PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", POSIX and not OSX)
+PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
 
 """
@@ -107,10 +107,15 @@ class AudioServer(StubServerMixin):
         # 3) use a private pulseaudio server, so each xpra
         #    session can have its own server,
         #    create a directory for each display:
-        if PRIVATE_PULSEAUDIO:
-            from xpra.platform.xposix.paths import _get_xpra_runtime_dir
-            xpra_rd = _get_xpra_runtime_dir()
-            if xpra_rd:
+        if PRIVATE_PULSEAUDIO and POSIX and not OSX:
+            from xpra.platform.xposix.paths import _get_xpra_runtime_dir, get_runtime_dir
+            rd = osexpand(get_runtime_dir())
+            if not os.path.exists(rd) or not os.path.isdir(rd):
+                log.warn("Warning: the runtime directory '%s' does not exist,")
+                log.warn(" cannot start a private pulseaudio server")
+            else:
+                xpra_rd = _get_xpra_runtime_dir()
+                assert xpra_rd, "bug: no xpra runtime dir"
                 display = os.environ.get("DISPLAY")
                 self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, "pulse-%s" % display))
                 if not os.path.exists(self.pulseaudio_private_dir):
