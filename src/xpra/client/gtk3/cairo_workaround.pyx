@@ -103,6 +103,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
     assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
+    #log("set_image_surface_data%s pixel buffer=%#x, surface=%#x, data=%#x, stride=%i, width=%i, height=%i", (image_surface, rgb_format, pixel_data, width, height, stride), <uintptr_t> cbuf, <uintptr_t> surface, <uintptr_t> data, istride, iwidth, iheight)
     cdef int x, y
     cdef int srci, dsti
     cdef uintptr_t src, dst
@@ -129,30 +130,28 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                     data[dsti + 3] = 255                #X
         else:
             raise ValueError("unhandled RGB format '%s'" % rgb_format)
-    #note: this one is currently unused because it doesn't work
-    #and I don't know why
-    #(we just disable 'rgb32' for gtk3... and fallback to png)
     elif format==CAIRO_FORMAT_ARGB32:
         if rgb_format in ("RGBA", "RGBX"):
-            for x in range(width):
-                for y in range(height):
+            for y in range(height):
+                for x in range(width):
                     data[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
                     data[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
                     data[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
                     data[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
         elif rgb_format in ("BGRA", "BGRX"):
-            for y in range(height):
-                src = (<uintptr_t> cbuf) + y*stride
-                dst = (<uintptr_t> data) + y*istride
-                memcpy(<void*> dst, <void*> src, istride)
-            cairo_surface_mark_dirty(surface)
-            return
+            if stride==istride:
+                memcpy(<void*> data, <void*> cbuf, stride*height)
+            else:
+                for y in range(height):
+                    src = (<uintptr_t> cbuf) + y*stride
+                    dst = (<uintptr_t> data) + y*istride
+                    memcpy(<void*> dst, <void*> src, istride)
         else:
             raise ValueError("unhandled RGB format '%s'" % rgb_format)
     else:
         raise ValueError("unhandled cairo format '%s'" % format)
     cairo_surface_mark_dirty(surface)
-    return
+
 
 cdef Pycairo_CAPI_t * Pycairo_CAPI
 Pycairo_CAPI = <Pycairo_CAPI_t*> PyCapsule_Import("cairo.CAPI", 0);
