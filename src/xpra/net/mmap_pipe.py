@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-import ctypes
+from ctypes import c_ubyte, c_char, c_uint32
 from xpra.util import roundup
 from xpra.os_util import memoryview_to_bytes, shellsub, WIN32, POSIX
 from xpra.simple_stats import std_unit
@@ -135,7 +135,7 @@ def write_mmap_token(mmap_area, token, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_
     log("write_mmap_token(%s, %#x, %#x, %#x)", mmap_area, token, index, count)
     v = token
     for i in range(0, count):
-        poke = ctypes.c_ubyte.from_buffer(mmap_area, index+i)
+        poke = c_ubyte.from_buffer(mmap_area, index+i)
         poke.value = v % 256
         v = v>>8
     assert v==0, "token value is too big"
@@ -145,7 +145,7 @@ def read_mmap_token(mmap_area, index=DEFAULT_TOKEN_INDEX, count=DEFAULT_TOKEN_BY
     v = 0
     for i in range(0, count):
         v = v<<8
-        peek = ctypes.c_ubyte.from_buffer(mmap_area, index+count-1-i)
+        peek = c_ubyte.from_buffer(mmap_area, index+count-1-i)
         v += peek.value
     log("read_mmap_token(%s, %#x, %#x)=%#x", mmap_area, index, count, v)
     return v
@@ -188,7 +188,7 @@ def init_server_mmap(mmap_filename, mmap_size=0):
         return None, 0
 
 def int_from_buffer(mmap_area, pos):
-    return ctypes.c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
+    return c_uint32.from_buffer(mmap_area, pos)      #@UndefinedVariable
 
 
 #descr_data is a list of (offset, length)
@@ -202,7 +202,7 @@ def mmap_read(mmap_area, *descr_data):
     if len(descr_data)==1:
         #construct an array directly from the mmap zone:
         offset, length = descr_data[0]
-        arraytype = ctypes.c_char * length
+        arraytype = c_char * length
         data_start.value = offset+length
         return arraytype.from_buffer(mmap_area, offset)
     #re-construct the buffer from discontiguous chunks:
