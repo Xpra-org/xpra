@@ -10,6 +10,7 @@ gtk = import_gtk()
 from xpra.log import Logger
 log = Logger("tray", "osx")
 
+from xpra.os_util import monotonic_time
 from xpra.client.tray_base import TrayBase
 from xpra.gtk_common.gtk_util import pixbuf_new_from_data, pixbuf_new_from_file, COLORSPACE_RGB
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
@@ -68,12 +69,14 @@ class OSXTray(TrayBase):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options={}):
         tray_icon = pixbuf_new_from_data(pixels, COLORSPACE_RGB, has_alpha, 8, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
+        self.icon_timestamp = monotonic_time()
 
     def do_set_icon_from_file(self, filename):
         if not self.macapp:
             return
         pixbuf = pixbuf_new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
+        self.icon_timestamp = monotonic_time()
 
 
     def set_global_menu(self):

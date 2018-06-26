@@ -6,6 +6,7 @@
 
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
+from xpra.os_util import monotonic_time
 from collections import deque
 log = Logger("tray")
 
@@ -31,6 +32,7 @@ class TrayBase(object):
         self.geometry_guess = None
         self.tray_event_locations = deque(maxlen=512)
         self.default_icon_extension = "png"
+        self.icon_timestamp = 0
 
     def __repr__(self):
         return "Tray(%i:%s)" % (self.app_id, self.tooltip)
@@ -91,6 +93,7 @@ class TrayBase(object):
         if not self.tray_widget:
             return
         self.do_set_icon_from_file(filename)
+        self.icon_timestamp = monotonic_time()
 
     def do_set_icon_from_file(self, filename):
         raise Exception("override me!")

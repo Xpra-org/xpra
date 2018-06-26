@@ -7,7 +7,7 @@
 # A tray implemented using gtk.StatusIcon
 
 import os
-from xpra.os_util import WIN32, OSX, POSIX, PYTHON3
+from xpra.os_util import WIN32, OSX, POSIX, PYTHON3, monotonic_time
 from xpra.util import envbool
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk
 gtk = import_gtk()
@@ -177,6 +177,7 @@ class GTKStatusIconTray(TrayBase):
             else:
                 tray_icon = tray_icon.scale_simple(tw, th, INTERP_HYPER)
         self.tray_widget.set_from_pixbuf(tray_icon)
+        self.icon_timestamp = monotonic_time()
 
 
 def main():

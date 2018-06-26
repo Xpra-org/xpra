@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("tray", "posix")
 
 from xpra.util import envbool
-from xpra.os_util import is_unity
+from xpra.os_util import is_unity, monotonic_time
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename
 
@@ -109,6 +109,7 @@ class AppindicatorTray(TrayBase):
         log("do_set_icon_from_file(%s) setting icon=%s", filename, noext)
         self.tray_widget.set_icon(noext)
         self._has_icon = True
+        self.icon_timestamp = monotonic_time()
 
 
 def main():

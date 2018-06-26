@@ -45,9 +45,15 @@ class TrayClient(StubClientMixin):
                 self.tray = self.setup_xpra_tray(self.tray_icon or "xpra")
                 if self.tray:
                     self.tray.show()
-                #re-set the icon after a short delay,
-                #seems to help with buggy tray geometries:
-                self.timeout_add(1000, self.tray.set_icon)
+                icon_timestamp = self.tray.icon_timestamp
+                def reset_icon():
+                    #re-set the icon after a short delay,
+                    #seems to help with buggy tray geometries,
+                    #but don't do it if we have already changed the icon
+                    #(ie: the dynamic window icon code may have set a new one)
+                    if icon_timestamp==self.tray.icon_timestamp:
+                        self.tray.set_icon()
+                self.timeout_add(1000, reset_icon)
             if self.delay_tray:
                 self.connect("first-ui-received", setup_xpra_tray)
             else:
