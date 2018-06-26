@@ -11,7 +11,6 @@ from xpra.x11.gtk_x11.gdk_display_source import init_display_source
 init_display_source()
 
 from xpra.util import std, csv
-from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.gtk_common.error import xsync
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 X11Keyboard = X11KeyboardBindings()
@@ -63,6 +62,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
     #First we try to use data from setxkbmap -query,
     #preferably as structured data:
     if xkbmap_query and not xkbmap_query_struct:
+        from xpra.keyboard.layouts import parse_xkbmap_query
         xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
     if xkbmap_query_struct:
         log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)

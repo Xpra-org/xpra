@@ -49,7 +49,6 @@ from xpra.util import iround, envbool
 from xpra.os_util import bytestostr
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
-from xpra.x11.server_keyboard_config import KeyboardConfig
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 
@@ -415,6 +414,7 @@ class X11ServerCore(GTKServerBase):
 
 
     def get_keyboard_config(self, props):
+        from xpra.x11.server_keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
         keyboard_config.enabled = props.boolget("keyboard", True)
         keyboard_config.parse_options(props)
