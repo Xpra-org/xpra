@@ -1201,9 +1201,12 @@ def _nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
 def fixup_video_all_or_none(options):
-    from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
-    from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
-    from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
+    try:
+        from xpra.codecs.video_helper import ALL_VIDEO_ENCODER_OPTIONS as aveco
+        from xpra.codecs.video_helper import ALL_CSC_MODULE_OPTIONS as acsco
+        from xpra.codecs.video_helper import ALL_VIDEO_DECODER_OPTIONS as avedo
+    except ImportError:
+        return
     vestr   = _csvstr(options.video_encoders)
     cscstr  = _csvstr(options.csc_modules)
     vdstr   = _csvstr(options.video_decoders)
@@ -1248,7 +1251,10 @@ def fixup_pings(options):
         options.pings = 5
 
 def fixup_encodings(options):
-    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    try:
+        from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    except ImportError:
+        return
     RENAME = {"jpg" : "jpeg"}
     if options.encoding:
         options.encoding = RENAME.get(options.encoding, options.encoding)

@@ -913,30 +913,33 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         return str(v).lower() not in FALSE_OPTIONS
     #turn off some server mixins:
     from xpra.server import server_features
+    impwarned = []
     def impcheck(*modules):
         for mod in modules:
             try:
                 __import__("xpra.%s" % mod, {}, {}, [])
             except ImportError as e:
-                log = get_util_logger()
-                log.warn("Warning: missing %s module", mod)
+                if mod not in impwarned:
+                    impwarned.append(mod)
+                    log = get_util_logger()
+                    log.warn("Warning: missing %s module", mod)
                 return False
         return True
     server_features.notifications   = opts.notifications and impcheck("notifications")
-    server_features.webcam          = b(opts.webcam)
+    server_features.webcam          = b(opts.webcam) and impcheck("codecs")
     server_features.clipboard       = b(opts.clipboard) and impcheck("clipboard")
     server_features.audio           = (b(opts.speaker) or b(opts.microphone)) and impcheck("sound")
     server_features.av_sync         = server_features.audio and b(opts.av_sync)
     server_features.fileprint       = b(opts.printing) or b(opts.file_transfer)
     server_features.mmap            = b(opts.mmap)
     server_features.input_devices   = not opts.readonly and impcheck("keyboard")
-    #server_features.commands        = ??
+    server_features.commands        = impcheck("server.control_command")
     server_features.dbus            = opts.dbus_proxy and impcheck("dbus")
-    #server_features.encoding        = ??
+    server_features.encoding        = impcheck("codecs")
     server_features.logging         = b(opts.remote_logging)
     #server_features.network_state   = ??
     server_features.display         = opts.windows
-    server_features.windows         = opts.windows
+    server_features.windows         = opts.windows and impcheck("codecs")
 
     kill_dbus = None
     if shadowing:

@@ -1094,7 +1094,10 @@ def do_parse_cmdline(cmdline, defaults):
     return options, args
 
 def validated_encodings(encodings):
-    from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    try:
+        from xpra.codecs.loader import PREFERED_ENCODING_ORDER
+    except ImportError:
+        return []
     lower_encodings = [x.lower() for x in encodings]
     validated = [x for x in PREFERED_ENCODING_ORDER if x.lower() in lower_encodings]
     if not validated:

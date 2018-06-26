@@ -404,6 +404,7 @@ class SocketConnection(Connection):
 def get_socket_options(sock, level, options):
     opts = {}
     try:
+        errs = []
         for k in options:
             opt = getattr(socket, k, None)
             if opt is None:
@@ -411,10 +412,12 @@ def get_socket_options(sock, level, options):
             try:
                 v = sock.getsockopt(level, opt)
             except Exception as e:
-                log.warn("Warning: cannot query %s: %s", k, e)
+                errs.append(k)
             else:
                 if v is not None:
                     opts[k] = v
+        if errs:
+            log.warn("Warning: failed to query %s", csv(errs))
     except:
         log.error("Error querying socket options:")
         log.error(" %s", e)

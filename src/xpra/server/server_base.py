@@ -22,7 +22,6 @@ from xpra.util import typedict, flatten_dict, updict, merge_dicts, envbool, \
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST, NEW_CLIENT, DONE, SESSION_BUSY
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import EXITING_CODE
-from xpra.codecs.loader import codec_versions
 
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
@@ -445,13 +444,18 @@ class ServerBase(ServerBaseClass):
     def send_hello(self, server_source, root_w, root_h, server_cipher):
         capabilities = self.make_hello(server_source)
         if server_source.wants_encodings:
-            updict(capabilities, "encoding", codec_versions, "version")
-            for k,v in self.get_encoding_info().items():
-                if k=="":
-                    k = "encodings"
-                else:
-                    k = "encodings.%s" % k
-                capabilities[k] = v
+            try:
+                from xpra.codecs.loader import codec_versions
+            except ImportError:
+                log("no codecs", exc_info=True)
+            else:
+                updict(capabilities, "encoding", codec_versions, "version")
+                for k,v in self.get_encoding_info().items():
+                    if k=="":
+                        k = "encodings"
+                    else:
+                        k = "encodings.%s" % k
+                    capabilities[k] = v
         if server_source.wants_display:
             capabilities.update({
                          "actual_desktop_size"  : (root_w, root_h),
