@@ -194,6 +194,8 @@ vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
+notifications_ENABLED   = DEFAULT
+keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
@@ -231,7 +233,7 @@ SWITCHES = ["enc_x264", "enc_x265", "enc_ffmpeg",
             "gtk2", "gtk3", "example",
             "html5", "minify", "html5_gzip", "html5_brotli",
             "pam", "xdg_open",
-            "sound", "opengl", "printing", "webcam",
+            "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
             "rebuild",
             "annotate", "warn", "strict",
             "shadow", "proxy", "rfb",
@@ -1749,7 +1751,7 @@ toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.mixins", "xpra.se
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
-toggle_packages(client_ENABLED or server_ENABLED, "xpra.notifications")
+toggle_packages(notifications_ENABLED, "xpra.notifications")
 
 #cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
 if dbus_ENABLED and server_ENABLED:
@@ -1949,7 +1951,7 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
 
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
-toggle_packages(client_ENABLED or server_ENABLED, "xpra.keyboard")
+toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.scripts.config", "xpra.scripts.parsing", "xpra.scripts.exec_util", "xpra.scripts.fdproxy", "xpra.scripts.version")
 if server_ENABLED or proxy_ENABLED:
