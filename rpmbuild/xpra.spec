@@ -179,13 +179,13 @@ Recommends:			python2-lzo
 Recommends:         python2-kerberos
 Recommends:         python2-gssapi
 #webcam:
-Recommends:			python-inotify
-Recommends:			opencv-python
-Recommends:			python-avahi
+Recommends:			python2-inotify
+Recommends:			python2-opencv
+Recommends:			python2-avahi
 Recommends:         python2-ldap
 Recommends:         python2-ldap3
 %endif
-%{Recommends}:		dbus-python
+%{Recommends}:		python2-dbus
 %{Recommends}:		dbus-x11
 %{Recommends}:		python2-netifaces
 %{Suggests}:		python2-cryptography
@@ -281,13 +281,13 @@ Recommends:			python2-xpra-audio
 Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
-%else
-%{Recommends}:		python-websockify
+Recommends:			python2-setproctitle
 %endif
 %if 0%{?el7}
 Requires:			python-cups
+Requires:			python-websockify
+Requires:			python-setproctitle
 %endif
-%{Recommends}:		python-setproctitle
 BuildRequires:		pam-devel
 BuildRequires:		gcc
 BuildRequires:		python2-Cython
@@ -318,7 +318,7 @@ Requires:			ffmpeg-xpra
 Requires:			python3-cryptography
 Requires:			python3-gobject
 Recommends:			python3-netifaces
-Recommends:			dbus-python
+Recommends:			python3-dbus
 Recommends:			python3-avahi
 %if 0%{?fedora}
 Recommends:			python3-lzo
