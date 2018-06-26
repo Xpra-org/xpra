@@ -131,7 +131,11 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
                     return None
                 return v
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in ("layout", "layouts", "variant", "variants", "options")]
-            self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
+            try:
+                self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync, opts.shortcut_modifiers, opts.key_shortcut, opts.keyboard_raw, *overrides)
+            except ImportError as e:
+                keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
+                keylog.warn("Warning: no keyboard support, %s", e)
         TrayClient.init_ui(self)
         NotificationClient.init_ui(self)
 
@@ -520,7 +524,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     # keyboard:
     def get_keyboard_caps(self):
         caps = {}
-        if self.readonly:
+        if self.readonly or not self.keyboard_helper:
             #don't bother sending keyboard info, as it won't be used
             caps["keyboard"] = False
         else:
@@ -528,8 +532,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             #show the user a summary of what we have detected:
             self.keyboard_helper.log_keyboard_info()
 
-        caps["modifiers"] = self.get_current_modifiers()
-        if self.keyboard_helper:
+            caps["modifiers"] = self.get_current_modifiers()
             delay_ms, interval_ms = self.keyboard_helper.key_repeat_delay, self.keyboard_helper.key_repeat_interval
             if delay_ms>0 and interval_ms>0:
                 caps["key_repeat"] = (delay_ms,interval_ms)
@@ -548,6 +551,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             self.keyboard_helper.keymap_changed()
 
     def get_keymap_properties(self):
+        if not self.keyboard_helper:
+            return {}
         props = self.keyboard_helper.get_keymap_properties()
         props["modifiers"] = self.get_current_modifiers()
         return props

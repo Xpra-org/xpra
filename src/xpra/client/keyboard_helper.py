@@ -9,8 +9,6 @@ import os
 from xpra.log import Logger
 log = Logger("keyboard")
 
-from xpra.keyboard.layouts import xkbmap_query_tostring
-from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
 from xpra.util import nonl, csv, std, envbool, print_nested_dict, repr_ellipsized
 from xpra.os_util import POSIX, bytestostr
 
@@ -97,6 +95,7 @@ class KeyboardHelper(object):
         #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
         #so generate a map from one to the other:
         modifier_names = {}
+        from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE
         meanings = self.xkbmap_mod_meanings or DEFAULT_MODIFIER_MEANINGS
         DEFAULT_MODIFIER_IGNORE_KEYNAMES = ["Caps_Lock", "Num_Lock", "Scroll_Lock"]
         for pub_name,mod_name in meanings.items():
@@ -333,6 +332,7 @@ class KeyboardHelper(object):
                 else:
                     query_struct["options"] = self.options
             if self.layout_option or self.layouts_option or self.variant_option or self.variants_option or self.options:
+                from xpra.keyboard.layouts import xkbmap_query_tostring
                 query = xkbmap_query_tostring(query_struct)
         return _print, query, query_struct
 

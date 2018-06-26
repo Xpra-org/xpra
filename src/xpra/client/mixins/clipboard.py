@@ -74,7 +74,7 @@ class ClipboardClient(StubClientMixin):
         except ImportError:
             log.warn("Warning: clipboard module is missing")
             self.clipboard_enabled = False
-            return
+            return True
         c = self.server_capabilities
         self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids")
