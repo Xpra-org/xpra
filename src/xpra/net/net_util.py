@@ -222,7 +222,7 @@ if not WIN32:
     elif sys.platform.startswith("openbsd"):
         library = "libc.so"
     try:
-        from ctypes import cdll, CDLL, c_char_p, c_uint, create_string_buffer
+        from ctypes import CDLL, c_char_p, c_uint, create_string_buffer
         #cdll.LoadLibrary(library)
         from ctypes.util import find_library
         #<CDLL 'libc.so.6', handle 7fcac419b000 at 7fcac1ab0c10>
