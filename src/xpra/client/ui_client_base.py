@@ -87,6 +87,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.server_lock = False
         self.server_lock_toggle = False
         self.server_window_filters = False
+        self.server_keyboard = True
+        self.server_pointer = True
 
         self.client_supports_opengl = False
         self.client_supports_sharing = False
@@ -310,6 +312,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
+        self.server_keyboard = c.boolget("keyboard", True)
+        self.server_pointer = c.boolget("pointer", True)
         self.server_start_new_commands = c.boolget("start-new-commands")
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strlistget("server-commands-signals")
@@ -317,6 +321,12 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
+        log.info("server_keyboard=%s", self.server_keyboard)
+        if not self.server_keyboard and self.keyboard_helper:
+            #swallow packets:
+            def nosend(*args):
+                pass
+            self.keyboard_helper.send = nosend
 
         i = platform_name(self._remote_platform, c.strlistget("platform.linux_distribution") or c.strget("platform.release", ""))
         r = self._remote_version

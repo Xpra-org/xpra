@@ -434,6 +434,8 @@ class ServerBase(ServerBaseClass):
                  "lock"                         : self.lock is not False,
                  "lock-toggle"                  : self.lock is None,
                  "windows"                      : server_features.windows,
+                 "keyboard"                     : server_features.input_devices,
+                 "pointer"                      : server_features.input_devices,
                  })
             capabilities.update(flatten_dict(self.get_server_features(source)))
         #this is a feature, but we would need the hello request

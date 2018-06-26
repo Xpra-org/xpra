@@ -685,7 +685,7 @@ class ClientWindowBase(ClientWidgetBase):
         return self._id
 
     def do_motion_notify_event(self, event):
-        if self._client.readonly or self._client.server_readonly:
+        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
@@ -700,7 +700,7 @@ class ClientWindowBase(ClientWidgetBase):
             return ""
 
     def _button_action(self, button, event, depressed, *args):
-        if self._client.readonly or self._client.server_readonly:
+        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
         pointer, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer)
