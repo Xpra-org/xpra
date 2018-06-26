@@ -7,6 +7,7 @@
 # Low level support for the "system tray" on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 
+import os
 import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
@@ -42,7 +43,7 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
     product_type = DWORD(0)
     from xpra.platform.win32.common import GetProductInfo as k32GetProductInfo
     v = k32GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, byref(product_type))
-    log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, product_type)
+    log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, hex(product_type.value))
     return bool(v)
 #win7 is actually 6.1:
 try:
@@ -217,7 +218,7 @@ class win32NotifyIcon(object):
                 iconPathName = iconPathName.decode()
             except:
                 pass
-            self.current_icon = self.LoadImage(iconPathName)
+            self.current_icon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.create_tray_window()
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
@@ -297,7 +298,7 @@ class win32NotifyIcon(object):
 
 
     def set_icon(self, iconPathName):
-        hicon = self.LoadImage(iconPathName)
+        hicon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.do_set_icon(hicon)
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))
         self.reset_function = (self.set_icon, iconPathName)
@@ -331,25 +332,33 @@ class win32NotifyIcon(object):
         UpdateWindow(self.hwnd)
         self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
 
-    def LoadImage(self, iconPathName, fallback=FALLBACK_ICON):
-        v = fallback
-        if iconPathName:
-            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-            try:
-                img_type = win32con.IMAGE_ICON
-                if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
-                    img_type = win32con.IMAGE_BITMAP
-                    icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
-                log("LoadImage(%s) using image type=%s", iconPathName,
-                                            {
-                                                win32con.IMAGE_ICON    : "ICON",
-                                                win32con.IMAGE_BITMAP  : "BITMAP",
-                                             }.get(img_type))
-                v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
-            except:
-                log.error("Failed to load icon at %s", iconPathName, exc_info=True)
-        log("LoadImage(%s)=%s", iconPathName, v)
-        return v
+    def LoadImage(self, iconPathName):
+        if not iconPathName:
+            return None
+        mingw_prefix = os.environ.get("MINGW_PREFIX")
+        if mingw_prefix and iconPathName.find(mingw_prefix)>=0:
+            #python can deal with mixed win32 and unix paths,
+            #but the native win32 LoadImage function cannot,
+            #this happens when running from a mingw environment
+            iconPathName = iconPathName.replace("/", "\\")
+        icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+        try:
+            img_type = win32con.IMAGE_ICON
+            if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
+                img_type = win32con.IMAGE_BITMAP
+                icon_flags |= win32con.LR_CREATEDIBSECTION | win32con.LR_LOADTRANSPARENT
+            log("LoadImage(%s) using image type=%s", iconPathName,
+                                        {
+                                            win32con.IMAGE_ICON    : "ICON",
+                                            win32con.IMAGE_BITMAP  : "BITMAP",
+                                         }.get(img_type))
+            v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
+        except:
+            log.error("Error: failed to load icon '%s'", iconPathName, exc_info=True)
+            return None
+        else:
+            log("LoadImage(%s)=%#x", iconPathName, v)
+            return v
 
 
     def OnTrayRestart(self, hwnd=0, msg=0, wparam=0, lparam=0):
@@ -380,7 +389,7 @@ class win32NotifyIcon(object):
     def OnTaskbarNotify(self, hwnd, msg, wparam, lparam):
         if lparam==win32con.WM_MOUSEMOVE:
             cb = self.move_callback
-            bm = [(hwnd, msg, wparam, lparam)]
+            bm = [(hwnd, int(msg), int(wparam), int(lparam))]
         else:
             cb = self.click_callback
             bm = BUTTON_MAP.get(lparam)
@@ -423,7 +432,7 @@ message_map = {
 def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     instance = win32NotifyIcon.instances.get(hwnd)
     fn = message_map.get(msg)
-    log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (hwnd, msg, wParam, lParam), instance, msg, fn)
+    log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (int(hwnd), int(msg), int(wParam), int(lParam)), instance, msg, fn)
     #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
     if instance and fn:
         return fn(instance, hwnd, msg, wParam, lParam) or 0
