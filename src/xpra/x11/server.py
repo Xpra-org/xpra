@@ -660,7 +660,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
             if self._wm:
                 toplevel = self._wm.get_property("toplevel")
             focuslog("reset_focus() %s / %s had focus (toplevel=%s)", self._has_focus, had_focus, toplevel)
-            self.clear_keys_pressed()
+            #this will call clear_keys_pressed() if the server is an InputServer:
+            self.reset_focus()
             # FIXME: kind of a hack:
             self._has_focus = 0
             #toplevel may be None during cleanup!

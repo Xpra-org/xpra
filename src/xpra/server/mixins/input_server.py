@@ -48,6 +48,9 @@ class InputServer(StubServerMixin):
         self.clear_keys_pressed()
         self.keyboard_config = None
 
+    def reset_focus(self):
+        self.clear_keys_pressed()
+
     def reset_state(self):
         self.clear_keys_pressed()
 

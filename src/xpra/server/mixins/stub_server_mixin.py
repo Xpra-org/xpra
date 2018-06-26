@@ -23,6 +23,13 @@ class StubServerMixin(object):
     def init_state(self):
         pass
 
+
+    """
+    Called when we reset the focus.
+    """
+    def reset_focus(self):
+        pass
+
     """
     Called when the last client has exited,
     so we can reset things to their original state.
