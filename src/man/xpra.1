@@ -882,8 +882,8 @@ TCP servers, usually a web server.
 xpra clients will connect as usual, but any client that does not
 speak the xpra protocol will be forwarded to the alternative
 server.
-.TP
 
+.TP
 \fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
 Respond to HTTP requests on the TCP port(s) and local sockets.
 This requires \fBwebsockify\fP to be installed and at least one
@@ -918,12 +918,13 @@ a more restrictive list of modules.
 Use the special value 'help' to get a list of options.
 Use the value 'none' to not load any colourspace conversion modules.
 
+.TP
 \fB\-\-mmap\-group\fP
 Sets the mmap file's gid to match the socket file's gid and sets
 the mmap file's permissions to 660.
 This is necessary to share the mmap file across user accounts.
-.TP
 
+.TP
 \fB\-\-socket\-permissions\fP=\fIACCESS\-MODE\fP
 Specifies the permissions on the server socket.
 Defaults to 600. This is ignored when \fImmap\-group\fP is enabled.
@@ -1052,6 +1053,7 @@ or to invert some or all axes.
 Allow the client to forward its log output to the server.
 The client can specify the value \fIboth\fP to both send
 it to the server and keep it locally.
+.TP
 \fB\-\-av\-sync\fP=\fIyes\fP|\fIno\fP
 Enable or disable audio-video synchronization.
 The video data will be delayed so that it is displayed in sync with the audio.
@@ -1181,11 +1183,11 @@ Force the currently focused window to be refreshed.
 Force all windows to be refreshed.
 .IP \fBtoggle_keyboard_grab\fP
 The keyboard will be grabbed / ungrabbed by the current window.
-.IP \fBtottle_pointer_grab\fP
+.IP \fBtoggle_pointer_grab\fP
 The pointer will be grabbed and confined to the current window.
-.IP \fBtottle_fullscreen\fP
+.IP \fBtoggle_fullscreen\fP
 Make the current window fullscreen / unfullscreen.
-.IP \fBtottle_debug\fP
+.IP \fBtoggle_debug\fP
 Turn debugging on or off.
 .IP \fBscaleup\fP
 Increase the current value of \fBdesktop-scaling\fP.
