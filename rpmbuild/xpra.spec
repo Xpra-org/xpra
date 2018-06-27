@@ -612,7 +612,7 @@ fi
 
 
 %changelog
-* Sun Jun 17 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
+* Wed Jun 27 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
 - fix memoryview paint error with non-opengl Python 2.6 clients
 - fix spurious errors and warnings during window cleanup
 - fix macos keyboard initialization
@@ -626,6 +626,12 @@ fi
 - fix pyobjc api deprecation warning
 - fix debug logging via environment variables
 - fix errors when XShm is not available
+- fix invalid clipboard toggle requests not ignored
+- fix missing context handler for keymap setup (crash possible)
+- fix building CUDA kernels with GCC 8.1
+- fix tray menu setup error when the clipboard is disabled
+- fix clipboard token send error when there are no targets
+- correctly disable desktop-scaling when mmap is enabled
 - send missing exception details to server with remote-logging
 - make python 2.6 warning less scary
 - prevent authenticated users from shutting down proxy servers
@@ -633,6 +639,7 @@ fi
 - support newer nvidia driver versions with nvenc
 - remove duplicated encoding
 - increase test timeout
+- recommend the dbus-x11 with the DEB package
 
 * Fri Apr 13 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.11-2
 - rebuild with logging backport fix
