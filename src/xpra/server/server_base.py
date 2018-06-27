@@ -2507,6 +2507,7 @@ class ServerBase(ServerCore):
         if cc!=ss or ss is None:
             clipboardlog.warn("Warning: received a request to change the clipboard status,")
             clipboardlog.warn(" but it does not come from the clipboard owner! Ignoring it.")
+            return
         cc.clipboard_enabled = clipboard_enabled
         if not clipboard_enabled:
             ch.enable_selections([])
