@@ -39,13 +39,9 @@ def do_get_install_prefix():
 def get_system_conf_dirs():
     return envaslist_or_delegate("XPRA_SYSCONF_DIRS", do_get_system_conf_dirs)
 def do_get_system_conf_dirs():
-    prefix = get_install_prefix()
-    #the system wide configuration directory
-    if prefix == '/usr':
-        #default posix config location:
-        return ['/etc/xpra']
-    #hope the prefix is something like "/usr/local" or "$HOME/.local":
-    return [prefix + '/etc/xpra/']
+    #overriden in all platforms
+    return []
+
 
 def get_user_conf_dirs(uid=None):
     return envaslist_or_delegate("XPRA_USER_CONF_DIRS", do_get_user_conf_dirs, uid)

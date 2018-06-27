@@ -58,7 +58,11 @@ class WSRequestHandler(WebSocketRequestHandler):
         path = posixpath.normpath(unquote(path))
         words = path.split('/')
         words = filter(None, words)
-        path = self.web_root or "/usr/share/xpra/www"
+        path = self.web_root
+        for p in [self.web_root]+[os.path.join(x, "xpra", "www") for x in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")]:
+            if os.path.exists(p) and os.path.isdir(p):
+                path = p
+                break
         for word in words:
             word = os.path.splitdrive(word)[1]
             word = os.path.split(word)[1]

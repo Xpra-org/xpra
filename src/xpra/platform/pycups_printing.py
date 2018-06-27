@@ -93,15 +93,16 @@ def find_ppd_file(short_name, filename):
     if ev and os.path.exists(ev):
         log("using environment override for %s ppd file: %s", short_name, ev)
         return ev
-    paths = ["/usr/share/cups/model",           #used on Fedora and others
-             "/usr/share/ppd/cups-pdf",         #used on Ubuntu
-             "/usr/share/ppd/cupsfilters",
-             "/usr/local/share/cups/model",     #install from source with /usr/local prefix
-             #if your distro uses something else, please file a bug so we can add it
-            ]
+    paths = []
+    for p in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"):
+        if os.path.exists(p) and os.path.isdir(p):
+            paths.append(os.path.join(p, "cups", "model"))      #used on Fedora and others
+            paths.append(os.path.join(p, "ppd", "cups-pdf"))    #used on Fedora and others
+            paths.append(os.path.join(p, "ppd", "cupsfilters"))
+    log("find ppd file: paths=%s", paths)
     for p in paths:
         f = os.path.join(p, filename)
-        if os.path.exists(f):
+        if os.path.exists(f) and os.path.isfile(f):
             return f
     log("cannot find %s in %s", filename, paths)
     return None

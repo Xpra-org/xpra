@@ -11,6 +11,11 @@ import site
 from xpra.util import envbool
 SOUND_PYTHON3 = envbool("XPRA_SOUND_PYTHON3", False)
 
+#removed in 2.3:
+# we no longer use "~/.xpra" on posix systems to store files or sockets,
+# but we still load config files from there if present
+LEGACY_DOTXPRA = envbool("XPRA_LEGACY_DOTXPRA", False)
+
 
 def do_get_install_prefix():
     #special case for "user" installations, ie:
@@ -30,10 +35,8 @@ def do_get_install_prefix():
 def do_get_resources_dir():
     #is there a better/cleaner way?
     from xpra.platform.paths import get_install_prefix
-    options = [get_install_prefix(),
-               sys.exec_prefix,
-               "/usr",
-               "/usr/local"]
+    options = [get_install_prefix(), sys.exec_prefix] + \
+               os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
     for x in options:
         p = os.path.join(x, "share", "xpra")
         if os.path.exists(p) and os.path.isdir(p):
@@ -75,9 +78,27 @@ def do_get_script_bin_dirs():
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
         script_bin_dirs.append(runtime_dir)
-    if os.geteuid()>0:
-        script_bin_dirs.append("~/.xpra")
+    if LEGACY_DOTXPRA:
+        if os.geteuid()>0:
+            script_bin_dirs.append("~/.xpra")
     return script_bin_dirs
+
+
+def do_get_system_conf_dirs():
+    dirs = ["/etc/xpra", "/usr/local/etc/xpra"]
+    for d in os.environ.get("XDG_CONFIG_DIRS", "/etc/xdg").split(":"):
+        dirs.append(os.path.join(d, "xpra"))
+    #hope the prefix is something like "/usr/local" or "$HOME/.local":
+    from xpra.platform.paths import get_install_prefix
+    prefix = get_install_prefix()
+    if prefix not in ("/usr", "/usr/local"):
+        if prefix.endswith(".local"):
+            idir= os.path.join(prefix, "xpra")          #ie: ~/.local/xpra
+        else:
+            idir= os.path.join(prefix, "/etc/xpra/")    #ie: /someinstallpath/etc/xpra
+        if idir not in dirs:
+            dirs.append(idir)
+    return dirs
 
 
 def do_get_user_conf_dirs(uid):
@@ -85,9 +106,11 @@ def do_get_user_conf_dirs(uid):
     #(but never use /root/.xpra)
     if uid is None:
         uid = os.getuid()
+    dirs = []
     if uid>0:
-        return ["~/.xpra"]
-    return []
+        dirs.append("~/.xpra")
+    dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
+    return dirs
 
 
 def get_runtime_dir():
@@ -118,10 +141,11 @@ def do_get_socket_dirs():
     if runtime_dir:
         #private, per user: /run/user/1000/xpra
         SOCKET_DIRS.append(runtime_dir)
-    #Debian pretends to be root during build.. check FAKEROOTKEY
-    #to ensure we still include "~/.xpra" in the default config
-    if os.geteuid()>0 or os.environ.get("FAKEROOTKEY"):
-        SOCKET_DIRS.append("~/.xpra")   #the old default path
+    if LEGACY_DOTXPRA:
+        #Debian pretends to be root during build.. check FAKEROOTKEY
+        #to ensure we still include "~/.xpra" in the default config
+        if os.geteuid()>0 or os.environ.get("FAKEROOTKEY"):
+            SOCKET_DIRS.append("~/.xpra")   #the old default path
     #for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):
         SOCKET_DIRS.append("/run/xpra")
@@ -134,7 +158,7 @@ def do_get_default_log_dirs():
     v = _get_xpra_runtime_dir()
     if v:
         log_dirs.append(v)
-    if os.geteuid()>0:
+    if LEGACY_DOTXPRA and os.geteuid()>0:
         log_dirs.append("~/.xpra")
     log_dirs.append("/tmp")
     return log_dirs
