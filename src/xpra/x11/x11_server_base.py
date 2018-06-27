@@ -336,8 +336,8 @@ class X11ServerBase(GTKServerBase):
             #prevent _keys_changed() from firing:
             #(using a flag instead of keymap.disconnect(handler) as this did not seem to work!)
             self.keymap_changing = True
-
-            self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force)
+            with xsync:
+                self.keyboard_config = server_source.set_keymap(self.keyboard_config, self.keys_pressed, force)
         finally:
             # re-enable via idle_add to give all the pending
             # events a chance to run first (and get ignored)
