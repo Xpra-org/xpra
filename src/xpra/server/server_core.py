@@ -357,6 +357,7 @@ class ServerCore(object):
         for p in tuple(self._tcp_proxy_clients):
             p.quit()
         netlog("cleanup will disconnect: %s", self._potential_protocols)
+        self.cancel_touch_timer()
         if self._upgrading:
             reason = SERVER_UPGRADE
         else:
@@ -624,6 +625,24 @@ class ServerCore(object):
                 except Exception as e:
                     log.error("failed to set socket path to %s: %s", info, e)
                     del e
+        if self.unix_socket_paths:
+            self.touch_timer = self.timeout_add(60*1000, self.touch_sockets)
+
+
+    def cancel_touch_timer(self):
+        tt = self.touch_timer
+        if tt:
+            self.touch_timer = None
+            self.source_remove(tt)
+
+    def touch_sockets(self):
+        netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
+        for sockpath in self.unix_socket_paths:
+            try:
+                os.utime(sockpath, None)
+            except Exception:
+                netlog("touch_sockets() error on %s", sockpath, exc_info=True)
+        return True
 
     def init_packet_handlers(self):
         netlog("initializing packet handlers")
