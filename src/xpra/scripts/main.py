@@ -2155,7 +2155,8 @@ def run_list(error_cb, opts, extra_args):
     if reprobe:
         sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set([x[0] for x in unknown]))))
         counter = 0
-        while reprobe and counter<LIST_REPROBE_TIMEOUT:
+        timeout = LIST_REPROBE_TIMEOUT
+        while reprobe and counter<timeout:
             sleep(1)
             counter += 1
             probe_list = list(reprobe)
@@ -2170,6 +2171,24 @@ def run_list(error_cb, opts, extra_args):
                 else:
                     sys.stdout.write("\t%s session at %s (%s)\n" % (state, display, socket_dir))
             reprobe = unknown
+            if reprobe and timeout==LIST_REPROBE_TIMEOUT:
+                #if all the remaining sockets are old,
+                #we don't need to poll for very long,
+                #as they're very likely to be dead:
+                newest = 0
+                import time
+                for x in reprobe:
+                    sockpath = x[2]
+                    try:
+                        mtime = os.stat(sockpath).st_mtime
+                    except Exception:
+                        pass
+                    else:
+                        newest = max(mtime, newest)
+                elapsed = time.time()-newest
+                if elapsed>60*5:
+                    #wait maximum 3 seconds for old sockets
+                    timeout = min(LIST_REPROBE_TIMEOUT, 3)
         #now cleanup those still unknown:
         clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
         for state, display, sockpath in unknown:
