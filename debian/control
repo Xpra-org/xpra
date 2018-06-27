@@ -129,6 +129,8 @@ Recommends:
 #trusty:        ,python-gst-1.0
 #xenial:        ,python-gst-1.0
 #yakkety:        ,python-gst-1.0
+# we use dbus for many things - this provides "dbus-launch":
+        ,dbus-x11
 #for printer forwarding:
         ,cups-filters
         ,cups-common
