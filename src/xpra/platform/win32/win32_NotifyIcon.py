@@ -453,7 +453,6 @@ log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
 
 
 def main():
-    import os
     from xpra.platform.win32.common import user32
 
     def click_callback(button, pressed):
