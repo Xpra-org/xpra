@@ -88,6 +88,8 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             from xpra.platform.printing import cleanup_printing
             printlog("cleanup_printing=%s", cleanup_printing)
             cleanup_printing()
+        except ImportError as e:
+            printlog("cleanup_printing()", exc_info=True)
         except Exception as e:
             printlog("cleanup_printing()", exc_info=True)
             printlog.warn("Warning: failed to cleanup printing subsystem:")
