@@ -49,6 +49,8 @@ DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 
+NOTTY = envbool("XPRA_NOTTY", False)
+
 
 """ Base class for Xpra clients.
     Provides the glue code for:
@@ -646,7 +648,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def do_process_challenge_prompt(self, packet, prompt="password"):
         authlog("do_process_challenge_prompt() isatty=%s", sys.stdin.isatty())
-        if sys.stdin.isatty() and not os.environ.get("MSYSCON"):
+        if sys.stdin.isatty() and not os.environ.get("MSYSCON") and not NOTTY:
             import getpass
             authlog("stdin isatty, using password prompt")
             password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
