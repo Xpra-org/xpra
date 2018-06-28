@@ -226,6 +226,7 @@ BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 BuildRequires:		numpy
 BuildRequires:		python2-rencode
+BuildRequires:		python2-cryptography
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
 
@@ -352,6 +353,7 @@ BuildRequires:		ffmpeg-xpra-devel
 BuildRequires:		libyuv-devel
 BuildRequires:		gtk3-devel
 BuildRequires:		gobject-introspection-devel
+BuildRequires:		python3-cryptography
 BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
 %description -n python3-xpra
