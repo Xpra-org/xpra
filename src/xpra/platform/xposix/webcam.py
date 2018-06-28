@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from collections import OrderedDict
 
 from xpra.log import Logger
 log = Logger("webcam")
@@ -51,8 +52,8 @@ def get_virtual_video_devices(capture_only=True):
     if not check_virtual_dir(False):
         return []
     contents = os.listdir(v4l2_virtual_dir)
-    devices = {}
-    for f in contents:
+    devices = OrderedDict()
+    for f in sorted(contents):
         if not f.startswith("video"):
             continue
         try:
