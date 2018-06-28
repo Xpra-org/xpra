@@ -66,12 +66,12 @@ class ServerSocketsTest(ServerTestUtil):
 
 	def test_tcp_socket(self):
 		port = get_free_tcp_port()
-		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp/127.0.0.1:%i/" % port, EXIT_OK)
-		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "tcp://127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 	def test_ws_socket(self):
 		port = get_free_tcp_port()
-		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], "hello", "ws/127.0.0.1:%i/" % port, EXIT_OK)
+		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 
 	def test_ssl(self):
@@ -126,19 +126,19 @@ class ServerSocketsTest(ServerTestUtil):
 				assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())
 			noverify = "--ssl-server-verify-mode=none"
 			#connect to ssl socket:
-			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
+			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_OK, noverify)
 			#tcp socket should upgrade to ssl:
-			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
 			#tcp socket should upgrade to ws and ssl:
-			test_connect("wss/127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
+			test_connect("wss://127.0.0.1:%i/" % tcp_port, EXIT_OK, noverify)
 			#ws socket should upgrade to ssl:
-			test_connect("wss/127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
+			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_OK, noverify)
 			
 			#self signed cert should fail without noverify:
-			test_connect("ssl/127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
-			test_connect("ssl/127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)
-			test_connect("wss/127.0.0.1:%i/" % ws_port, EXIT_SSL_FAILURE)
-			test_connect("wss/127.0.0.1:%i/" % wss_port, EXIT_SSL_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % ssl_port, EXIT_SSL_FAILURE)
+			test_connect("ssl://127.0.0.1:%i/" % tcp_port, EXIT_SSL_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % ws_port, EXIT_SSL_FAILURE)
+			test_connect("wss://127.0.0.1:%i/" % wss_port, EXIT_SSL_FAILURE)
 
 		finally:
 			shutil.rmtree(tmpdir)
