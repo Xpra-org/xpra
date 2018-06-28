@@ -70,6 +70,9 @@ class ServerSocketsTest(ServerTestUtil):
 		self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 	def test_ws_socket(self):
+		#the client will need "websocket-client":
+		import websocket
+		assert websocket
 		port = get_free_tcp_port()
 		self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], "hello", "ws://127.0.0.1:%i/" % port, EXIT_OK)
 
