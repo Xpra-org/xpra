@@ -10,7 +10,7 @@ SRC_DIR=`dirname $UNITTESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/install/python2"
 pushd $SRC_DIR
-python2 ./setup.py install --home=$INSTALL_ROOT
+python2 ./setup.py install --home=$INSTALL_ROOT || die "failed to build"
 popd
 
 export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
