@@ -32,10 +32,10 @@ class ServerAuthTest(ServerTestUtil):
 		r = pollwait(client, 5)
 		if f:
 			f.close()
-		assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())
 		if client.poll() is None:
 			client.terminate()
 		server.terminate()
+		assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, r)
 
 	def test_fail(self):
 		self._test_auth("fail", "", EXIT_FAILURE)
