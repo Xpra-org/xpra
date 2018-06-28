@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import time
 import unittest
 from xpra.util import envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX, PYTHON2
@@ -57,18 +58,19 @@ class X11ClientTest(X11ClientTestUtil):
 		try:
 			display = self.find_free_display()
 			server = self.check_start_server(display)
-			xvfb, client = self.run_client(display)
+			xvfb, client = self.run_client(display, "--file-transfer=yes")
 			assert pollwait(client, CLIENT_TIMEOUT) is None
 			#send a file to this client:
-			send_file_command = ["control", display, "send-file", f.name, "1", "*"]
+			send_file_command = ["control", display, "send-file", f.name, "0", "*"]
 			send_file = self.run_xpra(send_file_command)
 			assert pollwait(send_file, CLIENT_TIMEOUT)==0, "send-file command returncode is %s" % send_file.poll()
+			time.sleep(1)
 			#now verify the file can be found in the download directory
 			from xpra.platform.paths import get_download_dir
 			filename = os.path.join(os.path.expanduser(get_download_dir()), os.path.basename(f.name))
 			assert os.path.exists(filename), "cannot find %s" % filename
 			readback = load_binary_file(filename)
-			assert readback==data
+			assert readback==data, "file data corrupted"
 			os.unlink(filename)
 			#cleanup:
 			client.terminate()
