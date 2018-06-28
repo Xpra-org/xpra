@@ -4,10 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
 
-from xpra.util import typedict
-from xpra.os_util import POSIX, OSX, BytesIOClass
+from xpra.util import typedict, AdHocStruct
+from xpra.os_util import POSIX, OSX, BytesIOClass, get_util_logger
 
 
 class SourceMixinsTest(unittest.TestCase):
@@ -39,18 +40,23 @@ class SourceMixinsTest(unittest.TestCase):
 
 	def test_webcam(self):
 		if not POSIX or OSX:
+			get_util_logger().info("webcam test skipped: %s not supported yet", sys.platform)
 			return
 		from xpra.platform.xposix.webcam import get_virtual_video_devices, check_virtual_dir
 		if not check_virtual_dir():
+			get_util_logger().info("webcam test skipped: no virtual video device directory")
 			return
 		devices = get_virtual_video_devices()
 		if not devices:
+			get_util_logger().info("webcam test skipped: no virtual video devices found")
 			return
 		from xpra.server.source.webcam_mixin import WebcamMixin
+		server = AdHocStruct()
 		wm = WebcamMixin()
-		self.webcam_enabled	 = True
-		self.webcam_device	  = None
-		self.webcam_encodings   = ["png", "jpeg"]
+		server.webcam_enabled	 = True
+		server.webcam_device	  = None
+		server.webcam_encodings   = ["png", "jpeg"]
+		wm.init_from(None, server)
 		wm.init_state()
 		wm.hello_sent = True
 		packets = []
