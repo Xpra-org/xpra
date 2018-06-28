@@ -166,32 +166,34 @@ class ChildReaper(object):
     def add_dead_process(self, procinfo):
         log("add_dead_process(%s)", procinfo)
         process = procinfo.process
-        if process:
-            procinfo.returncode = process.poll()
-            procinfo.dead = procinfo.returncode is not None
-            cb = procinfo.callback
-            log("add_dead_process returncode=%s, dead=%s, callback=%s", procinfo.returncode, procinfo.dead, cb)
-            if procinfo.dead and procinfo.process and cb:
-                procinfo.callback = None
-                cb(procinfo.process)
-            if procinfo.dead:
-                #once it's dead, clear the reference to the process:
-                #this should free up some resources
-                #and ensure we don't end up here again
-                procinfo.process = None
-                if procinfo.ignore:
-                    log("child '%s' with pid %s has terminated (ignored)", procinfo.name, procinfo.pid)
-                else:
-                    log.info("child '%s' with pid %s has terminated", procinfo.name, procinfo.pid)
-        if procinfo.dead and procinfo.forget:
+        if procinfo.dead or not process:
+            return
+        procinfo.returncode = process.poll()
+        procinfo.dead = procinfo.returncode is not None
+        cb = procinfo.callback
+        log("add_dead_process returncode=%s, dead=%s, callback=%s", procinfo.returncode, procinfo.dead, cb)
+        if not procinfo.dead:
+            log.warn("Warning: process '%s' is still running", procinfo.name)
+            return
+        if process and cb:
+            procinfo.callback = None
+            cb(process)
+        #once it's dead, clear the reference to the process:
+        #this should free up some resources
+        #and also help to ensure we don't end up here again
+        procinfo.process = None
+        if procinfo.ignore:
+            log("child '%s' with pid %s has terminated (ignored)", procinfo.name, procinfo.pid)
+        else:
+            log.info("child '%s' with pid %s has terminated", procinfo.name, procinfo.pid)
+        if procinfo.forget:
             #forget it:
             try:
                 self._proc_info.remove(procinfo)
             except:
                 log("failed to remove %s from proc info list", procinfo, exc_info=True)
         log("updated procinfo=%s", procinfo)
-        if procinfo.dead:
-            self.check()
+        self.check()
 
     def reap(self):
         self.poll()
