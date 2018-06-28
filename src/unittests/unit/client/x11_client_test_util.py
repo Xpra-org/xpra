@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
+from xpra.os_util import osexpand, get_hex_uuid
 from unit.server_test_util import ServerTestUtil, log
 
 uq = 0
@@ -18,7 +21,9 @@ class X11ClientTestUtil(ServerTestUtil):
 
 	def do_run_client(self, client_display, *args):
 		from xpra.x11.vfb_util import xauth_add
-		xauth_add(client_display)
+		filename = osexpand(os.environ.get("XAUTHORITY", "~/.Xauthority"))
+		xauth_data = get_hex_uuid()
+		xauth_add(filename, client_display, xauth_data, os.getuid(), os.getgid())
 		env = self.get_run_env()
 		env["DISPLAY"] = client_display
 		global uq
