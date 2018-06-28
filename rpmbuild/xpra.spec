@@ -267,6 +267,7 @@ Recommends:			sshpass
 %if 0%{?el7}
 Requires:			python-cups
 %endif
+BuildRequires:      python2-websockify
 %description -n python2-xpra-client
 This package contains the python2 xpra client.
 
@@ -385,6 +386,7 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
+BuildRequires:      python3-websockify
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
