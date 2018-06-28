@@ -267,7 +267,6 @@ Recommends:			sshpass
 %if 0%{?el7}
 Requires:			python-cups
 %endif
-BuildRequires:      python2-websockify
 %description -n python2-xpra-client
 This package contains the python2 xpra client.
 
@@ -289,11 +288,15 @@ Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
+BuildRequires:      python2-websockify
+BuildRequires:      python2-websocket-client
 %endif
 %if 0%{?el7}
 Requires:			python-cups
 Requires:			python-websockify
 Requires:			python-setproctitle
+BuildRequires:      python-websockify
+BuildRequires:      python-websocket-client
 %endif
 BuildRequires:		pam-devel
 BuildRequires:		gcc
@@ -386,7 +389,6 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
-BuildRequires:      python3-websockify
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
@@ -401,6 +403,8 @@ Recommends:			cups-pdf
 Recommends:			python3-cups
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
+BuildRequires:      python3-websockify
+BuildRequires:      python3-websocket-client
 %if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda
