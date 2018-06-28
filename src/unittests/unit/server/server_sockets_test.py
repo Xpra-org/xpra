@@ -10,9 +10,16 @@ import unittest
 import tempfile
 from xpra.util import repr_ellipsized
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX, PYTHON2
-from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE
+from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_LOST, EXIT_SSL_FAILURE, EXIT_STR
 from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log
+
+
+def estr(r):
+	s = EXIT_STR.get(r)
+	if s:
+		return "%s : %s" % (r, s)
+	return str(r)
 
 
 class ServerSocketsTest(ServerTestUtil):
@@ -20,7 +27,9 @@ class ServerSocketsTest(ServerTestUtil):
 	@classmethod
 	def start_server(cls, *args):
 		server_proc = cls.run_xpra(["start", "--no-daemon"]+list(args))
-		assert pollwait(server_proc, 5) is None, "server failed to start, returned %s" % server_proc.poll()
+		if pollwait(server_proc, 5) is not None:
+			r = server_proc.poll()
+			raise Exception("server failed to start, returned %s" % estr(r))
 		return server_proc
 
 	def _test_connect(self, server_args=[], auth="none", client_args=[], password=None, uri_prefix=":", exit_code=0):
@@ -31,9 +40,11 @@ class ServerSocketsTest(ServerTestUtil):
 		#we should always be able to get the version:
 		uri = uri_prefix + str(display_no)
 		client = self.run_xpra(["version", uri] + server_args)
-		assert pollwait(client, 5)==0, "version client failed to connect"
-		if client.poll() is None:
-			client.terminate()
+		if pollwait(client, 5)!=0:
+			r = client.poll()
+			if client.poll() is None:
+				client.terminate()
+			raise Exception("version client failed to connect, returned %s" % estr(r))
 		#try to connect
 		cmd = ["connect-test", uri] + client_args
 		f = None
@@ -44,10 +55,11 @@ class ServerSocketsTest(ServerTestUtil):
 		r = pollwait(client, 5)
 		if f:
 			f.close()
-		assert r==exit_code, "expected info client to return %s but got %s" % (exit_code, client.poll())
 		if client.poll() is None:
 			client.terminate()
 		server.terminate()
+		if r!=exit_code:
+			raise Exception("expected info client to return %s but got %s" % estr(exit_code), estr(r))
 
 	def test_default_socket(self):
 		self._test_connect([], "allow", [], "hello", ":", EXIT_OK)
