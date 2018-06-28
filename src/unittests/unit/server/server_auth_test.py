@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import unittest
 from xpra.os_util import pollwait, OSX, POSIX, PYTHON2
-from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED
+from xpra.exit_codes import EXIT_OK, EXIT_FAILURE, EXIT_PASSWORD_REQUIRED, EXIT_NO_AUTHENTICATION
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -47,7 +47,7 @@ class ServerAuthTest(ServerTestUtil):
 
 	def test_none(self):
 		self._test_auth("none", "", EXIT_OK)
-		self._test_auth("none", "", EXIT_OK, "foo")
+		self._test_auth("none", "", EXIT_NO_AUTHENTICATION, "foo")
 
 	def test_allow(self):
 		self._test_auth("allow", "", EXIT_PASSWORD_REQUIRED)

@@ -24,6 +24,9 @@ class Authenticator(object):
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
+    def choose_salt_digest(self, digest_modes):
+        return choose_digest(digest_modes)
+
     def get_uid(self):
         return -1
 
