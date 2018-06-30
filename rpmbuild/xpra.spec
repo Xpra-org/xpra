@@ -612,7 +612,7 @@ fi
 
 
 %changelog
-* Wed Jun 27 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
+* Sat Jun 30 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
 - fix memoryview paint error with non-opengl Python 2.6 clients
 - fix spurious errors and warnings during window cleanup
 - fix macos keyboard initialization
@@ -631,6 +631,7 @@ fi
 - fix building CUDA kernels with GCC 8.1
 - fix tray menu setup error when the clipboard is disabled
 - fix clipboard token send error when there are no targets
+- fix putty plink PATH lookup issue
 - correctly disable desktop-scaling when mmap is enabled
 - send missing exception details to server with remote-logging
 - make python 2.6 warning less scary
@@ -638,6 +639,8 @@ fi
 - don't prompt for the ssh password if we already have it
 - support newer nvidia driver versions with nvenc
 - remove duplicated encoding
+- show another possible reason for connection failures
+- abort tests if build fails
 - increase test timeout
 - recommend the dbus-x11 with the DEB package
 
