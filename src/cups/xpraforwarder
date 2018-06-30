@@ -41,7 +41,9 @@ try:
 except ImportError:
 	from urllib.parse import urlparse, parse_qs
 
-__version__ = "2.2"
+
+__version__ = "2.3"
+
 
 #Writes a syslog entry (msg) at the default facility:
 def debug(msg):
