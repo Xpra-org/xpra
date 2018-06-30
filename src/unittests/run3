@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+die() { echo "$*" 1>&2 ; exit 1; }
+
 export XPRA_UTIL_DEBUG=0
 export XPRA_TEST_DEBUG=0
 export XPRA_HIDE_SUBPROCESS_OUTPUT=1
