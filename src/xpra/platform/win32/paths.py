@@ -121,6 +121,9 @@ if getattr(sys, 'frozen', False) in (True, "windows_exe", "console_exe"):    #@U
         APP_DIR = os.path.dirname(sys.executable)
     else:
         APP_DIR = os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
+    if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
+        #it seems that mingw builds can get confused about the correct value for os.pathsep:
+        APP_DIR = APP_DIR.replace("/", "\\")
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
