@@ -1368,14 +1368,6 @@ def parse_display_name(error_cb, opts, display_name):
             #special env used by plink:
             env = os.environ.copy()
             env["PLINK_PROTOCOL"] = "ssh"
-            #make sure we use the plink.exe binary that we ship with the installer,
-            #ahead of any other copy that may be found in the %PATH%:
-            from xpra.platform.paths import get_app_dir
-            ad = get_app_dir()
-            if ad:
-                PATH = [ad]+os.environ.get("PATH", "").split(os.pathsep)
-                env["PATH"] = os.pathsep.join(PATH)
-                desc["env"] = env
 
         username, password, host, ssh_port = parse_host_string(host, 22)
         if password and is_putty:
