@@ -35,7 +35,11 @@
 
 import sys, os, syslog
 import subprocess, traceback
-import urlparse
+try:
+	#py2:
+	from urlparse import urlparse, parse_qs
+except ImportError:
+	from urllib.parse import urlparse, parse_qs
 
 __version__ = "2.2"
 
@@ -112,8 +116,8 @@ def do_main():
 
 	dev_uri = os.environ['DEVICE_URI']
 	info("DEVICE_URI=%s" % dev_uri)
-	parsed_url = urlparse.urlparse(dev_uri)
-	attributes = urlparse.parse_qs(parsed_url.query)
+	parsed_url = urlparse(dev_uri)
+	attributes = parse_qs(parsed_url.query)
 	info("parsed attributes=%s" % attributes)
 	def aget(k, default_value=""):
 		v =  attributes.get(k)
