@@ -164,15 +164,15 @@ class OpenRequestsWindow(object):
             cb_answer(DENY)
         hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
         if dtype==b"url":
-            hbox.pack_start(self.btn("Open Locally", None, ok, "browser.png"))
+            hbox.pack_start(self.btn("Open Locally", None, ok, "open.png"))
             hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
             hbox.pack_start(self.btn("Print", None, ok, "printer.png"))
-        elif openit:
-            hbox.pack_start(self.btn("Download and Open", None, ok, "download.png"))
-            hbox.pack_start(self.btn("Open on server", None, remote))
         else:
             hbox.pack_start(self.btn("Download", None, ok, "download.png"))
+            if openit:
+                hbox.pack_start(self.btn("Download and Open", None, ok, "open.png"))
+                hbox.pack_start(self.btn("Open on server", None, remote))
         return hbox
 
     def schedule_timer(self):
