@@ -578,12 +578,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     wm_name = None
                 try:
                     if len(v)==8:
+                        v = v[4:]
                         if first_time("invalid-frame-extents"):
                             framelog.warn("Warning: invalid frame extents value '%s'", v)
                             if wm_name:
                                 framelog.warn(" this is probably a bug in '%s'", wm_name)
                             framelog.warn(" using '%s' instead", v)
-                        v = v[4:]
                     l, r, t, b = v
                     wfs["frame"] = (l, r, t, b)
                     wfs["offset"] = (l, t)
