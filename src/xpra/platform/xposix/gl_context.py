@@ -128,8 +128,17 @@ class GLXContext(object):
         self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
         self.props["direct"] = bool(GLX.glXIsDirect(self.xdisplay, self.context))
-        self.props["vendor"] = glGetString(GL_VENDOR)
-        self.props["renderer"] = glGetString(GL_RENDERER)
+        def getstr(k):
+            try:
+                return glGetString(k)
+            except Exception as e:
+                self.props["safe"] = False
+                result = getattr(e, "result", None)
+                if result and isinstance(result, str):
+                    return result
+                raise
+        self.props["vendor"] = getstr(GL_VENDOR)
+        self.props["renderer"] = getstr(GL_RENDERER)
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
     def check_support(self, force_enable=False):
