@@ -127,7 +127,7 @@ class PixmapBacking(GTK2WindowBacking):
         return img_data, width*len(target_format)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
-        if isinstance(img_data, (_memoryview, _buffer, bytearray)):
+        if isinstance(img_data, (_memoryview or _buffer, _buffer, bytearray)):
             img_data = memoryview_to_bytes(img_data)
         if INDIRECT_BGR:
             img_data, rowstride = self.bgr_to_rgb(img_data, width, height, rowstride, options.strget("rgb_format", ""), "RGB")
