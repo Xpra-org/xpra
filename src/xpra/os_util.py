@@ -119,8 +119,12 @@ def platform_release(release):
         SYSTEMVERSION_PLIST = "/System/Library/CoreServices/SystemVersion.plist"
         try:
             import plistlib
-            with open(SYSTEMVERSION_PLIST, "rb") as f:
-                pl = plistlib.load(f)           #@UndefinedVariable
+            load = getattr(plistlib, "load", None)
+            if load:
+                with open(SYSTEMVERSION_PLIST, "rb") as f:
+                    pl = load(f)           #@UndefinedVariable
+            else:
+                pl = plistlib.readPlist('/System/Library/CoreServices/SystemVersion.plist')
             return pl['ProductUserVisibleVersion']
         except Exception as e:
             from xpra.log import Logger
