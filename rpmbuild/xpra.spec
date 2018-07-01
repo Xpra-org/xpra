@@ -612,7 +612,10 @@ fi
 
 
 %changelog
-* Sat Jun 30 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
+* Sun Jul 01 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-2
+- python 2.6 compatibility fixup
+
+* Sat Jun 30 2018 Antoine Martin <antoine@devloop.org.uk> 1.0.12-1
 - fix memoryview paint error with non-opengl Python 2.6 clients
 - fix spurious errors and warnings during window cleanup
 - fix macos keyboard initialization
