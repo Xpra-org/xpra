@@ -194,10 +194,10 @@
 	</distutils>
 
 	<distutils id="python3-pillow" python3="1">
-		<branch repo="pypi.python.org"
-			module="/packages/89/b8/2f49bf71cbd0e9485bb36f72d438421b69b7356180695ae10bd4fd3066f5/Pillow-5.1.0.tar.gz"
-			hash="sha256:cee9bc75bff455d317b6947081df0824a8f118de2786dc3d74a3503fd631f4ef"
-			version="5.1.0"/>
+		<branch repo="files.pythonhosted.org"
+			module="/packages/d3/c4/b45b9c0d549f482dd072055e2d3ced88f3b977f7b87c7a990228b20e7da1/Pillow-5.2.0.tar.gz"
+			hash="sha256:f8b3d413c5a8f84b12cd4c5df1d8e211777c9852c6be3ee9c094b626644d3eab"
+			version="5.2.0"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="libwebp"/>
@@ -575,11 +575,12 @@
 		</after>
 	</distutils>
 
+
 	<distutils id="python3-pyobjc-core" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/92/80/38e3259d6753a0c96694fbc69dc7e82c6ddcfb3c9e418c77d3536cc34106/pyobjc-core-4.2.1.tar.gz"
-			hash="sha256:a712eae1d89f952d3814df90eed7b6afcb5816db24d1a86b4f97e0810534119e"
-			version="4.2.1"/>
+			module="/packages/9c/3c/09d2c37e3266fc7d1b0b2e46df838cf7603adca85d5132382a36e1e0b0c3/pyobjc-core-4.2.2.tar.gz"
+			hash="sha256:f76ed67ae902ea4bf6b673962520334b0ae26910c294b6ffbd2ac1af9b62ea0f"
+			version="4.2.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -590,9 +591,9 @@
 
 	<distutils id="python3-pyobjc-framework-cocoa" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d3/8a/03aed701a151563bc3bbe0eb004a66d16b580d9e95207be75d9d3c3f2b6d/pyobjc-framework-Cocoa-4.2.1.tar.gz"
-			hash="sha256:8ef446b1803b2392ce4df1a3600e8d5f1bc577206d57e30142c8425555009000"
-			version="4.2.1"/>
+			module="/packages/a2/32/45607f1f46d0813173b544b35d4b0d538fa7f57517adec70b7e4d4536045/pyobjc-framework-Cocoa-4.2.2.tar.gz"
+			hash="sha256:99b33ab038b90e8866e4cb510213f235c3010982fa425d8f34850c45ece30c43"
+			version="4.2.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -603,9 +604,9 @@
 
 	<distutils id="python3-pyobjc-framework-quartz" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9e/51/c92736169128f7ced926a6f8dd2bc09b9b40c6cbc901ea684fc4db443e26/pyobjc-framework-Quartz-4.2.1.tar.gz"
-			hash="sha256:11161f7c5d0602786f9b401183fe2f8e19291813d5d07fdfc0681b3e8ae00f07"
-			version="4.2.1"/>
+			module="/packages/a3/c8/e949e274d3068bf97613fc13df8e1f97d45c7548599b6b354365a2c78c60/pyobjc-framework-Quartz-4.2.2.tar.gz"
+			hash="sha256:541a9bc32909936f49a753317576f7c8772eaadace8e462845bb19aee79531d5"
+			version="4.2.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -616,9 +617,9 @@
 
 	<distutils id="python3-pyobjc-framework-avfoundation" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/32/06/aeb323e2b638c4c6d5ef5b20725026c12db3c68326de36f2b6ca332beaf7/pyobjc-framework-AVFoundation-4.2.1.tar.gz"
-			hash="sha256:fef56ca8e0c136141971ca3aec2fa5c7f873dfcff43960de97943639af132dbb"
-			version="4.2.1"/>
+			module="/packages/2b/06/487eefe0f4fd47dd1fa22ee532e7e123a3d3b3018be701ac23bcd61467b8/pyobjc-framework-AVFoundation-4.2.2.tar.gz"
+			hash="sha256:9e18d0795df7e2758cb8b7a76d80ed8b73057cb40ca1e28786473f62bcf19364"
+			version="4.2.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -629,9 +630,9 @@
 
 	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/c3/b0/3bea770f91b395f30f99bca8976ccafa42ac5c5b32348dd492ffe9b4d71e/pyobjc-framework-SystemConfiguration-4.2.1.tar.gz"
-			hash="sha256:214c3fb45c3c235f1f58c0fc7e05e73f4bccbc5a48c639cefd02c340e5013c51"
-			version="4.2.1"/>
+			module="/packages/82/28/4b9c46bd466b4188123d2b0bfdf8adea584152f2704dda18e5d5b6eeebd0/pyobjc-framework-SystemConfiguration-4.2.2.tar.gz"
+			hash="sha256:af1f25825974b148ed01ab095dd3796f07df6c575c52d802e37f908af5135096"
+			version="4.2.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
