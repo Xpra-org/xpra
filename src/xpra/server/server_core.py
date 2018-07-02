@@ -200,6 +200,7 @@ class ServerCore(object):
         self.dbus_control = False
         self.dbus_server = None
         self.unix_socket_paths = []
+        self.touch_timer = None
 
         self.session_name = u""
 
