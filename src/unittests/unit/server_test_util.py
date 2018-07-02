@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import tempfile
 import unittest
 import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
-from xpra.os_util import OSEnvContext, pollwait, osexpand, POSIX, WIN32
+from xpra.os_util import OSEnvContext, pollwait, osexpand, bytestostr, POSIX, WIN32
 from xpra.scripts.config import get_defaults
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_xpra_command
@@ -98,7 +98,7 @@ class ServerTestUtil(unittest.TestCase):
 			xpra_cmd = [cls.which("xpra")]
 		cmd = xpra_cmd + cls.default_xpra_args + xpra_args
 		pyexename = "python%i" % sys.version_info[0]
-		exe = xpra_cmd[0]
+		exe = bytestostr(xpra_cmd[0])
 		if exe.endswith(pyexename):
 			pass
 		elif WIN32 and exe.endswith("%s.exe" % pyexename):
