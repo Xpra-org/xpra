@@ -102,7 +102,8 @@ class RFBServer(object):
         #shadow servers need to be told to start the refresh timer:
         start_refresh = getattr(self, "start_refresh", None)
         if start_refresh:
-            start_refresh()
+            for wid in tuple(self._window_to_id.values()):
+                start_refresh(wid)
 
     def _process_rfb_PointerEvent(self, _proto, packet):
         if not server_features.input_devices or self.readonly:

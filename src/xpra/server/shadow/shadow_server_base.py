@@ -178,7 +178,8 @@ class ShadowServerBase(RFBServer):
         self.refresh_delay = v
         if self.mapped:
             self.cancel_refresh_timer()
-            self.start_refresh()
+            for wid in self.mapped:
+                self.start_refresh(wid)
 
 
     def stop_refresh(self, wid):
