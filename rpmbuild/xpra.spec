@@ -231,9 +231,11 @@ BuildRequires:		pygobject2-devel
 BuildRequires:		turbojpeg-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
-BuildRequires:		numpy
+%if 0%{?run_tests}
+BuildRequires:		python2-numpy
 BuildRequires:		python2-rencode
 BuildRequires:		python2-cryptography
+%endif
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
 
@@ -270,7 +272,9 @@ Requires:			pygtkglext
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
 Recommends:			sshpass
+%if 0%{?run_tests}
 BuildRequires:		xclip
+%endif
 %endif
 %if 0%{?el7}
 Requires:			python-cups
@@ -296,15 +300,19 @@ Recommends:			cups-pdf
 Recommends:			python2-cups
 Recommends:			python2-uinput
 Recommends:			python2-setproctitle
+%if 0%{?run_tests}
 BuildRequires:      python2-websockify
 BuildRequires:      python2-websocket-client
+%endif
 %endif
 %if 0%{?el7}
 Requires:			python-cups
 Requires:			python-websockify
 Requires:			python-setproctitle
+%if 0%{?run_tests}
 BuildRequires:      python-websockify
 BuildRequires:      python-websocket-client
+%endif
 %endif
 BuildRequires:		pam-devel
 BuildRequires:		gcc
@@ -355,7 +363,6 @@ BuildRequires:		libyuv-devel
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3
-BuildRequires:		python3-cryptography
 BuildRequires:		python3-devel
 BuildRequires:		python3-Cython
 BuildRequires:		python3-gobject
@@ -365,9 +372,11 @@ BuildRequires:		ffmpeg-xpra-devel
 BuildRequires:		libyuv-devel
 BuildRequires:		gtk3-devel
 BuildRequires:		gobject-introspection-devel
+%if 0%{?run_tests}
 BuildRequires:		python3-cryptography
 BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
+%endif
 %description -n python3-xpra
 This package contains the python3 build of xpra.
 
@@ -397,7 +406,9 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
+%if 0%{?run_tests}
 BuildRequires:		xclip
+%endif
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 
@@ -412,8 +423,10 @@ Recommends:			cups-pdf
 Recommends:			python3-cups
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
+%if 0%{?run_tests}
 BuildRequires:      python3-websockify
 BuildRequires:      python3-websocket-client
+%endif
 %if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda
