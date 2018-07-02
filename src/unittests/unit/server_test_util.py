@@ -96,7 +96,15 @@ class ServerTestUtil(unittest.TestCase):
 		xpra_cmd = get_xpra_command()
 		if xpra_cmd==["xpra"]:
 			xpra_cmd = [cls.which("xpra")]
-		cmd = ["python%i" % sys.version_info[0]] + xpra_cmd + cls.default_xpra_args + xpra_args
+		cmd = xpra_cmd + cls.default_xpra_args + xpra_args
+		pyexename = "python%i" % sys.version_info[0]
+		exe = xpra_cmd[0]
+		if exe.endswith(pyexename):
+			pass
+		elif WIN32 and exe.endswith("%s.exe" % pyexename):
+			pass
+		else:
+			cmd = [pyexename] + xpra_cmd + cls.default_xpra_args + xpra_args
 		return cls.run_command(cmd, env, **kwargs)
 
 	@classmethod
