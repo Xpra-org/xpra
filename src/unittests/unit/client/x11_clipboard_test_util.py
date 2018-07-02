@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 from xpra.util import envbool
-from xpra.os_util import get_hex_uuid, pollwait
+from xpra.os_util import get_hex_uuid, pollwait, which
 from unit.client.x11_client_test_util import X11ClientTestUtil
 from xpra.platform.features import CLIPBOARDS
 
@@ -15,6 +15,9 @@ log = Logger("clipboard")
 
 
 SANITY_CHECKS = envbool("XPRA_CLIPBOARD_SANITY_CHECKS", True)
+
+def has_xclip():
+	return which("xclip")
 
 
 class X11ClipboardTestUtil(X11ClientTestUtil):

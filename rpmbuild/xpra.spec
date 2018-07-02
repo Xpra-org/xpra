@@ -263,6 +263,7 @@ Requires:			pygtkglext
 Recommends:			python2-xpra-audio
 Recommends:			python2-cups
 Recommends:			sshpass
+BuildRequires:		xclip
 %endif
 %if 0%{?el7}
 Requires:			python-cups
@@ -389,6 +390,7 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			sshpass
 Recommends:			python3-pyu2f
+BuildRequires:		xclip
 %description -n python3-xpra-client
 This package contains the python3 xpra client.
 

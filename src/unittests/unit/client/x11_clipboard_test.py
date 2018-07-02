@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2016-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
-from unit.client.x11_clipboard_test_util import X11ClipboardTestUtil
+from unit.client.x11_clipboard_test_util import X11ClipboardTestUtil, has_xclip
 from xpra.os_util import OSX, POSIX, PYTHON2
 
 from xpra.log import Logger
@@ -35,7 +35,7 @@ class X11ClipboardTest(X11ClipboardTestUtil):
 
 
 def main():
-	if POSIX and PYTHON2 and not OSX:
+	if POSIX and PYTHON2 and not OSX and has_xclip():
 		unittest.main()
 
 
