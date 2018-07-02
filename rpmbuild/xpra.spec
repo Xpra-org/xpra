@@ -35,6 +35,12 @@
 #we never want to depend on proprietary nvidia bits:
 %global __requires_exclude ^libnvidia-.*\\.so.*$
 
+# Python permits the !/usr/bin/python shebang for scripts that are cross
+# compatible between python2 and python3, but Fedora 28 does not.  Fedora
+# wants us to choose python3 for cross-compatible scripts.  Since we want
+# to support python2 and python3 users, exclude our scripts from Fedora 28's
+# RPM build check, so that we don't get a bunch of build warnings.
+%global __brp_mangle_shebangs_exclude_from xpraforwarder|auth_dialog|xdg-open
 
 
 # centos / rhel 7.2 onwards
