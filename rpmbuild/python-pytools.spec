@@ -55,7 +55,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc README PKG-INFO
+%doc PKG-INFO
 %{python2_sitelib}/*
 
 
