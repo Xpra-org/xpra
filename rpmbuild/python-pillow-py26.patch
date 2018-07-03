@@ -1,0 +1,19 @@
+--- a/setup.py	2017-10-02 22:20:24.000000000 +0700
++++ b/setup.py	2018-07-03 13:57:25.754239508 +0700
+@@ -143,7 +143,7 @@
+         features = ['zlib', 'jpeg', 'tiff', 'freetype', 'raqm', 'lcms', 'webp',
+                     'webpmux', 'jpeg2000', 'imagequant']
+ 
+-        required = {'jpeg', 'zlib'}
++        required = ['jpeg', 'zlib']
+ 
+         def __init__(self):
+             for f in self.features:
+@@ -780,7 +780,6 @@
+           include_package_data=True,
+           packages=find_packages(),
+           scripts=glob.glob("Scripts/*.py"),
+-          install_requires=['olefile'],
+           test_suite='nose.collector',
+           keywords=["Imaging", ],
+           license='Standard PIL License'
