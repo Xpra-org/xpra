@@ -1,3 +1,4 @@
+%{!?__python2: %define __python2 python2}
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python2-pytools
