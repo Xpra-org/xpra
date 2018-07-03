@@ -34,16 +34,16 @@
 
 Name:           python2-pillow
 Version:        5.2.0
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
 Source:         https://pypi.python.org/packages/0f/57/25be1a4c2d487942c3ed360f6eee7f41c5b9196a09ca71c54d1a33c968d9/Pillow-%{version}.tar.gz
-Provides:       python-pillow
-Obsoletes:      python-pillow
-Conflicts:      python-pillow
+Provides:       python-pillow = %{version}-%{release}
+Obsoletes:      python-pillow < %{version}-%{release}
+Conflicts:      python-pillow < %{version}-%{release}
 
 %if 0%{?suse_version}
 BuildRequires:  python-devel
@@ -296,6 +296,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-2
+- try harder to prevent rpm db conflicts
+
 * Mon Jul 02 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-1
 - new upstream release
 
