@@ -204,6 +204,9 @@ PIL image wrapper for Qt.
 
 %prep
 %setup -q -n Pillow-%{version}
+%if 0%{?el6}
+%patch0 -p1
+%endif
 %if %{with_python3}
 rm -rf %{py3dir}
 cp -a . %{py3dir}
