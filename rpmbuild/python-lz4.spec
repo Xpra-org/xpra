@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        2.0.1
-Release:        1.xpra1%{?dist}
+Release:        2.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -29,9 +29,9 @@ BuildRequires:  python-devel
 BuildRequires:  python-setuptools
 BuildRequires:  python2-pkgconfig
 Requires: 		lz4
-Provides:		python-lz4
-Obsoletes:      python-lz4 < 0.8.2-3
-Conflicts:		python-lz4 < 0.8.2-3
+Provides:		python-lz4 = %{version}-%{release}
+Obsoletes:      python-lz4 < %{version}-%{release}
+Conflicts:		python-lz4 < %{version}-%{release}
 
 %description
 This package provides Python2 bindings for the lz4 compression library
@@ -90,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 2.0.1-2
+- try harder to prevent rpm db conflicts
+
 * Mon Jul 02 2018 Antoine Martin <antoine@nagafix.co.uk> - 2.0.1-1
 - New upstream release
 

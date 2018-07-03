@@ -13,14 +13,14 @@
 
 Name:           python2-rencode
 Version:        1.0.5
-Release:        7.xpra1%{?dist}
+Release:        8.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
 Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
-Provides:		python-rencode
-Obsoletes:		python-rencode
-Conflicts:		python-rencode
+Provides:		python-rencode = %{version}-%{release}
+Obsoletes:		python-rencode < %{version}-%{release}
+Conflicts:		python-rencode < %{version}-%{release}
 Patch0:         python-rencode-py36-importwarning.patch
 Patch1:         python-rencode-py26-testcompat.patch
 
@@ -119,6 +119,9 @@ popd
 %endif
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-8.xpra1
+- try harder to prevent rpm db conflicts
+
 * Sat Aug 05 2017 Antoine Martin <antoine@devloop.org.uk> - 1.0.5-7.xpra1
 - bump so we override fedora's package which lacks the import fix
 

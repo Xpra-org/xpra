@@ -1,18 +1,18 @@
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python2-pytools
-Version:        2016.2.1
-Release:        3%{?dist}
+Version:        2018.5.2
+Release:        1%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        http://pypi.python.org/packages/source/p/pytools/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/90/6a/7b706e4730db0ee5724c677cceafcac1bc9710c61612442a689e7b0aa5c4/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Provides:		python-pytools
-Obsoletes:		python-pytools
-Conflicts:		python-pytools
+Provides:		python-pytools = %{version}-%{release}
+Obsoletes:		python-pytools < %{version}-%{release}
+Conflicts:		python-pytools < %{version}-%{release}
 
 BuildArch:      noarch
 BuildRequires:  python-devel python-setuptools
@@ -59,6 +59,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 2018.5.2-1
+- new upstream release
+- try harder to prevent rpm db conflicts
+
 * Sat Dec 24 2016 Antoine Martin <antoine@devloop.org.uk> - 2016.2.1-3
 - try harder to supersede the old package name
 

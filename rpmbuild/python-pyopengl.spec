@@ -10,7 +10,7 @@
 
 Name:           python2-pyopengl
 Version:        3.1.1a1
-Release:        9xpra1%{?dist}
+Release:        10xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -18,18 +18,18 @@ Source0:        https://pypi.python.org/packages/source/P/%{srcname}/%{srcname}-
 Source1:        https://pypi.python.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
 
 Requires:       freeglut
-Obsoletes:      python-pyopengl < 3.1.2
+Obsoletes:      python-pyopengl < %{version}-%{release}
 Provides:       python-pyopengl = %{version}-%{release}
-Obsoletes:      pyopengl < 3.1.2
+Obsoletes:      pyopengl < %{version}-%{release}
 Provides:       pyopengl = %{version}-%{release}
-Conflicts:		pyopengl
-Obsoletes:      PyOpenGL < 3.1.2
+Conflicts:		pyopengl < %{version}-%{release}
+Obsoletes:      PyOpenGL < %{version}-%{release}
 Provides:       PyOpenGL = %{version}-%{release}
-Conflicts:		PyOpenGL
+Conflicts:		PyOpenGL < %{version}-%{release}
 #Fedora broke our xpra repository :(
-Obsoletes:      PyOpenGL-accelerate < 3.1.2
+Obsoletes:      PyOpenGL-accelerate < %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
-Conflicts:		PyOpenGL-accelerate
+Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
 
 %if 0%{?fedora}
 %define with_python3 1
@@ -174,6 +174,9 @@ popd
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-10xpra1
+- try harder to prevent rpm db conflicts
+
 * Thu Dec 07 2017 Antoine Martin <antoine@devloop.org.uk> - 3.1.1a1-9xpra1
 - remove opensuse bitrot
 

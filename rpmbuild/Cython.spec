@@ -2,16 +2,11 @@
 %{!?__python3: %define __python3 python3}
 %{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?py3dir: %global py3dir %{_builddir}/python3-%{name}-%{version}-%{release}}
-%define with_python3 0%{?fedora}%{?suse_version}
+%define with_python3 0%{?fedora}
 
-%if 0%{?suse_version}
-Name:		python-Cython
-%else
 Name:		python2-Cython
-%endif
-
 Version:	0.28.3
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -20,14 +15,9 @@ URL:		http://www.cython.org
 Source:		https://github.com/cython/cython/archive/%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python
-%if 0%{?suse_version}
-#no conflicts?
-%else
-Conflicts:	Cython
+Conflicts:	Cython < %{version}-%{release}
 Obsoletes:	Cython < %{version}-%{release}
 Provides: 	Cython = %{version}-%{release}
-Provides: 	python2-Cython = %{version}-%{release}
-%endif
 
 BuildRequires:	python-devel python-setuptools
 %if %{with_python3}
@@ -117,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-2
+- try harder to prevent rpm db conflicts
+
 * Wed May 30 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-1
 - new upstream release
 
