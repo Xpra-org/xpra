@@ -6,7 +6,7 @@
 
 Name:		python2-Cython
 Version:	0.28.3
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	A language for writing Python extension modules
 
 Group:		Development/Tools
@@ -50,11 +50,11 @@ cp -a . %{py3dir}
 find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 %endif
 
-find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python}|'
+find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 
 %if %{with_python3}
 pushd %{py3dir}
@@ -77,7 +77,7 @@ rm -rf %{buildroot}%{python3_sitelib}/setuptools/tests
 popd
 %endif
 
-%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
 rm -rf %{buildroot}%{python_sitelib}/setuptools/tests
 
 
@@ -86,7 +86,7 @@ rm -rf %{buildroot}
 
 
 ##%%check
-##%%{__python} runtests.py -x numpy
+##%%{__python2} runtests.py -x numpy
 
 
 %files
@@ -107,6 +107,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-3
+- use python2 explicitly
+
 * Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.28.3-2
 - try harder to prevent rpm db conflicts
 

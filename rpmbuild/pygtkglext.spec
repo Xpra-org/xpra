@@ -1,5 +1,6 @@
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%{!?__python2: %define __python2 python2}
+%{!?python_sitelib: %global python_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%{!?python_sitearch: %global python_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 %define pygtk2 pygtk2
 %define pygtkglext pygtkglext
@@ -11,7 +12,7 @@
 
 Name:           %{pygtkglext}
 Version:        1.1.0
-Release:        16.xpra1%{?dist}
+Release:        16.xpra2%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -99,5 +100,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 1.1.0-16.xpra2
+- use python2 explicitly
+
 * Thu Dec 03 2015 Antoine Martin <antoine@nagafix.co.uk> - 1.1.0-16.xpra1
 - Added support for building on openSUSE

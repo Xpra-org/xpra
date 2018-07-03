@@ -1,6 +1,8 @@
+%{!?__python2: %define __python2 python2}
+
 Name:           python-websockify
 Version:        0.8.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        WSGI based adapter for the Websockets protocol
 
 License:        LGPLv3
@@ -21,11 +23,11 @@ Python WSGI based adapter for the Websockets protocol
 sed -i '/setup_requires/d; /install_requires/d; /dependency_links/d' setup.py
 
 %build
-%{__python} setup.py build
+%{__python2} setup.py build
 
 
 %install
-%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
 
 rm -Rf %{buildroot}/usr/share/websockify
 mkdir -p %{buildroot}%{_mandir}/man1/
@@ -41,5 +43,8 @@ install -m 444 docs/websockify.1 %{buildroot}%{_mandir}/man1/
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.8.0-2
+- use python2 explicitly
+
 * Wed Jan 17 2018 Antoine Martin <antoine@devloop.org.uk> - 0.8.0-1
 - initial CentOS packaging

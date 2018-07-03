@@ -10,7 +10,7 @@
 
 Name:           python2-uinput
 Version:        0.11.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 
 License:        GPLv3
@@ -68,7 +68,7 @@ find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" %{__python} setup.py build
+CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 
 %if 0%{?with_python3}
 pushd %{py3dir}
@@ -108,6 +108,9 @@ chmod a-x examples/*
 
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 0.11.2-3
+- use python2 explicitly
+
 * Mon Jan 22 2018 Antoine Martin <antoine@devloop.org.uk> - 0.11.2-2
 - more explicit python version, sitearch paths
 

@@ -34,7 +34,7 @@
 
 Name:           python2-pillow
 Version:        5.2.0
-Release:        2%{?snap}%{?dist}
+Release:        3%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
@@ -208,7 +208,7 @@ cp -a . %{py3dir}
 
 %build
 # Build Python 2 modules
-find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python}|'
+find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python2}|'
 CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 %if %{with_webp} == 0
 #couldn't find a better way to disable webp:
@@ -239,7 +239,7 @@ popd
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
-%{__python} setup.py install --skip-build --root $RPM_BUILD_ROOT
+%{__python2} setup.py install --skip-build --root $RPM_BUILD_ROOT
 
 %if %{with_python3}
 pushd %{py3dir}
@@ -296,6 +296,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-3
+- use python2 explicitly
+
 * Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 5.2.0-2
 - try harder to prevent rpm db conflicts
 
