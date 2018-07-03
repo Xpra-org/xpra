@@ -196,8 +196,8 @@ Recommends:			python2-opencv
 Recommends:			python2-avahi
 Recommends:         python2-ldap
 Recommends:         python2-ldap3
+Recommends:			python2-dbus
 %endif
-%{Recommends}:		python2-dbus
 %{Recommends}:		dbus-x11
 %{Recommends}:		python2-netifaces
 %{Suggests}:		python2-cryptography
@@ -212,6 +212,7 @@ BuildRequires:		libwebp-devel
 BuildRequires:		python2-setuptools
 %endif
 %if 0%{?el7}
+Requires:			dbus-python
 Requires:			libwebp-xpra
 BuildRequires:		libwebp-xpra-devel
 BuildRequires:		python-setuptools
