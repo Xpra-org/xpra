@@ -471,7 +471,7 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 pushd xpra-%{version}-python3
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python3} setup.py build \
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
 	--without-html5 --without-printing --without-cuda_kernels
 popd
@@ -480,7 +480,7 @@ popd
 pushd xpra-%{version}-python2
 rm -rf build install
 # set pkg_config_path for xpra video libs
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS}" %{__python2} setup.py build \
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python2} setup.py build \
 	%{build_args}
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
