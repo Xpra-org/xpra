@@ -31,9 +31,9 @@ BuildRequires:  python-setuptools
 BuildRequires:  lz4-devel
 %endif
 Requires: 		lz4
-Provides:		python-lz4
-Obsoletes:      python-lz4 < 0.8.2-3
-Conflicts:		python-lz4 < 0.8.2-3
+Provides:               python-lz4 = %{version}-%{release}
+Obsoletes:      python-lz4 < %{version}-%{release}
+Conflicts:              python-lz4 < %{version}-%{release}
 Patch0:         lz4-skip-nose-vs-sphinx-mess.patch
 
 %description
