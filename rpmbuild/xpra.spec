@@ -184,9 +184,12 @@ Obsoletes:          libvpx-xpra
 Requires:			x264-xpra
 Requires:			ffmpeg-xpra
 Requires:			turbojpeg
-Requires:			numpy
 %if 0%{?fedora}
 Requires:			libyuv
+Requires:			python2-numpy
+%if 0%{?run_tests}
+BuildRequires:		python2-numpy
+%endif
 Recommends:			python2-lzo
 Recommends:         python2-kerberos
 Recommends:         python2-gssapi
@@ -212,6 +215,10 @@ BuildRequires:		libwebp-devel
 BuildRequires:		python2-setuptools
 %endif
 %if 0%{?el7}
+Requires:			numpy
+%if 0%{?run_tests}
+BuildRequires:		numpy
+%endif
 Requires:			dbus-python
 Requires:			libwebp-xpra
 BuildRequires:		libwebp-xpra-devel
@@ -233,7 +240,6 @@ BuildRequires:		turbojpeg-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
-BuildRequires:		python2-numpy
 BuildRequires:		python2-rencode
 BuildRequires:		python2-cryptography
 %endif
