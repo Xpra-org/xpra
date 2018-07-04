@@ -55,6 +55,7 @@ ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
+MODAL_WINDOWS = envbool("XPRA_MODAL_WINDOWS", False)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -107,6 +108,7 @@ class WindowClient(StubClientMixin):
 
         self.border = None
         self.window_close_action = "forward"
+        self.modal_windows = MODAL_WINDOWS
 
         self._pid_to_signalwatcher = {}
         self._signalwatcher_to_wids = {}

@@ -936,7 +936,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         #all other windows we manage from receiving input
         #including other unrelated applications
         #what we want is "window-modal"
-        statelog("set_modal(%s) swallowed", modal)
+        log("set_modal(%s) modal_windows=%s", modal, self._client.modal_windows)
+        if not self._client.modal_windows:
+            statelog("set_modal(%s) swallowed", modal)
+            return
+        gtk.Window.set_modal(self, modal)
 
 
     def set_fullscreen_monitors(self, fsm):
