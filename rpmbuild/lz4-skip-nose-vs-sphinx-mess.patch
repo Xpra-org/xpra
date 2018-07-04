@@ -1,9 +1,9 @@
 --- a/setup.py	2016-04-29 11:52:02.628483556 +0700
 +++ b/setup.py	2016-04-29 11:52:15.427381771 +0700
-@@ -71,8 +71,8 @@
-     packages=find_packages('src'),
-     package_dir={'': 'src'},
-     ext_modules=[lz4mod,],
+@@ -165,8 +165,8 @@
+         lz4block,
+         lz4frame
+     ],
 -    tests_require=["nose>=1.0"],
 -    test_suite = "nose.collector",
 +    #tests_require=["nose>=1.0"],
