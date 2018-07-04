@@ -16,4 +16,4 @@
 -          install_requires=['olefile'],
            test_suite='nose.collector',
            keywords=["Imaging", ],
-           license='Standard PIL License'
+           license='Standard PIL License',
