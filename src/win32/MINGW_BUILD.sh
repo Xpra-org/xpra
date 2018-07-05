@@ -243,6 +243,8 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	find lib/numpy/ -name "lib*.dll" -exec mv {} ./lib/ \;
 	#gstreamer uses its own lib dir, so this does not belong in the root:
 	mv ./libgst*.dll ./lib/gstreamer-1.0/
+	#but the main gstreamer lib does:
+	mv ./lib/gstreamer-1.0/libgstreamer*.dll ./
 	#remove all the pointless duplication:
 	mv *dll lib/
 	#but keep python and gcc DLLs in the root:
