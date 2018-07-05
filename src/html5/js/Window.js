@@ -130,8 +130,8 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 				'<span class="windowicon"><img id="windowicon' + String(wid) + '" /></span> '+
 				'<span class="windowtitle" id="title' + String(wid) + '">' + this.title + '</span> '+
 				'<span class="windowbuttons"> '+
-				'<span id="maximize' + String(wid) + '"><img src="../icons/maximize.png" /></span> '+
-				'<span id="close' + String(wid) + '"><img src="../icons/close.png" /></span> '+
+				'<span id="maximize' + String(wid) + '"><img src="icons/maximize.png" /></span> '+
+				'<span id="close' + String(wid) + '"><img src="icons/close.png" /></span> '+
 				'</span></div>');
 		// make draggable
 		jQuery(this.div).draggable({ cancel: "canvas" });
