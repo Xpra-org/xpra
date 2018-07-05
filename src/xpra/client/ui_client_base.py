@@ -325,7 +325,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
-        log.info("server_keyboard=%s", self.server_keyboard)
         if not self.server_keyboard and self.keyboard_helper:
             #swallow packets:
             def nosend(*args):
