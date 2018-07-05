@@ -240,17 +240,19 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
 		find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 	done
-	find lib/numpy/ -name "lib*.dll" -exec mv {} ./lib/ \;
+	echo "numpy duplicated DLLs:"
+	for x in openblas gfortran quadmath; do
+		mv -f ./lib/numpy/core/lib$x*.dll ./lib/
+		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
+	done
 	#gstreamer uses its own lib dir, so this does not belong in the root:
 	mv ./libgst*.dll ./lib/gstreamer-1.0/
 	#but the main gstreamer lib does:
 	mv ./lib/gstreamer-1.0/libgstreamer*.dll ./
 	#remove all the pointless duplication:
 	mv *dll lib/
-	#but keep python and gcc DLLs in the root:
-	cp lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
-	#we don't need this one?
-	rm lib/libopenblas*
+	#but keep the core DLLs (python, gcc, etc):
+	cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 	pushd lib > /dev/null
 	for x in `ls *dll`; do
 		find ./ -mindepth 2 -name "${x}" -exec rm {} \;
