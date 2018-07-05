@@ -289,10 +289,7 @@ XpraClient.prototype.callback_close = function(reason) {
 }
 
 XpraClient.prototype.connect = function() {
-	var details = this.host + ":" + this.port;
-	if (this.path) {
-		details += "/"+this.path;
-	}
+	var details = this.host + ":" + this.port + this.path;
 	if (this.ssl) {
 		details += " with ssl";
 	}
@@ -356,9 +353,7 @@ XpraClient.prototype.open_protocol = function() {
 		uri = "wss://";
 	uri += this.host;
 	uri += ":" + this.port;
-	if (this.path) {
-		uri += "/"+this.path;
-	}
+	uri += this.path;
 	// do open
 	this.on_connection_progress("Opening WebSocket connection", uri, 60);
 	this.protocol.open(uri);
@@ -2334,10 +2329,7 @@ XpraClient.prototype._sound_start_httpstream = function() {
 	if (this.ssl) {
 		url = "https";
 	}
-	url += "://"+this.host+":"+this.port;
-	if (this.path) {
-		url += "/"+this.path;
-	}
+	url += "://"+this.host+":"+this.port+this.path;
 	url += "/audio.mp3?uuid="+this.uuid;
 	this.log("starting http stream from", url);
 	this.audio.src = url;
