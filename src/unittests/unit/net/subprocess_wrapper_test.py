@@ -19,7 +19,7 @@ from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee
 from xpra.net.bytestreams import Connection
 from xpra.os_util import Queue
 
-TEST_TIMEOUT = 5*1000
+TEST_TIMEOUT = 10*1000
 
 
 class fake_subprocess():
@@ -133,15 +133,20 @@ class SubprocessWrapperTest(unittest.TestCase):
         callee.test_signal = test_signal_function
         #lc.connect_export("test-signal", hello)
         self.timeout = False
+        callee.timeout_fn = None
         def loop_stop(*args):
-            log("loop_stop%s", args)
+            log("loop_stop%s timeout_fn=%s", args, callee.timeout_fn)
+            if callee.timeout_fn:
+                glib.source_remove(callee.timeout_fn)
+                callee.timeout_fn = None
             lc.stop()
             glib.idle_add(mainloop.quit)
         def timeout_error():
-            log("timeout_error")
+            log.warn("timeout_error")
+            callee.timeout_fn = None
             self.timeout = True
             loop_stop()
-        glib.timeout_add(TEST_TIMEOUT, timeout_error)
+        callee.timeout_fn = glib.timeout_add(TEST_TIMEOUT, timeout_error)
         signal_string = b"hello foo"
         glib.idle_add(callee.emit, "test-signal", signal_string)
         #hook up a stop function call which ends this test cleanly
