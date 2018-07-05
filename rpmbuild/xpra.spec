@@ -4,9 +4,6 @@
 # later version. See the file COPYING for details.
 
 %define version 2.4
-%if ! %{defined build_no}
-%define build_no 0
-%endif
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -61,7 +58,7 @@ exit 1
 
 Name: xpra
 Version:			%{version}
-Release:			%{build_no}%{?dist}
+Release:			0%{?revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL
