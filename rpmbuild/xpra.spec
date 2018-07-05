@@ -56,7 +56,7 @@ exit 1
 %endif
 
 
-Name: xpra
+Name:				xpra
 Version:			%{version}
 Release:			0%{?revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
@@ -77,12 +77,12 @@ Epoch:              1
 %define epoch_prefix %{epoch}:
 %endif
 %endif
-Requires:			xpra-common = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common = %{?epoch_prefix}%{version}-%{release}
 Requires:			xpra-html5
-Requires:			python2-xpra-client = %{?epoch_prefix}%{version}-%{build_no}%{dist}
-Requires:			python2-xpra-server = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			python2-xpra-client = %{?epoch_prefix}%{version}-%{release}
+Requires:			python2-xpra-server = %{?epoch_prefix}%{version}-%{release}
 %if 0%{?fedora}
-Requires:			python2-xpra-audio = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			python2-xpra-audio = %{?epoch_prefix}%{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
@@ -105,7 +105,7 @@ This package contains the files which are shared between all the xpra packages.
 Summary:			Common files for xpra client packages
 Group:				Networking
 BuildArch:			noarch
-Requires:			xpra-common = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common = %{?epoch_prefix}%{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
@@ -166,7 +166,7 @@ This package contains Xpra's HTML5 client.
 Summary:			python2 build of xpra
 Group:				Networking
 Requires:			python2
-Requires:			xpra-common = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common = %{?epoch_prefix}%{version}-%{release}
 Requires:			python2-lz4
 Requires:			python2-rencode
 Requires:			python2-pillow
@@ -245,7 +245,7 @@ This package contains the python2 common build of xpra.
 %package -n python2-xpra-audio
 Summary:			python2 build of xpra audio support
 Group:				Networking
-Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{release}
 %if 0%{?fedora}
 #EL7 requires 3rd party repos like "media.librelamp.com"
 Requires:			python2-gstreamer1
@@ -265,8 +265,8 @@ This package contains audio support for python2 builds of xpra.
 Summary:			python2 build of xpra client
 Group:				Networking
 Conflicts:			xpra < 2.1
-Requires:			xpra-common-client = %{?epoch_prefix}%{version}-%{build_no}%{dist}
-Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common-client = %{?epoch_prefix}%{version}-%{release}
+Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{release}
 Requires:			pygtk2
 Requires:			python2-pyopengl
 Requires:			pygtkglext
@@ -288,8 +288,8 @@ This package contains the python2 xpra client.
 %package -n python2-xpra-server
 Summary:			python2 build of xpra server
 Group:				Networking
-Requires:			xpra-common-server = %{?epoch_prefix}%{version}-%{build_no}%{dist}
-Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common-server = %{?epoch_prefix}%{version}-%{release}
+Requires:			python2-xpra = %{?epoch_prefix}%{version}-%{release}
 Requires:			pygtk2
 %{Recommends}:		cups-filters
 %if %{with_cuda}
@@ -328,7 +328,7 @@ This package contains the python2 xpra server.
 %package -n python3-xpra
 Summary:			Xpra gives you "persistent remote applications" for X. Python3 build.
 Group:				Networking
-Requires:			xpra-common = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common = %{?epoch_prefix}%{version}-%{release}
 Requires:			python3
 Requires:			python3-lz4
 Requires:			python3-pillow
@@ -386,7 +386,7 @@ This package contains the python3 build of xpra.
 %package -n python3-xpra-audio
 Summary:			python3 build of xpra audio support
 Group:				Networking
-Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{release}
 Requires:			python3-gstreamer1
 Requires:			gstreamer1
 Requires:			gstreamer1-plugins-base
@@ -402,8 +402,8 @@ This package contains audio support for python2 builds of xpra.
 %package -n python3-xpra-client
 Summary:			python3 build of xpra client
 Group:				Networking
-Requires:			xpra-common-client = %{?epoch_prefix}%{version}-%{build_no}%{dist}
-Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common-client = %{?epoch_prefix}%{version}-%{release}
+Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{release}
 Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
@@ -418,8 +418,8 @@ This package contains the python3 xpra client.
 %package -n python3-xpra-server
 Summary:			python3 build of xpra server
 Group:				Networking
-Requires:			xpra-common-server = %{?epoch_prefix}%{version}-%{build_no}%{dist}
-Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{build_no}%{dist}
+Requires:			xpra-common-server = %{?epoch_prefix}%{version}-%{release}
+Requires:			python3-xpra = %{?epoch_prefix}%{version}-%{release}
 Requires:			python3-websockify
 Recommends:			cups-filters
 Recommends:			cups-pdf
