@@ -22,6 +22,7 @@ log = Logger("test")
 XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
 SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 8)
+STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 10)
 DELETE_TEMP_FILES = envbool("XPRA_DELETE_TEMP_FILES", True)
 SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
 
@@ -300,8 +301,8 @@ class ServerTestUtil(unittest.TestCase):
 			return
 		cmd = [subcommand]+list(connect_args)
 		stopit = cls.run_xpra(cmd)
-		assert pollwait(stopit) is not None, "%s command failed to exit" % subcommand
-		assert pollwait(server_proc) is not None, "server process %s failed to exit" % server_proc
+		assert pollwait(stopit, STOP_WAIT_TIMEOUT) is not None, "%s command failed to exit" % subcommand
+		assert pollwait(server_proc, STOP_WAIT_TIMEOUT) is not None, "server process %s failed to exit" % server_proc
 
 	@classmethod
 	def check_stop_server(cls, server_proc, subcommand="stop", display=":99999"):
