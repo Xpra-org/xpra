@@ -240,7 +240,6 @@ if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	for prefix in lib avcodec avformat avutil swscale swresample xvidcore zlib1; do
 		find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 	done
-	echo "numpy duplicated DLLs:"
 	for x in openblas gfortran quadmath; do
 		mv -f ./lib/numpy/core/lib$x*.dll ./lib/
 		mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
