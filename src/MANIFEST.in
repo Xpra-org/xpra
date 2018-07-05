@@ -1,4 +1,4 @@
-include COPYING NEWS README
+include COPYING NEWS README bell.wav
 include xpra/monotonic_ctime.h
 include xpra/monotonic_ctime.c
 include xpra/buffers/memalign.h
@@ -10,11 +10,13 @@ include xpra/buffers/xxhash.c
 include xpra/codecs/cuda_common/*.cu
 include xpra/codecs/v4l2/video.h
 recursive-include html5 *
+recursive-include http-headers *
 recursive-include man *
 recursive-include patches *
 recursive-include etc *
 recursive-include xdg *
 recursive-include cups *
+recursive-include dbus *
 recursive-include icons *
 recursive-include scripts *
 recursive-include selinux *
