@@ -170,7 +170,11 @@ def parse_env(env):
 
 
 def parse_URL(url):
-    from urlparse import urlparse, parse_qs
+    try:
+        #py2:
+        from urlparse import urlparse, parse_qs
+    except ImportError:
+        from urllib.parse import urlparse, parse_qs
     up = urlparse(url)
     address = up.netloc
     qpos = url.find("?")
