@@ -711,7 +711,6 @@
 
 	<metamodule id="meta-osx-xpra-python3-deps">
 		<dependencies>
-		  <dep package="gst-python"/>
 		  <dep package="python3-setuptools"/>
 		  <dep package="python3-zeroconf"/>
 		  <dep package="python3-netifaces"/>
