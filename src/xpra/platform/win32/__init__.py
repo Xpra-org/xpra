@@ -312,7 +312,7 @@ def _show_message(message, uType):
     if SHOW_MESSAGEBOX:
         #try to use an alert box since no console output will be shown:
         try:
-            MessageBoxA(0, message, prg_name, uType)
+            MessageBoxA(0, message.encode(), prg_name.encode(), uType)
             return
         except Exception as e:
             print("Error: cannot show alert box: %s" % (e,))
