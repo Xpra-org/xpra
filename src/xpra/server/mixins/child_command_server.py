@@ -180,6 +180,7 @@ class ChildCommandServer(StubServerMixin):
         return proc is not None and proc.poll() is None
 
     def reaper_exit(self):
+        log("reaper_exit() exit_with_children=%s", self.exit_with_children)
         if self.exit_with_children:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
