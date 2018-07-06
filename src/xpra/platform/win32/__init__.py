@@ -308,14 +308,14 @@ MB_SYSTEMMODAL      = 0x00001000
 def _show_message(message, uType):
     global prg_name
     #TODO: detect cx_freeze equivallent
-    SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", True)
-    if SHOW_MESSAGEBOX and REDIRECT_OUTPUT:
+    SHOW_MESSAGEBOX = envbool("XPRA_MESSAGEBOX", REDIRECT_OUTPUT)
+    if SHOW_MESSAGEBOX:
         #try to use an alert box since no console output will be shown:
         try:
             MessageBoxA(0, message, prg_name, uType)
             return
-        except:
-            pass
+        except Exception as e:
+            print("Error: cannot show alert box: %s" % (e,))
     print(message)
 
 def command_info(message):
