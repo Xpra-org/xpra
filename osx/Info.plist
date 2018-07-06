@@ -75,6 +75,7 @@
             <string>xpra</string>
             <string>xpras</string>
             <string>xpra+tcp</string>
+            <string>xpra+tls</string>
             <string>xpra+ssl</string>
             <string>xpra+ssh</string>
             <string>xpra+ws</string>

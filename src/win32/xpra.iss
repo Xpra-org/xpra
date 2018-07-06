@@ -67,6 +67,11 @@ Root: HKCR; Subkey: "xpra+ssl"; ValueType: "string"; ValueName: "URL Protocol"; 
 Root: HKCR; Subkey: "xpra+ssl\DefaultIcon"; ValueType: "string"; ValueData: "{app}\Xpra.exe,0"
 Root: HKCR; Subkey: "xpra+ssl\shell\open\command"; ValueType: "string"; ValueData: """{app}\Xpra.exe"" ""attach"" ""%1"""
 
+Root: HKCR; Subkey: "xpra+tls"; ValueType: "string"; ValueData: "Xpra SSL Protocol"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "xpra+tls"; ValueType: "string"; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCR; Subkey: "xpra+tls\DefaultIcon"; ValueType: "string"; ValueData: "{app}\Xpra.exe,0"
+Root: HKCR; Subkey: "xpra+tls\shell\open\command"; ValueType: "string"; ValueData: """{app}\Xpra.exe"" ""attach"" ""%1"""
+
 Root: HKCR; Subkey: "xpra+ssh"; ValueType: "string"; ValueData: "Xpra SSH Protocol"; Flags: uninsdeletekey
 Root: HKCR; Subkey: "xpra+ssh"; ValueType: "string"; ValueName: "URL Protocol"; ValueData: ""
 Root: HKCR; Subkey: "xpra+ssh\DefaultIcon"; ValueType: "string"; ValueData: "{app}\Xpra.exe,0"

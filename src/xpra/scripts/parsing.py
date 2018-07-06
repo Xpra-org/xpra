@@ -1070,6 +1070,7 @@ def do_parse_cmdline(cmdline, defaults):
             "xpra"      : "tcp",
             "xpras"     : "ssl",
             "xpra+tcp"  : "tcp",
+            "xpra+tls"  : "ssl",
             "xpra+ssl"  : "ssl",
             "xpra+ssh"  : "ssh",
             "xpra+ws"   : "ws",
