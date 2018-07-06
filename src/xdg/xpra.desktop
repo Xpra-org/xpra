@@ -8,4 +8,4 @@ NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;
-MimeType=x-scheme-handler/xpra;x-scheme-handler/xpras;
+MimeType=x-scheme-handler/xpra;x-scheme-handler/xpras;x-scheme-handler/xpra+ssl;x-scheme-handler/xpra+tcp;x-scheme-handler/xpra+ssh;x-scheme-handler/xpra+ws;x-scheme-handler/xpra+wss;

@@ -74,6 +74,11 @@
         <array>
             <string>xpra</string>
             <string>xpras</string>
+            <string>xpra+tcp</string>
+            <string>xpra+ssl</string>
+            <string>xpra+ssh</string>
+            <string>xpra+ws</string>
+            <string>xpra+wss</string>
         </array>
         <key>CFBundleURLName</key>
         <string>Xpra Session</string>

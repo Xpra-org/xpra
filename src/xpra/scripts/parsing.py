@@ -169,7 +169,7 @@ def parse_env(env):
     return d
 
 
-def parse_URL(url):
+def parse_URL(url, default_mode="tcp"):
     try:
         #py2:
         from urlparse import urlparse, parse_qs
@@ -191,9 +191,8 @@ def parse_URL(url):
             f_params[k] = v
         options = validate_config(f_params)
     al = address.lower()
-    if not al.startswith(":") and not al.startswith("tcp") and not al.startswith("ssh"):
-        #assume tcp if not specified
-        address = "tcp:%s" % address
+    if not any(al.startswith("%s:" % x) for x in ("", "tcp", "ssl", "ssh", "ws", "wss")):
+        address = "%s://%s" % (default_mode, address)
     return address, options
 
 
@@ -1066,14 +1065,28 @@ def do_parse_cmdline(cmdline, defaults):
 
     #special handling for URL mode:
     #xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
-    if len(args)==2 and args[0]=="attach" and (args[1].startswith("xpra://") or args[1].startswith("xpras://")):
-        url = args[1]
-        address, params = parse_URL(url)
-        for k,v in validate_config(params).items():
-            setattr(options, k.replace("-", "_"), v)
-        if url.startswith("xpras://tcp"):
-            address = "ssl" + address[3:]
-        args[1] = address
+    if len(args)==2 and args[0]=="attach":
+        URL_MODES = {
+            "xpra"      : "tcp",
+            "xpras"     : "ssl",
+            "xpra+tcp"  : "tcp",
+            "xpra+ssl"  : "ssl",
+            "xpra+ssh"  : "ssh",
+            "xpra+ws"   : "ws",
+            "xpra+wss"  : "wss",
+            }
+        for prefix, mode in URL_MODES.items():
+            url = args[1]
+            fullprefix = "%s://" % prefix
+            if url.startswith(fullprefix):
+                url = "xpra://%s" % url[len(fullprefix):]
+                address, params = parse_URL(url, mode)
+                for k,v in validate_config(params).items():
+                    setattr(options, k.replace("-", "_"), v)
+                #replace with our standard URL format,
+                #ie: tcp://host:port
+                args[1] = address
+                break
 
     #special case for things stored as lists, but command line option is a CSV string:
     #and may have "none" or "all" special values
