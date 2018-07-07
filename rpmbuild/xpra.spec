@@ -69,7 +69,10 @@ Source:				xpra-%{version}.tar.bz2
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
+%if 0%{?el7}
 Patch0:				centos7-oldsystemd.patch
+Patch1:             selinux-nomap.patch
+%endif
 %if 0%{?fedora}
 %if 0%{?fedora}<28
 #fedora 27 xpra packages declared an epoch value - breaking our packaging and updates, sigh
@@ -451,6 +454,7 @@ pushd $RPM_BUILD_DIR/xpra-%{version}
 %if 0%{?el7}
 #remove some systemd configuration options:
 %patch0 -p1
+%patch1 -p1
 %endif
 
 
