@@ -426,6 +426,8 @@ class GTKTrayMenuBase(object):
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
         if self.client.windows_enabled:
+            menu.append(self.make_modalwindowmenuitem())
+        if self.client.keyboard_helper:
             menu.append(self.make_keyboardsyncmenuitem())
 
     def make_sharingmenuitem(self):
@@ -727,6 +729,16 @@ class GTKTrayMenuBase(object):
             gl.connect("toggled", opengl_toggled)
         self.client.after_handshake(gl_set)
         return gl
+
+    def make_modalwindowmenuitem(self):
+        modal = self.checkitem("Modal Windows")
+        modal.set_tooltip_text("honour modal windows")
+        modal.set_active(self.client.modal_windows)
+        def modal_toggled(*args):
+            self.client.modal_windows = modal.get_active()
+            log("modal_toggled%s modal_windows=%s", args, self.client.modal_windows)
+        modal.connect("toggled", modal_toggled)
+        return modal
 
     def make_picturemenuitem(self):
         picture_menu_item = self.menuitem("Picture", "picture.png")

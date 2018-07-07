@@ -152,6 +152,7 @@ class WindowClient(StubClientMixin):
             self.pixel_depth = 0
 
         self.windows_enabled = opts.windows
+        self.modal_windows = self.windows_enabled and opts.modal_windows
 
         #mouse wheel:
         mw = (opts.mousewheel or "").lower().replace("-", "")
