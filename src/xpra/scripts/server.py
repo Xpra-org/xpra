@@ -1000,16 +1000,18 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
                 os.environ.update(dbus_env)
                 os.environ.update(protected_env)
 
-        if opts.forward_xdg_open and os.environ.get("DISPLAY") and local_sockets:
+        if POSIX and opts.forward_xdg_open:
             #find one xdg-open can use to talk back to us:
             udpaths = [sockpath for (stype, _, sockpath), _ in local_sockets if stype=="unix-domain"]
             if udpaths:
-                os.environ["XPRA_XDG_OPEN_SERVER_SOCKET"] = udpaths[0]
                 for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
                     xdg_override = os.path.join(x, "xdg-open")
                     if os.path.exists(xdg_override):
                         os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
+                        os.environ["XPRA_XDG_OPEN_SERVER_SOCKET"] = udpaths[0]
                         break
+            else:
+                log.warn("Warning: no local server sockets, forward-xdg-open disabled")
 
         log("env=%s", os.environ)
         try:
