@@ -20,7 +20,6 @@ from xpra.net.compression import Compressed
 from xpra.os_util import monotonic_time, BytesIOClass, strtobytes
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
 
-BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
@@ -568,7 +567,7 @@ class WindowsMixin(StubSourceMixin):
 # Methods used by WindowSource:
 #
     def record_congestion_event(self, source, late_pct=0, send_speed=0):
-        if not BANDWIDTH_DETECTION:
+        if not self.bandwidth_detection:
             return
         gs = self.statistics
         if not gs:
