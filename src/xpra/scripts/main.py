@@ -1495,7 +1495,7 @@ def make_client(error_cb, opts):
     mixin_features.logging          = b(opts.remote_logging)
     mixin_features.tray             = b(opts.tray)
     mixin_features.network_state    = True
-    mixin_features.encoding         = True
+    mixin_features.encoding         = opts.windows
     from xpra.platform.features import CLIENT_MODULES
     for client_module in CLIENT_MODULES:
         #ie: "xpra.client.gtk2.client"
