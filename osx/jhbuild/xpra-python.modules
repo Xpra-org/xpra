@@ -362,9 +362,9 @@
 
 	<distutils id="python-lz4">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/61/e4/3d6a241d24ed3f686a4d87425737a1dd554f21506551f57280722e93a20f/lz4-2.0.1.tar.gz"
-			hash="sha256:ad2829319cf151720724399cb5a14f6fb90abe5edfe2fabc1233e765d3e718b1"
-			version="2.0.1"/>
+			module="/packages/b8/fc/cc8a6a5685fe9989726b433703b622a4fa05ea101ade46018b38ee0dc86d/lz4-2.0.2.tar.gz"
+			hash="sha256:1b039a3ca91945062503c0c934fe18131d4997f7becfa3020bf93c56a1c4a0e8"
+			version="2.0.2"/>
 		<dependencies>
 			<dep package="lz4"/>
 			<dep package="python"/>

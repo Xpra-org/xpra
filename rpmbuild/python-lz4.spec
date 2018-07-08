@@ -17,13 +17,13 @@
 
 
 Name:           python2-lz4
-Version:        2.0.1
-Release:        2.xpra1%{?dist}
+Version:        2.0.2
+Release:        1.xpra1%{?dist}
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
 Group:          Development/Languages/Python
-Source:         https://files.pythonhosted.org/packages/61/e4/3d6a241d24ed3f686a4d87425737a1dd554f21506551f57280722e93a20f/lz4-%{version}.tar.gz
+Source:         httphttps://files.pythonhosted.org/packages/b8/fc/cc8a6a5685fe9989726b433703b622a4fa05ea101ade46018b38ee0dc86d/lz4-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python-devel
 BuildRequires:  python-setuptools
@@ -90,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jul 08 2018 Antoine Martin <antoine@nagafix.co.uk> - 2.0.2-1
+- New upstream release
+
 * Tue Jul 03 2018 Antoine Martin <antoine@devloop.org.uk> - 2.0.1-2
 - try harder to prevent rpm db conflicts
 
