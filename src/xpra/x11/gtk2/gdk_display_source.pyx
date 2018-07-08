@@ -86,3 +86,7 @@ def init_gdk_display_source():
     set_display(x11_display)
     set_display_name(display.get_name())
 
+def close_gdk_display_source():
+    #this triggers the garbage collection of the Display object:
+    global display
+    display = None

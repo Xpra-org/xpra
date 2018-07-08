@@ -43,6 +43,9 @@ def add_when_ready(f):
 def add_cleanup(f):
     _cleanups.append(f)
 
+def insert_cleanup(f):
+    _cleanups.insert(0, f)
+
 
 def deadly_signal(signum, _frame):
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
@@ -950,8 +953,9 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         if not check_xvfb():
             return  1
         assert starting or starting_desktop or upgrading
-        from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source
+        from xpra.x11.gtk2.gdk_display_source import init_gdk_display_source, close_gdk_display_source
         init_gdk_display_source()
+        insert_cleanup(close_gdk_display_source)
         #(now we can access the X11 server)
 
         #make sure the pid we save is the real one:
@@ -1120,4 +1124,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
             log.info("upgrading: not cleaning up Xvfb")
         r = 0
     log("cleanups=%s", _cleanups)
-    return r
+    try:
+        return r
+    finally:
+        import gc
+        gc.collect()
