@@ -130,7 +130,8 @@ class GlobalPerformanceStatistics(object):
         cps = []
         for t in range(10):
             etime = now-t
-            cps.append((etime, sum(1 for x in cst if x>etime-1 and x<=etime)))
+            matches = tuple(1 for x in cst if x>etime-1 and x<=etime) or (0,)
+            cps.append((etime, sum(matches)))
         #log("cps(%s)=%s (now=%s)", cst, cps, now)
         self.congestion_value = time_weighted_average(cps)
 
