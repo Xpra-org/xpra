@@ -172,7 +172,7 @@ def close_gtk_display():
     # Close our display(s) first, so the server dying won't kill us.
     # (if gtk has been loaded)
     gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
-    if gdk_mod:
+    if gdk_mod and envbool("XPRA_CLOSE_GTK_DISPLAY", False):
         for d in gdk_mod.display_manager_get().list_displays():
             d.close()
 
