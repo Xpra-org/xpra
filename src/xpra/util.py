@@ -674,7 +674,7 @@ def parse_simple_dict(s="", sep=","):
 #non-None values get added to <todict> with a prefix and optional suffix
 def updict(todict, prefix, d, suffix="", flatten_dicts=False):
     if not d:
-        return
+        return todict
     for k,v in d.items():
         if v is not None:
             if k:
@@ -687,6 +687,7 @@ def updict(todict, prefix, d, suffix="", flatten_dicts=False):
                 updict(todict, k, v)
             else:
                 todict[k] = v
+    return todict
 
 def pver(v, numsep=".", strsep=", "):
     #print for lists with version numbers, or CSV strings

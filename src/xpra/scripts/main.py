@@ -1445,7 +1445,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
             log.info(" (press Control-C to detach)\n")
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
-        app.init_ui(opts, extra_args)
+        app.init_ui(opts)
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
             extra_args = ["socket:%s" % opts.system_proxy_socket]
@@ -1468,6 +1468,34 @@ def get_client_app(error_cb, opts, extra_args, mode):
     return app
 
 def make_client(error_cb, opts):
+    from xpra.scripts.config import FALSE_OPTIONS
+    def b(v):
+        return str(v).lower() not in FALSE_OPTIONS
+    impwarned = []
+    def impcheck(*modules):
+        for mod in modules:
+            try:
+                __import__("xpra.%s" % mod, {}, {}, [])
+            except ImportError as e:
+                if mod not in impwarned:
+                    impwarned.append(mod)
+                    log = get_util_logger()
+                    log.warn("Warning: missing %s module", mod)
+                return False
+        return True
+    from xpra.client import mixin_features
+    mixin_features.display          = True
+    mixin_features.windows          = opts.windows
+    mixin_features.audio            = (b(opts.speaker) or b(opts.microphone)) and impcheck("sound")
+    mixin_features.webcam           = b(opts.webcam) and impcheck("codecs")
+    mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
+    mixin_features.notifications    = opts.notifications and impcheck("notifications")
+    mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")
+    mixin_features.mmap             = b(opts.mmap)
+    mixin_features.logging          = b(opts.remote_logging)
+    mixin_features.tray             = b(opts.tray)
+    mixin_features.network_state    = True
+    mixin_features.encoding         = True
     from xpra.platform.features import CLIENT_MODULES
     for client_module in CLIENT_MODULES:
         #ie: "xpra.client.gtk2.client"
@@ -1567,7 +1595,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.hello_extra = {"connect" : False}
     else:
         app = make_client(error_cb, opts)
-        app.init(opts)
+        app.init(opts, args)
         app.init_ui(opts)
         app.hello_extra = hello_extra
         app.setup_connection(connect())

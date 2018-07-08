@@ -17,15 +17,8 @@ from xpra.gtk_common.about import about, close_about
 from xpra.codecs.loader import PREFERED_ENCODING_ORDER, get_encoding_help, get_encoding_name
 from xpra.simple_stats import std_unit_dec
 from xpra.platform.gui import get_icon_size
-try:
-    from xpra.clipboard.translated_clipboard import TranslatedClipboardProtocolHelper
-except ImportError:
-    TranslatedClipboardProtocolHelper = None
-try:
-    from xpra import clipboard
-    HAS_CLIPBOARD = bool(clipboard)
-except ImportError:
-    HAS_CLIPBOARD = False
+from xpra.client import mixin_features
+
 
 from xpra.log import Logger
 log = Logger("menu")
@@ -44,7 +37,7 @@ WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
 SHOW_SERVER_COMMANDS = envbool("XPRA_SHOW_SERVER_COMMANDS", True)
 SHOW_TRANSFERS = envbool("XPRA_SHOW_TRANSFERS", True)
-SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", HAS_CLIPBOARD)
+SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", True)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 
@@ -292,15 +285,15 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_featuresmenuitem())
         if self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
-        if SHOW_CLIPBOARD_MENU:
+        if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
             menu.append(self.make_clipboardmenuitem())
-        if self.client.windows_enabled:
+        if mixin_features.windows:
             menu.append(self.make_picturemenuitem())
-        if STARTSTOP_SOUND_MENU:
+        if mixin_features.audio and STARTSTOP_SOUND_MENU:
             menu.append(self.make_audiomenuitem())
-        if WEBCAM_MENU:
+        if mixin_features.webcam and WEBCAM_MENU:
             menu.append(self.make_webcammenuitem())
-        if self.client.windows_enabled and WINDOWS_MENU:
+        if mixin_features.windows and WINDOWS_MENU:
             menu.append(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             menu.append(self.make_servermenuitem())
@@ -419,13 +412,15 @@ class GTKTrayMenuBase(object):
         menu.append(self.make_sharingmenuitem())
         menu.append(self.make_lockmenuitem())
         menu.append(self.make_readonlymenuitem())
-        menu.append(self.make_bellmenuitem())
-        menu.append(self.make_notificationsmenuitem())
-        if self.client.windows_enabled:
+        if mixin_features.windows:
+            menu.append(self.make_bellmenuitem())
+        if mixin_features.notifications:
+            menu.append(self.make_notificationsmenuitem())
+        if mixin_features.windows:
             menu.append(self.make_cursorsmenuitem())
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
-        if self.client.windows_enabled:
+        if mixin_features.windows:
             menu.append(self.make_modalwindowmenuitem())
         if self.client.keyboard_helper:
             menu.append(self.make_keyboardsyncmenuitem())

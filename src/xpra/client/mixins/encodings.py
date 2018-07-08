@@ -62,7 +62,7 @@ class Encodings(StubClientMixin):
         self.encoding_defaults = {}
 
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         self.allowed_encodings = opts.encodings
         self.encoding = opts.encoding
         self.video_scaling = parse_bool_or_int("video-scaling", opts.video_scaling)

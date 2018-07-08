@@ -11,7 +11,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
-from xpra.util import envint, typedict, csv
+from xpra.util import envint, typedict, csv, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -55,7 +55,7 @@ class AudioClient(StubClientMixin):
         self.server_ogg_latency_fix = False
         self.queue_used_sent = None
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         self.av_sync = opts.av_sync
         self.sound_properties = typedict()
         self.speaker_allowed = sound_option(opts.speaker) in ("on", "off")
@@ -120,6 +120,8 @@ class AudioClient(StubClientMixin):
                 log.warn(" %s", e)
             except Exception:
                 log.error("failed to add pulseaudio info", exc_info=True)
+        #audio tagging:
+        self.init_audio_tagging(opts.tray_icon)
 
 
     def cleanup(self):
@@ -147,6 +149,10 @@ class AudioClient(StubClientMixin):
         caps.update(self.sound_properties)
         log("audio capabilities: %s", caps)
         return caps
+
+    def get_caps(self):
+        return updict({}, "sound", self.get_audio_capabilities())
+
 
     def setup_connection(self, _conn):
         pass

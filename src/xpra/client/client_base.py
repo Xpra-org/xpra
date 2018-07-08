@@ -126,7 +126,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.init_packet_handlers()
         sanity_checks()
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         if self._init_done:
             #the gtk client classes can inherit this method
             #from multiple parents, skip initializing twice

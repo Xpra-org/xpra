@@ -35,7 +35,7 @@ class MmapClient(StubClientMixin):
         self.supports_mmap = MMAP_SUPPORTED
 
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         if MMAP_SUPPORTED:
             self.mmap_group = opts.mmap_group
             if os.path.isabs(opts.mmap):
@@ -83,16 +83,23 @@ class MmapClient(StubClientMixin):
 
 
     def get_caps(self):
-        if self.mmap_enabled:
-            return {
-                "file"          : self.mmap_filename,
-                "size"          : self.mmap_size,
-                "token"         : self.mmap_token,
-                "token_index"   : self.mmap_token_index,
-                "token_bytes"   : self.mmap_token_bytes,
-                "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
-                }
-        return {}
+        if not self.mmap_enabled:
+            return {}
+        raw_caps = {
+            "file"          : self.mmap_filename,
+            "size"          : self.mmap_size,
+            "token"         : self.mmap_token,
+            "token_index"   : self.mmap_token_index,
+            "token_bytes"   : self.mmap_token_bytes,
+            "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
+            }
+        caps = {
+            "mmap" : raw_caps,
+            }
+        #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
+        for k,v in raw_caps.items():
+            caps["mmap_%s" % k] = v
+        return caps
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)

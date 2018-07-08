@@ -31,37 +31,36 @@ class TrayClient(StubClientMixin):
         self.tray = None
         self.menu_helper = None
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         self.tray_enabled = opts.tray
         self.delay_tray = opts.delay_tray
         self.tray_icon = opts.tray_icon
+        if not self.tray_enabled:
+            return
+        self.menu_helper = self.make_tray_menu_helper()
+        if self.delay_tray:
+            self.connect("first-ui-received", self.setup_xpra_tray)
+        else:
+            #show shortly after the main loop starts running:
+            self.timeout_add(TRAY_DELAY, self.setup_xpra_tray)
 
-    def init_ui(self):
-        """ initialize user interface """
-        if self.tray_enabled:
-            self.menu_helper = self.make_tray_menu_helper()
-            def setup_xpra_tray(*args):
-                log("setup_xpra_tray%s", args)
-                tray = self.setup_xpra_tray(self.tray_icon or "xpra")
-                self.tray = tray
-                if tray:
-                    tray.show()
-                    icon_timestamp = tray.icon_timestamp
-                    def reset_icon():
-                        if not self.tray:
-                            return
-                        #re-set the icon after a short delay,
-                        #seems to help with buggy tray geometries,
-                        #but don't do it if we have already changed the icon
-                        #(ie: the dynamic window icon code may have set a new one)
-                        if icon_timestamp==tray.icon_timestamp:
-                            tray.set_icon()
-                    self.timeout_add(1000, reset_icon)
-            if self.delay_tray:
-                self.connect("first-ui-received", setup_xpra_tray)
-            else:
-                #show shortly after the main loop starts running:
-                self.timeout_add(TRAY_DELAY, setup_xpra_tray)
+    def setup_xpra_tray(self, *args):
+        log("setup_xpra_tray%s", args)
+        tray = self.create_xpra_tray(self.tray_icon or "xpra")
+        self.tray = tray
+        if tray:
+            tray.show()
+            icon_timestamp = tray.icon_timestamp
+            def reset_icon():
+                if not self.tray:
+                    return
+                #re-set the icon after a short delay,
+                #seems to help with buggy tray geometries,
+                #but don't do it if we have already changed the icon
+                #(ie: the dynamic window icon code may have set a new one)
+                if icon_timestamp==tray.icon_timestamp:
+                    tray.set_icon()
+            self.timeout_add(1000, reset_icon)
 
     def cleanup(self):
         t = self.tray
@@ -89,7 +88,7 @@ class TrayClient(StubClientMixin):
         if self.menu_helper:
             self.menu_helper.activate()
 
-    def setup_xpra_tray(self, tray_icon_filename):
+    def create_xpra_tray(self, tray_icon_filename):
         tray = None
         #this is our own tray
         def xpra_tray_click(button, pressed, time=0):

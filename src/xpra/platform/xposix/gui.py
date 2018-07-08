@@ -723,7 +723,8 @@ class ClientExtras(object):
         if client.xsettings_enabled:
             self.setup_xprops()
         self.xi_setup_failures = 0
-        if client.input_devices in ("xi", "auto"):
+        input_devices = getattr(client, "input_devices", None)
+        if input_devices in ("xi", "auto"):
             #this would trigger warnings with our temporary opengl windows:
             #only enable it after we have connected:
             self.client.after_handshake(self.setup_xi)

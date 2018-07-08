@@ -21,43 +21,79 @@ from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS
-from xpra.util import std, envint, envbool, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import std, envbool, typedict, updict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.version_util import get_version_info_full, get_platform_info
-#client mixins:
-from xpra.client.mixins.webcam import WebcamForwarder
-from xpra.client.mixins.audio import AudioClient
-from xpra.client.mixins.rpc import RPCClient
-from xpra.client.mixins.clipboard import ClipboardClient
-from xpra.client.mixins.notifications import NotificationClient
-from xpra.client.mixins.window_manager import WindowClient
-from xpra.client.mixins.mmap import MmapClient
-from xpra.client.mixins.remote_logging import RemoteLogging
-from xpra.client.mixins.display import DisplayClient
-from xpra.client.mixins.network_state import NetworkState
-from xpra.client.mixins.encodings import Encodings
-from xpra.client.mixins.tray import TrayClient
+
+
+CLIENT_BASES = [XpraClientBase]
+from xpra.client import mixin_features
+if mixin_features.display:
+    from xpra.client.mixins.display import DisplayClient
+    CLIENT_BASES.append(DisplayClient)
+if mixin_features.windows:
+    from xpra.client.mixins.window_manager import WindowClient
+    CLIENT_BASES.append(WindowClient)
+if mixin_features.webcam:
+    from xpra.client.mixins.webcam import WebcamForwarder
+    CLIENT_BASES.append(WebcamForwarder)
+if mixin_features.audio:
+    from xpra.client.mixins.audio import AudioClient
+    CLIENT_BASES.append(AudioClient)
+if mixin_features.clipboard:
+    from xpra.client.mixins.clipboard import ClipboardClient
+    CLIENT_BASES.append(ClipboardClient)
+if mixin_features.notifications:
+    from xpra.client.mixins.notifications import NotificationClient
+    CLIENT_BASES.append(NotificationClient)
+if mixin_features.dbus:
+    from xpra.client.mixins.rpc import RPCClient
+    CLIENT_BASES.append(RPCClient)
+if mixin_features.mmap:
+    from xpra.client.mixins.mmap import MmapClient
+    CLIENT_BASES.append(MmapClient)
+if mixin_features.logging:
+    from xpra.client.mixins.remote_logging import RemoteLogging
+    CLIENT_BASES.append(RemoteLogging)
+if mixin_features.network_state:
+    from xpra.client.mixins.network_state import NetworkState
+    CLIENT_BASES.append(NetworkState)
+if mixin_features.encoding:
+    from xpra.client.mixins.encodings import Encodings
+    CLIENT_BASES.append(Encodings)
+if mixin_features.tray:
+    from xpra.client.mixins.tray import TrayClient
+    CLIENT_BASES.append(TrayClient)
+
+CLIENT_BASES = tuple(CLIENT_BASES)
+ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
-TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
 
 """
 Utility superclass for client classes which have a UI.
 See gtk_client_base and its subclasses.
 """
-class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings, TrayClient):
+class UIXpraClient(ClientBaseClass):
     #NOTE: these signals aren't registered here because this class
     #does not extend GObject,
     #the gtk client subclasses will take care of it.
     #these are all "no-arg" signals
     __signals__ = ["first-ui-received", "keyboard-sync-toggled"]
-    for c in (DisplayClient, WindowClient, WebcamForwarder, AudioClient, ClipboardClient, NotificationClient, RPCClient, MmapClient, RemoteLogging, NetworkState, Encodings, TrayClient):
-        __signals__ += c.__signals__
+    for c in CLIENT_BASES:
+        if c!=XpraClientBase:
+            __signals__ += c.__signals__
 
     def __init__(self):
         log.info("Xpra %s client version %s %i-bit", self.client_toolkit(), full_version_str(), BITS)
-        for c in UIXpraClient.__bases__:
+        #mmap_enabled belongs in the MmapClient mixin,
+        #but it is used outside it, so make sure we define it:
+        self.mmap_enabled = False
+        #same for tray:
+        self.tray = None
+        for c in CLIENT_BASES:
             c.__init__(self)
         try:
             pinfo = get_platform_info()
@@ -108,10 +144,10 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self._on_server_setting_changed = {}
 
 
-    def init(self, opts):
+    def init(self, opts, extra_args=[]):
         """ initialize variables from configuration """
-        for c in UIXpraClient.__bases__:
-            c.init(self, opts)
+        for c in CLIENT_BASES:
+            c.init(self, opts, extra_args)
 
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
@@ -121,7 +157,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         self.client_lock = opts.lock is True
 
 
-    def init_ui(self, opts, extra_args=[]):
+    def init_ui(self, opts):
         """ initialize user interface """
         if not self.readonly:
             def noauto(v):
@@ -136,18 +172,13 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             except ImportError as e:
                 keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
                 keylog.warn("Warning: no keyboard support, %s", e)
-        TrayClient.init_ui(self)
-        NotificationClient.init_ui(self)
 
-        self.init_opengl(opts.opengl)
-
-        #audio tagging:
-        AudioClient.init_audio_tagging(self, opts.tray_icon)
+        if mixin_features.windows:
+            self.init_opengl(opts.opengl)
 
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)
 
-        WindowClient.init_ui(self, opts, extra_args)
 
         if MOUSE_DELAY_AUTO:
             try:
@@ -166,7 +197,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     def run(self):
         if self.client_extras:
             self.idle_add(self.client_extras.ready)
-        for c in UIXpraClient.__bases__:
+        for c in CLIENT_BASES:
             c.run(self)
         self.send_hello()
 
@@ -176,7 +207,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
     def cleanup(self):
         log("UIXpraClient.cleanup()")
-        for c in UIXpraClient.__bases__:
+        for c in CLIENT_BASES:
             c.cleanup(self)
         for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras):
             if x is None:
@@ -188,7 +219,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
                 log.error("error on %s cleanup", type(x), exc_info=True)
         #the protocol has been closed, it is now safe to close all the windows:
         #(cleaner and needed when we run embedded in the client launcher)
-        self.destroy_all_windows()
         reaper_cleanup()
         log("UIXpraClient.cleanup() done")
 
@@ -243,7 +273,6 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     def make_hello(self):
         caps = XpraClientBase.make_hello(self)
         caps["session-type"] = get_session_type()
-
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
         if MMAP_SUPPORTED:
@@ -253,11 +282,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
                 caps["server_uuid"] = get_uuid() or ""
             except:
                 pass
-        for x in (
-            #generic feature flags:
-            "notify-startup-complete",
-            "wants_events",
-            "setting-change",
+        for x in (#generic feature flags:
+            "notify-startup-complete", "wants_events", "setting-change",
             ):
             caps[x] = True
         #FIXME: the messy bits without proper namespace:
@@ -266,25 +292,13 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
             })
-        #messy unprefixed:
-        caps.update(WindowClient.get_caps(self))
-        caps.update(DisplayClient.get_caps(self))
-        caps.update(NetworkState.get_caps(self))
-        caps.update(Encodings.get_caps(self))
-        caps.update(ClipboardClient.get_caps(self))
         caps.update(self.get_keyboard_caps())
-        #nicely prefixed:
+        for c in CLIENT_BASES:
+            caps.update(c.get_caps(self))
         def u(prefix, c):
             updict(caps, prefix, c, flatten_dicts=False)
-        u("sound",              AudioClient.get_audio_capabilities(self))
-        u("notifications",      self.get_notifications_caps())
         u("control_commands",   self.get_control_commands_caps())
         u("platform",           get_platform_info())
-        mmap_caps = MmapClient.get_caps(self)
-        u("mmap",               mmap_caps)
-        #pre 2.3 servers only use underscore instead of "." prefix for mmap caps:
-        for k,v in mmap_caps.items():
-            caps["mmap_%s" % k] = v
         return caps
 
 
@@ -292,8 +306,8 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     ######################################################################
     # connection setup:
     def setup_connection(self, conn):
-        XpraClientBase.setup_connection(self, conn)
-        MmapClient.setup_connection(self, conn)
+        for c in CLIENT_BASES:
+            c.setup_connection(self, conn)
 
     def server_connection_established(self):
         if not XpraClientBase.server_connection_established(self):
@@ -304,7 +318,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
 
     def parse_server_capabilities(self):
-        for c in UIXpraClient.__bases__:
+        for c in CLIENT_BASES:
             if not c.parse_server_capabilities(self):
                 log.info("failed to parse server capabilities in %s", c)
                 return  False
@@ -354,7 +368,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
         return True
 
     def process_ui_capabilities(self):
-        for c in UIXpraClient.__bases__:
+        for c in CLIENT_BASES:
             if c!=XpraClientBase:
                 c.process_ui_capabilities(self)
         #keyboard:
@@ -369,7 +383,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
 
 
     def _process_startup_complete(self, packet):
-        log("all the existing windows and system trays have been received: %s items", len(self._id_to_window))
+        log("all the existing windows and system trays have been received")
         XpraClientBase._process_startup_complete(self, packet)
         gui_ready()
         if self.tray:
@@ -617,7 +631,7 @@ class UIXpraClient(XpraClientBase, DisplayClient, WindowClient, WebcamForwarder,
     # packets:
     def init_authenticated_packet_handlers(self):
         log("init_authenticated_packet_handlers()")
-        for c in UIXpraClient.__bases__:
+        for c in CLIENT_BASES:
             c.init_authenticated_packet_handlers(self)
         #run from the UI thread:
         self.set_packet_handlers(self._ui_packet_handlers, {

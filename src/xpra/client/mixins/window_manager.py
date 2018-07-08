@@ -125,7 +125,7 @@ class WindowClient(StubClientMixin):
         self._button_state = {}
         self._on_handshake = []
 
-    def init(self, opts):
+    def init(self, opts, extra_args=[]):
         if opts.system_tray and SYSTEM_TRAY_SUPPORTED:
             try:
                 from xpra.client import client_tray
@@ -152,7 +152,17 @@ class WindowClient(StubClientMixin):
             self.pixel_depth = 0
 
         self.windows_enabled = opts.windows
+        if self.windows_enabled:
+            if opts.window_close not in ("forward", "ignore", "disconnect", "shutdown", "auto"):
+                self.window_close_action = "forward"
+                log.warn("Warning: invalid 'window-close' option: '%s'", opts.window_close)
+                log.warn(" using '%s'", self.window_close_action)
+            else:
+                self.window_close_action = opts.window_close
         self.modal_windows = self.windows_enabled and opts.modal_windows
+
+        if opts.border:
+            self.parse_border(opts.border, extra_args)
 
         #mouse wheel:
         mw = (opts.mousewheel or "").lower().replace("-", "")
@@ -170,17 +180,6 @@ class WindowClient(StubClientMixin):
                     self.wheel_map[btn+1] = btn
                     self.wheel_map[btn] = btn+1
 
-
-    def init_ui(self, opts, extra_args=[]):
-        if opts.border:
-            self.parse_border(opts.border, extra_args)
-        if opts.window_close not in ("forward", "ignore", "disconnect", "shutdown", "auto"):
-            self.window_close_action = "forward"
-            log.warn("Warning: invalid 'window-close' option: '%s'", opts.window_close)
-            log.warn(" using '%s'", self.window_close_action)
-        else:
-            self.window_close_action = opts.window_close
-
         if ICON_OVERLAY>0 and ICON_OVERLAY<=100:
             icon_filename = get_icon_filename("xpra")
             if icon_filename:
@@ -190,7 +189,6 @@ class WindowClient(StubClientMixin):
                 except Exception as e:
                     log.error("Error: failed to load overlay icon '%s':", icon_filename, exc_info=True)
                     log.error(" %s", e)
-
         self._draw_queue = Queue()
         self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 

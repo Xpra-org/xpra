@@ -28,7 +28,7 @@ class RPCClient(StubClientMixin):
         self.server_rpc_types = []
         self.rpc_filter_timers = {}
 
-    def init(self, _opts):
+    def init(self, opts, _extra_args=[]):
         pass
 
     def cleanup(self):
@@ -39,9 +39,6 @@ class RPCClient(StubClientMixin):
 
 
     def run(self):
-        pass
-
-    def setup_connection(self, _conn):
         pass
 
 

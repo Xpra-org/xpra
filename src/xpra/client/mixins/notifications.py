@@ -10,7 +10,7 @@ log = Logger("notify")
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.os_util import bytestostr
-from xpra.util import envbool, repr_ellipsized, make_instance
+from xpra.util import envbool, repr_ellipsized, make_instance, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
 
@@ -31,7 +31,7 @@ class NotificationClient(StubClientMixin):
         self.notifier = None
         self.tray = None
 
-    def init(self, opts):
+    def init(self, opts, _extra_args=[]):
         if opts.notifications:
             try:
                 from xpra import notifications
@@ -40,13 +40,9 @@ class NotificationClient(StubClientMixin):
                 log.warn("Warning: notifications module not found")
             else:
                 self.client_supports_notifications = True
-
-    def init_ui(self):
-        log("client_supports_notifications=%s", self.client_supports_notifications)
-        if self.client_supports_notifications:
-            self.notifier = self.make_notifier()
-            log("using notifier=%s", self.notifier)
-            self.client_supports_notifications = self.notifier is not None
+                self.notifier = self.make_notifier()
+                log("using notifier=%s", self.notifier)
+                self.client_supports_notifications = self.notifier is not None
 
 
     def cleanup(self):
@@ -68,12 +64,13 @@ class NotificationClient(StubClientMixin):
         return True
 
 
-    def get_notifications_caps(self):
-        return {
+    def get_caps(self):
+        return updict({}, "notifications", {
             ""            : self.client_supports_notifications,
             "close"       : self.client_supports_notifications,
             "actions"     : self.client_supports_notifications and self.notifier and self.notifier.handles_actions,
-            }
+            })
+
 
     def init_authenticated_packet_handlers(self):
         self.set_packet_handlers(self._ui_packet_handlers, {
