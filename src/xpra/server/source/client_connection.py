@@ -108,7 +108,7 @@ class ClientConnection(ClientConnectionClass):
     def __init__(self, protocol, disconnect_cb, session_name, server,
                  idle_add, timeout_add, source_remove,
                  setting_changed,
-                 socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit,
+                 socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit, bandwidth_detection,
                  ):
         global counter
         self.counter = counter.increase()
@@ -146,6 +146,7 @@ class ClientConnection(ClientConnectionClass):
         self.setting_changed = setting_changed
         # network constraints:
         self.server_bandwidth_limit = bandwidth_limit
+        self.bandwidth_detection = bandwidth_detection
 
         #these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
@@ -197,6 +198,8 @@ class ClientConnection(ClientConnectionClass):
 
 
     def update_bandwidth_limits(self):
+        if not self.bandwidth_detection:
+            return
         mmap_size = getattr(self, "mmap_size", 0)
         if mmap_size>0:
             return
@@ -217,7 +220,7 @@ class ClientConnection(ClientConnectionClass):
         bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s", self.bandwidth_limit, bandwidth_limit)
         #figure out how to distribute the bandwidth amongst the windows,
         #we use the window size,
-        #(we should actually use the number of bytes actually sent: framerate, compression, etc..)
+        #(we should use the number of bytes actually sent: framerate, compression, etc..)
         window_weight = {}
         for wid, ws in self.window_sources.items():
             weight = 0
@@ -263,9 +266,10 @@ class ClientConnection(ClientConnectionClass):
         if self.server_bandwidth_limit is None:
             server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
         self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
+        self.bandwidth_detection = c.boolget("bandwidth-detection", True)
         cd = typedict(c.dictget("connection-data"))
         self.jitter = cd.intget("jitter", 0)
-        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit)
+        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s", server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
         cinfo = self.get_connect_info()
         for i,ci in enumerate(cinfo):
@@ -430,6 +434,7 @@ class ClientConnection(ClientConnectionClass):
                 "jitter"            : self.jitter,
                 "bandwidth-limit"   : {
                     "setting"       : self.bandwidth_limit or 0,
+                    "detection"     : self.bandwidth_detection,
                     "actual"        : self.soft_bandwidth_limit or 0,
                     }
                 }

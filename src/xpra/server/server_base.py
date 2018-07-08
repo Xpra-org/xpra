@@ -138,6 +138,8 @@ class ServerBase(ServerBaseClass):
         self.lock = opts.lock
         self.idle_timeout = opts.idle_timeout
         self.av_sync = opts.av_sync
+        self.bandwidth_detection = opts.bandwidth_detection
+        log.warn("bandwidth_detection=%s", self.bandwidth_detection)
 
 
     def setup(self):
@@ -318,7 +320,7 @@ class ServerBase(ServerBaseClass):
                           self.session_name, self,
                           self.idle_add, self.timeout_add, self.source_remove,
                           self.setting_changed,
-                          self._socket_dir, self.unix_socket_paths, not is_request, self.bandwidth_limit,
+                          self._socket_dir, self.unix_socket_paths, not is_request, self.bandwidth_limit, self.bandwidth_detection,
                           )
         log("process_hello clientconnection=%s", ss)
         try:

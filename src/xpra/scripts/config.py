@@ -575,6 +575,7 @@ OPTION_TYPES = {
                     "global-menus"      : bool,
                     "forward-xdg-open"  : bool,
                     "modal-windows"     : bool,
+                    "bandwidth-detection" : bool,
                     #arrays of strings:
                     "pulseaudio-configure-commands" : list,
                     "socket-dirs"       : list,
@@ -634,7 +635,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V1 = ["attach", "open-files", "open-url", "pixel-depth", "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
-                    "forward-xdg-open", "modal-windows",
+                    "forward-xdg-open", "modal-windows", "bandwidth-detection",
                           ]
 
 CLIENT_OPTIONS = ["title", "username", "password", "session-name",
@@ -694,7 +695,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "system-tray", "sharing", "lock", "windows", "webcam", "html",
     "terminate-children", "exit-with-children", "exit-with-client",
     "av-sync", "global-menus",
-    "forward-xdg-open", "modal-windows",
+    "forward-xdg-open", "modal-windows", "bandwidth-detection",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "rfb-auth",
@@ -960,6 +961,7 @@ def get_defaults():
                     "global-menus"      : True,
                     "forward-xdg-open"  : True,
                     "modal-windows"     : True,
+                    "bandwidth-detection" : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : [],
                     "remote-xpra"       : get_remote_run_xpra_scripts(),

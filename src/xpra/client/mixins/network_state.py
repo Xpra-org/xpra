@@ -44,6 +44,7 @@ class NetworkState(StubClientMixin):
 
         #bandwidth
         self.bandwidth_limit = 0
+        self.bandwidth_detection = True
         self.server_bandwidth_limit_change = False
         self.server_bandwidth_limit = 0
         self.server_session_name = None
@@ -66,6 +67,7 @@ class NetworkState(StubClientMixin):
     def init(self, opts):
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        self.bandwidth_detection = opts.bandwidth_detection
         bandwidthlog("init bandwidth_limit=%s", self.bandwidth_limit)
 
 
@@ -107,6 +109,7 @@ class NetworkState(StubClientMixin):
         bandwidthlog("bandwidth-limit capability=%s", bandwidth_limit)
         if bandwidth_limit>0:
             caps["bandwidth-limit"] = bandwidth_limit
+        caps["bandwidth-detection"] = self.bandwidth_detection
         return caps
 
     def parse_server_capabilities(self):

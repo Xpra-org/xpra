@@ -557,6 +557,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--bandwidth-limit", action="store",
                       dest="bandwidth_limit", default=defaults.bandwidth_limit,
                       help="Limit the bandwidth used. The value is specified in bits per second, use the value '0' to disable restrictions. Default: '%default'.")
+    legacy_bool_parse("bandwidth-detection")
+    group.add_option("--bandwidth-detection", action="store",
+                      dest="bandwidth_detection", default=defaults.bandwidth_detection,
+                      help="Automatically detect runtime bandwidth limits. Default: '%default'.")
     replace_option("--readwrite", "--readonly=no")
     replace_option("--readonly", "--readonly=yes")
     group.add_option("--readonly", action="store", metavar="yes|no",
