@@ -168,7 +168,7 @@ def display_name_check(display_name):
 def close_gtk_display():
     # Close our display(s) first, so the server dying won't kill us.
     # (if gtk has been loaded)
-    gdk_mod = sys.modules.get("gdk")
+    gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
     if gdk_mod:
         for d in gdk_mod.display_manager_get().list_displays():
             d.close()
@@ -789,14 +789,14 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         except:
             pass
 
+    kill_display = None
     if not proxying:
-        def close_display():
-            close_gtk_display()
+        add_cleanup(close_gtk_display)
+    if not proxying and not shadowing:
+        def kill_display():
             if xvfb_pid:
                 kill_xvfb(xvfb_pid)
-        add_cleanup(close_display)
-    else:
-        close_display = None
+        add_cleanup(kill_display)
 
     if opts.daemon:
         def noerr(fn, *args):
@@ -1109,8 +1109,8 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         r = -128
     if r>0:
         # Upgrading/exiting, so leave X and dbus servers running
-        if close_display:
-            _cleanups.remove(close_display)
+        if kill_display:
+            _cleanups.remove(kill_display)
         if kill_dbus:
             _cleanups.remove(kill_dbus)
         from xpra.server import EXITING_CODE
