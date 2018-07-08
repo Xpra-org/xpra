@@ -584,6 +584,10 @@ class XpraDesktopServer(gobject.GObject, RFBServer, X11ServerBase):
         self.dbus_server = X11_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
 
 
+    def show_all_windows(self):
+        log.warn("Warning: show_all_windows not implemented for desktop server")
+
+
     def do_make_screenshot_packet(self):
         log("grabbing screenshot")
         regions = []

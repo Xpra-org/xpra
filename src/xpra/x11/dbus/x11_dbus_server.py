@@ -28,3 +28,7 @@ class X11_DBUS_Server(DBUS_Server):
     @dbus.service.method(INTERFACE, in_signature='ii', out_signature='ii')
     def SetScreenSize(self, width, height):
         return self.server.set_screen_size(width, height)
+
+    @dbus.service.method(INTERFACE)
+    def ShowAllWindows(self):
+        self.server.show_all_windows()

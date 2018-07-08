@@ -642,6 +642,11 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.or_window_geometry(wid, window, x, y, w, h)
 
 
+    def show_all_windows(self):
+        for w in self._id_to_window.values():
+            self._desktop_manager.show_window(w)
+
+
     def _show_desktop(self, wm, show):
         log("show_desktop(%s, %s)", wm, show)
         for ss in self._server_sources.values():
