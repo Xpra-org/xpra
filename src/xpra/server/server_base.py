@@ -139,7 +139,6 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = opts.idle_timeout
         self.av_sync = opts.av_sync
         self.bandwidth_detection = opts.bandwidth_detection
-        log.warn("bandwidth_detection=%s", self.bandwidth_detection)
 
 
     def setup(self):
