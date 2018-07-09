@@ -267,7 +267,8 @@ ReleaseDC.argtypes = [HWND, HDC]
 mouse_event = user32.mouse_event
 LoadIconA = user32.LoadIconA
 LoadIconA.restype = HICON
-LoadIconA.argtypes = [HINSTANCE, LPCSTR]
+#can also pass int as second arg, so don't declare argtypes:
+#LoadIconA.argtypes = [HINSTANCE, LPCSTR]
 RegisterWindowMessageA = user32.RegisterWindowMessageA
 UpdateWindow = user32.UpdateWindow
 DestroyIcon = user32.DestroyIcon
