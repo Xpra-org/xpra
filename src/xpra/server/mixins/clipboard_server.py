@@ -154,8 +154,12 @@ class ClipboardServer(StubServerMixin):
     def set_session_driver(self, source):
         self.set_clipboard_source(source)
         ch = self._clipboard_helper
-        if source and ch:
-            ch.send_all_tokens()
+        if not source or not ch:
+            return
+        log("set_session_driver(%s) clipboard_enabled=%s, clipboard helper=%s", source, source.clipboard_enabled, ch)
+        if source.clipboard_enabled:
+            log("selections: %s", source.clipboard_client_selections)
+            ch.send_tokens(source.clipboard_client_selections)
 
 
     def _process_clipboard_packet(self, proto, packet):

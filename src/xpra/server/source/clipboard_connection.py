@@ -41,7 +41,7 @@ class ClipboardConnection(StubSourceMixin):
         self.cancel_clipboard_progress_timer()
 
     def parse_client_caps(self, c):
-        self.clipboard_enabled = c.boolget("clipboard", True)
+        self.clipboard_enabled = c.boolget("clipboard", False)
         self.clipboard_notifications = c.boolget("clipboard.notifications")
         self.clipboard_set_enabled = c.boolget("clipboard.set_enabled")
         log("client clipboard: enabled=%s, notifications=%s, set-enabled=%s", self.clipboard_enabled, self.clipboard_notifications, self.clipboard_set_enabled)
