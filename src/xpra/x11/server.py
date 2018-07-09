@@ -642,6 +642,16 @@ class XpraServer(gobject.GObject, X11ServerBase):
             ss.or_window_geometry(wid, window, x, y, w, h)
 
 
+    def add_control_commands(self):
+        super(XpraServer, self).add_control_commands()
+        from xpra.server.control_command import ArgsControlCommand
+        cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])
+        def control_cb():
+            self.show_all_windows()
+            return "%i windows shown" % len(self._id_to_window)
+        cmd.do_run = control_cb
+        self.control_commands[cmd.name] = cmd
+
     def show_all_windows(self):
         for w in self._id_to_window.values():
             self._desktop_manager.show_window(w)
