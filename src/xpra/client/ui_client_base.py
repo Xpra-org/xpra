@@ -147,6 +147,7 @@ class UIXpraClient(ClientBaseClass):
     def init(self, opts, extra_args=[]):
         """ initialize variables from configuration """
         for c in CLIENT_BASES:
+            log("init: %s", c)
             c.init(self, opts, extra_args)
 
         self.title = opts.title
