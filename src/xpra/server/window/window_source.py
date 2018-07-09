@@ -1904,15 +1904,15 @@ class WindowSource(WindowIconSource):
             if frame_no!=0:
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
-                decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
+                #decode = pixels//100000         #0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
                 now = monotonic_time()
                 live_time = int(1000*(now-self.statistics.init_time))
                 ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
-                latency = netlatency + sendlatency + decode + ack_tolerance
+                latency = netlatency + sendlatency + decode_time + ack_tolerance
                 eta = end_send_at + latency/1000.0
                 if now>eta and (live_time>=1000 or pixels>=4096):
                     actual = int(1000*(now-start_send_at))
-                    actual_send_latency = actual-netlatency-decode
+                    actual_send_latency = actual-netlatency-decode_time
                     late_pct = actual_send_latency*100//(1+sendlatency)
                     if pixels<=4096 or actual_send_latency<=0:
                         #small packets can really skew things, don't bother
