@@ -159,14 +159,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log.warn("Warning: unknown challenge handler '%s'", ch_name)
         if DETECT_LEAKS:
             from xpra.util import detect_leaks
-            detailed = []
-            #example: warning, uses ugly direct import:
-            #try:
-            #    from xpra.x11.bindings.ximage import XShmImageWrapper       #@UnresolvedImport
-            #    detailed.append(XShmImageWrapper)
-            #except:
-            #    pass
-            print_leaks = detect_leaks(log, detailed)
+            print_leaks = detect_leaks()
             self.timeout_add(10*1000, print_leaks)
 
 
