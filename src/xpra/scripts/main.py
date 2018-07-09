@@ -64,41 +64,40 @@ def main(script_file, cmdline):
         get_util_logger().debug(msg, exc_info=True)
 
     try:
-        try:
-            defaults = make_defaults_struct()
-            fixup_defaults(defaults)
-            options, args = do_parse_cmdline(cmdline, defaults)
-            if not args:
-                raise InitExit(-1, "xpra: need a mode")
-            mode = args.pop(0)
-            def err(*args):
-                raise InitException(*args)
-            return run_mode(script_file, err, options, args, mode, defaults)
-        except SystemExit:
-            debug_exc()
-            raise
-        except InitExit as e:
-            debug_exc()
-            if str(e) and e.args and (e.args[0] or len(e.args)>1):
-                command_info("%s" % e)
-            return e.status
-        except InitInfo as e:
-            debug_exc()
+        defaults = make_defaults_struct()
+        fixup_defaults(defaults)
+        options, args = do_parse_cmdline(cmdline, defaults)
+        if not args:
+            raise InitExit(-1, "xpra: need a mode")
+        mode = args.pop(0)
+        def err(*args):
+            raise InitException(*args)
+        return run_mode(script_file, err, options, args, mode, defaults)
+    except SystemExit:
+        debug_exc()
+        raise
+    except InitExit as e:
+        debug_exc()
+        if str(e) and e.args and (e.args[0] or len(e.args)>1):
             command_info("%s" % e)
-            return 0
-        except InitException as e:
-            debug_exc()
-            command_error("xpra initialization error:\n %s" % e)
-            return 1
-        except AssertionError as e:
-            debug_exc()
-            command_error("xpra initialization error:\n %s" % e)
-            traceback.print_tb(sys.exc_info()[2])
-            return 1
-        except Exception:
-            debug_exc()
-            command_error("xpra main error:\n%s" % traceback.format_exc())
-            return 1
+        return e.status
+    except InitInfo as e:
+        debug_exc()
+        command_info("%s" % e)
+        return 0
+    except InitException as e:
+        debug_exc()
+        command_error("xpra initialization error:\n %s" % e)
+        return 1
+    except AssertionError as e:
+        debug_exc()
+        command_error("xpra initialization error:\n %s" % e)
+        traceback.print_tb(sys.exc_info()[2])
+        return 1
+    except Exception:
+        debug_exc()
+        command_error("xpra main error:\n%s" % traceback.format_exc())
+        return 1
     finally:
         platform_clean()
 
