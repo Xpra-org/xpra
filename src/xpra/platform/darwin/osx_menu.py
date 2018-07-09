@@ -15,6 +15,7 @@ from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase, populate_en
             SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
+from xpra.client import mixin_features
 
 from xpra.log import Logger
 log = Logger("osx", "tray", "menu")
@@ -189,11 +190,12 @@ class OSXMenuHelper(GTKTrayMenuBase):
             features_menu = self.make_menu()
             menus.append(("Features", features_menu))
             self.append_featuresmenuitems(features_menu)
-            features_menu.add(self.make_swapkeysmenuitem())
-            features_menu.add(self.make_invertmousewheelmenuitem())
-            features_menu.add(self.make_numlockmenuitem())
-            features_menu.add(self.make_scalingmenuitem())
-        if SHOW_CLIPBOARD_MENU:
+            if mixin_features.windows:
+                features_menu.add(self.make_swapkeysmenuitem())
+                features_menu.add(self.make_invertmousewheelmenuitem())
+                features_menu.add(self.make_numlockmenuitem())
+                features_menu.add(self.make_scalingmenuitem())
+        if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
             clipboard_menu = self.make_menu()
             menus.append(("Clipboard", clipboard_menu))
             for label in CLIPBOARD_LABELS:
@@ -203,14 +205,14 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 clipboard_menu.add(self.make_clipboard_submenuitem(label, self._clipboard_direction_changed))
             clipboard_menu.show_all()
             self.client.after_handshake(self.set_clipboard_menu, clipboard_menu)
-        if SHOW_SOUND_MENU:
+        if mixin_features.audio and SHOW_SOUND_MENU:
             sound_menu = self.make_menu()
             if self.client.speaker_allowed and len(self.client.speaker_codecs)>0:
                 sound_menu.add(self.make_speakermenuitem())
             if self.client.microphone_allowed and len(self.client.microphone_codecs)>0:
                 sound_menu.add(self.make_microphonemenuitem())
             menus.append(("Sound", sound_menu))
-        if SHOW_ENCODINGS_MENU:
+        if mixin_features.windows and SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
             def set_encodings_menu(*_args):
                 from xpra.codecs.loader import PREFERED_ENCODING_ORDER
@@ -222,7 +224,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)
             self.client.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
-        if SHOW_ACTIONS_MENU:
+        if mixin_features.windows and SHOW_ACTIONS_MENU:
             actions_menu = self.make_menu()
             actions_menu.add(self.make_refreshmenuitem())
             actions_menu.add(self.make_raisewindowsmenuitem())
