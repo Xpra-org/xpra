@@ -118,8 +118,11 @@ class ServerCommandsWindow(object):
                     if returncode is not None:
                         rstr = "%s" % returncode
                     #find the windows matching this pid
-                    windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
-                    log("windows matching pid=%i: %s", pid, windows)
+                    windows = ()
+                    from xpra.client import mixin_features
+                    if mixin_features.windows:
+                        windows = tuple(w for w in self.client._id_to_window.values() if getattr(w, "_metadata", {}).get("pid")==pid)
+                        log("windows matching pid=%i: %s", pid, windows)
                     icon = gtk.Label()
                     if windows:
                         try:

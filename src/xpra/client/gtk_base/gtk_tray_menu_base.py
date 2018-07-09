@@ -283,7 +283,7 @@ class GTKTrayMenuBase(object):
 
         menu.append(self.make_infomenuitem())
         menu.append(self.make_featuresmenuitem())
-        if self.client.keyboard_helper:
+        if mixin_features.windows and self.client.keyboard_helper:
             menu.append(self.make_layoutsmenuitem())
         if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
             menu.append(self.make_clipboardmenuitem())
@@ -411,8 +411,8 @@ class GTKTrayMenuBase(object):
     def append_featuresmenuitems(self, menu):
         menu.append(self.make_sharingmenuitem())
         menu.append(self.make_lockmenuitem())
-        menu.append(self.make_readonlymenuitem())
         if mixin_features.windows:
+            menu.append(self.make_readonlymenuitem())
             menu.append(self.make_bellmenuitem())
         if mixin_features.notifications:
             menu.append(self.make_notificationsmenuitem())
@@ -422,7 +422,7 @@ class GTKTrayMenuBase(object):
             menu.append(self.make_openglmenuitem())
         if mixin_features.windows:
             menu.append(self.make_modalwindowmenuitem())
-        if self.client.keyboard_helper:
+        if mixin_features.windows and self.client.keyboard_helper:
             menu.append(self.make_keyboardsyncmenuitem())
 
     def make_sharingmenuitem(self):

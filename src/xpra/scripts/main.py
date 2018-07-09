@@ -1484,7 +1484,7 @@ def make_client(error_cb, opts):
                 return False
         return True
     from xpra.client import mixin_features
-    mixin_features.display          = True
+    mixin_features.display          = opts.windows
     mixin_features.windows          = opts.windows
     mixin_features.audio            = (b(opts.speaker) or b(opts.microphone)) and impcheck("sound")
     mixin_features.webcam           = b(opts.webcam) and impcheck("codecs")

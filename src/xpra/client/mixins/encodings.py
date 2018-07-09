@@ -56,7 +56,6 @@ class Encodings(StubClientMixin):
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless_mode = ()
         self.server_auto_video_encoding = False
-        self.server_compressors = []
 
         #what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -100,7 +99,6 @@ class Encodings(StubClientMixin):
 
     def parse_server_capabilities(self):
         c = self.server_capabilities
-        self.server_compressors = c.strlistget("compressors", ["zlib"])
         self.server_encodings = c.strlistget("encodings")
         self.server_core_encodings = c.strlistget("encodings.core", self.server_encodings)
         self.server_encodings_problematic = c.strlistget("encodings.problematic", PROBLEMATIC_ENCODINGS)  #server is telling us to try to avoid those

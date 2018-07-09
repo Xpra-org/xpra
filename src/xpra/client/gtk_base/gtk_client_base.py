@@ -105,7 +105,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
         self._set_window_menu = get_menu_support_function()
-        self.connect("scaling-changed", self.reset_windows_cursors)
+        try:
+            self.connect("scaling-changed", self.reset_windows_cursors)
+        except TypeError:
+            log("no 'scaling-changed' signal")
         #detect when the UI thread isn't responding:
         self.UI_watcher = None
         self.connect("first-ui-received", self.start_UI_watcher)
@@ -851,18 +854,20 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def process_ui_capabilities(self):
         UIXpraClient.process_ui_capabilities(self)
-        if self.server_randr:
-            display = display_get_default()
-            if is_gtk3():
-                #always one screen per display:
-                screen = gdk.Screen.get_default()
+        #this requires the "DisplayClient" mixin:
+        if not hasattr(self, "screen_size_changed"):
+            return
+        display = display_get_default()
+        if is_gtk3():
+            #always one screen per display:
+            screen = gdk.Screen.get_default()
+            screen.connect("size-changed", self.screen_size_changed)
+        else:
+            i=0
+            while i<display.get_n_screens():
+                screen = display.get_screen(i)
                 screen.connect("size-changed", self.screen_size_changed)
-            else:
-                i=0
-                while i<display.get_n_screens():
-                    screen = display.get_screen(i)
-                    screen.connect("size-changed", self.screen_size_changed)
-                    i += 1
+                i += 1
 
 
     def window_grab(self, window):
