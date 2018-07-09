@@ -18,6 +18,7 @@ screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
 mouselog = Logger("win32", "mouse")
 
+from xpra.client import mixin_features
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
@@ -937,9 +938,9 @@ class ClientExtras(object):
             log.error("Error: cannot register focus and power callbacks:")
             log.error(" %s", e)
         self.keyboard_hook_id = None
-        if FORWARD_WINDOWS_KEY:
-            from xpra.make_thread import make_thread
-            make_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True).start()
+        if FORWARD_WINDOWS_KEY and mixin_features.windows:
+            from xpra.make_thread import start_thread
+            start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
 
     def ready(self):
         pass
@@ -1110,6 +1111,8 @@ class ClientExtras(object):
         c = self.client
         log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
         if not c:
+            return
+        if not mixin_features.windows:
             return
         if wParam==0:
             #our app has lost focus
