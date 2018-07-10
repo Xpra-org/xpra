@@ -8,7 +8,7 @@ from collections import namedtuple
 from xpra.dbus.helper import dbus_to_native, native_to_dbus
 from xpra.dbus.common import init_session_bus
 from xpra.server.dbus.dbus_server_base import DBUS_Server_Base, INTERFACE, BUS_NAME
-from xpra.util import parse_scaling_value, from0to100
+from xpra.util import parse_scaling_value, from0to100, DETACH_REQUEST
 import dbus.service
 
 from xpra.log import Logger, add_debug_category, remove_debug_category, disable_debug_for, enable_debug_for
@@ -275,6 +275,21 @@ class DBUS_Server(DBUS_Server_Base):
                 d[str(source)] = str(p)
         self.log(".ListClients()=%s", d)
         return d
+
+    @dbus.service.method(INTERFACE, in_signature='s')
+    def DetachClient(self, uuid):
+        self.log(".DetachClient(%s)", uuid)
+        for p, source in self.server._server_sources.items():
+            if source.uuid==uuid:
+                self.log("matched %s", source)
+                self.server.disconnect_client(p, DETACH_REQUEST)
+
+    @dbus.service.method(INTERFACE)
+    def DetachAllClients(self):
+        self.log(".DetachAllClients() will detach: %s", self.server._server_sources)
+        for p in self.server._server_sources.keys():
+            self.server.disconnect_client(p, DETACH_REQUEST)
+
 
     @dbus.service.method(INTERFACE, in_signature='', out_signature='a{sv}', async_callbacks=("callback", "errback"))
     def GetAllInfo(self, callback, errback):
