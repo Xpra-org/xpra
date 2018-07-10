@@ -259,6 +259,7 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".SendNotification%s", (nid, title, message, uuids))
         self.server.control_command_send_notification(ni(nid), ns(title), ns(message), ns(uuids))
 
+    @dbus.service.method(INTERFACE, in_signature='is')
     def CloseNotification(self, nid, uuids):
         self.log(".CloseNotification%s", (nid, uuids))
         self.server.control_command_close_notification(ni(nid), ns(uuids))
