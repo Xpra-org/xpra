@@ -216,6 +216,13 @@ class WindowClient(StubClientMixin):
         log("WindowClient.cleanup() done")
 
 
+    def set_modal_windows(self, modal_windows):
+        self.modal_windows = modal_windows
+        #re-set flag on all the windows:
+        for w in self._id_to_window.values():
+            modal = w._metadata.boolget("modal", False)
+            w.set_modal(modal)
+
     def set_windows_cursor(self, client_windows, new_cursor):
         raise NotImplementedError()
 
