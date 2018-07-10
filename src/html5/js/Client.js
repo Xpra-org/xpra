@@ -500,6 +500,7 @@ XpraClient.prototype.init_keyboard = function() {
 	});
 }
 
+
 XpraClient.prototype._keyb_get_modifiers = function(event) {
 	/**
 	 * Returns the modifiers set for the current event.
@@ -1188,7 +1189,7 @@ XpraClient.prototype.do_window_mouse_move = function(e, window) {
 	var mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = [];
+	var modifiers = this._keyb_get_modifiers(e);
 	var buttons = [];
 	var wid = 0;
 	if (window) {
@@ -1211,7 +1212,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	var mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = [];
+	var modifiers = this._keyb_get_modifiers(e);
 	var buttons = [];
 	var wid = 0;
 	if (window) {
@@ -1243,7 +1244,7 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	var mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = [];
+	var modifiers = this._keyb_get_modifiers(e);
 	var buttons = [];
 	var wid = 0;
 	if (window) {

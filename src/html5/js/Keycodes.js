@@ -1746,7 +1746,18 @@ for (i=1; i<=24; i++) {
  */
 function get_event_modifiers(event) {
 	var modifiers = [];
-	if (event.modifiers) {
+	if (event.getModifierState) {
+		if (event.getModifierState("Control"))
+			modifiers.push("control");
+		if (event.getModifierState("Alt"))
+			modifiers.push("alt");
+		if (event.getModifierState("Meta"))
+			modifiers.push("meta");
+		if (event.getModifierState("Shift"))
+			modifiers.push("shift");
+		//event.getModifierState("ScrollLock") || event.getModifierState("Scroll")
+	}
+	else if (event.modifiers) {
 		if (event.modifiers & Event.ALT_MASK)
 			modifiers.push("alt");
 		if (event.modifiers & Event.CONTROL_MASK)
