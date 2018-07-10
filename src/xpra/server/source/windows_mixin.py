@@ -590,10 +590,12 @@ class WindowsMixin(StubSourceMixin):
                 summary = "Network Performance Issue"
                 body = "Your network connection is struggling to keep up,\n" + \
                         "consider lowering the bandwidth limit,\n" + \
-                        "or lowering the picture quality"
+                        "or turning off automatic network congestion management.\n" + \
+                        "Choosing 'ignore' will silence all further warnings."
                 actions = []
                 if self.bandwidth_limit==0 or self.bandwidth_limit>MIN_BANDWIDTH:
                     actions += ["lower-bandwidth", "Lower bandwidth limit"]
+                actions += ["bandwidth-off", "Turn off"]
                 #if self.default_min_quality>10:
                 #    actions += ["lower-quality", "Lower quality"]
                 actions += ["ignore", "Ignore"]
@@ -616,5 +618,7 @@ class WindowsMixin(StubSourceMixin):
         #    self.default_min_quality = max(1, self.default_min_quality-15)
         #    self.set_min_quality(self.default_min_quality)
         #    self.setting_changed("min-quality", self.default_min_quality)
+        elif action_id=="bandwidth-off":
+            self.bandwidth_detection = False
         elif action_id=="ignore":
             self.bandwidth_warnings = False
