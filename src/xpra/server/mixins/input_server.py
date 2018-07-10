@@ -373,14 +373,17 @@ class InputServer(StubServerMixin):
         pass
 
     def _process_pointer_position(self, proto, packet):
+        mouselog("_process_pointer_position(%s, %s)", proto, packet)
         if self.readonly:
             return
-        wid, pointer, modifiers = packet[1:4]
         ss = self._server_sources.get(proto)
-        if ss is not None:
-            ss.mouse_last_position = pointer
+        if ss is None:
+            return
+        wid, pointer, modifiers = packet[1:4]
+        ss.mouse_last_position = pointer
         if self.ui_driver and self.ui_driver!=ss.uuid:
             return
+        ss.user_event()
         if self._process_mouse_common(proto, wid, pointer, *packet[5:]):
             self._update_modifiers(proto, wid, modifiers)
 
