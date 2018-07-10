@@ -1452,7 +1452,7 @@ if WIN32:
                     #this is a mac osx thing:
                     "ctypes.macholib")
 
-    if webcam_ENABLED:
+    if webcam_ENABLED and False:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
