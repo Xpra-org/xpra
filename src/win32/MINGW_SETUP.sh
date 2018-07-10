@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2017-2018 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -45,7 +45,7 @@ $PACMAN --noconfirm -S ${XPKG}python3-numpy ${XPKG}python3-pillow ${XPKG}cython
 easy_install-2.7 -U -Z enum34 enum-compat
 for x in rencode xxhash zeroconf lz4 websocket-client netifaces comtypes PyOpenGL PyOpenGL_accelerate websockify cffi pycparser cryptography nvidia-ml-py appdirs setproctitle pyu2f python-ldap ldap3; do
     easy_install-2.7 -U -Z $x
-    easy_install-3.6 -U -Z $x
+    easy_install-3.7 -U -Z $x
 done
 
 #this would install cx_Freeze 5.x - which is broken in many ways,

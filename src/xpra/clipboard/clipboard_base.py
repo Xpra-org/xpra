@@ -762,7 +762,7 @@ class ClipboardProxy(gtk.Invisible):
                 gtk.Invisible.do_selection_request_event(self, event)
                 return
             atoms = self.prop_get(event.window, event.property, ["multiple-conversion"])
-            log("MULTIPLE clipboard atoms: %r", atoms)
+            log.info("MULTIPLE clipboard atoms: %r", atoms)
             if atoms:
                 targets = atoms[::2]
                 for t in targets:
