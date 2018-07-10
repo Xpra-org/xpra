@@ -100,6 +100,14 @@ def main(script_file, cmdline):
         return 1
     finally:
         platform_clean()
+        try:
+            sys.stdout.close()
+        except:
+            pass
+        try:
+            sys.stderr.close()
+        except:
+            pass
 
 
 def configure_logging(options, mode):
