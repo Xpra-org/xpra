@@ -1473,9 +1473,19 @@ if WIN32:
         #so python can load OpenGL from the install directory
         #(further complicated by the fact that "." is the "frozen" path...)
         #but we re-add those two directories to the library.zip as part of the build script
-        import OpenGL, OpenGL_accelerate        #@UnresolvedImport
+        import OpenGL
         print("*** copying PyOpenGL modules to %s ***" % install)
-        for module_name, module in {"OpenGL" : OpenGL, "OpenGL_accelerate" : OpenGL_accelerate}.items():
+        glmodules = {
+            "OpenGL" : OpenGL,
+            }
+        try:
+            import OpenGL_accelerate        #@UnresolvedImport
+        except ImportError as e:
+            print("Warning: missing OpenGL module")
+            print(" %s" % e)
+        else:
+            glmodules["OpenGL_accelerate"] = OpenGL_accelerate
+        for module_name, module in glmodules.items():
             module_dir = os.path.dirname(module.__file__ )
             try:
                 shutil.copytree(
