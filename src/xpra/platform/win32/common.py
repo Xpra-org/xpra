@@ -417,7 +417,7 @@ def EnumDisplayMonitors():
         results.append(monitor)
         return 1
     callback = MonitorEnumProc(_callback)
-    _EnumDisplayMonitors(0, 0, callback, 0)
+    _EnumDisplayMonitors(0, None, callback, 0)
     return results
 
 def GetIntSystemParametersInfo(key):
