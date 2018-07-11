@@ -184,6 +184,9 @@ class WindowClient(StubClientMixin):
             icon_filename = get_icon_filename("xpra")
             if icon_filename:
                 try:
+                    #make sure Pillow's PNG image loader doesn't spam the output with debug messages:
+                    import logging
+                    logging.getLogger("PIL.PngImagePlugin").setLevel(logging.INFO)
                     from PIL import Image   #@UnresolvedImport
                     self.overlay_image = Image.open(icon_filename)
                 except Exception as e:
