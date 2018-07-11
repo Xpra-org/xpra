@@ -1590,7 +1590,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if self._backing is None:
             #we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
-        self.idle_add(self._focus_change, "initial")
+        if not self._override_redirect:
+            self.idle_add(self._focus_change, "initial")
 
     def get_window_frame_size(self):
         frame = self._client.get_frame_extents(self)
