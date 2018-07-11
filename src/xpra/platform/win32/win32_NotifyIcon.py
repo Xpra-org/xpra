@@ -228,6 +228,9 @@ class win32NotifyIcon(object):
         self.command_callback = command_callback
         self.reset_function = None
 
+    def __repr__(self):
+        return "win32NotifyIcon(%#x)" % self.app_id
+
     def create_tray_window(self):
         self.create_window()
         self.register_tray()
