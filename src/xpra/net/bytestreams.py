@@ -323,7 +323,10 @@ class SocketConnection(Connection):
                 s.shutdown(socket.SHUT_RDWR)
             except:
                 log("%s.shutdown(SHUT_RDWR)", s, exc_info=True)
-        s.close()
+        try:
+            s.close()
+        except EOFError:
+            log("%s.close()", s, exc_info=True)
         log("%s.close() done", self)
 
     def __repr__(self):
